@@ -17,10 +17,7 @@ pub struct WorthQueryProviderSessionCommitControlStopped {
 }
 
 impl WorthQueryProviderSessionCommitControlStopped {
-    pub(in crate::domain_computation) fn new(
-        kind: WorthQueryProviderSessionControlStopKind,
-        detail: impl Into<String>,
-    ) -> Self {
+    pub fn new(kind: WorthQueryProviderSessionControlStopKind, detail: impl Into<String>) -> Self {
         Self {
             kind,
             stage: WorthQueryProviderSessionProtocolStage::Commit,
@@ -70,3 +67,5 @@ impl WorthQueryProviderSessionCommitControlStopped {
         self
     }
 }
+
+mod court_doors_for_test;

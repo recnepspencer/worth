@@ -28,9 +28,7 @@ pub struct WorthQueryRequestedElevation {
 }
 
 impl WorthQueryRequestedElevation {
-    pub(in crate::domain_computation) const fn commit_receipt(
-        &self,
-    ) -> &WorthQueryApplicationCommitReceipt {
+    pub const fn commit_receipt(&self) -> &WorthQueryApplicationCommitReceipt {
         &self.commit
     }
 

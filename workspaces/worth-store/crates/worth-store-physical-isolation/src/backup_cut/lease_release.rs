@@ -1,11 +1,12 @@
 use super::BackupReachabilityLease;
+use worth_foundational::CanonicalDigestId;
 
 const MAGIC: &[u8; 4] = b"WBR1";
 const RECORD_BYTES: usize = 36;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BackupReachabilityLeaseReleaseRecord {
-    cut_identity: [u8; 32],
+    cut_identity: CanonicalDigestId,
     encoded: [u8; RECORD_BYTES],
 }
 
@@ -19,7 +20,7 @@ impl BackupReachabilityLeaseReleaseRecord {
         encoded[..MAGIC.len()].copy_from_slice(MAGIC);
         encoded[MAGIC.len()..].copy_from_slice(&cut_identity);
         Self {
-            cut_identity,
+            cut_identity: CanonicalDigestId::new(cut_identity),
             encoded,
         }
     }
@@ -35,13 +36,13 @@ impl BackupReachabilityLeaseReleaseRecord {
             .try_into()
             .map_err(|_| InvalidBackupReachabilityLeaseReleaseRecord)?;
         Ok(Self {
-            cut_identity,
+            cut_identity: CanonicalDigestId::new(cut_identity),
             encoded,
         })
     }
 
     pub const fn cut_identity(&self) -> [u8; 32] {
-        self.cut_identity
+        *self.cut_identity.bytes()
     }
 
     pub fn recovery_bytes(&self) -> &[u8] {

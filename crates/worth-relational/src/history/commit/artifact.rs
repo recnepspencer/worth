@@ -2,6 +2,8 @@ mod original_inputs;
 mod readmission;
 mod reconstructed_inputs;
 pub(crate) use original_inputs::OriginalCanonicalInputs;
+mod retained_entity_selection;
+pub use retained_entity_selection::RelationalRetainedSelectionArtifactDenial;
 
 use std::sync::Arc;
 
@@ -47,6 +49,7 @@ pub enum RelationalCommitArtifactDenial {
     Parentage,
     RootLinkage,
     CanonicalPayloadEncoding,
+    RetainedEntitySelection(RelationalRetainedSelectionArtifactDenial),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -73,6 +76,7 @@ impl RelationalCommitArtifact {
     pub(super) fn validate_envelope(
         envelope: &CanonicalCommitEnvelope,
     ) -> Result<(), RelationalCommitArtifactDenial> {
+        retained_entity_selection::validate(envelope)?;
         RelationalCommitParentage::from_ordered(envelope.commit.parents.clone())
             .map(|_| ())
             .map_err(|_| RelationalCommitArtifactDenial::Parentage)?;
@@ -82,6 +86,7 @@ impl RelationalCommitArtifact {
     pub(super) fn from_envelope(
         envelope: Arc<CanonicalCommitEnvelope>,
     ) -> Result<Self, RelationalCommitArtifactDenial> {
+        retained_entity_selection::validate(&envelope)?;
         let canonical_payload = observe_canonical_payload(&envelope)?;
         let identity = RelationalCommitIdentity::new(
             envelope.commit.commit_id,

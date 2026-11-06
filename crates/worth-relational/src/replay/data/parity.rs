@@ -27,7 +27,7 @@ pub enum ReplaySurfaceAuthorityKind {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct VerifiedDescriptorDigest {
     pub kind: DescriptorAuthorityKind,
-    pub digest: [u8; 32],
+    pub digest: worth_foundational::CanonicalDigestId,
     pub descriptor_semantics_version: DescriptorSemanticsVersion,
     pub canonical_basis_version: Option<DescriptorCanonicalBasisVersion>,
 }
@@ -36,20 +36,20 @@ pub struct VerifiedDescriptorDigest {
 pub struct DescriptorComparisonBasis {
     pub kind: DescriptorAuthorityKind,
     pub exact_digest: Option<VerifiedDescriptorDigest>,
-    pub summary_digest: Option<[u8; 32]>,
+    pub summary_digest: Option<worth_foundational::CanonicalDigestId>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct VerifiedReplaySurfaceDigest {
     pub kind: ReplaySurfaceAuthorityKind,
-    pub digest: [u8; 32],
+    pub digest: worth_foundational::CanonicalDigestId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ReplaySurfaceComparisonBasis {
     pub kind: ReplaySurfaceAuthorityKind,
     pub exact_digest: Option<VerifiedReplaySurfaceDigest>,
-    pub summary_digest: Option<[u8; 32]>,
+    pub summary_digest: Option<worth_foundational::CanonicalDigestId>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -93,7 +93,7 @@ impl VerifiedDescriptorDigest {
     ) -> Self {
         Self {
             kind,
-            digest,
+            digest: worth_foundational::CanonicalDigestId::new(digest),
             descriptor_semantics_version,
             canonical_basis_version,
         }
@@ -102,7 +102,10 @@ impl VerifiedDescriptorDigest {
 
 impl VerifiedReplaySurfaceDigest {
     pub fn from_digest(kind: ReplaySurfaceAuthorityKind, digest: [u8; 32]) -> Self {
-        Self { kind, digest }
+        Self {
+            kind,
+            digest: worth_foundational::CanonicalDigestId::new(digest),
+        }
     }
 }
 
@@ -115,7 +118,7 @@ impl DescriptorComparisonBasis {
         Self {
             kind,
             exact_digest,
-            summary_digest,
+            summary_digest: summary_digest.map(worth_foundational::CanonicalDigestId::new),
         }
     }
 
@@ -171,7 +174,7 @@ impl ReplaySurfaceComparisonBasis {
         Self {
             kind,
             exact_digest,
-            summary_digest,
+            summary_digest: summary_digest.map(worth_foundational::CanonicalDigestId::new),
         }
     }
 

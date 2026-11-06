@@ -31,7 +31,7 @@ pub(super) fn open<Schema: ApplicationSchema, History: ApplicationHistoryQueryBi
     execution: worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     mut plan: SubjectPlan<'_, Schema, History>,
-    metadata: HistoryMetadataAdmission<History>,
+    metadata: HistoryMetadataAdmission,
     subjects: Subjects<Schema, History>,
     maximum_owned_bytes: usize,
 ) -> Result<Cursor<Schema, History>, Denial> {
@@ -42,7 +42,9 @@ pub(super) fn open<Schema: ApplicationSchema, History: ApplicationHistoryQueryBi
         application,
         &plan,
         |runtime, _, security, plan| {
-            metadata.validate(&execution, application, runtime, security, plan)
+            metadata
+                .validate(&execution, application, runtime, security, plan)
+                .map_err(Denial::from)
         },
     )?;
     let opened = Cursor::open(
@@ -59,7 +61,9 @@ pub(super) fn open<Schema: ApplicationSchema, History: ApplicationHistoryQueryBi
         application,
         &plan,
         |runtime, _, security, plan| {
-            metadata.validate(&execution, application, runtime, security, plan)
+            metadata
+                .validate(&execution, application, runtime, security, plan)
+                .map_err(Denial::from)
         },
     )?;
     complete::<Schema, History>(execution, application, plan, proof)?;
@@ -73,7 +77,7 @@ pub(super) fn page<Schema: ApplicationSchema, History: ApplicationHistoryQueryBi
     execution: worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     mut plan: SubjectPlan<'_, Schema, History>,
-    metadata: HistoryMetadataAdmission<History>,
+    metadata: HistoryMetadataAdmission,
     subjects: &Subjects<Schema, History>,
     original: &Cursor<Schema, History>,
     limits: Limits,

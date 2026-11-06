@@ -53,6 +53,7 @@ fn an_owned_head_promotes_without_a_checkpoint_and_keeps_its_old_observation() {
     journal.entity_slots.insert(fixture.entity.slot_index());
     let before = fixture.source.reads.load(Ordering::SeqCst);
     let prepared = PreparedResidentRegion::incremental(
+        execution,
         RegionCaptureBasis {
             retention: &prior,
             kind_commitment: fixture.cold.kind_authority,

@@ -32,14 +32,6 @@ impl MemoryPublicationReady {
     ) -> crate::publication::RuntimeWorldPublicationOutcome {
         self.ready.retain(cause)
     }
-    #[cfg(test)]
-    pub(crate) fn publish(
-        self,
-        cell: &crate::branch::ProductBranchReferenceCell,
-        late: crate::publication::CompositeLateCancellationPosture,
-    ) -> crate::publication::RuntimeWorldPublicationOutcome {
-        self.ready.publish(cell, late)
-    }
 }
 impl CompositePublicationReady {
     pub(crate) fn capture_memory_original(

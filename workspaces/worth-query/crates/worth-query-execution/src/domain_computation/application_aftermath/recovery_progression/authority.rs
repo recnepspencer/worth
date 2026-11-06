@@ -149,9 +149,9 @@ where
         handle: &WorthQueryRecoveryHandle,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<WorthQueryRecoveryEffectAuthority, WorthQueryRecoveryHandleDenial> {
-        handle.admit_home_owner(self.product_runtime.owner.owner_identity())?;
+        handle.admit_home_owner(self.runtime.product_runtime.owner.owner_identity())?;
         admission
-            .refuse_stale_home_authority(self.product_runtime.owner.owner_identity())
+            .refuse_stale_home_authority(self.runtime.product_runtime.owner.owner_identity())
             .map_err(|_| {
                 WorthQueryRecoveryHandleDenial::new(
                     WorthQueryRecoveryHandleDenialKind::StaleIncarnation,
@@ -161,12 +161,19 @@ where
         let owner = self.runtime.authority_identity();
         ensure_same_runtime(owner, handle.runtime_authority())?;
         ensure_same_runtime(owner, admission.runtime_authority())?;
-        deny_if_expired(handle, &self.authorization_clock)?;
+        deny_if_expired(handle, &self.runtime.authorization_clock)?;
+        admission
+            .validate_installed_entry(
+                owner,
+                &self.installed_schema.binding_identity(),
+                self.runtime.installed_operations(),
+            )
+            .map_err(admission_authorization_denial)?;
         super::binding_axis::check_binding_axes(handle.binding(), admission)?;
         Ok(WorthQueryRecoveryEffectAuthority::mint(
             self.runtime.authority_identity(),
             handle.authority_identity(),
-            self.product_runtime.owner.owner_identity(),
+            self.runtime.product_runtime.owner.owner_identity(),
         ))
     }
 
@@ -177,9 +184,9 @@ where
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         disclosure: &WorthQueryRecoveryDisclosureAdmission,
     ) -> Result<WorthQueryRecoveryInspectAuthority, WorthQueryRecoveryHandleDenial> {
-        handle.admit_home_owner(self.product_runtime.owner.owner_identity())?;
+        handle.admit_home_owner(self.runtime.product_runtime.owner.owner_identity())?;
         admission
-            .refuse_stale_home_authority(self.product_runtime.owner.owner_identity())
+            .refuse_stale_home_authority(self.runtime.product_runtime.owner.owner_identity())
             .map_err(|_| {
                 WorthQueryRecoveryHandleDenial::new(
                     WorthQueryRecoveryHandleDenialKind::StaleIncarnation,
@@ -187,15 +194,23 @@ where
             })?;
         handle.ensure_live()?;
         let owner = self.runtime.authority_identity();
-        disclosure.ensure_for_runtime(owner, self.product_runtime.owner.owner_identity())?;
+        disclosure
+            .ensure_for_runtime(owner, self.runtime.product_runtime.owner.owner_identity())?;
         ensure_same_runtime(owner, handle.runtime_authority())?;
         ensure_same_runtime(owner, admission.runtime_authority())?;
-        deny_if_expired(handle, &self.authorization_clock)?;
+        deny_if_expired(handle, &self.runtime.authorization_clock)?;
+        admission
+            .validate_installed_entry(
+                owner,
+                &self.installed_schema.binding_identity(),
+                self.runtime.installed_operations(),
+            )
+            .map_err(admission_authorization_denial)?;
         super::binding_axis::check_binding_axes(handle.binding(), admission)?;
         Ok(WorthQueryRecoveryInspectAuthority::mint(
             self.runtime.authority_identity(),
             handle.authority_identity(),
-            self.product_runtime.owner.owner_identity(),
+            self.runtime.product_runtime.owner.owner_identity(),
         ))
     }
 }
@@ -238,7 +253,7 @@ fn ensure_authority_owns_handle(
 /// testable without standing up a published runtime — the caller still reads
 /// the owner identity from the runtime it is a method on, never from an
 /// argument.
-pub(super) fn ensure_same_runtime(
+pub fn ensure_same_runtime(
     owner: WorthQueryRuntimeAuthorityIdentity,
     presented: WorthQueryRuntimeAuthorityIdentity,
 ) -> Result<(), WorthQueryRecoveryHandleDenial> {
@@ -249,3 +264,13 @@ pub(super) fn ensure_same_runtime(
     }
     Ok(())
 }
+
+fn admission_authorization_denial(
+    denial: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+) -> WorthQueryRecoveryHandleDenial {
+    WorthQueryRecoveryHandleDenial::new(WorthQueryRecoveryHandleDenialKind::AdmissionAuthorization(
+        denial.kind(),
+    ))
+}
+
+mod court_doors_for_test;

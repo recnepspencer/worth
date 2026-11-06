@@ -24,7 +24,7 @@ where
         >,
         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
     > {
-        let execution = phase.execution_request_for(&self.product_runtime)?;
+        let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
         let selected = self
             .on_branch(definition.branch())
             .select(phase)

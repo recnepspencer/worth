@@ -1,5 +1,7 @@
 //! Authored independent row rosters; graph identities come only from publication.
 use super::*;
+use crate::application_invariant_acceptance::managed_index::maintained::nested::edit::Edit;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 pub(super) fn set(names: &[&str]) -> BTreeSet<String> {
     names.iter().map(|s| (*s).to_owned()).collect()
 }
@@ -12,7 +14,7 @@ pub(super) fn find(event: &str, prefix: &str) -> query::FindPrefix {
         prefix: prefix.into(),
     }
 }
-pub(super) fn publish(world: &host::EventHost, key: &mut u64, input: authoring::Edit) {
+pub(super) fn publish(world: &host::EventHost, key: &mut u64, input: Edit) {
     let scope = authentication::request_scope();
     let principal = authentication::block_on(
         authentication::admit(world.installed_schema()).authenticate(
@@ -56,8 +58,13 @@ pub(super) fn edit_history(world: &host::EventHost, key: &mut u64, input: histor
         .unwrap();
     assert!(result.result().is_some(), "{result:?}");
 }
-pub(super) fn setup() -> (host::EventHost, Arc<prefix::Calls>, Arc<rule::Calls>, u64) {
-    let provider = Arc::new(prefix::Calls::default());
+pub(super) fn setup() -> (
+    host::EventHost,
+    Arc<prefix_observation::Calls>,
+    Arc<rule::Calls>,
+    u64,
+) {
+    let provider = Arc::new(prefix_observation::Calls::default());
     let records = Arc::new(rule::Calls::default());
     let world = host::install_events(Arc::clone(&provider), Arc::clone(&records));
     let mut key = 3000;
@@ -65,7 +72,7 @@ pub(super) fn setup() -> (host::EventHost, Arc<prefix::Calls>, Arc<rule::Calls>,
         publish(
             &world,
             &mut key,
-            authoring::Edit::Directory {
+            Edit::Directory {
                 identity: event.into(),
             },
         );
@@ -74,7 +81,7 @@ pub(super) fn setup() -> (host::EventHost, Arc<prefix::Calls>, Arc<rule::Calls>,
         publish(
             &world,
             &mut key,
-            authoring::Edit::Item {
+            Edit::Item {
                 directory: event.into(),
                 identity: item.into(),
                 name: format!("match-{item}"),

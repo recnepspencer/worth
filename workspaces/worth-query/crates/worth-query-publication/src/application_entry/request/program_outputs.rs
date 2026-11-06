@@ -180,7 +180,7 @@ where
                 self.recover_required_outputs_in_advancement::<Program, Root>(
                     &phase,
                     application,
-                    source_receipt,
+                    worth_query_execution::facade::primary_graph::WorthQueryOutputSourceReplay::Retained(source_receipt),
                     root_demand,
                     controls,
                 )
@@ -198,7 +198,7 @@ where
         &self,
         phase: &AdvancementPhase<'_>,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
-        source_receipt: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
+        source_receipt: worth_query_execution::facade::primary_graph::WorthQueryOutputSourceReplay<'_>,
         root_demand: RootDemand<Schema, Root>,
         controls: crate::application_entry::WorthQueryOutputDemandControls,
     ) -> Result<
@@ -240,7 +240,7 @@ where
                 crate::application_entry::WorthQueryRequiredOutputPreparationDenial::UndeclaredOutputRoot,
             );
         }
-        let (root, observation, preparation) = self
+        let (source_receipt, root, observation, preparation) = self
             .demand(root_demand.clone())
             .controls(controls)
             .start_recovery::<Program, Root>(phase, application, source_receipt)
@@ -260,7 +260,7 @@ where
         &self,
         phase: &AdvancementPhase<'_>,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
-        source_receipt: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
+        source_receipt: worth_query_execution::facade::primary_graph::WorthQueryOutputSourceReplay<'_>,
         root_demand: RootDemand<Schema, Root>,
         controls: crate::application_entry::WorthQueryOutputDemandControls,
         admission: &worth_query_execution::facade::primary_graph::WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,

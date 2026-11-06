@@ -19,7 +19,7 @@ use worth_relational::facade::{
 
 // This directory is call-local and descriptive; its map backing is not charged
 // as ExecutionArray payload. Every value is the native owner's exact-root token.
-pub(super) struct PreparedSelections {
+pub struct PreparedSelections {
     pub(super) selectors:
         BTreeMap<(DerivedIndexId, KindId, AspectFieldLocator), PreparedEntityFieldLookup>,
 }
@@ -106,7 +106,7 @@ impl PreparedSelections {
     }
 }
 
-fn comparison_stop(
+pub fn comparison_stop(
     stop: BoundedEntityFieldLookupAdmissionStop<WorthQueryDecisionReadSetFailure>,
 ) -> Result<bool, WorthQueryDecisionReadSetFailure> {
     match stop {
@@ -121,19 +121,4 @@ fn comparison_stop(
     }
 }
 
-#[cfg(test)]
-mod read_fold_tests {
-    use super::*;
-    #[test]
-    fn read_fold_index_accounting_overflow_is_a_request_stop() {
-        let denied = comparison_stop(BoundedEntityFieldLookupAdmissionStop::AccountingOverflow)
-            .expect_err("accounting overflow cannot answer not equal");
-        assert_eq!(denied.kind(), crate::domain_computation::WorthQueryDecisionReadSetDenialKind::ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource {
-            denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkCounterOverflow,
-            partition_identity: None, policy_ancestor: None,
-        }));
-        assert!(
-            !comparison_stop(BoundedEntityFieldLookupAdmissionStop::ExactBasisRequired).unwrap()
-        );
-    }
-}
+mod court_doors_for_test;

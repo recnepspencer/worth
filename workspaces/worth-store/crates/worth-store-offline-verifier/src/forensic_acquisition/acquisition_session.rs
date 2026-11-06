@@ -1,5 +1,6 @@
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
+use worth_foundational::CanonicalDigestId;
 
 use sha2::{Digest, Sha256};
 use worth_store_physical_backend::{OfflineMediaReadDenial, ReadOnlyOfflineMediaCapability};
@@ -299,12 +300,12 @@ fn source_record(
     source_fingerprint: [u8; 32],
 ) -> DurableForensicSourceRecord {
     DurableForensicSourceRecord {
-        plan_identity: plan.plan_identity(),
+        plan_identity: CanonicalDigestId::new(plan.plan_identity()),
         source_index: source_index as u64,
         source_length,
         acquired_prefix_bytes,
-        acquired_digest,
-        source_fingerprint,
+        acquired_digest: CanonicalDigestId::new(acquired_digest),
+        source_fingerprint: CanonicalDigestId::new(source_fingerprint),
     }
 }
 
@@ -317,10 +318,10 @@ fn validate_recovered_records(
             .sources
             .get(index)
             .ok_or(ForensicAcquisitionDenial::DamagedAcquisitionJournal)?;
-        if record.plan_identity != plan.plan_identity()
+        if *record.plan_identity.bytes() != plan.plan_identity()
             || record.source_index != index as u64
             || record.source_length != source.byte_length
-            || record.source_fingerprint != source.metadata_fingerprint
+            || *record.source_fingerprint.bytes() != source.metadata_fingerprint
         {
             return Err(ForensicAcquisitionDenial::DamagedAcquisitionJournal);
         }
@@ -350,7 +351,7 @@ fn validate_recorded_output(
         }
         digest.update(&buffer[..read]);
     }
-    if <[u8; 32]>::from(digest.finalize()) != record.acquired_digest {
+    if <[u8; 32]>::from(digest.finalize()) != *record.acquired_digest.bytes() {
         return Err(ForensicAcquisitionDenial::DamagedAcquisitionJournal);
     }
     Ok(())

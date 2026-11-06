@@ -36,6 +36,10 @@ fn assert_stale(
 mod serial {
     use super::*;
     #[test]
+    #[expect(
+        clippy::result_large_err,
+        reason = "The fixture preserves the original typed owner denial."
+    )]
     fn preserved_family_head_reopens_for_current_output_before_any_demand() {
         let _guard = checkpoint_recovery_test_guard();
         let provider_observation = crate::producer::ProviderContacts::default();

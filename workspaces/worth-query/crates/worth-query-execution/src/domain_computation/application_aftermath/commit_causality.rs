@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
-pub(crate) enum ApplicationCommitCausality {
+pub enum ApplicationCommitCausality {
     Ordinary,
     RecordedCorrection(
         std::sync::Arc<

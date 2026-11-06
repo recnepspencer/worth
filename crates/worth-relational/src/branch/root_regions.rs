@@ -255,8 +255,8 @@ fn node_commitment(
             digest.update([1]);
             digest.update(region.region.partition_id.0.to_be_bytes());
             digest.update(region.region.content_digest);
-            digest.update(region.region.kind_commitment.head);
-            digest.update(region.region.kind_commitment.history);
+            digest.update(region.region.kind_commitment.head.bytes());
+            digest.update(region.region.kind_commitment.history.bytes());
         }
         Some(RelationalPersistentRegionLeaf::Removed(partition_id)) => {
             digest.update([2]);

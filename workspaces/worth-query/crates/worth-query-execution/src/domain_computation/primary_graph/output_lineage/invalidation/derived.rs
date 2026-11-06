@@ -24,8 +24,8 @@ use super::source_alignment::BranchMarkRoot;
 use super::source_alignment::EqualOutputCurrentness;
 use super::source_alignment::SnapshotAlignedMarkState;
 
-mod current_registration;
-mod prepared;
+pub(crate) mod current_registration;
+pub(crate) mod prepared;
 pub(in crate::domain_computation::primary_graph) use current_registration::CurrentSettlementRegistrationCleanup;
 pub(in crate::domain_computation::primary_graph) use current_registration::PreparedCurrentSettlementRegistration;
 pub(in crate::domain_computation::primary_graph) use prepared::PreparedSettlementRegistration;
@@ -33,7 +33,7 @@ pub(in crate::domain_computation::primary_graph) use prepared::SettlementRegistr
 pub(in crate::domain_computation::primary_graph) use prepared::StoppedSettlementRegistration;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum SettlementRegistrationStop {
+pub enum SettlementRegistrationStop {
     Alignment(FullVerificationReason),
     /// The registration's basis or equality belongs to another source.
     Foreign,
@@ -43,7 +43,7 @@ pub(in crate::domain_computation::primary_graph) enum SettlementRegistrationStop
     Edit(CompanionCellEditStop),
 }
 
-pub(in crate::domain_computation::primary_graph) enum SourceSettlementCurrentness {
+pub enum SourceSettlementCurrentness {
     Clean,
     Dirty(OrdSet<usize>),
     PendingUpstream(OrdSet<Arc<RecordedSettlementIdentity>>),
@@ -67,7 +67,7 @@ impl SourceSettlementCurrentness {
 
 /// Only consumed-output evidence may interpret the actor's certified equality
 /// consequence. Direct callers still observe the old settlement's own marks.
-pub(in crate::domain_computation::primary_graph) enum ConsumedOutputCurrentness {
+pub enum ConsumedOutputCurrentness {
     Direct(SourceSettlementCurrentness),
     CanonicallyEqualClean(Arc<RecordedSettlementIdentity>),
     PendingEqualSuccessor,
@@ -318,3 +318,5 @@ fn copy_currentness(currentness: SettlementCurrentness<'_>) -> SourceSettlementC
         SettlementCurrentness::Foreign => SourceSettlementCurrentness::Foreign,
     }
 }
+
+mod court_doors_for_test;

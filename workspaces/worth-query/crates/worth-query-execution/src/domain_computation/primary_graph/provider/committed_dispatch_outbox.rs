@@ -14,23 +14,13 @@ use crate::domain_computation::primary_graph::{
 };
 
 mod correlation;
-#[cfg(test)]
-mod layout_tests;
 mod original_attempt;
 mod original_row;
-#[cfg(test)]
-mod owner_test_support;
-mod restoration;
-#[cfg(test)]
-mod test_support;
+pub(crate) mod restoration;
 mod work;
 
 use restoration::{required_fields, restore_record};
-#[cfg(test)]
-pub(in crate::domain_computation) use test_support::{
-    commit_distinct_records_and_admit_fixture, commit_observe_and_admit_fixture,
-    commit_observe_and_admit_twice_fixture,
-};
+
 pub use work::WorthQueryCommittedDispatchOutboxReadWork;
 
 /// Fresh Query-provider observation of one authoritative Relational outbox row.
@@ -44,7 +34,7 @@ pub struct WorthQueryCommittedDispatchOutboxObservation {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-struct WorthQueryCommittedDispatchOutboxOwnerObservation {
+pub struct WorthQueryCommittedDispatchOutboxOwnerObservation {
     record: WorthQueryDispatchOutboxRecord,
     commit: RelationalCommitReceipt,
     record_ref: RecordRef,
@@ -118,19 +108,14 @@ impl WorthQueryCommittedDispatchOutboxObservation {
 
     /// Corruption probe for proving the World axis is checked independently
     /// from the Relational runtime axis.
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn with_relational_runtime_instance_for_test(
-        mut self,
-        runtime: u64,
-    ) -> Self {
+    pub fn with_relational_runtime_instance_for_test(mut self, runtime: u64) -> Self {
         self.owner.relational_runtime_instance_id = runtime;
         self
     }
 
     /// Substitution probe for proving the exact World publication is paired
     /// with its own Relational owner row before transport admission.
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn with_product_publication_for_test(
+    pub fn with_product_publication_for_test(
         mut self,
         publication: WorthQueryCommittedProductPublication,
     ) -> Self {
@@ -287,7 +272,8 @@ where
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         correlation: &crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity,
     ) -> Result<WorthQueryCommittedDispatchOutboxObservation, Denial> {
-        self.primary_provider
+        self.runtime
+            .primary_provider
             .committed_dispatch_outbox_for_correlation(execution, correlation)
     }
 
@@ -298,7 +284,7 @@ where
         receipt: &WorthQueryApplicationCommitReceipt,
     ) -> Result<Option<WorthQueryCommittedDispatchOutboxObservation>, Denial> {
         let phase_request = phase
-            .execution_request_for(&self.product_runtime)
+            .execution_request_for(&self.runtime.product_runtime)
             .map_err(|_| Denial::ForeignPhase)?;
         self.observe_committed_dispatch_outbox_with_request(&phase_request, receipt)
     }
@@ -308,7 +294,8 @@ where
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         receipt: &WorthQueryApplicationCommitReceipt,
     ) -> Result<Option<WorthQueryCommittedDispatchOutboxObservation>, Denial> {
-        self.primary_provider
+        self.runtime
+            .primary_provider
             .committed_dispatch_outbox(execution, receipt)
     }
 }
@@ -316,14 +303,4 @@ where
 mod record_read;
 use record_read::CommittedOutboxRead;
 
-#[cfg(test)]
-#[path = "committed_dispatch_outbox_tests.rs"]
-mod tests;
-
-#[cfg(test)]
-#[path = "committed_dispatch_outbox/restoration_tests.rs"]
-mod restoration_tests;
-
-#[cfg(test)]
-#[path = "committed_dispatch_outbox/corruption_tests.rs"]
-mod corruption_tests;
+mod court_doors_for_test;

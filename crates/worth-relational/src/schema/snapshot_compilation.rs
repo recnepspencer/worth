@@ -83,6 +83,7 @@ impl RelationalSchemaRegistry {
         }
         control.checkpoint()?;
         Ok(SchemaAuthoritySnapshot {
+            content_formats: self.content_formats.snapshot(),
             primary_schema_id,
             primary_schema_version_id,
             entity_kinds,

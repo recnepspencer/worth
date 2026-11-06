@@ -84,6 +84,7 @@ where
         return None;
     }
     let installed = runtime
+        .runtime
         .authorization
         .capability_plan_by_identity(&access.authorization.installed_capability_identity())?;
     if installed.capability_authority_identity().as_ref()
@@ -132,6 +133,7 @@ where
         WorthQueryOperationAuthorizationDenial,
     > {
         let owned = self
+            .runtime
             .runtime
             .authorization
             .capability_plan_by_identity(&request.capability_identity())
@@ -223,7 +225,7 @@ impl<Schema> WorthQueryExactCapabilityObservationContext<'_, Schema> {
     pub(in crate::domain_computation::authorization) fn bridge(
         &self,
     ) -> &worth_runtime_bridge::facade::BridgeAuthorizationRuntime {
-        self.observation.runtime.authorization.bridge()
+        self.observation.runtime.runtime.authorization.bridge()
     }
     pub(in crate::domain_computation::authorization) const fn installed(&self) -> &crate::domain_computation::authorization::capability_registry::WorthQueryInstalledCapabilityPlan{
         self.installed

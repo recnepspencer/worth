@@ -3,12 +3,7 @@ use super::*;
 
 /// Both forms compare captured input through its actual selected owner.
 /// Callers supply a basis or a runtime, never an asserted comparison result.
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) enum DecisionInput<
-    'a,
-    'basis,
-    'runtime,
-    Schema,
-> {
+pub enum DecisionInput<'a, 'basis, 'runtime, Schema> {
     Selected(&'a SelectedDecisionInput<'basis, 'runtime, Schema>),
     Ordinary {
         runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -58,6 +53,7 @@ impl PerformedMembers {
             }
 
             let candidate = runtime
+                .runtime
                 .primary_provider
                 .graph
                 .output_lineage

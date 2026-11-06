@@ -12,8 +12,12 @@ pub mod assessment_output;
 pub mod assessment_readiness;
 #[path = "document_retention_model/correctable_retention.rs"]
 pub mod correctable_retention;
+#[path = "document_retention_model/document_history.rs"]
+pub mod document_history;
 #[path = "document_retention_model/host.rs"]
 pub mod host;
+#[path = "document_retention_model/model_lifecycle.rs"]
+pub mod model_lifecycle;
 #[path = "document_retention_model/operator_identity.rs"]
 pub mod operator_identity;
 #[path = "document_retention_model/presented_request.rs"]

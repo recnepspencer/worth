@@ -3,6 +3,9 @@
 pub enum RuntimeWorldRecoveryDenial {
     HomeProgramTransitionRequired,
     RecoveredCustodyRequired,
+    ContinuationAlreadyCommitted,
+    ContinuationAlreadyStarted,
+    ReleaseAlreadyStarted,
     ReopenRequired,
     OwnerUnavailable(crate::lifecycle::RuntimeWorldOwnerUnavailable),
     ForeignHandle,
@@ -14,6 +17,8 @@ pub enum RuntimeWorldRecoveryDenial {
     CallerCapabilityLive,
     SettlementRequired,
     SettlementEvidenceUnavailable,
+    OriginalSourceUnavailable,
+    OriginalSourceMismatch,
     OutputCapacityExhausted,
 }
 impl From<crate::lifecycle::RuntimeWorldOwnerUnavailable> for RuntimeWorldRecoveryDenial {

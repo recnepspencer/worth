@@ -24,7 +24,9 @@ use worth_query_host::facade::{
 };
 
 use super::*;
+mod admission_time;
 mod installation;
+pub(super) use installation::install_on_clock;
 pub(super) use installation::{install_configured_in_bootstrap, install_program_in_bootstrap};
 pub(super) mod observed;
 mod principal_bootstrap;
@@ -131,12 +133,22 @@ where
     >,
     Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
 {
-    let expectation = match checkpoint {
-        Some(_) => "the checkpoint restores",
-        None => "the checkpoint source installs",
-    };
-    try_install_program_with_limits::<Program>(checkpoint, profile, limits, seed)
-        .expect(expectation)
+    match checkpoint {
+        Some(checkpoint) => {
+            worth_query_host::facade::application_contribution::with_bootstrap_advancement(
+                execution_policy::POPULATION_BOOTSTRAP_POLICY,
+                |phase| {
+                    installation::install_checkpoint_in_bootstrap::<Program>(
+                        &phase, checkpoint, profile, limits,
+                    )
+                },
+            )
+            .expect("the reconstructed population owns its original opening request")
+            .expect("the checkpoint restores")
+        }
+        None => try_install_program_with_limits::<Program>(None, profile, limits, seed)
+            .expect("the checkpoint source installs"),
+    }
 }
 
 /// Installs or restores, returning the denial when the installation is refused.
@@ -249,25 +261,6 @@ pub(super) fn limits_with_room(
     )
 }
 
-/// Explicit history byte room for a bounded large-world courtroom. Ordinary
-/// small fixtures retain their existing fixed metadata ceiling.
-pub(super) fn limits_with_history_room(
-    retained_composite_commits: u64,
-    active_observations: u64,
-    unique_exact_component_pins: u64,
-    invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
-    history_metadata_bytes: u64,
-) -> WorthQueryInMemoryApplicationLimits {
-    limits_with_history_and_policy(
-        retained_composite_commits,
-        active_observations,
-        unique_exact_component_pins,
-        invalidation,
-        history_metadata_bytes,
-        execution_policy::CHECKPOINT_EXECUTION_POLICY,
-    )
-}
-
 pub(super) fn limits_with_policy(
     retained_composite_commits: u64,
     active_observations: u64,
@@ -282,6 +275,7 @@ pub(super) fn limits_with_policy(
         invalidation,
         524_288,
         policy,
+        authentication::WorthQueryAdmissionClock::system(),
     )
 }
 
@@ -292,6 +286,7 @@ pub(super) fn limits_with_history_and_policy(
     invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
     history_metadata_bytes: u64,
     policy: worth_foundational::ExecutionRequestPolicy,
+    clock: authentication::WorthQueryAdmissionClock,
 ) -> WorthQueryInMemoryApplicationLimits {
     WorthQueryInMemoryApplicationLimits::new(
         WorthQueryProductWorldResources::install(
@@ -321,7 +316,7 @@ pub(super) fn limits_with_history_and_policy(
                     owner_created_component_custody_records: 16,
                 },
             },
-            WorthQueryProductWorldClock::start(),
+            WorthQueryProductWorldClock::start(clock),
             invalidation,
             policy,
         )

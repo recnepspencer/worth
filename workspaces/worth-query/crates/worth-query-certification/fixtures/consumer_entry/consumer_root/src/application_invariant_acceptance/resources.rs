@@ -1,3 +1,6 @@
+mod runtime_time;
+pub(super) use runtime_time::RuntimeTime;
+use worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock;
 use worth_query_host::facade::runtime::RuntimeWorldBranchBudgetInstallation;
 use worth_query_host::facade::runtime::RuntimeWorldBudgetInstallation;
 use worth_query_host::facade::runtime::RuntimeWorldCustodyBudgetInstallation;
@@ -25,23 +28,24 @@ pub(super) const EXECUTION_POLICY: worth_foundational::ExecutionRequestPolicy =
     );
 
 pub(super) fn world_resources() -> WorthQueryProductWorldResources {
-    world_resources_with_policy(EXECUTION_POLICY)
+    world_resources_for(
+        EXECUTION_POLICY,
+        ACTIVE_WORLD_OBSERVATIONS,
+        8,
+        WorthQueryAdmissionClock::system(),
+    )
 }
 
-fn world_resources_with_policy(
-    policy: worth_foundational::ExecutionRequestPolicy,
-) -> WorthQueryProductWorldResources {
-    world_resources_with_observations(policy, ACTIVE_WORLD_OBSERVATIONS)
-}
-
-fn world_resources_with_observations(
+fn world_resources_for(
     policy: worth_foundational::ExecutionRequestPolicy,
     active_observations: u64,
+    branch_capacity: u64,
+    clock: WorthQueryAdmissionClock,
 ) -> WorthQueryProductWorldResources {
     WorthQueryProductWorldResources::install(
         RuntimeWorldBudgetInstallation {
             branches: RuntimeWorldBranchBudgetInstallation {
-                live_product_branches: 8,
+                live_product_branches: branch_capacity,
             },
             history: RuntimeWorldHistoryBudgetInstallation {
                 retained_composite_commits: 64,
@@ -65,7 +69,7 @@ fn world_resources_with_observations(
                 owner_created_component_custody_records: 32,
             },
         },
-        WorthQueryProductWorldClock::start(),
+        WorthQueryProductWorldClock::start(clock),
         WorthQueryInvalidationResources::new(),
         policy,
     )
@@ -74,21 +78,49 @@ fn world_resources_with_observations(
 
 pub(super) fn application_limits(
 ) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
-    application_limits_with_policy(EXECUTION_POLICY)
+    application_limits_for_world(world_resources())
 }
 
-pub(super) fn application_limits_with_policy(
-    policy: worth_foundational::ExecutionRequestPolicy,
+pub(super) fn application_limits_with_branches(
+    branch_capacity: u64,
 ) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
-    application_limits_with_observations(policy, ACTIVE_WORLD_OBSERVATIONS)
+    application_limits_for_world(world_resources_for(
+        EXECUTION_POLICY,
+        ACTIVE_WORLD_OBSERVATIONS,
+        branch_capacity,
+        WorthQueryAdmissionClock::system(),
+    ))
+}
+
+pub(super) fn application_limits_with_clock(
+    policy: worth_foundational::ExecutionRequestPolicy,
+    clock: WorthQueryAdmissionClock,
+) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
+    application_limits_for_world(world_resources_for(
+        policy,
+        ACTIVE_WORLD_OBSERVATIONS,
+        8,
+        clock,
+    ))
 }
 
 pub(super) fn application_limits_with_observations(
     policy: worth_foundational::ExecutionRequestPolicy,
     active_observations: u64,
 ) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
+    application_limits_for_world(world_resources_for(
+        policy,
+        active_observations,
+        8,
+        WorthQueryAdmissionClock::system(),
+    ))
+}
+
+fn application_limits_for_world(
+    world: WorthQueryProductWorldResources,
+) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
     worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits::new(
-        world_resources_with_observations(policy, active_observations),
+        world,
         worth_query_host::facade::runtime::WorthQueryApplicationQueryResourceProfile::new(
             std::num::NonZeroUsize::new(32).expect("concurrent graph work is non-zero"),
         ),

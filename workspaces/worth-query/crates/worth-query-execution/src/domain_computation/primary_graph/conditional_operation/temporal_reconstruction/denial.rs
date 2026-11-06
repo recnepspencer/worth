@@ -142,6 +142,10 @@ pub(super) fn one_shot(
 ) -> WorthQueryConditionalRuntimeInstallationDenial {
     use crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind as Kind;
     match denial.kind() {
+        Kind::Content(cause) => reconstruction_denial(
+            WorthQueryConditionalRuntimeInstallationDenialKind::Content(cause),
+            "conditional reconstruction content refused",
+        ),
         Kind::ExecutionRequest(kind) => read_stopped(Ok(kind)),
         Kind::Cancelled => read_stopped(Err(
             crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,

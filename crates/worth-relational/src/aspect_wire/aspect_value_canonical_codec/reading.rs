@@ -117,7 +117,6 @@ impl<'a> AspectValueBodyReader<'a> {
             ))),
             tags::BIG_INT => Ok(AspectValue::BigInt(self.read_big_int()?)),
             tags::RATIONAL => self.read_rational_value(),
-            tags::BYTES => Ok(AspectValue::Bytes(self.read_content_ref()?)),
             tags::UUID => Ok(AspectValue::Uuid(self.read_uuid()?)),
             tags::DATE => Ok(AspectValue::Date(CanonicalDate {
                 days_from_unix_epoch: self.read_i32()?,
@@ -184,7 +183,9 @@ impl<'a> AspectValueBodyReader<'a> {
     }
 
     fn read_content_ref(&mut self) -> Result<ContentRefId, AspectValueCanonicalCodecError> {
-        Ok(ContentRefId(self.read_u64()?))
+        let mut digest = [0; 32];
+        digest.copy_from_slice(self.read_exact(32)?);
+        Ok(ContentRefId(digest))
     }
 
     fn read_entity_id(&mut self) -> Result<EntityId, AspectValueCanonicalCodecError> {

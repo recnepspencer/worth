@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use super::RelationScopeRequirement;
 use super::{PlannedRelationEdge, PreparedRelationIntegrityScope, PreparedRelationIntegrityScopes};
+use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::{EntityReference, MergedCommitPlan};
@@ -14,7 +15,7 @@ use super::preparation_control::InvariantPreparationControl;
 use crate::transactions::data::TransactionCommitError;
 
 pub(crate) fn prepare_relation_integrity_scopes(
-    merged_plan: Option<&MergedCommitPlan>,
+    semantic_plan: Option<RelationalSemanticPlan<'_>>,
     whole_home_target: bool,
     partitions: &dyn CurrentPartitionAccess,
     version_id: crate::identity::data::VersionId,
@@ -33,8 +34,11 @@ pub(crate) fn prepare_relation_integrity_scopes(
         performance,
         control,
     );
-    if let Some(merged_plan) = merged_plan {
-        accumulator.collect_plan(merged_plan)?;
+    if let Some(plan) = semantic_plan {
+        if let Some(selection) = plan.selection() {
+            accumulator.collect_revalidated_entity(selection.entity())?;
+        }
+        accumulator.collect_plan(plan.commands())?;
     }
     if whole_home_target {
         accumulator.collect_home_target_source()?;

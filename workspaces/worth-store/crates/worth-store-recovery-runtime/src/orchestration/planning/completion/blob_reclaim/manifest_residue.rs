@@ -174,8 +174,8 @@ pub(super) fn verify(
                         || value.source_basis_digest() != intent.source_basis_digest()
                         || value.manifest_selected_generation() != manifest_generation
                         || value.reserved_selected_generation() > intent.source_root_generation()
-                        || value.request().idempotency() != idempotency
-                        || value.request().fingerprint() != fingerprint
+                        || value.request().idempotency() != *idempotency.bytes()
+                        || value.request().fingerprint() != *fingerprint.bytes()
                         || (recovered
                             && !wal_fate::recovered_reservation_key_matches(
                                 intent,
@@ -184,7 +184,7 @@ pub(super) fn verify(
                             ))
                         || (!recovered
                             && !basis.fates.operations().iter().any(|operation| {
-                                operation.identity().idempotency() == idempotency
+                                operation.identity().idempotency() == *idempotency.bytes()
                                     && operation.lease_issuance_generation()
                                         == value.request().lease_issuance_generation()
                                     && operation.lease_expiry_generation()

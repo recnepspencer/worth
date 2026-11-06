@@ -17,7 +17,6 @@ pub(in crate::domain_computation) struct DurableDependenciesView<'a> {
 
 // Descriptive comparator input from the fixture's genuine native capture. This
 // neither mints capability metadata nor changes the conventional decision.
-#[cfg(test)]
 pub(super) fn conventional_observed_view(
     primary: &worth_relational::facade::authorization::RelationalAuthorizationDependencyWire,
 ) -> DurableDependenciesView<'_> {

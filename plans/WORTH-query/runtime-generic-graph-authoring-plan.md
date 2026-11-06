@@ -26,8 +26,8 @@
 > **Impacted later roadmap work:**
 > - `Milestone 9.4` (`Temporal Query Basis And Time-Aware Subscription Contracts`)
 > - `Milestone 9.5` (`Async And Resource-Backed Query Families`)
-> - `Milestone 10` (`Store-Backed Execution And Historical Parity`)
-> - `Milestone 11` (`Durable Saved-Query, Cursor, And Artifact Reload Semantics`)
+> - `Store execution/historical integration` (`Store-Backed Execution And Historical Parity`)
+> - `Store Milestone 11` (`Durable Saved-Query, Cursor, And Artifact Reload Semantics`)
 >
 > **Primary architectural driver:** make graph-shaped mutation authoring
 > physically executable through one ordinary Query runtime contract without

@@ -5,7 +5,7 @@ use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
-pub(super) struct MaterialFootprintStorage<'a, 'request, 'authority> {
+pub struct MaterialFootprintStorage<'a, 'request, 'authority> {
     execution: &'a ExecutionRequest<'request, 'authority>,
     allocation: Option<&'a Arc<SourceFactsAllocation>>,
 }
@@ -133,3 +133,5 @@ impl<'a, 'request, 'authority> MaterialFootprintStorage<'a, 'request, 'authority
         self.execution
     }
 }
+
+mod court_doors_for_test;

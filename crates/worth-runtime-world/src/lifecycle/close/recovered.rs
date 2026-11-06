@@ -19,8 +19,7 @@ pub(super) struct OriginalRecoveredClose {
     _commit: crate::identity::CompositeCommitIdentity,
     _open: crate::durability::AdmittedWorldOpenAttempt,
     _release: Mutex<Option<crate::durability::WorldDurableArtifact>>,
-    _committed_release:
-        Mutex<Option<worth_proof::DurablyCommitted<crate::durability::ActualWorldPublication>>>,
+    _committed_release: Mutex<Option<crate::durability::WorldCommittedPublication>>,
     _claimed: Mutex<bool>,
     expected: crate::branch::ProductBranchObservation,
     native: Option<RecoveredNativeRetirement>,
@@ -81,6 +80,8 @@ impl OriginalRecoveredClose {
             attempt,
             commit,
             open,
+            continued: _,
+            native_identity: _,
             expected,
             binding,
             native,
@@ -88,15 +89,37 @@ impl OriginalRecoveredClose {
             claimed,
             release,
             committed_release,
+            prepared_release,
+            continuation,
             metadata_bytes: _,
         } = original;
+        // Unsubmitted terminal metadata owns no Native lease or serving share.
+        // Its destination is canceled while the same live World/Native owners
+        // still surround this cooperative retirement phase.
+        drop(
+            prepared_release
+                .into_inner()
+                .unwrap_or_else(|e| e.into_inner()),
+        );
         let native = match native
             .into_inner()
             .unwrap_or_else(|cause| cause.into_inner())
         {
             RecoveredNativeCustody::OpenOnly => None,
-            RecoveredNativeCustody::Relational(original) => {
-                Some(original.consume(RecoveredNativeRetirement::new))
+            RecoveredNativeCustody::Relational(original) => Some(
+                Arc::try_unwrap(original)
+                    .expect("exclusive original Native custody")
+                    .consume(RecoveredNativeRetirement::new),
+            ),
+            RecoveredNativeCustody::Prepared(view) => {
+                drop(view);
+                let prepared = continuation
+                    .into_inner()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .expect("same prepared continuation");
+                Some(RecoveredNativeRetirement::Publication(
+                    (*prepared).into_home_retirement(),
+                ))
             }
             RecoveredNativeCustody::Released => {
                 unreachable!("the exclusive recovered record passed final sealed validation")
@@ -130,7 +153,7 @@ impl OriginalRecoveredClose {
         native_owner: &worth_relational::facade::runtime::RelationalRuntime,
     ) -> Result<bool, Denial> {
         if let Some(native) = self.native.take() {
-            let (native, progress) = native.advance(request);
+            let (native, progress) = native.advance(request, native_owner);
             self.native = Some(native);
             if !progress? {
                 return Ok(false);

@@ -29,8 +29,12 @@ impl RecoveredNativeContinuationLoan {
             .as_mut()
             .expect("the original row custody remains owned")
     }
-    pub(crate) fn start(&mut self, prepared: PreparedOriginalContinuation) {
-        // No callback, request poll or fallible admission follows this move.
+    pub(crate) fn start(
+        &mut self,
+        prepared: PreparedOriginalContinuation,
+    ) -> Result<(), crate::recovery::RuntimeWorldRecoveryDenial> {
+        // No callback or request poll intervenes. An outstanding source loan
+        // returns typed Busy and restores the exact capability before returning.
         let RecoveredNativeCustody::Relational(native) = self
             .current
             .take()
@@ -38,7 +42,16 @@ impl RecoveredNativeContinuationLoan {
         else {
             unreachable!("the receiver admitted a relational original before preparation")
         };
-        self.current = Some(RecoveredNativeCustody::Continuing(prepared.finish(native)));
+        match Arc::try_unwrap(native) {
+            Ok(native) => {
+                self.current = Some(RecoveredNativeCustody::Continuing(prepared.finish(native)));
+                Ok(())
+            }
+            Err(native) => {
+                self.current = Some(RecoveredNativeCustody::Relational(native));
+                Err(crate::recovery::RuntimeWorldRecoveryDenial::Busy)
+            }
+        }
     }
 }
 impl Drop for RecoveredNativeContinuationLoan {

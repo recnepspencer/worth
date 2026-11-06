@@ -234,7 +234,7 @@ fn inline_digest_headers_preserve_commitment_and_frontier_wire() {
     #[derive(Serialize)]
     struct LegacyOpening {
         siblings: Vec<crate::storage::substrate::HistoryFrontierSibling>,
-        last: Option<(u128, [u8; 32])>,
+        last: Option<(u128, worth_foundational::CanonicalDigestId)>,
     }
     let source = payload(4);
     let opening = source.append_frontier(Some(value(4, 0))).unwrap();

@@ -149,15 +149,21 @@ where
             prepared.disclosure,
         )?;
         Ok(WorthQueryAdmittedApplicationQueryPlan {
+            history_metadata: None,
             planned_batch_item: None,
             retain_expression_context: false,
             retain_projection_for_inspection: false,
             runtime_authority: self.runtime.authority_identity(),
             graph_authority_identity: self
-                .primary_graph_authority
+                .runtime
+                .primary_graph_authority()
                 .authority_identity()
                 .to_string(),
-            provider_identity: self.primary_graph_authority.provider_identity().to_string(),
+            provider_identity: self
+                .runtime
+                .primary_graph_authority()
+                .provider_identity()
+                .to_string(),
             query,
             principal: access.principal(),
             scope: access.scope(),
@@ -168,6 +174,7 @@ where
             continuation_state: None,
             basis,
             index_posture,
+            security_basis: None,
             security_product,
             graph_work,
             authorization: authorities.authorization,

@@ -74,15 +74,12 @@ fn killed_native_after_two_publications_recovers_exact_unpublished_predecessor()
             other => panic!("original later unpublished release refused: {other:?}"),
         }
     };
-    assert_eq!(
-        released.native_effect().unwrap().subject().receipt(),
-        &receipt
-    );
+    assert_eq!(released.original().native_receipt().unwrap(), &receipt);
     assert_eq!(
         released
-            .native_effect()
+            .original()
+            .native_semantic_result()
             .unwrap()
-            .semantic_result()
             .created_entities()
             .len(),
         1

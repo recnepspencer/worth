@@ -126,6 +126,17 @@ where
             } else {
                 None
             };
+            if admitted.is_none()
+                && matches!(
+                    recovered
+                        .dispositions
+                        .get(&open.association.attempt())
+                        .map(|row| row.disposition()),
+                    Some(RecoveredCustodyDisposition::Continued)
+                )
+            {
+                return Err(Denial::OccurrenceEvidenceMismatch);
+            }
             let index = custody.publications.len();
             custody.publications.push(admitted);
             let ids = (
@@ -154,7 +165,6 @@ where
         insert(&mut observations, &head.commit, &expected, execution)?;
         for (index, occurrence) in recovered.occurrences.values().enumerate() {
             let open = occurrence.open();
-            let relational = occurrence.relational();
             let before = observations
                 .get(&open.expected.commit)
                 .ok_or(Denial::MissingPredecessor)?;
@@ -183,6 +193,23 @@ where
             binding.retain_checkpoint_occurrence(origin);
             insert(&mut observations, &open.commit, &selected, execution)?;
         }
+        for disposition in recovered.dispositions.values() {
+            if let RecoveredCustodyDisposition::Released(_) = disposition.disposition() {
+                let open = disposition.open();
+                let expected = observations
+                    .get(&open.expected.commit)
+                    .ok_or(Denial::MissingPredecessor)?;
+                root.state
+                    .recovery
+                    .readmit_released_original(
+                        execution,
+                        disposition,
+                        expected,
+                        effects.take(&open.association.attempt()),
+                    )
+                    .map_err(Denial::Medium)?;
+            }
+        }
         for (open, (attempt, commit, identity), index, slot_index) in opens.values() {
             let expected = observations
                 .get(&open.expected.commit)
@@ -195,9 +222,24 @@ where
                     identity: identity.clone(),
                     attempt: attempt.clone(),
                     commit: commit.clone(),
+                    continued: recovered
+                        .dispositions
+                        .get(&open.association.attempt())
+                        .cloned(),
                     open: open.clone(),
                     expected,
                     binding: binding.clone(),
+                    native_identity: custody.publications[*index]
+                        .as_ref()
+                        .map(|publication| {
+                            native
+                                .history()
+                                .immutable_commit_identity(
+                                    publication.custody().effect().subject().receipt().commit_id,
+                                )
+                                .ok_or(Denial::OccurrenceEvidenceMismatch)
+                        })
+                        .transpose()?,
                     native: custody.publications[*index].take(),
                 });
         }

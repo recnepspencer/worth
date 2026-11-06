@@ -47,9 +47,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             ))
         };
         let execution = phase
-            .execution_request_for(&self.product_runtime)
+            .execution_request_for(&self.runtime.product_runtime)
             .map_err(|_| authorize(Refusal::ForeignPhase))?;
         let (_, _, role) = self
+            .runtime
             .authorization
             .elevation_lifecycle_operation::<Schema, Operation>(
                 operation.operation(),

@@ -15,10 +15,10 @@ use super::frontier::RequiredFrontier;
 use super::frontier::RequiredUpstream;
 use super::queued::QueuedRequiredRoots;
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerCommitAuthority;
+use crate::domain_computation::primary_graph::application_contribution::producer::ProducerInvocationAuthority;
 pub(super) mod canonical_apply;
-mod member_refusal;
-mod member_stop;
+pub(crate) mod member_refusal;
+pub(crate) mod member_stop;
 use member_refusal::RefusalRow;
 use member_refusal::RefusingMember;
 mod frozen_collection;
@@ -35,7 +35,7 @@ pub(super) fn drive_required_wave<'runtime, Schema, Family>(
     demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
-    authority: &WorthQueryProducerCommitAuthority,
+    authority: &ProducerInvocationAuthority<'_>,
     mut wave: RequiredWaveSelection<'runtime, Schema>,
     queue: &mut QueuedRequiredRoots,
     queue_custody: &mut RequiredContinuations<Schema>,
@@ -46,6 +46,7 @@ where
     Family: WorthQueryProducerOutputFamily<Schema>,
 {
     runtime
+        .runtime
         .output_demands
         .record_selection_state(wave.is_frozen());
     let mut frontier = RequiredFrontier::new();
@@ -151,7 +152,7 @@ where
                 }
                 requested_refusal::RequestedRefusal::Unavailable => {
                     let ended = RefusingMember::from_driver(
-                        &runtime.output_demands,
+                        &runtime.runtime.output_demands,
                         &mut frontier.members[index],
                         RefusalRow::Member,
                         &mut *queue_custody,
@@ -225,6 +226,7 @@ where
                 principal,
                 request,
                 wave.branch,
+                authority,
                 custody,
                 frontier.members[index].ready.selected(),
                 performed,
@@ -252,7 +254,7 @@ where
                 Err(OwnedRefreshStop::Selection(stop)) => return Err(stop),
                 Err(OwnedRefreshStop::Recorded(stop)) => {
                     let ended = RefusingMember::from_driver(
-                        &runtime.output_demands,
+                        &runtime.runtime.output_demands,
                         &mut frontier.members[index],
                         RefusalRow::Member,
                         &mut *queue_custody,
@@ -300,12 +302,13 @@ where
                 principal,
                 request,
                 wave.branch,
+                authority,
                 custody,
                 &head,
                 performed,
             ) {
                 Ok(HeldUpstream::Ready(ready)) => {
-                    runtime.output_demands.clear_required_stop(&head);
+                    runtime.runtime.output_demands.clear_required_stop(&head);
                     if super::selection::committed_ready(&ready)? {
                         wave = wave.reselect(execution, runtime)?;
                         resolved.clear();
@@ -323,7 +326,7 @@ where
                 }
                 Err(stop) => {
                     let ended = RefusingMember::from_driver(
-                        &runtime.output_demands,
+                        &runtime.runtime.output_demands,
                         &mut frontier.members[index],
                         RefusalRow::HeldHead(&head),
                         &mut *queue_custody,

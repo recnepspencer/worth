@@ -6,7 +6,7 @@ use worth_query_declaration::facade::application_aftermath::{
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog;
 
-pub(in crate::domain_computation::primary_graph) fn validate_witness<S>(
+pub fn validate_witness<S>(
     source: TypeId,
     manifest: &[DeclaredCorrectionOutputField],
     bindings: &WorthQueryInstalledApplicationValueBindingCatalog,
@@ -32,6 +32,14 @@ pub(in crate::domain_computation::primary_graph) fn validate_witness<S>(
         || installed.canonical_contract() != recipe.canonical_contract()
     {
         return Err(Denial::FieldMeaningMismatch);
+    }
+    match (field.content_recipe(), installed.content_format()) {
+        (None, None) => {}
+        (Some(a), Some(b))
+            if a.declaration() == b.declaration()
+                && a.binding_type() == b.binding_type()
+                && a.value_type() == b.value_type() => {}
+        _ => return Err(Denial::FieldMeaningMismatch),
     }
     Ok(())
 }

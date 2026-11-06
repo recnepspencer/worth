@@ -28,7 +28,7 @@ fn disposal_returns_original_handle_on_refusal_then_native_receipt() {
 
     let cancellation = WorthQueryCancellationSource::new();
     cancellation.cancel();
-    let canceled = WorthQueryRequestScope::new(None, cancellation.token());
+    let canceled = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let specialist = world.fixture.authenticate_specialist();
     let (cause, handle) = runtime
         .dispose_commit_recovery(handle, &specialist, world.specialist_action(), &canceled)

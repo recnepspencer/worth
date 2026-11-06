@@ -46,7 +46,7 @@ fn native_contract_is_visible(
             candidate.native_aspect_key() == contract.key()
                 && candidate.native_field_key().is_none()
         }),
-        AspectShape::Opaque(_) | AspectShape::Reference(_) | AspectShape::Content => false,
+        AspectShape::Opaque(_) | AspectShape::Reference(_) => false,
     }
 }
 

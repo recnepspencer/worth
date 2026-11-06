@@ -142,7 +142,7 @@ impl WorthQueryProductRetentionFollower for WorthQueryPrimaryGraphProvider {
 
 /// The World commits of `candidates` history still retains. A World that is
 /// not attached or cannot answer keeps them all; nothing is lost but capacity.
-fn retained_among(
+pub fn retained_among(
     world: Option<&RuntimeWorldRecoveryPort>,
     candidates: &[CompositeCommitIdentity],
 ) -> BTreeSet<CompositeCommitIdentity> {
@@ -151,20 +151,4 @@ fn retained_among(
         .unwrap_or_else(|| candidates.to_vec())
         .into_iter()
         .collect()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::retained_among;
-    use crate::domain_computation::primary_graph::tests::recoverable_commit_support;
-
-    #[test]
-    fn a_provider_without_world_history_keeps_every_candidate() {
-        let receipt = recoverable_commit_support::committed_recoverable_application();
-        let commit = receipt
-            .committed_product_publication()
-            .composite_commit()
-            .clone();
-        assert!(retained_among(None, std::slice::from_ref(&commit)).contains(&commit));
-    }
 }

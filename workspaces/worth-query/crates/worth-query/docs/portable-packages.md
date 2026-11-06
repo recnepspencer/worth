@@ -270,6 +270,11 @@ no-overwrite output.
 
 - The default export ceiling is 65,536 records and 64 MiB of logical material;
   custom limits may narrow but not widen constitutional ceilings.
+- Installed graph-obligation identities separately admit 4,096 canonical entries
+  and 1 MiB: distinct aspect contracts count once, with references, masks,
+  field paths, bindings and structural scopes also charged. Operation denials
+  retain requested and maximum counts through `canonical_denial()`; see the
+  [installation contract](../../worth-query-installation/README.md#canonicality).
 - The current reader window is exactly the current version at every archive
   layer; artifacts framed under an earlier protocol must be re-exported.
 - The archive surface frames opaque external signature bytes; consuming hosts

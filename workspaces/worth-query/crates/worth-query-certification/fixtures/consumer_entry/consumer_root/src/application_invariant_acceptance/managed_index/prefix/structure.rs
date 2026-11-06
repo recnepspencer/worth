@@ -1,15 +1,6 @@
 //! The prefix adapter exposes actual topology; Query supplies structural admission.
 use super::*;
-#[cfg(test)]
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub(in super::super) enum Fault {
-    #[default]
-    None,
-    OmitSource,
-    DuplicateSource,
-    DuplicateChild,
-    DisconnectedCycle,
-}
+use crate::application_invariant_acceptance::managed_index::structure_fault::Fault;
 
 pub(super) fn describe(
     calls: &Calls,

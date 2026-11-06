@@ -3,10 +3,10 @@ use super::*;
 use crate::durability::{WorldDurableFrameDenial, WorldDurableMediumDenial};
 
 #[derive(Debug)]
-pub(crate) struct PreparedReadmittedPublicationRecord {
+pub(crate) struct ReadmittedPublicationRecordBacking {
     pub(super) memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
-impl PreparedReadmittedPublicationRecord {
+impl ReadmittedPublicationRecordBacking {
     pub(crate) fn backing_bytes() -> Option<usize> {
         Some(
             std::alloc::Layout::new::<[std::sync::atomic::AtomicUsize; 2]>()

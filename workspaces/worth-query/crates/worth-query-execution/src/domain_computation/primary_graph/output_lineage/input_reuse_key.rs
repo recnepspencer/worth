@@ -6,15 +6,12 @@ use crate::domain_computation::primary_graph::{
     application_query::WorthQueryObservedSourceSelection,
 };
 
-#[cfg(test)]
-mod tests;
-
 /// The exact prepared input of a performed producer output. Its source
 /// selection retains runtime-owned meaning; a row restored from a checkpoint
 /// has no such proof, and a republished output continues its own.
 /// The installed edition is the producer's whole identity: a runtime installs
 /// one producer under it, whichever program selects the occurrence.
-pub(in crate::domain_computation::primary_graph) struct PreparedInputReuseKey {
+pub struct PreparedInputReuseKey {
     selection: WorthQueryObservedSourceSelection,
     input_identity: [u8; 32],
     installed_edition: InstalledProducerEdition,
@@ -69,3 +66,5 @@ impl PreparedInputReuseKey {
             .same_selected_membership_as(&other.selection, admit)
     }
 }
+
+mod court_doors_for_test;

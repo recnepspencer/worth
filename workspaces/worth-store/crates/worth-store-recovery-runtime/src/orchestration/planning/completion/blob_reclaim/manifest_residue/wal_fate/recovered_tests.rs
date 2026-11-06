@@ -19,8 +19,10 @@ fn recovered_intent() -> BlobManifestResidueCleanup {
         [5; 32],
         [6; 32],
         OriginalDropProofV1::RecoveredNoBinding {
-            idempotency: expected_drop_key([1; 16], [2; 16], [7; 32], 1, 10),
-            fingerprint: [8; 32],
+            idempotency: worth_foundational::CanonicalDigestId::new(expected_drop_key(
+                [1; 16], [2; 16], [7; 32], 1, 10,
+            )),
+            fingerprint: worth_foundational::CanonicalDigestId::new([8; 32]),
             reserved,
         },
         9,
@@ -115,11 +117,11 @@ fn recovered_post_selector_absence_denies_all_same_material_fates() {
         RecoveryOperationFate::Indeterminate,
         RecoveryOperationFate::ProvenNoEffect,
     ] {
-        let evidence = observed(exact_key, (1, 10), fate);
+        let evidence = observed(*exact_key.bytes(), (1, 10), fate);
         assert!(is_recovered_drop_material(
             intent,
             [7; 32],
-            exact_key,
+            *exact_key.bytes(),
             &evidence.operations()[0],
         ));
     }
@@ -128,14 +130,19 @@ fn recovered_post_selector_absence_denies_all_same_material_fates() {
     let alternate_key = expected_drop_key([1; 16], [2; 16], [7; 32], 2, 11);
     let alternate = observed(alternate_key, (2, 11), RecoveryOperationFate::Indeterminate);
     assert!(
-        is_recovered_drop_material(intent, [7; 32], exact_key, &alternate.operations()[0],),
+        is_recovered_drop_material(
+            intent,
+            [7; 32],
+            *exact_key.bytes(),
+            &alternate.operations()[0],
+        ),
         "a different lease of the same original attempt also contradicts no binding"
     );
     let unrelated = observed([19; 32], (2, 11), RecoveryOperationFate::Indeterminate);
     assert!(!is_recovered_drop_material(
         intent,
         [7; 32],
-        exact_key,
+        *exact_key.bytes(),
         &unrelated.operations()[0],
     ));
 }

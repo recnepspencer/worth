@@ -97,6 +97,10 @@ impl<'a> WorldOpenAttemptInput<'a> {
 }
 
 pub(crate) enum WorldArtifactInput<'a> {
+    Continued {
+        association: &'a CompositeAttemptAssociation,
+        custody: DurableProductUnpublishedOwnerEffectsIdentity,
+    },
     Branch {
         head: WorldHeadInput<'a>,
         bootstrap: worth_foundational::facade::DurableWorldBootstrapAttemptIdentity,
@@ -115,11 +119,20 @@ impl WorldArtifactInput<'_> {
         match self {
             Self::Branch { head, .. } => Ok(head.name.len()),
             Self::OpenAttempt(open) => open.name_bytes(),
-            Self::Released { association, .. } => Ok(association.branch().name().len()),
+            Self::Released { association, .. } | Self::Continued { association, .. } => {
+                Ok(association.branch().name().len())
+            }
         }
     }
     pub(super) fn materialize(self) -> Result<WorldRecord, Denial> {
         Ok(match self {
+            Self::Continued {
+                association,
+                custody,
+            } => WorldRecord::Continued {
+                association: association.clone(),
+                custody,
+            },
             Self::Branch {
                 head,
                 bootstrap,

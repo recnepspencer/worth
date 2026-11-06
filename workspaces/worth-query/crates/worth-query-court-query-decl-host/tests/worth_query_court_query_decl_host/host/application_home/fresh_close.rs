@@ -27,8 +27,7 @@ pub(super) fn verify(
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
             Some(Instant::now() + Duration::from_secs(60)),
-            cancellation.token(),
-        );
+            cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         let principal = identity::inspection_authentication::authenticate(
             retained_runtime.runtime().installed_schema(),
             &scope,
@@ -42,10 +41,10 @@ pub(super) fn verify(
             .expect("pre-seal refusal preserves the original serving Home");
         assert_eq!(observed.rows(), &[8]);
     }
-    let legacy_denial = retained_runtime
-        .close_conditional_runtime()
-        .err()
-        .expect("the retained Query clone never acquires Store lifecycle custody");
+    let legacy_denial = match retained_runtime.close_conditional_runtime() {
+        Ok(_) => panic!("the retained Query clone never acquires Store lifecycle custody"),
+        Err(denial) => denial,
+    };
     assert_eq!(
         legacy_denial.kind(),
         WorthQueryConditionalRuntimeInstallationDenialKind::RuntimeKeepaliveRetained,

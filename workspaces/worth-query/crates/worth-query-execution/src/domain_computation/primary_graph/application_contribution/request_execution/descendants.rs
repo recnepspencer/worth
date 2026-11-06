@@ -1,10 +1,10 @@
 //! The framework lends member execution only from an advancement's wave.
 use super::{Form, QueryRequestExecution};
 
-pub(in crate::domain_computation::primary_graph) struct WaveRequestExecution<'authority> {
+pub struct WaveRequestExecution<'authority> {
     execution: QueryRequestExecution<'authority>,
 }
-pub(in crate::domain_computation::primary_graph) struct MemberRequestExecution<'authority> {
+pub struct MemberRequestExecution<'authority> {
     execution: QueryRequestExecution<'authority>,
 }
 impl<'authority> QueryRequestExecution<'authority> {
@@ -22,7 +22,7 @@ impl<'authority> QueryRequestExecution<'authority> {
         };
         Self {
             cancellation: self.cancellation.clone(),
-            deadline: self.deadline,
+            deadline: self.deadline.clone(),
             declared_work: self.declared_work,
             certified_seed: self.certified_seed,
             form,
@@ -58,3 +58,5 @@ impl MemberRequestExecution<'_> {
         &self.execution
     }
 }
+
+mod court_doors_for_test;

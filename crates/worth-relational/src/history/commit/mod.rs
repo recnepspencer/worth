@@ -4,6 +4,7 @@ mod identity;
 mod parentage;
 
 pub(crate) use artifact::RelationalCommitAuthoritativeAllocationKind;
+pub use artifact::RelationalRetainedSelectionArtifactDenial;
 pub(crate) use artifact::{OriginalCanonicalInputs, RelationalCommitArtifact};
 pub use artifact::{RelationalCommitArtifactDenial, RelationalCommitRootDescriptor};
 pub(crate) use catalog::{RelationalCommitCatalog, RelationalCommitCatalogEnvelopeAppendDenial};

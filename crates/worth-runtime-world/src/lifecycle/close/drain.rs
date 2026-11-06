@@ -136,6 +136,7 @@ where
         state
             .recovery
             .validate_close_reports(&progress.recovered, request)?;
+        state.recovery.cancel_uninstalled_for_close(request)?;
         progress.report = Some(RuntimeWorldCloseReport::new(
             Vec::new(),
             std::mem::take(&mut progress.recovered),

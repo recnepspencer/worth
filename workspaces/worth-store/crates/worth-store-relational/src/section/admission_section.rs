@@ -196,7 +196,7 @@ pub(super) fn coordinates(
         covered: u64::from_le_bytes(take(bytes, 12).ok()?),
         through: u64::from_le_bytes(take(bytes, 20).ok()?),
         revision: u64::from_le_bytes(take(bytes, 28).ok()?),
-        digest: take(bytes, 36).ok()?,
+        digest: CanonicalDigestId::new(take(bytes, 36).ok()?),
     })
 }
 

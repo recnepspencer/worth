@@ -52,12 +52,14 @@ fn stage_stops_keep_canonical_prefix_and_do_not_publish_partial_decomposition() 
     }), worth_execution::MapOutcome::Stopped { completed_prefix, boundary: Some(id), reason: worth_execution::MapStop::WorkExhausted { .. }, .. }
     if completed_prefix == vec![1, 2] && id == worth_foundational::PartitionIdentity::new(3)));
 
+    let time = worth_execution::MonotonicTimeController::new().unwrap();
+    let held = time.hold();
     let expired = lease(
         worth_foundational::ExecutionPosture::Serial,
         1,
         20,
         worth_execution::CancellationToken::new(),
-        Some(std::time::Instant::now()),
+        Some(time.clock().deadline_at(held)),
         worth_foundational::DeterminismContract::CanonicalBitwise,
     );
     assert!(matches!(map.run(Some(&expired), |n, context| {

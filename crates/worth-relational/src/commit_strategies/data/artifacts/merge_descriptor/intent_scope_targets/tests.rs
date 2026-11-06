@@ -14,7 +14,7 @@ struct LegacyDescriptor {
     #[serde(with = "crate::aspect_wire::serde_canonical_aspect_field_locator_arc_slice")]
     intent_scope_targets: Arc<[AspectFieldLocator]>,
     merge_semantics: StrategyMergeSemantics,
-    lowering_summary_digest: [u8; 32],
+    lowering_summary_digest: worth_foundational::CanonicalDigestId,
 }
 
 #[test]
@@ -47,7 +47,7 @@ fn strategy_scope_targets_preserve_prior_named_compact_wire_and_ordinary_clone()
                 true,
                 true,
             ),
-            lowering_summary_digest: [4; 32],
+            lowering_summary_digest: worth_foundational::CanonicalDigestId::new([4; 32]),
             intent_scope_targets_memory: None,
         };
         let legacy = LegacyDescriptor {

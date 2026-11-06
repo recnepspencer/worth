@@ -21,6 +21,7 @@ impl PreparedCanonicalBranchMovement {
         medium: Option<std::sync::Arc<crate::durability::medium::RelationalDurableMediumBinding>>,
     ) -> Result<PreparedBranchPublicationPreflight, RelationalPublicationOutcome> {
         let PreparedRelationalPublicationParts {
+            current_read,
             companion_read,
             managed_source_reads,
             runtime_instance_id,
@@ -283,16 +284,17 @@ impl PreparedCanonicalBranchMovement {
             }
         };
         Ok(PreparedBranchPublicationPreflight {
+            current_read,
             companion,
             companion_binding,
             movement,
             expected,
             publication_cell,
-            next_state,
+            next_state: Some(next_state),
             next_basis,
-            settlement_reservation,
-            head_retirement,
-            candidate_retention,
+            settlement_reservation: Some(settlement_reservation),
+            head_retirement: Some(head_retirement),
+            candidate_retention: Some(candidate_retention),
             control,
             expires_at,
             maximum_lifetime_millis,

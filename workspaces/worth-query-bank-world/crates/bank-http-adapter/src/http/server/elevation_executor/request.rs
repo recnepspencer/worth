@@ -3,7 +3,10 @@ use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
 
-use super::super::super::protocol::{BankHttpCommitDisposition, BankHttpElevationRequestOutcome};
+use super::super::super::protocol::{
+    BankHttpCommitDisposition, BankHttpDenial, BankHttpDenialKind, BankHttpElevationRequestOutcome,
+    BankHttpNextAction,
+};
 use super::super::authenticated_owner::BankHttpAuthenticatedOwner;
 use super::super::authentication::BankHttpApplicationAuthenticator;
 use super::super::elevation_registry::{
@@ -22,7 +25,7 @@ where
     A: BankHttpApplicationAuthenticator,
 {
     let request_id = request.request_id;
-    let scope = WorthQueryRequestScope::new(Some(request.deadline), cancellation.token());
+    let scope = WorthQueryRequestScope::new(Some(request.deadline), cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = match application.authenticate(request.credential, &scope).await {
         Ok(principal) => principal,
         Err(denial) => return (request_denied(Some(request_id), denial)).into(),
@@ -102,6 +105,19 @@ where
         }
         BankEstateElevationRequestOutcome::TimedOut => {
             return (request_denied(Some(request_id), deadline_exceeded())).into();
+        }
+        BankEstateElevationRequestOutcome::Denied {
+            kind: BankCommitDenialKind::OriginalEffectReleased,
+            ..
+        } => {
+            return (request_denied(
+                Some(request_id),
+                BankHttpDenial::new(
+                    BankHttpDenialKind::OriginalEffectReleased,
+                    BankHttpNextAction::ContactOperator,
+                ),
+            ))
+            .into();
         }
         BankEstateElevationRequestOutcome::Denied {
             kind: BankCommitDenialKind::IdempotencyIntentDrift,

@@ -20,7 +20,10 @@ fn cancellation_and_deadline_remain_request_owned() {
             let cancellation = CancellationSource::new();
             let child = parent
                 .child(LeaseRequest {
-                    deadline: deadline.then(|| Instant::now() - Duration::from_secs(1)),
+                    deadline: deadline.then(|| {
+                        crate::MonotonicClock::system()
+                            .deadline_at(Instant::now() - Duration::from_secs(1))
+                    }),
                     cancellation: cancellation.token(),
                     ..request(1, 1_000, 100)
                 })

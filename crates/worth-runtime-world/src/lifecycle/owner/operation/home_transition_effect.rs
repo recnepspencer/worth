@@ -29,10 +29,11 @@ where
         admission: &worth_proof::AdmittedHomeProgramTransitionStep<
             worth_relational::facade::branch::RelationalBranchBasisAdmissionIdentity,
         >,
-        claim: WorldRecoveredUnpublishedEffects,
+        mut claim: WorldRecoveredUnpublishedEffects,
         cancellation: &RuntimeWorldCancellationToken,
         deadline: Option<RuntimeWorldInstant>,
     ) -> Outcome {
+        claim.source = None;
         let result = (|| {
             let binding = self.state.durable.as_ref().ok_or(Denial::IdentityScope)?;
             let authority = binding
@@ -124,14 +125,14 @@ where
                         record,
                         native.custody(),
                     )?;
-                    loan.start(prepared);
+                    loan.start(prepared).map_err(Denial::Recovery)?;
                 }
                 RecoveredNativeCustody::Continuing(work) => {
                     if !work.admits(plan.commitment(), step, association) {
                         return Err(Denial::IdentityScope);
                     }
                 }
-                RecoveredNativeCustody::Working => {
+                RecoveredNativeCustody::Prepared(_) | RecoveredNativeCustody::Working => {
                     return Err(Denial::Recovery(
                         crate::recovery::RuntimeWorldRecoveryDenial::Busy,
                     ))
@@ -148,6 +149,7 @@ where
             }
             Ok(outcome)
         })();
+        claim.refresh_source();
         match result {
             Ok(OriginalContinuationAdvance::Completed(publication)) => {
                 Outcome::Continued(publication)

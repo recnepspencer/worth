@@ -4,19 +4,16 @@ use super::*;
 use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
-pub(in crate::domain_computation::primary_graph) enum ConsumerCustody {
+pub enum ConsumerCustody {
     Handoff(ConsumerHandoff),
     Released,
 }
-pub(in crate::domain_computation::primary_graph) struct ConsumerHandoff {
+pub struct ConsumerHandoff {
     identity: Arc<RecordedSettlementIdentity>,
     _interest: WorthQueryOutputDemandInterest,
 }
 impl ConsumerCustody {
-    pub(in crate::domain_computation::primary_graph) fn matches(
-        &self,
-        identity: &Arc<RecordedSettlementIdentity>,
-    ) -> bool {
+    pub fn matches(&self, identity: &Arc<RecordedSettlementIdentity>) -> bool {
         match self {
             Self::Handoff(handoff) => handoff.identity == *identity,
             Self::Released => false,
@@ -83,3 +80,5 @@ fn interest_count_overflow() -> WorthQueryOutputDemandDenial {
         "consumer interest count is not representable",
     )
 }
+
+mod court_doors_for_test;

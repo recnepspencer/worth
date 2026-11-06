@@ -37,7 +37,16 @@ fn changed_codec_continuation_swallowed_refusal_and_original_cancellation_never_
     output::reset_decodes();
     {
         let cancellation = WorthQueryCancellationSource::new();
-        let scope = WorthQueryRequestScope::new(request_scope().deadline(), cancellation.token());
+        let original_scope = request_scope();
+        let scope = WorthQueryRequestScope::new(
+            original_scope.deadline().map(|deadline| {
+                deadline
+                    .instant_on(original_scope.clock())
+                    .expect("the request deadline retains its clock")
+            }),
+            cancellation.token(),
+            original_scope.clock().clone(),
+        );
         let _guard = projection::Guard::arm(cancellation, true);
         let (denied, _) = native::resume(&original, narrow_token, &scope, narrow);
         let denied = denied
@@ -63,7 +72,16 @@ fn changed_codec_continuation_swallowed_refusal_and_original_cancellation_never_
     assert_eq!(output::ignored_refusals(), 0);
     for (reject, token) in [false, true].into_iter().zip(cancellation_tokens) {
         let cancellation = WorthQueryCancellationSource::new();
-        let scope = WorthQueryRequestScope::new(request_scope().deadline(), cancellation.token());
+        let original_scope = request_scope();
+        let scope = WorthQueryRequestScope::new(
+            original_scope.deadline().map(|deadline| {
+                deadline
+                    .instant_on(original_scope.clock())
+                    .expect("the request deadline retains its clock")
+            }),
+            cancellation.token(),
+            original_scope.clock().clone(),
+        );
         let _guard = projection::Guard::arm(cancellation, reject);
         let (denied, _) = native::resume(&original, token, &scope, 8_000_000);
         let denied = denied

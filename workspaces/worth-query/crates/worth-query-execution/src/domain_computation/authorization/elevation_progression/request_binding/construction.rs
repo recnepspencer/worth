@@ -44,6 +44,7 @@ where
         .as_ref()
         .ok_or_else(|| projection_denial(installed.contract().name()))?;
     let interval = runtime
+        .runtime
         .authorization_clock
         .sample_interval(elevation.temporal.timeline, proposed.duration())
         .map_err(|_| {

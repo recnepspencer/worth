@@ -2,10 +2,16 @@ pub use worth_query_declaration::facade::application_schema::{
     ApplicationEntityMarkerIdentity, ApplicationEntityRef, ApplicationSchema,
     ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
 };
+pub use worth_query_declaration::facade::{
+    application_history::ApplicationHistoryModelDomain,
+    application_query::ApplicationQueryDisclosurePosture,
+    application_schema::ApplicationSchemaMember,
+};
 pub use worth_query_installation::facade::{
     WorthQueryExpectedPortablePackageIdentity, WorthQueryPortableDomainIdentity,
     WorthQueryPortableDomainPackage, WorthQueryPortablePackageReconstruction,
-    WorthQueryPortablePackageReconstructionLimits, WorthQueryPortablePackageRecordFamily as Family,
+    WorthQueryPortablePackageReconstructionLimits, WorthQueryPortablePackageRecord,
+    WorthQueryPortablePackageRecordFamily as Family,
 };
 pub use worth_query_package_archive::facade::*;
 
@@ -80,3 +86,6 @@ pub fn decode_hex(encoded: &str) -> Vec<u8> {
         })
         .collect()
 }
+
+pub use worth_query_declaration::facade::application_schema::validate_portable_application_schema_freshly;
+pub use worth_query_installation::facade::WorthQueryPortablePackageReconstructionCandidate;

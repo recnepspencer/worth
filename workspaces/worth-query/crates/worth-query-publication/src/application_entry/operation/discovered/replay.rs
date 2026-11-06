@@ -33,8 +33,18 @@ where
             WorthQueryApplicationIdempotencyResolution as Resolution,
             WorthQueryManagedApplicationRecoveryDenial as Recovery,
         };
-        let State::Replay(original) = &self.state else {
-            unreachable!("dispatch owns committed replay evidence")
+        let original = match &self.state {
+            State::ReplayRetained(receipt) => {
+                worth_query_execution::facade::primary_graph::WorthQueryOutputSourceReplay::Retained(
+                    receipt,
+                )
+            }
+            State::ReplayRecorded(receipt) => {
+                worth_query_execution::facade::primary_graph::WorthQueryOutputSourceReplay::Recorded(
+                    receipt,
+                )
+            }
+            _ => unreachable!("dispatch owns original replay evidence"),
         };
         let admitted = (|| {
             let mut native = self
@@ -43,18 +53,28 @@ where
             let prepared =
                 native.authorize_discovered_source::<P, R>(phase, &self.runtime, None)?;
             let read = native.read_recovery_idempotency(phase, &prepared)?;
-            let Resolution::RecoveredCommitted(receipt) = read.into_resolution() else {
-                return Err(WorthQueryApplicationRecoveryRequestDenial::Recovery(
-                    Recovery::BindingMismatch,
-                ));
+            let receipt = match read.into_resolution() {
+                Resolution::RecoveredCommitted(receipt) => receipt,
+                Resolution::ReleasedOriginal(original) => {
+                    return Err(
+                        WorthQueryApplicationRecoveryRequestDenial::ReleasedOriginal(original),
+                    )
+                }
+                Resolution::ProductUnpublished(_)
+                | Resolution::ProductPreparationPending(_)
+                | Resolution::IntentDrift
+                | Resolution::Unseen => {
+                    return Err(WorthQueryApplicationRecoveryRequestDenial::Recovery(
+                        Recovery::BindingMismatch,
+                    ))
+                }
             };
-            if !super::super::receipt_correspondence::matches_retained_original(original, &receipt)
-            {
+            if !original.matches_recorded(&receipt) {
                 return Err(WorthQueryApplicationRecoveryRequestDenial::Recovery(
                     Recovery::BindingMismatch,
                 ));
             }
-            Ok((prepared, original.clone()))
+            Ok((prepared, original))
         })();
         let (prepared, receipt) = match admitted {
             Ok(admitted) => admitted,
@@ -68,7 +88,7 @@ where
         match request.recover_admitted_discovered_outputs_in_advancement::<P, R, _, _, _>(
             phase,
             &self.runtime,
-            &receipt,
+            receipt,
             WorthQueryOutputDemandControls::host_policy(),
             &prepared.admission,
         ) {
@@ -88,7 +108,10 @@ where
             Err(AdmittedDiscoveredRecoveryDenial::Outputs(denial)) => {
                 if denial.recovery_posture() == WorthQueryRequiredOutputRecoveryPosture::Terminal {
                     self.state = State::NotPerformed(
-                        WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt),
+                        match receipt {
+                        worth_query_execution::facade::primary_graph::WorthQueryOutputSourceReplay::Retained(receipt) => WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt.clone()),
+                        worth_query_execution::facade::primary_graph::WorthQueryOutputSourceReplay::Recorded(receipt) => WorthQueryApplicationMutationOutcome::RecoveredCommitted(receipt.clone()),
+                    },
                     );
                     self.terminal(Denial::Outputs(denial))
                 } else {

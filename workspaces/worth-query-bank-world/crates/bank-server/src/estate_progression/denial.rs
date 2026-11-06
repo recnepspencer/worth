@@ -64,8 +64,10 @@ pub enum BankEstateProgressionDenial {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankRecoveryDenialKind {
+    AdmissionAuthorization(crate::BankAuthorizationDenialKind),
     CompletionExecutionRequest(worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial),
     RecoveryNotAdmitted,
+    StaleIncarnation,
     RecoveryAlreadyMinted,
     SchemaMismatch,
     BranchMismatch,
@@ -131,7 +133,9 @@ impl BankRecoveryDenial {
         use WorthQueryRecoveryHandleDenialKind as Query;
         let kind = match denial.kind() {
             Query::CompletionExecutionRequest(cause) => Bank::CompletionExecutionRequest(cause),
+            Query::AdmissionAuthorization(cause) => Bank::AdmissionAuthorization(cause.into()),
             Query::RecoveryNotAdmitted => Bank::RecoveryNotAdmitted,
+            Query::StaleIncarnation => Bank::StaleIncarnation,
             Query::RecoveryAlreadyMinted => Bank::RecoveryAlreadyMinted,
             Query::SchemaMismatch => Bank::SchemaMismatch,
             Query::BranchMismatch => Bank::BranchMismatch,

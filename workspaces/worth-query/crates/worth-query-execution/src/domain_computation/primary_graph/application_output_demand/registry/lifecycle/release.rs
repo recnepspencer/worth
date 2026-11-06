@@ -20,7 +20,7 @@ impl WorthQueryOutputDemandRegistry {
         }
         let needs_awaited = state.records.get(&interest.key).is_some_and(|row| matches!(&row.state,
             DemandState::Output(output) if matches!(output.advancement(), WorthQueryOutputAdvancement::Idle)
-            && matches!(output.checkpoint, Some(WorthQueryOutputCheckpoint::Published { .. } | WorthQueryOutputCheckpoint::Delivered { .. }))));
+            && matches!(output.checkpoint, Some(WorthQueryOutputCheckpoint::Published { .. } | WorthQueryOutputCheckpoint::RecoveredPublished { .. } | WorthQueryOutputCheckpoint::Delivered { .. } | WorthQueryOutputCheckpoint::RecoveredDelivered { .. }))));
         let awaited = needs_awaited
             && refreshed_rejoin::awaited_by_stale_owner(&state.records, &interest.key);
         let mut retirement = None;
@@ -145,3 +145,5 @@ impl WorthQueryOutputDemandRegistry {
         state.note_custody(source_commit);
     }
 }
+
+mod court_doors_for_test;

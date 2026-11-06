@@ -50,6 +50,7 @@ fn registry_allocation_bytes(registry: &RelationalSchemaRegistry) -> usize {
     std::mem::size_of::<RelationalSchemaRegistry>()
         .saturating_add(entity_bytes)
         .saturating_add(relation_bytes)
+        .saturating_add(registry.content_formats.snapshot().owned_bytes() as usize)
 }
 
 fn declaration_allocation_bytes(

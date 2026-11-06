@@ -1,0 +1,9 @@
+{
+ "authority_doors": [],
+ "constructor_doors": [],
+ "field_doors": [
+  "domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage.by_source (mut)"
+ ],
+ "method_doors": [],
+ "unplaced": []
+}

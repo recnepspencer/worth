@@ -51,7 +51,11 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
         ),
         WorthQueryOperationProjectionDenial,
     > {
-        admission.validate_projection_authority(self.runtime_authority, &self.binding_identity)?;
+        admission.validate_projection_authority(
+            self.runtime_authority,
+            &self.binding_identity,
+            &self.installed_operations,
+        )?;
         let product = lease.product();
         let completed = self
             .project_borrowed(

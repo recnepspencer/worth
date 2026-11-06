@@ -38,6 +38,7 @@ pub use super::super::product_operation::{
     WorthQueryGeneratedOutputSuspensionFailure, WorthQueryGeneratedOutputSuspensionRecovery,
     WorthQueryGeneratedOutputSuspensionRecoveryFailure,
     WorthQueryGeneratedOutputSuspensionRecoveryStage, WorthQueryOrderedProgramAdoptionCoverage,
+    WorthQueryOwnedProductHead, WorthQueryOwnedProductHeadCloseFailure,
     WorthQueryPerformedBranchAdoption, WorthQueryPerformedConditionalDefinitionPublication,
     WorthQueryPreparedBranchAdoption, WorthQueryPreparedBranchSetAdoption,
     WorthQueryPreparedCorrectionSource, WorthQueryPreparedProgramMigration, WorthQueryProductEntry,

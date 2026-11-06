@@ -69,7 +69,7 @@ where
             Option<Disclosed<Schema, Family>>,
             WorthQueryOutputDemandDenial,
         >,
-        commit_authority: WorthQueryProducerCommitAuthority,
+        commit_authority: ProducerInvocationAuthority<'_>,
 
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
@@ -120,7 +120,7 @@ where
 
         pass: AdvancePass<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
         performed: &std::cell::RefCell<required_wave::performed::PerformedMembers>,
-        commit_authority: WorthQueryProducerCommitAuthority,
+        commit_authority: ProducerInvocationAuthority<'_>,
         disclosure: &mut impl FnMut(
             &Observed<Schema, Family>,
         ) -> Result<
@@ -140,17 +140,25 @@ where
             AdvancePass::OwnPublication(receipt) | AdvancePass::Final(_, receipt) => Some(receipt),
             AdvancePass::Initial | AdvancePass::Refreshed(_) | AdvancePass::RetryDisclosure => None,
         };
-        if !self.own_publication_is_selected(execution, delivery_branch, publication)? {
-            return Ok(AdvancePassProgress::Answer(
-                WorthQueryOutputDemandAdvance::Pending,
-            ));
-        }
         if demand.runtime_authority != self.runtime.authority_identity().as_u64()
             || demand.schema_binding != self.installed_schema.binding_identity()
         {
             return Err(denial(
                 WorthQueryOutputDemandDenialKind::ForeignDemand,
                 Family::IDENTITY,
+            ));
+        }
+        super::retained_read::authorize_history_source::<Schema, Family>(
+            execution,
+            self,
+            demand.observed_source.source(),
+            principal,
+            request_scope,
+            commit_authority.history_control(),
+        )?;
+        if !self.own_publication_is_selected(execution, delivery_branch, publication)? {
+            return Ok(AdvancePassProgress::Answer(
+                WorthQueryOutputDemandAdvance::Pending,
             ));
         }
         if let Some(stop) = &demand.terminal_caller_denial {
@@ -166,7 +174,7 @@ where
             .interest
             .as_ref()
             .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::Closed, Family::IDENTITY))?;
-        demand.rejoin_refreshed_output(&self.output_demands)?;
+        demand.rejoin_refreshed_output(&self.runtime.output_demands)?;
 
         let installed_entry = std::sync::Arc::clone(&demand.installed_entry);
         let entry = installed_entry.as_ref();
@@ -188,7 +196,7 @@ where
         // acknowledge work without entering the validated execution core.
         demand
             .progression_provenance
-            .validate_for_execution(&commit_authority, &entry.edition)?;
+            .validate_for_execution(commit_authority.mode(), &entry.edition)?;
         if matches!(
             &pass,
             AdvancePass::Initial | AdvancePass::Refreshed(_) | AdvancePass::RetryDisclosure
@@ -223,7 +231,7 @@ where
                         request_scope,
                         delivery_branch,
                         matches!(
-                            commit_authority,
+                            commit_authority.mode(),
                             WorthQueryProducerCommitAuthority::ProgramOutput
                         ),
                         disclosed,
@@ -287,7 +295,6 @@ where
                 }
                 AdvancePass::OwnPublication(receipt) => {
                     let Some(disclosed) = disclosure(&demand.observed_source)? else {
-                        #[cfg(test)]
                         own_effect_observation::record(Stage::DisclosureExhausted);
                         return Ok(AdvancePassProgress::Answer(
                             WorthQueryOutputDemandAdvance::Progressed,
@@ -301,7 +308,7 @@ where
                         request_scope,
                         delivery_branch,
                         matches!(
-                            commit_authority,
+                            commit_authority.mode(),
                             WorthQueryProducerCommitAuthority::ProgramOutput
                         ),
                         disclosed,

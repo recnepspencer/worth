@@ -210,6 +210,7 @@ fn resolve_indeterminate_commit(
         );
     }
     match resolution {
+        Ok(WorthQueryProviderIdempotencyResolution::ReleasedOriginal(_)) => WorthQueryProviderProgressionOutcome::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::original_effect_released()),
         Ok(WorthQueryProviderIdempotencyResolution::Readmitted(receipt)) => {
             WorthQueryProviderProgressionOutcome::RecoveredCommitted(receipt)
         }
@@ -219,6 +220,17 @@ fn resolve_indeterminate_commit(
                     .provider
                     .preparation_pending(&context.product, handle, stage),
             )
+        }
+        Ok(WorthQueryProviderIdempotencyResolution::RecoveredUnpublished { handle }) => {
+            match context
+                .provider
+                .recovered_unpublished_application(&context.product, handle)
+            {
+                Ok(effects) => WorthQueryProviderProgressionOutcome::ProductUnpublished(effects),
+                Err(_) => WorthQueryProviderProgressionOutcome::Indeterminate(
+                    evidence.with_preparation_busy(),
+                ),
+            }
         }
         Ok(WorthQueryProviderIdempotencyResolution::PreparationBusy) => {
             WorthQueryProviderProgressionOutcome::Indeterminate(evidence.with_preparation_busy())

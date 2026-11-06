@@ -1,3 +1,4 @@
+use worth_foundational::CanonicalDigestId;
 use worth_store_physical_format::PersistedRecordIdentity;
 
 const TOKEN_BYTES: usize = 116;
@@ -10,7 +11,7 @@ pub struct BlobResumeToken {
     pub(in crate::physical_runtime::blob) store: [u8; 16],
     pub(in crate::physical_runtime::blob) session: [u8; 16],
     pub(in crate::physical_runtime::blob) declaration_record: PersistedRecordIdentity,
-    pub(in crate::physical_runtime::blob) declaration_digest: [u8; 32],
+    pub(in crate::physical_runtime::blob) declaration_digest: CanonicalDigestId,
     pub(in crate::physical_runtime::blob) chunk_size: u32,
     pub(in crate::physical_runtime::blob) total_bytes: u64,
     pub(in crate::physical_runtime::blob) max_checkpoint_sequence: u64,
@@ -31,7 +32,7 @@ impl BlobResumeToken {
         bytes[24..40].copy_from_slice(&self.session);
         bytes[40..56].copy_from_slice(&self.declaration_record.allocation_epoch());
         bytes[56..64].copy_from_slice(&self.declaration_record.ordinal().to_le_bytes());
-        bytes[64..96].copy_from_slice(&self.declaration_digest);
+        bytes[64..96].copy_from_slice(self.declaration_digest.bytes());
         bytes[96..100].copy_from_slice(&self.chunk_size.to_le_bytes());
         bytes[100..108].copy_from_slice(&self.total_bytes.to_le_bytes());
         bytes[108..116].copy_from_slice(&self.max_checkpoint_sequence.to_le_bytes());
@@ -54,7 +55,9 @@ impl BlobResumeToken {
                 u64::from_le_bytes(bytes[56..64].try_into().expect("fixed field")),
             )
             .ok_or(BlobResumeTokenDenial::InvalidReference)?,
-            declaration_digest: bytes[64..96].try_into().expect("fixed field"),
+            declaration_digest: CanonicalDigestId::new(
+                bytes[64..96].try_into().expect("fixed field"),
+            ),
             chunk_size: u32::from_le_bytes(bytes[96..100].try_into().expect("fixed field")),
             total_bytes: u64::from_le_bytes(bytes[100..108].try_into().expect("fixed field")),
             max_checkpoint_sequence: u64::from_le_bytes(
@@ -63,7 +66,7 @@ impl BlobResumeToken {
         };
         if token.store == [0; 16]
             || token.session == [0; 16]
-            || token.declaration_digest == [0; 32]
+            || *token.declaration_digest.bytes() == [0; 32]
             || token.total_bytes == 0
             || !(65536..=262144).contains(&token.chunk_size)
             || token.max_checkpoint_sequence == 0
@@ -84,7 +87,7 @@ mod tests {
             store: [1; 16],
             session: [2; 16],
             declaration_record: PersistedRecordIdentity::new([3; 16], 1).unwrap(),
-            declaration_digest: [4; 32],
+            declaration_digest: CanonicalDigestId::new([4; 32]),
             chunk_size: 65536,
             total_bytes: 131072,
             max_checkpoint_sequence: 17,

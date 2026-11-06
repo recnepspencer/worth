@@ -4,6 +4,7 @@ use super::super::super::{
     geometry::{self as model, authoring::Edit},
 };
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 
 fn point(x: i64, y: i64) -> Coordinates {
     Coordinates::new(x, y, x, y)
@@ -103,7 +104,7 @@ fn check(request: &Request<'_, '_, '_>, note: &str, end: (i64, i64)) {
 
 #[test]
 fn box_correction_excludes_uncancelled_nonmatching_indirect_motion() {
-    let calls = Arc::new(prefix::Calls::default());
+    let calls = Arc::new(prefix_observation::Calls::default());
     let world = host::install(calls.clone(), Arc::new(rule::Calls::new(calls)));
     let scope = authentication::request_scope();
     let principal = authentication::block_on(
@@ -136,7 +137,7 @@ fn box_correction_excludes_uncancelled_nonmatching_indirect_motion() {
 #[test]
 fn box_correction_keeps_transient_entrants_and_raw_restoration_without_performed_pairs() {
     for (probe, empty, end) in [(point(5, 0), false, (-1, 0)), (point(25, 0), true, (30, 0))] {
-        let calls = Arc::new(prefix::Calls::default());
+        let calls = Arc::new(prefix_observation::Calls::default());
         let world = host::install(calls.clone(), Arc::new(rule::Calls::new(calls)));
         let scope = authentication::request_scope();
         let principal = authentication::block_on(
@@ -169,7 +170,7 @@ fn box_correction_keeps_transient_entrants_and_raw_restoration_without_performed
 #[test]
 fn box_correction_accepts_genuine_recorded_motion_cancellation_for_populated_and_empty_inputs() {
     for (probe, empty, end) in [(point(5, 0), false, (-1, 0)), (point(25, 0), true, (30, 0))] {
-        let calls = Arc::new(prefix::Calls::default());
+        let calls = Arc::new(prefix_observation::Calls::default());
         let world = host::install(calls.clone(), Arc::new(rule::Calls::new(calls)));
         let scope = authentication::request_scope();
         let principal = authentication::block_on(
@@ -208,7 +209,7 @@ fn box_correction_accepts_genuine_recorded_motion_cancellation_for_populated_and
 
 #[test]
 fn box_correction_keeps_matching_authored_noops_rejected_by_exact_contact() {
-    let calls = Arc::new(prefix::Calls::default());
+    let calls = Arc::new(prefix_observation::Calls::default());
     let world = host::install(calls.clone(), Arc::new(rule::Calls::new(calls)));
     let scope = authentication::request_scope();
     let principal = authentication::block_on(

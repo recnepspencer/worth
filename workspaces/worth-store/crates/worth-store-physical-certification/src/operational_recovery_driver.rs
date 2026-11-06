@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::path::Path;
+use worth_foundational::CanonicalDigestId;
 
 mod construction;
 mod process_crash;
@@ -43,9 +44,9 @@ struct OperationalRecoveryDriverState {
     process_crash: Option<OperationalRecoveryProcessCrashConfig>,
     reached: Vec<OperationalRecoveryYieldpoint>,
     operation_identities: Vec<String>,
-    control_artifact_identities: Vec<[u8; 32]>,
-    inspection_evidence_identity: Option<[u8; 32]>,
-    truth_evidence_identity: Option<[u8; 32]>,
+    control_artifact_identities: Vec<CanonicalDigestId>,
+    inspection_evidence_identity: Option<CanonicalDigestId>,
+    truth_evidence_identity: Option<CanonicalDigestId>,
     latest_control_observation:
         Option<worth_store_operations::OperationalControlSessionObservation>,
 }
@@ -59,7 +60,7 @@ impl OperationalRecoveryProductionDriver {
         record: &worth_store_operations::OperationalControlRecord,
     ) {
         self.observe_operation(record.operation_id());
-        let identity = record.stable_fingerprint();
+        let identity = CanonicalDigestId::new(record.stable_fingerprint());
         let mut state = self.state.borrow_mut();
         if !state.control_artifact_identities.contains(&identity) {
             state.control_artifact_identities.push(identity);
@@ -76,8 +77,10 @@ impl OperationalRecoveryProductionDriver {
     ) {
         self.observe_operation(operation);
         let mut state = self.state.borrow_mut();
-        state.inspection_evidence_identity = Some(truth.source_inspection_identity());
-        state.truth_evidence_identity = Some(truth.truth_evidence_identity());
+        state.inspection_evidence_identity =
+            Some(CanonicalDigestId::new(truth.source_inspection_identity()));
+        state.truth_evidence_identity =
+            Some(CanonicalDigestId::new(truth.truth_evidence_identity()));
     }
 
     pub fn forensic_acquire_next(

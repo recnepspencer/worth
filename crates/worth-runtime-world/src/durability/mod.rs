@@ -25,7 +25,7 @@ mod readmission;
 mod readmission_custody;
 pub(crate) use readmission::{
     AdmittedWorldDisposition, AdmittedWorldOccurrence, AdmittedWorldOccurrenceLocation,
-    AdmittedWorldOpenAttempt, RecoveredCustodyDisposition,
+    AdmittedWorldOpenAttempt, PreparedWorldReleasedDisposition, RecoveredCustodyDisposition,
 };
 pub use readmission_custody::WorldNativeReadmissionCustody;
 mod release_evidence;
@@ -43,12 +43,13 @@ pub(crate) use association::{
     decode_association, encode_association, encode_home_transition_association,
 };
 pub(crate) use binding::{
-    ActualWorldPublication, WorldDurableMediumBinding, WorldDurablePublicationStop,
+    ActualWorldPublication, WorldCommittedPublication, WorldDurableMediumBinding,
+    WorldDurablePublicationStop,
 };
 pub(crate) use frontiers::WorldIdentityFrontiers;
 pub use medium::{
     RuntimeWorldDurableMedium, WorldDurableHomeBinding, WorldDurableMediumDenial,
-    WorldPublicationObservation, WorldPublicationTaskPosture,
+    WorldPublicationCompletion, WorldPublicationObservation, WorldPublicationTaskPosture,
 };
 pub use readmission::WorldReadmissionDenial;
 pub(crate) use readmission::WorldRecoveredJournalState;

@@ -1,6 +1,7 @@
+use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
 use crate::branch::SelectedRelationalBranchRead;
 use crate::runtime::{RelationalPreparationRuntime, WorkingState};
-use crate::transactions::data::{MergedCommitPlan, TransactionCommitError};
+use crate::transactions::data::TransactionCommitError;
 use crate::validation::data::{InvariantGroupSet, InvariantPlanContract};
 use crate::validation::engine::{
     InvariantEngine, InvariantExecutionDisposition, InvariantExecutionMetadata,
@@ -24,7 +25,7 @@ impl PreparationInvariantAuthority<'_> {
         selected: &SelectedRelationalBranchRead<'_>,
         proposed: &WorkingState,
         version: crate::identity::data::VersionId,
-        plan: &MergedCommitPlan,
+        plan: RelationalSemanticPlan<'_>,
         proposal: Option<&crate::mvcc::RelationalMutationProposalIdentity>,
         aggregate: Option<crate::aggregate_identity::AggregateProposalBorrow<'_>>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -72,7 +73,7 @@ impl PreparationInvariantAuthority<'_> {
         selected: &SelectedRelationalBranchRead<'_>,
         working: &WorkingState,
         version: crate::identity::data::VersionId,
-        plan: &MergedCommitPlan,
+        plan: RelationalSemanticPlan<'_>,
         proposal: Option<&crate::mvcc::RelationalMutationProposalIdentity>,
         aggregate: Option<crate::aggregate_identity::AggregateProposalBorrow<'_>>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -121,7 +122,7 @@ impl PreparationInvariantAuthority<'_> {
         working: &WorkingState,
         created_entities: &crate::transactions::data::CommitCreatedEntityBindings,
         version: crate::identity::data::VersionId,
-        plan: &MergedCommitPlan,
+        plan: RelationalSemanticPlan<'_>,
         proposal: Option<&crate::mvcc::RelationalMutationProposalIdentity>,
         aggregate: Option<crate::aggregate_identity::AggregateProposalBorrow<'_>>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -173,7 +174,7 @@ impl PreparationInvariantAuthority<'_> {
         working: &WorkingState,
         applied_created_entities: Option<&crate::transactions::data::CommitCreatedEntityBindings>,
         version: crate::identity::data::VersionId,
-        plan: &MergedCommitPlan,
+        plan: RelationalSemanticPlan<'_>,
         proposal: Option<&crate::mvcc::RelationalMutationProposalIdentity>,
         aggregate: Option<crate::aggregate_identity::AggregateProposalBorrow<'_>>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -209,7 +210,9 @@ impl PreparationInvariantAuthority<'_> {
                 proposal.cloned(),
             ),
         };
-        let aggregate = aggregate.map(|source| source.invocation(plan));
+        // Aggregate logical changes were captured from the actual applied
+        // effect. Its command constituent is used only for native consequences.
+        let aggregate = aggregate.map(|source| source.invocation(plan.commands()));
         let observation = observation.with_aggregate(aggregate);
         let observation_kind = observation.kind();
         let view = InvariantRuntimeView::from_preparation_for_state(
@@ -220,7 +223,7 @@ impl PreparationInvariantAuthority<'_> {
             .runtime
             .home_target
             .is_none()
-            .then(|| InvariantPlanContract::from_merged_plan(plan));
+            .then(|| plan.invariant_contract());
         let consumed_groups = profile.consumed_groups();
         if plan_contract
             .is_some_and(|contract| !contract.intersects_consumed_groups(consumed_groups))
@@ -236,7 +239,7 @@ impl PreparationInvariantAuthority<'_> {
                 proposal,
             )));
         }
-        let request = InvariantExecutionRequest::from_profile_with_contract_at_current_version(
+        let request = InvariantExecutionRequest::from_semantic_plan(
             profile,
             &view,
             observation,

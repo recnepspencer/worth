@@ -39,7 +39,7 @@ where
                 requested,
             ));
         }
-        let execution = match phase.execution_request_for(&self.product_runtime) {
+        let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(execution) => execution,
             Err(_) => {
                 return Err((

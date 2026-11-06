@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+use worth_foundational::CanonicalDigestId;
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -11,7 +12,7 @@ pub(super) struct PendingArtifact {
     pub generation: u64,
     pub operation: u64,
     pub bytes: Vec<u8>,
-    pub sha256: [u8; 32],
+    pub sha256: CanonicalDigestId,
 }
 
 impl PendingArtifact {
@@ -46,7 +47,7 @@ impl PendingArtifact {
             runtime,
             generation,
             operation,
-            sha256: Sha256::digest(&bytes).into(),
+            sha256: CanonicalDigestId::new(Sha256::digest(&bytes).into()),
             bytes,
         }
     }

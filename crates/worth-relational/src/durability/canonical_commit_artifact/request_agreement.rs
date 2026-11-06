@@ -110,13 +110,15 @@ fn digest(
     input_writer.value(&envelope.recorded_original_inputs())?;
     let input_leaf = input_writer.hash.finalize().into();
     Ok(
-        *super::RelationalCanonicalCommitArtifactDigest::from_leaves(
+        *super::RelationalCanonicalCommitArtifactDigest::from_leaves_for_request(
             position.0,
             envelope.commit.commit_id.0,
             position_leaf,
             envelope_leaf,
             input_leaf,
+            context,
         )
+        .map_err(Stop::Request)?
         .as_bytes(),
     )
 }

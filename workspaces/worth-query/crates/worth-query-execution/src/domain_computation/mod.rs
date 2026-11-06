@@ -6,7 +6,7 @@ mod artifact_identity;
 pub(crate) mod artifact_owner;
 pub(crate) mod authorization;
 pub(crate) mod convergence_epoch;
-mod domain_evidence_binding;
+pub(crate) mod domain_evidence_binding;
 pub(crate) mod evidence_identity;
 mod evidence_material;
 mod execution_resource_attempt;
@@ -38,7 +38,7 @@ pub use product_publication::{
     WorthQueryProductStaleApplication, WorthQueryProductUnpublishedApplication,
     WorthQueryProductUnpublishedRecovery, WorthQueryProductUnpublishedRecoveryFailure,
     WorthQueryProductUnpublishedRecoveryReleaseDenial,
-    WorthQueryProductUnpublishedRecoveryReleaseFailure,
+    WorthQueryProductUnpublishedRecoveryReleaseFailure, WorthQueryRecoveredProductReleaseDenial,
 };
 pub use provider_session::*;
 

@@ -1,5 +1,4 @@
 //! Historical validation meaning excludes execution work and packet bookkeeping.
-use crate::authority::commit::preparation::planning::strategy::PreparationStrategy;
 use crate::identity::data::VersionId;
 use crate::validation::data::{
     CustomInvariantNonApplicability, CustomInvariantTouchedSummary, InvariantCostClass,
@@ -31,6 +30,7 @@ pub struct RelationalInvariantExecutionMeaning {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+/// Original validation facts; preparation posture and diagnostics stay in live execution metadata.
 pub struct RelationalInvariantMetadataMeaning {
     pub execution_point: InvariantExecutionPoint,
     pub observation_kind: InvariantObservationKind,
@@ -38,12 +38,9 @@ pub struct RelationalInvariantMetadataMeaning {
     pub current_version: VersionId,
     pub consumed_groups: InvariantGroupSet,
     pub applicable_groups: InvariantGroupSet,
-    pub declared_cost: InvariantCostClass,
     pub disposition: InvariantExecutionDisposition,
     pub plan_contract: Option<InvariantPlanContract>,
     pub has_merged_plan: bool,
-    pub preparation_strategy: Option<PreparationStrategy>,
-    pub preparation_failures: Vec<RelationalValidationPreparationFailure>,
     pub proof_scope: Option<RelationalInvariantProofScopeMeaning>,
 }
 
@@ -52,14 +49,6 @@ pub struct RelationalInvariantMetadataMeaning {
 pub struct RelationalInvariantProofScopeMeaning {
     pub scope: InvariantPlanScopeClass,
     pub widened_causes: Vec<InvariantScopeWideningCause>,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum RelationalValidationPreparationFailure {
-    PlanningProofInsufficient,
-    ReductionIdentityConflict,
-    SerialStrategySelected,
-    PublicationIsolationViolation,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -98,3 +87,6 @@ pub struct RelationalInvariantDecisionMeaning {
     pub declared_cost: InvariantCostClass,
     pub custom_provenance_present: bool,
 }
+
+#[cfg(test)]
+mod tests;

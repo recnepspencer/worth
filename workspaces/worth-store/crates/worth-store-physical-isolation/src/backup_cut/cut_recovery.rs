@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use worth_foundational::CanonicalDigestId;
 
 use worth_store_authority::StoreCurrentAuthorityIdentity;
 use worth_store_physical_format::{
@@ -19,7 +20,7 @@ use super::{
 pub(super) struct BackupCutRecoverySource {
     pub(super) output_name: String,
     pub(super) path: PathBuf,
-    pub(super) physical_identity: [u8; 32],
+    pub(super) physical_identity: CanonicalDigestId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -93,7 +94,7 @@ impl BackupCutRecoveryRecord {
                     .map_err(|_| BackupCutRecoveryDenial::AllocationFailed)?,
                 path: copy_path(artifact.source_path())
                     .map_err(|_| BackupCutRecoveryDenial::AllocationFailed)?,
-                physical_identity: artifact.physical_identity(),
+                physical_identity: CanonicalDigestId::new(artifact.physical_identity()),
             });
         }
         let coordinates = cut.coordinates();
@@ -101,7 +102,7 @@ impl BackupCutRecoveryRecord {
         let manifest = BackupBundleManifest::canonical_checked(
             BackupBundleManifestDeclaration::new(
                 BackupBundleManifestIdentity {
-                    cut_identity: cut.identity(),
+                    cut_identity: worth_foundational::CanonicalDigestId::new(cut.identity()),
                     store_lineage: coordinates.store_lineage().to_owned(),
                     root_generation: coordinates.root_generation(),
                     manifest_generation: coordinates.manifest_generation(),
@@ -158,7 +159,7 @@ impl BackupCutRecoveryRecord {
         validate_source_closure(&manifest, &decoded.sources)?;
         Ok(Self {
             authority_identity: StoreCurrentAuthorityIdentity::from_persisted_fingerprint(
-                decoded.authority_fingerprint,
+                *decoded.authority_fingerprint.bytes(),
             ),
             security_progression_fingerprint: decoded.security_progression_fingerprint,
             format_profile: decoded.format_profile,

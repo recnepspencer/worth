@@ -4,44 +4,8 @@ use worth_query_decl::facade::{application_operation::*, application_schema::*, 
 use worth_query_host::facade::primary_graph::*;
 #[path = "authoring/handler.rs"]
 mod handler;
+use crate::application_invariant_acceptance::managed_index::maintained::nested::edit::Edit;
 pub(super) use handler::Handler;
-#[derive(Clone, Debug, serde::Serialize)]
-pub enum Edit {
-    Directory {
-        identity: String,
-    },
-    Item {
-        directory: String,
-        identity: String,
-        name: String,
-        root: bool,
-        incarnation: u64,
-    },
-    Name {
-        item: String,
-        value: String,
-    },
-    Enabled {
-        item: String,
-        value: bool,
-    },
-    Link {
-        from: String,
-        to: String,
-        edition: u64,
-    },
-    Unlink {
-        from: String,
-        to: String,
-    },
-    Share {
-        directory: String,
-        item: String,
-    },
-    Retire {
-        item: String,
-    },
-}
 #[derive(Debug)]
 pub struct Changed;
 #[derive(Debug)]

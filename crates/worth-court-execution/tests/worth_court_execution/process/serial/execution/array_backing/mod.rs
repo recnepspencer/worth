@@ -319,11 +319,9 @@ fn typed_layout_and_live_denials_preserve_quotes_and_release_partial_storage() {
     assert_eq!(builder.seal().unwrap_err(), denied);
     assert_eq!(parent.reserve_memory(16).unwrap().bytes(), 16);
     stopped_request.cancellation = worth_execution::CancellationToken::new();
-    stopped_request.deadline = Some(
-        std::time::Instant::now()
-            .checked_sub(std::time::Duration::from_secs(1))
-            .unwrap(),
-    );
+    let time = worth_execution::MonotonicTimeController::new().unwrap();
+    let held = time.hold();
+    stopped_request.deadline = Some(time.clock().deadline_at(held));
     let expired = parent.child(stopped_request).unwrap();
     let denied = ExecutionArrayBuilder::<u32>::allocate(
         4,

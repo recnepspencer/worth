@@ -73,6 +73,7 @@ fn relink_rejects_schema_authority_mutation() {
 
     let denial = root
         .relink_canonical_envelope(
+            execution,
             Arc::new(envelope),
             &runtime.services.symbols.interner_snapshot(),
         )
@@ -98,6 +99,7 @@ fn relink_rejects_visibility_tuple_mutation() {
 
     let denial = root
         .relink_canonical_envelope(
+            execution,
             Arc::new(envelope),
             &runtime.services.symbols.interner_snapshot(),
         )
@@ -246,6 +248,7 @@ fn visibility_commitment_binds_every_visible_tuple_axis() {
         );
         assert!(
             root.relink_canonical_envelope(
+                execution,
                 Arc::new(mutant),
                 &runtime.services.symbols.interner_snapshot(),
             )

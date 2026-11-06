@@ -61,8 +61,7 @@ fn reopened_home_refuses_prior_open_capability_before_disclosing_new_observation
     let path = fixture::location();
     let lease = checkpoint_capture::lease(128 << 20);
     let execution = worth_execution::ExecutionRequest::leased(&lease);
-    let cancellation = WorthQueryCancellationSource::new();
-    let live = WorthQueryRequestScope::new(None, cancellation.token());
+    let (_cancellation, live) = scope();
     let home = with_bootstrap_advancement_from_request(execution, |phase| {
         request(
             WorthQueryApplicationHomeLocation::Directory(path.clone()),

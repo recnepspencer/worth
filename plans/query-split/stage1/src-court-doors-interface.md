@@ -1,0 +1,10 @@
+# Court doors: interface
+
+## interface_items (6)
+
+- `domain_computation::primary_graph::application_checkpoint::facts::payload::iteration::FactIter`
+- `domain_computation::primary_graph::application_output_demand::registry::record_map::MutRows`
+- `domain_computation::primary_graph::application_output_demand::registry::record_map::ObservedRows`
+- `domain_computation::primary_graph::application_output_demand::registry::record_map::mutation::RecordMutation`
+- `domain_computation::primary_graph::workflow::schema::layout::WorkflowLayoutFields`
+- `domain_computation::runtime_time::time_basis::WorthQueryRuntimeTimeDenial`

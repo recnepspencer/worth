@@ -12,7 +12,6 @@ pub use commit_semantic_result::{
     RelationalInvariantCheckMeaning, RelationalInvariantCustomProvenanceMeaning,
     RelationalInvariantDecisionMeaning, RelationalInvariantExecutionMeaning,
     RelationalInvariantMetadataMeaning, RelationalInvariantProofScopeMeaning,
-    RelationalValidationPreparationFailure,
 };
 mod commit_validation;
 mod conflict_class;

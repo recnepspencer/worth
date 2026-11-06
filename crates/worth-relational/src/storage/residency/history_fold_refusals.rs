@@ -86,7 +86,7 @@ fn shared_row_bases_cannot_expand_beyond_the_original_read_limit() {
         partition_id: cold.partition_id,
         schema_carrier_digest: cold.schema_carrier_digest,
         row_index: 0,
-        kind_commitment: cold.kind_authority.history,
+        kind_commitment: *cold.kind_authority.history.bytes(),
     };
     let per_row = image.entities[0]
         .earlier

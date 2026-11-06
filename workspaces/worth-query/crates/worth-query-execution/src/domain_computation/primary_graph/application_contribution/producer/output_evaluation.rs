@@ -1,16 +1,14 @@
 //! One actual producer field comparison, completed before Ready and retained through retries.
 pub(super) mod installation;
-mod native;
+pub(crate) mod native;
 use super::output_equivalence_contract::InstalledProducerOutputEquivalence;
 use crate::domain_computation::primary_graph::{
     application_output_demand::PreparedReadyBacking,
     conditional_operation::WorthQueryConditionalTruthBasis,
     output_reuse::{retained_fact_denial, RetainedFactStop},
-    WorthQueryApplicationCommitReceipt, WorthQueryOutputDemandDenial,
-    WorthQueryOutputDemandDenialKind, WorthQueryPrimaryGraphLayout,
+    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind, WorthQueryPrimaryGraphLayout,
 };
-#[cfg(test)]
-pub(super) use native::dependency_matches_output;
+
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_relational::facade::{
@@ -34,7 +32,7 @@ pub enum WorthQueryProducerEvaluationIneligibility {
     ReadinessPublicationMismatch,
     ReadinessFieldMismatch,
 }
-pub(in crate::domain_computation::primary_graph) struct ProducerOutputEvaluation {
+pub struct ProducerOutputEvaluation {
     field: Arc<InstalledProducerOutputEquivalence>,
     role: Arc<str>,
     pub(in crate::domain_computation::primary_graph) state: ProducerOutputEvaluationState,
@@ -89,7 +87,7 @@ impl ProducerOutputEvaluation {
 }
 
 /// One installed comparison owns its exact field/role meaning and lowering.
-pub(in crate::domain_computation::primary_graph) struct InstalledOutputComparison {
+pub struct InstalledOutputComparison {
     lowering: Arc<BridgeInstalledConditionalLowering>,
     field: Arc<InstalledProducerOutputEquivalence>,
     role: Arc<str>,
@@ -97,7 +95,10 @@ pub(in crate::domain_computation::primary_graph) struct InstalledOutputCompariso
 }
 /// The value and dependency metadata come from this one actual readiness execution.
 pub(super) struct NativeOutputBasis<'a> {
-    pub(super) receipt: &'a WorthQueryApplicationCommitReceipt,
+    pub(super) receipt:
+        crate::domain_computation::primary_graph::application_output_demand::OutputPublicationView<
+            'a,
+        >,
     pub(super) readiness: &'a BridgeConditionalDecisionEvidence,
     pub(super) lowering: &'a BridgeInstalledConditionalLowering,
     pub(super) ordinal: usize,
@@ -147,26 +148,16 @@ impl InstalledOutputComparison {
                 &self.field,
                 &self.role,
                 &basis,
-                truth.is_publication(basis.receipt),
+                truth.is_product_publication(basis.receipt.committed_product_publication()),
             )? {
                 Err(cause) => ProducerOutputEvaluationState::Ineligible(cause),
                 Ok(observed) => {
-                    // fetch_update is the supported atomic spelling at MSRV 1.94.
-                    #[allow(deprecated)]
-                    let attempt = attempts
-                        .fetch_update(
-                            std::sync::atomic::Ordering::Relaxed,
-                            std::sync::atomic::Ordering::Relaxed,
-                            |current| current.checked_add(2),
+                    let attempt = next_comparison_attempt(attempts).ok_or_else(|| {
+                        WorthQueryOutputDemandDenial::new(
+                            WorthQueryOutputDemandDenialKind::SchedulingRejected,
+                            "output comparison attempt exhausted",
                         )
-                        .ok()
-                        .and_then(|baseline| baseline.checked_add(1))
-                        .ok_or_else(|| {
-                            WorthQueryOutputDemandDenial::new(
-                                WorthQueryOutputDemandDenialKind::SchedulingRejected,
-                                "output comparison attempt exhausted",
-                            )
-                        })?;
+                    })?;
                     let signal = bridge
                         .admit_exact_conditional_signal_basis(&self.lowering, truth.signal_basis())
                         .map_err(|cause| {
@@ -217,6 +208,18 @@ impl InstalledOutputComparison {
         })
     }
 }
+fn next_comparison_attempt(attempts: &std::sync::atomic::AtomicU64) -> Option<u64> {
+    use std::sync::atomic::Ordering::Relaxed;
+    let mut current = attempts.load(Relaxed);
+    loop {
+        let next = current.checked_add(2)?;
+        match attempts.compare_exchange_weak(current, next, Relaxed, Relaxed) {
+            Ok(baseline) => return baseline.checked_add(1),
+            Err(observed) => current = observed,
+        }
+    }
+}
+
 pub(super) fn consult(
     execution: &ExecutionRequest<'_, '_>,
 ) -> Result<(), WorthQueryOutputDemandDenial> {
@@ -226,4 +229,26 @@ pub(super) fn consult(
             "producer output evaluation",
         )
     })
+}
+
+#[cfg(test)]
+mod attempt_tests {
+    use super::next_comparison_attempt;
+    use std::sync::atomic::{AtomicU64, Ordering::Relaxed};
+
+    #[test]
+    fn comparison_attempts_refuse_exhaustion_without_reusing_or_wrapping() {
+        let attempts = AtomicU64::new(0);
+        assert_eq!(next_comparison_attempt(&attempts), Some(1));
+        assert_eq!(next_comparison_attempt(&attempts), Some(3));
+        for exhausted in [u64::MAX - 1, u64::MAX] {
+            attempts.store(exhausted, Relaxed);
+            assert_eq!(next_comparison_attempt(&attempts), None);
+            assert_eq!(attempts.load(Relaxed), exhausted);
+        }
+        attempts.store(u64::MAX - 2, Relaxed);
+        assert_eq!(next_comparison_attempt(&attempts), Some(u64::MAX - 1));
+        assert_eq!(attempts.load(Relaxed), u64::MAX);
+        assert_eq!(next_comparison_attempt(&attempts), None);
+    }
 }

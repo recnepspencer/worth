@@ -19,12 +19,12 @@ use worth_query_installation::facade::{
 
 use super::WorthQueryApplicationCommitDenial;
 
-mod activation_cell;
+pub(crate) mod activation_cell;
 mod original_meaning;
-mod presented_program;
+pub(crate) mod presented_program;
 pub(in crate::domain_computation) use original_meaning::OriginalProgramMeaning;
-mod revision_rendering;
-mod support_lifecycle;
+pub(crate) mod revision_rendering;
+pub(crate) mod support_lifecycle;
 
 pub(in crate::domain_computation::primary_graph) use activation_cell::WorthQueryProgramActivationCell;
 pub(in crate::domain_computation::primary_graph) use presented_program::WorthQueryPresentedProgram;
@@ -35,7 +35,7 @@ pub(in crate::domain_computation::primary_graph) use support_lifecycle::{
 };
 
 /// The program support one published application runtime retains.
-pub(in crate::domain_computation::primary_graph) struct WorthQueryInstalledProgramSupport<Schema> {
+pub struct WorthQueryInstalledProgramSupport<Schema> {
     native_programs: Box<[Arc<super::application_installation::WorthQuerySupportedProgramRecord>]>,
     roster: Arc<WorthQueryProgramSupportRoster<Schema>>,
     renderings: Box<[AspectValue]>,
@@ -121,9 +121,7 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
         self.adoption_admissions.get(revision).copied()
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn activation(
-        &self,
-    ) -> &WorthQueryProgramActivationCell {
+    pub const fn activation(&self) -> &WorthQueryProgramActivationCell {
         &self.activation
     }
 
@@ -231,9 +229,7 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
         self.lifecycle.retain_custody(source, target)
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn lifecycle(
-        &self,
-    ) -> &support_lifecycle::WorthQueryProgramSupportLifecycle {
+    pub const fn lifecycle(&self) -> &support_lifecycle::WorthQueryProgramSupportLifecycle {
         &self.lifecycle
     }
 
@@ -255,3 +251,5 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
             .adoption_requirements(installed_schema, source, target)
     }
 }
+
+mod court_doors_for_test;

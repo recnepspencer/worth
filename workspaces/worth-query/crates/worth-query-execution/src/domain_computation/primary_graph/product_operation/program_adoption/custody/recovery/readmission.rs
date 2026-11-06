@@ -73,6 +73,13 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .prepare_settled_relational_adoption(&unpublished, request)
         {
             Ok(prepared) => prepared,
+            Err(PublicationDenial::ClockMismatch) => {
+                drop(unpublished);
+                return Err(failure(
+                    WorthQueryBranchAdoptionRecoveryDenial::ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
+                    recovery,
+                ));
+            }
             Err(PublicationDenial::Stopped(stop)) => {
                 drop(unpublished);
                 return Err(failure(
@@ -122,7 +129,19 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 );
                 Ok(WorthQueryBranchAdoptionRecoveryOutcome::Performed { adoption, cleanup })
             }
-            Err(PublicationDenial::Stopped(stop)) => Err(failure(
+            Err(PublicationDenial::ClockMismatch) => Err(failure(
+                WorthQueryBranchAdoptionRecoveryDenial::ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
+                WorthQueryBranchAdoptionRecovery {
+                    source,
+                    target,
+                    selected_entity_count,
+                    migration,
+                    custody,
+                    product,
+                    support_custody,
+                },
+            )),
+Err(PublicationDenial::Stopped(stop)) => Err(failure(
                 WorthQueryBranchAdoptionRecoveryDenial::ExecutionDenied(advancement_denial(stop)),
                 WorthQueryBranchAdoptionRecovery {
                     source,
@@ -158,6 +177,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     effects,
                     binding.recovery(),
                     self.application()
+                        .runtime
                         .primary_provider
                         .unpublished_idempotency_disposition(),
                     support_custody,
@@ -179,8 +199,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     }
 }
 
-#[cfg(test)]
-fn recovery_execution<'scope>(
+pub fn recovery_execution<'scope>(
     phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope>,
     runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
 ) -> Result<worth_execution::ExecutionRequest<'scope, 'scope>, WorthQueryBranchAdoptionRecoveryDenial>
@@ -189,10 +208,6 @@ fn recovery_execution<'scope>(
         .checked_execution_request_for(runtime)
         .map_err(WorthQueryBranchAdoptionRecoveryDenial::ExecutionDenied)
 }
-
-#[cfg(test)]
-#[path = "foreign_phase_tests.rs"]
-mod foreign_phase_tests;
 
 impl crate::domain_computation::execution_observation::WorthQueryExecutionObservation {
     /// Drives the private continuation with an already selected product and

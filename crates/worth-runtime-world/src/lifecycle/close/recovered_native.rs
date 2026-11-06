@@ -11,6 +11,7 @@ use worth_relational::facade::{
 #[derive(Debug)]
 pub(super) enum RecoveredNativeRetirement {
     Active(RelationalRecoveredPublicationRetirement),
+    Publication(crate::history::ReadmittedPublicationRetirement),
     Retired(RetiredRelationalRecoveredPublication),
 }
 impl RecoveredNativeRetirement {
@@ -20,9 +21,14 @@ impl RecoveredNativeRetirement {
     pub(super) fn advance(
         self,
         request: &ExecutionRequest<'_, '_>,
+        owner: &worth_relational::facade::runtime::RelationalRuntime,
     ) -> (Self, Result<bool, Denial>) {
         match self {
             Self::Retired(retired) => (Self::Retired(retired), Ok(true)),
+            Self::Publication(mut task) => {
+                let progress = task.advance(request, owner);
+                (Self::Publication(task), progress)
+            }
             Self::Active(mut task) => match task.advance(request) {
                 Progress::Advanced => (Self::Active(task), Ok(false)),
                 Progress::Busy => (Self::Active(task), Err(Denial::Busy)),

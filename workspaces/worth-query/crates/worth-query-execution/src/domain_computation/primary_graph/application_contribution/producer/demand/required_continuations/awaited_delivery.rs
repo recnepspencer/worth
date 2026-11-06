@@ -25,7 +25,7 @@ impl<Schema: ApplicationSchema + 'static> RequiredContinuations<Schema> {
         for index in 0..self.entries.len() {
             if matches!(
                 registry.row_stage_admitted(self.entries[index].interest())?,
-                OutputRowStage::Published
+                OutputRowStage::Published | OutputRowStage::PublicationPending
             ) {
                 return Ok(Some(AwaitedDelivery {
                     entries: &mut self.entries[index..],
@@ -46,16 +46,22 @@ impl<Schema: ApplicationSchema + 'static> AwaitedDelivery<'_, Schema> {
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         branch: crate::basis::WorthQueryProductBranch,
+        invocation: &ProducerInvocationAuthority<'_>,
         contacts: Option<&mut usize>,
 
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<Option<DeliveredAwaited>, WorthQueryOutputDemandDenial> {
-        let result = self.entries[0].resume(phase, runtime, principal, request, branch, performed);
+        let result = self.entries[0].resume(
+            phase, runtime, principal, request, branch, invocation, performed,
+        );
         self.entries[0].report_caller_contacts(contacts);
 
         match result {
             Ok(Some(ready)) => {
-                runtime.output_demands.clear_required_stop(self.key());
+                runtime
+                    .runtime
+                    .output_demands
+                    .clear_required_stop(self.key());
                 self.entries.rotate_left(1);
                 Ok(Some(DeliveredAwaited::from_delivery(ready)))
             }

@@ -120,8 +120,7 @@ pub fn request_scope() -> WorthQueryRequestScope {
     let cancellation = WorthQueryCancellationSource::new();
     WorthQueryRequestScope::new(
         Some(Instant::now() + Duration::from_secs(60)),
-        cancellation.token(),
-    )
+        cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
 }
 
 pub struct CausalCredential {

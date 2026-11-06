@@ -28,6 +28,7 @@ pub(crate) fn compile_value_binding_catalog(
     WorthQueryInstalledApplicationValueBindingCatalog,
     WorthQueryApplicationValueBindingInstallationDenial,
 > {
+    let (formats, mut content_fields) = super::content::compile(declaration.members(), provenance)?;
     let declared = collect_declared_fields(declaration)?;
     let recipes = provenance
         .field_bindings()
@@ -55,12 +56,13 @@ pub(crate) fn compile_value_binding_catalog(
                 WorthQueryInstalledApplicationValueBinding::new(
                     schema_binding.clone(),
                     recipe.clone(),
-                ),
+                )
+                .with_content(content_fields.remove(locus)),
             )
         })
         .collect();
     Ok(WorthQueryInstalledApplicationValueBindingCatalog::new(
-        bindings,
+        formats, bindings,
     ))
 }
 
@@ -121,6 +123,7 @@ fn collect_declared_fields(
             unit,
             frame,
             canonical,
+            content_format,
             presence,
             equality_queryable,
             ..
@@ -130,14 +133,15 @@ fn collect_declared_fields(
         };
         let locus = ApplicationFieldBindingLocus::new(entity, aspect, field);
         if *equality_queryable
-            && (*scalar_family == worth_foundational::facade::ScalarAspectType::InlineBytes
+            && (content_format.is_some()
+                || *scalar_family == worth_foundational::facade::ScalarAspectType::InlineBytes
                 || canonical
                     .as_ref()
                     .is_some_and(|contract| contract.is_domain_value()))
         {
             return Err(denial(DenialKind::ContractMismatch, &locus));
         }
-        let codec = if canonical.is_some() {
+        let codec = if canonical.is_some() || content_format.is_some() {
             Some(
                 ApplicationFieldValueMeaning::from_member(member)
                     .map_err(|_| denial(DenialKind::ContractMismatch, &locus))?

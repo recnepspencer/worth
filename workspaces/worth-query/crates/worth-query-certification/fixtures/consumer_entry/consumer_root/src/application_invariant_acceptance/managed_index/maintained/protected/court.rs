@@ -1,4 +1,5 @@
 //! Current grant and READ decisions gate every notification and hidden-field omission.
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 mod continuation;
 mod exact_refinement;
 mod realized_influence;
@@ -39,7 +40,7 @@ fn purpose() -> access::ReadAccess {
         directory: "catalog".into(),
     }
 }
-fn callbacks(calls: &prefix::Calls) -> (usize, usize) {
+fn callbacks(calls: &prefix_observation::Calls) -> (usize, usize) {
     (
         calls.probe_validations.load(Ordering::SeqCst),
         calls.matched_sources.load(Ordering::SeqCst),
@@ -99,7 +100,7 @@ fn create(
     ));
 }
 fn journey() {
-    let calls = Arc::new(prefix::Calls::default());
+    let calls = Arc::new(prefix_observation::Calls::default());
     let rules = Arc::new(rule::Calls::new(calls.clone()));
     let world = host::install(calls.clone(), rules);
     let scope = authentication::request_scope();

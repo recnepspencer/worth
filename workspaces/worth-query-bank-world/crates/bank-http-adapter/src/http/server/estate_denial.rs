@@ -37,6 +37,10 @@ pub(super) fn estate_denial(denial: BankEstateProgressionDenial) -> BankHttpDeni
         )) => super::relational_execution_denial::denial(cause),
         D::Attempt(bank_server::BankCommitPreparationDenial::StorageUnavailable(failure)) => super::relational_execution_denial::denial(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause::StorageUnavailable(failure)),
         D::Attempt(bank_server::BankCommitPreparationDenial::Application {
+            kind: bank_server::BankApplicationAttemptDenialKind::ContentInconsistency,
+            ..
+        }) => BankHttpDenial::new(BankHttpDenialKind::InternalDenied, BankHttpNextAction::ContactOperator),
+        D::Attempt(bank_server::BankCommitPreparationDenial::Application {
             kind: bank_server::BankApplicationAttemptDenialKind::Cancelled,
             ..
         }) => BankHttpDenial::new(BankHttpDenialKind::Cancelled, BankHttpNextAction::Retry),
@@ -80,6 +84,9 @@ fn idempotency_denial(denial: BankEstateIdempotencyResolutionDenial) -> BankHttp
     use BankHttpDenialKind as Denial;
     use BankHttpNextAction as Next;
     let (denial, next) = match denial {
+        Idempotency::OriginalEffectReleased => {
+            (Denial::OriginalEffectReleased, Next::ContactOperator)
+        }
         Idempotency::PreparationBusy => (Denial::Unavailable, Next::Retry),
         Idempotency::ExecutionDenied(kind) => {
             return super::mutation_application::pending_execution_stop(kind)
@@ -111,6 +118,9 @@ fn recovery_denial(kind: BankRecoveryDenialKind) -> BankHttpDenial {
     use BankHttpNextAction as Next;
     use BankRecoveryDenialKind as Kind;
     let (denial, next) = match kind {
+        Kind::AdmissionAuthorization(cause) => return authorization_denial(cause),
+        Kind::CompletionExecutionDenied { kind: worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind::Content(cause), .. } => return super::relational_execution_denial::denial(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause::Content(cause)),
+        Kind::CompletionExecutionDenied { kind: worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind::ContentInconsistency, .. } => (Denial::InternalDenied, Next::ContactOperator),
         Kind::CompletionExecutionRequest(cause) => {
             return super::advancement_denial::advancement(cause)
         }
@@ -123,7 +133,7 @@ fn recovery_denial(kind: BankRecoveryDenialKind) -> BankHttpDenial {
         | Kind::ForeignPrincipal => (Denial::PermissionDenied, Next::None),
         // The recovery already moved on: it was opened, or it ended. Reading
         // the commit again reports its current recovery status.
-        Kind::RecoveryAlreadyMinted | Kind::AlreadyTerminal => (Denial::Stale, Next::Refresh),
+        Kind::StaleIncarnation | Kind::RecoveryAlreadyMinted | Kind::AlreadyTerminal => (Denial::Stale, Next::Refresh),
         // The live recovery can never be admitted again: its window closed, or
         // installed truth moved past the commit it was bound to. The effect
         // stays unsettled, so an operator settles it.

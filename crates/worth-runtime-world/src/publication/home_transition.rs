@@ -31,8 +31,7 @@ pub struct ReservedWorldHomeTransitionAssignments {
     pub(crate) description: HomeProgramTransitionPlanDescription,
     pub(crate) assignments: ExecutionArray<CompositeAttemptAssociation>,
     pub(crate) predecessor: crate::branch::ProductBranchObservation,
-    pub(crate) owner: crate::identity::RuntimeWorldOwnerIdentity,
-    pub(crate) operation: crate::lifecycle::owner::RuntimeWorldOperationReservation,
+    pub(crate) _operation: crate::lifecycle::owner::RuntimeWorldOperationReservation,
     pub(crate) _names_memory: Option<ExecutionMemoryReservation>,
     pub(crate) steps: ExecutionArray<std::sync::Mutex<Option<WorldHomeTransitionStepReservation>>>,
 }

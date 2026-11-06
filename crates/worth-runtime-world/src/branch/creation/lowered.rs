@@ -12,6 +12,8 @@ pub(crate) struct LoweredBranchCreationPlan {
     expected: ProductBranchObservation,
     relational: RelationalBranchCreationPlan,
     signal: SignalBranchCreationPlan,
+    source_kind: super::BranchCreationSourceKind,
+    retained_native: Option<worth_relational::facade::branch::AdmittedRelationalRetainedForkSource>,
 }
 
 impl LoweredBranchCreationPlan {
@@ -27,7 +29,26 @@ impl LoweredBranchCreationPlan {
             expected: source,
             relational,
             signal,
+            source_kind: super::BranchCreationSourceKind::Current,
+            retained_native: None,
         })
+    }
+
+    pub(crate) fn from_retained(
+        mut self,
+        source: worth_relational::facade::branch::AdmittedRelationalRetainedForkSource,
+    ) -> Self {
+        self.source_kind = super::BranchCreationSourceKind::Retained;
+        self.retained_native = Some(source);
+        self
+    }
+    pub(crate) fn source_kind(&self) -> super::BranchCreationSourceKind {
+        self.source_kind
+    }
+    pub(crate) fn take_retained_native(
+        &mut self,
+    ) -> Option<worth_relational::facade::branch::AdmittedRelationalRetainedForkSource> {
+        self.retained_native.take()
     }
 
     pub(crate) const fn expected(&self) -> &ProductBranchObservation {

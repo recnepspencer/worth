@@ -1,0 +1,2 @@
+//! Doors under `domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::capability_admission::preparation::observation::request_resolution`.
+pub use crate::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::capability_admission::preparation::observation::request_resolution::WorthQueryCapabilityContextKey;

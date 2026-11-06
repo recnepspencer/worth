@@ -189,13 +189,17 @@ fn foreign_and_sibling_preparation_refuse_lineage_before_ambient_cancellation_or
 fn active_root_preparation_keeps_the_child_absolute_deadline() {
     let root = ExecutionResourceLease::serial(grant(100, None)).unwrap();
     let mut child_grant = grant(100, None);
-    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(1);
+    let time = worth_execution::MonotonicTimeController::new().unwrap();
+    let held = time.hold();
+    let deadline = time
+        .clock()
+        .deadline_at(held + std::time::Duration::from_secs(1));
     child_grant.deadline = Some(deadline);
     let child = root.child(child_grant).unwrap();
     let observed = Cell::new(false);
     let outer = ExecutionRequest::leased(&child).run_native_with_checkpoint(|_| {
         let result = ExecutionRequest::leased(&root).prepare_native(|_| {
-            std::thread::sleep(deadline.saturating_duration_since(std::time::Instant::now()));
+            time.advance(std::time::Duration::from_secs(1)).unwrap();
             Ok::<_, ()>(())
         });
         assert_eq!(

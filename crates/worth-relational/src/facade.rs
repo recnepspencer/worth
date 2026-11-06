@@ -1,4 +1,14 @@
 //! Public API boundary for `worth-relational`.
+pub mod content {
+    pub use crate::content::{
+        RelationalContentAttachments, RelationalContentCodec, RelationalContentControl,
+        RelationalContentDenial, RelationalContentFieldBinding, RelationalContentFormat,
+        RelationalContentFormatDeclaration, RelationalContentFormatRegistry,
+        RelationalContentFrame, RelationalContentReadClosure, RelationalContentRejection,
+        RelationalContentSchemaSnapshot, RelationalContentSink, MAXIMUM_CONTENT_FRAME_BYTES,
+        MAXIMUM_STAGED_CONTENT_BYTES,
+    };
+}
 #[path = "facade/authorization.rs"]
 pub mod authorization;
 #[path = "facade/branch.rs"]
@@ -80,15 +90,15 @@ pub mod history {
         AspectHistoryCommitSpan, AspectHistoryDigest, AspectHistoryEntry,
         AspectHistoryLineageEventSpan, AspectHistoryOrigin, AspectHistoryQueryResult,
         AspectHistoryResolutionTrace, AspectResolutionContext, BranchCreateError,
-        BranchCreateErrorClass, BranchId, CanonicalCommitEnvelope, CommitId,
-        CommittedVersionSummary, HistoryAspectQueryTarget, HistoryDriftClass,
-        HistoryRetentionClass, HistoryShapeClassification, LineageAspectHistory,
-        LineageAspectHistoryQueryResult, LineageAspectResolutionDigest, MergeBasisAncestors,
-        MergeConflictRecord, MergeInspection, OrderedParentList, RelationalCommitReceipt,
-        RelationalDescriptiveTouch, RelationalDescriptiveTouchGraph,
-        RelationalDescriptiveTouchPrecision, RelationalMergeBranchBasisDenial,
-        RelationalReplayRetentionDenial, RelationalTouchAdjacencyDirection,
-        SharedCanonicalCommitEnvelope, VersionGraphPolicy,
+        BranchCreateErrorClass, BranchId, CanonicalCommitEnvelope,
+        CanonicalRetainedEntitySelection, CommitId, CommittedVersionSummary,
+        HistoryAspectQueryTarget, HistoryDriftClass, HistoryRetentionClass,
+        HistoryShapeClassification, LineageAspectHistory, LineageAspectHistoryQueryResult,
+        LineageAspectResolutionDigest, MergeBasisAncestors, MergeConflictRecord, MergeInspection,
+        OrderedParentList, RelationalCommitReceipt, RelationalDescriptiveTouch,
+        RelationalDescriptiveTouchGraph, RelationalDescriptiveTouchPrecision,
+        RelationalMergeBranchBasisDenial, RelationalReplayRetentionDenial,
+        RelationalTouchAdjacencyDirection, SharedCanonicalCommitEnvelope, VersionGraphPolicy,
     };
     pub use crate::history::{BoundedCanonicalCommitPatchDenial, HistoryAccess, HistoryAuthority};
     pub use crate::history::{
@@ -110,6 +120,7 @@ pub mod history {
         RelationalCommitArtifactDenial, RelationalCommitCatalogAppendDenial,
         RelationalCommitCatalogEntry, RelationalCommitIdentity, RelationalCommitParentage,
         RelationalCommitParentageDenial, RelationalCommitRootDescriptor,
+        RelationalRetainedSelectionArtifactDenial,
     };
 }
 
@@ -288,8 +299,8 @@ pub mod publication {
         SubscriberStreamFailureClass,
     };
     pub use crate::publication::data::{
-        PublicationArtifactSnapshot, PublicationDiagnosticsSnapshot, PublicationError,
-        PublicationObservationSnapshot, PublicationSettlementRepairError,
+        AuthoredRetirementRefusal, PublicationArtifactSnapshot, PublicationDiagnosticsSnapshot,
+        PublicationError, PublicationObservationSnapshot, PublicationSettlementRepairError,
     };
     pub use crate::publication::patch::data::{
         PatchDetail, PatchFragmentBudget, PatchOrdering, PatchPublicationMode, PatchStreamBatch,

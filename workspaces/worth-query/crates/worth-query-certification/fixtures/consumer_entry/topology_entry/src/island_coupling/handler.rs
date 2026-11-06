@@ -39,6 +39,10 @@ impl<S: TopologySchemaBinding> OperationHandler<S, PlanarIslandCouplingBinding<S
         }
     }
 
+    #[expect(
+        clippy::result_large_err,
+        reason = "The fixture preserves the original typed owner denial."
+    )]
     fn build_candidate(
         &self,
         input: &PlanarIslandCoupling,

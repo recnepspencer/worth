@@ -12,6 +12,8 @@ pub(super) fn validate_member_identity_uniqueness(
     let mut query_types = BTreeSet::<&str>::new();
     let mut resource_names = BTreeSet::new();
     let mut resource_types = BTreeSet::new();
+    let mut history_names = BTreeSet::new();
+    let mut history_types = BTreeSet::new();
     let mut capability_names = BTreeSet::<&str>::new();
     let mut capability_types = BTreeSet::<WorthQueryPortableTypeIdentity>::new();
     let mut context_types = BTreeSet::<&WorthQueryPortableTypeIdentity>::new();
@@ -22,6 +24,10 @@ pub(super) fn validate_member_identity_uniqueness(
     let mut component_reads = BTreeSet::new();
     for member in members {
         let duplicate = match member {
+            ApplicationSchemaMember::ApplicationHistory { definition } => {
+                !history_names.insert(definition.parts().identity.as_str())
+                    || !history_types.insert(&definition.parts().history_type)
+            }
             ApplicationSchemaMember::DerivedComponentSet { definition } => {
                 !component_sets.insert(definition.name.as_str())
             }

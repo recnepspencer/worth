@@ -189,17 +189,31 @@ pub(crate) fn artifacts_of(
 pub(crate) fn artifacts_of_home(
     home: &worth_store_application::ReadmittedApplicationHome,
 ) -> Vec<Vec<u8>> {
-    let journal = home
-        .physical_serving_for_test()
-        .branch_transitions()
-        .unwrap();
+    artifacts_of_parts(
+        home.physical_serving_for_test(),
+        home.relational().runtime(),
+    )
+}
+
+pub(crate) fn artifacts_of_world(
+    home: &worth_store_application::WorldReadmittedApplicationHome<(), (), (), (), ()>,
+) -> Vec<Vec<u8>> {
+    artifacts_of_parts(
+        home.physical_serving_for_test(),
+        home.relational().runtime(),
+    )
+}
+
+fn artifacts_of_parts(
+    serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
+    runtime: &RelationalRuntime,
+) -> Vec<Vec<u8>> {
+    let journal = serving.branch_transitions().unwrap();
     let head = journal.head().unwrap().map_or(0, |entry| entry.position());
     let durable = (1..=head)
         .map(|sequence| journal.read(sequence, 1 << 20).unwrap().into_bytes())
         .collect::<Vec<_>>();
-    let live = home
-        .relational()
-        .runtime()
+    let live = runtime
         .durability()
         .branch_transition_artifacts(worth_execution::ExecutionAllocationPolicy::SystemAllocation);
     let covered = live.covered_sequence().0 as usize;

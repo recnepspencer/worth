@@ -1,6 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Child, ExitStatus};
+use worth_foundational::CanonicalDigestId;
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -32,8 +33,8 @@ pub struct ProcessProbeExecution {
     pub declaration: ProcessProbeDeclaration,
     pub process: ProcessIdentityEvidence,
     pub termination: ProcessTermination,
-    pub output_artifact_identity: [u8; 32],
-    pub evidence_identity: [u8; 32],
+    pub output_artifact_identity: CanonicalDigestId,
+    pub evidence_identity: CanonicalDigestId,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -81,11 +82,11 @@ impl ProcessProbeExecution {
             declaration,
             process,
             termination: termination.0,
-            output_artifact_identity,
-            evidence_identity: [0; 32],
+            output_artifact_identity: CanonicalDigestId::new(output_artifact_identity),
+            evidence_identity: CanonicalDigestId::new([0; 32]),
         };
         evidence.evidence_identity = wire_encoding::encode(&evidence)
-            .map(|bytes| Sha256::digest(bytes).into())
+            .map(|bytes| CanonicalDigestId::new(Sha256::digest(bytes).into()))
             .map_err(|_| ProcessProbeEvidenceDenial::EvidenceWrite)?;
         Ok(evidence)
     }
@@ -96,7 +97,7 @@ pub(crate) fn persist_execution(
     execution: &ProcessProbeExecution,
 ) -> Result<PathBuf, ProcessProbeEvidenceDenial> {
     let root = execution_root(fallback_root)?;
-    let path = root.join(format!("{}.bin", hex(&execution.evidence_identity)));
+    let path = root.join(format!("{}.bin", hex(execution.evidence_identity.bytes())));
     let bytes =
         wire_encoding::encode(execution).map_err(|_| ProcessProbeEvidenceDenial::EvidenceWrite)?;
     match publish_new_synced(&path, &bytes) {

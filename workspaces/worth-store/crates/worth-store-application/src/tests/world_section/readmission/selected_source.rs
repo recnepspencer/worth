@@ -64,9 +64,19 @@ fn home2_with_real_complete_native(
         .unwrap()
         .prepare_home_checkpoint(request)
         .unwrap();
-    let ordinary_native = home
+    // The Home image requires its actual original Native admission image and
+    // the companion from this same World capture (D12 clean cutover).
+    let (identity, through, digest) = world_image.home_admission_coordinates(request).unwrap();
+    let captured = home
         .relational
-        .prepare_complete_checkpoint(request)
+        .complete_checkpoint_preparation()
+        .prepare_home(identity, through, digest, request)
+        .unwrap();
+    let companion = world_image
+        .capture_home_admission_companion(captured.admission_image(), request)
+        .unwrap();
+    let ordinary_native = captured
+        .bind_home_admission_section(companion.bytes(), request)
         .unwrap();
     let (members, member_funding) = ordinary_native.prepare_members(&[], request).unwrap();
     // Both sections come from their real strong producers; framing alone
@@ -244,10 +254,14 @@ fn ordinary_selected_native_refuses_before_incarnation_and_native_or_world_publi
     assert!(matches!(
         crate::admit_home(recovered, &request),
         Err(crate::ApplicationHomeOpenRefusal::Relational(
-            worth_store_relational::RelationalSectionReadmissionDenial::InitialInputs(
-                worth_relational::facade::durability::RelationalInitialInputsRefusal::Missing
+            worth_store_relational::RelationalSectionReadmissionDenial::AdmissionImage(
+                worth_relational::facade::durability::RelationalCheckpointAdmissionRefusal::PredecessorFormat {
+                    protocol, version,
+                }
             )
-        ))
+        )) if protocol == worth_foundational::facade::BoundaryProtocolIdentity::new(
+            "worth.store.relational.checkpoint-section")
+            && version.posture() == worth_foundational::facade::BoundaryProtocolUnsupportedVersionPosture::Retired
     ));
     for (name, original) in anchors.into_iter().zip(&before) {
         let actual = records

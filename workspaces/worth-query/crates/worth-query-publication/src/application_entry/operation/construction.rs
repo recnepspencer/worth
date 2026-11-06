@@ -62,6 +62,7 @@ impl<Schema: ApplicationSchema, Intent: ApplicationMutationIntent<Schema>>
             preconditions: self_native.preconditions,
             source: self_native.source,
             branch: self_native.branch,
+            history: None,
         })
     }
 }

@@ -27,6 +27,15 @@ impl std::error::Error for DecisionQueryPreparationStop {
     }
 }
 
+pub(in crate::domain_computation::primary_graph) fn native_decision_cause<'a>(
+    error: &'a (dyn std::error::Error + 'static),
+) -> Option<&'a worth_relational::facade::mvcc::CompanionPreflightStop> {
+    match error.downcast_ref::<DecisionQueryPreparationStop>()? {
+        DecisionQueryPreparationStop::Native(cause) => Some(cause),
+        _ => None,
+    }
+}
+
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     /// Runs an authenticated handler with its declared Parent reads on the
     /// product selected by this admission and the admission's original request.
@@ -48,6 +57,29 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         WorthQueryCompletedMutationCandidate<S, B>,
         B::Denial,
     > {
+        let refused = |cause| {
+            WorthQueryMutationHandlerExecutionReport::new(
+                Err(cause),
+                WorthQueryMutationHandlerWork::NotStarted,
+            )
+        };
+        // Ownership is refused before the branch, so neither path does work
+        // for a foreign core; the phase check keeps preparation's order.
+        let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
+            Ok(execution) => execution,
+            Err(cause) => {
+                return refused(MutationHandlerExecutionDenial::ForeignAdvancementPhase(
+                    cause,
+                ))
+            }
+        };
+        if let Err(denial) = admission.validate_mutation_entry(
+            self.runtime.authority_identity(),
+            &self.installed_schema.binding_identity(),
+            &self.runtime.installed_operations,
+        ) {
+            return refused(denial);
+        }
         if admission
             .allowed_graph_contract()
             .managed_index_reads()
@@ -61,22 +93,22 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 allocation,
             );
         }
-        let shared = match self.prepare_decision_query_basis(phase, admission.graph_work()) {
+        // A forged tag type is refused before the shared basis is prepared.
+        if let Err(denial) = admission.validate_installed_mutation_binding(
+            self.installed_schema
+                .installed_mutation_binding_descriptor(B::IDENTITY),
+        ) {
+            return refused(denial);
+        }
+        if let Err(denial) = admission.validate_current_authority() {
+            return refused(MutationHandlerExecutionDenial::Projection(denial.into()));
+        }
+        let shared = match self.prepare_decision_query_basis(&execution, admission.graph_work()) {
             Ok(shared) => shared,
-            Err(cause) => {
-                return WorthQueryMutationHandlerExecutionReport::new(
-                    Err(cause),
-                    WorthQueryMutationHandlerWork::NotStarted,
-                )
-            }
+            Err(cause) => return refused(cause),
         };
         let request = admission.publication_request().clone();
-        let access = SourceQueryReaderAccess {
-            application: self,
-            shared: &shared,
-            principal,
-            request: &request,
-        };
+        let access = SourceQueryReaderAccess::ordinary(self, &shared, principal, &request);
         match self.prepare_mutation_handler_plan_with_source_access::<B>(
             phase,
             identities,
@@ -92,7 +124,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     }
     fn prepare_decision_query_basis(
         &self,
-        phase: &WorthQueryAdvancementPhase<'_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         work: &crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     ) -> Result<
         crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation<
@@ -101,13 +133,10 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         >,
         MutationHandlerExecutionDenial,
     > {
-        let execution = phase
-            .execution_request_for(&self.product_runtime)
-            .map_err(MutationHandlerExecutionDenial::ForeignAdvancementPhase)?;
         work.mutation_lease()
             .ok_or(DecisionQueryPreparationStop::MissingProduct)
             .and_then(|lease| {
-                self.on_mutation_product(&execution, lease)
+                self.on_mutation_product(execution, lease)
                     .map_err(DecisionQueryPreparationStop::Product)
             })
             .and_then(|selected| {
@@ -118,5 +147,32 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             .map_err(|cause| {
                 MutationHandlerExecutionDenial::Handler(HandlerExecutionDenial::new(cause))
             })
+    }
+}
+
+#[cfg(test)]
+mod cause_tests {
+    use super::*;
+    #[test]
+    fn handler_denial_preserves_native_decision_preparation_cause() {
+        let denial = HandlerExecutionDenial::new(DecisionQueryPreparationStop::Native(
+            worth_relational::facade::mvcc::CompanionPreflightStop::ManagedSourceChanged,
+        ));
+        assert!(matches!(
+            denial.native_decision_refusal(),
+            Some(worth_relational::facade::mvcc::CompanionPreflightStop::ManagedSourceChanged)
+        ));
+        let retained = denial
+            .source
+            .as_ref()
+            .downcast_ref::<DecisionQueryPreparationStop>()
+            .unwrap();
+        let DecisionQueryPreparationStop::Native(original) = retained else {
+            unreachable!()
+        };
+        assert!(std::ptr::eq(
+            denial.native_decision_refusal().unwrap(),
+            original
+        ));
     }
 }

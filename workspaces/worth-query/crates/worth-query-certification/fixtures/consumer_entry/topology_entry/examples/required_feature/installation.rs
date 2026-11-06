@@ -173,7 +173,7 @@ pub fn limits_for_policy(
                 owner_created_component_custody_records: 16,
             },
         },
-        WorthQueryProductWorldClock::start(),
+        WorthQueryProductWorldClock::start(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         WorthQueryInvalidationResources::new(),
         policy,
     )
@@ -228,13 +228,12 @@ pub fn authenticate(
     authentication::WorthQueryAuthenticatedExternalPrincipal<ExampleSchema>,
 ) {
     let cancellation = authentication::WorthQueryCancellationSource::new();
-    let scope = authentication::WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = authentication::WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let adapter = authentication::admit_authentication_adapter(
         application.installed_schema(),
         authentication::WorthQueryAuthenticationAdapterAdmission::new(
             authentication::WorthQueryAuthenticationAudience::new("required-feature").unwrap(),
-            authentication::WorthQueryAuthenticationMethod::new("local").unwrap(),
-        ),
+            authentication::WorthQueryAuthenticationMethod::new("local").unwrap(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         LocalIdentity,
     )
     .unwrap();

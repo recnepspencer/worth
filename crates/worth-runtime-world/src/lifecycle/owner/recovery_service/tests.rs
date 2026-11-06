@@ -356,7 +356,7 @@ fn foreign_recovery_authority_refuses_release_continuation_and_adoption_without_
         .expect_err("genuine unsettled owner custody");
     let handle = retained.recovery_handle();
     assert!(matches!(
-        RuntimeWorldRecoveryService::release_effects(foreign.as_ref(), &handle, 0),
+        RuntimeWorldRecoveryService::release_effects(foreign.as_ref(), execution, &handle, 0, None),
         Err(Denial::ForeignHandle)
     ));
     assert!(matches!(

@@ -8,6 +8,14 @@ impl RelationalSchemaRegistry {
         mut self,
         additions: RelationalSchemaRegistry,
     ) -> Result<Self, SchemaRegistryError> {
+        self.content_formats = self
+            .content_formats
+            .extend(additions.content_formats)
+            .map_err(|denial| {
+                SchemaRegistryError::inconsistent_schema_basis(format!(
+                    "content registry composition denied: {denial}"
+                ))
+            })?;
         let derived = additions.derived_relations;
         let domains = additions.projected_member_domains;
         for registration in additions.entity_kinds.into_values() {

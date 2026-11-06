@@ -35,15 +35,20 @@ where
     Right: ApplicationOutputEdgesShape<Schema>
         + ProgramOutputContinuationFactory<Schema, Program, ParentDemand>,
 {
+    fn validate_history_group_outputs(
+        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+    ) -> Result<(), worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryDenial>{
+        Left::validate_history_group_outputs(application)?;
+        Right::validate_history_group_outputs(application)
+    }
+
     fn start(
         application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         parent_demand: &ParentDemand,
         parent_settlement: &WorthQueryApplicationOutputDemandSettlement<
             SourceQuery<Schema, ParentDemand>,
         >,
-        parent_authority: &std::sync::Arc<
-            WorthQuerySettledProgramOutput<Schema, Program, ParentDemand>,
-        >,
+        parent_authority: &ProgramOutputParentAuthority<Schema, Program, ParentDemand>,
         minimum_observation: &crate::application_entry::WorthQueryApplicationReadObservation,
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
         controls: WorthQueryOutputDemandControls,
@@ -86,6 +91,20 @@ where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
 {
+    fn authorize_history(
+        &self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
+        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+        history: ProgramOutputHistoryFrame<'_, '_, '_>,
+    ) -> Result<(), WorthQueryRequiredOutputPreparationDenial> {
+        self.left
+            .authorize_history(phase, application, request, history)?;
+        self.right
+            .authorize_history(phase, application, request, history)
+    }
     fn close_read_request(
         &mut self,
         phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
@@ -105,6 +124,7 @@ where
         >,
         application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+        history: Option<ProgramOutputHistoryFrame<'_, '_, '_>>,
     ) -> Result<ProgramOutputContinuationProgress, WorthQueryRequiredOutputPreparationDenial> {
         let mut runnable = false;
         for index in (self.next_advance..2).chain(0..self.next_advance) {
@@ -116,7 +136,7 @@ where
             } else {
                 &mut self.right
             };
-            match branch.advance(phase, application, request)? {
+            match branch.advance(phase, application, request, history)? {
                 ProgramOutputContinuationProgress::Pending => {}
                 ProgramOutputContinuationProgress::Progressed => {
                     // Propagate the native boundary through tuple nesting before

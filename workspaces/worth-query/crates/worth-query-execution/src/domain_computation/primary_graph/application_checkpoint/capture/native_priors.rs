@@ -16,7 +16,7 @@ type Accepted = (
     Option<TypeId>,
 );
 
-pub(in crate::domain_computation::primary_graph) fn merge(
+pub fn merge(
     lineage: &WorthQueryApplicationOutputLineage,
     current: Vec<Accepted>,
     recovered: impl IntoIterator<Item = (Identity, Option<TypeId>)>,

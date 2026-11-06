@@ -53,7 +53,7 @@ impl RetainedCanonicalIndex {
         let bytes = Self::allocation_bytes(&commit.commit).ok_or(Denial::FrameSizeOverflow)?;
         let memory = request
             .reserve_retained_memory(bytes)
-            .map_err(Denial::Request)?;
+            .map_err(|cause| Denial::Request(cause.into()))?;
         let entry = RelationalCommitIndexEntry {
             association_discovery: commit.envelope().association_discovery(),
             commit: commit.commit.clone(),

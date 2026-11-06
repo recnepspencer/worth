@@ -49,8 +49,7 @@ pub fn authenticate<Schema: worth_query_decl::facade::application_schema::Applic
         schema,
         WorthQueryAuthenticationAdapterAdmission::new(
             WorthQueryAuthenticationAudience::new("host").unwrap(),
-            WorthQueryAuthenticationMethod::new("test").unwrap(),
-        ),
+            WorthQueryAuthenticationMethod::new("test").unwrap(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
         IdentityAdapter,
     )
     .unwrap();

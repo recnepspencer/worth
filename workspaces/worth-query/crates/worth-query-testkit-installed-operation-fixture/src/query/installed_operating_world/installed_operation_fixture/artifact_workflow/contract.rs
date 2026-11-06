@@ -227,11 +227,14 @@ pub fn candidate_target_contract() -> AspectContract {
     )
 }
 
+// This provider-native artifact column describes a digest; it neither installs
+// a Native field nor claims admitted byte custody.
 pub fn candidate_content_contract() -> AspectContract {
-    AspectContract::content_ref(
+    AspectContract::scalar(
         candidate_content(),
         AspectIdentity(0x9150_0005),
         AspectContractRevision(1),
+        ScalarAspectType::ContentRef,
     )
 }
 

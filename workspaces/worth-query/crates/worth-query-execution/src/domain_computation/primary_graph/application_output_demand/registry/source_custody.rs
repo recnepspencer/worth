@@ -6,13 +6,13 @@ use super::{
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum PreparedOutputRootKind {
+pub enum PreparedOutputRootKind {
     Required(TypeId),
     Discovered(TypeId),
 }
 
 #[derive(Default)]
-pub(super) struct SourcePreparationState {
+pub struct SourcePreparationState {
     pub(super) active: usize,
     pub(super) retired: bool,
 }
@@ -23,6 +23,7 @@ use std::cmp::Ordering;
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
 mod owned_affinity;
+mod recorded_replay;
 mod reservation_control;
 mod retention;
 pub use reservation_control::{
@@ -90,7 +91,7 @@ impl WorthQueryOutputDemandRegistry {
         let custody = state
             .source_custody
             .get_mut(receipt.committed_product_publication().composite_commit())
-            .filter(|custody| custody.retired.is_none())
+            .filter(|custody| custody.retired.is_none() && !custody.completed)
             .filter(|custody| custody.root_kind == PreparedOutputRootKind::Required(root_type))
             .filter(|custody| {
                 custody
@@ -344,7 +345,7 @@ impl SourceCustody {
     }
 }
 
-pub(super) fn root_revision_order(
+pub fn root_revision_order(
     prior: &BoundOutputSource,
     successor: &BoundOutputSource,
 ) -> Option<Ordering> {
@@ -359,3 +360,5 @@ pub(super) fn denial(
 ) -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(kind, subject)
 }
+
+mod court_doors_for_test;

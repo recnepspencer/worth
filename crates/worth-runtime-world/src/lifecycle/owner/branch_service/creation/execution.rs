@@ -149,6 +149,20 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    fn admit_creation_source_lifecycle(
+        &self,
+        attempt: &ReservedBranchCreationAttempt,
+    ) -> Result<(), RuntimeWorldBranchAdmissionDenial> {
+        match attempt.plan().source_kind() {
+            crate::branch::BranchCreationSourceKind::Current => {
+                self.admit_source_head(attempt.source())
+            }
+            crate::branch::BranchCreationSourceKind::Retained => {
+                self.admit_retained_source_lifecycle(attempt.source())
+            }
+        }
+    }
+
     /// The last pre-effect recheck before the first owner fork. Nothing has
     /// moved yet, so every way this closes is a plain admission denial, and
     /// they are named apart because a displaced or retired source head is not
@@ -164,7 +178,7 @@ where
         if self.deadline_expired(attempt.deadline()) {
             return Err(RuntimeWorldBranchAdmissionDenial::DeadlineBeforeEffect);
         }
-        self.admit_source_head(attempt.source())
+        self.admit_creation_source_lifecycle(attempt)
     }
 
     /// The between-owners boundary for a creation. A denial here may already
@@ -190,7 +204,7 @@ where
                 denial: RuntimeWorldBranchAdmissionDenial::DeadlineBeforeEffect,
             });
         }
-        if let Err(denial) = self.admit_source_head(attempt.source()) {
+        if let Err(denial) = self.admit_creation_source_lifecycle(attempt) {
             return Err(terminal::CreationDenialNaming {
                 cause: ProductUnpublishedCause::StaleProductHead,
                 denial,

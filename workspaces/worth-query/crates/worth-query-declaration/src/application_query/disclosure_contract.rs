@@ -12,6 +12,7 @@ use crate::application_schema::{
 };
 
 mod history;
+pub use history::ApplicationHistoryMetadataDisclosureDenial;
 mod inspection;
 
 mod components;

@@ -1,0 +1,11 @@
+command: cargo fmt --manifest-path workspaces/worth-query/Cargo.toml --package worth-query-host --package worth-query-execution
+HEAD: 3be57980759467a5d4a8a3e9dcbd91ff42700674
+git_status_short_empty: false
+start_utc: 2026-11-04T14:40:33.608234+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+
+end_utc: 2026-11-04T14:40:45.482305+00:00
+exit_code: 0
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

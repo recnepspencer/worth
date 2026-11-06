@@ -70,8 +70,7 @@ async fn valid_signature_on_unsupported_version_denies_before_owner_custody() {
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
         Some(Instant::now() + Duration::from_secs(5)),
-        cancellation.token(),
-    );
+        cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let route = server.rail_completion.as_ref().unwrap();
     let before = server.observe_estate_rail_completion_cost().unwrap();
     assert!(matches!(

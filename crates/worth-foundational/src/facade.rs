@@ -540,6 +540,7 @@ pub use crate::performance::{
     FoundationalReplayMaterializationPerformanceClaimBuilder,
     FoundationalSupportDerivedPerformanceClaim, FoundationalSupportDerivedPerformanceClaimBuilder,
 };
+pub use crate::producer_publication_ownership::ProducerPublicationOwnership;
 pub use crate::profiles::{
     admit_requested_foundational_profile, admit_requested_foundational_profile_with_resolutions,
     attach_boundary_profiled_artifact, attach_proof_bearing_profiled_artifact,
@@ -717,9 +718,9 @@ pub use crate::values::{
     decode_canonical_text_hex, encode_canonical_text_hex, AggregateDefinitionIdentity,
     AggregateIdentity, AggregateLineageKind, AspectValue, CanonicalBigInt, CanonicalDate,
     CanonicalDecimal, CanonicalF32, CanonicalF64, CanonicalRational, CanonicalString,
-    CanonicalTime, CanonicalTimestamp, CanonicalTimestampTz, ContentRefId, EntityId, Generation,
-    InlineBytes, InlineBytesLengthDenial, InternedString, LocalSlot, PartitionId, ScalarAspectType,
-    Symbol,
+    CanonicalTime, CanonicalTimestamp, CanonicalTimestampTz, ContentFormat, ContentFormatDenial,
+    ContentRefId, EntityId, Generation, InlineBytes, InlineBytesLengthDenial, InternedString,
+    LocalSlot, PartitionId, ScalarAspectType, Symbol,
 };
 
 pub use crate::budget_limits::{BudgetRefused, ExhaustedLimit, LimitCounts, LimitDimension};

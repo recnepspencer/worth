@@ -22,12 +22,12 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     ) -> Result<(), WorthQueryRequiredSetCurrentnessDenial> {
         let runtime = self.application();
         let execution = phase
-            .checked_execution_request_for(&runtime.product_runtime)
+            .checked_execution_request_for(&runtime.runtime.product_runtime)
             .map_err(execution_denial)?;
         let control = RequestAllocationControl::new(request, execution.allocation_policy());
 
         runtime
-            .primary_provider
+            .runtime.primary_provider
             .graph
             .with_runtime(&execution, |relational| {
                 let query_control = || match request.interruption() {
@@ -72,6 +72,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         };
         if let (Some(coverage), Some(selected)) = (&source.coverage, &selected)
             && runtime
+                .runtime
                 .primary_provider
                 .graph
                 .source_owner
@@ -85,7 +86,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         let retained = source;
         let source = &retained.source;
         let prepared = source.admit_fact_materialization(
-            &runtime.primary_provider.graph.layout,
+            &runtime.runtime.primary_provider.graph.layout,
             &source.query_identifier,
             SourceFactExpansionControl::in_request(*execution, Some(request)),
         )?;
@@ -107,6 +108,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         }
         if let (Some(coverage), Some(selected)) = (&retained.coverage, &selected) {
             runtime
+                .runtime
                 .primary_provider
                 .graph
                 .source_owner

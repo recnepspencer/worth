@@ -44,6 +44,7 @@ impl ApplicationProgramDefinition<ConsumerSchema> for PinnedSourceProgram {
                 .external_input::<external_input::NeutralExternalProvider>()
                 .finish_action()
                 .conditional_operation::<MutatePlanar>()
+                .conditional_operation::<worth_query_topology_entry::EscapePlanar>()
                 .required_pair::<PlanarFinalFeatureRoles<ConsumerSchema, PlanarSourceFeature>>()
                 .conditional_operation::<PublishAlternatePlanarOutput>()
                 .action::<PlanarSourceAdjustmentBinding<ConsumerSchema>, PinnedCompletion>()

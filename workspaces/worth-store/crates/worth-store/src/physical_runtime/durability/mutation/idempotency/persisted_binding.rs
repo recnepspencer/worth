@@ -1,4 +1,5 @@
 use super::canonical_encoding::CanonicalBindingEncoding;
+use worth_foundational::CanonicalDigestId;
 
 use super::attempt_binding::AllocatedPhysicalMutationAttemptBinding;
 use super::registry::PhysicalMutationUnresolvedBindingObservation;
@@ -18,7 +19,7 @@ pub(in crate::physical_runtime) struct PersistedPhysicalMutationAttemptBinding {
     mutation: crate::physical_runtime::PhysicalMutationIdentity,
     group: crate::physical_runtime::PhysicalDurabilityGroupMemberBinding,
     member: crate::physical_runtime::PhysicalWalMemberBasis,
-    redo_digest: [u8; 32],
+    redo_digest: CanonicalDigestId,
     bytes: Box<[u8]>,
 }
 
@@ -32,7 +33,7 @@ impl PersistedPhysicalMutationAttemptBinding {
             mutation: binding.mutation_identity(),
             group: binding.group_binding(),
             member: binding.member(),
-            redo_digest: binding.redo_digest(),
+            redo_digest: CanonicalDigestId::new(binding.redo_digest()),
             bytes: Box::default(),
         };
         persisted.bytes = persisted.encode().into_boxed_slice();
@@ -95,7 +96,7 @@ impl PersistedPhysicalMutationAttemptBinding {
     }
 
     pub(in crate::physical_runtime) const fn redo_digest(&self) -> [u8; 32] {
-        self.redo_digest
+        *self.redo_digest.bytes()
     }
 
     fn encode(&self) -> Vec<u8> {
@@ -126,6 +127,6 @@ impl PersistedPhysicalMutationAttemptBinding {
         bytes.field(&self.member.member_identity().bytes());
         bytes.write(&range.start().get().to_le_bytes());
         bytes.write(&range.end_exclusive().get().to_le_bytes());
-        bytes.field(&self.redo_digest);
+        bytes.field(self.redo_digest.bytes());
     }
 }

@@ -39,7 +39,7 @@ fn unpublished_candidate_edit_recovers_before_adopting_the_unchanged_model() {
         )
         .unwrap();
     let cancellation = WorthQueryCancellationSource::new();
-    let original_scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let original_scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let original =
         authentication::authenticate(host.installed_schema(), Actor::Reviewer, &original_scope)
             .unwrap();
@@ -138,7 +138,7 @@ fn unpublished_candidate_edit_recovers_before_adopting_the_unchanged_model() {
     assert!(staging.step.is_none());
     assert!(matches!(
         staging.completed.as_slice(),
-        [WorthQuerySourceCompletion::Recovered { .. }]
+        [WorthQuerySourceCompletion::Recorded { .. }]
     ));
     assert_eq!(staging.branch(), candidate);
     assert_eq!(staging.read(&model, &fresh).unwrap(), 3);

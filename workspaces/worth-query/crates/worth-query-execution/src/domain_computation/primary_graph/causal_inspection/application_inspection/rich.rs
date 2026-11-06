@@ -231,3 +231,7 @@ pub use super::super::inventory::CausalEvidenceFamily as WorthQueryApplicationEv
 pub use super::super::materialization::CausalInspectionMaterializationPolicy as WorthQueryApplicationMaterializationPolicy;
 
 const _: () = assert!(CausalEvidenceFamily::ALL.len() <= 64);
+
+mod court_doors_for_test;
+
+pub use source::SourceMaterializationDenial;

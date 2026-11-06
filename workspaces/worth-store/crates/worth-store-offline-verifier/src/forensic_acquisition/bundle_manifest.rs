@@ -36,7 +36,7 @@ fn ranges_from_records(records: &[DurableForensicSourceRecord]) -> Vec<ForensicB
                 source_offset: 0,
                 byte_length: record.acquired_prefix_bytes,
                 output_name: Some(output_name(record.source_index as usize)),
-                digest: Some(record.acquired_digest),
+                digest: Some(*record.acquired_digest.bytes()),
                 posture: ForensicRangePosture::Acquired,
             });
         }

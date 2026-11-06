@@ -28,7 +28,7 @@ mod serial {
                 let (scope, principal) = authenticate(&application);
                 let cancellation = authentication::WorthQueryCancellationSource::new();
                 let stopped_scope =
-                    authentication::WorthQueryRequestScope::new(None, cancellation.token());
+                    authentication::WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
                 let stopped = application.request(&principal, &stopped_scope);
                 let mut tree = stopped
                     .advanced()
@@ -79,8 +79,7 @@ mod serial {
                 // No new demand, refreshed source, producer replay or receipt recovery.
                 let fresh_scope = authentication::WorthQueryRequestScope::new(
                     None,
-                    authentication::WorthQueryCancellationSource::new().token(),
-                );
+                    authentication::WorthQueryCancellationSource::new().token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
                 let fresh = application.request(&principal, &fresh_scope);
                 let settled = match tree.settle(&application, &fresh).unwrap() {
                     WorthQueryApplicationProgramOutputProgress::Settled(value) => value,

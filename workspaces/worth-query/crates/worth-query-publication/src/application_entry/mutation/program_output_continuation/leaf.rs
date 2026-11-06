@@ -12,6 +12,15 @@ where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
 {
+    fn authorize_history(
+        &self,
+        _: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+        _: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+        _: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+        _: ProgramOutputHistoryFrame<'_, '_, '_>,
+    ) -> Result<(), WorthQueryRequiredOutputPreparationDenial> {
+        Ok(())
+    }
     fn close_read_request(
         &mut self,
         _phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
@@ -26,6 +35,7 @@ where
         _phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         _application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         _: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+        _: Option<ProgramOutputHistoryFrame<'_, '_, '_>>,
     ) -> Result<ProgramOutputContinuationProgress, WorthQueryRequiredOutputPreparationDenial> {
         if std::mem::take(&mut self.open) {
             Ok(ProgramOutputContinuationProgress::Settled {
@@ -46,6 +56,12 @@ where
     Program: ApplicationProgramDefinition<Schema>,
     ParentDemand: WorthQueryApplicationOutputDemand<Schema> + Clone,
 {
+    fn validate_history_group_outputs(
+        _: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+    ) -> Result<(), worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryDenial>{
+        Ok(())
+    }
+
     fn unavailable_completion<Root>() -> Option<ProgramOutputUnavailableCompletion<Schema, Program, Root>>
     where
         Schema: 'static,
@@ -69,7 +85,7 @@ where
         _: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         _: &ParentDemand,
         _: &WorthQueryApplicationOutputDemandSettlement<SourceQuery<Schema, ParentDemand>>,
-        _: &std::sync::Arc<WorthQuerySettledProgramOutput<Schema, Program, ParentDemand>>,
+        _: &ProgramOutputParentAuthority<Schema, Program, ParentDemand>,
         _: &crate::application_entry::WorthQueryApplicationReadObservation,
         _: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
         _: WorthQueryOutputDemandControls,

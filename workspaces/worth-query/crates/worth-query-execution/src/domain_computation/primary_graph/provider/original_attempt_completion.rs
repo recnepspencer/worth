@@ -56,7 +56,7 @@ type OriginalSlot = Arc<dyn OriginalCompletionSlot>;
 pub(in crate::domain_computation::primary_graph) struct OriginalCompletionPublisher(
     Mutex<Option<OriginalSlot>>,
 );
-pub(in crate::domain_computation::primary_graph) struct OriginalCompletionReceiver {
+pub struct OriginalCompletionReceiver {
     slot: OriginalSlot,
     envelope: Box<CleanupRequired>,
 }

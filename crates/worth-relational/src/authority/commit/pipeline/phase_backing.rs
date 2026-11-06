@@ -33,6 +33,9 @@ impl<T> CommitPhaseBacking<T> {
     pub(super) fn value(&self) -> &T {
         &self.values[0]
     }
+    pub(super) fn value_mut(&mut self) -> &mut T {
+        &mut self.values[0]
+    }
     pub(super) fn into_inner(mut self) -> T {
         self.values.pop().expect("one actual candidate stage")
     }

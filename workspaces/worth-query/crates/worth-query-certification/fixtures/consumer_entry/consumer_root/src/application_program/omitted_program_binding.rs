@@ -30,6 +30,7 @@ impl ApplicationProgramDefinition<ConsumerSchema> for OmittedProgramBinding {
         vec![
             ApplicationFeatureSpec::root::<ConsumerSchema, InstalledConditionalActionFeature>()
                 .conditional_operation::<MutatePlanar>()
+                .conditional_operation::<worth_query_topology_entry::EscapePlanar>()
                 .required_pair::<PlanarFinalFeatureRoles<ConsumerSchema, InstalledConditionalActionFeature>>()
                 .conditional_operation::<PublishAlternatePlanarOutput>()
                 .finish(),

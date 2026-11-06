@@ -7,16 +7,14 @@ use sha2::{Digest, Sha256};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct RelationalRegionKindCommitment {
-    pub(crate) head: [u8; 32],
-    pub(crate) history: [u8; 32],
+    pub(crate) head: worth_foundational::CanonicalDigestId,
+    pub(crate) history: worth_foundational::CanonicalDigestId,
 }
 
-pub(super) fn digest(projection: &[RegionRelationProjection]) -> Result<[u8; 32], Cause> {
-    let mut hash = Sha256::new();
-    hash.update(b"worth.relational.region-kind-authority.v2\0");
-    rmp_serde::encode::write(&mut KindHashWriter(&mut hash), projection)
-        .map_err(|_| Cause::Damaged)?;
-    Ok(hash.finalize().into())
+pub(super) fn digest(
+    projection: &[RegionRelationProjection],
+) -> Result<worth_foundational::CanonicalDigestId, Cause> {
+    digest_controlled(projection, &mut |_, _| Ok(()))
 }
 
 struct KindHashWriter<'a>(&'a mut Sha256);
@@ -33,7 +31,7 @@ impl std::io::Write for KindHashWriter<'_> {
 pub(super) fn digest_full(
     projection: &super::kind_projection::full::FullKindProjection,
     request: &worth_execution::ExecutionRequest<'_, '_>,
-) -> Result<[u8; 32], super::RegionContentFailure> {
+) -> Result<worth_foundational::CanonicalDigestId, super::RegionContentFailure> {
     let encoding = FullProjectionEncoding {
         projection,
         request: *request,
@@ -43,10 +41,12 @@ pub(super) fn digest_full(
     hash.update(b"worth.relational.region-kind-authority.v2\0");
     let result = rmp_serde::encode::write(&mut KindHashWriter(&mut hash), &encoding);
     if let Some(cause) = encoding.stopped.take() {
-        return Err(super::RegionContentFailure::Request(cause));
+        return Err(super::RegionContentFailure::Execution(cause));
     }
     result.map_err(|_| super::RegionContentFailure::Adjacency)?;
-    Ok(hash.finalize().into())
+    Ok(worth_foundational::CanonicalDigestId::new(
+        hash.finalize().into(),
+    ))
 }
 
 type Stop = std::cell::Cell<Option<crate::execution::RelationalExecutionDenialCause>>;
@@ -163,9 +163,57 @@ impl Serialize for SlotsEncoding<'_, '_, '_> {
     }
 }
 
+pub(super) fn digest_controlled(
+    projection: &[RegionRelationProjection],
+    checkpoint: &mut super::kind_projection::ProjectionCheckpoint<'_>,
+) -> Result<worth_foundational::CanonicalDigestId, Cause> {
+    let mut hash = Sha256::new();
+    hash.update(b"worth.relational.region-kind-authority.v2\0");
+    // Stream the same MessagePack representation; no unbounded serialized Vec.
+    let mut writer = ProjectionHashWriter {
+        hash: &mut hash,
+        checkpoint,
+        stopped: None,
+    };
+    let encoded = projection.serialize(&mut rmp_serde::Serializer::new(&mut writer));
+    if let Some(cause) = writer.stopped {
+        return Err(cause);
+    }
+    encoded.map_err(|_| Cause::Damaged)?;
+    Ok(worth_foundational::CanonicalDigestId::new(
+        hash.finalize().into(),
+    ))
+}
+
+struct ProjectionHashWriter<'borrow, 'control> {
+    hash: &'borrow mut Sha256,
+    checkpoint: &'borrow mut super::kind_projection::ProjectionCheckpoint<'control>,
+    stopped: Option<Cause>,
+}
+impl std::io::Write for ProjectionHashWriter<'_, '_> {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        for chunk in bytes.chunks(4096) {
+            if self.stopped.is_some() {
+                return Err(std::io::Error::other(
+                    "projection admission already stopped",
+                ));
+            }
+            if let Err(cause) = (self.checkpoint)(chunk.len() as u64, 0) {
+                self.stopped = Some(cause);
+                return Err(std::io::Error::other("projection admission stopped"));
+            }
+            self.hash.update(chunk);
+        }
+        Ok(bytes.len())
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
 pub(super) fn verify(
     projection: &[RegionRelationProjection],
-    expected: [u8; 32],
+    expected: worth_foundational::CanonicalDigestId,
 ) -> Result<(), Cause> {
     if digest(projection)? != expected {
         return Err(Cause::IntegrityMismatch);

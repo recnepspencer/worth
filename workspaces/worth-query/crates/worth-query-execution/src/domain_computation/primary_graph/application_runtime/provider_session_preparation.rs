@@ -1,10 +1,11 @@
 //! A real installed Home fences a portable grant before constructing live work.
-use super::WorthQueryPrimaryGraphApplicationRuntime;
+use super::{WorthQueryApplicationRuntimeCore, WorthQueryPrimaryGraphApplicationRuntime};
 use crate::domain_computation::provider_session::graph_provider::bounded_step::provider_anchor::WorthQueryGraphProviderAnchor;
 use crate::domain_computation::{
     WorthQueryPreparedProviderSession, WorthQueryProviderSessionFailure,
     WorthQueryProviderSessionGrant, WorthQueryProviderSessionReceiver,
 };
+use std::sync::Arc;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// The receiving runtime supplies its actual provider and Home witness.
@@ -18,15 +19,20 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
             WorthQueryProviderSessionFailure,
         >,
     ) -> Result<WorthQueryPreparedProviderSession<'run>, WorthQueryProviderSessionFailure> {
-        let provider = self
-            .primary_graph_authority
-            .retain_provider_anchor::<WorthQueryGraphProviderAnchor>()
-            .expect("a published primary graph retains its original provider");
-        grant.prepare_with_receiver(
-            phase,
-            Some(self.product_runtime.owner.owner_identity()),
-            &provider,
-            receiver,
-        )
+        let (owner, provider) = session_receiver_facts(&self.runtime);
+        grant.prepare_with_receiver(phase, Some(owner), &provider, receiver)
     }
+}
+
+fn session_receiver_facts(
+    runtime: &WorthQueryApplicationRuntimeCore,
+) -> (
+    worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
+    Arc<WorthQueryGraphProviderAnchor>,
+) {
+    let provider = runtime
+        .primary_graph_authority()
+        .retain_provider_anchor::<WorthQueryGraphProviderAnchor>()
+        .expect("a published primary graph retains its original provider");
+    (runtime.product_runtime.owner.owner_identity(), provider)
 }

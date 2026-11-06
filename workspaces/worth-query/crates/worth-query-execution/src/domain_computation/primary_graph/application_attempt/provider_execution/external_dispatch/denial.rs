@@ -93,6 +93,10 @@ pub enum WorthQueryExternalRedispatchDenial {
     /// Fresh effect authority for the handle failed before transport: the
     /// handle already ended, it expired, or the authority is not its own.
     FreshAuthority(WorthQueryRecoveryHandleDenialKind),
+    /// Exact installed admission refusal before any effect or owner read.
+    AdmissionAuthorization(
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
+    ),
     /// The admitted request was cancelled before transport.
     AdmissionCancelled,
     /// The admitted request reached its deadline before transport.
@@ -149,6 +153,7 @@ impl From<WorthQueryExternalRedispatchDenial> for WorthQueryRecoveryHandleDenial
                 Kind::CompletionExecutionRequest(cause)
             }
             Redispatch::FreshAuthority(kind) => kind,
+            Redispatch::AdmissionAuthorization(kind) => Kind::AdmissionAuthorization(kind),
             Redispatch::AdmissionCancelled => Kind::AdmissionCancelled,
             Redispatch::AdmissionDeadlineExceeded => Kind::AdmissionDeadlineExceeded,
             Redispatch::AdmissionAuthenticationExpired => Kind::AdmissionAuthenticationExpired,
@@ -189,7 +194,7 @@ impl From<WorthQueryExternalRedispatchDenial> for WorthQueryRecoveryHandleDenial
 }
 
 /// The runtime's own admission refusal, each cause kept exactly.
-pub(super) const fn from_attempt_admission(
+pub const fn from_attempt_admission(
     denial: WorthQueryExternalDispatchAdmissionDenial,
 ) -> WorthQueryExternalDispatchPreparationDenial {
     use WorthQueryExternalDispatchAdmissionDenial as Admission;
@@ -218,7 +223,7 @@ pub(super) const fn from_attempt_admission(
 }
 
 /// The outstanding-dispatch lease refusal, each cause kept exactly.
-pub(super) const fn from_in_flight(
+pub const fn from_in_flight(
     denial: WorthQueryOutstandingInFlightDenial,
 ) -> WorthQueryExternalDispatchPreparationDenial {
     use WorthQueryExternalDispatchAttemptDenial as Attempt;
@@ -243,7 +248,7 @@ pub(super) const fn from_in_flight(
 
 /// Maps the shared preparation step's refusal onto re-dispatch. The owner row
 /// is read before that step, so its refusal never reaches this mapping.
-pub(super) fn redispatch_preparation(
+pub fn redispatch_preparation(
     denial: WorthQueryExternalDispatchPreparationDenial,
 ) -> WorthQueryExternalRedispatchDenial {
     use WorthQueryExternalDispatchPreparationDenial as Preparation;
@@ -283,10 +288,6 @@ pub(super) fn redispatch_preparation(
         Preparation::OwnerReadDenied(read) => Redispatch::OwnerReadDenied(read),
     }
 }
-
-#[cfg(test)]
-#[path = "denial_tests.rs"]
-mod tests;
 
 impl InstalledTransportPendingReason {
     pub(in crate::domain_computation::primary_graph) const fn dispatch_preparation_denial(
@@ -337,7 +338,6 @@ impl WorthQueryExternalDispatchPreparationDenial {
     }
 }
 
-#[cfg(test)]
 impl WorthQueryExternalRedispatchDenial {
     pub(super) fn advancement(
         cause: crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
@@ -363,3 +363,13 @@ impl WorthQueryExternalRedispatchDenial {
         }
     }
 }
+
+impl WorthQueryExternalRedispatchDenial {
+    pub(super) fn from_admission_authorization(
+        denial: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    ) -> Self {
+        Self::AdmissionAuthorization(denial.kind())
+    }
+}
+
+mod court_doors_for_test;

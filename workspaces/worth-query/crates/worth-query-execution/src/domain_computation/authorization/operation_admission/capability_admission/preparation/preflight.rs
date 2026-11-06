@@ -99,19 +99,25 @@ pub(super) fn admit_installed_plan<'a, Schema, Capability, Operation, Input>(
     approved: Option<&WorthQueryApprovedElevation>,
 ) -> Result<&'a WorthQueryInstalledCapabilityPlan, WorthQueryOperationAuthorizationDenial> {
     let installed = runtime
+        .runtime
         .authorization
         .capability_plan(capability)
         .ok_or_else(|| policy_not_installed(capability))?;
     validate_approved_applicability(installed, capability, approved)?;
     let rules = installed.rules().iter().map(|rule| rule.bridge());
-    if !runtime.authorization.bridge().matches_installed_policy(
-        installed.correspondence(),
-        &bridge_authorization_binding_identity(capability.binding_identity()),
-        installed.contract().name(),
-        &installed.request().resource_entity,
-        installed.contract().operation(),
-        rules,
-    ) {
+    if !runtime
+        .runtime
+        .authorization
+        .bridge()
+        .matches_installed_policy(
+            installed.correspondence(),
+            &bridge_authorization_binding_identity(capability.binding_identity()),
+            installed.contract().name(),
+            &installed.request().resource_entity,
+            installed.contract().operation(),
+            rules,
+        )
+    {
         return Err(policy_not_installed(capability));
     }
     Ok(installed)
@@ -209,6 +215,7 @@ pub(super) fn sample_trusted_time<Schema, Capability, Operation, Input>(
     installed: &WorthQueryInstalledCapabilityPlan,
 ) -> Result<WorthQueryRuntimeTimeSample, WorthQueryOperationAuthorizationDenial> {
     runtime
+        .runtime
         .authorization_clock
         .sample(installed.request().timeline)
         .map_err(|_| {

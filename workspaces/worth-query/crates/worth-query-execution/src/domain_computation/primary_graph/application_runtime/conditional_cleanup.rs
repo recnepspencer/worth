@@ -138,3 +138,19 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         Ok(before)
     }
 }
+
+impl<Schema> Drop for WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    fn drop(&mut self) {
+        // The local owner drops first even if cleanup unwinds. Move later
+        // custody into its original field positions before cleanup can panic.
+        let execution = self.runtime.execution.take();
+        self.post_conditional_teardown.take_from(&mut self.runtime);
+        self.output_teardown.take_from(&mut self.runtime);
+        self.workflow_teardown.take_from(&mut self.runtime);
+        if let Some(owner) = &mut self.conditional_cleanup.owner {
+            owner.close();
+        }
+        self.release_query_conditional_bindings();
+        drop(execution);
+    }
+}

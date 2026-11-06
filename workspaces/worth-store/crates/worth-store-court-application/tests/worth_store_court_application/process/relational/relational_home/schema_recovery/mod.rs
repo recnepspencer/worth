@@ -11,15 +11,15 @@ use worth_store_testkit_application_oracle::facade::home_opening::HomeOpeningRef
 use crate::schema_recovery::*;
 
 use {
-    crate::durable_run::apply, crate::durable_run::assert_holds, crate::durable_run::open,
     crate::durable_run::open_declaring, crate::durable_run::recorded_schema,
-    crate::durable_run::served_schema, crate::durable_run::steps_after,
-    crate::durable_run::steps_before,
+    crate::durable_run::served_schema, crate::durable_run::steps_before,
 };
 use {
     crate::schema_transition::basis_of, crate::schema_transition::SOURCE,
     crate::schema_transition::TARGET,
 };
+
+mod between_operations;
 
 #[test]
 fn a_home_serves_only_the_schema_its_main_head_records() {
@@ -34,14 +34,17 @@ fn a_home_serves_only_the_schema_its_main_head_records() {
                 format!("seed {SEED:#x} checkpoint every {checkpoint_every}, {prefix} commits");
             let directory = tempfile::tempdir().unwrap();
             let location = directory.path().join("home");
-            let home = open(&location, &execution).expect("a new home opens");
             let held = steps_before(&script, prefix);
-            assert_eq!(apply(&home, &execution, held), prefix);
-            let acknowledged =
-                crate::workload::artifacts_of(&execution, home.relational().runtime());
-            // Preserve the script's chosen checkpoint/tail boundary. This is
-            // an interruption, not an orderly close with a new checkpoint.
-            home.abort_for_test();
+            // Kill only after the actual completed prefix, without taking a
+            // close checkpoint. The original World owner remains in the child.
+            let acknowledged = between_operations::run(
+                &location,
+                checkpoint_every,
+                prefix,
+                between_operations::ScriptPhase::Prefix,
+                &[],
+                directory.path(),
+            );
 
             let served = served_schema(held);
             for declared in [SOURCE, TARGET, OTHER_LABEL] {
@@ -58,31 +61,36 @@ fn a_home_serves_only_the_schema_its_main_head_records() {
                     "{case}: {refusal:?}"
                 );
             }
-            let home = open_declaring(&location, served, &execution)
+            let home = crate::durable_run::world::open(&location, served, false, &execution)
                 .unwrap_or_else(|refusal| panic!("{case}: {refusal:?}"));
-            assert_holds(&execution, &home, &script, &acknowledged);
+            crate::durable_run::world::assert_holds(&execution, &home.home, &script, &acknowledged);
             assert_eq!(
-                basis_of(home.relational().runtime(), &branch("main")),
+                basis_of(home.home.relational().runtime(), &branch("main")),
                 served,
                 "{case}"
             );
             assert_eq!(
-                basis_of(home.relational().runtime(), &branch("feature")),
+                basis_of(home.home.relational().runtime(), &branch("feature")),
                 SOURCE,
                 "{case}"
             );
-            apply(&home, &execution, steps_after(&script, prefix));
-            let everything = crate::workload::artifacts_of(&execution, home.relational().runtime());
+            // Ordinary abandonment takes no Home checkpoint. The suffix runs
+            // in the real child and is killed at its completed durable boundary.
+            drop(home);
+            let everything = between_operations::run(
+                &location,
+                checkpoint_every,
+                prefix,
+                between_operations::ScriptPhase::Suffix,
+                &acknowledged,
+                directory.path(),
+            );
             assert_eq!(&everything[..prefix], &acknowledged[..], "{case}");
-            assert_holds(&execution, &home, &script, &everything);
-            // Preserve the script's chosen checkpoint/tail boundary. This is
-            // an interruption, not an orderly close with a new checkpoint.
-            home.abort_for_test();
 
-            let home = open_declaring(&location, TARGET, &execution)
+            let home = crate::durable_run::world::open(&location, TARGET, false, &execution)
                 .unwrap_or_else(|refusal| panic!("{case}: second open: {refusal:?}"));
-            assert_holds(&execution, &home, &script, &everything);
-            home.close(&execution);
+            crate::durable_run::world::assert_holds(&execution, &home.home, &script, &everything);
+            crate::durable_run::world::close(home, &execution);
         }
     }
 }
@@ -94,10 +102,15 @@ fn a_registry_with_other_kind_contracts_refuses_before_service() {
     let script = crate::workload::Script::generate(SEED, COMMITS, 4);
     let directory = tempfile::tempdir().unwrap();
     let location = directory.path().join("home");
-    let home = open(&location, &execution).expect("a new home opens");
-    apply(&home, &execution, steps_before(&script, THROUGH_TRANSITION));
-    let acknowledged = crate::workload::artifacts_of(&execution, home.relational().runtime());
-    home.close(&execution);
+    let home = crate::durable_run::world::open(&location, SOURCE, true, &execution)
+        .expect("a new home opens");
+    crate::durable_run::world::apply(
+        &home.home,
+        &execution,
+        steps_before(&script, THROUGH_TRANSITION),
+    );
+    let acknowledged = crate::workload::artifacts_of(&execution, home.home.relational().runtime());
+    crate::durable_run::world::close(home, &execution);
 
     let foreign = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
         .runtime_setup(|runtime| {
@@ -125,7 +138,13 @@ fn a_registry_with_other_kind_contracts_refuses_before_service() {
     // Explicit ordinary abandonment after observing the actual refused owner;
     // this does not claim a successful close.
     drop(refused);
-    let home = open(&location, &execution).expect("the refusal left the home intact");
-    assert_holds(&execution, &home, &script, &acknowledged);
-    home.close(&execution);
+    let home = crate::durable_run::world::open(
+        &location,
+        crate::durable_run::served_schema(steps_before(&script, THROUGH_TRANSITION)),
+        false,
+        &execution,
+    )
+    .expect("the refusal left the home intact");
+    crate::durable_run::world::assert_holds(&execution, &home.home, &script, &acknowledged);
+    crate::durable_run::world::close(home, &execution);
 }

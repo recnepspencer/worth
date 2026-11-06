@@ -1,0 +1,84 @@
+command: python target/lane-evidence/owned_host_funding_probe.py funding-state-fresh-refusal-diagnostic test(automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_uses_its_own_allowance) 1
+HEAD: 3be57980759467a5d4a8a3e9dcbd91ff42700674
+git_status_short_empty: false
+start_utc: 2026-11-04T16:21:33.876461+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+prebuild: cargo metadata --offline --format-version 1 --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\Cargo.toml"
+prebuild: cargo test --message-format=json --no-run --package worth-query-court-query-decl-host --test worth_query_court_query_decl_host --profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo nextest list --cargo-message-format=json --package worth-query-court-query-decl-host --test worth_query_court_query_decl_host --cargo-profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\Cargo.toml" --list-type binaries-only --message-format json
+   Compiling worth-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-relational)
+   Compiling worth-runtime-bridge v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-runtime-bridge)
+   Compiling worth-store-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-relational)
+   Compiling worth-runtime-world v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-runtime-world)
+   Compiling worth-query-execution v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-execution)
+   Compiling worth-store-application v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-application)
+   Compiling worth-query-publication v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-publication)
+   Compiling worth-query-host v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-host)
+   Compiling worth-query v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query)
+   Compiling worth-query-testkit-document-retention v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-testkit-document-retention)
+   Compiling worth-query-testkit-certification-canonical v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-testkit-certification-canonical)
+   Compiling worth-query-testkit-host v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-testkit-host)
+   Compiling worth-query-testkit-certification-granular-invalidation v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-testkit-certification-granular-invalidation)
+   Compiling worth-query-testkit-certification-correction v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-testkit-certification-correction)
+   Compiling worth-query-testkit-certification v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-testkit-certification)
+   Compiling worth-query-court-query-decl-host v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-court-query-decl-host)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 6m 14s
+MARKER_FREE_EXECUTABLE: C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\target\debug\deps\worth_query_court_query_decl_host-0388f5f36454721a.exe
+prebuild: cargo nextest list --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\query\funding-state-fresh-refusal-diagnostic\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\query\funding-state-fresh-refusal-diagnostic\build\binaries.json" --message-format json --ignore-default-filter -E test(automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_uses_its_own_allowance)
+prebuild: cargo nextest run --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\query\funding-state-fresh-refusal-diagnostic\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\query\funding-state-fresh-refusal-diagnostic\build\binaries.json" --profile ci --config-file "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\query\d12-single-emission-bounded-host-court\nextest.toml" --success-output immediate --ignore-default-filter --no-fail-fast --no-tests=fail --message-format libtest-json -E test(automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_uses_its_own_allowance)
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-query-funding-state-fresh-refusal-diagnostic-build-car-3be579807594-202611041621349695370000-7c9b9f3a197b.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-query-funding-state-fresh-refusal-diagnostic-build-bin-3be579807594-202611041621355667110000-382f35f72e16.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-query-funding-state-fresh-refusal-diagnostic-build-bin-3be579807594-202611041621362661270000-d2c87ffc03ba.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-query-funding-state-fresh-refusal-diagnostic-build-req-3be579807594-202611041627530350130000-a195308de173.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-query-funding-state-fresh-refusal-diagnostic-run-selec-3be579807594-202611041627551619520000-59f402b0f4a8.log
+CAPTURE_OWNER_REFUSAL C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-relational\src\durability\authority\checkpoint_complete\regions\grouping.rs:120:24
+
+thread 'host::application_home::reopening::checkpoint_funding::automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_uses_its_own_allowance' (36088) panicked at crates\worth-query-court-query-decl-host\tests\worth_query_court_query_decl_host\host\application_home\reopening\checkpoint_funding.rs:54:48:
+called `Result::unwrap()` on an `Err` value: Directory(Native(Capture(OriginalAuthorityUnavailable)))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+info: experimental features enabled: wrapper-scripts
+────────────
+ Nextest run ID df9cae82-c530-455b-8c00-3e13ac637a62 with nextest profile: ci
+    Starting 1 test across 1 binary (375 tests skipped)
+{"type":"suite","event":"started","test_count":3}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$cost::certification::runtime_world_branching::cumulative::scheduled_public_read_timings_report_cold_and_warm_distributions"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":2,"measured":0,"filtered_out":373,"exec_time":0}
+{"type":"suite","event":"started","test_count":3}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$cost::certification::runtime_world_branching::cumulative::scheduled_seeded_model_broadens_public_action_roster"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":2,"measured":0,"filtered_out":373,"exec_time":0}
+        FAIL [   4.516s] (1/1) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_funding::automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_uses_its_own_allowance
+  output ───
+
+    running 1 test
+    CAPTURE_OWNER_REFUSAL C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-relational\src\durability\authority\checkpoint_complete\regions\grouping.rs:120:24
+
+    thread 'host::application_home::reopening::checkpoint_funding::automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_uses_its_own_allowance' (36088) panicked at crates\worth-query-court-query-decl-host\tests\worth_query_court_query_decl_host\host\application_home\reopening\checkpoint_funding.rs:54:48:
+    called `Result::unwrap()` on an `Err` value: Directory(Native(Capture(OriginalAuthorityUnavailable)))
+    note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+    test host::application_home::reopening::checkpoint_funding::automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_uses_its_own_allowance ... FAILED
+
+    failures:
+
+    failures:
+        host::application_home::reopening::checkpoint_funding::automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_uses_its_own_allowance
+
+    test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 375 filtered out; finished in 3.58s
+
+
+{"type":"suite","event":"started","test_count":3}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_funding::automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_uses_its_own_allowance"}
+{"type":"test","event":"failed","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_funding::automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_uses_its_own_allowance","exec_time":4.5157504,"stdout":"CAPTURE_OWNER_REFUSAL C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\crates\\worth-relational\\src\\durability\\authority\\checkpoint_complete\\regions\\grouping.rs:120:24\n\nthread 'host::application_home::reopening::checkpoint_funding::automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_uses_its_own_allowance' (36088) panicked at crates\\worth-query-court-query-decl-host\\tests\\worth_query_court_query_decl_host\\host\\application_home\\reopening\\checkpoint_funding.rs:54:48:\ncalled `Result::unwrap()` on an `Err` value: Directory(Native(Capture(OriginalAuthorityUnavailable)))\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"}
+{"type":"suite","event":"failed","passed":0,"failed":1,"ignored":2,"measured":0,"filtered_out":373,"exec_time":4.5157504}
+────────────
+     Summary [   4.519s] 1 test run: 0 passed, 1 failed, 375 skipped
+        FAIL [   4.516s] (1/1) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_funding::automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_uses_its_own_allowance
+error: test run failed
+
+EVIDENCE_TEST_COUNTS: 0,1,0
+
+end_utc: 2026-11-04T16:28:00.085439+00:00
+exit_code: 100
+tests_passed: 0
+tests_failed: 1
+tests_ignored: 0

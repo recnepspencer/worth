@@ -1,11 +1,12 @@
 //! No-effect domain and original cancellation keep the genuine watch unchanged.
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 
 pub(super) fn run(
     world: &host::Host,
     principal: &WorthQueryAuthenticatedExternalPrincipal<super::super::super::schema::Catalog>,
     scope: &WorthQueryRequestScope,
-    calls: &Arc<prefix::Calls>,
+    calls: &Arc<prefix_observation::Calls>,
 ) {
     let request = world
         .runtime()
@@ -55,7 +56,7 @@ pub(super) fn run(
         WorthQueryManagedIndexWatchOutcome::Pending
     ));
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let fired = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let observed = Arc::clone(&fired);
     *calls.after_first_node.lock().unwrap() = Some(Box::new(move || {

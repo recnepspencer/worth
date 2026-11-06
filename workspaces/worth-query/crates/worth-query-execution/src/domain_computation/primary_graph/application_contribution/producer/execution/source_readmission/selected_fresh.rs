@@ -55,12 +55,8 @@ where
         .finish_prepared_application_query_permission(execution, permission)
         .map_err(|stop| query_admission_denied(Binding::IDENTITY, stop))?;
     let access =
-        crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess {
-            application: runtime,
-            shared,
-            principal,
-            request,
-        };
+        crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess::ordinary(
+            runtime, shared, principal, request);
     let read = access.read_admitted_result::<SourceBinding<Schema, Binding>>(execution, plan, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
         .map_err(|stop| super::super::denial::selected_source_read_denied(Binding::IDENTITY, stop))?;
     crate::domain_computation::primary_graph::application_output_demand::observe_retained_source_selection(

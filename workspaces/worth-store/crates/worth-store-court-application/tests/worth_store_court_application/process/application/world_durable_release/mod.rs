@@ -133,16 +133,13 @@ fn killed_native_effect_reopens_original_world_custody_releases_and_reopens_agai
             other => panic!("original recovered release refused: {other:?}"),
         }
     };
-    assert_eq!(released.identity().ordinal(), number(2));
-    assert_eq!(
-        released.native_effect().unwrap().subject().receipt(),
-        &receipt
-    );
+    assert_eq!(released.original().identity().ordinal(), number(2));
+    assert_eq!(released.original().native_receipt().unwrap(), &receipt);
     assert_eq!(
         released
-            .native_effect()
+            .original()
+            .native_semantic_result()
             .unwrap()
-            .semantic_result()
             .created_entities()
             .len(),
         1

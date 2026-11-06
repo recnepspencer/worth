@@ -10,10 +10,26 @@ pub(crate) struct RelationalDurablePreparationAdmission {
 }
 
 impl RelationalDurablePreparationAdmission {
+    pub(crate) fn has_attached_medium(&self) -> bool {
+        self.unresolved.is_some()
+    }
+
     pub(crate) fn new(medium: Option<Arc<RelationalDurableMediumBinding>>) -> Self {
         Self {
             home: medium.as_ref().map(Arc::downgrade),
             unresolved: medium.map(|medium| medium.preparation_fate()),
+        }
+    }
+
+    pub(crate) fn requires_home_program_contracts(
+        &self,
+    ) -> Result<bool, super::RelationalHomeProgramWriteDenial> {
+        match &self.home {
+            None => Ok(false),
+            Some(home) => home
+                .upgrade()
+                .ok_or(super::RelationalHomeProgramWriteDenial::MediumMoved)?
+                .requires_home_program_contracts(),
         }
     }
 

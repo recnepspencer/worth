@@ -31,12 +31,14 @@ pub use commit::{
 };
 pub use parentage::OrdinaryParent;
 pub(crate) use publication::MemoryPublicationRecord;
-pub(crate) use publication::PreparedReadmittedPublicationRecord;
 pub(crate) use publication::{
     CanonicalPublicationEnvelope, PerformedPublicationFacts, PreparedPublicationRecord,
     PublicationDeliveryClaim, PublicationRevision,
 };
-pub(crate) use publication::{PublicationEvidence, ReadmittedPublicationRecord};
+pub(crate) use publication::{
+    PreparedReadmittedPublicationRecord, PublicationEvidence, ReadmittedPublicationRecord,
+    ReadmittedPublicationRecordBacking,
+};
 pub use publication::{
     WorldObservedMemoryPublication, WorldReadmittedPublication, WorldReadmittedPublicationDenial,
 };

@@ -1,0 +1,96 @@
+//! Active-chunk full-key insertion preserves canonical and arrival ordering.
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::handoff::restore_authored_order;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::storage::RetainedFactStore;
+use worth_query_execution::facade::application_inspection::StoreDenial;
+use crate::process::domain_computation::primary_graph::application_attempt::retained_decision_facts::tests::control;
+use crate::process::domain_computation::primary_graph::application_attempt::retained_decision_facts::tests::key;
+use crate::process::domain_computation::primary_graph::application_attempt::retained_decision_facts::tests::merge;
+use crate::process::domain_computation::primary_graph::application_attempt::retained_decision_facts::tests::Body;
+use worth_execution::ExecutionAllocationPolicy as Policy;
+
+#[test]
+fn active_chunk_orders_full_keys_and_resolves_boundary_and_interior_duplicates() {
+    let policy = control(Policy::SystemAllocation);
+    let authored = [6, 2, 10, 1, 7, 3, 5, 0, 12];
+    let populate = || {
+        let mut store = RetainedFactStore::new(policy).unwrap();
+        for limit in authored {
+            store
+                .insert_for_test(
+                    key(b"same", Some((b"predicate", limit)), policy),
+                    Body {
+                        scalar: limit as u64,
+                        roles: 1,
+                    },
+                    policy,
+                    merge,
+                )
+                .unwrap();
+        }
+        store
+    };
+    let mut store = populate();
+    for limit in [0, 5, 12] {
+        store
+            .insert_for_test(
+                key(b"same", Some((b"predicate", limit)), policy),
+                Body {
+                    scalar: limit as u64,
+                    roles: 2,
+                },
+                policy,
+                merge,
+            )
+            .unwrap();
+    }
+    let canonical = store.finish_for_test(policy).unwrap();
+    assert_eq!(canonical.len(), 9);
+    for (record, limit) in canonical.iter().zip([0, 1, 2, 3, 5, 6, 7, 10, 12]) {
+        assert_eq!((*record.key_for_test()).locator_for_test(), b"same");
+        assert_eq!(
+            (*record.key_for_test()).predicate_material(),
+            Some((b"predicate".as_slice(), limit))
+        );
+        assert_eq!(record.value_for_test().scalar, limit as u64);
+        assert_eq!(
+            record.value_for_test().roles,
+            if [0, 5, 12].contains(&limit) { 3 } else { 1 }
+        );
+    }
+    let restored = restore_authored_order(canonical, policy).unwrap();
+    for (ordinal, (record, limit)) in restored.iter().zip(authored).enumerate() {
+        assert_eq!((*record.ordinal_for_test()), ordinal);
+        assert_eq!(record.value_for_test().scalar, limit as u64);
+    }
+    for limit in [0, 5, 12] {
+        let mut conflict = populate();
+        assert!(matches!(
+            conflict.insert_for_test(
+                key(b"same", Some((b"predicate", limit)), policy),
+                Body {
+                    scalar: 99,
+                    roles: 2
+                },
+                policy,
+                merge,
+            ),
+            Err(StoreDenial::ConflictingBody)
+        ));
+        assert!(matches!(
+            conflict.insert_for_test(
+                key(b"different", None, policy),
+                Body {
+                    scalar: 13,
+                    roles: 1
+                },
+                policy,
+                merge,
+            ),
+            Err(StoreDenial::ConflictingBody)
+        ));
+        assert!(matches!(
+            conflict.finish_for_test(policy),
+            Err(StoreDenial::ConflictingBody)
+        ));
+    }
+}

@@ -12,6 +12,8 @@ pub(crate) struct CanonicalEnvelopeReadmissionMemory {
     pub(crate) validation: Option<crate::transactions::data::ValidationReadmissionMemory>,
     pub(crate) schema: Option<crate::schema::data::SchemaTransitionReadmissionMemory>,
     pub(crate) strategy: Option<StrategyReadmissionMemory>,
+    pub(crate) cascades: Option<std::sync::Arc<worth_execution::ExecutionMemoryReservation>>,
+    pub(crate) selection: Option<std::sync::Arc<worth_execution::ExecutionMemoryReservation>>,
     pub(crate) origin: Option<worth_execution::ExecutionMemoryReservation>,
     pub(crate) control: Option<std::sync::Arc<super::CanonicalEnvelopeControlAllocation>>,
 }

@@ -37,9 +37,8 @@ pub(crate) fn encoded_aspect_value_len(value: &AspectValue) -> Option<usize> {
         | AspectValue::UInt64(_)
         | AspectValue::Float64(_)
         | AspectValue::Time(_)
-        | AspectValue::Timestamp(_)
-        | AspectValue::Bytes(_)
-        | AspectValue::ContentRef(_) => Some(9),
+        | AspectValue::Timestamp(_) => Some(9),
+        AspectValue::ContentRef(_) => Some(33),
         AspectValue::String(InternedString::Raw(value)) => 2usize.checked_add(text(value)?),
         AspectValue::String(InternedString::Symbol(_)) => Some(6),
         AspectValue::Decimal(value) => 1usize.checked_add(text(value.as_str())?),
@@ -131,10 +130,6 @@ pub(crate) fn write_aspect_value<O: CanonicalAspectOutput>(
             encode_big_int(bytes, &value.numerator)?;
             encode_big_int(bytes, &value.denominator)?;
         }
-        AspectValue::Bytes(value) => {
-            bytes.byte(tags::BYTES)?;
-            encode_content_ref(bytes, *value)?;
-        }
         AspectValue::Uuid(value) => {
             bytes.byte(tags::UUID)?;
             bytes.bytes(value)?;
@@ -197,7 +192,7 @@ fn encode_content_ref<O: CanonicalAspectOutput>(
     bytes: &mut O,
     value: ContentRefId,
 ) -> Result<(), O::Error> {
-    bytes.bytes(&value.0.to_le_bytes())?;
+    bytes.bytes(&value.0)?;
     Ok(())
 }
 

@@ -71,6 +71,10 @@ pub(crate) use meter::available_serial_memory_bytes;
 
 mod checkpoint_observation;
 pub use checkpoint_observation::ExecutionCheckpointObservationForTest;
+pub(crate) mod setup_observation;
+pub use setup_observation::{
+    ExecutionScopeSetupCountsForTest, ExecutionScopeSetupObservationForTest,
+};
 
 pub(crate) fn record_request_consult_for_test() {
     checkpoint_observation::record(1);

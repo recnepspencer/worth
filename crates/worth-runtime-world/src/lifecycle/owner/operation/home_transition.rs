@@ -129,8 +129,7 @@ where
             description,
             assignments: assignments.seal().map_err(Refusal::Backing)?,
             predecessor: expected,
-            owner: self.owner_identity(),
-            operation,
+            _operation: operation,
             _names_memory: names_memory,
             steps: steps.seal().map_err(Refusal::Backing)?,
         })

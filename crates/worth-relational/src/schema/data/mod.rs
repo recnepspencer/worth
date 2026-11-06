@@ -101,6 +101,7 @@ pub struct KindResolution {
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct RelationalSchemaRegistry {
+    pub(crate) content_formats: crate::content::RelationalContentFormatRegistry,
     pub(crate) entity_kinds: BTreeMap<KindId, EntityKindRegistration>,
     pub(crate) relation_kinds: BTreeMap<KindId, RelationKindRegistration>,
     /// Compiled only from accepted aggregate contracts; absent from all wire
@@ -117,6 +118,24 @@ pub struct RelationalSchemaRegistry {
 }
 
 impl RelationalSchemaRegistry {
+    pub fn bind_content_field(
+        mut self,
+        field_meaning: worth_foundational::facade::CanonicalDigestId,
+        format: worth_foundational::facade::CanonicalDigestId,
+    ) -> Result<Self, crate::content::RelationalContentDenial> {
+        self.content_formats.bind_field(field_meaning, format)?;
+        Ok(self)
+    }
+
+    pub fn register_content_format(
+        mut self,
+        identity: worth_foundational::facade::CanonicalDigestId,
+        codec: std::sync::Arc<dyn crate::content::RelationalContentCodec>,
+    ) -> Result<Self, crate::content::RelationalContentDenial> {
+        self.content_formats.register(identity, codec)?;
+        Ok(self)
+    }
+
     pub fn new() -> Self {
         Self::default()
     }

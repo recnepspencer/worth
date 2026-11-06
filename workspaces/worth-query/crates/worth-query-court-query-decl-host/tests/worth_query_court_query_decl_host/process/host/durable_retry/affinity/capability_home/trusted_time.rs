@@ -12,6 +12,12 @@ struct Clock {
     available: bool,
 }
 impl WorthQueryRuntimeTimeSource for Clock {
+    fn admission_clock(
+        &self,
+    ) -> worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock
+    {
+        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()
+    }
     fn current_time(&self) -> Result<SystemTime, WorthQueryRuntimeTimeSourceDenial> {
         self.calls.fetch_add(1, Ordering::SeqCst);
         if self.available {

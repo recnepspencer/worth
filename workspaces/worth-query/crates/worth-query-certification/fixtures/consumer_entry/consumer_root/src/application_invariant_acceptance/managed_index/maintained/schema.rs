@@ -50,7 +50,7 @@ pub(super) fn declare(
                 Item::reference(),
             )
             .principal_binding(CatalogPrincipal::reference())
-            .application_query(query::source_definition())
+            .application_query(query::source_definition(false))
             .application_query_binding::<query::SourceBinding>()
             .application_query(query::prefix_definition())
             .application_query_binding::<query::PrefixBinding>()

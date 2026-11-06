@@ -23,7 +23,7 @@ where
             FamilySourceValue<Schema, Family>,
         >,
         entry: &InstalledProducerProvider<Schema>,
-        commit_authority: WorthQueryProducerCommitAuthority,
+        commit_authority: ProducerInvocationAuthority<'_>,
         performed: &std::cell::RefCell<super::super::required_wave::performed::PerformedMembers>,
     ) -> Result<
         CallerPass<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
@@ -36,7 +36,6 @@ where
     {
         use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandAdvanceAdmission as Admission;
         let waiting = || {
-            #[cfg(test)]
             own_effect_observation::record(Stage::CheckpointWait);
             CallerPass::Answer(WorthQueryOutputDemandAdvance::Pending)
         };
@@ -63,7 +62,7 @@ where
                 .interest
                 .as_ref()
                 .expect("a published row retains its live Interest");
-            match self.output_demands.begin_published(interest) {
+            match self.runtime.output_demands.begin_published(interest) {
                 Admission::AdvanceCheckpoint { claim, checkpoint } => {
                     if !self.advance_output_checkpoint(
                         execution,
@@ -72,6 +71,10 @@ where
                         &demand.selected.identity,
                         claim,
                         checkpoint,
+                        principal,
+                        request_scope,
+                        &wave_authority,
+                        &mut demand.unpublished_selected_checkpoint,
                     )? {
                         return Ok(waiting());
                     }

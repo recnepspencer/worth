@@ -43,6 +43,8 @@ pub enum WorthQueryOperationAuthorizationRefusalKind {
     StaleInstalledSchema,
     /// The installed operation changed or is no longer installed.
     StaleInstalledOperation,
+    /// The admission brand carries a different input type than installation.
+    InputNotAdmitted,
     /// The principal no longer resolves as it did.
     StalePrincipal,
     /// The request scope no longer resolves as it did.
@@ -340,3 +342,5 @@ impl From<crate::basis::WorthQueryProductBranchAdmissionDenial>
         }
     }
 }
+
+mod court_doors_for_test;

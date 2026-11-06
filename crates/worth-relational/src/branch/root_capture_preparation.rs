@@ -33,15 +33,20 @@ enum PreparedSchemaAllocation {
 }
 
 pub(super) fn prepare(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     issuer: &RelationalBranchRootIdentityIssuer,
     partitions: &impl PartitionAccess,
     published_delta: &RelationalPublishedPartitionDelta,
     previous: Option<&Arc<RelationalBranchRoot>>,
     envelope: Arc<CanonicalCommitEnvelope>,
+    content: &crate::content::ContentPublication,
     registry: &crate::schema::data::RelationalSchemaRegistry,
     symbols: &crate::runtime::RuntimeSymbolTable,
     execution_contracts: Option<Arc<crate::runtime::RelationalRootExecutionContracts>>,
 ) -> Result<PreparedRelationalBranchRootCapture, RelationalBranchRootCaptureDenial> {
+    if content.records() != envelope.content.records() {
+        return Err(RelationalBranchRootCaptureDenial::UnadmittedContent);
+    }
     let root_id = issuer.issue_root_id()?;
     let prepared_schema = prepare_schema(
         issuer,
@@ -51,6 +56,7 @@ pub(super) fn prepare(
         execution_contracts.as_ref(),
     )?;
     let prepared_regions = prepare_regions(
+        execution,
         issuer,
         root_id,
         partitions,
@@ -74,6 +80,7 @@ pub(super) fn prepare(
         ),
     };
     let root = Arc::new(RelationalBranchRoot {
+        content: content.directory()?,
         managed_source_image: std::sync::OnceLock::new(),
         id: root_id,
         regions: prepared_regions.regions,
@@ -114,6 +121,7 @@ pub(super) fn prepare(
 
 #[allow(clippy::too_many_arguments)]
 fn prepare_regions(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     issuer: &RelationalBranchRootIdentityIssuer,
     root_id: u64,
     partitions: &impl PartitionAccess,
@@ -124,6 +132,7 @@ fn prepare_regions(
 ) -> Result<PreparedRootRegions, RelationalBranchRootCaptureDenial> {
     let (regions, publication_cost) = match previous {
         Some(previous) if previous.committed.is_some() => capture::build_incremental_regions(
+            execution,
             issuer,
             root_id,
             published_delta,

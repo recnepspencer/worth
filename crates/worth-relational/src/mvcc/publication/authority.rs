@@ -1,3 +1,4 @@
+mod recovered_preparation;
 mod runtime;
 use super::PublicationPreparationDenial;
 use runtime::PublicationPreparationRuntime;
@@ -166,6 +167,7 @@ fn prepare_versioned_publication(
     sequence: PublicationSequence,
     output_positions: Option<crate::history::data::RequiredOutputPublicationPositions>,
     original_artifact: Option<&RelationalCommitArtifact>,
+    recovered_content: Option<&crate::content::ContentPublication>,
 ) -> Result<crate::runtime::PreparedVersionedArtifactPublication, PublicationPreparationDenial> {
     let validated = runtime.validate_publication_request(PublicationRequest {
         commit_id,
@@ -176,9 +178,11 @@ fn prepare_versioned_publication(
     })?;
     let sequence_successors = crate::runtime::PreparedCommitSequence::new(&commit_reference)?;
     let prepared_root = runtime.prepare_publication_root(
+        execution,
         selected_branch_state,
         &published_partition_delta,
         &envelope,
+        recovered_content.unwrap_or(&envelope.content),
         schema_registry,
     )?;
     let prepared_root = match output_positions {
@@ -214,12 +218,15 @@ fn prepare_versioned_publication(
             )
             .map_err(|cause| match cause {
                 crate::durability::data::RelationalRecoveryStop::Request(cause) => {
-                    PublicationPreparationDenial::Request(cause)
+                    PublicationPreparationDenial::Execution(cause)
                 }
                 crate::durability::data::RelationalRecoveryStop::Allocation(_) => {
-                    PublicationPreparationDenial::Request(
+                    PublicationPreparationDenial::Execution(
                         crate::execution::RelationalExecutionDenialCause::AllocationFailed,
                     )
+                }
+                crate::durability::data::RelationalRecoveryStop::Content(cause) => {
+                    PublicationPreparationDenial::Execution(cause.into_execution_cause())
                 }
                 crate::durability::data::RelationalRecoveryStop::Durability(cause) => {
                     PublicationPreparationDenial::Invalid(format!(
@@ -259,7 +266,7 @@ fn prepare_versioned_publication(
     }
     let artifact = artifact
         .prepare_catalog_owner(execution)
-        .map_err(PublicationPreparationDenial::Request)?;
+        .map_err(PublicationPreparationDenial::Execution)?;
     let new_authoritative_bytes = root
         .publication_cost()
         .new_authoritative_bytes
@@ -310,6 +317,7 @@ impl RelationalPreparationPublicationAuthority<'_> {
             PublicationSequence::Truth,
             output_positions,
             None,
+            None,
         )?;
         Ok(PreparedRelationalPublication { publication })
     }
@@ -335,45 +343,5 @@ impl<'runtime> RelationalPublicationAuthority<'runtime> {
             },
         )
         .map(|_| ())
-    }
-
-    pub(crate) fn prepare_recovered_commit(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        commit_id: CommitId,
-        commit_reference: RelationalCommitReceipt,
-        binding: &AdmittedRelationalBranchBasis,
-        published_partition_delta: crate::storage::RelationalPublishedPartitionDelta,
-        envelope: Arc<CanonicalCommitEnvelope>,
-    ) -> Result<PreparedRecoveredRelationalPublication, PublicationPreparationDenial> {
-        let selected_branch_state = self
-            .runtime
-            .selected_branch_state(binding)
-            .map_err(|error| error.detail())?;
-        let schema_registry = selected_branch_state
-            .root()
-            .map(|root| root.schema_authority().registry().clone())
-            .unwrap_or_else(|| self.runtime.config.schema.registry.clone());
-        let original_artifact = self.runtime.history.commit_artifact(commit_id);
-        let prepared = prepare_versioned_publication(
-            self.runtime,
-            execution,
-            commit_id,
-            commit_reference,
-            binding,
-            &selected_branch_state,
-            published_partition_delta,
-            envelope,
-            &schema_registry,
-            PublicationSequence::RecoveryTruth,
-            None,
-            original_artifact.as_deref(),
-        )?;
-        Ok(PreparedRecoveredRelationalPublication {
-            publication:
-                crate::runtime::PreparedRecoveredVersionedArtifactPublication::from_recovery_readmission(
-                    prepared,
-                ).map_err(|detail| PublicationPreparationDenial::Invalid(detail.to_owned()))?,
-        })
     }
 }

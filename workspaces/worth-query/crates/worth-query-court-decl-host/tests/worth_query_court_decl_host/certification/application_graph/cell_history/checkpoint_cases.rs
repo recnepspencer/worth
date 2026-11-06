@@ -49,7 +49,10 @@ fn cell_checkpoint_restores_structural_edits_and_retries_by_the_durable_record()
         )
     };
     let restored = checkpoint::restore(bytes, 64);
-    assert_eq!(live_at::current(&restored, 1), [survivor.clone()]);
+    assert_eq!(
+        live_at::current(&restored, 1).as_slice(),
+        std::slice::from_ref(&survivor)
+    );
     assert_eq!(live_at::current(&restored, 2), untouched);
     let old = live_at::observe(&restored);
     assert!(matches!(

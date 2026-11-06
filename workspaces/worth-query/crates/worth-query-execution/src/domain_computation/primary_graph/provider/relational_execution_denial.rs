@@ -32,6 +32,8 @@ pub fn relational_execution_kind(
             partition_identity,
         },
         Cause::StorageUnavailable(failure) => Kind::StorageUnavailable(failure),
+        Cause::ContentInconsistency => Kind::ContentInconsistency,
+        Cause::Content(cause) => Kind::Content(cause),
         Cause::WorkerLimitExceedsParent => resource(Resource::WorkerLimit, None),
         Cause::MemoryLimitExceedsParent => resource(Resource::PolicyMemoryLimit, None),
         Cause::WorkLimitExceedsParent => resource(Resource::WorkLimit, None),
@@ -95,7 +97,7 @@ pub fn relational_execution_kind(
 }
 
 /// Preparation executes before publication; a refusal never asks for recovery.
-pub(in crate::domain_computation::primary_graph) fn relational_execution_stop(
+pub fn relational_execution_stop(
     cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
     partition_identity: Option<u64>,
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
@@ -118,7 +120,7 @@ pub(in crate::domain_computation::primary_graph) fn relational_execution_stop(
 }
 
 /// Native preparation evidence keeps the typed cause at the application boundary.
-pub(in crate::domain_computation::primary_graph) fn native_preparation_kind(
+pub fn native_preparation_kind(
     failure: &crate::domain_computation::WorthQueryProviderSessionFailure,
 ) -> Result<
     Option<crate::domain_computation::WorthQueryProviderSessionDenialKind>,

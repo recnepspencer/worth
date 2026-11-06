@@ -1,9 +1,15 @@
+#[cfg(test)]
 use worth_execution::{ExecutionAllocationPolicy, ExecutionByteBuffer};
 
+#[cfg(test)]
 use super::frame::{CanonicalCommitArtifactHeader, DIGEST_OFFSET, HEADER_LEN};
 use super::payload_digest::RelationalCanonicalCommitArtifactDigest as Digest;
+#[cfg(test)]
 use super::payload_wire::ArtifactPayloadRef;
-use super::{RelationalCanonicalCommitArtifact, RelationalCanonicalCommitArtifactEncodeDenial};
+use super::RelationalCanonicalCommitArtifact;
+#[cfg(test)]
+use super::RelationalCanonicalCommitArtifactEncodeDenial;
+#[cfg(test)]
 use crate::durability::artifact_payload_emission::{count_payload, emit_payload};
 use crate::history::data::PositionedCanonicalCommit;
 
@@ -68,6 +74,7 @@ impl RelationalCanonicalCommitArtifact {
     /// bytes. Cost: two serializer passes over the envelope (count, emit),
     /// one policy-admitted allocation of header plus payload, and one
     /// SHA-256 pass over the payload.
+    #[cfg(test)]
     pub(crate) fn from_positioned(
         commit: &PositionedCanonicalCommit,
         policy: ExecutionAllocationPolicy<'_, '_>,
@@ -78,6 +85,12 @@ impl RelationalCanonicalCommitArtifact {
         let frame_len = HEADER_LEN
             .checked_add(payload_len)
             .ok_or(RelationalCanonicalCommitArtifactEncodeDenial::FrameSizeOverflow)?;
+        if frame_len > super::MAXIMUM_ARTIFACT_BYTES {
+            return Err(RelationalCanonicalCommitArtifactEncodeDenial::SizeLimit {
+                observed: frame_len,
+                maximum: super::MAXIMUM_ARTIFACT_BYTES,
+            });
+        }
         let declared_len = u64::try_from(payload_len)
             .map_err(|_| RelationalCanonicalCommitArtifactEncodeDenial::FrameSizeOverflow)?;
         let unsealed = CanonicalCommitArtifactHeader {

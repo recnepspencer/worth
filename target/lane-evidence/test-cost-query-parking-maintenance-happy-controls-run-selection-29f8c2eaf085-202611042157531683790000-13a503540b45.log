@@ -1,0 +1,47 @@
+Command: ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\query\\parking-maintenance-happy-controls\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\query\\parking-maintenance-happy-controls\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\query\\parking-maintenance-happy-controls\\nextest.toml", "--success-output", "immediate", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "-E", "test(same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old_key) | test(flushed_and_pending_multibatch_homes_readmit_their_completed_publication)"]
+Working directory: C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query
+HEAD: 29f8c2eaf085097189fa514ad19346b0f1352356
+Git status --short empty: False
+Start: 2026-11-04T21:57:53.168379+00:00
+
+{"type": "cargo-invocation", "command": ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\query\\parking-maintenance-happy-controls\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\query\\parking-maintenance-happy-controls\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\query\\parking-maintenance-happy-controls\\nextest.toml", "--success-output", "immediate", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "-E", "test(same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old_key) | test(flushed_and_pending_multibatch_homes_readmit_their_completed_publication)"], "cwd": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\workspaces\\worth-query", "capture": "ordered", "mode": "build", "target_dir": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\workspaces\\worth-query\\target", "cargo_profile": "test"}
+info: experimental features enabled: wrapper-scripts
+────────────
+ Nextest run ID b90d7546-b797-4083-bae4-1e8255d6d665 with nextest profile: ci
+    Starting 2 tests across 1 binary (369 tests skipped)
+{"type":"suite","event":"started","test_count":4}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$cost::certification::runtime_world_branching::cumulative::scheduled_public_read_timings_report_cold_and_warm_distributions"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$cost::certification::runtime_world_branching::cumulative::scheduled_seeded_model_broadens_public_action_roster"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":2,"measured":0,"filtered_out":367,"exec_time":0}
+        PASS [   5.220s] (1/2) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old_key
+  output ───
+
+    running 1 test
+    test host::application_home::reopening::same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old_key ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 370 filtered out; finished in 4.13s
+
+
+        PASS [   7.990s] (2/2) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::flushed_and_pending_multibatch_homes_readmit_their_completed_publication
+  output ───
+
+    running 1 test
+    test host::application_home::reopening::flushed_and_pending_multibatch_homes_readmit_their_completed_publication ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 370 filtered out; finished in 6.90s
+
+
+{"type":"suite","event":"started","test_count":4}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old_key"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::flushed_and_pending_multibatch_homes_readmit_their_completed_publication"}
+{"type":"test","event":"ok","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old_key","exec_time":5.2195876}
+{"type":"test","event":"ok","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::flushed_and_pending_multibatch_homes_readmit_their_completed_publication","exec_time":7.9897197}
+{"type":"suite","event":"ok","passed":2,"failed":0,"ignored":2,"measured":0,"filtered_out":367,"exec_time":13.2093073}
+────────────
+     Summary [   7.994s] 2 tests run: 2 passed, 369 skipped
+
+
+{"type": "cargo-result", "exit_code": 0}
+
+End: 2026-11-04T21:58:01.399966+00:00
+Exit code: 0

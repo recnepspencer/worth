@@ -1,6 +1,6 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph::application_query) enum WorthQueryApplicationReadExecutionDenialKind
-{
+pub enum WorthQueryApplicationReadExecutionDenialKind {
+    Content(worth_relational::facade::content::RelationalContentDenial),
     ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
     PredicateIndexUnavailable,
     TargetIdentityIndexUnavailable,
@@ -21,8 +21,7 @@ pub(in crate::domain_computation::primary_graph::application_query) enum WorthQu
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph::application_query) struct WorthQueryApplicationReadExecutionDenial
-{
+pub struct WorthQueryApplicationReadExecutionDenial {
     kind: WorthQueryApplicationReadExecutionDenialKind,
     subject: String,
 }
@@ -38,9 +37,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_exec
 }
 
 impl WorthQueryApplicationReadExecutionDenial {
-    pub(in crate::domain_computation::primary_graph::application_query) const fn kind(
-        &self,
-    ) -> WorthQueryApplicationReadExecutionDenialKind {
+    pub const fn kind(&self) -> WorthQueryApplicationReadExecutionDenialKind {
         self.kind
     }
 
@@ -109,7 +106,24 @@ pub(in crate::domain_computation::primary_graph::application_query) fn managed_r
         | Cause::ForeignBasis
         | Cause::ForeignGraph
         | Cause::ForeignReadProof
-        | Cause::ForeignReadIntent
-        | Cause::TerminalReleaseMismatch => Ok(Denial::Session),
+        | Cause::ForeignReadIntent => Ok(Denial::Session),
     }
 }
+
+pub(super) fn content_read_denial(
+    cause: worth_relational::facade::content::RelationalContentDenial,
+    subject: &str,
+) -> WorthQueryApplicationReadExecutionDenial {
+    match cause {
+        worth_relational::facade::content::RelationalContentDenial::Execution(cause) => {
+            relational_read_denial(cause, subject)
+        }
+        cause => read_execution_denial(
+            WorthQueryApplicationReadExecutionDenialKind::Content(cause),
+            subject,
+        ),
+    }
+}
+
+#[cfg(test)]
+mod content_tests;

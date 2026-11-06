@@ -38,7 +38,8 @@ where
     /// Schedules failure at the real post-commit snapshot admission boundary.
     #[doc(hidden)]
     pub fn fail_next_post_commit_snapshot_for_test(&self) {
-        self.primary_provider
+        self.runtime
+            .primary_provider
             .fail_next_post_commit_snapshot_for_test();
     }
 
@@ -63,28 +64,32 @@ where
     /// Delays one output-readiness delivery before its unique World change is consumed.
     #[doc(hidden)]
     pub fn delay_next_output_readiness_delivery_for_test(&self) {
-        self.primary_provider
+        self.runtime
+            .primary_provider
             .delay_next_output_readiness_delivery_for_test();
     }
 
     /// Fails one readiness evaluation after performed-change delivery.
     #[doc(hidden)]
     pub fn fail_next_output_readiness_evaluation_for_test(&self) {
-        self.primary_provider
+        self.runtime
+            .primary_provider
             .fail_next_output_readiness_evaluation_for_test();
     }
 
     /// Holds real World observations while the next ready output opens a read.
     #[doc(hidden)]
     pub fn press_next_ready_read_with_world_snapshots_for_test(&self) {
-        self.primary_provider
+        self.runtime
+            .primary_provider
             .press_next_ready_read_with_world_snapshots_for_test();
     }
 
     /// Holds real World observations while the next readiness evaluation selects its basis.
     #[doc(hidden)]
     pub fn press_next_readiness_with_world_snapshots_for_test(&self) {
-        self.primary_provider
+        self.runtime
+            .primary_provider
             .press_next_readiness_with_world_snapshots_for_test();
     }
 
@@ -95,21 +100,25 @@ where
         &self,
         source: worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource,
     ) -> bool {
-        self.primary_provider
+        self.runtime
+            .primary_provider
             .cancel_after_next_output_comparison_for_test(source)
     }
 
     /// Counts readiness decisions actually attempted by this application runtime.
     #[doc(hidden)]
     pub fn output_readiness_attempt_count_for_test(&self) -> u64 {
-        self.next_output_producer_attempt
+        self.runtime
+            .next_output_producer_attempt
             .load(std::sync::atomic::Ordering::Relaxed)
     }
 
     /// Counts post-publication checkpoints and any World snapshots retained inside their receipts.
     #[doc(hidden)]
     pub fn output_checkpoint_snapshot_state_for_test(&self) -> (usize, usize) {
-        self.output_demands.output_checkpoint_snapshot_state()
+        self.runtime
+            .output_demands
+            .output_checkpoint_snapshot_state()
     }
 
     pub(in crate::domain_computation::primary_graph) fn hold_world_snapshot_pressure_for_test(
@@ -120,6 +129,7 @@ where
         let mut exhausted = false;
         for _ in 0..1_024 {
             match self
+                .runtime
                 .product_runtime
                 .integration_admit_product_branch(branch)
             {
@@ -145,13 +155,13 @@ where
     /// Counts performed sources awaiting their required-output admission owner.
     #[doc(hidden)]
     pub fn prepared_required_output_source_count_for_test(&self) -> usize {
-        self.output_demands.prepared_source_count()
+        self.runtime.output_demands.prepared_source_count()
     }
 
     /// Counts retained source custody, including consumed roots awaiting program completion.
     #[doc(hidden)]
     pub fn retained_source_custody_count_for_test(&self) -> usize {
-        self.output_demands.retained_source_custody_count()
+        self.runtime.output_demands.retained_source_custody_count()
     }
 
     /// Observes the currently bound primary Bridge truth snapshot.
@@ -159,7 +169,8 @@ where
     pub fn primary_truth_snapshot_for_test(
         &self,
     ) -> Option<worth_runtime_bridge::facade::TruthSnapshotIdentity> {
-        self.primary_provider
+        self.runtime
+            .primary_provider
             .graph
             .current_truth_snapshot(&super::super::primary_truth_branch_identity())
     }
@@ -173,12 +184,13 @@ where
         usize,
         worth_relational::facade::branch::RelationalBranchBasisDescriptor,
     ) {
-        self.primary_provider
+        self.runtime
+            .primary_provider
             .graph
             .with_runtime(request_execution, |runtime| {
                 let active = runtime.retention().active_snapshot_count();
                 let identity = runtime
-                    .branch_identity(self.relational_branch_identity.branch_id())
+                    .branch_identity(self.runtime.relational_branch_identity.branch_id())
                     .expect("the application branch remains owner registered");
                 let (_, basis) = runtime
                     .observe_branch(&identity)
@@ -197,7 +209,7 @@ where
         Result<(), worth_relational::facade::transactions::TransactionCommitError>,
         crate::domain_computation::primary_graph::WorthQueryForeignAdvancementPhase,
     > {
-        let execution = phase.execution_request_for(&self.product_runtime)?;
+        let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
         let selected = self
             .on_branch(definition.branch())
             .select(phase)
@@ -258,7 +270,7 @@ where
         Result<(), worth_relational::facade::transactions::TransactionCommitError>,
         crate::domain_computation::primary_graph::WorthQueryForeignAdvancementPhase,
     > {
-        let execution = phase.execution_request_for(&self.product_runtime)?;
+        let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
         let selected = self
             .on_branch(definition.branch())
             .select(phase)
@@ -360,17 +372,19 @@ where
         Ok(candidate)
     }
 
-    #[cfg(test)]
-    pub(crate) fn provider_session_resource_count_for_test(&self) -> usize {
-        self.primary_provider.application_attempt_resource_count()
+    pub fn provider_session_resource_count_for_test(&self) -> usize {
+        self.runtime
+            .primary_provider
+            .application_attempt_resource_count()
     }
 
-    #[cfg(test)]
-    pub(crate) fn application_attempt_work_for_test(
+    pub fn application_attempt_work_for_test(
         &self,
     ) -> crate::domain_computation::primary_graph::provider::WorthQueryApplicationAttemptWorkSnapshot
     {
-        self.primary_provider.application_attempt_work_for_test()
+        self.runtime
+            .primary_provider
+            .application_attempt_work_for_test()
     }
 }
 

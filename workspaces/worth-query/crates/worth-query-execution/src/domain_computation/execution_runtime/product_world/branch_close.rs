@@ -49,12 +49,12 @@ impl WorthQueryProductBranchCloseReceipt {
     }
 }
 
-pub(crate) enum WorthQueryProductBranchCloseScope {
+pub enum WorthQueryProductBranchCloseScope {
     Workspace,
     Application,
 }
 
-pub(crate) struct WorthQueryPendingProductBranchClose {
+pub struct WorthQueryPendingProductBranchClose {
     runtime: WorthQueryProductRuntime,
     branch: WorthQueryProductBranch,
     occurrence: WorthQueryRetiredProductOccurrence,
@@ -66,9 +66,7 @@ impl WorthQueryPendingProductBranchClose {
         &self.occurrence
     }
 
-    pub(crate) fn into_cleanup(
-        self,
-    ) -> (WorthQueryProductBranch, WorthQueryProductBranchOwnerCleanup) {
+    pub fn into_cleanup(self) -> (WorthQueryProductBranch, WorthQueryProductBranchOwnerCleanup) {
         (
             self.branch,
             WorthQueryProductBranchOwnerCleanup::new(self.runtime, self.cleanup_identity),
@@ -147,3 +145,5 @@ fn map_retirement_denial(
         ) => WorthQueryProductBranchCloseDenial::CapacityExhausted,
     }
 }
+
+mod court_doors_for_test;

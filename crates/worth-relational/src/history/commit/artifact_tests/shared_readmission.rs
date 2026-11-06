@@ -14,7 +14,7 @@ fn shared_readmitted_envelope_clones_keep_the_original_allocation_and_grant_unti
     let host = SerialRequest::from_memory(budget.clone(), stop.token(), None);
     let request = ExecutionRequest::serial(&host);
     let artifact = owned_artifact(&source, &request);
-    let admitted = artifact.readmit_owned(&request).unwrap();
+    let admitted = artifact.readmit_framed(&request).unwrap();
     let shared =
         SharedCanonicalCommitEnvelope::from_arc(admitted.into_positioned().canonical_arc().clone());
     drop(artifact);
@@ -37,7 +37,7 @@ fn actual_weak_position_retains_only_the_fixed_original_control_bill_until_last_
     let host = SerialRequest::from_memory(budget.clone(), stop.token(), None);
     let request = ExecutionRequest::serial(&host);
     let artifact = owned_artifact(&source, &request);
-    let positioned = artifact.readmit_owned(&request).unwrap().into_positioned();
+    let positioned = artifact.readmit_framed(&request).unwrap().into_positioned();
     let retained = crate::runtime::RetainedCanonicalPosition::from_positioned(&positioned);
     let same = retained.clone();
     let fixed = fixed_allocation_bill();

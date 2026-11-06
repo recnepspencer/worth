@@ -149,6 +149,17 @@ impl CommitCreatedEntityBindings {
     }
 }
 
+fn resolve_client_key<'a>(
+    client: &'a crate::symbols::data::ClientKey,
+    symbols: &'a dyn SymbolTextLookup,
+) -> Option<&'a str> {
+    client.as_raw_str().or_else(|| {
+        client
+            .as_symbol()
+            .and_then(|symbol| symbols.resolve(symbol))
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -255,15 +266,4 @@ mod tests {
             None
         );
     }
-}
-
-fn resolve_client_key<'a>(
-    client: &'a crate::symbols::data::ClientKey,
-    symbols: &'a dyn SymbolTextLookup,
-) -> Option<&'a str> {
-    client.as_raw_str().or_else(|| {
-        client
-            .as_symbol()
-            .and_then(|symbol| symbols.resolve(symbol))
-    })
 }

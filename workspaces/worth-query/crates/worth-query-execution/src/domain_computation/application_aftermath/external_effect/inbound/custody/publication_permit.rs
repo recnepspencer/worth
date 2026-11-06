@@ -7,7 +7,7 @@ use worth_query_installation::facade::InstalledInboundOccurrenceContract;
 use super::WorthQueryInboundCustody;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum WorthQueryTransportPublicationPermitDenial {
+pub enum WorthQueryTransportPublicationPermitDenial {
     ForeignBinding,
     AtCapacity,
     CounterExhausted,
@@ -15,7 +15,7 @@ pub(in crate::domain_computation) enum WorthQueryTransportPublicationPermitDenia
 
 /// One active transport World publication. Its drop releases the same
 /// operation counter charged by authenticated inbound publication.
-pub(in crate::domain_computation) struct WorthQueryTransportPublicationPermit {
+pub struct WorthQueryTransportPublicationPermit {
     custody: Arc<Mutex<WorthQueryInboundCustody>>,
     operation: String,
 }

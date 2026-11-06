@@ -1,3 +1,4 @@
+use worth_foundational::CanonicalDigestId;
 use worth_store_offline_verifier::OfflineVerifierBoundarySeam;
 use worth_store_offline_verifier::RecoveryObserverReport;
 use worth_store_recovery_runtime::{RecoveryReportEnvelope, RecoveryReportOutcome};
@@ -12,7 +13,7 @@ pub enum IndependentVerifierObservationKind {
 pub struct IndependentVerifierObservation {
     seam: OfflineVerifierBoundarySeam,
     kind: IndependentVerifierObservationKind,
-    artifact_set_digest: [u8; 32],
+    artifact_set_digest: CanonicalDigestId,
 }
 
 impl IndependentVerifierObservation {
@@ -29,7 +30,7 @@ impl IndependentVerifierObservation {
             } else {
                 IndependentVerifierObservationKind::Disagreement
             },
-            artifact_set_digest: observer.artifact_set_digest(),
+            artifact_set_digest: CanonicalDigestId::new(observer.artifact_set_digest()),
         }
     }
 
@@ -42,6 +43,6 @@ impl IndependentVerifierObservation {
     }
 
     pub const fn artifact_set_digest(&self) -> [u8; 32] {
-        self.artifact_set_digest
+        *self.artifact_set_digest.bytes()
     }
 }

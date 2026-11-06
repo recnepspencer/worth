@@ -1,6 +1,7 @@
 //! A real AABB false positive and endpoint edit exercise distinct exact watch truth.
 use super::super::refinement;
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 #[test]
 fn exact_refinement_segment_contact_uses_related_points_and_candidate_stable_watch() {
     lifecycle::isolated_allocation_case(
@@ -13,7 +14,7 @@ fn exact_refinement_segment_contact_uses_related_points_and_candidate_stable_wat
 }
 fn run() {
     let calls = Arc::new(provider::Calls::default());
-    let prefixes = Arc::new(prefix::Calls::default());
+    let prefixes = Arc::new(prefix_observation::Calls::default());
     let world = host::install_geometry(
         prefixes.clone(),
         Arc::new(prefix_rule::Calls::new(prefixes)),

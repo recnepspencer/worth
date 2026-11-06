@@ -31,7 +31,7 @@ pub(super) struct InspectionReferenceIdentities {
     pub(super) anchor: BridgeIdentityEvidence,
 }
 
-pub(super) enum InspectionIdentityStop<Stop> {
+pub enum InspectionIdentityStop<Stop> {
     Resource(Stop),
     Basis(CanonicalBasisPreparationStop<Stop>),
     Digest(CanonicalDigestAdmissionStop<Stop>),
@@ -47,7 +47,7 @@ enum Part<'a> {
 }
 
 #[derive(Clone, Copy, Eq, PartialEq)]
-pub(super) enum InspectionOriginalReference {
+pub enum InspectionOriginalReference {
     Before,
     After,
     Source,

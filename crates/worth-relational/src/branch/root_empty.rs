@@ -8,6 +8,7 @@ impl RelationalBranchRoot {
         let issuer = RelationalBranchRootIdentityIssuer::default();
         Arc::new(Self {
             id: 0,
+            content: Default::default(),
             regions: RelationalPersistentRegionSet::initial(0, BTreeMap::new(), &issuer)
                 .expect("empty test root has reachability capacity"),
             entity_slot_count: 0,
@@ -43,6 +44,7 @@ impl RelationalBranchRoot {
         let issuer = RelationalBranchRootIdentityIssuer::default();
         Arc::new(Self {
             id: 0,
+            content: Default::default(),
             regions: RelationalPersistentRegionSet::initial(0, BTreeMap::new(), &issuer)
                 .expect(/* Proof: Each empty root creates a fresh issuer at its initial frontier; these first schema and empty-reachability allocations cannot exhaust it. */ "empty root has reachability capacity"),
             entity_slot_count: 0,

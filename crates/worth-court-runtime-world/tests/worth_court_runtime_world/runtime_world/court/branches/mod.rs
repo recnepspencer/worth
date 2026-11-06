@@ -2,6 +2,7 @@
 use crate::court::ordinary_context::branches::*;
 pub(crate) use worth_relational::facade::history::BranchId;
 pub(crate) use worth_signal::facade::branch::validate_signal_branch_name;
+mod retained_source;
 #[test]
 fn omitted_plans_are_denied_before_owner_work() {
     let host_request = crate::test_execution_policy::serial_request();
@@ -120,8 +121,15 @@ fn sibling_fork_denial_retains_only_real_relational_custody_until_cleanup() {
     let cleanup = court
         .world
         .recovery_port()
-        .release_effects(&handle, 0)
-        .unwrap();
+        .release_effects(
+            request_execution,
+            &handle,
+            0,
+            court.observe_recovery_original(request_execution, &handle),
+        )
+        .unwrap()
+        .into_parts();
+    let (_original, cleanup) = cleanup;
     assert_eq!(cleanup.unpublished_history_candidates().len(), 1);
     assert_eq!(
         cleanup.owner_retirement_work().len(),

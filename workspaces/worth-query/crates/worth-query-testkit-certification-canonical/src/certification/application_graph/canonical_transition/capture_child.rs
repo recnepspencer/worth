@@ -23,7 +23,7 @@ pub fn request(
     memory: u64,
     work: u64,
     cancellation: CancellationToken,
-    deadline: Option<std::time::Instant>,
+    deadline: Option<worth_execution::MonotonicDeadline>,
 ) -> LeaseRequest {
     LeaseRequest {
         policy: ExecutionRequestPolicy::new(
@@ -39,7 +39,7 @@ pub fn request(
 /// Room for a whole transition; its capture is capped separately.
 pub fn funding(
     cancellation: CancellationToken,
-    deadline: Option<std::time::Instant>,
+    deadline: Option<worth_execution::MonotonicDeadline>,
 ) -> LeaseRequest {
     request(64 * 1024 * 1024, 8_000_000, cancellation, deadline)
 }

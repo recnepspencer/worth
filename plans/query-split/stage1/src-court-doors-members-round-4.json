@@ -1,0 +1,17 @@
+{
+ "authority_doors": [],
+ "constructor_doors": [],
+ "field_doors": [
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.claim_batch",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.prerequisites",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.prerequisites (mut)",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.state",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.state (mut)"
+ ],
+ "method_doors": [
+  "domain_computation::primary_graph::application_output_demand::registry::claim_readthrough::incoming::ClaimBatch::deactivate"
+ ],
+ "unplaced": [
+  "cannot assign to data in a `&` reference"
+ ]
+}

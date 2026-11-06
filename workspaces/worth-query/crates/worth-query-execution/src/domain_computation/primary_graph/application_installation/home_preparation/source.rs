@@ -117,15 +117,6 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeQueryRuntime<Sch
         self.publication = Some(super::super::super::bootstrap::home_publication::publish(
             &mut self.prepared.bootstrap,
             phase,
-            || {
-                self.prepared
-                    .state
-                    .admitted_home_binding()
-                    .map(|admitted| admitted.consume(|owner| owner.into_description()))
-                    .map_err(|cause| {
-                        home_source_denial(format!("Home completion binding denied: {cause:?}"))
-                    })
-            },
         )?);
         Ok(())
     }

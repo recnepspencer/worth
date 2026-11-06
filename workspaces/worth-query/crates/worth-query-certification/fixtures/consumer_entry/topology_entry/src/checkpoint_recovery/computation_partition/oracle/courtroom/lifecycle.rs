@@ -81,9 +81,11 @@ mod serial {
             let mut rng = Lcg(seed);
             let mut model = Model::new(&mut rng);
             let mut history = Reference::new(&model);
-            let mut app = installation::install_variant::<false, TOTALS_WORK, 1, 2>(
+            let mut app = installation::install_variant_with_observations::<false, TOTALS_WORK, 1, 2>(
                 None,
                 Default::default(),
+                0,
+                super::super::differential::reference::model_history_policy(),
                 |g| model.seed(g),
             );
             let mut prior = None;
@@ -122,11 +124,22 @@ mod serial {
                         model.written(write);
                     }
                 }
-                let checkpoint = app.with_host_advancement(|phase| app.capture_application_checkpoint(&phase, worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation).unwrap()).expect("installed host call opens");
+                let capture = worth_query_host::facade::primary_graph::query_test_execution_authority_for_test()
+                    .request_lease(worth_query_host::facade::runtime::LeaseRequest {
+                        policy: crate::checkpoint_recovery::support::observation::POPULATION_BOOTSTRAP_POLICY,
+                        cancellation: worth_query_host::facade::runtime::CancellationToken::new(),
+                        deadline: None,
+                    }).expect("the population owns its original checkpoint-capture request");
+                let checkpoint = app.with_funded_host_advancement(
+                    worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::Execution(&capture),
+                    |phase| app.capture_application_checkpoint(&phase, worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation).unwrap(),
+                ).expect("installed host call opens");
                 drop(app);
-                app = installation::install_variant::<false, TOTALS_WORK, 1, 2>(
+                app = installation::install_variant_with_observations::<false, TOTALS_WORK, 1, 2>(
                     Some(checkpoint),
                     Default::default(),
+                    0,
+                    super::super::differential::reference::model_history_policy(),
                     |_| panic!("restore does not reseed"),
                 );
                 prior = None;

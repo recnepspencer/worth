@@ -65,7 +65,7 @@ where
         SourceOnlyRetentionSchema::declaration().unwrap(),
         (contacts.clone(),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        worth_query_testkit_document_retention::facade::document_retention_model::host::host_limits(),
+        worth_query_testkit_document_retention::facade::document_retention_model::host::host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         |_, graph, installed| {
             let binding = installed.principal_binding(DocumentPrincipalBinding::reference()).unwrap();
             graph.bind_principal(&binding, WorthQueryApplicationPrincipalKey::new("source-only-operator").unwrap(), 1_u64, worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::operator_identity(), worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled)?;

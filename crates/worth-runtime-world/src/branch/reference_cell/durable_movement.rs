@@ -179,22 +179,24 @@ impl WorldProductMovementPermit {
         result
     }
 
-    pub(super) fn admits(&self, phase: &ProductMovementPhase) -> bool {
-        matches!(phase, ProductMovementPhase::MovementInFlight { subject, committed: Some(_) }
-            if subject.same_subject(&self.subject))
-    }
-
     /// The caller prearms its retained reopen-required phase before consuming
     /// this permit. A loss or post-swap unwind cannot restore a spent phase.
     pub(crate) fn publish_readmitted(
         mut self,
         expected: &ProductBranchObservation,
         successor: &mut Option<ProductBranchHeadProtection>,
+        record: &crate::history::ReadmittedPublicationRecord,
     ) -> Result<ProductBranchReferenceMovement, ProductBranchReferenceLoss> {
+        assert_eq!(&record.before, expected.snapshot());
+        assert_eq!(
+            successor.as_ref().expect("retained successor").snapshot(),
+            &record.after
+        );
+        let _actual_location = record.location();
         let result = self.cell.replace_expected_permitted(
             expected,
             successor,
-            |successor| successor,
+            |slot| slot,
             None,
             Some(&self),
         );
@@ -202,6 +204,11 @@ impl WorldProductMovementPermit {
             self.armed = false;
         }
         result
+    }
+
+    pub(super) fn admits(&self, phase: &ProductMovementPhase) -> bool {
+        matches!(phase, ProductMovementPhase::MovementInFlight { subject, committed: Some(_) }
+            if subject.same_subject(&self.subject))
     }
 }
 

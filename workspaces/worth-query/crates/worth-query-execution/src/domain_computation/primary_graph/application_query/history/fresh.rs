@@ -41,7 +41,7 @@ fn with_session<'application, Schema, History, Output>(
     ) -> Result<PendingDecisions, Denial>,
     operation: impl for<'fresh> FnOnce(
         SubjectPlan<'fresh, Schema, History>,
-        HistoryMetadataAdmission<History>,
+        HistoryMetadataAdmission,
     ) -> Result<Output, Denial>,
 ) -> Result<Output, Denial>
 where
@@ -113,7 +113,7 @@ fn request_for<'scope, Schema: ApplicationSchema>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope>,
 ) -> Result<worth_execution::ExecutionRequest<'scope, 'scope>, Denial> {
-    phase.execution_request_for(&application.product_runtime).map_err(|_| {
+    phase.execution_request_for(&application.runtime.product_runtime).map_err(|_| {
         Denial::Authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(
             crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(
                 crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind::ForeignPhase,

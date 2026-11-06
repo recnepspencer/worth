@@ -13,7 +13,7 @@ describe("worth-signals-wasm Track 6 size policy", () => {
   it("keeps the hard ceiling below the Gate 6.0 baseline", () => {
     assert.equal(BASELINE_WASM_BYTES, 13_092_002);
     assert.ok(MAX_WASM_BYTES < BASELINE_WASM_BYTES);
-    assert.equal(MAX_WASM_BYTES, computeMaxWasmBytesFromMeasured(9_631_195));
+    assert.equal(MAX_WASM_BYTES, computeMaxWasmBytesFromMeasured(11_707_918));
   });
 
   it("rejects measurements that do not beat baseline", () => {

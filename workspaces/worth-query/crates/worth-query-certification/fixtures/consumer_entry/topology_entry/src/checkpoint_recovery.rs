@@ -1,3 +1,4 @@
+#![allow(clippy::disallowed_methods)]
 use std::num::NonZeroUsize;
 use worth_query_decl::facade::application_program::{
     ApplicationCommitBoundary, ApplicationConnectionRef, ApplicationFeatureSpec,

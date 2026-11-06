@@ -97,3 +97,5 @@ impl SelectedReadyReadmission {
             && self.completion.same_cell(&other.completion))
     }
 }
+
+mod court_doors_for_test;

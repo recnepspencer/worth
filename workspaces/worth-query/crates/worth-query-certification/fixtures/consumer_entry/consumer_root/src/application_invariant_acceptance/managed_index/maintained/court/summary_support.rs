@@ -1,12 +1,13 @@
 //! A genuine same-Source slot outside a leaf's region cannot influence its summary.
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 
 #[test]
 fn checked_summary_confines_row_resolution_to_the_actual_region() {
     lifecycle::run(journey);
 }
 fn journey() {
-    let provider = Arc::new(prefix::Calls::default());
+    let provider = Arc::new(prefix_observation::Calls::default());
     let rules = Arc::new(rule::Calls::new(provider.clone()));
     let world = host::install(provider.clone(), rules);
     let scope = authentication::request_scope();

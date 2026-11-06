@@ -5,7 +5,7 @@ mod cancellation;
 use cancellation::BoundaryCancellation;
 
 #[derive(Clone, Copy)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryPrimaryGraphFault {
+pub enum WorthQueryPrimaryGraphFault {
     LostCommitResponse,
     RejectedSessionPreparation,
     RejectedCommitBeforeTransaction,
@@ -16,28 +16,19 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryPrimaryGraphFaul
     FailedOutputReadinessEvaluation,
     ReadyReadSnapshotPressure,
     ReadinessSnapshotPressure,
-    #[cfg(test)]
     UndeclaredApplicationTouch,
-    #[cfg(test)]
     PanickedPendingApplicationPublication,
-    #[cfg(test)]
     TightIndexMaintenanceBudget,
-    #[cfg(test)]
     DuplicateQueryPreparationSlot,
 }
 
-pub(in crate::domain_computation::primary_graph) trait WorthQueryPrimaryGraphFaultPort:
-    Send + Sync
-{
+pub trait WorthQueryPrimaryGraphFaultPort: Send + Sync {
     fn take(&self, fault: WorthQueryPrimaryGraphFault) -> bool;
 
-    #[cfg(test)]
     fn candidate_staged_for_validation(&self) {}
 
-    #[cfg(test)]
     fn candidate_ready_for_native_preparation(&self) {}
 
-    #[cfg(test)]
     fn aftermath_ready_for_sealing(&self) {}
 
     fn output_comparison_completed(&self) {}
@@ -132,13 +123,9 @@ const fn fault_mask(fault: WorthQueryPrimaryGraphFault) -> u16 {
         WorthQueryPrimaryGraphFault::FailedOutputReadinessEvaluation => 1 << 10,
         WorthQueryPrimaryGraphFault::ReadyReadSnapshotPressure => 1 << 11,
         WorthQueryPrimaryGraphFault::ReadinessSnapshotPressure => 1 << 12,
-        #[cfg(test)]
         WorthQueryPrimaryGraphFault::UndeclaredApplicationTouch => 1 << 6,
-        #[cfg(test)]
         WorthQueryPrimaryGraphFault::PanickedPendingApplicationPublication => 1 << 8,
-        #[cfg(test)]
         WorthQueryPrimaryGraphFault::TightIndexMaintenanceBudget => 1 << 13,
-        #[cfg(test)]
         WorthQueryPrimaryGraphFault::DuplicateQueryPreparationSlot => 1 << 14,
     }
 }
@@ -176,17 +163,14 @@ impl super::WorthQueryPrimaryGraphProvider {
         self.take_fault(WorthQueryPrimaryGraphFault::RelationalInvariantViolation)
     }
 
-    #[cfg(test)]
     pub(super) fn take_undeclared_application_touch(&self) -> bool {
         self.take_fault(WorthQueryPrimaryGraphFault::UndeclaredApplicationTouch)
     }
 
-    #[cfg(test)]
     pub(super) fn take_panicked_pending_application_publication(&self) -> bool {
         self.take_fault(WorthQueryPrimaryGraphFault::PanickedPendingApplicationPublication)
     }
 
-    #[cfg(test)]
     pub(super) fn take_tight_index_maintenance_budget(&self) -> bool {
         self.take_fault(WorthQueryPrimaryGraphFault::TightIndexMaintenanceBudget)
     }

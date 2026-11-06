@@ -5,16 +5,13 @@ use super::super::{
 };
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
-pub(in crate::domain_computation::primary_graph) struct SelectedOutputAdmission<'a> {
+pub struct SelectedOutputAdmission<'a> {
     pub(super) commit: &'a CompositeCommitIdentity,
     retained_key: Option<[u8; 32]>,
 }
 
 impl<'a> SelectedOutputAdmission<'a> {
-    pub(in crate::domain_computation::primary_graph) fn new(
-        commit: &'a CompositeCommitIdentity,
-        retained_key: Option<[u8; 32]>,
-    ) -> Self {
+    pub fn new(commit: &'a CompositeCommitIdentity, retained_key: Option<[u8; 32]>) -> Self {
         Self {
             commit,
             retained_key,
@@ -39,14 +36,22 @@ impl<'a> SelectedOutputAdmission<'a> {
         }
         let actual = match &record.state {
             DemandState::Output(output) => match &output.checkpoint {
+                Some(WorthQueryOutputCheckpoint::PublicationPending { .. }) => return false,
                 Some(
                     WorthQueryOutputCheckpoint::Published { receipt, .. }
                     | WorthQueryOutputCheckpoint::Delivered { receipt, .. },
                 ) => *receipt.idempotency_binding().key_identity(),
+                Some(
+                    WorthQueryOutputCheckpoint::RecoveredPublished { publication, .. }
+                    | WorthQueryOutputCheckpoint::RecoveredDelivered { publication, .. },
+                ) => *publication.view().idempotency_binding().key_identity(),
                 Some(WorthQueryOutputCheckpoint::Ready(completion)) => {
                     match &completion.authority {
                         WorthQueryAcceptedOutputAuthority::Committed(receipt) => {
                             *receipt.idempotency_binding().key_identity()
+                        }
+                        WorthQueryAcceptedOutputAuthority::Recovered(publication) => {
+                            *publication.view().idempotency_binding().key_identity()
                         }
                         WorthQueryAcceptedOutputAuthority::Stable(published) => {
                             published.idempotency_key_identity()

@@ -20,7 +20,7 @@ pub(super) fn publish(
         token.store,
         token.session,
         token.declaration_record,
-        token.declaration_digest,
+        *token.declaration_digest.bytes(),
         reason,
     )
     .map_err(BlobTerminalFailure::Format)?;

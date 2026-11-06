@@ -262,3 +262,11 @@ pub(crate) struct RelationalCheckpointEmptyComponent {
     pub(crate) descriptor: crate::branch::RelationalBranchBasisDescriptor,
     pub(crate) schema_carrier_digest: [u8; 32],
 }
+
+/// The Native identity and the physical member locator are checked independently.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct RelationalCheckpointContent {
+    pub(crate) identity: worth_foundational::facade::ContentRefId,
+    pub(crate) member: RelationalDurableMemberLocator,
+}

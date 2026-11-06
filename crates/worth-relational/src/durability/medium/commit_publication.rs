@@ -40,7 +40,6 @@ impl RelationalCommitPublication {
         positioned: Arc<PositionedCanonicalCommit>,
         roots: &crate::branch::RelationalBranchRootDescriptor,
         medium: Option<&RelationalDurableMediumBinding>,
-        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         original: Option<
             crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact,
@@ -48,7 +47,7 @@ impl RelationalCommitPublication {
     ) -> Result<Self, RelationalDurableStepStop> {
         match medium {
             Some(medium) => medium
-                .publish(positioned, roots, policy, execution)
+                .publish(positioned, roots, execution)
                 .map(Self::Durable),
             None => Ok(Self::MemoryOnly {
                 positioned,

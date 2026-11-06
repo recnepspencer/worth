@@ -62,7 +62,7 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
         .as_ref()
         .unwrap();
     assert_eq!(origin.producer, "installed-producer");
-    assert_eq!(origin.dependency_identity, [3; 32]);
+    assert_eq!(*origin.dependency_identity.bytes(), [3; 32]);
     let entity = origin.outputs[0];
     let mut copied = performed
         .canonical_commit()

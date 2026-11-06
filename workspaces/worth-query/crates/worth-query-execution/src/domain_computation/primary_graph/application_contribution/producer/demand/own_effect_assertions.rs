@@ -21,9 +21,9 @@ where
                 FamilySourceQuery<Schema, Family>,
             > + 'static,
     FamilySourceQuery<Schema, Family>: 'static,
-    WorthQueryAdmittedOutputDemand<Schema, Family>: Send + Sync,
+    WorthQueryAdmittedOutputDemand<Schema, Family>: Send,
 {
-    pub(in crate::domain_computation::primary_graph) fn assert_born_stale_absence_for_test(
+    pub fn assert_born_stale_absence_for_test(
         &self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -69,13 +69,15 @@ where
             1
         );
         let interest = self.interest.as_ref().expect("original live Interest");
-        let OutputRowStage::Ready(completion) = runtime.output_demands.row_stage(interest) else {
+        let OutputRowStage::Ready(completion) = runtime.runtime.output_demands.row_stage(interest)
+        else {
             panic!("the original row must retain its actual Ready, not an inferred commit");
         };
         let WorthQueryAcceptedOutputAuthority::Committed(receipt) = &completion.authority else {
             panic!("performed original receipt, never stable alias or reconstruction");
         };
         let completed = runtime
+            .runtime
             .primary_provider
             .observe_completed_application(receipt.commit_reference())
             .unwrap();
@@ -102,7 +104,7 @@ where
             self.assert_required_admission(runtime, phase, execution, principal, scope, source);
         }
     }
-    pub(in crate::domain_computation::primary_graph) fn assert_preserve_successor_for_test(
+    pub fn assert_preserve_successor_for_test(
         &self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         root: worth_relational::facade::identity::EntityId,
@@ -125,7 +127,7 @@ where
         );
         assert!(self.settled);
     }
-    pub(in crate::domain_computation::primary_graph) fn assert_changed_successor_for_test(
+    pub fn assert_changed_successor_for_test(
         &self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -149,7 +151,8 @@ where
             2
         );
         let interest = self.interest.as_ref().expect("actual P2 Interest");
-        let OutputRowStage::Ready(completion) = runtime.output_demands.row_stage(interest) else {
+        let OutputRowStage::Ready(completion) = runtime.runtime.output_demands.row_stage(interest)
+        else {
             panic!("P2 must retain its own completed publication");
         };
         let WorthQueryAcceptedOutputAuthority::Committed(receipt) = &completion.authority else {
@@ -160,6 +163,7 @@ where
             "P2's canonical output mutation must reset P1 before renewal"
         );
         let completed = runtime
+            .runtime
             .primary_provider
             .observe_completed_application(receipt.commit_reference())
             .unwrap();

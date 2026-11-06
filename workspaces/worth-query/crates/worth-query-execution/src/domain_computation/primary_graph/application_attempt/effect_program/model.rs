@@ -9,7 +9,7 @@ use worth_relational::facade::transactions::EntityReference;
 use super::super::read_set::WorthQueryCompleteApplicationReadSet;
 use super::super::WorthQueryProjectedApplicationMutation;
 
-mod emission;
+pub(crate) mod emission;
 pub(in crate::domain_computation::primary_graph) use emission::{
     WorthQueryAdmittedApplicationEmissionBatch, WorthQueryApplicationEmission,
 };
@@ -36,14 +36,14 @@ pub struct WorthQueryApplicationCreatedRelation<Schema, Relation, From, To> {
     pub(super) program: Arc<()>,
 }
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationOptionalFieldWrite {
+pub struct WorthQueryApplicationOptionalFieldWrite {
     pub(in crate::domain_computation::primary_graph::application_attempt) contract:
         PortableAspectContractBasis,
     pub(in crate::domain_computation::primary_graph::application_attempt) value:
         Option<AspectValue>,
 }
 
-pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationRealizedEffect {
+pub enum WorthQueryApplicationRealizedEffect {
     CreateEntity {
         kind: KindId,
         key: String,
@@ -112,6 +112,8 @@ pub struct WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
         &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
     pub(in crate::domain_computation::primary_graph::application_attempt) output_currentness_facts:
         Option<super::super::OutputCurrentnessFacts>,
+    pub(in crate::domain_computation::primary_graph::application_attempt) content_attachments:
+        worth_relational::facade::content::RelationalContentAttachments,
     // Last to drop: physical backing releases before its retained grant.
 
 }
@@ -127,11 +129,10 @@ impl<Schema, Operation, Input, Scope>
     }
 }
 
-#[cfg(test)]
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>
 {
-    pub(in crate::domain_computation::primary_graph) fn with_consumed_output_for_test(
+    pub fn with_consumed_output_for_test(
         mut self,
         evidence: crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence,
     ) -> Self {
@@ -162,12 +163,14 @@ pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, S
     pub(super) output_correspondence:
         super::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     pub(super) creation_partition: Option<WorthQueryApplicationCreationPartition>,
+    pub(super) content_attachments: worth_relational::facade::content::RelationalContentAttachments,
+    pub(super) content_denial: Option<crate::domain_computation::primary_graph::WorthQueryValueDecodeDenial>,
     // Last to drop: physical backing releases before its retained grant.
 
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationCreationPartition {
+pub enum WorthQueryApplicationCreationPartition {
     Issued,
     Context(worth_relational::facade::identity::PartitionId),
 }
@@ -204,15 +207,11 @@ impl<Schema, Operation, Input, Scope>
             .belongs_to(runtime_authority, binding_identity)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn product_branch(
-        &self,
-    ) -> crate::basis::WorthQueryProductBranch {
+    pub fn product_branch(&self) -> crate::basis::WorthQueryProductBranch {
         self.read_set.lease.product().product_branch()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn with_output_demand_observation(
-        mut self,
-    ) -> Self {
+    pub fn with_output_demand_observation(mut self) -> Self {
         self.retain_output_demand_observation = true;
         self
     }
@@ -230,3 +229,5 @@ impl<Schema, Operation, Input, Scope>
         self
     }
 }
+
+mod court_doors_for_test;

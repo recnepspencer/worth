@@ -3,17 +3,17 @@ mod custody;
 use super::*;
 use worth_runtime_world::facade::{CompositeCommitIdentity, ProductBranchObservation};
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryLivePredicatePreparation {
+pub struct WorthQueryLivePredicatePreparation {
     state: Arc<Mutex<WorthQueryLiveDeliverySourceState>>,
     key: WorthQueryLiveProductKey,
     _allocation: Arc<SourceFactsAllocation>,
 }
-pub(in crate::domain_computation::primary_graph) struct WorthQueryLivePredicateOpening {
+pub struct WorthQueryLivePredicateOpening {
     state: Arc<Mutex<WorthQueryLiveDeliverySourceState>>,
     key: WorthQueryLiveProductKey,
     _allocation: Arc<SourceFactsAllocation>,
 }
-pub(in crate::domain_computation::primary_graph) struct WorthQueryLivePredicateSubscription {
+pub struct WorthQueryLivePredicateSubscription {
     subscription: WorthQueryLiveSubscription,
     stamp: Stamp,
     allocation: Arc<SourceFactsAllocation>,
@@ -34,26 +34,6 @@ impl Stamp {
     }
 }
 impl WorthQueryLiveDeliverySource {
-    #[cfg(test)]
-    /// An authenticated lifecycle/untracked-movement owner calls this; no READ is issued.
-    pub(in crate::domain_computation::primary_graph) fn invalidate_predicates(
-        &self,
-        observation: &ProductBranchObservation,
-    ) {
-        let key = WorthQueryLiveProductKey::from_observation(observation);
-        let mut state = self
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if let Some(partition) = state.partitions.get_mut(&key) {
-            if let Some(next) = partition.resync_epoch.checked_add(1) {
-                partition.resync_epoch = next;
-            } else {
-                partition.retired = true;
-            }
-        }
-    }
-
     pub(in crate::domain_computation::primary_graph) fn begin_predicate_preparation(
         &self,
         execution: &ExecutionRequest<'_, '_>,
@@ -225,6 +205,21 @@ impl WorthQueryLiveDeliverySource {
         }
         Ok(())
     }
+    /// Owner court injects an untracked movement; production publishes exact predicate notices.
+    pub fn invalidate_predicates(&self, observation: &ProductBranchObservation) {
+        let key = WorthQueryLiveProductKey::from_observation(observation);
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if let Some(partition) = state.partitions.get_mut(&key) {
+            if let Some(next) = partition.resync_epoch.checked_add(1) {
+                partition.resync_epoch = next;
+            } else {
+                partition.retired = true;
+            }
+        }
+    }
 }
 impl WorthQueryLivePredicateSubscription {
     pub(in crate::domain_computation::primary_graph) fn subscription(
@@ -233,3 +228,5 @@ impl WorthQueryLivePredicateSubscription {
         &self.subscription
     }
 }
+
+mod court_doors_for_test;

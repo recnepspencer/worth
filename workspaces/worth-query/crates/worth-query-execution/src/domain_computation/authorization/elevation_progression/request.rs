@@ -56,7 +56,7 @@ where
             + 'static,
     {
         access.refuse_stale_incarnation(self)?;
-        let execution = match phase.execution_request_for(&self.product_runtime) {
+        let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(execution) => execution,
             Err(_) => return Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody")),
         };
@@ -156,6 +156,7 @@ where
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
     let Some((capability, command_capability, role)) = runtime
+        .runtime
         .authorization
         .elevation_lifecycle_operation::<Schema, Operation>(
             operation.operation(),
@@ -181,6 +182,7 @@ where
         ));
     }
     let installed = runtime
+        .runtime
         .authorization
         .capability_plan_by_identity(&capability)
         .filter(|plan| plan.elevation().is_some())

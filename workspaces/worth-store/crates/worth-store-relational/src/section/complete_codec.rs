@@ -1,6 +1,7 @@
 //! Complete Home sections have an additive envelope; ordinary section v3 is unchanged.
 use super::RelationalSectionCheckpointDenial as Capture;
 use worth_foundational::facade::BoundaryProtocolVersion;
+use worth_foundational::CanonicalDigestId;
 use worth_relational::facade::durability::CompleteRelationalNativeCheckpoint;
 
 const MAGIC: &[u8; 8] = b"WSRCSRC1";
@@ -29,7 +30,7 @@ pub(super) struct CompleteSectionCoordinates {
     pub(super) covered: u64,
     pub(super) through: u64,
     pub(super) revision: u64,
-    pub(super) digest: [u8; 32],
+    pub(super) digest: CanonicalDigestId,
 }
 pub(super) fn coordinates(bytes: &[u8]) -> Option<CompleteSectionCoordinates> {
     if let Some(coordinates) = super::admission_section::coordinates(bytes) {
@@ -49,6 +50,6 @@ pub(super) fn coordinates(bytes: &[u8]) -> Option<CompleteSectionCoordinates> {
         covered: integer(10)?,
         through: integer(18)?,
         revision: integer(26)?,
-        digest: bytes.get(34..HEADER)?.try_into().ok()?,
+        digest: CanonicalDigestId::new(bytes.get(34..HEADER)?.try_into().ok()?),
     })
 }

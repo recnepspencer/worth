@@ -29,6 +29,8 @@ impl CanonicalCommitEnvelopeBody {
         );
         let canonical_semantics = (
             &self.required_output_origin,
+            &self.authored_cascade_retirement,
+            &self.authored_cascade_restoration,
             &self.required_output_materialization,
             &self.schema_version,
             &self.schema_authority,
@@ -42,6 +44,17 @@ impl CanonicalCommitEnvelopeBody {
             &self.schema_reconciliation_descriptor,
             &self.descriptor_semantics_version,
         );
+        if let Some(event) = &self.producer_cascade_retirement {
+            return rmp_serde::encode::write_named(
+                writer,
+                &(
+                    identity_and_authority,
+                    canonical_semantics,
+                    &self.authored_index_writes,
+                    event,
+                ),
+            );
+        }
         if self.authored_index_writes.is_unavailable() {
             rmp_serde::encode::write_named(writer, &(identity_and_authority, canonical_semantics))
         } else {

@@ -13,7 +13,7 @@ use worth_query_installation::facade::{
 };
 
 #[derive(Clone)]
-pub(super) struct SourceOriginal {
+pub struct SourceOriginal {
     pub(super) runtime: u64,
     pub(super) operation: [u8; 32],
     pub(super) publication: crate::basis::WorthQueryProductBranchReadIdentity,

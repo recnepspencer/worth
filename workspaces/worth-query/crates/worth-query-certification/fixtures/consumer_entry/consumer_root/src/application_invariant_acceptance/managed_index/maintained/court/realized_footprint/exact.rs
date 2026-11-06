@@ -1,12 +1,13 @@
 //! Exact observation consumers retain rejected candidate inputs and original stops.
 use super::super::super::refinement::{self, mutation::RenameExact};
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use worth_query_consumer_values::PrefixIndexDenial;
 
 #[test]
 fn realized_footprint_exact_rejected_candidate_inputs_remain_influence() {
     lifecycle::run(|| {
-        let calls = Arc::new(prefix::Calls::default());
+        let calls = Arc::new(prefix_observation::Calls::default());
         let world = host::install(calls.clone(), Arc::new(rule::Calls::new(calls)));
         let scope = authentication::request_scope();
         let principal = authentication::block_on(
@@ -125,7 +126,7 @@ fn realized_footprint_exact_rejected_candidate_inputs_remain_influence() {
 #[test]
 fn realized_footprint_target_refinement_keeps_domain_failure_and_original_cancellation() {
     lifecycle::run(|| {
-        let calls = Arc::new(prefix::Calls::default());
+        let calls = Arc::new(prefix_observation::Calls::default());
         let world = host::install(calls.clone(), Arc::new(rule::Calls::new(calls.clone())));
         let scope = authentication::request_scope();
         let principal = authentication::block_on(
@@ -191,7 +192,7 @@ fn realized_footprint_target_refinement_keeps_domain_failure_and_original_cancel
         );
         calls.reject_refinement.store(false, Ordering::SeqCst);
         let cancellation = WorthQueryCancellationSource::new();
-        let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+        let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         let fired = Arc::new(std::sync::atomic::AtomicBool::new(false));
         let observed = fired.clone();
         *calls.after_refinement.lock().unwrap() = Some(Box::new(move || {

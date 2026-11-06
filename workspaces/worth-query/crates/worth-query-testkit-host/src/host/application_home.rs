@@ -18,7 +18,6 @@ use worth_query_host::facade::{
 pub mod balance_query;
 pub mod retirement;
 pub use retirement::{request_with_handler_retirement_refusal, RefusingHomeProgram};
-mod checkpoint_resources;
 mod native_contribution;
 pub mod schema;
 use schema::HomeIdentitySchema;
@@ -86,9 +85,48 @@ pub fn request_with_initializer(
             worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
         > + 'static,
 ) -> WorthQueryApplicationHomeRequest<'static, HomeIdentitySchema, HomeProgram> {
+    request_at_location_with_initializer(
+        WorthQueryApplicationHomeLocation::Directory(location),
+        build,
+        contacts,
+        initial_state,
+    )
+}
+
+pub fn request_at_location(
+    location: WorthQueryApplicationHomeLocation,
+    build: ApplicationBuildIdentity,
+    initialized: Arc<AtomicUsize>,
+    contacts: Arc<AtomicUsize>,
+) -> WorthQueryApplicationHomeRequest<'static, HomeIdentitySchema, HomeProgram> {
+    request_at_location_with_initializer(location, build, contacts, move |_, graph, schema| {
+        initialized.fetch_add(1, Ordering::SeqCst);
+        schema::seed(graph, schema)
+    })
+}
+
+fn request_at_location_with_initializer(
+    location: WorthQueryApplicationHomeLocation,
+    build: ApplicationBuildIdentity,
+    contacts: Arc<AtomicUsize>,
+    initial_state: impl FnOnce(
+            &worth_query_host::facade::application_contribution::WorthQueryBootstrapAdvancementPhase<
+                '_,
+            >,
+            &mut worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphBootstrap<
+                HomeIdentitySchema,
+            >,
+            &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
+                HomeIdentitySchema,
+            >,
+        ) -> Result<
+            (),
+            worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
+        > + 'static,
+) -> WorthQueryApplicationHomeRequest<'static, HomeIdentitySchema, HomeProgram> {
     let declaration = HomeIdentitySchema::declaration().unwrap();
     WorthQueryApplicationHomeRequest::new(
-        WorthQueryApplicationHomeLocation::Directory(location),
+        location,
         ApplicationProgramAuthoring::<HomeIdentitySchema, HomeProgram>::begin()
             .with_schema(&declaration)
             .validated_program()
@@ -98,7 +136,7 @@ pub fn request_with_initializer(
         (contacts,),
         build,
         WorthQueryInMemoryApplicationLimits::new(
-            checkpoint_resources::resources(),
+            identity::world_resources(),
             WorthQueryApplicationQueryResourceProfile::default(),
             SignalConditionalEvaluationBudget::development(),
         ),

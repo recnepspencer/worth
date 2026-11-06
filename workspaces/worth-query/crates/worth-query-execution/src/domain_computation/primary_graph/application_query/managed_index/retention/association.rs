@@ -2,8 +2,7 @@
 use super::*;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
-pub(in crate::domain_computation::primary_graph::application_query) struct ManagedIndexRegistrationKey
-{
+pub struct ManagedIndexRegistrationKey {
     runtime: WorthQueryRuntimeAuthorityIdentity,
     incarnation: ProductBranchIncarnation,
     principal: EntityId,
@@ -11,10 +10,9 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Manag
     purpose: [u8; 32],
 }
 
-#[cfg(test)]
 impl ManagedIndexRegistrationKey {
     // Metadata-storage tests only: this key cannot create a typed receiver or READ.
-    pub(in crate::domain_computation::primary_graph::application_query) fn storage_key_for_test(
+    pub fn storage_key_for_test(
         runtime: WorthQueryRuntimeAuthorityIdentity,
         incarnation: ProductBranchIncarnation,
         scope: EntityId,

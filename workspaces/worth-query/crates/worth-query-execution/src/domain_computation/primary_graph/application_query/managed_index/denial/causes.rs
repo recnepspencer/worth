@@ -57,6 +57,7 @@ pub enum WorthQueryManagedIndexRefusal {
 /// The actual original cause, borrowed from the owned operation denial.
 #[derive(Debug, Eq, PartialEq)]
 pub enum WorthQueryManagedIndexDenialCause<'a> {
+    CurrentControl(&'a crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial),
     SourceVerification {
         kind: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind,
         authorization: Option<crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind>,
@@ -101,6 +102,7 @@ pub(super) fn provider(cause: &ProviderExecutionDenial) -> Cause<'_> {
         ProviderExecutionDenial::SourceRead(cause) => {
             use application_query::output_source_observation::SourceQueryObservationStop as Stop;
             match cause {
+                Stop::CurrentControl(cause) => Cause::CurrentControl(cause),
                 Stop::ManagedIndex(cause) => cause.cause(),
                 Stop::Installation(cause) => Cause::Installation(cause),
                 Stop::Principal(cause) => Cause::Principal(cause),
@@ -231,7 +233,7 @@ fn session(cause: &WorthQueryManagedIndexSessionDenial) -> Cause<'_> {
         Denial::Execution(cause) => Cause::Execution(cause),
         Denial::Product(cause) => Cause::Product(cause),
         Denial::AuthorityMismatch => Cause::Refused(Refusal::SessionAuthorityMismatch),
-        Denial::TerminalReleaseMismatch => Cause::Refused(Refusal::TerminalReleaseMismatch),
+        Denial::ForeignReadIntent => Cause::Refused(Refusal::ForeignReadIntent),
         Denial::Parent(cause) => graph_read(cause),
     }
 }
@@ -254,9 +256,6 @@ fn graph_read(cause: &WorthQueryManagedGraphReadDenial) -> Cause<'_> {
         }
         WorthQueryManagedGraphReadDenial::ForeignReadIntent => {
             Cause::Refused(Refusal::ForeignReadIntent)
-        }
-        WorthQueryManagedGraphReadDenial::TerminalReleaseMismatch => {
-            Cause::Refused(Refusal::TerminalReleaseMismatch)
         }
     }
 }

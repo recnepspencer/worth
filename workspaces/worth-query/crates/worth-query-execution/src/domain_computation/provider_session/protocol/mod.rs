@@ -3,9 +3,8 @@ mod commit_outcome;
 mod commit_stop;
 mod control_stopped;
 mod counters;
-mod declared_closure;
-#[cfg(test)]
-mod declared_closure_tests;
+pub(crate) mod declared_closure;
+
 mod denial;
 mod execution_plan;
 mod plan_contract;
@@ -17,10 +16,10 @@ pub(in crate::domain_computation) use session_grant_control::ProviderSessionGran
 pub use session_grant_control::{
     WorthQueryProviderSessionGrantControlDenial, WorthQueryProviderSessionGrantControlForTest,
 };
-mod session_affinity;
+pub(crate) mod session_affinity;
 mod session_binding;
 mod session_lease;
-mod terminal_binding;
+pub(crate) mod terminal_binding;
 mod terminal_outcome;
 
 pub use abort_outcome::*;

@@ -1,6 +1,7 @@
 //! Public committed index consumers, separate from the original application schema.
 mod boxes;
 mod directory;
+pub(super) mod directory_edit;
 mod expectations;
 mod host;
 mod journey;
@@ -9,9 +10,13 @@ pub(super) mod lifecycle;
 mod maintained;
 mod mutation;
 mod prefix;
+pub(super) mod prefix_alias_input;
+pub(super) mod prefix_cost_stages;
+pub(super) mod prefix_observation;
 mod query;
 mod refusing;
 mod schema;
+pub(super) mod structure_fault;
 #[cfg(test)]
 mod value_edits;
 

@@ -92,11 +92,13 @@ class WorkerFirstRootSession {
       activeImportContext: () => this.#activeImportContext,
       activeImportController: () => this.#activeImportController,
       setActiveImportContext: (context) => { this.#activeImportContext = context; },
-      refreshBranchCache: () => this.#refreshBranchCache(),
+      adoptBranchCache: (current, branches) => {
+        this.#cachedCurrentBranch = current; this.#cachedBranches = branches;
+      },
       currentImportContext: () => this.currentImportContext(),
       hasMutableInputId: (id) => this.hasMutableInputId(id),
       applyImportMutation: (controller, transactionOps, outputIds) => this.applyImportMutation(controller, transactionOps, outputIds),
-      publishDiagnosticsChanged: () => this.publishDiagnosticsChanged(),
+      adoptDiagnostics: (snapshot) => this.#liveDiagnostics.adopt(snapshot),
     });
     this.#resourceBranches = createWorkerFirstResourceBranchLifecycle({
       ready: () => this.ready(),

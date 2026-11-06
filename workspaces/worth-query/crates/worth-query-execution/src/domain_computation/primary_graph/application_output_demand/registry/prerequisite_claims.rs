@@ -23,7 +23,7 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 /// Claims the exact previously settled inputs of one running output before its
 /// product effect. The successful publication moves these claims into the
 /// demand record; dropping the ticket reverses them.
-pub(in crate::domain_computation::primary_graph) struct PreparedPrerequisiteClaims {
+pub struct PreparedPrerequisiteClaims {
     context: RequiredOutputDemandContext,
     predecessors: Vec<Arc<WorthQueryOutputDemandKey>>,
     claim_batch: Option<super::claim_readthrough::ClaimBatch>,
@@ -139,5 +139,4 @@ impl PreparedPrerequisiteClaims {
     }
 }
 
-#[cfg(test)]
-pub(super) mod custody_note_steps;
+mod court_doors_for_test;

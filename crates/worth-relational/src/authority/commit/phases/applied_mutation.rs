@@ -83,20 +83,9 @@ pub(crate) fn apply_mutation_draft(
     source_interpretation: std::sync::Arc<
         crate::validation::candidate_source::NativeManagedSourceInterpretation,
     >,
+    content: &crate::content::RelationalContentAttachments,
 ) -> Result<AppliedMutationDraft, MutationApplyDenial> {
-    if !identity
-        .source_interpretation()
-        .is_some_and(|owner| std::sync::Arc::ptr_eq(&owner, &source_interpretation))
-    {
-        return Err(crate::transactions::data::TransactionCommitError::conflict(
-            crate::transactions::data::CommitConflict::new(
-                crate::transactions::data::ConflictClass::StaleValidationBasis {
-                    detail: "candidate Source belongs to another proposal owner".into(),
-                },
-            ),
-        )
-        .into());
-    }
+    require_original_source_interpretation(identity, &source_interpretation)?;
     let materialization = source_interpretation.materialization_mode();
     let version_id = identity.proposed_version_id();
     let apply_plan = AuthoritativeApplyPlan {
@@ -136,6 +125,35 @@ pub(crate) fn apply_mutation_draft(
         crate::authority::commit::pipeline::request_lease(execution),
         runtime.commit_work_budget.clone(),
     )?;
+    state.content =
+        crate::content::run_commit_stage(execution, runtime.commit_work_budget.as_ref(), || {
+            crate::content::prepare_publication(
+                execution,
+                selected_state.selected().state().root(),
+                schema.registry(),
+                content,
+                &state,
+                &outcome.effect.publication.changed_records,
+                version_id,
+                source_interpretation.restoration_content(),
+            )
+        })
+        .map_err(crate::content::commit_denial)?;
+    state
+        .content
+        .bind_schema(schema)
+        .map_err(crate::content::commit_denial)?;
+    source_interpretation
+        .bind_content(
+            execution,
+            state.content.directory().map_err(|_| {
+                crate::content::commit_denial(
+                    crate::content::RelationalContentDenial::EncodingInconsistency,
+                )
+            })?,
+            schema,
+        )
+        .map_err(crate::content::commit_denial)?;
     crate::authority::mutation::apply_adjacency_deltas(
         &mut state,
         &outcome.effect.adjacency.deltas,
@@ -155,4 +173,109 @@ pub(crate) fn apply_mutation_draft(
         outcome,
         identities: PendingMutationIdentities { records, symbols },
     })
+}
+
+pub(crate) fn apply_retained_entity_selection_draft(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalPreparationRuntime,
+    selected_state: &SelectedRelationalBranchRead<'_>,
+    working_state: &WorkingState,
+    retained: &crate::authority::commit::semantic_plan::PreparedRetainedEntityPayload,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+    identity: &crate::mvcc::RelationalMutationProposalIdentity,
+    mut symbols: PendingSymbolMeanings,
+    source_interpretation: std::sync::Arc<
+        crate::validation::candidate_source::NativeManagedSourceInterpretation,
+    >,
+    content: &crate::content::RelationalContentAttachments,
+) -> Result<AppliedMutationDraft, MutationApplyDenial> {
+    require_original_source_interpretation(identity, &source_interpretation)?;
+    crate::aggregate_identity::guard::retained_entity_selection(
+        execution,
+        runtime.commit_work_budget.as_ref(),
+        schema.registry(),
+        retained.meaning.kind(),
+    )?;
+    let mut state = working_state.clone();
+    let mut records = runtime.record_identity.begin_allocations();
+    let config = crate::config::data::MutationConfig {
+        cascade_delete_policy: runtime.config.storage.cascade_delete_policy,
+        adjacency_policy: runtime.config.storage.adjacency_policy.clone(),
+        cross_context_policy: runtime.config.storage.cross_context_policy,
+    };
+    let outcome = crate::authority::mutation::retained_entity_selection::apply(
+        execution,
+        &mut state,
+        retained,
+        identity.proposed_version_id(),
+        &config,
+        schema.registry(),
+        schema.aspect_plans(),
+        &mut symbols,
+        &mut records,
+        runtime.commit_work_budget.clone(),
+    )?;
+    state.content =
+        crate::content::run_commit_stage(execution, runtime.commit_work_budget.as_ref(), || {
+            crate::content::prepare_publication(
+                execution,
+                selected_state.selected().state().root(),
+                schema.registry(),
+                content,
+                &state,
+                &outcome.effect.publication.changed_records,
+                identity.proposed_version_id(),
+                Some(retained._source.inner.root.retained_content()),
+            )
+        })
+        .map_err(crate::content::commit_denial)?;
+    state
+        .content
+        .bind_schema(schema)
+        .map_err(crate::content::commit_denial)?;
+    source_interpretation
+        .bind_content(
+            execution,
+            state.content.directory().map_err(|_| {
+                crate::content::commit_denial(
+                    crate::content::RelationalContentDenial::EncodingInconsistency,
+                )
+            })?,
+            schema,
+        )
+        .map_err(crate::content::commit_denial)?;
+    let aggregate = crate::aggregate_identity::AggregateProposal::capture(
+        schema,
+        selected_state.selected(),
+        identity,
+        outcome.effect.clone(),
+        None,
+    );
+    Ok(AppliedMutationDraft {
+        source_interpretation,
+        state,
+        outcome,
+        aggregate,
+        identities: PendingMutationIdentities { records, symbols },
+    })
+}
+
+fn require_original_source_interpretation(
+    identity: &crate::mvcc::RelationalMutationProposalIdentity,
+    source: &std::sync::Arc<crate::validation::candidate_source::NativeManagedSourceInterpretation>,
+) -> Result<(), MutationApplyDenial> {
+    if identity
+        .source_interpretation()
+        .is_some_and(|owner| std::sync::Arc::ptr_eq(&owner, source))
+    {
+        return Ok(());
+    }
+    Err(crate::transactions::data::TransactionCommitError::conflict(
+        crate::transactions::data::CommitConflict::new(
+            crate::transactions::data::ConflictClass::StaleValidationBasis {
+                detail: "candidate Source belongs to another proposal owner".into(),
+            },
+        ),
+    )
+    .into())
 }

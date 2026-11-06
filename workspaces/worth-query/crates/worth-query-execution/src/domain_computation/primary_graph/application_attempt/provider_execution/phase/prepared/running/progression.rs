@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
     provider_binding::WorthQueryPreparedApplicationProviderAttempt,
     snapshot_lease::WorthQueryApplicationSnapshotLease, WorthQueryApplicationIdempotencyBinding,
 };
+use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
 use crate::domain_computation::primary_graph::provider::{
     WorthQueryApplicationBranchCommitCoordination, WorthQueryPrimaryGraphProvider,
 };
@@ -15,10 +16,10 @@ mod authorized;
 mod commit_resolution;
 mod fresh;
 mod invariant;
-mod mutation_cleanup;
-pub(in crate::domain_computation::primary_graph::application_attempt) mod progressed;
-mod registered;
-mod session_admission;
+pub(crate) mod mutation_cleanup;
+pub(crate) mod progressed;
+pub(crate) mod registered;
+pub(crate) mod session_admission;
 
 pub(in crate::domain_computation::primary_graph::application_attempt) use commit_resolution::WorthQueryFreshCommitReceiptPermit;
 use mutation_cleanup::WorthQueryApplicationMutationCleanupOwner;
@@ -26,8 +27,7 @@ pub(in crate::domain_computation) use registered::{
     WorthQueryProviderAttemptRegistrationContext, WorthQueryRegisteredProviderAttempt,
 };
 
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) struct WorthQueryProgressedApplicationCommit
-{
+pub struct WorthQueryProgressedApplicationCommit {
     original_completion:
         crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver,
     outcome: WorthQueryProviderProgressionOutcome,
@@ -62,7 +62,7 @@ struct WorthQueryProviderProgression<'a, Schema, Operation, Input, Scope> {
     >,
 }
 
-struct WorthQueryProviderProgressionCompletion {
+pub struct WorthQueryProviderProgressionCompletion {
     outcome: WorthQueryProviderProgressionOutcome,
     cleanup: WorthQueryApplicationMutationCleanupOwner,
 }
@@ -88,8 +88,7 @@ impl WorthQueryProviderProgressionCompletion {
     }
 }
 
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution::phase)
-struct WorthQueryApplicationCommitProgressionAuthority<
+pub struct WorthQueryApplicationCommitProgressionAuthority<
     'a,
     'provider,
     Schema,
@@ -115,6 +114,7 @@ struct WorthQueryApplicationCommitProgressionAuthority<
     product: &'a crate::basis::WorthQueryProductBranchLease,
     original_completion:
         &'a crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver,
+    history: Option<HistoryProducerInvocation<'a>>,
     aftermath_causality: Option<
         crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
     >,
@@ -165,12 +165,7 @@ impl<'a, 'provider, Schema, Operation, Input, Scope>
     }
 }
 
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) fn progress_application_commit<
-    Schema,
-    Operation,
-    Input,
-    Scope,
->(
+pub fn progress_application_commit<Schema, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
 
@@ -178,6 +173,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
         Schema,
     >,
     running_commit: WorthQueryRunningApplicationCommit<Schema, Operation, Input, Scope>,
+    history: Option<HistoryProducerInvocation<'_>>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> super::completion_storage::CompletedApplicationCommit
 where
@@ -205,8 +201,8 @@ where
         WorthQueryProviderProgression {
             application,
             running: &mut running,
-            graph: &application.primary_graph_authority,
-            provider: &application.primary_provider,
+            graph: application.runtime.primary_graph_authority(),
+            provider: &application.runtime.primary_provider,
             admission: &admission,
             prepared: provider_attempt,
             outcome_identity,
@@ -217,6 +213,7 @@ where
         },
         mutation_run,
         &original_completion,
+        history,
         allocation_policy,
     )
     .finish(
@@ -235,6 +232,7 @@ fn progress_provider_application<Schema, Operation, Input, Scope>(
     progression: WorthQueryProviderProgression<'_, Schema, Operation, Input, Scope>,
     mutation_run: crate::domain_computation::provider_session::WorthQueryMutationRunBinding,
     original_completion: &crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver,
+    history: Option<HistoryProducerInvocation<'_>>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> WorthQueryProviderProgressionCompletion
 where
@@ -290,10 +288,12 @@ where
     };
     provider.after_application_attempt_registration_for_test();
     let command_lane = application
+        .runtime
         .primary_provider
         .correction_commit_lane(&idempotency);
     let _command = command_lane.as_ref().map(|lane| lane.enter());
     let commit_lane = application
+        .runtime
         .primary_provider
         .application_branch_commit_lane(product.observation());
 
@@ -307,7 +307,10 @@ where
         coordination: &coordination,
         product: &product,
         original_completion,
+        history,
         aftermath_causality,
     };
     registered_session.progress(execution, &authority, allocation_policy)
 }
+
+mod court_doors_for_test;

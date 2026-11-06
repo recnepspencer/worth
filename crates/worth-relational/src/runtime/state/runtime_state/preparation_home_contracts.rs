@@ -48,11 +48,22 @@ impl RelationalPreparationRuntime {
                 runtime.execution_contracts = Some(selected.clone());
             }
             None => {
-                if !basis
-                    .inner
-                    .root
-                    .schema_authority()
-                    .has_same_executable_meaning_except_basis(&self.config.schema.registry)
+                // D16 governs a medium bound by the Home owner. Ordinary Native
+                // roots keep interpreting their own admitted schema inventory.
+                let home = self
+                    .durability_admission
+                    .requires_home_program_contracts()
+                    .map_err(|cause| {
+                        TransactionCommitError::publication_denied(
+                            crate::mvcc::RelationalPublicationDenial::HomeProgramTransition(cause),
+                        )
+                    })?;
+                if home
+                    && !basis
+                        .inner
+                        .root
+                        .schema_authority()
+                        .has_same_executable_meaning_except_basis(&self.config.schema.registry)
                 {
                     return Err(required_contracts());
                 }

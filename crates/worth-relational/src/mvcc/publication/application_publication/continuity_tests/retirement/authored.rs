@@ -136,7 +136,7 @@ fn ordinary_authored_complete_retirement_reissues_only_through_exact_warm_and_co
             matches!(origin.publication, crate::history::data::CanonicalOutputPublication::AuthoredRetirement { predecessor } if predecessor == born.commit.commit_id)
         );
         assert_eq!(origin.producer, "authored-creator");
-        assert_eq!(origin.dependency_identity, [1; 32]);
+        assert_eq!(*origin.dependency_identity.bytes(), [1; 32]);
         assert_eq!(origin.outputs, ids);
         assert!(origin
             .members

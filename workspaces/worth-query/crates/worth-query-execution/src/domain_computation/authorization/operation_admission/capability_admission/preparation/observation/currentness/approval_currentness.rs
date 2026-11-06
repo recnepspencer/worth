@@ -65,7 +65,7 @@ where
                 execution,
                 relational,
                 snapshot,
-                prepared.runtime().authorization.bridge(),
+                prepared.runtime().runtime.authorization.bridge(),
             )
             .map_err(|cause| {
                 crate::domain_computation::authorization::denial::relational_read_denial(

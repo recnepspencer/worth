@@ -1,4 +1,5 @@
 use super::{WalSegmentIdentity, WAL_FRAME_V1_HEADER_BYTES, WAL_FRAME_V1_VERSION};
+use worth_foundational::CanonicalDigestId;
 
 const MAGIC: &[u8; 8] = b"WORTHWAL";
 
@@ -9,8 +10,8 @@ pub struct WalFrameV1Header {
     lsn_start: u64,
     lsn_end: u64,
     payload_bytes: u64,
-    identity_digest: [u8; 32],
-    payload_digest: [u8; 32],
+    identity_digest: CanonicalDigestId,
+    payload_digest: CanonicalDigestId,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -20,8 +21,8 @@ pub(super) struct UnverifiedWalFrameV1Header {
     lsn_start: u64,
     lsn_end: u64,
     payload_bytes: u64,
-    identity_digest: [u8; 32],
-    payload_digest: [u8; 32],
+    identity_digest: CanonicalDigestId,
+    payload_digest: CanonicalDigestId,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -63,8 +64,12 @@ pub(super) fn decode_unverified_wal_frame_v1_header(
         lsn_start: read_u64(header, 28),
         lsn_end: read_u64(header, 36),
         payload_bytes: read_u64(header, 44),
-        identity_digest: header[52..84].try_into().expect("fixed identity digest"),
-        payload_digest: header[84..116].try_into().expect("fixed payload digest"),
+        identity_digest: CanonicalDigestId::new(
+            header[52..84].try_into().expect("fixed identity digest"),
+        ),
+        payload_digest: CanonicalDigestId::new(
+            header[84..116].try_into().expect("fixed payload digest"),
+        ),
     })
 }
 
@@ -89,8 +94,8 @@ impl UnverifiedWalFrameV1Header {
             lsn_start: self.lsn_start,
             lsn_end: self.lsn_end,
             payload_bytes: self.payload_bytes,
-            identity_digest: self.identity_digest,
-            payload_digest: self.payload_digest,
+            identity_digest: CanonicalDigestId::new(*self.identity_digest.bytes()),
+            payload_digest: CanonicalDigestId::new(*self.payload_digest.bytes()),
         })
     }
 
@@ -99,7 +104,7 @@ impl UnverifiedWalFrameV1Header {
     }
 
     pub(super) const fn payload_digest(self) -> [u8; 32] {
-        self.payload_digest
+        *self.payload_digest.bytes()
     }
 }
 
@@ -129,11 +134,11 @@ impl WalFrameV1Header {
     }
 
     pub const fn identity_digest(self) -> [u8; 32] {
-        self.identity_digest
+        *self.identity_digest.bytes()
     }
 
     pub const fn payload_digest(self) -> [u8; 32] {
-        self.payload_digest
+        *self.payload_digest.bytes()
     }
 }
 

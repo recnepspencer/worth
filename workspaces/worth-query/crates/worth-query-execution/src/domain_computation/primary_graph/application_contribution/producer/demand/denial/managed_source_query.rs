@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::{
         WorthQueryManagedIndexDenial as Cause, WorthQueryManagedIndexDenialCause as Detail,
         WorthQueryManagedIndexStop as Stop, WorthQueryManagedIndexWorkDenial as Work,
     },
-    output_reuse,
+    output_reuse, WorthQueryOutputDemandRecoveryPosture,
 };
 use std::sync::Arc;
 impl WorthQueryOutputDemandDenial {
@@ -14,6 +14,25 @@ impl WorthQueryOutputDemandDenial {
         subject: &'static str,
     ) -> Self {
         let mut denial = match cause.cause() {
+            Detail::CurrentControl(stop) => stop.clone(),
+            Detail::SourceVerification { execution: Some(stop), .. } =>
+                output_reuse::read_denial(stop).with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Retryable),
+            Detail::SourceVerification { authorization: Some(kind), .. } =>
+                Self::new(WorthQueryOutputDemandDenialKind::of_request_authorization(kind), subject)
+                    .with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Retryable),
+            Detail::SourceVerification { kind, .. } => {
+                use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind as Attempt;
+                let kind = match kind {
+                    Attempt::Cancelled => WorthQueryOutputDemandDenialKind::Cancelled,
+                    Attempt::DeadlineExceeded => WorthQueryOutputDemandDenialKind::TimedOut,
+                    Attempt::DecisionFactBudgetExceeded => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+                    Attempt::ExecutionRequest(stop) => WorthQueryOutputDemandDenialKind::SourceQueryExecution(
+                        crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(stop)),
+                    _ => return Self::new(WorthQueryOutputDemandDenialKind::ManagedIndexSourceDenied, subject)
+                        .with_managed_source_query(cause),
+                };
+                Self::new(kind, subject).with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Retryable)
+            }
             Detail::Work(Work::Controlled(Stop::Request(stop))) => {
                 output_reuse::read_denial((*stop).into())
             }
@@ -71,5 +90,10 @@ impl WorthQueryOutputDemandDenial {
     /// Exact original managed read error, including its typed domain/request/refusal.
     pub fn managed_source_query_denial(&self) -> Option<&Cause> {
         self.evidence.as_ref()?.managed_source_query.as_deref()
+    }
+
+    fn with_managed_source_query(mut self, cause: Arc<Cause>) -> Self {
+        self.evidence_mut().managed_source_query = Some(cause);
+        self
     }
 }

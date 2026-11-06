@@ -218,7 +218,7 @@ fn rehashed_cross_region_kind_forgery_is_refused_by_the_canonical_root() {
         .collect::<BTreeMap<_, _>>();
     let schema_digest = wire.manifest.roots[0].schema_carrier_digest;
     let frame = RelationalRegionImage::decode(
-        &members[&leaf.head],
+        members[&leaf.head].bytes(),
         leaf.head,
         a.partition_id,
         schema_digest,
@@ -269,6 +269,7 @@ fn rehashed_cross_region_kind_forgery_is_refused_by_the_canonical_root() {
                 root.recorded_components.clone(),
                 root.schema_carrier_digest,
                 regions,
+                root.content.clone(),
             )
         })
         .collect();

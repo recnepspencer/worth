@@ -18,7 +18,7 @@ struct ActivationEntry {
 }
 
 /// Bounded coordination only. Entries contain no head or component selection.
-pub(crate) struct WorthQueryProductActivationRegistry {
+pub struct WorthQueryProductActivationRegistry {
     state: Mutex<ActivationRegistryState>,
     capacity: Arc<ActivationCapacity>,
 }
@@ -33,9 +33,7 @@ struct ActivationRegistryState {
 }
 
 impl WorthQueryProductActivationRegistry {
-    pub(crate) fn new(
-        limit: RuntimeWorldBudgetLimit,
-    ) -> Result<Self, WorthQueryProductActivationDenial> {
+    pub fn new(limit: RuntimeWorldBudgetLimit) -> Result<Self, WorthQueryProductActivationDenial> {
         let mut gates = HashMap::new();
         if let Some(maximum) = limit.get() {
             gates
@@ -224,7 +222,7 @@ impl WorthQueryProductActivationRegistry {
 }
 
 /// Branch capacity admission precedes World branch creation.
-pub(crate) struct WorthQueryProductActivationReservation<'a> {
+pub struct WorthQueryProductActivationReservation<'a> {
     registry: &'a WorthQueryProductActivationRegistry,
     gate: Arc<WorthQueryProductActivationGate>,
     program: Option<ApplicationProgramRevision>,
@@ -342,3 +340,5 @@ impl Drop for WorthQueryProgramRetirementBarrier {
             .remove(&self.revision);
     }
 }
+
+mod court_doors_for_test;

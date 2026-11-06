@@ -1,4 +1,5 @@
 use crate::DerivedFamilyRootDirectoryBinding;
+use worth_foundational::CanonicalDigestId;
 
 use super::PersistedDerivedDirectoryRecordBinding;
 
@@ -8,7 +9,7 @@ use super::PersistedDerivedDirectoryRecordBinding;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PersistedReleasedDirectoryReplacementV1 {
     expected_previous: DerivedFamilyRootDirectoryBinding,
-    expected_previous_payload_sha256: [u8; 32],
+    expected_previous_payload_sha256: CanonicalDigestId,
     next: PersistedDerivedDirectoryRecordBinding,
 }
 
@@ -25,7 +26,9 @@ impl PersistedReleasedDirectoryReplacementV1 {
             && next.record().record() != expected_previous.directory_record())
         .then_some(Self {
             expected_previous,
-            expected_previous_payload_sha256,
+            expected_previous_payload_sha256: CanonicalDigestId::new(
+                expected_previous_payload_sha256,
+            ),
             next,
         })
     }
@@ -35,7 +38,7 @@ impl PersistedReleasedDirectoryReplacementV1 {
     }
 
     pub const fn expected_previous_payload_sha256(self) -> [u8; 32] {
-        self.expected_previous_payload_sha256
+        *self.expected_previous_payload_sha256.bytes()
     }
 
     pub const fn next(self) -> PersistedDerivedDirectoryRecordBinding {

@@ -69,6 +69,8 @@ fn requires_resource_nodes(member: &ApplicationSchemaMember) -> bool {
         | OperationComponentRead { .. }
         | PrincipalBinding { .. }
         | ApplicationQuery { .. }
+        | ContentFormat { .. }
+        | ApplicationHistory { .. }
         | ApplicationHistoryQuery { .. }
         | ApplicationQueryInspection { .. }
         | ApplicationCapability { .. }

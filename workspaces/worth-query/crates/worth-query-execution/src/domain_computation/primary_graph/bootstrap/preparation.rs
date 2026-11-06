@@ -117,13 +117,7 @@ impl WorthQueryExecutionInstallationAuthority {
     > {
         let execution = phase.execution_request();
 
-        let super::native_meaning::InstalledNativeSchemaMeaning {
-            managed_views,
-            source_initializer,
-            layout,
-            receipt: mut invariant_installation_receipt,
-            expected_invariant_inventory_digest,
-        } = self.prepare_native_schema(
+        let mut schema = self.prepare_native_schema(
             phase,
             runtime,
             installed_schema,
@@ -144,8 +138,8 @@ impl WorthQueryExecutionInstallationAuthority {
                 }
                 .map_err(map_checkpoint_recovery_stop)?;
                 if !authority.codec_transition_pending() {
-                    invariant_installation_receipt = relational_runtime
-                    .readmit_recovered_initial_schema_installation(invariant_installation_receipt)
+                    schema.receipt = relational_runtime
+                    .readmit_recovered_initial_schema_installation(schema.receipt)
                     .map_err(|error| {
                         primary_graph_denial(
                             if error.kind() == worth_relational::facade::runtime::RelationalInitialSchemaInstallationDenialKind::RecoveredAuthorityMismatch {
@@ -175,6 +169,13 @@ impl WorthQueryExecutionInstallationAuthority {
         } else {
             None
         };
+        let super::native_meaning::InstalledNativeSchemaMeaning {
+            managed_views,
+            source_initializer,
+            layout,
+            receipt: invariant_installation_receipt,
+            expected_invariant_inventory_digest,
+        } = schema.bind_sources(&relational_runtime.main_branch_identity());
         let mut graph = super::prepared_native::PreparedNativeGraph::new(
             relational_runtime,
             layout,
@@ -220,6 +221,11 @@ pub(super) fn map_checkpoint_recovery_stop(
             WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
             format!("native checkpoint admission image refused: {cause:?}"),
         ),
+        RelationalRecoveryStop::Content(cause) => primary_graph_denial(
+            WorthQueryPrimaryGraphInstallationDenialKind::ContentAdmissionRejected,
+            "native checkpoint content refused",
+        )
+        .with_content_cause(cause),
         RelationalRecoveryStop::Durability(error) => primary_graph_denial(
             WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
             format!("native checkpoint recovery denied: {error:?}"),
@@ -369,3 +375,5 @@ mod tests {
         );
     }
 }
+
+mod court_doors_for_test;

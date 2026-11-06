@@ -10,7 +10,7 @@ use crate::domain_computation::primary_graph::{
 use std::sync::Arc;
 use worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkPlanIdentity;
 
-pub(in crate::domain_computation) struct WorthQuerySessionInspectionReadProof {
+pub struct WorthQuerySessionInspectionReadProof {
     session: WorthQueryGraphWorkSessionIdentity,
     plan: WorthQueryGraphWorkPlanIdentity,
     basis: WorthQueryApplicationBasisIdentity,
@@ -88,12 +88,6 @@ impl WorthQueryManagedGraphWorkSession {
             .plan
             .complete_application_inspection()
             .ok_or(WorthQueryManagedGraphReadDenial::ForeignReadIntent)?;
-        if release.scope()
-            != worth_query_admission::integration::WorthQueryExecutionCapacityReservationScope::GraphWork
-            || release.released_reservation_count() != 1
-        {
-            return Err(WorthQueryManagedGraphReadDenial::TerminalReleaseMismatch.into());
-        }
         Ok(WorthQueryInspectionReadCompletion {
             session: self.identity,
             managed_run: self.managed_run,

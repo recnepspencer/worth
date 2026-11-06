@@ -10,7 +10,7 @@ use super::SourceInvalidationOwner;
 use crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness;
 
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct RegisteredOutputFacts {
+pub struct RegisteredOutputFacts {
     pub(super) facts: Arc<[Fact]>,
 }
 

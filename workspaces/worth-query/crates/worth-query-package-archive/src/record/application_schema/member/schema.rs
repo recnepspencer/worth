@@ -33,6 +33,12 @@ pub(super) fn write(
     member: &ApplicationSchemaMember,
 ) -> Result<(), Denial> {
     match member {
+        ApplicationSchemaMember::ContentFormat { declaration } => {
+            output.raw_bytes(&declaration.identity)?;
+            output.text(&declaration.name)?;
+            output.u32(declaration.version)?;
+            output.u64(declaration.maximum_frame_bytes)
+        }
         ApplicationSchemaMember::Entity { entity } => output.text(entity),
         ApplicationSchemaMember::Aspect {
             entity,
@@ -95,6 +101,7 @@ fn write_field(
         presence,
         scalar_family,
         canonical: _,
+        content_format,
         value_type,
         unit,
         frame,
@@ -119,7 +126,11 @@ fn write_field(
     }
     foundational_value::write_bool(output, *writable)?;
     foundational_value::write_bool(output, *equality_queryable)?;
-    foundational_value::write_bool(output, *unique)
+    foundational_value::write_bool(output, *unique)?;
+    if let Some(identity) = content_format {
+        output.raw_bytes(identity)?;
+    }
+    Ok(())
 }
 
 fn write_relation(
@@ -151,6 +162,11 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationSchemaMember, Denial> {
     Ok(match tag {
+        52 => ApplicationSchemaMember::ContentFormat {
+            declaration: worth_query_declaration::facade::application_schema::ApplicationContentFormatDeclaration {
+                identity: input.array()?, name: input.text()?.to_owned(), version: input.u32()?, maximum_frame_bytes: input.u64()?,
+            },
+        },
         1 => ApplicationSchemaMember::Entity {
             entity: input.text()?.to_owned(),
         },
@@ -161,7 +177,7 @@ pub(super) fn decode(
             revision: AspectContractRevision(input.u64()?),
             absence: super::super::super::foundational_aspect::decode_absence(input)?,
         },
-        3 | 25 => ApplicationSchemaMember::Field {
+        3 | 25 | 53 | 54 => ApplicationSchemaMember::Field {
             entity: input.text()?.to_owned(),
             aspect: input.text()?.to_owned(),
             field: input.text()?.to_owned(),
@@ -172,12 +188,13 @@ pub(super) fn decode(
             unit: super::super::wire_vocabulary::decode_optional(input, |input| {
                 Ok(input.text()?.to_owned())
             })?,
-            frame: (tag == 25)
+            frame: matches!(tag,25 | 54)
                 .then(|| input.text().map(str::to_owned))
                 .transpose()?,
             writable: foundational_value::decode_bool(input)?,
             equality_queryable: foundational_value::decode_bool(input)?,
             unique: foundational_value::decode_bool(input)?,
+            content_format: matches!(tag,53 | 54).then(|| input.array()).transpose()?,
         },
         4 | 26 => ApplicationSchemaMember::Relation {
             relation: input.text()?.to_owned(),

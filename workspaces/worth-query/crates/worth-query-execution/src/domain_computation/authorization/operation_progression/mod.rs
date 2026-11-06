@@ -1,8 +1,9 @@
 //! Owner-sealed progression from authorization into operation admission.
 
-mod authority_validation;
+pub(crate) mod authority_validation;
 pub(in crate::domain_computation) use authority_validation::{
-    authorize_public_mutation_on_selected, SelectedConventionalAdmissionStop,
+    authorize_current_control_mutation_on_selected, authorize_public_mutation_on_selected,
+    SelectedConventionalAdmissionStop,
 };
 
 pub use authority_validation::WorthQueryAdmittedApplicationCapabilityAccess;
@@ -131,3 +132,7 @@ where
     let bound = authority_validation::bind_conventional_preconditions(validated, preconditions)?;
     authority_validation::transition_conventional_operation(execution, bound)
 }
+
+pub(in crate::domain_computation) use authority_validation::{
+    BrandTag, ReadCompletionAdmission, WorthQueryAdmittedOperation,
+};

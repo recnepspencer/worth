@@ -4,14 +4,13 @@ use crate::domain_computation::primary_graph::{
     application_attempt::WorthQueryApplicationObservedFact as Fact,
     application_checkpoint::facts::FactPayload,
 };
-#[cfg(test)]
 use std::sync::Arc;
 use std::{collections::BTreeMap, ops::Deref};
 use worth_query_installation::facade::WorthQueryOperationGraphReadScope;
 
 /// Keeps exact backing and its native/decode funding; never a freshness proof.
 #[derive(Clone)]
-pub(in crate::domain_computation) struct SharedObservedFact {
+pub struct SharedObservedFact {
     payload: FactPayload,
     ordinal: usize,
 }
@@ -35,7 +34,7 @@ impl Deref for SharedObservedFact {
 }
 
 #[derive(Clone)]
-pub(in crate::domain_computation) struct SharedReadScope {
+pub struct SharedReadScope {
     backing: ScopeBacking,
 }
 #[derive(Clone)]
@@ -45,7 +44,6 @@ enum ScopeBacking {
             crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
         ordinal: usize,
     },
-    #[cfg(test)]
     OwnerFixture(Arc<WorthQueryOperationGraphReadScope>),
 }
 impl AsRef<WorthQueryOperationGraphReadScope> for SharedReadScope {
@@ -54,7 +52,6 @@ impl AsRef<WorthQueryOperationGraphReadScope> for SharedReadScope {
             ScopeBacking::Installed { installed, ordinal } => installed
                 .get(*ordinal)
                 .expect("completed installed scope ordinal"),
-            #[cfg(test)]
             ScopeBacking::OwnerFixture(scope) => scope,
         }
     }
@@ -245,7 +242,6 @@ impl CompletedApplicationFacts {
     }
 }
 
-#[cfg(test)]
 impl From<Fact> for SharedObservedFact {
     fn from(fact: Fact) -> Self {
         Self {
@@ -255,7 +251,6 @@ impl From<Fact> for SharedObservedFact {
     }
 }
 
-#[cfg(test)]
 impl From<WorthQueryOperationGraphReadScope> for SharedReadScope {
     fn from(scope: WorthQueryOperationGraphReadScope) -> Self {
         Self {

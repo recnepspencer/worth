@@ -1,4 +1,4 @@
-pub(super) mod application_publication;
+pub(crate) mod application_publication;
 mod home_retirement;
 mod runtime_access;
 mod snapshot_release;
@@ -11,9 +11,8 @@ use worth_relational::facade::runtime::RelationalRuntime;
 use super::schema_layout::WorthQueryPrimaryGraphLayout;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryRelationalSourceOwner;
 
-pub(super) mod index_installation;
+pub(crate) mod index_installation;
 mod selected_runtime;
-#[cfg(test)]
 mod test_inspection;
 use index_installation::primary_index_inventory;
 
@@ -177,15 +176,13 @@ impl std::fmt::Debug for WorthQueryPrimaryGraph {
 #[doc(hidden)]
 #[derive(Clone)]
 pub struct WorthQueryPrimaryGraphIntegrationHandle {
-    pub(super) application_publication:
-        Option<Arc<application_publication::ApplicationPublication>>,
+    pub application_publication: Option<Arc<application_publication::ApplicationPublication>>,
     pub(super) source_owner: home_retirement::PrimaryGraphSourceCustody,
     pub(super) layout: Arc<WorthQueryPrimaryGraphLayout>,
     pub(super) primary_index_ids: Arc<[worth_relational::facade::indexes::DerivedIndexId]>,
     pub(super) aggregate_projections:
         Arc<Mutex<super::aggregate_projection::WorthQueryAggregateProjections>>,
-    pub(in crate::domain_computation::primary_graph) output_lineage:
-        Arc<Mutex<super::output_lineage::WorthQueryApplicationOutputLineage>>,
+    pub output_lineage: Arc<Mutex<super::output_lineage::WorthQueryApplicationOutputLineage>>,
     pub(in crate::domain_computation::primary_graph) managed_derived_views:
         Arc<super::application_query::derived_view::ManagedDerivedViewRegistry>,
     pub(in crate::domain_computation::primary_graph) workflow_compilation_reuse:
@@ -343,3 +340,5 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
         self.truth_partition_role.as_ref()
     }
 }
+
+mod court_doors_for_test;

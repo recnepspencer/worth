@@ -8,7 +8,7 @@ use serde::{
 pub(in crate::storage::overlay::partition_content) struct FrontierView<'a> {
     root: Option<&'a Node>,
     siblings: usize,
-    last: Option<(u128, [u8; 32])>,
+    last: Option<(u128, worth_foundational::CanonicalDigestId)>,
 }
 impl DigestIndex {
     pub(in crate::storage::overlay::partition_content) fn append_frontier_view(
@@ -37,7 +37,7 @@ impl DigestIndex {
                 return Some(FrontierView {
                     root: self.root.as_deref(),
                     siblings,
-                    last: Some((node.key, value)),
+                    last: Some((node.key, worth_foundational::CanonicalDigestId::new(value))),
                 });
             }
         }
@@ -68,7 +68,7 @@ impl Serialize for Siblings<'_> {
             sequence.serialize_element(&HistoryFrontierSibling {
                 key: children[0].key,
                 bit: children[0].bit,
-                digest: children[0].digest,
+                digest: worth_foundational::CanonicalDigestId::new(children[0].digest),
                 parent_bit: node.bit,
             })?;
             current = Some(&children[1]);

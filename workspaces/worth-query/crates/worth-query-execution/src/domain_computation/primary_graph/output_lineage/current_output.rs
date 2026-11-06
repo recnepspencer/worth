@@ -1,7 +1,6 @@
 mod observation_reader;
-#[cfg(test)]
-mod receipt_stops;
-mod retained_candidates;
+
+pub(crate) mod retained_candidates;
 
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
 use crate::equality_type_id::EqualityTypeId as TypeId;
@@ -19,7 +18,7 @@ use super::WorthQueryApplicationOutputLineage;
 use super::WorthQueryProducerLineageHead;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
 
-pub(in crate::domain_computation::primary_graph) struct RetainedOutputCurrentnessRead {
+pub struct RetainedOutputCurrentnessRead {
     pub(in crate::domain_computation::primary_graph) identity:
         Arc<super::RecordedSettlementIdentity>,
     pub(in crate::domain_computation::primary_graph) facts: Option<super::ComparableSourceFacts>,
@@ -98,12 +97,12 @@ impl WorthQueryApplicationOutputLineage {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn source_facts_for_receipt(
+    pub(in crate::domain_computation::primary_graph) fn source_facts_for_publication(
         &self,
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
-        receipt: &WorthQueryApplicationCommitReceipt,
+        receipt: crate::domain_computation::primary_graph::application_output_demand::OutputPublicationView<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Option<RetainedOutputCurrentnessRead>, CompanionPreflightStop> {
         let Some(output_binding) = receipt.output_correspondence().binding_type() else {
@@ -182,7 +181,7 @@ impl WorthQueryApplicationOutputLineage {
         let source = SemanticSource {
             runtime_authority,
             schema: schema.clone(),
-            scope: restored.scope,
+            scope: restored.source_scope,
             output_binding,
         };
         if !self.by_source.contains_key(&source) {
@@ -196,11 +195,11 @@ impl WorthQueryApplicationOutputLineage {
             let (recorded, _) = self.matching_output_in_partition_budgeted(
                 &source,
                 coordinate,
-                restored.partition,
+                restored.checkpoint.source_partition,
                 execution,
                 |recorded| {
                     recorded.source_identity
-                        == Some(RecordedSourceIdentity::Checkpoint(restored.identity))
+                        == Some(RecordedSourceIdentity::Checkpoint(restored.source_identity))
                         && std::ptr::eq(
                             recorded.correspondence.as_ref(),
                             settlement.output_correspondence.as_ref(),
@@ -221,19 +220,25 @@ impl WorthQueryApplicationOutputLineage {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn current_output_matches_receipt(
+    pub(in crate::domain_computation::primary_graph) fn current_output_matches_publication(
         &self,
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
-        receipt: &WorthQueryApplicationCommitReceipt,
+        receipt: crate::domain_computation::primary_graph::application_output_demand::OutputPublicationView<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<bool, CompanionPreflightStop> {
-        self.source_facts_for_receipt(runtime_authority, schema, observation, receipt, execution)
-            .map(|read| {
-                read.and_then(|read| read.facts)
-                    .is_some_and(|facts| !facts.is_empty())
-            })
+        self.source_facts_for_publication(
+            runtime_authority,
+            schema,
+            observation,
+            receipt,
+            execution,
+        )
+        .map(|read| {
+            read.and_then(|read| read.facts)
+                .is_some_and(|facts| !facts.is_empty())
+        })
     }
 
     /// A stable authority names one immutable alias row. Selection must still
@@ -320,3 +325,5 @@ fn retained_currentness_read(
         verification_requirement: recorded.verification_requirement(),
     }))
 }
+
+mod court_doors_for_test;

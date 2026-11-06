@@ -22,7 +22,7 @@ pub(super) fn run(
         .world_operation_control_for_test()
         .pause_before_product_compare_for_test(NonZeroUsize::MIN);
     let cancellation = WorthQueryCancellationSource::new();
-    let original_scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let original_scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let calls = rules.provider.clone();
     let outcome = std::thread::scope(|threads| {
         let inspector = threads.spawn(move || {

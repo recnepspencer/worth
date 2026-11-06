@@ -22,6 +22,7 @@ pub enum RelationalCheckpointAdmissionRefusal {
     Allocation(worth_execution::ExecutionAllocationDenial),
     Buffer(worth_execution::ExecutionRequestArrayDenial),
     Native(crate::durability::data::DurabilityError),
+    Content(crate::content::RelationalContentDenial),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -79,6 +80,7 @@ pub(crate) fn native_stop(
     use crate::durability::data::RelationalRecoveryStop as Stop;
     match cause {
         Stop::AdmissionImage(cause) => cause,
+        Stop::Content(cause) => RelationalCheckpointAdmissionRefusal::Content(cause),
         Stop::Request(cause) => RelationalCheckpointAdmissionRefusal::Request(cause),
         Stop::Allocation(cause) => RelationalCheckpointAdmissionRefusal::Allocation(cause),
         Stop::Durability(cause) => RelationalCheckpointAdmissionRefusal::Native(cause),

@@ -119,6 +119,7 @@ pub(crate) fn projected_stop(
     cause: crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal,
 ) -> Refusal {
     match cause {
+        crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::Content(cause) => Refusal::Content(cause),
         crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::Request(cause) => Refusal::Request(cause),
         crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::Frame(_)
         | crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::PayloadDecode { .. }

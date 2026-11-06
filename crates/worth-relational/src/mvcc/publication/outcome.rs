@@ -199,6 +199,9 @@ pub enum RelationalPublicationDenial {
     CanonicalArtifactEncoding(
         crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial,
     ),
+    ScopedCutoverDurabilityUnsupported,
+    CutoverDeadlineElapsed,
+    CurrentReadDependency(super::RelationalPublicationReadDependencyDenial),
     RecoveredCodecTransitionRequired,
     StaleInvariantGeneration {
         expected_generation: u64,
@@ -217,6 +220,7 @@ pub enum RelationalPublicationDenial {
     /// The durable medium refused the commit before any durable effect; it
     /// was never installed.
     DurablePublicationRefused(crate::durability::medium::RelationalDurablePublicationRefusal),
+    RetainedEntitySelectionDurabilityUnsupported,
 }
 
 /// A bounded resource turned this publication attempt away without moving

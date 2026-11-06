@@ -1,5 +1,6 @@
 //! Real changed Source values must requalify summaries even without a Node write.
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 
 #[test]
 fn checked_summary_rejects_unchanged_root_for_changed_source_then_commits_lawful_twin() {
@@ -13,7 +14,7 @@ fn journey(write_leaves: bool, next_x: i64) {
     let calls = Arc::new(provider::Calls::default());
     let config = Configuration::new(calls.clone());
     let rules = config.rules.clone();
-    let prefixes = Arc::new(prefix::Calls::default());
+    let prefixes = Arc::new(prefix_observation::Calls::default());
     let world = host::install_geometry(
         prefixes.clone(),
         Arc::new(prefix_rule::Calls::new(prefixes)),

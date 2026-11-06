@@ -3,7 +3,7 @@ use super::super::refreshed_rejoin;
 use super::super::DemandRecord;
 use super::super::WorthQueryOutputDemandKey;
 #[derive(Debug, PartialEq, Eq)]
-pub(in super::super) struct RowObservation {
+pub struct RowObservation {
     pub awaited: bool,
     pub required: bool,
     pub held: bool,
@@ -24,7 +24,7 @@ fn moving_claims(row: &DemandRecord, newest_ready: bool) -> usize {
         0
     }
 }
-pub(in super::super) fn observe_row(
+pub fn observe_row(
     records: &super::super::record_map::DemandRecords,
     key: &WorthQueryOutputDemandKey,
 ) -> RowObservation {

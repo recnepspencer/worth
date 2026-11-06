@@ -128,24 +128,10 @@ pub fn installed_application(
     .unwrap()
 }
 
-pub(super) const RETAINED_COMPOSITE_COMMITS: u64 = 1_024;
-pub(super) const ORDINARY_REQUEST_WORK_ALLOCATION: u64 = 8_000_000;
+const RETAINED_COMPOSITE_COMMITS: u64 = 1_024;
+const ORDINARY_REQUEST_WORK_ALLOCATION: u64 = 8_000_000;
 
 pub fn world_resources() -> WorthQueryProductWorldResources {
-    world_resources_with_policy(ExecutionRequestPolicy::new(
-        ExecutionPosture::Serial,
-        DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(
-            std::num::NonZeroUsize::MIN,
-            None,
-            Some(ORDINARY_REQUEST_WORK_ALLOCATION),
-        ),
-    ))
-}
-
-pub(super) fn world_resources_with_policy(
-    execution_policy: ExecutionRequestPolicy,
-) -> WorthQueryProductWorldResources {
     WorthQueryProductWorldResources::install(
         RuntimeWorldBudgetInstallation {
             branches: RuntimeWorldBranchBudgetInstallation {
@@ -173,9 +159,17 @@ pub(super) fn world_resources_with_policy(
                 owner_created_component_custody_records: 256,
             },
         },
-        WorthQueryProductWorldClock::start(),
+        WorthQueryProductWorldClock::start(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         WorthQueryInvalidationResources::new(),
-        execution_policy,
+        ExecutionRequestPolicy::new(
+            ExecutionPosture::Serial,
+            DeterminismContract::CanonicalBitwise,
+            ExecutionBudget::new(
+                std::num::NonZeroUsize::MIN,
+                None,
+                Some(ORDINARY_REQUEST_WORK_ALLOCATION),
+            ),
+        ),
     )
     .unwrap()
 }

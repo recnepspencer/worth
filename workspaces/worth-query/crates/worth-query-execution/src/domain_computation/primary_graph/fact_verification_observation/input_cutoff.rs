@@ -79,16 +79,13 @@ pub(in crate::domain_computation::primary_graph) use WorthQueryInputCutoffOutcom
 
 /// Only the existing owned execution listener enables this passive scope.
 /// Nested invocations restore the enclosing receipt instead of overwriting it.
-pub(in crate::domain_computation::primary_graph) struct Scope {
+pub struct Scope {
     prior: Option<WorthQueryInputCutoffForTest>,
     installed: bool,
 }
 
 impl Scope {
-    pub(in crate::domain_computation::primary_graph) fn begin(
-        producer: &'static str,
-        gate: Gate,
-    ) -> Self {
+    pub fn begin(producer: &'static str, gate: Gate) -> Self {
         let installed = super::execution_observation::is_installed();
         let prior = if installed {
             CURRENT.replace(Some(WorthQueryInputCutoffForTest {
@@ -123,7 +120,7 @@ impl Drop for Scope {
     }
 }
 
-pub(in crate::domain_computation::primary_graph) fn reach(gate: Gate) {
+pub fn reach(gate: Gate) {
     if !super::execution_observation::is_installed() {
         return;
     }
@@ -135,7 +132,7 @@ pub(in crate::domain_computation::primary_graph) fn reach(gate: Gate) {
     });
 }
 
-pub(in crate::domain_computation::primary_graph) fn finish(outcome: Outcome) {
+pub fn finish(outcome: Outcome) {
     if !super::execution_observation::is_installed() {
         return;
     }
@@ -146,6 +143,3 @@ pub(in crate::domain_computation::primary_graph) fn finish(outcome: Outcome) {
         }
     });
 }
-
-#[cfg(test)]
-mod tests;

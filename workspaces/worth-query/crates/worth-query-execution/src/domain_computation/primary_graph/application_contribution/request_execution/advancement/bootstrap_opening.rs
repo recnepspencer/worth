@@ -43,21 +43,19 @@ pub fn with_bootstrap_advancement_from_request<R>(
     let _custody = OpeningCustody::enter()?;
     request.consult().map_err(advancement_denial)?;
     let mut unwind = None;
+    let mut value = None;
+    // Nested execution carries only unit; the opening owner retains completion.
     let outcome = request.run(ExecutionWorkCeiling::new(request.work_ceiling()), |_| {
-        match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            body(WorthQueryBootstrapAdvancementPhase::new(request))
+        if let Err(payload) = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            value = Some(body(WorthQueryBootstrapAdvancementPhase::new(request)));
         })) {
-            Ok(value) => Some(value),
-            Err(payload) => {
-                unwind = Some(payload);
-                None
-            }
+            unwind = Some(payload);
         }
     });
     if let Some(payload) = unwind {
         std::panic::resume_unwind(payload);
     }
     outcome
-        .map(|(value, _)| value.expect("completed bootstrap callback returned its value"))
+        .map(|((), _)| value.expect("completed bootstrap callback returned its value"))
         .map_err(advancement_denial)
 }

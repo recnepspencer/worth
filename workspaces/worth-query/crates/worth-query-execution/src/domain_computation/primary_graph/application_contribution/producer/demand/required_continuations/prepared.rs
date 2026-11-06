@@ -4,7 +4,7 @@ impl<Schema, Family> PreparedRequiredFreshSlot<Schema, Family>
 where
     Schema: ApplicationSchema + 'static,
     Family: WorthQueryProducerOutputFamily<Schema> + 'static,
-    WorthQueryAdmittedOutputDemand<Schema, Family>: Send + Sync,
+    WorthQueryAdmittedOutputDemand<Schema, Family>: Send,
     FamilySourceValue<Schema, Family>:
         WorthQueryApplicationProjection<Schema, FamilySourceQuery<Schema, Family>> + 'static,
     FamilySourceQuery<Schema, Family>: 'static,

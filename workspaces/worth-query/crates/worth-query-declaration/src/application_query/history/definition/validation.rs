@@ -1,12 +1,9 @@
 use std::collections::BTreeSet;
 
-use super::super::{ApplicationHistoryMetadataFacet, ApplicationHistoryTarget};
+use super::super::ApplicationHistoryTarget;
 use super::{
     ApplicationHistoryQueryDefinitionDenial as Denial,
     WorthQueryPortableApplicationHistoryQueryParts,
-};
-use crate::application_query::{
-    ApplicationQueryDisclosurePosture, ApplicationQueryDisclosureSelector,
 };
 
 pub(super) fn validate(
@@ -64,41 +61,10 @@ pub(super) fn validate(
 }
 
 fn validate_metadata(parts: &WorthQueryPortableApplicationHistoryQueryParts) -> Result<(), Denial> {
-    let contract = &parts.metadata_disclosure;
-    if contract.classification().trim().is_empty() {
-        return Err(Denial::InvalidMetadataDisclosure);
-    }
-    match contract.posture() {
-        ApplicationQueryDisclosurePosture::Public
-            if contract.rules().is_empty()
-                && contract.capability_name().is_none()
-                && contract.capability_type().is_none() =>
-        {
-            return Ok(())
-        }
-        ApplicationQueryDisclosurePosture::Governed
-            if contract.capability_name().is_some_and(name_is_valid)
-                && contract
-                    .capability_identity()
-                    .is_some_and(|identity| identity.is_valid()) => {}
-        _ => return Err(Denial::InvalidMetadataDisclosure),
-    }
-    let mut seen = BTreeSet::new();
-    for rule in contract.rules() {
-        let ApplicationQueryDisclosureSelector::HistoryMetadata(metadata) = rule.selector() else {
-            return Err(Denial::InvalidMetadataDisclosure);
-        };
-        if metadata.history_identity() != parts.history_type
-            || !rule.influence().permits(metadata.facet().influence())
-            || !seen.insert(metadata.facet())
-        {
-            return Err(Denial::InvalidMetadataDisclosure);
-        }
-    }
-    if seen.len() != ApplicationHistoryMetadataFacet::ALL.len() {
-        return Err(Denial::InvalidMetadataDisclosure);
-    }
-    Ok(())
+    parts
+        .metadata_disclosure
+        .validate_history_metadata(&parts.history_type)
+        .map_err(|_| Denial::InvalidMetadataDisclosure)
 }
 
 fn name_is_valid(value: &str) -> bool {

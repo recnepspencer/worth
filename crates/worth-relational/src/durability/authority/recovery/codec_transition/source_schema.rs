@@ -12,7 +12,8 @@ pub(super) use relation_consequences::admit_retired_relation_consequences;
 pub(super) fn readmit_current_source_schema(
     checkpoint: &DurableCheckpoint,
     main_branch: &crate::history::data::BranchId,
-) -> Result<RelationalSchemaRegistry, DurabilityError> {
+    available: &crate::content::RelationalContentFormatRegistry,
+) -> Result<RelationalSchemaRegistry, crate::durability::data::RelationalRecoveryStop> {
     for cell in checkpoint
         .branch_cells
         .iter()
@@ -34,14 +35,14 @@ pub(super) fn readmit_current_source_schema(
         if carrier.schema_root() != *target.roots().schema_root() {
             return Err(schema_denial(
                 "current source schema carrier differs from its exact target".into(),
-            ));
+            )
+            .into());
         }
-        let (registry, _) = carrier.readmit_registry().map_err(schema_denial)?;
+        let (mut registry, _) = carrier.readmit_registry().map_err(schema_denial)?;
+        registry.content_formats = registry.content_formats.bind_recorded(available)?;
         return Ok(registry);
     }
-    Err(schema_denial(
-        "codec transition requires a committed current source schema".into(),
-    ))
+    Err(schema_denial("codec transition requires a committed current source schema".into()).into())
 }
 
 pub(super) fn admit_supported_consequences<'a>(

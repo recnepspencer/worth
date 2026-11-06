@@ -12,12 +12,11 @@ use crate::domain_computation::WorthQueryProviderSessionCommitStop;
 /// Exact prepared native identities, physically admitted and sealed before any
 /// publication. The same immutable backing follows every receipt and recovery
 /// holder; Arc headers remain outside the array's payload charge.
-pub(in crate::domain_computation::primary_graph::provider) struct PreparedTouchedRecords {
+pub struct PreparedTouchedRecords {
     records: Arc<ExecutionArray<WorthQueryTouchedRecordIdentity>>,
 }
 
 impl PreparedTouchedRecords {
-    #[cfg(test)]
     pub(super) fn prepare(
         candidate: &PreparedRelationalCommitCandidate,
 
@@ -95,5 +94,4 @@ impl TouchedRecordsPreparationDenial {
     }
 }
 
-#[cfg(test)]
-mod tests;
+mod court_doors_for_test;

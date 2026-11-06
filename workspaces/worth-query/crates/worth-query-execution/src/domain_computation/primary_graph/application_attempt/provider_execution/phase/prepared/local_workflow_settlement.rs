@@ -10,7 +10,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
 use crate::domain_computation::primary_graph::workflow::instance::visit_workflow_operation_settlement_facts;
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
 
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) struct LocalWorkflowSettlementPublication {
+pub struct LocalWorkflowSettlementPublication {
     progress_update:
         crate::domain_computation::primary_graph::workflow::instance::PreparedWorkflowProgressUpdate,
     transition_identity: String,
@@ -35,6 +35,7 @@ impl LocalWorkflowSettlementPublication {
         let key = self.progress_update.key();
         let committed_revision = receipt.commit_reference().version_id;
         let _ = application
+            .runtime
             .primary_provider
             .graph
             .with_workflow_instance_progress_mut(key, |retention| {

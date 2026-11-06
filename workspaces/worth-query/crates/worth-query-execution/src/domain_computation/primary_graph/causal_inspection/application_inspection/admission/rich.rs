@@ -20,7 +20,7 @@ pub(in super::super) struct RichReportScope {
     pub(in super::super) target: Arc<WorthQueryApplicationInspectionTarget>,
     pub(in super::super) request: WorthQueryApplicationMaterializationRequest,
 }
-pub(in super::super) struct PreparedRichMaterialization {
+pub struct PreparedRichMaterialization {
     pub(in super::super) scope: RichReportScope,
     pub(in super::super) artifact: WorthQueryApplicationRichMaterialization,
 }
@@ -128,6 +128,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
             capture_original_query(execution, self.memory, &self.target, &self.session, loan)?;
         if matches!(body.artifact.original, OriginalQueryDetail::Provided(_)) {
             self.runtime
+                .runtime
                 .primary_provider
                 .inspection_materialization_prepared();
         }
@@ -141,5 +142,4 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
     }
 }
 
-#[cfg(test)]
-mod tests;
+mod court_doors_for_test;

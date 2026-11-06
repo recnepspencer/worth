@@ -1,4 +1,5 @@
 use crate::{OracleFamilyKind, ShortcutRejectionObservationKind};
+use worth_foundational::CanonicalDigestId;
 
 use super::OracleVerdictBasis;
 
@@ -62,7 +63,7 @@ pub struct PhysicalProofOracleVerdict {
     kind: PhysicalProofOracleVerdictKind,
     basis: OracleVerdictBasis,
     non_claims: Vec<PhysicalOracleNonClaim>,
-    transcript_replay_basis_digest: Option<[u8; 32]>,
+    transcript_replay_basis_digest: Option<CanonicalDigestId>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -141,7 +142,8 @@ impl PhysicalProofOracleVerdict {
                 oracle: self.oracle,
             });
         }
-        self.transcript_replay_basis_digest = Some(transcript_replay_basis_digest);
+        self.transcript_replay_basis_digest =
+            Some(CanonicalDigestId::new(transcript_replay_basis_digest));
         Ok(self)
     }
 
@@ -183,7 +185,10 @@ impl PhysicalProofOracleVerdict {
     }
 
     pub const fn transcript_replay_basis_digest(&self) -> Option<&[u8; 32]> {
-        self.transcript_replay_basis_digest.as_ref()
+        match &self.transcript_replay_basis_digest {
+            Some(digest) => Some(digest.bytes()),
+            None => None,
+        }
     }
 }
 

@@ -1,7 +1,8 @@
 //! BVH-specific stopped construction and physical backing ownership.
-use super::super::{host, lifecycle, prefix};
+use super::super::{host, lifecycle};
 use super::{geometry, query, BoxIndex, Calls, Coordinates};
 use crate::application_invariant_acceptance::authentication;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use lifecycle::{authenticate, isolated_allocation_case, ALLOCATOR};
 use stats_alloc::Region;
 use std::sync::{Arc, Mutex};
@@ -31,9 +32,12 @@ fn cancelled_cold_box_build_releases_partial_bvh_and_rebuilds_with_fresh_request
 }
 fn cancelled_build() {
     let calls = Arc::new(Calls::default());
-    let world = host::install_boxes(Arc::new(prefix::Calls::default()), Arc::clone(&calls));
+    let world = host::install_boxes(
+        Arc::new(prefix_observation::Calls::default()),
+        Arc::clone(&calls),
+    );
     let cancellation = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = authenticate(&world, &scope);
     let request = world
         .runtime()
@@ -50,6 +54,15 @@ fn cancelled_build() {
     assert_eq!(source.rows().len(), 6);
     let reached = Arc::new(Mutex::new(None));
     let observation = Arc::clone(&reached);
+    // The retained handle, cancellation wait list and fixture observers outlive
+    // this build. Initialize their lazy pthread Mutex backing before measuring
+    // only the build's Source/node/scratch ownership; the index is still cold.
+    assert_eq!(index.lifecycle(), WorthQueryManagedIndexLifecycle::Created);
+    drop(scope.cancellation().cancelled());
+    assert!(!scope.cancellation().is_cancelled());
+    drop(reached.lock().unwrap());
+    drop(calls.after_first_node.lock().unwrap());
+    drop(calls.coordinates.lock().unwrap());
     let region = Region::new(ALLOCATOR);
     *calls.after_first_node.lock().unwrap() = Some(Box::new(move || {
         // A leaf was actually pushed. The remaining recursive BVH spans must stop.
@@ -131,7 +144,10 @@ fn final_release() {
     warm_allocation_observation();
     let region = Region::new(ALLOCATOR);
     let calls = Arc::new(Calls::default());
-    let world = host::install_boxes(Arc::new(prefix::Calls::default()), Arc::clone(&calls));
+    let world = host::install_boxes(
+        Arc::new(prefix_observation::Calls::default()),
+        Arc::clone(&calls),
+    );
     let scope = authentication::request_scope();
     let principal = authenticate(&world, &scope);
     let (index, sibling, rows, expected) = {
@@ -213,7 +229,7 @@ fn final_release() {
 fn warm_allocation_observation() {
     // Reuse the existing thread-local Execution/codec capacities before measuring.
     let world = host::install_boxes(
-        Arc::new(prefix::Calls::default()),
+        Arc::new(prefix_observation::Calls::default()),
         Arc::new(Calls::default()),
     );
     let scope = authentication::request_scope();

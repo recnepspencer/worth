@@ -210,4 +210,5 @@ pub enum DerivedRelationDenial {
     InvalidMemberCase,
     InvalidGraphLaws,
     InvalidEventChain,
+    SourceProgramIdentityExhausted,
 }

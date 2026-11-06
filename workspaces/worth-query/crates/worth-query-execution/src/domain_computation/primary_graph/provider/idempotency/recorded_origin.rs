@@ -7,7 +7,9 @@ use worth_foundational::facade::BoundaryProtocolVersion;
 /// is issued by World after registration, never predicted or copied from a key.
 pub(super) const ENCLOSING_NATIVE_ASSOCIATION: u64 = 1;
 
-pub(super) fn affinity_text(product: &WorthQueryProductIdempotencyAffinity) -> String {
+pub(in crate::domain_computation::primary_graph::provider) fn affinity_text(
+    product: &WorthQueryProductIdempotencyAffinity,
+) -> String {
     let Some(owner) = product.branch().owner_identity().durable() else {
         return "memory-only".to_owned();
     };

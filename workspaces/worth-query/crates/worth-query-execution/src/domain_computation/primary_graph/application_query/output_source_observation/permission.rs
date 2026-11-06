@@ -40,7 +40,11 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
     ) -> Result<R, E> {
         use SourceQueryObservationStop as Stop;
         let application = self.application;
-        let selected = self.shared.selected();
+        let selected = self
+            .history
+            .as_ref()
+            .map_or(self.shared, |history| history.current)
+            .selected();
         let access =
             WorthQueryApplicationQueryAccessContext::new(principal.principal(), scope.scope());
         let query = installed.query();
@@ -49,21 +53,39 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
             .unwrap_or(NonZeroUsize::MAX);
         let (product, basis) = application
             .retain_selected_query_basis_admitted(self.shared)
-            .map_err(Stop::Basis)?;
-        let controls = WorthQueryApplicationQueryControls::selected_read_one_shot(
-            product,
-            basis,
-            limits.maximum_results().min(query_maximum),
-            self.request,
-        )
-        .map_err(|stop| Stop::Read(WorthQueryAdmittedOneShotStop::Admission(stop)))?
-        .with_selection_origin(selected.selection_origin())
-        .with_original_settled_producer(selected.original_settled_producer().cloned());
+            .map_err(|stop| self.record_history_refusal(Stop::Basis(stop)))?;
+        let controls = if let Some(history) = &self.history {
+            WorthQueryApplicationQueryControls::selected_read_one_shot_with_control(
+                history.invocation.current().retained_clone(),
+                product,
+                basis,
+                limits.maximum_results().min(query_maximum),
+                self.request,
+            )
+        } else {
+            WorthQueryApplicationQueryControls::selected_read_one_shot(
+                product,
+                basis,
+                limits.maximum_results().min(query_maximum),
+                self.request,
+            )
+            .map_err(|stop| {
+                self.record_history_refusal(Stop::Read(WorthQueryAdmittedOneShotStop::Admission(
+                    stop,
+                )))
+            })?
+        }
+        .with_selection_origin(self.shared.selected().selection_origin())
+        .with_original_settled_producer(
+            self.shared.selected().original_settled_producer().cloned(),
+        );
         let (parameters, controls) = application
             .prepare_source_query_admission(query, &access, parameters, controls)
-            .map_err(|cause| Stop::Preparation {
-                phase: SourceQueryPreparationPhase::Parameters,
-                cause,
+            .map_err(|cause| {
+                self.record_history_refusal(Stop::Preparation {
+                    phase: SourceQueryPreparationPhase::Parameters,
+                    cause,
+                })
             })?;
         let permission = application
             .prepare_application_query_permission_with_parameters(
@@ -74,22 +96,37 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                 parameters,
                 controls,
                 selected,
+                self.history.as_ref().map(|_| self.shared.selected()),
                 self.request,
                 principal,
                 scope,
                 native,
             )
-            .map_err(|cause| Stop::Preparation {
-                phase: SourceQueryPreparationPhase::Permission,
-                cause,
+            .map_err(|cause| {
+                self.record_history_refusal(Stop::Preparation {
+                    phase: SourceQueryPreparationPhase::Permission,
+                    cause,
+                })
             })?;
+        if let Some(history) = &self.history {
+            permission
+                .require_history_principal(history.invocation)
+                .map_err(|cause| {
+                    self.record_history_refusal(Stop::Preparation {
+                        phase: SourceQueryPreparationPhase::Permission,
+                        cause,
+                    })
+                })?;
+        }
         let plan = application
             .finish_prepared_application_query_permission_with_native_access(
                 execution, permission, native,
             )
-            .map_err(|cause| Stop::Preparation {
-                phase: SourceQueryPreparationPhase::Session,
-                cause,
+            .map_err(|cause| {
+                self.record_history_refusal(Stop::Preparation {
+                    phase: SourceQueryPreparationPhase::Session,
+                    cause,
+                })
             })?;
         consume(plan, native)
     }

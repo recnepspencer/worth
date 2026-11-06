@@ -40,6 +40,7 @@ fn install_source(
             256,
             4 * 1024 * 1024,
             256,
+            worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
         ),
         worth_query_host::facade::runtime::WorthQueryApplicationQueryResourceProfile::new(
             std::num::NonZeroUsize::new(128).unwrap(),
@@ -152,13 +153,12 @@ pub fn authenticate_cancellable(
     auth::WorthQueryCancellationSource,
 ) {
     let cancel = auth::WorthQueryCancellationSource::new();
-    let scope = auth::WorthQueryRequestScope::new(None, cancel.token());
+    let scope = auth::WorthQueryRequestScope::new(None, cancel.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let adapter = auth::admit_authentication_adapter(
         app.installed_schema(),
         auth::WorthQueryAuthenticationAdapterAdmission::new(
             auth::WorthQueryAuthenticationAudience::new("dispatch").unwrap(),
-            auth::WorthQueryAuthenticationMethod::new("local").unwrap(),
-        ),
+            auth::WorthQueryAuthenticationMethod::new("local").unwrap(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         Local,
     )
     .unwrap();

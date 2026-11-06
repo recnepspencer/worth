@@ -20,7 +20,7 @@ use super::super::fact::WorthQueryApplicationFactKey;
 /// One owner call of a partitioned computation that reads through the lent
 /// reader.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation::primary_graph) enum ComputationRead {
+pub enum ComputationRead {
     /// `partitions`: which items the input holds.
     Membership,
     /// `partition_key` for one item.
@@ -75,7 +75,7 @@ impl ComputationFactReads {
 /// Every owner call that read one decision fact. Items and partitions are in
 /// ascending order and named once, by type.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct ComputationFactReaders {
+pub struct ComputationFactReaders {
     membership: bool,
     item_keys: CanonicalUniqueVec<PartitionItemId>,
     partitions: CanonicalUniqueVec<PartitionIdentity>,
@@ -83,15 +83,12 @@ pub(in crate::domain_computation::primary_graph) struct ComputationFactReaders {
 
 impl ComputationFactReaders {
     /// The partitions whose gathering read the fact.
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn partitions(&self) -> &[PartitionIdentity] {
         self.partitions.as_slice()
     }
 
     /// Every call that read the fact.
-    pub(in crate::domain_computation::primary_graph) fn reads(
-        &self,
-    ) -> impl Iterator<Item = ComputationRead> + '_ {
+    pub fn reads(&self) -> impl Iterator<Item = ComputationRead> + '_ {
         self.membership
             .then_some(ComputationRead::Membership)
             .into_iter()
@@ -111,7 +108,6 @@ impl ComputationFactReaders {
             )
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn read_by(
         membership: bool,
         item_keys: impl IntoIterator<Item = u64>,
@@ -129,7 +125,7 @@ impl ComputationFactReaders {
 /// The fact keys the owner calls of one attempt read, each with every call
 /// that read it.
 #[derive(Default)]
-pub(in crate::domain_computation::primary_graph) struct ComputationFactAttribution {
+pub struct ComputationFactAttribution {
     readers: BTreeMap<WorthQueryApplicationFactKey, ComputationFactReads>,
     handler: Option<std::sync::Arc<BTreeSet<WorthQueryApplicationFactKey>>>,
     calls: BTreeSet<ComputationRead>,
@@ -273,11 +269,7 @@ impl ComputationFactAttribution {
 
     /// Records that `read` read `key`. A key an earlier call already read
     /// gains this call too.
-    pub(in crate::domain_computation::primary_graph) fn record(
-        &mut self,
-        key: WorthQueryApplicationFactKey,
-        read: ComputationRead,
-    ) {
+    pub fn record(&mut self, key: WorthQueryApplicationFactKey, read: ComputationRead) {
         super::super::super::fact_verification_observation::fresh_read_key_record();
         if self.range_progress.is_some() {
             assert!(
@@ -291,10 +283,7 @@ impl ComputationFactAttribution {
         self.readers.entry(key).or_default().record(read);
     }
 
-    pub(in crate::domain_computation::primary_graph) fn contains_key(
-        &self,
-        key: &WorthQueryApplicationFactKey,
-    ) -> bool {
+    pub fn contains_key(&self, key: &WorthQueryApplicationFactKey) -> bool {
         self.readers.contains_key(key)
             || self.native.as_ref().is_some_and(|native| {
                 native
@@ -314,7 +303,7 @@ impl ComputationFactAttribution {
 
 /// A fact's exact position in the completed original payload, and its readers.
 #[derive(Clone, Debug, Eq, PartialEq)]
-struct SealedComputationFact {
+pub struct SealedComputationFact {
     ordinal: usize,
     readers: ComputationFactReaders,
 }
@@ -322,12 +311,13 @@ struct SealedComputationFact {
 /// Original pre-effect facts with checked ordinal/call correspondence.
 /// Postcommit rebasing never replaces this payload.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct SealedComputationFacts {
+pub struct SealedComputationFacts {
     index: std::sync::Arc<index::ComputationFactIndex>,
     metadata: std::sync::Arc<
         worth_execution::ExecutionOrderedMap<WorthQueryApplicationFactKey, SealedComputationFact>,
     >,
-    original: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
+    pub original:
+        crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
     content: Option<super::super::FactContent>,
     projection: Option<std::sync::Arc<super::CompletedFactProjection>>,
     layout: layout::SealedReadLayout,
@@ -335,21 +325,19 @@ pub(in crate::domain_computation::primary_graph) struct SealedComputationFacts {
 
 mod adjacency;
 mod charged;
-mod layout;
+pub(crate) mod layout;
 mod ranges;
 mod structural_reads;
 pub(in crate::domain_computation::primary_graph) use layout::CheckedCallShape;
 pub(in crate::domain_computation::primary_graph) use ranges::NativeCallCarriage;
 mod reattribution;
 mod reuse;
-pub(in crate::domain_computation::primary_graph::application_attempt::read_set) use layout::CheckedReadLayout;
+
 pub(in crate::domain_computation::primary_graph) use reuse::NativeReadRefresh;
-mod index;
-mod sealed;
-#[cfg(test)]
+pub(crate) mod index;
+pub(crate) mod sealed;
 mod test_mutation;
-#[cfg(test)]
-mod tests;
+
 pub(in crate::domain_computation::primary_graph) use index::ComputationFactIndex;
 
 impl worth_execution::ChargedBytes for ComputationRead {
@@ -358,5 +346,6 @@ impl worth_execution::ChargedBytes for ComputationRead {
     }
 }
 
-#[cfg(test)]
-mod reattribution_tests;
+mod court_doors_for_test;
+
+pub use layout::{CheckedReadLayout, SealedReadLayout};

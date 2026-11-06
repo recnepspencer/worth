@@ -4,7 +4,7 @@ use super::{
     WorthQueryMutationPreconditionComparisonEvidence, WorthQueryRetainedPreImage,
 };
 
-pub(in crate::domain_computation) struct WorthQueryPendingApplicationCommitReceipt {
+pub struct WorthQueryPendingApplicationCommitReceipt {
     provider: super::super::super::super::provider::WorthQueryPrimaryGraphCommittedApplication,
     current_provider_session:
         crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,

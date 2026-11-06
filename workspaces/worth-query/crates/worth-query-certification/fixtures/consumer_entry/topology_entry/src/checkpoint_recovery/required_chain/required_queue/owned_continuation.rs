@@ -71,7 +71,7 @@ mod serial {
 
         let cancelled = authentication::WorthQueryCancellationSource::new();
         cancelled.cancel();
-        let stopped_scope = authentication::WorthQueryRequestScope::new(None, cancelled.token());
+        let stopped_scope = authentication::WorthQueryRequestScope::new(None, cancelled.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         let stopped_request = application.request(&principal, &stopped_scope);
         assert!(
             matches!(dependent.settle(application.runtime(), &stopped_request),

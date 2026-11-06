@@ -18,9 +18,7 @@ impl WorthQueryApplicationCommitDenial {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn decision_read_set_denied(
-        failure: WorthQueryDecisionReadSetFailure,
-    ) -> Self {
+    pub fn decision_read_set_denied(failure: WorthQueryDecisionReadSetFailure) -> Self {
         Self::decision_read_set_denied_at(failure, Stage::DecisionReadSet)
     }
 

@@ -13,11 +13,7 @@ fn mint(
         .select_reachable_commit(observation, commit_id)
         .into_outcome()
         .ok()?;
-    Some(
-        runtime
-            .mint_change_receipt(execution, selected, None)
-            .ok()?,
-    )
+    runtime.mint_change_receipt(execution, selected, None).ok()
 }
 
 pub(crate) fn main() {

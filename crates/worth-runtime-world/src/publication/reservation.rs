@@ -13,8 +13,9 @@ mod capacities;
 
 pub(crate) use capacities::{ReservedAttemptCapacities, ReservedAttemptCapacityInputs};
 
-/// Component calls have one fixed order. There is no cross-owner lock held
-/// across those calls.
+/// Component calls have one fixed order. A current-read condition guards only
+/// Native's prepared memory cutover; no guard spans preparation, owning cleanup,
+/// settlement or the subsequent Signal call.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CompositePublicationOrder {
     RelationalThenSignal,
@@ -220,6 +221,27 @@ impl ReservedCompositePublicationAttempt {
 
     pub(crate) fn record_progress(&mut self, progress: &CompositeAttemptProgress) {
         self.progress = self.custody.record_progress(progress.retained_image());
+    }
+
+    /// Preserve only the genuine Native occurrence before any later owner work
+    /// or caller unwind can abandon this attempt.
+    pub(crate) fn record_relational_performed(
+        &mut self,
+        performed: &worth_relational::facade::mvcc::PerformedRelationalCommit,
+    ) -> (
+        worth_relational::facade::history::RelationalCommitIdentity,
+        worth_relational::facade::branch::AdmittedRelationalBranchBasis,
+    ) {
+        let identity = performed.commit_identity();
+        let successor = performed.next_basis().clone();
+        self.record_progress(&CompositeAttemptProgress::new(
+            super::RelationalAttemptProgress::settlement_required(
+                identity.clone(),
+                successor.clone(),
+            ),
+            super::SignalAttemptProgress::untouched(),
+        ));
+        (identity, successor)
     }
 
     /// Structural counters are initialized when the attempt is reserved, before

@@ -1,7 +1,7 @@
 //! Whether a row still owes work, keeps an answer, or can retire.
 use super::{DemandRecord, DemandState, WorthQueryOutputAdvancement, WorthQueryOutputCheckpoint};
 
-pub(super) enum IdleRowDisposition {
+pub enum IdleRowDisposition {
     InFlight,
     KeptAnswer,
     HeldForStaleOwner,
@@ -9,7 +9,7 @@ pub(super) enum IdleRowDisposition {
 }
 
 #[derive(Clone, Copy)]
-pub(super) enum RowRetirement {
+pub enum RowRetirement {
     Unstarted,
     Finished,
     AbandonedPublication,
@@ -34,10 +34,30 @@ impl DemandRecord {
             DemandState::Failed(_) => Retired(RowRetirement::Finished),
             DemandState::Output(output) => match output.advancement() {
                 WorthQueryOutputAdvancement::Claimed(_) => InFlight,
-                WorthQueryOutputAdvancement::Stopped { .. } => Retired(RowRetirement::Finished),
+                WorthQueryOutputAdvancement::Stopped {
+                    interrupted_claim, ..
+                } => {
+                    if matches!(&output.checkpoint, Some(WorthQueryOutputCheckpoint::PublicationPending { owner, .. }) if !owner.is_closed())
+                        || (output.checkpoint.is_none() && interrupted_claim.is_some())
+                    {
+                        InFlight
+                    } else {
+                        Retired(RowRetirement::Finished)
+                    }
+                }
                 WorthQueryOutputAdvancement::Idle => match &output.checkpoint {
+                    Some(WorthQueryOutputCheckpoint::PublicationPending { owner, .. }) => {
+                        if owner.is_closed() {
+                            Retired(RowRetirement::Finished)
+                        } else {
+                            InFlight
+                        }
+                    }
                     Some(WorthQueryOutputCheckpoint::Ready(_)) => KeptAnswer,
-                    Some(WorthQueryOutputCheckpoint::Published { .. }) => {
+                    Some(
+                        WorthQueryOutputCheckpoint::Published { .. }
+                        | WorthQueryOutputCheckpoint::RecoveredPublished { .. },
+                    ) => {
                         if awaited_by_stale_owner {
                             IdleRowDisposition::HeldForStaleOwner
                         } else if self.interests == 0 {
@@ -46,7 +66,10 @@ impl DemandRecord {
                             InFlight
                         }
                     }
-                    Some(WorthQueryOutputCheckpoint::Delivered { .. }) => {
+                    Some(
+                        WorthQueryOutputCheckpoint::Delivered { .. }
+                        | WorthQueryOutputCheckpoint::RecoveredDelivered { .. },
+                    ) => {
                         // Delivery precedes accepted readiness. A performed
                         // source still awaiting this output keeps the delivered
                         // checkpoint, so a fresh owner resumes readiness.
@@ -91,3 +114,5 @@ impl DemandRecord {
         )
     }
 }
+
+mod court_doors_for_test;

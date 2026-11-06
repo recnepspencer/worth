@@ -1,0 +1,238 @@
+//! Root consumption is returned only for an abandoned, undelivered answer.
+//! Receipts and source payloads come from real commits; stages are assigned
+//! at the registry seam that owns disposal, not inferred from a handler run.
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::PreparedReadyBacking;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::SourceCustody;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputProgress;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryPendingOutputDelivery;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource;
+use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
+use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId;
+
+pub fn retained_source(
+    identity: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::SourceEpoch,
+) -> SourceCustody {
+    let mut receipt = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application_with_output_demand_observation();
+    let change = Arc::new(receipt.take_performed_relational_product_change().unwrap());
+    let observation = receipt
+        .committed_product_publication()
+        .take_output_demand_observation_for_test()
+        .unwrap();
+    let source =
+        WorthQueryPerformedOutputDemandSource::new_for_test(receipt, change, observation, None);
+    let scope = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::source_custody::real_scope_and_occurrence().0;
+    {
+        // Bound in the original literal order, passed in the door's.
+        let (
+            occurrence,
+            root_kind,
+            source,
+            discovery,
+            bound_sources,
+            consumed_sources,
+            retired_sources,
+            retired,
+            token_count,
+            cleanup,
+            completed,
+        ) = (
+            (*source.receipt_for_test())
+                .product_branch()
+                .occurrence_for_test(),
+            PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()),
+            Some(source),
+            None,
+            Some(vec![BoundOutputSource::new_for_test(scope, identity)]),
+            Vec::new(),
+            Vec::new(),
+            None,
+            1,
+            Default::default(),
+            false,
+        );
+        SourceCustody::new_for_test(
+            occurrence,
+            root_kind,
+            source,
+            discovery,
+            consumed_sources,
+            retired_sources,
+            bound_sources,
+            retired,
+            token_count,
+            cleanup,
+            completed,
+        )
+    }
+}
+
+pub fn repeat_source(initial: &SourceCustody) -> SourceCustody {
+    {
+        // Bound in the original literal order, passed in the door's.
+        let (
+            occurrence,
+            root_kind,
+            source,
+            discovery,
+            bound_sources,
+            consumed_sources,
+            retired_sources,
+            retired,
+            token_count,
+            cleanup,
+            completed,
+        ) = (
+            (*initial.occurrence_for_test()),
+            (*initial.root_kind_for_test()).clone(),
+            (*initial.source_for_test()).clone(),
+            None,
+            (*initial.bound_sources_for_test()).clone(),
+            Vec::new(),
+            Vec::new(),
+            None,
+            1,
+            Default::default(),
+            false,
+        );
+        SourceCustody::new_for_test(
+            occurrence,
+            root_kind,
+            source,
+            discovery,
+            consumed_sources,
+            retired_sources,
+            bound_sources,
+            retired,
+            token_count,
+            cleanup,
+            completed,
+        )
+    }
+}
+
+#[test]
+fn completed_and_retired_custody_return_no_consumption() {
+    let identity = key("guarded-root", 5, 1).source_into_for_test();
+    let initial = retained_source(identity.clone());
+    let scope = (*initial.bound_sources_for_test()).as_ref().unwrap()[0].scope;
+    for completed in [false, true] {
+        let mut custody = repeat_source(&initial);
+        (*custody.consumed_sources_mut_for_test()).push(identity.clone());
+        if completed {
+            (*custody.completed_mut_for_test()) = true;
+        } else {
+            // Keep the payload so this row independently pins the retired guard.
+            (*custody.retired_mut_for_test()) = Some(WorthQueryOutputDemandDenial::new_for_test(
+                WorthQueryOutputDemandDenialKind::Superseded,
+                "retired root",
+            ));
+        }
+        custody.return_undelivered_root_for_test(&identity, scope);
+        assert_eq!(
+            (*custody.consumed_sources_for_test()).as_slice(),
+            std::slice::from_ref(&identity)
+        );
+    }
+}
+
+#[test]
+fn delivered_and_ready_roots_keep_their_consumption_on_removal() {
+    let row_key = key("delivered-root", 5, 1);
+    let initial = retained_source((*row_key.source_for_test()).clone());
+    let source = (*initial.source_for_test()).as_ref().unwrap();
+    let commit = (*source.change_for_test()).product_commit().clone();
+    let scope = (*initial.bound_sources_for_test()).as_ref().unwrap()[0].scope;
+    for ready in [false, true] {
+        let mut state = DemandRegistryState::default();
+        let mut custody = repeat_source(&initial);
+        (*custody.consumed_sources_mut_for_test()).push((*row_key.source_for_test()).clone());
+        state.source_custody.insert(commit.clone(), custody);
+        let stage = if ready {
+            worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::closed_retirement::ready()
+        } else {
+            let backing = PreparedReadyBacking::new_for_test();
+            DemandState::Output(WorthQueryOutputProgress::new_for_test(
+                WorthQueryOutputCheckpoint::Delivered {
+                    receipt: (*source.receipt_for_test()).clone(),
+                    delivery: None,
+                    ready_backing: backing,
+                },
+            ))
+        };
+        let mut row = record(*initial.occurrence_for_test(), stage, 0);
+        (*row.source_scope_mut_for_test()) = Some(scope);
+        (*row.source_commits_mut_for_test()).push(commit.clone());
+        (*state.records_mut_for_test()).insert_for_test(row_key.clone(), row);
+        drop(state.remove_record(&row_key).unwrap());
+        assert_eq!(
+            (*state.source_custody[&commit].consumed_sources_for_test()).as_slice(),
+            std::slice::from_ref(row_key.source_for_test()),
+            "ready={ready}: delivered work cannot be admitted again"
+        );
+    }
+}
+
+#[test]
+fn an_abandoned_join_returns_the_requested_source_it_consumed() {
+    let older = key_with_identity("joined-root", 5, 1, 90);
+    let requested = key_with_identity("joined-root", 6, 1, 90);
+    assert_ne!((*older.source_for_test()), (*requested.source_for_test()));
+    assert!(older.same_semantic_source_for_test(&requested));
+    let initial = retained_source((*requested.source_for_test()).clone());
+    let source = (*initial.source_for_test()).as_ref().unwrap();
+    let commit = (*source.change_for_test()).product_commit().clone();
+    let scope = (*initial.bound_sources_for_test()).as_ref().unwrap()[0].scope;
+    let registry = WorthQueryOutputDemandRegistry::default();
+    {
+        let mut state = (*registry.state_for_test()).lock().unwrap();
+        state
+            .source_custody
+            .insert(commit.clone(), repeat_source(&initial));
+        let mut row = record(*initial.occurrence_for_test(), DemandState::Admitted, 0);
+        (*row.source_scope_mut_for_test()) = Some(scope);
+        (*state.records_mut_for_test()).insert_for_test(older.clone(), row);
+    }
+    let (interest, _) = registry
+        .admit_for_test(
+            requested.clone(),
+            Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::admission::selected_output::SelectedOutputAdmission::new(&commit, None)),
+            scope,
+            *initial.occurrence_for_test(),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Required,
+            None,
+            None,
+        )
+        .unwrap();
+    assert_eq!(
+        (*interest.key_for_test()),
+        older,
+        "the admission actually joins the older key"
+    );
+    let mut state = (*registry.state_for_test()).lock().unwrap();
+    assert_eq!(
+        (*state.source_custody[&commit].consumed_sources_for_test()).as_slice(),
+        std::slice::from_ref(requested.source_for_test())
+    );
+    let backing = PreparedReadyBacking::new_for_test();
+    let mut row = (*state.records_mut_for_test()).get_mut(&older).unwrap();
+    (*row.state_mut_for_test()) = DemandState::Output(WorthQueryOutputProgress::new_for_test(
+        WorthQueryOutputCheckpoint::Published {
+            receipt: (*source.receipt_for_test()).clone(),
+            delivery: WorthQueryPendingOutputDelivery::NoChange,
+            ready_backing: backing,
+        },
+    ));
+    (*row.performed_source_mut_for_test()) = None; // The real publication finish releases this payload.
+    (*row.interests_mut_for_test()) = 0;
+    row.finish_for_test();
+    drop(state.remove_record(&older).unwrap());
+    assert!(
+        (*state.source_custody[&commit].consumed_sources_for_test()).is_empty(),
+        "the returned identity is the requested source, not the older row key"
+    );
+    drop(state);
+    drop(interest);
+}

@@ -20,17 +20,17 @@ struct PublicationInputs {
 pub(super) struct ValidatedCandidate {
     context: CandidateContext,
     inputs: PublicationInputs,
-    validated: snapshot_validation::SnapshotValidatedCommitExecution,
+    validated: CommitPhaseBacking<snapshot_validation::SnapshotValidatedCommitExecution>,
 }
 pub(super) struct AssembledCandidate {
     context: CandidateContext,
     inputs: PublicationInputs,
-    assembled: artifact_execution::AssembledCommitExecution,
+    assembled: CommitPhaseBacking<artifact_execution::AssembledCommitExecution>,
 }
 pub(super) struct PublishedCandidate {
     runtime: RelationalPreparationRuntime,
     registration: CandidateRegistration,
-    prepared: super::super::PreparedCommitPublicationExecution,
+    prepared: CommitPhaseBacking<super::super::PreparedCommitPublicationExecution>,
 }
 #[inline(never)]
 pub(super) fn validate(
@@ -55,8 +55,8 @@ pub(super) fn validate(
         caller_association,
         diagnostic_capture,
     } = history.into_inner();
-    let history_bound = history_bound.into_inner();
-    let runtime = recovered_runtime.with_candidate_symbols(history_bound.candidate_symbols());
+    let runtime =
+        recovered_runtime.with_candidate_symbols(history_bound.value().candidate_symbols());
     let validated = snapshot_validation::validate_snapshot_publication(
         request,
         &runtime,
@@ -129,7 +129,9 @@ pub(super) fn publish(
         inputs.materialization,
         inputs.caller,
     )?;
-    prepared.append_diagnostics(context.diagnostic.finish());
+    prepared
+        .value_mut()
+        .append_diagnostics(context.diagnostic.finish());
     CommitPhaseBacking::new(
         request,
         PublishedCandidate {
@@ -149,5 +151,5 @@ pub(super) fn register(
         registration,
         prepared,
     } = source.into_inner();
-    registration.register(request, &runtime, prepared)
+    registration.register(request, &runtime, prepared.into_inner())
 }

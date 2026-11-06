@@ -13,17 +13,16 @@ pub(crate) use component_obligation::{
 pub use dependency_counts::{ComponentBasisDependencyClass, ComponentBasisDependencyCounts};
 #[cfg(test)]
 pub(crate) use obligation_transfer::ComponentBasisObligationTransferDestination;
-pub(crate) use obligation_transfer::{
-    ProductHeadRetentionTransfer, RetentionTransferDenial, RetentionTransferReceipt,
-};
+pub(crate) use obligation_transfer::{ProductHeadRetentionTransfer, RetentionTransferReceipt};
 #[allow(unused_imports)]
-pub(crate) use registry::{
-    ReservedComponentPinPairCapacity, RetentionObligationDenial, RuntimeWorldRetentionOwner,
-};
+pub(crate) use registry::{ReservedComponentPinPairCapacity, RuntimeWorldRetentionOwner};
 #[allow(unused_imports)]
 pub(crate) use unique_component_pin::{ExactComponentBasisKey, ExactComponentPinRequest};
 
 pub use registry::{RetentionCostSnapshot, RetentionReclamationReport};
+
+pub use obligation_transfer::RetentionTransferDenial;
+pub use registry::RetentionObligationDenial;
 
 #[cfg(test)]
 mod tests {

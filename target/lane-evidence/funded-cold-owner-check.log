@@ -1,0 +1,171 @@
+command: cargo check -p worth-relational --tests
+HEAD: 146a4f5e13efc6d7d57925ef59155ff6e2b8dda8
+git_status_short_empty: false
+start_utc: 2026-11-04T21:17:57.593472+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+    Checking rand_core v0.10.1
+   Compiling getrandom v0.4.3
+    Checking cpufeatures v0.3.1
+    Checking bit-vec v0.10.1
+    Checking bitflags v2.13.2
+    Checking core_detect v1.0.0
+    Checking unarray v0.1.4
+    Checking regex-syntax v0.8.11
+    Checking stats_alloc v0.1.10
+    Checking worth-harness v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-harness)
+    Checking worth-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-relational)
+    Checking rand_xorshift v0.5.0
+    Checking chacha20 v0.10.2
+    Checking bit-set v0.11.1
+    Checking rand v0.10.3
+    Checking proptest v1.12.0
+error[E0433]: cannot find type `RelationalStorageUnavailableCause` in this scope
+   --> crates\worth-relational\src\storage\residency\region_load.rs:388:20
+    |
+388 |             cause: RelationalStorageUnavailableCause::SourceUnavailable,
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ use of undeclared type `RelationalStorageUnavailableCause`
+    |
+help: a struct with a similar name exists
+    |
+388 -             cause: RelationalStorageUnavailableCause::SourceUnavailable,
+388 +             cause: RelationalStorageUnavailable::SourceUnavailable,
+    |
+help: consider importing this enum through its public re-export
+    |
+  2 + use crate::facade::storage::RelationalStorageUnavailableCause;
+    |
+
+warning: unused import: `apply_original_intents_to_working_state`
+  --> crates\worth-relational\src\authority\mutation\mod.rs:25:5
+   |
+25 |     apply_original_intents_to_working_state, apply_plan_to_working_state, MutationApplyOutcome,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `OriginalRecordAllocationCursor` and `OriginalSymbolMeanings`
+ --> crates\worth-relational\src\runtime\mod.rs:5:37
+  |
+5 |     OriginalEmptySchemaObservation, OriginalRecordAllocationCursor, OriginalSymbolMeanings,
+  |                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `overlay::PartitionState`
+  --> crates\worth-relational\src\storage\residency\region_load\materialization_funding\region_image.rs:10:5
+   |
+10 |     overlay::PartitionState,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0277]: `?` couldn't convert the error to `RelationalCanonicalCommitArtifactRefusal`
+  --> crates\worth-relational\src\storage\residency\region_load\materialization_funding\aspect_state.rs:65:51
+   |
+65 |                 "Scalar" => scalar(value, request)?,
+   |                             ----------------------^ the trait `From<demand_failure::RelationalResidencyDemandFailure>` is not implemented for `RelationalCanonicalCommitArtifactRefusal`
+   |                             |
+   |                             this can't be annotated with `?` because it has type `Result<_, demand_failure::RelationalResidencyDemandFailure>`
+   |
+note: `RelationalCanonicalCommitArtifactRefusal` needs to implement `From<demand_failure::RelationalResidencyDemandFailure>`
+  --> crates\worth-relational\src\durability\canonical_commit_artifact\readmission_refusal.rs:13:1
+   |
+13 | pub enum RelationalCanonicalCommitArtifactRefusal {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait
+help: the trait `From<demand_failure::RelationalResidencyDemandFailure>` is not implemented for `RelationalCanonicalCommitArtifactRefusal`
+      but trait `From<RelationalCanonicalCommitArtifactFrameRefusal>` is implemented for it
+  --> crates\worth-relational\src\durability\canonical_commit_artifact\readmission_refusal.rs:39:1
+   |
+39 | / impl From<RelationalCanonicalCommitArtifactFrameRefusal>
+40 | |     for RelationalCanonicalCommitArtifactRefusal
+   | |________________________________________________^
+   = help: for that trait implementation, expected `RelationalCanonicalCommitArtifactFrameRefusal`, found `demand_failure::RelationalResidencyDemandFailure`
+   = note: the full name for the type has been written to 'C:\programming\worth worktees\worktrees\m3-p3-reopen\target\debug\deps\worth_relational-be07ef11158af538.long-type-2971957572437887213.txt'
+   = note: consider using `--verbose` to print the full type name to the console
+
+error[E0277]: `?` couldn't convert the error to `RelationalCanonicalCommitArtifactRefusal`
+  --> crates\worth-relational\src\storage\residency\region_load\materialization_funding\aspect_state.rs:66:54
+   |
+66 |                 "Struct" => structure(value, request)?,
+   |                             -------------------------^ the trait `From<demand_failure::RelationalResidencyDemandFailure>` is not implemented for `RelationalCanonicalCommitArtifactRefusal`
+   |                             |
+   |                             this can't be annotated with `?` because it has type `Result<_, demand_failure::RelationalResidencyDemandFailure>`
+   |
+note: `RelationalCanonicalCommitArtifactRefusal` needs to implement `From<demand_failure::RelationalResidencyDemandFailure>`
+  --> crates\worth-relational\src\durability\canonical_commit_artifact\readmission_refusal.rs:13:1
+   |
+13 | pub enum RelationalCanonicalCommitArtifactRefusal {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait
+help: the trait `From<demand_failure::RelationalResidencyDemandFailure>` is not implemented for `RelationalCanonicalCommitArtifactRefusal`
+      but trait `From<RelationalCanonicalCommitArtifactFrameRefusal>` is implemented for it
+  --> crates\worth-relational\src\durability\canonical_commit_artifact\readmission_refusal.rs:39:1
+   |
+39 | / impl From<RelationalCanonicalCommitArtifactFrameRefusal>
+40 | |     for RelationalCanonicalCommitArtifactRefusal
+   | |________________________________________________^
+   = help: for that trait implementation, expected `RelationalCanonicalCommitArtifactFrameRefusal`, found `demand_failure::RelationalResidencyDemandFailure`
+   = note: the full name for the type has been written to 'C:\programming\worth worktees\worktrees\m3-p3-reopen\target\debug\deps\worth_relational-be07ef11158af538.long-type-2971957572437887213.txt'
+   = note: consider using `--verbose` to print the full type name to the console
+
+error[E0277]: the trait bound `u128: stored_value::StoredValue` is not satisfied
+   --> crates\worth-relational\src\storage\residency\region_load\materialization_funding\region_image.rs:293:20
+    |
+293 |         map::<u64, SharedColumn<u128>>(count)?,
+    |                    ^^^^^^^^^^^^^^^^^^ the trait `stored_value::StoredValue` is not implemented for `u128`
+    |
+help: the following other types implement trait `stored_value::StoredValue`
+   --> crates\worth-relational\src\storage\substrate\stored_value.rs:48:9
+    |
+ 48 |           impl StoredValue for $value {
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |           |
+    |           `u32`
+    |           `u64`
+    |           `u8`
+    |           `usize`
+...
+ 60 | / inline!(
+ 61 | |     (),
+ 62 | |     u8,
+ 63 | |     u32,
+...   |
+ 71 | |     crate::storage::data::RecordLifecycleState,
+ 72 | | );
+    | |_- in this macro invocation
+note: required by a bound in `shared_column::SharedColumn`
+   --> crates\worth-relational\src\storage\substrate\shared_column.rs:22:35
+    |
+ 22 | pub(crate) struct SharedColumn<T: StoredValue> {
+    |                                   ^^^^^^^^^^^ required by this bound in `SharedColumn`
+    = note: this error originates in the macro `inline` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: `?` couldn't convert the error to `demand_failure::RelationalResidencyDemandFailure`
+   --> crates\worth-relational\src\storage\residency\region_load.rs:180:40
+    |
+180 |         let contracts = contracts(cold)?;
+    |                         ---------------^ the trait `From<RelationalStorageUnavailableCause>` is not implemented for `demand_failure::RelationalResidencyDemandFailure`
+    |                         |
+    |                         this can't be annotated with `?` because it has type `Result<_, RelationalStorageUnavailableCause>`
+    |
+note: `demand_failure::RelationalResidencyDemandFailure` needs to implement `From<RelationalStorageUnavailableCause>`
+   --> crates\worth-relational\src\storage\residency\demand_failure.rs:6:1
+    |
+  6 | pub(crate) enum RelationalResidencyDemandFailure {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait
+help: the trait `From<RelationalStorageUnavailableCause>` is not implemented for `demand_failure::RelationalResidencyDemandFailure`
+      but trait `From<storage_unavailable::RelationalStorageUnavailable>` is implemented for it
+   --> crates\worth-relational\src\storage\residency\demand_failure.rs:11:1
+    |
+ 11 | impl From<RelationalStorageUnavailable> for RelationalResidencyDemandFailure {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for that trait implementation, expected `storage_unavailable::RelationalStorageUnavailable`, found `RelationalStorageUnavailableCause`
+
+Some errors have detailed explanations: E0277, E0433.
+For more information about an error, try `rustc --explain E0277`.
+warning: `worth-relational` (lib) generated 3 warnings
+error: could not compile `worth-relational` (lib) due to 5 previous errors; 3 warnings emitted
+
+end_utc: 2026-11-04T21:18:47.295655+00:00
+exit_code: 101
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

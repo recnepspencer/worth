@@ -28,12 +28,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
         if request
             .deadline()
-            .is_some_and(|deadline| std::time::Instant::now() >= deadline)
+            .is_some_and(|deadline| deadline.is_elapsed())
         {
             return Err(Denial::TimedOut);
         }
         let execution = phase
-            .execution_request_for(&self.product_runtime)
+            .execution_request_for(&self.runtime.product_runtime)
             .map_err(|denial| Denial::ExecutionDenied(denial.into()))?;
         let original = receipt
             .original
@@ -44,11 +44,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             return Err(Denial::ForeignRuntime);
         }
         let committed = self
+            .runtime
             .primary_provider
             .original_attempt_dispatch_outbox(&execution, original)
             .map_err(Denial::OwnerReadDenied)?
             .ok_or(Denial::OriginalNotOwned)?;
         let transport = self
+            .runtime
             .external_effect_transport
             .get()
             .ok_or(Denial::TransportNotInstalled)?;

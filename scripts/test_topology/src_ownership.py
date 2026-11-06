@@ -1,0 +1,149 @@
+"""Which moving module scopes become testkit support, court tests, or both.
+
+A module scope's disposition:
+- `court`: it holds tests and nothing outside its court unit reads it;
+- `testkit`: it holds no tests and something outside its unit reads it (or a testkit part does);
+- `split`: it holds tests and is read from outside its unit; its non-test items become the
+  testkit part and its tests stay in the court part.
+The testkit never depends on a court, so every moving scope a testkit part reads gains a
+testkit part too, to a fixpoint. Scopes with no tests that nothing outside reads stay with
+their unit's court as local support.
+"""
+
+
+def dispositions(model, unit_of):
+    """Map module names -> 'court' | 'testkit' | 'split' | 'local'."""
+    supported = set()
+    for names, record in model.records.items():
+        reader_unit = unit_of(names)
+        for _reference, origin in record.uses:
+            if origin is None or origin[0] == '<external>':
+                continue
+            target = defining_record(model, origin[0])
+            if target is None or target == names:
+                continue
+            if unit_of(target) != reader_unit:
+                supported.add(target)
+    supported |= {names for names in model.records if model.records[names].family in root_support(model)}
+    supported |= {names for names, record in model.records.items() if record.extracted or record.doors}
+    couples = impl_couplings(model)
+    frontier = list(supported)
+    while frontier:
+        names = frontier.pop()
+        # An impl lives in its self type's crate: impl modules follow their type into the testkit.
+        for coupled in couples.get(names, ()):
+            if coupled not in supported:
+                supported.add(coupled)
+                frontier.append(coupled)
+        # A support module keeps its module ancestry: its parent's imports resolve `super::` there.
+        parent = names[:-1]
+        if parent in model.records and parent not in supported and not model.records[parent].extracted:
+            supported.add(parent)
+            frontier.append(parent)
+        for _reference, origin in model.records[names].uses:
+            if origin is None or origin[0] == '<external>':
+                continue
+            target = defining_record(model, origin[0])
+            if target is not None and target != names and target not in supported:
+                supported.add(target)
+                frontier.append(target)
+        for ancestor in ancestors_in_family(model, names):
+            if ancestor not in supported and not model.records[ancestor].tests:
+                # A support scope's non-test ancestors carry its module path; they hold no tests.
+                pass
+    result = {}
+    for names, record in model.records.items():
+        has_tests = bool(record.tests) or bool(macro_tests(record))
+        if names in supported:
+            result[names] = 'split' if has_tests else 'testkit'
+        else:
+            result[names] = 'court' if has_tests else 'local'
+    return with_glob_hosts(model, result)
+
+
+def with_glob_hosts(model, result):
+    """A testkit scope that a court-side child globs (`use super::*`) also gets a court part.
+
+    The child reads the parent's imports, which a testkit module cannot export; the court part
+    keeps them (and imports the parent's testkit items), so the glob still binds every name.
+    """
+    from src_paths import resolve, use_trees
+    changed = True
+    while changed:
+        changed = False
+        for names, record in model.records.items():
+            parent = names[:-1]
+            if result[names] == 'testkit' or result.get(parent) != 'testkit':
+                continue
+            targets = [resolve(segments, names, model.index)
+                       for segments, glob, _alias in use_trees(record.node.own_text()) if glob]
+            if any(t is not None and t[0] == parent and not t[1] for t in targets):
+                result[parent] = 'split'
+                changed = True
+    return result
+
+
+def impl_couplings(model):
+    """Type-defining moving module -> moving modules holding impls of that type."""
+    from src_hooks import impl_target
+    from src_kept_impls import impl_trait, in_moved, self_type_origin
+    couples = {}
+    for names, record in model.records.items():
+        if record.extracted or record.foreign:
+            continue
+        own = record.node.own_text()
+        for item in record.items:
+            if item.keyword != 'impl' or item.test:
+                continue
+            text = own[item.start:item.end]
+            target, trait = impl_target(text), impl_trait(text)
+            if not target:
+                continue
+            if trait is not None:
+                trait_origin = model.everything.origin(names, trait)[0]
+                if trait_origin is not None and in_moved(model, trait_origin[0]):
+                    continue
+            origin = self_type_origin(model, names, text)
+            if origin is not None and origin[0] != names and origin[0] in model.records:
+                couples.setdefault(origin[0], set()).add(names)
+    return couples
+
+
+def defining_record(model, module):
+    """The moving module scope that defines `module`'s items (itself when it is moving)."""
+    return module if module in model.records else None
+
+
+def root_support(model):
+    """Moving families with no tests at all are support wherever they are read from."""
+    return {family for family in model.moving if family in model.families
+            if not any(model.records[n.names].tests or macro_tests(model.records[n.names])
+                       for n in model.families[family].node.walk())}
+
+
+def ancestors_in_family(model, names):
+    family = model.records[names].family
+    return [names[:i] for i in range(len(family), len(names))]
+
+
+def macro_tests(record):
+    from src_families import macro_generated
+    return macro_generated(record.node.own_text())
+
+
+def sizes(model, result):
+    """Lines that land in the testkit and in courts, by disposition."""
+    totals = {'testkit': 0, 'court': 0}
+    for names, disposition in result.items():
+        text = model.records[names].node.own_text()
+        lines = text.count('\n') + 1
+        if disposition == 'testkit':
+            totals['testkit'] += lines
+        elif disposition in ('court', 'local'):
+            totals['court'] += lines
+        else:
+            record = model.records[names]
+            test_lines = sum(text.count('\n', i.start, i.end) + 1 for i in record.items if i.test)
+            totals['court'] += test_lines
+            totals['testkit'] += max(lines - test_lines, 0)
+    return totals

@@ -295,12 +295,8 @@ where
             .readmit_application_query_from_observed(execution, query, &access, retained, controls)
             .map_err(|error| query_admission_denied(Binding::IDENTITY, error))?;
         let reader =
-            crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess {
-                application: runtime,
-                shared: &shared,
-                principal: external_principal,
-                request,
-            };
+            crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess::ordinary(
+                runtime, &shared, external_principal, request);
 
         reader.read_admitted_result::<SourceBinding<Schema, Binding>>(execution, plan, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
             .map_err(|stop| super::denial::selected_source_read_denied(Binding::IDENTITY, stop))?

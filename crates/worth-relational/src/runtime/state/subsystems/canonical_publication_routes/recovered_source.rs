@@ -56,8 +56,7 @@ impl RelationalCanonicalPublicationRoutes {
         if Arc::ptr_eq(&previous.envelope, &envelope) {
             return Ok(());
         }
-        let versioned = source.authority_kind()
-            != crate::history::data::CanonicalCommitAuthorityKind::BranchReferenceMovement;
+        let versioned = source.authority_kind().advances_version();
         if versioned
             && self
                 .by_version

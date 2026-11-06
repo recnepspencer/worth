@@ -131,6 +131,7 @@ where
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProductSelection(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::SchedulingRejected
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::SchedulingDeferred
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::CurrentControlBusy
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::PublicationStale
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::NoEffect
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::Cancelled
@@ -141,13 +142,18 @@ where
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::RequiredSuccessorStateUnavailable
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ForeignSettlement
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::RetainedVerificationFactUnavailable(_)
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::SettlementProvenance(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::Closed
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::DuplicatePerformedSource
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::BridgeConditional(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProductDelivery(_)
-                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::CorrespondenceDelivery(_) => WorthQueryApplicationOutputDemandDenial::Demand(denial),
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::CorrespondenceDelivery(_)
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::WorldRecovery(_)
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::RecoveryPublication(_)
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::PublicationReceipt(_) => WorthQueryApplicationOutputDemandDenial::Demand(denial),
         })?;
         match progress {
             WorthQueryOutputDemandAdvance::Progressed => {

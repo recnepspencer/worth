@@ -64,10 +64,9 @@ impl RuntimeWorldOwnerIdentity {
         presented: Self,
     ) -> Result<(), worth_proof::HomeIncarnationDenial> {
         if let (OwnerScope::Home(current), OwnerScope::Home(other)) = (self.scope, presented.scope)
+            && current != other
         {
-            if current != other {
-                return Err(worth_proof::HomeIncarnationDenial::ForeignHome);
-            }
+            return Err(worth_proof::HomeIncarnationDenial::ForeignHome);
         }
         match (self.home_fence, presented.home_fence) {
             (Some(current), Some(presented)) => current.admit(presented),

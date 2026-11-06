@@ -174,7 +174,7 @@ fn original_directory_receipt_preserves_cancellation_at_every_consult() {
         Outcome::Committed { receipt, .. } => receipt,
         other => panic!("the retained original must remain fresh: {other:?}"),
     };
-    receipt_fields::assert_live_agrees(&original, &recorded);
+    receipt_fields::assert_live_agrees(original, &recorded);
     assert_eq!(contacts.load(Ordering::SeqCst), 1);
     assert_eq!(balance(home.runtime(), &live), 8);
     drop(fresh);

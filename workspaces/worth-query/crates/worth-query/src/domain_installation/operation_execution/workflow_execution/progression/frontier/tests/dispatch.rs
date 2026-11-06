@@ -269,7 +269,16 @@ fn reversed_completion_still_applies_canonical_effects_and_receipts() {
     // The independent owner quote funds this successful journey. Work refusal
     // has its own finite-boundary court.
     probe.take_computes();
-    let expected = observe(request_execution, 29, None, Policy::width(0), &probe);
+    let (expected, report) = worth_execution::ExecutionWorkCeiling::new(None)
+        .run_serial(&host_request, || {
+            observe(request_execution, 29, None, Policy::width(0), &probe)
+        })
+        .unwrap();
+    assert_eq!(
+        report.charged_work(),
+        1_992,
+        "complete original SDK invoice"
+    );
     // Reset observations between runs: any purity mutant must prove order
     // dependence, not simply a counter carried over from a previous run.
     probe.take_computes();
@@ -292,7 +301,7 @@ fn reversed_completion_still_applies_canonical_effects_and_receipts() {
         assert_eq!(
             observe(request_execution, 29, None, Policy::width(workers), &probe),
             expected,
-            "default finite grant at width {workers}"
+            "funded original grant at width {workers}"
         );
     }
 

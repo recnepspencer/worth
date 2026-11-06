@@ -16,8 +16,9 @@ use crate::domain_computation::primary_graph::{
 /// The accepted source being replaced. A Stable alias is identified by its
 /// own published cell and Product observation, never by its performed origin.
 #[derive(Clone, Copy)]
-pub(in crate::domain_computation::primary_graph) enum OutputRefreshPredecessor<'a> {
+pub enum OutputRefreshPredecessor<'a> {
     Committed(&'a WorthQueryApplicationCommitReceipt),
+    Recovered(&'a super::super::WorthQueryRecoveredProducerPublication),
     Stable {
         interest: &'a WorthQueryOutputDemandInterest,
         published: &'a PublishedStableLineage,
@@ -33,6 +34,9 @@ impl<'a> OutputRefreshPredecessor<'a> {
     ) -> Self {
         match authority {
             WorthQueryAcceptedOutputAuthority::Committed(receipt) => Self::Committed(receipt),
+            WorthQueryAcceptedOutputAuthority::Recovered(publication) => {
+                Self::Recovered(publication)
+            }
             WorthQueryAcceptedOutputAuthority::Stable(published) => Self::Stable {
                 interest,
                 published,
@@ -46,6 +50,9 @@ impl OutputRefreshPredecessor<'_> {
     pub(super) fn key_identity(self) -> [u8; 32] {
         match self {
             Self::Committed(receipt) => *receipt.idempotency_binding().key_identity(),
+            Self::Recovered(publication) => {
+                *publication.view().idempotency_binding().key_identity()
+            }
             Self::Stable { published, .. } => published.idempotency_key_identity(),
             Self::Restored(restored) => restored.checkpoint.idempotency_key,
         }
@@ -56,6 +63,9 @@ impl OutputRefreshPredecessor<'_> {
             (Self::Committed(expected), WorthQueryAcceptedOutputAuthority::Committed(actual)) => {
                 actual.is_same_authoritative_commit(expected)
             }
+            (Self::Recovered(expected), WorthQueryAcceptedOutputAuthority::Recovered(actual)) => {
+                actual.same_publication(expected)
+            }
             (Self::Stable { published, .. }, WorthQueryAcceptedOutputAuthority::Stable(actual)) => {
                 actual.same_publication(published)
             }
@@ -63,7 +73,30 @@ impl OutputRefreshPredecessor<'_> {
                 actual.checkpoint.idempotency_key == expected.checkpoint.idempotency_key
                     && Arc::ptr_eq(&actual.correspondence, &expected.correspondence)
             }
-            _ => false,
+            (
+                Self::Committed(_),
+                WorthQueryAcceptedOutputAuthority::Recovered(_)
+                | WorthQueryAcceptedOutputAuthority::Stable(_)
+                | WorthQueryAcceptedOutputAuthority::Restored(_),
+            )
+            | (
+                Self::Recovered(_),
+                WorthQueryAcceptedOutputAuthority::Committed(_)
+                | WorthQueryAcceptedOutputAuthority::Stable(_)
+                | WorthQueryAcceptedOutputAuthority::Restored(_),
+            )
+            | (
+                Self::Stable { .. },
+                WorthQueryAcceptedOutputAuthority::Committed(_)
+                | WorthQueryAcceptedOutputAuthority::Recovered(_)
+                | WorthQueryAcceptedOutputAuthority::Restored(_),
+            )
+            | (
+                Self::Restored(_),
+                WorthQueryAcceptedOutputAuthority::Committed(_)
+                | WorthQueryAcceptedOutputAuthority::Recovered(_)
+                | WorthQueryAcceptedOutputAuthority::Stable(_),
+            ) => false,
         }
     }
 
@@ -111,3 +144,5 @@ fn stale_predecessor() -> WorthQueryOutputDemandDenial {
         "the accepted stable predecessor no longer owns this demand",
     )
 }
+
+mod court_doors_for_test;

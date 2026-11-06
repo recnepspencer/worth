@@ -5,12 +5,20 @@ use super::super::resource_lifecycle::{
 
 /// The basis admitted by the query pipeline owns the exact selected World
 /// occurrence and its matching application component lease.
-pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationQueryBasisCustody {
+pub struct WorthQueryApplicationQueryBasisCustody {
     product: crate::basis::WorthQueryProductObservationLease,
     application_basis: WorthQueryApplicationBasisLease,
 }
 
 impl WorthQueryApplicationQueryBasisCustody {
+    pub(in crate::domain_computation::primary_graph) fn from_selected<Schema>(
+        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        shared: &crate::domain_computation::primary_graph::SharedSelectedProductOperation<'_, Schema>,
+    ) -> Result<Self, crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop>{
+        let (product, application_basis) = runtime.retain_selected_query_basis_admitted(shared)?;
+        Ok(Self::new(product, application_basis))
+    }
+
     pub(super) fn new(
         product: crate::basis::WorthQueryProductObservationLease,
         application_basis: WorthQueryApplicationBasisLease,
@@ -19,6 +27,14 @@ impl WorthQueryApplicationQueryBasisCustody {
             product,
             application_basis,
         }
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) fn from_issued_selected<Schema>(
+        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        selected: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<'_, Schema>,
+    ) -> Result<Self, crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop>{
+        let (product, basis) = runtime.retain_issued_query_basis_admitted(selected)?;
+        Ok(Self::new(product, basis))
     }
 
     pub(in crate::domain_computation::primary_graph::application_query) fn retained_product(
@@ -84,9 +100,7 @@ impl WorthQueryApplicationQueryBasisCustody {
             .then(|| self.application_basis.snapshot_handle())
     }
 
-    pub(in crate::domain_computation::primary_graph::application_query) fn identity(
-        &self,
-    ) -> &WorthQueryApplicationBasisIdentity {
+    pub fn identity(&self) -> &WorthQueryApplicationBasisIdentity {
         self.application_basis.identity()
     }
 
@@ -96,9 +110,7 @@ impl WorthQueryApplicationQueryBasisCustody {
         self.application_basis.version_id()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn snapshot_handle(
-        &self,
-    ) -> &worth_relational::facade::snapshots::SnapshotHandle {
+    pub fn snapshot_handle(&self) -> &worth_relational::facade::snapshots::SnapshotHandle {
         self.application_basis.snapshot_handle()
     }
 

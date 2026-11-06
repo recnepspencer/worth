@@ -114,19 +114,7 @@ impl<Schema: ApplicationSchema, Disclosure: ApplicationSourceDisclosureBinding<S
     fn execute_inner_core(
         self,
         detail: Option<super::super::super::rich::WorthQueryApplicationMaterializationRequest>,
-        pending: &mut dyn FnMut(
-            &ExecutionRequest<'_, '_>,
-            &WorthQueryInstalledApplicationQueryBinding<Schema, Disclosure::Disclosure>,
-            EntityId,
-            EntityId,
-            &mut Option<ExecutionMemoryReservation>,
-        ) -> Result<
-            (
-                Option<WorthQueryPendingApplicationQueryGovernance>,
-                Option<WorthQueryPendingApplicationQueryGovernance>,
-            ),
-            InspectionCause,
-        >,
+        pending: &mut super::super::PendingInspectionPolicy<'_, Schema, Disclosure::Disclosure>,
     ) -> Result<
         (PreparedSourceOutcome, Option<ExecutionMemoryReservation>),
         WorthQueryApplicationInspectionDenial,

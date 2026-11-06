@@ -9,10 +9,10 @@ use super::{
     WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputLineage,
 };
 
-mod republication;
+pub(crate) mod republication;
 
 /// A recorded checkpoint output and the source facts its verification covers.
-pub(in crate::domain_computation::primary_graph) struct RestoredRecord {
+pub struct RestoredRecord {
     pub(in crate::domain_computation::primary_graph) identity:
         Arc<super::RecordedSettlementIdentity>,
     pub(in crate::domain_computation::primary_graph) facts: super::RetainedSourceFacts,
@@ -382,3 +382,5 @@ impl WorthQueryApplicationOutputLineage {
         self.live_occurrences.insert(occurrence);
     }
 }
+
+mod court_doors_for_test;

@@ -35,7 +35,7 @@ fn public_only_source_preserves_original_work_exhaustion_and_inherited_cancellat
             Terminal::Request(RelationalExecutionDenialCause::WorkExhausted)
         );
         assert_eq!(stopped.reached, 1);
-        assert!(stopped.work <= EXTRA - 1);
+        assert!(stopped.work < EXTRA);
         assert!(stopped.work > base.work);
     }
     let cancelled = sample(

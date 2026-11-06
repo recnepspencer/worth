@@ -9,7 +9,7 @@ impl HomeIntentPublication {
                 Some(
                     Endpoint::Ready(_)
                         | Endpoint::Stopped(_)
-                        | Endpoint::Committed(_)
+                        | Endpoint::Committed { .. }
                         | Endpoint::Refused(_)
                 )
             ) {
@@ -41,7 +41,9 @@ impl HomeIntentPublication {
                 let valid = self.matches(observed.source());
                 let mut state = self.state();
                 state.invalid |= !valid;
-                state.endpoint = Some(Endpoint::Terminal(observed));
+                state.endpoint = Some(Endpoint::Terminal {
+                    _observation: observed,
+                });
             }
         }
     }
@@ -65,7 +67,9 @@ impl HomeIntentPublication {
                 OrderedJournalStoppedPoll::Settled(observed) => {
                     let valid = self.matches(observed.source());
                     self.state().invalid |= !valid;
-                    Some(Endpoint::Terminal(observed))
+                    Some(Endpoint::Terminal {
+                        _observation: observed,
+                    })
                 }
                 OrderedJournalStoppedPoll::Failed(custody) => {
                     Some(Endpoint::Stopped(custody.into_stopped()))

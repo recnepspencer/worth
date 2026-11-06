@@ -45,6 +45,7 @@ fn identity<Value: CanonicalValue>(
     bounds: ValueDecodeBounds,
 ) -> crate::application_schema::ApplicationSchemaIdentity {
     let field = ApplicationSchemaMember::Field {
+        content_format: None,
         entity: "Document".into(),
         aspect: "Facts".into(),
         field: "Saved".into(),

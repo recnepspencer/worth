@@ -1,3 +1,5 @@
+#![recursion_limit = "256"]
+// The Native index catalog requires this depth for its auto-trait obligations.
 //! Neutral owning workflow: capture, condition, distinct approval and real archival ingress.
 //!
 //! `cargo run -p worth-query-certification --example observable_workflow` writes
@@ -29,6 +31,10 @@ mod resource_monitor;
 #[path = "observable_workflow/restoration.rs"]
 mod restoration;
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-builder=1 thread-spawn=1: The example joins one actor with its declared bootstrap stack; native request computation retains its Execution authority."
+)]
 fn main() {
     match archive::handle_worker() {
         Ok(true) => (),

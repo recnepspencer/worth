@@ -54,10 +54,7 @@ pub struct WorthQueryProvisionalEffectProgramView<'a> {
 }
 
 impl<'a> WorthQueryProvisionalEffectProgramView<'a> {
-    pub(crate) fn new(
-        program: &'a WorthQueryLoweredProvisionalEffectProgram,
-        generation: u64,
-    ) -> Self {
+    pub fn new(program: &'a WorthQueryLoweredProvisionalEffectProgram, generation: u64) -> Self {
         Self {
             program,
             generation,
@@ -328,3 +325,5 @@ fn canonical(value: impl Into<Arc<str>>) -> Result<Arc<str>, WorthQueryProvision
     }
     Ok(value)
 }
+
+mod court_doors_for_test;

@@ -1,7 +1,8 @@
 //! Isolated physical allocation across actual candidate collection before checked root pruning.
 use super::super::super::authentication;
-use super::super::{host, lifecycle, prefix};
+use super::super::{host, lifecycle};
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::sync::{atomic::Ordering, Arc, Mutex};
 use worth_query_host::facade::application_entry::*;
 #[test]
@@ -16,7 +17,10 @@ fn pruned_completed_source_allocates_no_dense_candidate_backing() {
 }
 fn journey() {
     let calls = Arc::new(Calls::default());
-    let world = host::install_boxes(Arc::new(prefix::Calls::default()), calls.clone());
+    let world = host::install_boxes(
+        Arc::new(prefix_observation::Calls::default()),
+        calls.clone(),
+    );
     let scope = authentication::request_scope();
     let principal = authentication::block_on(
         authentication::admit(world.installed_schema()).authenticate(
@@ -43,11 +47,15 @@ fn journey() {
     let samples = Arc::new(Mutex::new([None; 2]));
     let observed = samples.clone();
     *calls.before_candidates.lock().unwrap() = Some(Box::new(move || {
-        observed.lock().unwrap()[0] = Some(lifecycle::ALLOCATOR.stats());
+        // Acquire observer backing before measuring: pthread Mutex initializes
+        // its heap allocation on the first lock on macOS.
+        let mut samples = observed.lock().unwrap();
+        samples[0] = Some(lifecycle::ALLOCATOR.stats());
     }));
     let observed = samples.clone();
     *calls.first_summary.lock().unwrap() = Some(Box::new(move || {
-        observed.lock().unwrap()[1] = Some(lifecycle::ALLOCATOR.stats());
+        let mut samples = observed.lock().unwrap();
+        samples[1] = Some(lifecycle::ALLOCATOR.stats());
     }));
     let comparisons = calls.summary_comparisons.load(Ordering::SeqCst);
     let matches = calls.matched_sources.load(Ordering::SeqCst);

@@ -1,4 +1,5 @@
 mod medium_moves_into_one_runtime;
+mod memory_cutover_returns_actual_publication_after_callback;
 mod owner_issued_identity_admits_current_basis;
 mod owner_service_ports_are_shared_borrowable;
 mod publication_authority_is_nameable;

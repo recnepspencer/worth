@@ -55,15 +55,29 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeNativeMeaning<Sc
                 .map_err(|cause| {
                     existing_denial(format!("Home recovered schema authority denied: {cause}"))
                 })?;
-            super::super::super::root::index_installation::register_primary_graph_indexes(&mut self.schema.layout, native,
-                super::super::super::root::index_installation::IndexInstallationPosture::RequireRecovered)
-                .map_err(existing_denial)?;
+            use super::super::super::bootstrap::home_publication::readmission::{
+                inspect_native_completion, RecoveredBootstrapPublication,
+            };
+            match inspect_native_completion(
+                native,
+                &self.schema.layout,
+                &self.state.installed,
+                &execution,
+            )? {
+                RecoveredBootstrapPublication::Incomplete => (),
+                RecoveredBootstrapPublication::Completed => {
+                    super::super::super::root::index_installation::register_primary_graph_indexes(
+                        &mut self.schema.layout, native,
+                        super::super::super::root::index_installation::IndexInstallationPosture::RequireRecovered,
+                    ).map_err(existing_denial)?;
+                }
+            }
             native_families::readmit(native, &self.schema.layout, &execution)
         })();
         match result {
             Ok(()) => Ok(ReadmittedExistingHomeNativeMeaning {
                 state: self.state,
-                schema: self.schema,
+                schema: self.schema.bind_sources(&native.main_branch_identity()),
                 restore_work: outcome.checkpoint_restore_work,
             }),
             Err(cause) => Err(QueryExistingHomeNativeReadmissionRefused {

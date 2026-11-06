@@ -8,14 +8,7 @@ use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelFai
 /// Governance keeps the pending value and its computation/disclosure copy alive
 /// together, so both copies are admitted before the first is constructed.
 /// Existing capability authorization remains shared under its original owner.
-pub(in crate::domain_computation) fn prepare_funded_pending_disclosure<
-    Schema,
-    Scope,
-    Capability,
-    Operation,
-    Input,
-    E,
->(
+pub fn prepare_funded_pending_disclosure<Schema, Scope, Capability, Operation, Input, E>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     binding: &ApplicationSchemaBindingIdentity,
     principal: EntityId,

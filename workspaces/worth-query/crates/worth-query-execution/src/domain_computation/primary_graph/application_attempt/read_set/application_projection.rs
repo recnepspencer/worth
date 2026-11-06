@@ -8,7 +8,7 @@ use std::{collections::BTreeMap, sync::Arc};
 use worth_execution::ExecutionMemoryReservation;
 
 #[derive(Debug)]
-pub(in crate::domain_computation) struct CompletedFactProjection {
+pub struct CompletedFactProjection {
     locators: BTreeMap<Arc<str>, usize>,
     by_ordinal: Vec<Arc<str>>,
     count: usize,

@@ -14,6 +14,9 @@ pub enum WorthQueryGeneratedOutputPublicationNoEffectCause {
     DeadlineBeforeEffect,
     /// An owner refused the publication before any effect.
     OwnerDeniedBeforeEffect,
+    /// The separately admitted current control input no longer permits the
+    /// original publication. This is distinct from a stale write target.
+    CurrentReadDependency(worth_runtime_world::facade::CurrentProductReadDependencyDenial),
     /// The bridge correspondence moved from the prepared basis; prepare again.
     CorrespondenceRebindRequired,
     /// The product reference has no generation left to advance to.
@@ -75,6 +78,9 @@ const fn map_cause(
         WorldCause::OwnerDeniedBeforeEffect => {
             WorthQueryGeneratedOutputPublicationNoEffectCause::OwnerDeniedBeforeEffect
         }
+        WorldCause::CurrentReadDependency(cause) => {
+            WorthQueryGeneratedOutputPublicationNoEffectCause::CurrentReadDependency(cause)
+        }
         WorldCause::CorrespondenceRebindRequired => {
             WorthQueryGeneratedOutputPublicationNoEffectCause::CorrespondenceRebindRequired
         }
@@ -105,6 +111,14 @@ mod tests {
         assert_eq!(
             map_cause(worth_runtime_world::facade::NoEffectCause::CapacityExhausted),
             WorthQueryGeneratedOutputPublicationNoEffectCause::CapacityExhausted
+        );
+        let dependency =
+            worth_runtime_world::facade::CurrentProductReadDependencyDenial::WorldHeadUnavailable;
+        assert_eq!(
+            map_cause(
+                worth_runtime_world::facade::NoEffectCause::CurrentReadDependency(dependency)
+            ),
+            WorthQueryGeneratedOutputPublicationNoEffectCause::CurrentReadDependency(dependency)
         );
     }
 }

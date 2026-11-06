@@ -7,14 +7,16 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
         let _custody = OpeningCustody::enter()?;
-        self.product_runtime.with_execution_placement(|placement| {
-            let execution = QueryRequestExecution::open_control(
-                placement,
-                worth_execution::CancellationToken::new(),
-                None,
-            );
-            execution.run_product_advancement(&self.product_runtime, body)
-        })?
+        self.runtime
+            .product_runtime
+            .with_execution_placement(|placement| {
+                let execution = QueryRequestExecution::open_control(
+                    placement,
+                    worth_execution::CancellationToken::new(),
+                    None,
+                );
+                execution.run_product_advancement(&self.runtime.product_runtime, body)
+            })?
     }
 
     /// Runs one host call funded as `allocation_policy` says. Under
@@ -62,21 +64,23 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         &self,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         cancellation: worth_execution::CancellationToken,
-        deadline: Option<std::time::Instant>,
+        deadline: Option<worth_execution::MonotonicDeadline>,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
         let _custody = OpeningCustody::enter()?;
-        self.product_runtime.with_execution_placement(|placement| {
-            let execution = match allocation_policy {
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation => {
-                    QueryRequestExecution::open_control(placement, cancellation, deadline)
-                }
-                worth_execution::ExecutionAllocationPolicy::Execution(lease) => {
-                    QueryRequestExecution::under_lease(lease, cancellation, deadline)
-                }
-            };
-            execution.run_product_advancement(&self.product_runtime, body)
-        })?
+        self.runtime
+            .product_runtime
+            .with_execution_placement(|placement| {
+                let execution = match allocation_policy {
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation => {
+                        QueryRequestExecution::open_control(placement, cancellation, deadline)
+                    }
+                    worth_execution::ExecutionAllocationPolicy::Execution(lease) => {
+                        QueryRequestExecution::under_lease(lease, cancellation, deadline)
+                    }
+                };
+                execution.run_product_advancement(&self.runtime.product_runtime, body)
+            })?
     }
 
     /// Checks borrowed advancement custody before a Publication entry reader.
@@ -85,7 +89,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<(), WorthQueryForeignAdvancementPhase> {
         phase
-            .execution_request_for(&self.product_runtime)
+            .execution_request_for(&self.runtime.product_runtime)
             .map(|_| ())
     }
 
@@ -99,10 +103,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
         let _custody = OpeningCustody::enter()?;
-        self.product_runtime.with_execution_placement(|placement| {
-            let execution = QueryRequestExecution::open(placement, request);
-            execution.run_product_advancement(&self.product_runtime, body)
-        })?
+        self.runtime
+            .product_runtime
+            .with_execution_placement(|placement| {
+                let execution = QueryRequestExecution::open(placement, request);
+                execution.run_product_advancement(&self.runtime.product_runtime, body)
+            })?
     }
 }
 
@@ -135,7 +141,7 @@ impl crate::domain_computation::execution_runtime::product_world::WorthQueryProd
     fn open_host_advancement<R>(
         &self,
         cancellation: worth_execution::CancellationToken,
-        deadline: Option<std::time::Instant>,
+        deadline: Option<worth_execution::MonotonicDeadline>,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
         let _custody = OpeningCustody::enter()?;

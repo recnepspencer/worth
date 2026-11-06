@@ -24,6 +24,7 @@ pub(super) fn create_forked_branch<D, I, E, Ctx, T>(
     source: ProductBranchObservation,
     intent: ProductBranchCreationIntent,
     cancellation: &RuntimeWorldCancellationToken,
+    retained: Option<worth_relational::facade::branch::AdmittedRelationalRetainedForkSource>,
 ) -> Result<RuntimeWorldBranchCreationOutcome, RuntimeWorldBranchAdmissionDenial>
 where
     D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
@@ -47,13 +48,18 @@ where
         incarnation,
     };
 
-    let attempt = RuntimeWorldPreparationService::prepare_creation(
-        owner,
-        source,
-        intent,
-        cancellation,
-        None,
-    )?;
+    let attempt = match retained {
+        Some(retained) => {
+            owner.prepare_retained_creation(source, intent, retained, cancellation, None)?
+        }
+        None => RuntimeWorldPreparationService::prepare_creation(
+            owner,
+            source,
+            intent,
+            cancellation,
+            None,
+        )?,
+    };
     match execute_creation(owner, execution, attempt, &destination, cancellation) {
         BranchCreationExecution::NoEffect(denial) => Err(denial),
         BranchCreationExecution::ProductUnpublished(effects) => Ok(

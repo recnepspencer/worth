@@ -2,6 +2,7 @@ use super::identity::{decode_identity, encode_identity};
 use super::record::{read_u64, CheckpointStreamDecodeDenial};
 use super::PhysicalCheckpointIdentity;
 use sha2::{Digest, Sha256};
+use worth_foundational::CanonicalDigestId;
 
 pub(super) const HEADER_PAYLOAD_BYTES: usize = 144;
 pub const CHECKPOINT_STREAM_HEADER_RECORD_BYTES: usize = 164;
@@ -70,9 +71,9 @@ pub struct PhysicalCheckpointSource {
 /// Persisted Store policy binding required to interpret C.7 operation leases.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PhysicalCheckpointSecurityBinding {
-    policy_identity: [u8; 32],
+    policy_identity: CanonicalDigestId,
     idempotency_retention_generations: u64,
-    digest: [u8; 32],
+    digest: CanonicalDigestId,
 }
 
 impl PhysicalCheckpointSource {
@@ -184,14 +185,14 @@ impl PhysicalCheckpointSecurityBinding {
             idempotency_retention_generations,
         );
         Some(Self {
-            policy_identity,
+            policy_identity: CanonicalDigestId::new(policy_identity),
             idempotency_retention_generations,
-            digest,
+            digest: CanonicalDigestId::new(digest),
         })
     }
 
     pub const fn policy_identity(self) -> [u8; 32] {
-        self.policy_identity
+        *self.policy_identity.bytes()
     }
 
     pub const fn idempotency_retention_generations(self) -> u64 {
@@ -199,7 +200,7 @@ impl PhysicalCheckpointSecurityBinding {
     }
 
     pub const fn digest(self) -> [u8; 32] {
-        self.digest
+        *self.digest.bytes()
     }
 }
 

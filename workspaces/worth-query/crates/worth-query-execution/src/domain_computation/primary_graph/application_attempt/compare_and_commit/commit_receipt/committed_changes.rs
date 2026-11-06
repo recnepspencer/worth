@@ -42,6 +42,19 @@ impl WorthQueryApplicationCommittedChanges {
         &self.envelope.commit
     }
 
+    pub(in crate::domain_computation::primary_graph) fn content_for_field(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        entity: EntityId,
+        entity_name: &str,
+        locator: &AspectFieldLocator,
+    ) -> Result<
+        worth_relational::facade::content::RelationalContentFrame,
+        worth_relational::facade::content::RelationalContentDenial,
+    > {
+        self.envelope
+            .content_for_field(request, entity, entity_name, locator)
+    }
     /// Iterates the commit's entity changes without copying its patch payloads.
     pub fn entity_changes(&self) -> impl Iterator<Item = (EntityId, RecordStructuralChange)> + '_ {
         self.envelope
@@ -206,3 +219,5 @@ impl std::fmt::Debug for WorthQueryApplicationCommittedChanges {
             .finish()
     }
 }
+
+mod court_doors_for_test;

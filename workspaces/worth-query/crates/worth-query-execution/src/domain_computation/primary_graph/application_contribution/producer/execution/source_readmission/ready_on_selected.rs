@@ -1,5 +1,6 @@
 //! Clean certification for a required cue on the wave's one selected Product.
 
+use super::super::ProducerInvocationAuthority;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::producer::demand::MatchedRequiredPredecessors;
 use crate::domain_computation::primary_graph::application_contribution::producer::demand::ResolvedRequiredPredecessors;
@@ -34,6 +35,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     validated_principal: &worth_query_installation::facade::WorthQueryValidatedPrincipalBinding,
     external_principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
+    invocation: &ProducerInvocationAuthority<'_>,
     shared: &'basis SharedSelectedProductOperation<'_, Schema>,
     positioned: &'basis PositionedRelationalSnapshot,
     retained: &WorthQueryObservedSource<SourceQuery<Schema, Binding>>,
@@ -84,6 +86,13 @@ where
         .into());
     }
     let installed_limits = runtime.resolve_application_query_limits(installed.limits());
+    let control = super::super::select_invocation_control(execution, runtime, invocation)?;
+    let control_basis = control.as_ref().map(|control| {
+        crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryBasisCustody::from_selected(runtime, control)
+    }).transpose().map_err(|stop| match stop {
+        SelectedQueryBasisRetentionStop::Basis => denial(WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable, Binding::IDENTITY).into(),
+        SelectedQueryBasisRetentionStop::Admission(stop) => ready::ready_resource_denial(Binding::IDENTITY, stop),
+    })?;
     let (product, basis) = runtime
         .retain_selected_query_basis_admitted(shared)
         .map_err(|stop| match stop {
@@ -96,27 +105,48 @@ where
                 ready::ready_resource_denial(Binding::IDENTITY, stop)
             }
         })?;
-    let controls = WorthQueryApplicationQueryControls::selected_read_one_shot(
-        product,
-        basis,
-        installed_limits.maximum_results(),
-        request,
-    )
-    .map_err(|stop| ready::ready_resource_denial(Binding::IDENTITY, stop))?
+    let controls = if let Some(control) = &control {
+        WorthQueryApplicationQueryControls::selected_read_one_shot_with_control(
+            control
+                .selected()
+                .product()
+                .read_lease_ref()
+                .retained_clone(),
+            product,
+            basis,
+            installed_limits.maximum_results(),
+            request,
+        )
+    } else {
+        WorthQueryApplicationQueryControls::selected_read_one_shot(
+            product,
+            basis,
+            installed_limits.maximum_results(),
+            request,
+        )
+        .map_err(|stop| ready::ready_resource_denial(Binding::IDENTITY, stop))?
+    }
     .with_selection_origin(shared.selected().selection_origin())
     .with_original_settled_producer(shared.selected().original_settled_producer().cloned());
     runtime
-        .with_fresh_retained_query_permission(execution, installed, Some(validated_principal), external_principal, retained, shared.selected(), controls, |permission| {
+        .with_fresh_retained_query_permission(execution, installed, Some(validated_principal), external_principal, retained, control.as_ref().unwrap_or(shared).selected(), control.as_ref().map(|_| shared.selected()), controls, |permission| {
+                if let Some(history) = invocation.history_control() {
+                    permission.require_history_principal(history)
+                        .map_err(|stop| query_admission_denied(Binding::IDENTITY, stop))?;
+                    permission.require_original_scope(retained)
+                        .map_err(|stop| query_admission_denied(Binding::IDENTITY, stop))?;
+                }
+                invocation.confirm_source(execution, runtime, ())?;
                 let Some(candidate) = candidate else {
                     return on_disclosure(permission, None);
                 };
                 let Some(sealed) = permission
-                    .seal_current_ready(execution)
+                    .seal_current_ready_with_control(execution, control_basis.as_ref())
                     .map_err(|error| query_admission_denied(Binding::IDENTITY, error))?
                 else {
                     return on_disclosure(permission, None);
                 };
-                let handle = &runtime.primary_provider.graph;
+                let handle = &runtime.runtime.primary_provider.graph;
                 let current = handle
                     .with_runtime(execution, |relational| {
                         candidate.certify_current(execution,
@@ -131,6 +161,7 @@ where
                 sealed
                     .validate_request()
                     .map_err(|error| query_admission_denied(Binding::IDENTITY, error))?;
+                invocation.confirm_source(execution, runtime, ())?;
                 match current {
                     CurrentAcceptedResult::Current(proof) => {
                         let Some(bound) = proof
@@ -181,7 +212,7 @@ where
                                 let evidence = rebound_consumption::retain(execution, runtime, &successor, &pending, sealed.product(),
                                     sealed.snapshot_handle(), positioned)?;
 
-                                MatchedRequiredPredecessors::join(&mut matched, &runtime.output_demands, &consumer, old, evidence, positioned)
+                                MatchedRequiredPredecessors::join(&mut matched, &runtime.runtime.output_demands, &consumer, old, evidence, positioned)
                                     .map_err(ProducerExecutionStop::ExecutionStopped)?;
                                 let next = handle
                                     .with_runtime(execution, |relational| {
@@ -199,6 +230,7 @@ where
                                     Some(next) => pending = next,
                                     None => {
                                         drop(sealed);
+                                        invocation.confirm_source(execution, runtime, ())?;
                                         return on_disclosure(permission, matched);
                                     }
                                 }
@@ -224,10 +256,11 @@ where
                             let consumer = candidate.retain_recorded_identity()
                                 .map_err(|stop| ready::ready_resource_denial(Binding::IDENTITY, stop))?;
                             Some(MatchedRequiredPredecessors::retain_consumer(
-                                &runtime.output_demands, &consumer, positioned,
+                                &runtime.runtime.output_demands, &consumer, positioned,
                             ).map_err(ProducerExecutionStop::ExecutionStopped)?)
                         } else { None };
                         drop(sealed);
+                        invocation.confirm_source(execution, runtime, ())?;
                         on_disclosure(permission, matched)
                     }
                 }
@@ -239,4 +272,6 @@ where
                 query_admission_denied(Binding::IDENTITY, error),
             FreshQueryPermissionStop::Inspect(error) => error,
         })
+        .and_then(|outcome| invocation.confirm_source(execution, runtime, outcome)
+            .map_err(ProducerExecutionStop::ExecutionStopped))
 }

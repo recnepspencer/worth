@@ -4,6 +4,7 @@ use super::super::{
     schema::Catalog,
 };
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use worth_query_host::facade::primary_graph::WorthQueryApplicationCommitReceipt;
 mod delivery;
 mod geometry;
@@ -12,7 +13,7 @@ use delivery::*;
 #[test]
 fn managed_correction_requires_genuine_cancellation_for_populated_and_empty_inputs() {
     for (prefix, empty, moved) in [("sh", false, "renamed"), ("needle", true, "needle")] {
-        let calls = Arc::new(prefix::Calls::default());
+        let calls = Arc::new(prefix_observation::Calls::default());
         let rules = Arc::new(rule::Calls::new(calls.clone()));
         let world = host::install(calls, rules);
         let scope = authentication::request_scope();
@@ -41,7 +42,7 @@ fn managed_correction_requires_genuine_cancellation_for_populated_and_empty_inpu
 #[test]
 fn managed_correction_refuses_raw_restoration_and_an_uncancelled_transient_entrant() {
     for (prefix, empty, moved) in [("sh", false, "renamed"), ("needle", true, "needle")] {
-        let calls = Arc::new(prefix::Calls::default());
+        let calls = Arc::new(prefix_observation::Calls::default());
         let rules = Arc::new(rule::Calls::new(calls.clone()));
         let world = host::install(calls, rules);
         let scope = authentication::request_scope();
@@ -67,7 +68,7 @@ fn managed_correction_refuses_raw_restoration_and_an_uncancelled_transient_entra
 
 #[test]
 fn managed_correction_excludes_nonmatching_authored_noops_from_empty_predicate_history() {
-    let calls = Arc::new(prefix::Calls::default());
+    let calls = Arc::new(prefix_observation::Calls::default());
     let rules = Arc::new(rule::Calls::new(calls.clone()));
     let world = host::install(calls, rules);
     let scope = authentication::request_scope();
@@ -91,7 +92,7 @@ fn managed_correction_excludes_nonmatching_authored_noops_from_empty_predicate_h
 
 #[test]
 fn managed_correction_excludes_uncancelled_irrelevant_edits_using_actual_historical_rows() {
-    let calls = Arc::new(prefix::Calls::default());
+    let calls = Arc::new(prefix_observation::Calls::default());
     let rules = Arc::new(rule::Calls::new(calls.clone()));
     let world = host::install(calls, rules);
     let scope = authentication::request_scope();
@@ -115,7 +116,7 @@ fn managed_correction_excludes_uncancelled_irrelevant_edits_using_actual_histori
 
 #[test]
 fn ordinary_recorded_correction_preserves_an_intervening_disjoint_note() {
-    let calls = Arc::new(prefix::Calls::default());
+    let calls = Arc::new(prefix_observation::Calls::default());
     let rules = Arc::new(rule::Calls::new(calls.clone()));
     let world = host::install(calls, rules);
     let scope = authentication::request_scope();
@@ -139,7 +140,7 @@ fn ordinary_recorded_correction_preserves_an_intervening_disjoint_note() {
 
 #[test]
 fn managed_correction_keeps_matching_noops_rejected_by_exact_refinement() {
-    let calls = Arc::new(prefix::Calls::default());
+    let calls = Arc::new(prefix_observation::Calls::default());
     let rules = Arc::new(rule::Calls::new(calls.clone()));
     let world = host::install(calls, rules);
     let scope = authentication::request_scope();
@@ -178,7 +179,7 @@ fn managed_correction_keeps_matching_noops_rejected_by_exact_refinement() {
 
 #[test]
 fn managed_history_exclusion_preserves_independent_ordinary_authored_noop() {
-    let calls = Arc::new(prefix::Calls::default());
+    let calls = Arc::new(prefix_observation::Calls::default());
     let rules = Arc::new(rule::Calls::new(calls.clone()));
     let world = host::install(calls, rules);
     let scope = authentication::request_scope();
@@ -206,7 +207,7 @@ fn managed_history_exclusion_preserves_independent_ordinary_authored_noop() {
 
 #[test]
 fn managed_historical_matching_preserves_original_cancellation_and_allows_fresh_retry() {
-    let calls = Arc::new(prefix::Calls::default());
+    let calls = Arc::new(prefix_observation::Calls::default());
     let rules = Arc::new(rule::Calls::new(calls.clone()));
     let world = host::install(calls.clone(), rules);
     let scope = authentication::request_scope();
@@ -229,7 +230,7 @@ fn managed_historical_matching_preserves_original_cancellation_and_allows_fresh_
         .selected_commit()
         .clone();
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let observed = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let in_match = observed.clone();
     calls.matched_sources.store(1, Ordering::SeqCst);

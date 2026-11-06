@@ -1,3 +1,4 @@
+use super::super::phase_backing::CommitPhaseBacking;
 use super::super::rejection::{attach_rejection, elapsed_micros};
 use super::preparation::{
     prepare_publication_artifacts, PublicationPreparation, PublicationPreparationInput,
@@ -5,6 +6,7 @@ use super::preparation::{
 use crate::authority::commit::phases::publication::enforce_patch_budget;
 use crate::authority::commit::phases::schema_continuity::SchemaContinuityPlan;
 use crate::authority::commit::publication::assemble_patch;
+use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
 use crate::authority::mutation::MutationEffect;
 use crate::commit_strategies::data::StrategyCommitArtifactBundle;
 use crate::diagnostics::data::RelationalDiagnosticsEntry;
@@ -12,7 +14,7 @@ use crate::history::data::{BranchId, CommitId, RelationalCommitReceipt};
 use crate::identity::data::VersionId;
 use crate::runtime::RelationalPreparationRuntime;
 use crate::transactions::data::{
-    CommitLog, CommitPatchBudgetSummary, CommitPhase, CommitPhaseTiming, MergedCommitPlan,
+    CommitLog, CommitPatchBudgetSummary, CommitPhase, CommitPhaseTiming,
     PublishedMergeExecutionAuthority, TransactionCommitError,
 };
 
@@ -25,7 +27,7 @@ pub(super) struct ArtifactAssemblyInput<'a> {
     pub(super) version_id: VersionId,
     pub(super) merge_parent_branches: &'a [BranchId],
     pub(super) merge_base_commits: &'a [CommitId],
-    pub(super) merged_plan: &'a MergedCommitPlan,
+    pub(super) merged_plan: RelationalSemanticPlan<'a>,
     pub(super) record_allocations: &'a [crate::history::data::CanonicalRecordAllocation],
     pub(super) strategy_commit_artifacts: Option<StrategyCommitArtifactBundle>,
     pub(super) merge_execution_authority: Option<PublishedMergeExecutionAuthority>,
@@ -41,7 +43,7 @@ pub(super) fn assemble_authoritative_publication_phase(
     phase_timing: &mut CommitPhaseTiming,
     input: ArtifactAssemblyInput<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> Result<PublicationPreparation, TransactionCommitError> {
+) -> Result<CommitPhaseBacking<PublicationPreparation>, TransactionCommitError> {
     commit_log.begin_phase(CommitPhase::ArtifactAssembly);
     let phase_started = std::time::Instant::now();
     let mut effect = input.effect;
@@ -82,7 +84,7 @@ pub(super) fn assemble_authoritative_publication_phase(
         execution,
     )
     .map_err(|error| attach_rejection(commit_log, CommitPhase::ArtifactAssembly, error))?;
-    record_publication_phase_artifacts(commit_log, &publication);
+    record_publication_phase_artifacts(commit_log, publication.value());
     commit_log.complete_phase(CommitPhase::ArtifactAssembly);
     phase_timing.artifact_assembly_micros = elapsed_micros(phase_started);
     Ok(publication)

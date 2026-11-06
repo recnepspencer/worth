@@ -30,7 +30,11 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
         WorthQueryCompletedOperationInvariantProjection<Schema, Operation, Output>,
         WorthQueryOperationProjectionDenial,
     > {
-        admission.validate_projection_authority(self.runtime_authority, &self.binding_identity)?;
+        admission.validate_projection_authority(
+            self.runtime_authority,
+            &self.binding_identity,
+            &self.installed_operations,
+        )?;
         let product = admission
             .graph_work()
             .mutation_lease()

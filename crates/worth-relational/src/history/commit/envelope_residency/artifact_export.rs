@@ -14,7 +14,8 @@ impl RelationalCommitEnvelopeResidency {
     /// Capture metadata is read from the original Memory frame, never re-encoded.
     pub(crate) fn original_memory_payload_digest(
         &self,
-    ) -> Result<[u8; 32], crate::durability::data::DurabilityError> {
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<[u8; 32], Stop> {
         let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
         let fail = || {
             crate::durability::data::DurabilityError::new(
@@ -27,9 +28,10 @@ impl RelationalCommitEnvelopeResidency {
             ..
         } = &state.backing
         else {
-            return Err(fail());
+            return Err(fail().into());
         };
-        let artifact = Artifact::from_owned_bytes(bytes.clone()).map_err(|_| fail())?;
+        let artifact =
+            Artifact::from_owned_original(bytes.clone(), execution).map_err(original_frame_stop)?;
         Ok(*artifact.payload_digest().as_bytes())
     }
     /// Strict capture reads original frames only; resident body encoding is forbidden.
@@ -88,7 +90,7 @@ impl RelationalCommitEnvelopeResidency {
                 }
             };
             let artifact =
-                Artifact::from_owned_bytes(bytes).map_err(|_| failure(Cause::Damaged))?;
+                Artifact::from_owned_original(bytes, execution).map_err(original_frame_stop)?;
             if let EnvelopeBacking::Journal { entry, .. } = &state.backing {
                 Self::check_frame(entry, &artifact)?;
             }
@@ -104,8 +106,7 @@ impl RelationalCommitEnvelopeResidency {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Artifact, Denial> {
-        let policy = execution.allocation_policy();
-        policy.check_live()?;
+        crate::execution::check_request(execution).map_err(Denial::Request)?;
         let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
         if let Some(failure) = state.damage {
             return Err(Denial::StorageUnavailable(failure));
@@ -115,61 +116,83 @@ impl RelationalCommitEnvelopeResidency {
             ..
         } = &state.backing
         {
-            // Verify the original immutable frame; never encode another copy.
-            return Artifact::from_owned_bytes(bytes.clone()).map_err(|_| {
-                Denial::PayloadEncoding {
-                    detail: "retained original Memory artifact failed verification".into(),
-                }
-            });
+            return Artifact::from_owned_original(bytes.clone(), execution)
+                .map_err(frame_copy_denial);
         }
         if let EnvelopeBacking::SelectedCheckpoint { entry, directory } = &state.backing {
-            let result = Self::selected_artifact(entry, directory, execution, 1 << 30);
+            let result = Self::selected_artifact(
+                entry,
+                directory,
+                execution,
+                crate::durability::canonical_commit_artifact::MAXIMUM_ARTIFACT_BYTES as u64,
+            );
             if let Err(stop) = &result {
                 state.remember_original_failure(stop);
             }
             return result.map_err(export_stop);
         }
-        if let Some(commit) = state
-            .position
-            .as_ref()
-            .and_then(|position| position.resident())
+        if let EnvelopeBacking::Memory { .. } = &state.backing
+            && let Some(commit) = state
+                .position
+                .as_ref()
+                .and_then(|position| position.resident())
         {
-            return Artifact::from_positioned(&commit, policy);
+            return Artifact::from_positioned_request(&commit, execution);
         }
         let EnvelopeBacking::Journal { entry, source, .. } = &state.backing else {
             return Err(Denial::PayloadEncoding {
-                detail: "memory envelope has no performed position".to_owned(),
+                detail: "memory envelope has no performed position".into(),
             });
         };
         let failure = |cause| RelationalStorageUnavailable {
             subject: RelationalStorageSubject::Envelope(entry.position),
             cause,
         };
-        let result = source
-            .read_commit(entry.position, 1 << 30)
-            .map_err(failure)
-            .and_then(|bytes| {
-                Artifact::from_untrusted_bytes(bytes).map_err(|_| failure(Cause::Damaged))
-            })
-            .and_then(|artifact| {
-                if artifact.position() != entry.position
-                    || artifact.commit_id() != entry.commit.commit_id
-                    || artifact.payload_digest().as_bytes() != &entry.payload_digest
-                {
-                    return Err(failure(Cause::IntegrityMismatch));
-                }
-                Ok(artifact)
-            });
-        match result {
-            Ok(artifact) => {
-                policy.check_live()?;
-                Ok(artifact)
+        // The existing port certifies no length before reading. Reserve its
+        // complete bounded temporary before asking it to allocate; never guess
+        // a size from unrelated current-root content or read uncharged first.
+        const LIMIT: u64 =
+            crate::durability::canonical_commit_artifact::MAXIMUM_ARTIFACT_BYTES as u64;
+        let _read = execution
+            .reserve_retained_memory(LIMIT)
+            .map_err(|cause| Denial::Request(cause.into()))?;
+        let read = source.read_commit(entry.position, LIMIT);
+        let result = match read {
+            Err(cause) => Err(Denial::StorageUnavailable(failure(cause))),
+            Ok(bytes) => {
+                use crate::durability::canonical_commit_artifact::ControlledFrameCopyDenial as Copy;
+                Artifact::copy_frame_original(&bytes, execution)
+                    .map_err(|cause| match cause {
+                        Copy::Request(cause) => Denial::Request(cause),
+                        Copy::Allocation(cause) => Denial::Allocation(cause),
+                        Copy::Frame(cause) => Denial::Frame(cause),
+                    })
+                    .and_then(|artifact| {
+                        if artifact.position() != entry.position
+                            || artifact.commit_id() != entry.commit.commit_id
+                            || artifact.payload_digest().as_bytes() != &entry.payload_digest
+                        {
+                            return Err(Denial::StorageUnavailable(failure(
+                                Cause::IntegrityMismatch,
+                            )));
+                        }
+                        Ok(artifact)
+                    })
             }
-            Err(failure) => {
-                if failure.cause.is_proven_damage() {
-                    state.damage = Some(failure);
-                }
-                Err(Denial::StorageUnavailable(failure))
+        };
+        if matches!(&result, Err(Denial::Frame(cause)) if frame_proves_damage(cause)) {
+            state.damage = Some(failure(Cause::Damaged));
+        }
+        if let Err(Denial::StorageUnavailable(failure)) = &result
+            && failure.cause.is_proven_damage()
+        {
+            state.damage = Some(*failure);
+        }
+        match result {
+            Err(cause) => Err(cause),
+            Ok(artifact) => {
+                crate::execution::check_request(execution).map_err(Denial::Request)?;
+                Ok(artifact)
             }
         }
     }
@@ -184,5 +207,47 @@ fn export_stop(stop: Stop) -> Denial {
         Stop::Request(cause) => Denial::Readmission(Stop::Request(cause)),
         Stop::AdmissionImage(cause) => Denial::Readmission(Stop::AdmissionImage(cause)),
         Stop::Allocation(cause) => Denial::Readmission(Stop::Allocation(cause)),
+        Stop::Content(cause) => Denial::Readmission(Stop::Content(cause)),
+    }
+}
+
+fn frame_proves_damage(
+    cause: &crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactFrameRefusal,
+) -> bool {
+    use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactFrameRefusal as Frame;
+    match cause {
+        Frame::UnsupportedVersion(_) | Frame::SizeLimit { .. } => false,
+        Frame::InvalidVersion
+        | Frame::InvalidPayloadShape
+        | Frame::UnrecognizedMagic
+        | Frame::TruncatedHeader { .. }
+        | Frame::TruncatedPayload { .. }
+        | Frame::TrailingBytes { .. }
+        | Frame::DigestMismatch { .. } => true,
+    }
+}
+
+fn frame_copy_denial(
+    cause: crate::durability::canonical_commit_artifact::ControlledFrameCopyDenial,
+) -> Denial {
+    use crate::durability::canonical_commit_artifact::ControlledFrameCopyDenial as Copy;
+    match cause {
+        Copy::Frame(cause) => Denial::Frame(cause),
+        Copy::Request(cause) => Denial::Request(cause),
+        Copy::Allocation(cause) => Denial::Allocation(cause),
+    }
+}
+
+pub(super) fn original_frame_stop(
+    cause: crate::durability::canonical_commit_artifact::ControlledFrameCopyDenial,
+) -> Stop {
+    use crate::durability::canonical_commit_artifact::ControlledFrameCopyDenial as Copy;
+    match cause {
+        Copy::Request(cause) => Stop::Request(cause),
+        Copy::Allocation(cause) => Stop::Allocation(cause),
+        Copy::Frame(cause) => {
+            crate::durability::data::RelationalNativeCheckpointCaptureDenial::ArtifactFrame(cause)
+                .into()
+        }
     }
 }

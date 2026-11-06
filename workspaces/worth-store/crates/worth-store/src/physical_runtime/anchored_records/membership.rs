@@ -93,7 +93,7 @@ impl ValueMembership {
                 name,
                 generation: self.selected.generation,
                 record: PhysicalRecordId::from_persisted(self.selected.record),
-                payload_sha256: self.header.payload_sha256,
+                payload_sha256: *self.header.payload_sha256.bytes(),
                 payload_bytes: self.header.payload_bytes,
             },
             members: self.members.clone(),
@@ -113,7 +113,7 @@ impl ValueMembership {
         payload_bytes: u64,
         members: impl ExactSizeIterator<Item = ([u8; 32], u64)>,
     ) -> bool {
-        self.header.payload_sha256 == payload_sha256
+        *self.header.payload_sha256.bytes() == payload_sha256
             && self.header.payload_bytes == payload_bytes
             && self.members.len() == members.len()
             && self

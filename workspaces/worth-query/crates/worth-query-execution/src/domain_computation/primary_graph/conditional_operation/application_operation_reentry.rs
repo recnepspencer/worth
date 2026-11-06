@@ -7,7 +7,7 @@ mod outcome_application;
 mod processing;
 mod provider_commit_deferred;
 mod reentry_counts;
-mod sealed_commit;
+pub(crate) mod sealed_commit;
 mod temporal_idempotency;
 mod wake_retirement;
 pub(in crate::domain_computation::primary_graph::conditional_operation) use denial::WorthQueryTemporalReentryDenial;
@@ -31,7 +31,7 @@ use super::reconstruction_authority::{
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
-pub(super) enum WorthQueryTemporalReentryOutcome {
+pub enum WorthQueryTemporalReentryOutcome {
     ProductPreparationPending(crate::domain_computation::WorthQueryProductPreparationPending),
     ProductPreparationRefused(crate::domain_computation::WorthQueryProductPreparationRefused),
     CleanupRequired(Box<super::super::WorthQueryApplicationCleanupRequired>),
@@ -61,14 +61,14 @@ pub(super) enum WorthQueryTemporalReentryOutcome {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(super) enum WorthQueryTemporalControlStop {
+pub enum WorthQueryTemporalControlStop {
     Cancelled,
     TimedOut,
     Authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(super) enum WorthQueryTemporalTerminalFailure {
+pub enum WorthQueryTemporalTerminalFailure {
     CustomInvariant(crate::domain_computation::WorthQueryCustomInvariantDenial),
     ApplicationCommit(
         crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind,
@@ -84,7 +84,7 @@ pub(super) enum WorthQueryTemporalTerminalFailure {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(super) enum WorthQueryTemporalAdmissionTerminalFailure {
+pub enum WorthQueryTemporalAdmissionTerminalFailure {
     Principal(crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind),
     Entity(crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind),
     Authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial),
@@ -293,6 +293,3 @@ where
         admission_canonical_work,
     }
 }
-
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use sealed_commit::assert_preparation_retry;

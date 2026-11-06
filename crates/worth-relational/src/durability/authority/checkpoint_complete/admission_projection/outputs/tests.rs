@@ -14,7 +14,7 @@ fn codec_retirement_projection_keeps_meaning_and_omits_runtime_identity_slots() 
         "descriptor_version": 2, "runtime_instance_id": 99, "branch_id": "main",
         "reference": { "branch_id": "relational/99/main", "target": "Empty", "generation": 4 },
         "truth_version": 7, "root_identity": 123,
-        "schema_commitment": vec![3_u8;32], "visibility_commitment": vec![4_u8;32],
+        "schema_commitment": CanonicalDigestId::new([3; 32]), "visibility_commitment": CanonicalDigestId::new([4; 32]),
         "posture": "Live"
     }))
     .unwrap();
@@ -27,8 +27,8 @@ fn codec_retirement_projection_keeps_meaning_and_omits_runtime_identity_slots() 
             .unwrap(),
             family: "codec-family".into(),
             source_scope: EntityId::new(PartitionId::main(), 0, 1),
-            source_partition: [5; 32],
-            source_epoch: [6; 32],
+            source_partition: worth_foundational::CanonicalDigestId::new([5; 32]),
+            source_epoch: worth_foundational::CanonicalDigestId::new([6; 32]),
         },
         source,
         retiring: RelationalCommitReceipt {

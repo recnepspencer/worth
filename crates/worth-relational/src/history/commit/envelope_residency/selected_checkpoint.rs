@@ -166,8 +166,10 @@ impl RelationalCommitEnvelopeResidency {
         // Only this consumer read a canonical body; generic selected reads
         // also carry derived-index members and cannot certify this event.
         directory.source.observe_canonical_member_read(member);
-        if <[u8; 32]>::from(<sha2::Sha256 as sha2::Digest>::digest(bytes.bytes())) != member.sha256
-            || bytes.len() as u64 != member.length
+        if crate::durability::log::native_checkpoint_codec::member_frame::locator_for_request(
+            execution,
+            bytes.bytes(),
+        )? != member
         {
             return Err(RelationalStorageUnavailable {
                 subject: RelationalStorageSubject::Envelope(entry.position),
@@ -175,13 +177,8 @@ impl RelationalCommitEnvelopeResidency {
             }
             .into());
         }
-        let artifact =
-            RelationalCanonicalCommitArtifact::from_owned_bytes(bytes).map_err(|_| {
-                RelationalStorageUnavailable {
-                    subject: RelationalStorageSubject::Envelope(entry.position),
-                    cause: Cause::Damaged,
-                }
-            })?;
+        let artifact = RelationalCanonicalCommitArtifact::from_owned_original(bytes, execution)
+            .map_err(super::artifact_export::original_frame_stop)?;
         Self::check_frame(entry, &artifact)?;
         Ok(artifact)
     }

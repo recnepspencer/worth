@@ -108,7 +108,7 @@ where
                 .insert(*record.revision(), record.adoption_admission::<Schema>());
         }
     }
-    if !runtime.product_runtime.is_directory_home() {
+    if !runtime.runtime.product_runtime.is_directory_home() {
         retain_on_refusal!(super::conditional::validate_conditional_actions(
             installed.actions(),
             runtime.installed_conditionals.operation_types()

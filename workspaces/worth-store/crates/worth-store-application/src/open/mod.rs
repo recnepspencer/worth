@@ -47,8 +47,10 @@ pub(crate) fn recover_home_observed(
     let opened = physical_admission::open(&request.location, opening)
         .map_err(ApplicationHomeOpenRefusal::Physical)?;
     observed(&opened.serving);
+    let serving = Arc::new(opened.serving);
+    request.opening_observation.bind_physical(&serving);
     let recovered = RecoveredPhysicalHome {
-        serving: Arc::new(opened.serving),
+        serving,
         origin: opened.origin,
         request,
     };
@@ -73,6 +75,7 @@ pub fn admit_home(
             relational,
             binding,
             build,
+            opening_observation,
             predecessor,
             #[cfg(feature = "certification-test-authority")]
             mut controls,
@@ -81,6 +84,8 @@ pub fn admit_home(
         let selected_source =
             crate::checkpoint::SelectedHomeSource::capture(&recovered.serving, execution)
                 .map_err(ApplicationHomeOpenRefusal::Checkpoint)?;
+        use crate::{ApplicationHomeOpeningEdge as Edge, ApplicationHomeOpeningStage as Stage};
+        opening_observation.arrive_for_test(Stage::DescriptorIncarnation, Edge::Before);
         let prepared_descriptor = crate::descriptor::prepare_admission(
             &recovered.serving,
             recovered.origin,
@@ -110,6 +115,7 @@ pub fn admit_home(
             transition: transition_admission,
         } = crate::descriptor::publish(&recovered.serving, prepared_descriptor, execution)
             .map_err(ApplicationHomeOpenRefusal::Descriptor)?;
+        opening_observation.arrive_for_test(Stage::DescriptorIncarnation, Edge::After);
         let checkpoint = Arc::new(Default::default());
         let transition = readmission::transition::HomeTransitionOwner::new(
             descriptor.identity,
@@ -130,6 +136,7 @@ pub fn admit_home(
         Ok(HomeAdmitted::from_owner(AdmittedApplicationHome {
             native_source,
             context: HomeContext {
+                opening_observation,
                 transition,
                 selected_home_source: Some(selected_source),
                 initialization: crate::relational_preparation::HomeInitializationOrigin::Available(

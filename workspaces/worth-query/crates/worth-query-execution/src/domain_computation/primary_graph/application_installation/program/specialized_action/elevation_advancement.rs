@@ -16,17 +16,18 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
-        let execution =
-            match phase.execution_request_for(&self.runtime.backing.runtime().product_runtime) {
-                Ok(execution) => execution,
-                Err(cause) => {
-                    return self
-                        .runtime
-                        .backing
-                        .runtime()
-                        .refuse_elevation_request(program, cause.into())
-                }
-            };
+        let execution = match phase
+            .execution_request_for(&self.runtime.backing.runtime().runtime.product_runtime)
+        {
+            Ok(execution) => execution,
+            Err(cause) => {
+                return self
+                    .runtime
+                    .backing
+                    .runtime()
+                    .refuse_elevation_request(program, cause.into())
+            }
+        };
         self.compare_and_commit_elevation_request_in_advancement_with_request(
             &execution,
             phase,
@@ -68,17 +69,18 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
-        let execution =
-            match phase.execution_request_for(&self.runtime.backing.runtime().product_runtime) {
-                Ok(execution) => execution,
-                Err(cause) => {
-                    return self
-                        .runtime
-                        .backing
-                        .runtime()
-                        .refuse_elevation_approval(program, cause.into())
-                }
-            };
+        let execution = match phase
+            .execution_request_for(&self.runtime.backing.runtime().runtime.product_runtime)
+        {
+            Ok(execution) => execution,
+            Err(cause) => {
+                return self
+                    .runtime
+                    .backing
+                    .runtime()
+                    .refuse_elevation_approval(program, cause.into())
+            }
+        };
         self.compare_and_commit_elevation_approval_in_advancement_with_request(
             &execution,
             phase,
@@ -121,17 +123,18 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
-        let execution =
-            match phase.execution_request_for(&self.runtime.backing.runtime().product_runtime) {
-                Ok(execution) => execution,
-                Err(cause) => {
-                    return self
-                        .runtime
-                        .backing
-                        .runtime()
-                        .refuse_elevation_close(program, cause.into())
-                }
-            };
+        let execution = match phase
+            .execution_request_for(&self.runtime.backing.runtime().runtime.product_runtime)
+        {
+            Ok(execution) => execution,
+            Err(cause) => {
+                return self
+                    .runtime
+                    .backing
+                    .runtime()
+                    .refuse_elevation_close(program, cause.into())
+            }
+        };
         self.compare_and_commit_elevation_close_in_advancement_with_request(
             &execution,
             phase,

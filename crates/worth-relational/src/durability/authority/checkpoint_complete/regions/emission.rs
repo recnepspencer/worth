@@ -109,7 +109,17 @@ pub(super) fn capture(
             mirror_schema = Some(group.carrier);
         }
         output
-            .push(root.finish(group.carrier).map_err(request_stop)?)
+            .push(
+                root.finish(
+                    group.carrier,
+                    crate::durability::checkpoints::content::root_capture::capture(
+                        request,
+                        source.root.retained_content(),
+                        members,
+                    )?,
+                )
+                .map_err(request_stop)?,
+            )
             .map_err(request_stop)?;
     }
     if mirror.len() != mirror_count {

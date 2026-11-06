@@ -1,5 +1,6 @@
 use std::ops::Range;
 use std::path::PathBuf;
+use worth_foundational::CanonicalDigestId;
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -37,7 +38,7 @@ pub(crate) struct DeclaredRootCorruption {
     target: RootArtifactIdentity,
     code: RootCorruptionCode,
     operation: RootCorruptionOperation,
-    declaration_identity: [u8; 32],
+    declaration_identity: CanonicalDigestId,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -90,7 +91,7 @@ impl DeclaredRootCorruption {
         };
         let declaration_identity = bincode::serialize(&(
             "worth-store-c9-root-corruption-v1",
-            manifest.identity(),
+            CanonicalDigestId::new(manifest.identity()),
             target,
             code,
             &operation,
@@ -101,7 +102,7 @@ impl DeclaredRootCorruption {
             target,
             code,
             operation,
-            declaration_identity,
+            declaration_identity: CanonicalDigestId::new(declaration_identity),
         })
     }
 
@@ -115,7 +116,7 @@ impl DeclaredRootCorruption {
         &self.operation
     }
     pub(crate) const fn identity(&self) -> [u8; 32] {
-        self.declaration_identity
+        *self.declaration_identity.bytes()
     }
 
     pub(crate) fn is_exact_for(&self, manifest: &CleanRootArtifactManifest) -> bool {

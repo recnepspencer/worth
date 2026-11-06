@@ -14,6 +14,11 @@ Product-facing package docs live separately in:
 - [wasm_product_roadmap.md](wasm_product_roadmap.md)
   The crate roadmap, including composition, graph lifecycle, forms/resources,
   and aspect-capacity work.
+- [agent_grade_runtime_program.md](agent_grade_runtime_program.md)
+  Program S1: delta-bounded ordinary paths with mechanical latency gates, the
+  JSON value domain, typed errors and surface cutover, generated-adversity
+  certification, partitioned execution, bundle budgets and TypeScript 7,
+  ahead of the 2.0.0 release.
 
 ## Milestone And Design Docs
 

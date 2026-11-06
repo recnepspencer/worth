@@ -38,6 +38,10 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
         contracts: &mut WorthQueryApplicationContributionContracts<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         contracts.producer::<InitialPlanarProducer<Schema>>()?;
+        if Schema::ESCAPING_PLANAR_OUTPUT {
+            contracts.producer::<super::EscapingPlanarProducer<Schema>>()?;
+            contracts.conditional::<super::EscapingPlanarReadiness<Schema>>()?;
+        }
         #[cfg(test)]
         super::checkpoint_recovery::required_chain::contracts(contracts)?;
         #[cfg(test)]
@@ -152,6 +156,9 @@ impl TopologyContribution {
         setup.handler::<super::PlanarInitialAdjustmentBinding<Schema>, _>(
             super::PlanarInitialAdjustmentHandler,
         )?;
+        setup.handler::<super::document_history::SetPlanarHistoryStatusBinding<Schema>, _>(
+            super::document_history::SetPlanarHistoryStatusHandler,
+        )?;
         setup.handler::<super::PlanarIslandCouplingBinding<Schema>, _>(
             super::island_coupling::PlanarIslandCouplingHandler,
         )?;
@@ -174,6 +181,12 @@ impl TopologyContribution {
             configured
         };
         setup.producer::<InitialPlanarProducer<Schema>>(provider)?;
+        if Schema::ESCAPING_PLANAR_OUTPUT {
+            setup.handler::<super::EscapingPlanarBinding<Schema>, _>(PlanarHandler)?;
+            setup
+                .producer::<super::EscapingPlanarProducer<Schema>>(super::EscapingPlanarProvider)?;
+            setup.conditional::<super::EscapingPlanarReadiness<Schema>>(())?;
+        }
         <super::PlanarFinalFeatureDefinition<Schema> as worth_query_host::facade::application_contribution::WorthQueryFeatureDefinition<Schema>>::configure(super::CompletePlanarFinalRuntime::new(final_feature), setup)?;
         setup.producer::<super::AlternatePlanarOutputProducer<Schema>>(
             super::AlternatePlanarOutputProvider,

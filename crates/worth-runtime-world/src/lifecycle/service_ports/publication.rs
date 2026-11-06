@@ -17,6 +17,7 @@ mod conditional_recovery;
 mod durable;
 mod execution;
 mod incarnation;
+mod memory_cutover;
 use incarnation::publication_owner_denial;
 mod home_transition;
 mod home_transition_effect;
@@ -25,6 +26,7 @@ mod home_transition_step;
 mod home_transition_unopened;
 mod open_attempt;
 mod owned_async;
+use crate::lifecycle::owner::RelationalCutoverHandoff;
 
 /// Executes the concrete component-owner progression and exact product CAS.
 pub struct RuntimeWorldPublicationPort<D, I, E, Ctx, T>
@@ -111,6 +113,16 @@ where
         prepared: PreparedCompositePublicationWithoutSignal,
         cancellation: &RuntimeWorldCancellationToken,
     ) -> RuntimeWorldPublicationOutcome {
+        self.execute_without_signal_cutover(execution, prepared, cancellation, None)
+    }
+
+    fn execute_without_signal_cutover(
+        &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        prepared: PreparedCompositePublicationWithoutSignal,
+        cancellation: &RuntimeWorldCancellationToken,
+        cutover: Option<&mut RelationalCutoverHandoff<'_>>,
+    ) -> RuntimeWorldPublicationOutcome {
         let owner = match self.service() {
             Ok(owner) => owner,
             Err(_) => return unavailable(prepared.expected_head().clone()),
@@ -120,7 +132,8 @@ where
         {
             return RuntimeWorldPublicationOutcome::NoEffect(denial);
         }
-        let outcome = owner.execute_without_signal(execution, prepared, cancellation);
+        let outcome =
+            owner.execute_without_signal_with_cutover(execution, prepared, cancellation, cutover);
         owner.finish_publication(&execution, outcome, cancellation)
     }
     pub fn execute_with_signal<F>(
@@ -135,6 +148,21 @@ where
     where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
     {
+        self.execute_with_signal_cutover(execution, prepared, context, cancellation, apply, None)
+    }
+
+    fn execute_with_signal_cutover<F>(
+        &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        prepared: PreparedCompositePublicationWithSignal,
+        context: &mut Ctx,
+        cancellation: &RuntimeWorldCancellationToken,
+        apply: F,
+        cutover: Option<&mut RelationalCutoverHandoff<'_>>,
+    ) -> RuntimeWorldPublicationOutcome
+    where
+        F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
+    {
         let owner = match self.service() {
             Ok(owner) => owner,
             Err(_) => return unavailable(prepared.expected_head().clone()),
@@ -144,7 +172,14 @@ where
         {
             return RuntimeWorldPublicationOutcome::NoEffect(denial);
         }
-        let outcome = owner.execute_with_signal(execution, prepared, context, cancellation, apply);
+        let outcome = owner.execute_with_signal_with_cutover(
+            execution,
+            prepared,
+            context,
+            cancellation,
+            apply,
+            cutover,
+        );
         owner.finish_publication(&execution, outcome, cancellation)
     }
 
@@ -158,6 +193,7 @@ where
         cancellation: &RuntimeWorldCancellationToken,
         apply: F,
         admit_activation: H,
+        cutover: Option<&mut RelationalCutoverHandoff<'_>>,
     ) -> (
         RuntimeWorldPublicationOutcome,
         Arc<crate::publication::ConditionalDefinitionAttemptCustody>,
@@ -183,7 +219,7 @@ where
         {
             return (RuntimeWorldPublicationOutcome::NoEffect(denial), custody);
         }
-        let outcome = owner.execute_conditional_definition_with_signal(
+        let outcome = owner.execute_conditional_definition_with_signal_and_cutover(
             execution,
             prepared,
             publication,
@@ -191,6 +227,7 @@ where
             cancellation,
             |transaction| apply(transaction, &custody),
             || admit_activation(&custody),
+            cutover,
         );
         (
             owner.finish_publication(&execution, outcome, cancellation),
@@ -211,6 +248,25 @@ impl RuntimeWorldPublicationPort<(), (), (), (), ()> {
         bridge_prepared: worth_runtime_bridge::facade::BridgePreparedConditionalInstallationExtension,
         bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
         cancellation: &RuntimeWorldCancellationToken,
+    ) -> crate::publication::RuntimeWorldConditionalDefinitionPublicationOutcome {
+        self.publish_bridge_conditional_definition_cutover(
+            execution,
+            prepared,
+            bridge_prepared,
+            bridge,
+            cancellation,
+            None,
+        )
+    }
+
+    fn publish_bridge_conditional_definition_cutover(
+        &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        prepared: PreparedCompositePublicationWithSignal,
+        bridge_prepared: worth_runtime_bridge::facade::BridgePreparedConditionalInstallationExtension,
+        bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+        cancellation: &RuntimeWorldCancellationToken,
+        cutover: Option<&mut RelationalCutoverHandoff<'_>>,
     ) -> crate::publication::RuntimeWorldConditionalDefinitionPublicationOutcome {
         use crate::publication::{
             RuntimeWorldConditionalDefinitionPublicationOutcome as Outcome,
@@ -234,6 +290,7 @@ impl RuntimeWorldPublicationPort<(), (), (), (), ()> {
                 Ok(())
             },
             |custody| custody.complete_activation(bridge),
+            cutover,
         );
         match outcome {
             RuntimeWorldPublicationOutcome::Performed(publication) => {

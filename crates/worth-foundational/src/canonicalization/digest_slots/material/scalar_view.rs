@@ -41,7 +41,7 @@ pub(super) enum CanonicalScalarView<'a> {
         denominator: CanonicalTextView<'a>,
     },
     BytesRefId(u64),
-    ContentRefId(u64),
+    ContentRefId([u8; 32]),
     EntityRef {
         partition_id: u32,
         local_slot: u64,
@@ -170,7 +170,6 @@ impl<'a> From<&'a AspectValue> for CanonicalScalarView<'a> {
                 denominator: CanonicalTextView::Raw(value.denominator.as_str()),
             },
             AspectValue::String(value) => Self::ExactText(value.into()),
-            AspectValue::Bytes(value) => Self::BytesRefId(value.0),
             AspectValue::Uuid(value) => Self::UuidBytes(value),
             AspectValue::Date(value) => Self::DateDays(value.days_from_unix_epoch),
             AspectValue::Time(value) => Self::TimeNanos(value.nanos_since_midnight),

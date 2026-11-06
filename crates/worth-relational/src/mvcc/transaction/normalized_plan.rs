@@ -11,6 +11,16 @@ pub(crate) struct OwnedNormalizedPlan {
 }
 
 impl OwnedNormalizedPlan {
+    pub(crate) fn empty(transaction_id: TransactionId) -> Self {
+        Self {
+            plan: MergedCommitPlan {
+                transaction_id,
+                merged_intents: Vec::new(),
+            },
+            _memory: None,
+        }
+    }
+
     pub(crate) fn plan(&self) -> &MergedCommitPlan {
         &self.plan
     }

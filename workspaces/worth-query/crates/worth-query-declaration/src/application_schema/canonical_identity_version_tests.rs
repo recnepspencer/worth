@@ -11,6 +11,7 @@ use crate::facade::application_schema::{ApplicationFieldPresence, ApplicationRel
 #[test]
 fn schema_axes_use_the_current_complete_identity_preimage() {
     let framed = ApplicationSchemaMember::Field {
+        content_format: None,
         entity: "Entity".to_owned(),
         aspect: "Aspect".to_owned(),
         field: "Field".to_owned(),
@@ -91,6 +92,7 @@ fn relation_endpoint_policy_changes_current_canonical_meaning() {
 #[test]
 fn field_uniqueness_changes_current_canonical_meaning() {
     let field = |unique| ApplicationSchemaMember::Field {
+        content_format: None,
         entity: "Entity".to_owned(),
         aspect: "Aspect".to_owned(),
         field: "Field".to_owned(),

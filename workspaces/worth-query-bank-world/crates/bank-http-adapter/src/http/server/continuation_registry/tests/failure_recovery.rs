@@ -48,8 +48,7 @@ async fn failed_native_history_resume_retains_cursor_and_revocation_ends_selecti
     cancellation.cancel();
     let stopped_scope = WorthQueryRequestScope::new(
         Some(Instant::now() + Duration::from_secs(30)),
-        cancellation.token(),
-    );
+        cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let stopped = fixture
         .application
         .runtime

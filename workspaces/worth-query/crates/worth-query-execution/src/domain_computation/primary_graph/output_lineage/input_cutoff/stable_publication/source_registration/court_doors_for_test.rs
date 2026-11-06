@@ -1,0 +1,13 @@
+//! Sealed test doors over this module's private members.
+use super::*;
+
+impl<'selected> StableEqualityConsequence<'selected> {
+    #[doc(hidden)]
+    pub fn native_actor_fixture_for_test(
+        predecessor: Arc<RecordedSettlementIdentity>,
+        successor: Arc<RecordedSettlementIdentity>,
+        selected: &'selected worth_relational::facade::runtime::PositionedRelationalSnapshot,
+    ) -> Self {
+        Self::native_actor_fixture(predecessor, successor, selected)
+    }
+}

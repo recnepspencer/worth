@@ -1,0 +1,36 @@
+{
+ "crates": {
+  "worth-query-execution-vocabulary": [
+   "domain_computation::application_contract_admission",
+   "domain_computation::application_outcome_identity",
+   "domain_computation::artifact_identity",
+   "domain_computation::evidence_identity",
+   "domain_computation::evidence_material",
+   "domain_computation::execution_observation",
+   "domain_computation::primary_graph::admitted_capture",
+   "domain_computation::primary_graph::aggregate_identity",
+   "domain_computation::primary_graph::application_branch",
+   "domain_computation::primary_graph::authentication_clock",
+   "domain_computation::primary_graph::entity_key",
+   "domain_computation::primary_graph::entity_resolution_denial",
+   "domain_computation::primary_graph::exact_basis_access",
+   "domain_computation::primary_graph::index_maintenance_budget",
+   "domain_computation::primary_graph::output_binding_identity",
+   "domain_computation::primary_graph::output_family_identity",
+   "domain_computation::primary_graph::principal_key",
+   "domain_computation::primary_graph::publication_request_denial",
+   "domain_computation::primary_graph::read_observation",
+   "domain_computation::primary_graph::record_reservations",
+   "domain_computation::primary_graph::request_allocation_control",
+   "domain_computation::primary_graph::request_local",
+   "domain_computation::primary_graph::value_decode",
+   "domain_computation::runtime_time",
+   "equality_type_id",
+   "execution_digest",
+   "relational_snapshot_release"
+  ]
+ },
+ "default": "worth-query-execution",
+ "description": "Modules that cannot reach the largest cycle form one lower crate.",
+ "name": "vocabulary-below"
+}

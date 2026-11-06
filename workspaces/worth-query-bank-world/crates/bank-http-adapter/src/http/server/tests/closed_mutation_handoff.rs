@@ -19,7 +19,7 @@ use worth_query_host::facade::admission::authenticated_principal::{
 async fn lost_closed_source_handoff_restores_the_actual_owner_and_its_capacity() {
     let application = Arc::new(application(AccountId::new(100).unwrap()));
     let cancellation = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = application.authenticate(&scope).await;
     let request = application.runtime.request(&principal, &scope);
     let create = admit(decode(create("closed-handoff", 17)), Duration::from_secs(5)).unwrap();

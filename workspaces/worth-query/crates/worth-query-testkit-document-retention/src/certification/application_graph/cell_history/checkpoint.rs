@@ -3,7 +3,7 @@ use super::{
     host::{self, Host, Program},
     schema::Schema,
 };
-use worth_query_decl::facade::{application_program::*, application_schema::*};
+use worth_query_decl::facade::application_program::*;
 use worth_query_host::facade::application_installation::*;
 
 pub fn capture(host: &Host) -> Box<[u8]> {

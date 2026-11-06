@@ -1,4 +1,6 @@
 //! The real settlement's readonly seed, separate from its operational read lease.
+
+pub(crate) mod provenance;
 use super::*;
 use crate::basis::WorthQueryProductBranchReadIdentity;
 use crate::domain_computation::primary_graph::{
@@ -8,7 +10,8 @@ use crate::domain_computation::primary_graph::{
 
 /// No variant asserts that a query row or field was produced by this source.
 /// Fresh metadata admission and exact revision/output overlap remain necessary.
-pub(in crate::domain_computation::primary_graph) enum OriginalSettledProducerSource {
+#[derive(Clone)]
+pub enum OriginalSettledProducerSource {
     Committed {
         #[allow(dead_code, reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it")]
         settlement: Option<Arc<RecordedSettlementIdentity>>,
@@ -36,7 +39,7 @@ pub(in crate::domain_computation::primary_graph) enum OriginalSettledProducerSou
 
 /// One original-request funded header sharing only original immutable backings.
 /// It owns no Product observation, Native reader, Ready cell or commit receipt.
-pub(in crate::domain_computation::primary_graph) struct OriginalSettledProducerObservation {
+pub struct OriginalSettledProducerObservation {
     runtime_authority: u64,
     schema: ApplicationSchemaBindingIdentity,
     read: WorthQueryProductBranchReadIdentity,
@@ -76,6 +79,25 @@ impl OriginalSettledProducerObservation {
                     original_publication: completion.original_producing_publication().cloned(),
                 },
                 receipt.retain_output_correspondence(),
+            ),
+            WorthQueryAcceptedOutputAuthority::Recovered(publication) => (
+                OriginalSettledProducerSource::Committed {
+                    settlement: publication.view().exact_output_settlement().cloned(),
+                    publication: publication
+                        .view()
+                        .committed_product_publication()
+                        .observed_product_identity(),
+                    changes: publication.view().committed_changes().clone(),
+                    inputs: publication.view().performed_input_facts().cloned(),
+                    conditional: completion.readiness.causal_observation().cloned(),
+                    evaluation: completion.readiness.output_evaluation().cloned(),
+                    disclosure: publication
+                        .view()
+                        .authority_binding()
+                        .retain_original_inspection_disclosure(),
+                    original_publication: completion.original_producing_publication().cloned(),
+                },
+                publication.view().retain_output_correspondence(),
             ),
             WorthQueryAcceptedOutputAuthority::Stable(stable) => (
                 OriginalSettledProducerSource::StableReused {
@@ -176,19 +198,13 @@ impl OriginalSettledProducerObservation {
         self.read.matches_observation(product)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn read(
-        &self,
-    ) -> &WorthQueryProductBranchReadIdentity {
+    pub fn read(&self) -> &WorthQueryProductBranchReadIdentity {
         &self.read
     }
-    pub(in crate::domain_computation::primary_graph) fn source(
-        &self,
-    ) -> &OriginalSettledProducerSource {
+    pub fn source(&self) -> &OriginalSettledProducerSource {
         &self.source
     }
-    pub(in crate::domain_computation::primary_graph) fn correspondence(
-        &self,
-    ) -> &WorthQueryApplicationOutputCorrespondence {
+    pub fn correspondence(&self) -> &WorthQueryApplicationOutputCorrespondence {
         &self.correspondence
     }
     pub(in crate::domain_computation::primary_graph) fn retain_correspondence(
@@ -197,3 +213,5 @@ impl OriginalSettledProducerObservation {
         Arc::clone(&self.correspondence)
     }
 }
+
+mod court_doors_for_test;

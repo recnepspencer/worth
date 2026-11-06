@@ -44,45 +44,9 @@ impl RuntimeWorldOwnerUnavailable {
     }
 }
 
-/// Owner-issued input for one composite branch-creation attempt. The source
-/// observation carries the exact source identity, reference occurrence, and
-/// component basis. Creation never borrows a Signal transaction: forking a
-/// component branch is not a mutation of that branch.
-pub(crate) struct RuntimeWorldBranchCreationRequest<'a, 'request, 'authority> {
-    /// The caller's request: a component fork is a durable owner transition
-    /// that waits for, and is bounded by, the caller's request.
-    execution: &'a worth_execution::ExecutionRequest<'request, 'authority>,
-    source: ProductBranchObservation,
-    intent: ProductBranchCreationIntent,
-    cancellation: &'a RuntimeWorldCancellationToken,
-}
-
-impl<'a, 'request, 'authority> RuntimeWorldBranchCreationRequest<'a, 'request, 'authority> {
-    pub(crate) fn new(
-        execution: &'a worth_execution::ExecutionRequest<'request, 'authority>,
-        source: ProductBranchObservation,
-        intent: ProductBranchCreationIntent,
-        cancellation: &'a RuntimeWorldCancellationToken,
-    ) -> Self {
-        Self {
-            execution,
-            source,
-            intent,
-            cancellation,
-        }
-    }
-
-    pub(crate) fn into_parts(
-        self,
-    ) -> (
-        &'a worth_execution::ExecutionRequest<'request, 'authority>,
-        ProductBranchObservation,
-        ProductBranchCreationIntent,
-        &'a RuntimeWorldCancellationToken,
-    ) {
-        (self.execution, self.source, self.intent, self.cancellation)
-    }
-}
+#[path = "ports/branch_creation.rs"]
+mod branch_creation;
+pub(crate) use branch_creation::RuntimeWorldBranchCreationRequest;
 
 /// Terminal owned by the branch-creation service. A performed value is a new
 /// product reference occurrence; a partial value keeps performed owner work
@@ -119,6 +83,11 @@ pub(crate) trait RuntimeWorldObservationService:
         crate::history::WorldReadmittedPublication,
         crate::history::WorldReadmittedPublicationDenial,
     >;
+    fn product_branch_writers_are_locked_out_for_test(
+        &self,
+        expected: &ProductBranchObservation,
+    ) -> Result<bool, RuntimeWorldBranchAdmissionDenial>;
+
     fn readmit_product_branch_reference(
         &self,
         description: &crate::branch::ProductBranchReferenceDescription,
@@ -210,6 +179,10 @@ pub(crate) trait RuntimeWorldObservationService:
 pub(crate) trait RuntimeWorldBranchService:
     super::availability::RuntimeWorldAvailability
 {
+    fn admit_retained_branch_source(
+        &self,
+        source: &ProductBranchObservation,
+    ) -> Result<crate::branch::RetainedProductBranchCreationSource, RuntimeWorldBranchAdmissionDenial>;
     fn create_product_branch(
         &self,
         request: RuntimeWorldBranchCreationRequest<'_, '_, '_>,
@@ -248,69 +221,9 @@ pub(crate) trait RuntimeWorldPreparationService {
     ) -> Result<ReservedBranchCreationAttempt, RuntimeWorldBranchAdmissionDenial>;
 }
 
-/// Shared internal seam for the two owner-execution routes. There is one
-/// method per compile-visible Signal decision; neither can be reached with
-/// the other's prepared reservation.
-pub(crate) trait RuntimeWorldOwnerExecutionService {
-    type SignalDefinition: Copy + Ord + std::fmt::Debug + 'static;
-    type SignalIdentity: Copy + Ord;
-    type SignalEvent;
-    type SignalContext;
-    type SignalTransactionKey: Copy + Ord;
-
-    fn execute_without_signal(
-        &self,
-        execution: worth_execution::ExecutionRequest<'_, '_>,
-
-        prepared: PreparedCompositePublicationWithoutSignal,
-        cancellation: &RuntimeWorldCancellationToken,
-    ) -> OwnerExecutionOutcome;
-
-    fn execute_with_signal<F>(
-        &self,
-        execution: worth_execution::ExecutionRequest<'_, '_>,
-
-        prepared: PreparedCompositePublicationWithSignal,
-        runtime_ctx: &mut Self::SignalContext,
-        cancellation: &RuntimeWorldCancellationToken,
-        apply: F,
-    ) -> OwnerExecutionOutcome
-    where
-        F: FnOnce(
-            &mut SignalTransaction<
-                '_,
-                Self::SignalDefinition,
-                Self::SignalIdentity,
-                Self::SignalEvent,
-                Self::SignalContext,
-                Self::SignalTransactionKey,
-            >,
-        ) -> Result<(), SignalError>;
-
-    fn execute_conditional_definition_with_signal<F, H>(
-        &self,
-        execution: worth_execution::ExecutionRequest<'_, '_>,
-
-        prepared: PreparedCompositePublicationWithSignal,
-        publication: worth_signal::facade::branch::SignalConditionalDefinitionPublicationOperation,
-        runtime_ctx: &mut Self::SignalContext,
-        cancellation: &RuntimeWorldCancellationToken,
-        apply: F,
-        admit_activation: H,
-    ) -> OwnerExecutionOutcome
-    where
-        F: FnOnce(
-            &mut SignalTransaction<
-                '_,
-                Self::SignalDefinition,
-                Self::SignalIdentity,
-                Self::SignalEvent,
-                Self::SignalContext,
-                Self::SignalTransactionKey,
-            >,
-        ) -> Result<(), SignalError>,
-        H: FnOnce() -> Result<(), SignalError>;
-}
+#[path = "ports/owner_execution.rs"]
+mod owner_execution;
+pub(crate) use owner_execution::RuntimeWorldOwnerExecutionService;
 
 #[cfg(test)]
 pub(crate) trait RuntimeWorldProductPublicationService {

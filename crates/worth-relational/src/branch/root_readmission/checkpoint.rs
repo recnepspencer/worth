@@ -10,6 +10,7 @@ impl RelationalBranchRoot {
             super::super::super::root_checkpoint::RelationalRootRegionCheckpoint,
         >,
         commit: CheckpointAdmittedCommit,
+        content_records: &crate::content::RelationalContentAttachments,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
         let memory = super::super::reserve_arc_memory::<Self>(Some(request))?;
@@ -57,7 +58,9 @@ impl RelationalBranchRoot {
             correctness_index: RelationalRootCorrectnessIndex::AuthoritativeFallback,
             visibility: commit.visibility(),
         };
-        Ok(Arc::new(Self {
+        let version = commit.index().commit.version_id;
+        let mut root = Self {
+            content: Default::default(),
             id: root_id,
             managed_source_image: Default::default(),
             regions,
@@ -74,6 +77,16 @@ impl RelationalBranchRoot {
                 publication_cost: Default::default(),
             }),
             _memory: memory,
-        }))
+        };
+        root.content = crate::content::ContentDirectory::reconstruct(
+            request,
+            root.schema_authority.registry(),
+            content_records,
+            root.schema_authority.retained_aspect_contracts(),
+            &root,
+            version,
+        )
+        .map_err(RelationalBranchRootCaptureDenial::Content)?;
+        Ok(Arc::new(root))
     }
 }

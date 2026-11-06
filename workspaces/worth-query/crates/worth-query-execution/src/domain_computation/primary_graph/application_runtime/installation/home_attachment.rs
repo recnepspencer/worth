@@ -1,5 +1,6 @@
 //! Preflight the same application assembly while Host retains bootstrap custody.
 use super::super::super::managed_bridge::WorthQueryInstalledApplicationBridge;
+use super::super::mutation_partition::ApplicationMutationPartitions;
 use super::*;
 use crate::domain_computation::authorization::WorthQueryRuntimeClock;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime;
@@ -20,13 +21,27 @@ pub(in crate::domain_computation::primary_graph) fn preflight_home_application<
         WorthQueryInstalledAuthorizationRegistry,
         super::super::super::handler::InstalledMutationHandlerRegistry<Schema>,
         super::super::super::application_resource::installation::InstalledResourceRegistry<Schema>,
+        ApplicationMutationPartitions,
     ),
     WorthQueryPrimaryGraphInstallationDenial,
 > {
+    if !bootstrap.product_world_resources.admits_clock(
+        &worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    ) {
+        return Err(WorthQueryPrimaryGraphInstallationDenial::new(
+            WorthQueryPrimaryGraphInstallationDenialKind::AdmissionClockMismatch,
+            "Home Product World and admission require the same monotonic clock",
+        ));
+    }
     validate_application_schema(runtime, installed)?;
     let handlers = super::owned_contributions::preflight(bootstrap, installed)?;
     let authorization = compile_authorization(bootstrap, installed)?;
     let graph = bootstrap.graph.integration_handle();
+    let mutation_partitions = graph
+        .with_runtime(&phase.execution_request(), |native| {
+            ApplicationMutationPartitions::readmit(native, &phase.execution_request())
+        })
+        .map_err(super::super::super::bootstrap::request_read_denial::read)?;
     graph.with_runtime(&phase.execution_request(), |native| {
         graph.ensure_primary_indexes_for_basis(&phase.execution_request(), native, basis)
             .map_err(|cause| match cause {
@@ -70,7 +85,14 @@ pub(in crate::domain_computation::primary_graph) fn preflight_home_application<
         None,
         provider.application_resource_support_ref(),
     )?;
-    Ok((provider, participation, authorization, handlers, resources))
+    Ok((
+        provider,
+        participation,
+        authorization,
+        handlers,
+        resources,
+        mutation_partitions,
+    ))
 }
 
 pub(in crate::domain_computation::primary_graph) fn finish_home_application<
@@ -92,6 +114,7 @@ pub(in crate::domain_computation::primary_graph) fn finish_home_application<
     managed_indexes: super::super::super::application_query::managed_index::ManagedIndexProviderCatalog<Schema>,
     bridge: WorthQueryInstalledApplicationBridge,
     product: WorthQueryProductRuntime,
+    mutation_partitions: ApplicationMutationPartitions,
 ) -> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     let projection = bootstrap.retain_invariant_projection_authority();
     let checkpoint_restore_work = bootstrap.recovered_checkpoint_restore_work();
@@ -125,6 +148,7 @@ pub(in crate::domain_computation::primary_graph) fn finish_home_application<
         Default::default(),
         product,
         None,
+        mutation_partitions,
     );
     super::owned_contributions::transfer(&mut application, resources, managed_indexes);
     application

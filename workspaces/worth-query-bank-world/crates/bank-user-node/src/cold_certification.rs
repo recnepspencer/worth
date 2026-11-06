@@ -27,8 +27,7 @@ pub async fn install_for_test(
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
         Some(Instant::now() + configuration.maximum_deadline),
-        cancellation.token(),
-    );
+        cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let oidc = cold_certification_for_test::discover_adapter_for_test(
         oidc_configuration,
         trusted_root_pem,

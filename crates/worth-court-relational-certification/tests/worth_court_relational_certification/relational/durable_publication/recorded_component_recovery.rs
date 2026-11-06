@@ -88,10 +88,12 @@ fn recorded_component_recovery_admits_original_empty_and_historical_tail_subject
         Cause::ForeignRecoveryRuntime
     ));
     let mut changed = serde_json::to_value(&successor).unwrap();
-    let original_byte = changed["target"]["Canonical"]["artifact_digest"][0]
-        .as_u64()
-        .unwrap();
-    changed["target"]["Canonical"]["artifact_digest"][0] = serde_json::json!(original_byte ^ 1);
+    let digest: worth_foundational::CanonicalDigestId =
+        serde_json::from_value(changed["target"]["Canonical"]["artifact_digest"].clone()).unwrap();
+    let mut bytes = *digest.bytes();
+    bytes[0] ^= 1;
+    changed["target"]["Canonical"]["artifact_digest"] =
+        serde_json::to_value(worth_foundational::CanonicalDigestId::new(bytes)).unwrap();
     let changed: RecordedRelationalComponentReference = serde_json::from_value(changed).unwrap();
     assert_ne!(changed, successor);
     assert!(matches!(

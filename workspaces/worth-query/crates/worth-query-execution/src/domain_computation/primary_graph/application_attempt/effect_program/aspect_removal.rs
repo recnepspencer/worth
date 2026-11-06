@@ -59,7 +59,7 @@ impl<Schema, Operation, Input, Scope>
                 aspect.name(),
             ));
         };
-        self.require_aspect_unwritten(id, &key)?;
+        self.require_aspect_unwritten(entity, id, &key)?;
         let mut fields = Vec::new();
         fields.try_reserve(shape.fields().len()).map_err(|_| {
             denial(
@@ -91,6 +91,7 @@ impl<Schema, Operation, Input, Scope>
     }
     fn require_aspect_unwritten(
         &self,
+        entity: &str,
         id: EntityId,
         key: &AspectKey,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
@@ -111,22 +112,31 @@ impl<Schema, Operation, Input, Scope>
             _ => false,
         });
         if conflict {
-            Err(denial(
-                WorthQueryApplicationAttemptDenialKind::ConflictingEffectStep,
-                key.as_str(),
-            ))
+            Err(aspect_conflict(entity, id, key))
         } else {
             Ok(())
         }
     }
     pub(super) fn require_parent_not_removed(
         &self,
+        entity: &str,
         id: EntityId,
         locator: &AspectFieldLocator,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         if self.effects.iter().any(|effect| matches!(effect, model::WorthQueryApplicationRealizedEffect::RemoveAspect { entity_id, contract, .. }
             if *entity_id == id && contract.key() == locator.aspect().aspect_key())) {
-            Err(denial(WorthQueryApplicationAttemptDenialKind::ConflictingEffectStep, locator.aspect().aspect_key().as_str()))
+            Err(aspect_conflict(entity, id, locator.aspect().aspect_key()))
         } else { Ok(()) }
     }
+}
+
+fn aspect_conflict(
+    entity: &str,
+    id: EntityId,
+    key: &AspectKey,
+) -> WorthQueryApplicationAttemptDenial {
+    denial(
+        WorthQueryApplicationAttemptDenialKind::ConflictingEffectStep,
+        format!("{entity} {id:?}.{}", key.as_str()),
+    )
 }

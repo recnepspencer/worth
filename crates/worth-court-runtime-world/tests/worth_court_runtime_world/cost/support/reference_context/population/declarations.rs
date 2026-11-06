@@ -198,6 +198,8 @@ impl Population {
         )
     }
     pub(crate) fn finish(self) {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = worth_execution::ExecutionRequest::serial(&host_request);
         let Self {
             court,
             root,
@@ -213,7 +215,12 @@ impl Population {
             court
                 .world
                 .recovery_port()
-                .release_effects(&handle, 0)
+                .release_effects(
+                    &execution,
+                    &handle,
+                    0,
+                    court.observe_recovery_original(&execution, &handle),
+                )
                 .unwrap();
         }
         for head in branches {

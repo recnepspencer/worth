@@ -3,6 +3,7 @@ use std::path::PathBuf;
 /// Why a court could not establish its declared compiler boundary.
 #[derive(Debug)]
 pub enum CompilerFixtureRefusal {
+    Multiple(Vec<CompilerFixtureRefusal>),
     MissingPrebuild,
     Read {
         path: PathBuf,
@@ -44,6 +45,12 @@ pub enum CompilerFixtureRefusal {
 impl std::fmt::Display for CompilerFixtureRefusal {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Multiple(refusals) => {
+                for refusal in refusals {
+                    writeln!(formatter, "{refusal}")?;
+                }
+                Ok(())
+            }
             Self::MissingPrebuild => write!(formatter, "missing WORTH_PREBUILT_COMPILER_OUTCOMES; run the workspace gate prebuild"),
             Self::Read { path, reason } => write!(formatter, "read {}: {reason}", path.display()),
             Self::InvalidPrebuild(reason) => write!(formatter, "invalid compiler prebuild: {reason}"),

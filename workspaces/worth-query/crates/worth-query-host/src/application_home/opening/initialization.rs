@@ -21,6 +21,7 @@ where
         home,
         checkpoint_limits,
         initial_state,
+        observation,
     } = opening;
     let request = phase.execution_request();
     // Existing/Consumed origin never invokes the callback. Keep Query out
@@ -39,6 +40,7 @@ where
                 .expect("the one admitted recipe consumes Query once"),
             initial_state,
             checkpoint_limits,
+            observation.clone(),
         ));
     });
     match opened {
@@ -50,6 +52,7 @@ where
                     home.into_home(),
                     query.take().expect("existing origin retained Query"),
                     checkpoint_limits,
+                    observation,
                 )
             }
             ApplicationHomeInitializationDenial::Execution(_)

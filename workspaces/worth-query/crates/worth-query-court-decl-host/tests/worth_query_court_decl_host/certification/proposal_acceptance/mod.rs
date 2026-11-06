@@ -1,5 +1,6 @@
 //! Exact public fork admission precedes ordinary candidate requests and cleanup.
 mod adoption;
+mod owned_head;
 mod stored_basis;
 use worth_query_host::facade::{
     primary_graph::{RuntimeWorldBranchAdmissionDenial, RuntimeWorldServiceDenial},

@@ -6,7 +6,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) struct CheckpointDecodeDenial {
+pub struct CheckpointDecodeDenial {
     kind: Kind,
     message: String,
 }
@@ -56,6 +56,10 @@ impl CheckpointDecodeDenial {
             FactDecodeDenial::Execution(cause) => Self::native_execution(cause,
                 "checkpoint fact reconstruction stopped".to_owned()),
             FactDecodeDenial::Retention(StoreDenial::ExecutionRequest(cause)) => Self::execution(cause),
+            FactDecodeDenial::Retention(StoreDenial::Content(cause)) => Self::native_execution(
+                cause.into_execution_cause(),
+                format!("checkpoint content reconstruction refused: {cause}"),
+            ),
             FactDecodeDenial::Retention(StoreDenial::Allocation(cause)) => match cause.classify() {
                 ExecutionAllocationDenialClass::Request(stop) => Self::execution(stop),
                 ExecutionAllocationDenialClass::Physical(_) => Self {
@@ -72,9 +76,12 @@ impl CheckpointDecodeDenial {
             },
             FactDecodeDenial::Retention(StoreDenial::PhysicalAllocation) => Self::allocator(),
             FactDecodeDenial::Retention(StoreDenial::Representability) => Self::capacity(),
+            FactDecodeDenial::Retention(StoreDenial::ContentInconsistency) => Self::native_execution(
+                worth_relational::facade::transactions::RelationalExecutionDenialCause::ContentInconsistency,
+                "checkpoint retained content disagrees with its identity".to_owned(),
+            ),
             FactDecodeDenial::Retention(StoreDenial::ConflictingBody) =>
                 "checkpoint facts contain conflicting bodies".to_owned().into(),
-            #[cfg(test)]
             FactDecodeDenial::Retention(StoreDenial::InvalidOrdinal) =>
                 "checkpoint facts contain an invalid fixture ordinal".to_owned().into(),
         }
@@ -185,3 +192,5 @@ pub(super) fn sections(bytes: &[u8]) -> Result<CurrentSections<'_>, CheckpointDe
         outputs: cursor.remaining,
     })
 }
+
+mod court_doors_for_test;

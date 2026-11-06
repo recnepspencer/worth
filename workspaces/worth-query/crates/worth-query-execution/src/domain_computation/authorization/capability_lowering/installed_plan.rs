@@ -26,7 +26,7 @@ use crate::domain_computation::authorization::capability_registry::{
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
 
-pub(in crate::domain_computation::authorization) struct WorthQueryInstalledCapabilityPlan {
+pub struct WorthQueryInstalledCapabilityPlan {
     correspondence: worth_runtime_bridge::facade::BridgeAuthorizationCorrespondenceIdentity,
     capability_authority_identity: Arc<str>,
     contract: ErasedApplicationCapabilityContract,
@@ -84,9 +84,7 @@ impl WorthQueryInstalledCapabilityPlan {
     ) -> WorthQueryCapabilityGrantWitnessBinding {
         self.grant_witness
     }
-    pub(in crate::domain_computation::authorization) const fn decision_rules(
-        &self,
-    ) -> &WorthQueryCapabilityDecisionRuleBindings {
+    pub const fn decision_rules(&self) -> &WorthQueryCapabilityDecisionRuleBindings {
         &self.decision_rules
     }
     pub(in crate::domain_computation::authorization) const fn request(
@@ -109,14 +107,10 @@ impl WorthQueryInstalledCapabilityPlan {
     ) -> &Option<WorthQueryCapabilityUpperBoundBindings> {
         &self.upper_bound
     }
-    pub(in crate::domain_computation::authorization) fn paths(
-        &self,
-    ) -> &[WorthQueryCapabilityPathTemplate] {
+    pub fn paths(&self) -> &[WorthQueryCapabilityPathTemplate] {
         self.rule_set.paths()
     }
-    pub(in crate::domain_computation::authorization) fn rules(
-        &self,
-    ) -> &[WorthQueryCapabilityRuleBinding] {
+    pub fn rules(&self) -> &[WorthQueryCapabilityRuleBinding] {
         self.rule_set.rules()
     }
 }

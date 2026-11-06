@@ -1,25 +1,18 @@
-use worth_execution::ExecutionRequest;
-
-use super::frame::CanonicalCommitArtifactHeader;
+//! Current frame and owner payload admission under the invoking request.
+use super::frame::CanonicalCommitArtifactHeader as Header;
 use super::payload_wire::{ArtifactPayloadRef, ArtifactPayloadWire};
 use super::{
-    RelationalCanonicalCommitArtifact, RelationalCanonicalCommitArtifactRefusal as Refusal,
+    RelationalCanonicalCommitArtifact as Artifact,
+    RelationalCanonicalCommitArtifactRefusal as Refusal,
 };
-use crate::durability::artifact_canonical_payload::is_canonical_payload;
+use crate::durability::artifact_canonical_payload::is_canonical_payload_with_original_context;
 use crate::durability::migration::ReadmittedCanonicalCommit;
+use worth_execution::{ExecutionImmutableBytes, ExecutionRequest, MapKernelContext};
 
-impl RelationalCanonicalCommitArtifact {
-    /// The only door from artifact bytes back to canonical authority.
-    ///
-    /// Phases, cheapest first, each refusing before the next runs: request
-    /// liveness; frame, version, length and digest; payload decode; header
-    /// agreement with the payload position and envelope commit id; managed
-    /// field-text readmission; positioned-commit admission; and finally a
-    /// canonical-form check that the payload is exactly the admitted
-    /// commit's encoding.
-    ///
-    /// Cost: O(payload bytes) for the digest, decode and canonical check,
-    /// plus field-text admission charged to `execution`.
+impl Artifact {
+    /// Admit current bytes only: liveness, bounded frame, funded integrity,
+    /// original allocation quotes, controlled content/schema decoding, header
+    /// agreement, actual positioned meaning, and funded canonical comparison.
     pub fn readmit(
         bytes: &[u8],
         execution: &ExecutionRequest<'_, '_>,
@@ -27,21 +20,61 @@ impl RelationalCanonicalCommitArtifact {
         Self::readmit_with_input(bytes, execution, None)
     }
 
-    /// Keep the exact original provider byte allocation in the admitted Arc.
-    pub(crate) fn readmit_owned(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<ReadmittedCanonicalCommit, Refusal> {
-        Self::readmit_with_input(self.as_bytes(), execution, Some(self.bytes.clone()))
-    }
-
     pub(super) fn readmit_with_input(
         bytes: &[u8],
         execution: &ExecutionRequest<'_, '_>,
-        input: Option<worth_execution::ExecutionImmutableBytes>,
+        input: Option<ExecutionImmutableBytes>,
     ) -> Result<ReadmittedCanonicalCommit, Refusal> {
         crate::execution::check_request(execution).map_err(Refusal::Request)?;
-        let (header, payload) = CanonicalCommitArtifactHeader::verify(bytes)?;
+        let (header, payload) = Header::inspect(bytes)?;
+        let mut input = input;
+        let mut answer = None;
+        let handoff = crate::execution::request_stage::optional_stage(
+            execution,
+            |context, _| {
+                answer = Some((|| {
+                    let digest = super::payload_digest::RelationalCanonicalCommitArtifactDigest::of_payload_for_request(
+                    header.position.0, header.commit_id.0, payload, context).map_err(digest_denial)?;
+                    header.require_digest(digest)?;
+                    Self::readmit_payload(&header, payload, execution, context, input.take())
+                })());
+            },
+            |_| 0,
+        );
+        complete(handoff, answer)
+    }
+
+    /// The actual immutable frame already proved its digest. Preserve its
+    /// original byte allocation while admitting every decoded owner field.
+    pub(crate) fn readmit_framed(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<ReadmittedCanonicalCommit, Refusal> {
+        crate::execution::check_request(execution).map_err(Refusal::Request)?;
+        let mut answer = None;
+        let handoff = crate::execution::request_stage::optional_stage(
+            execution,
+            |context, _| {
+                answer = Some(Self::readmit_payload(
+                    &self.header,
+                    &self.as_bytes()[super::frame::HEADER_LEN..],
+                    execution,
+                    context,
+                    Some(self.bytes.clone()),
+                ));
+            },
+            |_| 0,
+        );
+        complete(handoff, answer)
+    }
+
+    fn readmit_payload(
+        header: &Header,
+        payload: &[u8],
+        execution: &ExecutionRequest<'_, '_>,
+        context: &mut MapKernelContext<'_, '_>,
+        input: Option<ExecutionImmutableBytes>,
+    ) -> Result<ReadmittedCanonicalCommit, Refusal> {
         let quote = super::decoded_quote::quote(payload, execution)?;
         let canonical = super::decoded_quote::field(
             super::borrowed_payload::BorrowedPayload(payload),
@@ -66,7 +99,7 @@ impl RelationalCanonicalCommitArtifact {
                 Some(super::prepare_schema_image_decode(image, execution)?)
             }
         };
-        let mut wire = decode_payload(payload)?;
+        let mut wire = super::payload_wire::decode_payload(payload, execution)?;
         if let Some(admission) = original_image {
             let image = wire
                 .original_inputs
@@ -81,7 +114,7 @@ impl RelationalCanonicalCommitArtifact {
             .map_err(|detail| Refusal::PayloadDecode {
                 detail: detail.into(),
             })?;
-        check_header_agreement(&header, &wire)?;
+        check_header_agreement(header, &wire)?;
         let envelope = wire
             .canonical
             .readmit(execution)
@@ -112,23 +145,33 @@ impl RelationalCanonicalCommitArtifact {
         let readmitted = ReadmittedCanonicalCommit::readmit_current(header.position, envelope)
             .map_err(Refusal::PositionAdmission)?;
         let canonical = ArtifactPayloadRef::new(readmitted.position(), readmitted.envelope());
-        if !is_canonical_payload(&canonical, payload) {
+        if !is_canonical_payload_with_original_context(&canonical, payload, context)
+            .map_err(Refusal::Request)?
+        {
             return Err(Refusal::NonCanonicalPayload);
         }
         Ok(readmitted.with_verified_journal_payload(*header.digest.as_bytes()))
     }
 }
 
-fn decode_payload(payload: &[u8]) -> Result<ArtifactPayloadWire<'_>, Refusal> {
-    rmp_serde::from_slice(payload).map_err(|error| Refusal::PayloadDecode {
-        detail: error.to_string(),
-    })
+fn digest_denial(cause: super::payload_digest::RequestDigestDenial) -> Refusal {
+    match cause {
+        super::payload_digest::RequestDigestDenial::Frame(cause) => Refusal::Frame(cause),
+        super::payload_digest::RequestDigestDenial::Request(cause) => Refusal::Request(cause),
+    }
 }
-
-fn check_header_agreement(
-    header: &CanonicalCommitArtifactHeader,
-    wire: &ArtifactPayloadWire<'_>,
-) -> Result<(), Refusal> {
+fn complete(
+    handoff: Result<(), crate::execution::RelationalExecutionDenialCause>,
+    answer: Option<Result<ReadmittedCanonicalCommit, Refusal>>,
+) -> Result<ReadmittedCanonicalCommit, Refusal> {
+    match (handoff, answer) {
+        (Ok(()), Some(answer)) => answer,
+        (Ok(()), None) => unreachable!("completed original artifact admission ran its callback"),
+        (Err(_), Some(Err(cause))) => Err(cause),
+        (Err(cause), Some(Ok(_)) | None) => Err(Refusal::Request(cause)),
+    }
+}
+fn check_header_agreement(header: &Header, wire: &ArtifactPayloadWire<'_>) -> Result<(), Refusal> {
     if header.position != wire.position {
         return Err(Refusal::PositionDisagreement {
             header: header.position,

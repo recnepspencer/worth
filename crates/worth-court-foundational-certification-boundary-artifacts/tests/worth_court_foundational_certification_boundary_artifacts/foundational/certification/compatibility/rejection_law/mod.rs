@@ -177,33 +177,6 @@ fn json_lowering_rejects_incompatible_reference_shapes() {
 }
 
 #[test]
-fn json_lowering_rejects_content_shape_with_shape_specific_denial() {
-    let contract = worth_foundational::AspectContract::content_ref(
-        key("blob.preview"),
-        identity(52),
-        revision(1),
-    );
-    let source = source_for("blob.preview");
-
-    let outcome =
-        lower_json_record_aspect_state([worth_foundational::JsonCompatibilityAspectInput::new(
-            contract,
-            source.clone(),
-            json!("inline-bytes-are-not-admitted"),
-        )]);
-
-    assert_eq!(
-        outcome,
-        worth_proof::TransitionOutcome::Denied(
-            worth_foundational::JsonCompatibilityLoweringDenial::JsonShapeNotAdmitted {
-                source,
-                expected: "content reference id",
-            }
-        )
-    );
-}
-
-#[test]
 fn json_lowering_rejects_scalar_content_ref_with_family_specific_shape_text() {
     let source = source_for("blob.slot");
     let outcome =
@@ -222,20 +195,24 @@ fn json_lowering_rejects_scalar_content_ref_with_family_specific_shape_text() {
         worth_proof::TransitionOutcome::Denied(
             worth_foundational::JsonCompatibilityLoweringDenial::JsonShapeNotAdmitted {
                 source,
-                expected: "content reference id",
+                expected: "lowercase 32-byte content digest",
             }
         )
     );
 }
 
 #[test]
-fn json_lowering_rejects_scalar_bytes_with_family_specific_shape_text() {
-    let source = source_for("blob.bytes");
+fn json_lowering_rejects_legacy_numeric_content_references() {
+    let source = source_for("blob.content_ref");
     let outcome =
         lower_json_record_aspect_state([worth_foundational::JsonCompatibilityAspectInput::new(
-            scalar_contract("blob.bytes", 1, worth_foundational::ScalarAspectType::Bytes),
+            scalar_contract(
+                "blob.content_ref",
+                1,
+                worth_foundational::ScalarAspectType::ContentRef,
+            ),
             source.clone(),
-            json!("not-a-bytes-id"),
+            json!(9),
         )]);
 
     assert_eq!(
@@ -243,7 +220,7 @@ fn json_lowering_rejects_scalar_bytes_with_family_specific_shape_text() {
         worth_proof::TransitionOutcome::Denied(
             worth_foundational::JsonCompatibilityLoweringDenial::JsonShapeNotAdmitted {
                 source,
-                expected: "bytes reference id",
+                expected: "lowercase 32-byte content digest",
             }
         )
     );

@@ -6,6 +6,7 @@ pub(super) fn managed_index(
     use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestInterruption as Stop;
     use worth_query_host::facade::primary_graph::WorthQueryManagedIndexDenialCause as Cause;
     match cause.cause() {
+        Cause::CurrentControl(cause) => super::query_denial(bank_server::BankApplicationQueryDenial::from_request_query(worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial::OutputSettlement(cause.clone()))),
         Cause::SourceVerification { execution: Some(cause), .. } => crate::http::server::relational_execution_denial::denial(cause),
         Cause::SourceVerification { authorization: Some(cause), .. } => authorization_denial(cause.into()),
         Cause::SourceVerification { .. } | Cause::NativeSource(_) => unavailable(),
@@ -33,11 +34,14 @@ pub(super) fn managed_index(
     }
 }
 
-fn source(
+pub(super) fn source(
     cause: &worth_query_host::facade::primary_graph::WorthQuerySourceExpectationDenial,
 ) -> BankHttpDenial {
     use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestInterruption;
 
+    if let Some(authorization) = cause.authorization_denial() {
+        return authorization_denial(authorization.kind().into());
+    }
     if let Some(stop) = cause.retention_interruption() {
         return match stop {
             WorthQueryRequestInterruption::Cancelled => cancelled(),
@@ -84,6 +88,12 @@ pub(in crate::http::server) fn work(
             crate::http::server::relational_execution_denial::denial(*cause)
         }
         Work::Controlled(Stop::OrderedStorage(cause)) => ordered_storage(cause),
+        Work::Controlled(Stop::Content(cause)) => {
+            crate::http::server::relational_execution_denial::denial(cause.into_execution_cause())
+        }
+        Work::Controlled(Stop::Projection(cause)) => {
+            projection(bank_server::BankApplicationProjectionDenialKind::from_query(cause.kind()))
+        }
         Work::Controlled(Stop::ValueDecode(cause)) => value_decode(*cause),
         Work::Controlled(Stop::NativeSource(cause)) => native_walk(cause),
         Work::Controlled(Stop::NodeCapacityExceeded) => exhausted(),
@@ -148,7 +158,7 @@ fn ordered_storage(
         Denial::CapacityOverflow => internal_denied(),
     }
 }
-fn native_admission(
+pub(super) fn native_admission(
     cause: &worth_query_host::facade::primary_graph::CompanionPreflightStop,
 ) -> BankHttpDenial {
     use worth_query_host::facade::primary_graph::{

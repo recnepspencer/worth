@@ -10,7 +10,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
         (usize, usize),
         crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
     > {
-        let execution = phase.execution_request_for(&self.product_runtime).map_err(|_| {
+        let execution = phase.execution_request_for(&self.runtime.product_runtime).map_err(|_| {
             crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(
                 crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase,
                 "actor retention",

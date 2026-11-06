@@ -95,7 +95,7 @@ impl HistoryMetadataCharge {
 
     pub(super) fn with_readmitted(mut self) -> Result<Self, HistoryMetadataArithmeticOverflow> {
         self.publication_envelope =
-            crate::history::PreparedReadmittedPublicationRecord::backing_bytes()
+            crate::history::ReadmittedPublicationRecordBacking::backing_bytes()
                 .ok_or(HistoryMetadataArithmeticOverflow)?;
         self.total = self
             .total

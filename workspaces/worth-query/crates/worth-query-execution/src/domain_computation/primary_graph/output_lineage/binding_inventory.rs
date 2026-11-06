@@ -20,13 +20,10 @@ impl WorthQueryApplicationOutputLineage {
             .binding_type(identity)
             .expect("lineage binding is installed")
     }
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn fixture_binding(
-        &mut self,
-        binding: TypeId,
-        name: &str,
-    ) -> OutputBindingIdentity {
+    pub fn fixture_binding(&mut self, binding: TypeId, name: &str) -> OutputBindingIdentity {
         self.binding_identities.insert(binding, name);
         self.binding_identity(binding).unwrap()
     }
 }
+
+mod court_doors_for_test;

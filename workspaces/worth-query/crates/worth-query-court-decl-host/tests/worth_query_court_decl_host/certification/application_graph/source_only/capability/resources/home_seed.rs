@@ -1,10 +1,7 @@
 //! Resource pools require authored owned-async definitions before they can serve.
 use std::sync::Arc;
 use worth_foundational::facade::DurableStateFamily;
-use worth_query_decl::facade::{
-    application_program::ApplicationProgramAuthoring,
-    application_schema::ApplicationSchemaComposition,
-};
+use worth_query_decl::facade::application_program::ApplicationProgramAuthoring;
 use worth_query_host::facade::{
     application_contribution::with_bootstrap_advancement_from_request,
     application_installation::{
@@ -42,8 +39,7 @@ fn directory_resource_seed_refuses_before_clock_provider_or_owner_effect() {
         declaration,
         (contacts.clone(),),
         ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap(),
-        worth_query_testkit_document_retention::facade::document_retention_model::host::host_limits(
-        ),
+        worth_query_testkit_document_retention::facade::document_retention_model::host::host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         |_, _, _| panic!("an unsupported resource seed cannot initialize"),
     );
     let budget = worth_execution::SerialMemoryBudget::new(Some(128 << 20));

@@ -53,7 +53,6 @@ impl WorthQueryOutputReadinessDeliveryEvidence {
         }
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) const fn for_test() -> Self {
         Self {
             producer_contacts: 1,
@@ -121,3 +120,5 @@ impl WorthQueryOutputReadinessDeliveryEvidence {
         self.semantic_observation_reads
     }
 }
+
+mod court_doors_for_test;

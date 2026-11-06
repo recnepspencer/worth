@@ -84,3 +84,5 @@ impl AggregateObservation {
         Ok(true)
     }
 }
+
+mod court_doors_for_test;

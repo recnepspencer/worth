@@ -13,8 +13,11 @@ pub(crate) struct RootData {
     pub(crate) recorded_components: Vec<RelationalBranchBasisDescriptor>,
     pub(crate) schema_carrier_digest: [u8; 32],
     pub(crate) regions: Vec<RelationalCheckpointRegion>,
+    pub(crate) content: Vec<super::super::RelationalCheckpointContent>,
     #[serde(skip)]
     _memory: Option<ExecutionMemoryReservation>,
+    #[serde(skip)]
+    _content_memory: Option<ExecutionMemoryReservation>,
 }
 
 /// Cloning a root description shares only this root's own immutable allocations.
@@ -33,6 +36,7 @@ impl std::fmt::Debug for RelationalCheckpointRoot {
             .field("recorded_components", &self.recorded_components)
             .field("schema_carrier_digest", &self.schema_carrier_digest)
             .field("regions", &self.regions)
+            .field("content", &self.content)
             .finish()
     }
 }
@@ -42,6 +46,7 @@ impl PartialEq for RelationalCheckpointRoot {
             && self.recorded_components == other.recorded_components
             && self.schema_carrier_digest == other.schema_carrier_digest
             && self.regions == other.regions
+            && self.content == other.content
     }
 }
 impl Eq for RelationalCheckpointRoot {}
@@ -62,13 +67,16 @@ impl RelationalCheckpointRoot {
         recorded_components: Vec<RelationalBranchBasisDescriptor>,
         schema_carrier_digest: [u8; 32],
         regions: Vec<RelationalCheckpointRegion>,
+        content: Vec<super::super::RelationalCheckpointContent>,
     ) -> Self {
         Self(Arc::new(RootData {
             commit_id,
             recorded_components,
             schema_carrier_digest,
             regions,
+            content,
             _memory: None,
+            _content_memory: None,
         }))
     }
 }
@@ -142,6 +150,7 @@ impl PreparedCheckpointRoot {
     pub(crate) fn finish(
         self,
         schema_carrier_digest: [u8; 32],
+        content: crate::durability::checkpoints::content::root_capture::CapturedRootContent,
     ) -> Result<RelationalCheckpointRoot, Cause> {
         if self.regions.len() != self.expected_regions {
             return Err(Cause::ChargedBytesOverflow);
@@ -151,7 +160,9 @@ impl PreparedCheckpointRoot {
             recorded_components: self.components,
             schema_carrier_digest,
             regions: self.regions,
+            content: content.rows,
             _memory: self.memory,
+            _content_memory: content.memory,
         })))
     }
 }

@@ -13,7 +13,7 @@ use crate::domain_computation::primary_graph::{
 
 /// Invocation evidence awaiting the completed, exactly covered handler read.
 /// The static producer declaration supplies the upper bound on context use.
-pub(in crate::domain_computation::primary_graph) struct PreparedDecisionReuseContext {
+pub struct PreparedDecisionReuseContext {
     contract: WorthQueryProducerInputReuseContract,
     key: Option<[u8; 32]>,
     principal: Option<WorthQueryPrincipalReuseWitness>,
@@ -22,7 +22,7 @@ pub(in crate::domain_computation::primary_graph) struct PreparedDecisionReuseCon
 
 /// Recorded fixed native and canonical context for a completed producer read.
 /// An absent proof is ineligible; the handler fact count remains independent.
-pub(in crate::domain_computation::primary_graph) struct CompletedDecisionReuseProof {
+pub struct CompletedDecisionReuseProof {
     key: Option<[u8; 32]>,
     principal: Option<WorthQueryPrincipalReuseWitness>,
     scope: Option<WorthQueryDecisionScopeWitness>,
@@ -165,3 +165,5 @@ mod tests {
         }
     }
 }
+
+mod court_doors_for_test;

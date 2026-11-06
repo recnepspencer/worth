@@ -16,7 +16,7 @@ pub struct WorthQueryConditionalClockHandle<Schema, Node, Clock> {
     pub(super) marker: PhantomData<fn() -> (Schema, Node, Clock)>,
 }
 
-pub(in crate::domain_computation::primary_graph) struct ConditionalClockLease;
+pub struct ConditionalClockLease;
 
 impl<Schema, Node, Clock> WorthQueryConditionalClockHandle<Schema, Node, Clock> {
     pub fn binding_identity(&self) -> &str {

@@ -17,4 +17,20 @@ function readLineSummary(materialization, options = undefined) {
   });
 }
 
-export { readLineSummary };
+function captureLineSummaryInputs(materialization) {
+  const binding = materialization.binding;
+  binding.valueSignal();
+  binding.processingSignal();
+  binding.uploadSignal();
+  binding.downloadSignal();
+  binding.statusSignal();
+  binding.freshnessSignal();
+  binding.diagnosticsSignal();
+}
+
+function readReactiveLineSummary(materialization) {
+  captureLineSummaryInputs(materialization);
+  return readLineSummary(materialization, { includeExplainability: false });
+}
+
+export { readLineSummary, readReactiveLineSummary, captureLineSummaryInputs };

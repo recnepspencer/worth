@@ -1,25 +1,24 @@
-pub(in crate::domain_computation::primary_graph) use fact::{
-    SourceReadAuthorization, SourceReadAuthorizationKey,
-};
+pub use fact::SourceReadAuthorization;
+pub use fact::SourceReadAuthorizationKey;
 mod output_field_capture;
-pub(in crate::domain_computation::primary_graph) use fact::SourcePublicationRead;
-pub(in crate::domain_computation::primary_graph) use fact::{
-    ManagedSourceRead, ManagedSourceReadKey,
-};
-pub(in crate::domain_computation::primary_graph) use output_field_capture::OutputFieldCaptureFailure;
+pub use fact::IndexedSelectionReobserveDenial;
+pub(in crate::domain_computation::primary_graph) use fact::ManagedSourceRead;
+pub use fact::ManagedSourceReadKey;
+pub use fact::SourcePublicationRead;
+pub use output_field_capture::{OutputFieldCaptureFailure, StoreDenial};
 mod capability_revocation_program;
-mod commit_authority_binding;
+pub(crate) mod commit_authority_binding;
 mod commit_outcome_identity;
 mod commit_terminal;
-mod compare_and_commit;
+pub(crate) mod compare_and_commit;
 mod delegation_activation_program;
 mod denial;
-mod dependency_identity;
+pub(crate) mod dependency_identity;
 pub(in crate::domain_computation::primary_graph) use dependency_identity::{
     FactContent, OutputCurrentnessFacts, WorthQueryProducerIdentityDenial,
 };
-mod effect_program;
-mod effect_validation;
+pub(crate) mod effect_program;
+pub(crate) mod effect_validation;
 mod elevation_approval_outcome;
 mod elevation_approval_program;
 mod elevation_approval_replay;
@@ -31,41 +30,38 @@ mod elevation_lifecycle_emission;
 mod elevation_lifecycle_facts;
 mod elevation_request_outcome;
 mod elevation_request_program;
-mod fact;
+pub(crate) mod fact;
 pub(super) mod idempotency;
 mod idempotency_resolution;
 mod mandatory_review_outcome;
 mod mandatory_review_program;
 mod mandatory_review_replay;
-mod migration;
-mod observation;
+pub(crate) mod migration;
+pub(crate) mod observation;
 pub(in crate::domain_computation::primary_graph) use observation::observe_aspect_presence;
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use observation::take_native_field_contacts;
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use observation::ReadRendezvous;
+
 pub(in crate::domain_computation::primary_graph) use observation::{
-    observe_aspect_absence, observe_field, observe_field_value_borrowed,
-    observe_field_value_borrowed_admitted, WorthQueryApplicationFieldObservation,
+    observe_aspect_absence, observe_field, observe_field_observation_borrowed_admitted,
+    observe_field_value_borrowed, observe_field_value_borrowed_admitted,
+    WorthQueryApplicationFieldObservation,
 };
-pub(in crate::domain_computation::primary_graph) mod precondition_binding;
-mod provider_binding;
+pub(crate) mod precondition_binding;
+pub(crate) mod provider_binding;
 pub(in crate::domain_computation::primary_graph) use provider_binding::WorthQueryExpectedEffectStepPreparationWork;
 pub(in crate::domain_computation::primary_graph) use provider_binding::WorthQueryPrimaryGraphApplicationAttempt;
-pub(in crate::domain_computation::primary_graph) mod provider_compare_denial;
-mod provider_execution;
+pub(crate) mod provider_compare_denial;
+pub(crate) mod provider_execution;
 mod provider_recomparison;
 mod read_phase;
-mod read_scope;
-mod read_set;
+pub(crate) mod read_scope;
+pub(crate) mod read_set;
 pub(in crate::domain_computation::primary_graph) use dependency_identity::CompletedFactRoutes;
 pub(in crate::domain_computation::primary_graph) mod signed_creation;
 mod signed_selection;
 mod signing_lifecycle;
 pub(in crate::domain_computation::primary_graph) use read_set::request_liveness::check_request_live;
 pub(in crate::domain_computation) use read_set::CompletedHandlerFactBoundary;
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use read_set::ComputationFactReaders;
+
 pub(in crate::domain_computation::primary_graph) use read_set::FactRoutes;
 pub(in crate::domain_computation::primary_graph) use read_set::{
     observe_admitted_fact, CheckedCallShape, CompletedDecisionReuseProof,
@@ -77,17 +73,16 @@ pub use signed_creation::{
     WorthQuerySignedCreationAdapter, WorthQuerySignedCreationPreparationDenial,
 };
 mod retained_commit;
-pub(in crate::domain_computation::primary_graph) mod retained_decision_facts;
-pub(super) mod snapshot_lease;
-mod workflow_deadline;
+pub(crate) mod retained_decision_facts;
+pub(crate) mod snapshot_lease;
+pub(crate) mod workflow_deadline;
 mod workflow_definition_program;
-pub(in crate::domain_computation::primary_graph) mod workflow_instance_observation;
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use workflow_instance_observation::decode_field_revision_fact;
+pub(crate) mod workflow_instance_observation;
+
 pub(in crate::domain_computation::primary_graph) use workflow_instance_observation::WorkflowStepAllowance;
-mod workflow_instance_program;
+pub(crate) mod workflow_instance_program;
 mod workflow_proposal_program;
-pub(in crate::domain_computation) mod workflow_transition_program;
+pub(crate) mod workflow_transition_program;
 pub(in crate::domain_computation) use snapshot_lease::{
     WorthQueryApplicationSnapshotLease, WorthQueryApplicationSnapshotLeaseDenial,
     WorthQueryApplicationSnapshotRelease,
@@ -156,10 +151,9 @@ pub use elevation_request_program::WorthQueryElevationRequestProgram;
 pub(in crate::domain_computation) use fact::WorthQueryApplicationObservedFact;
 pub(in crate::domain_computation::primary_graph) use fact::{
     observe_adjacency, observe_indexed_candidates, reobserve_indexed_entity_selection,
-    FactMovement, IndexedSelectionReobserveDenial, Movement, ObservedRetained,
-    WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationFactKey,
-    WorthQueryApplicationObservedRelation, WorthQueryIndexedSelectionRefusal,
-    WorthQuerySourceCurrentnessFailure,
+    FactMovement, Movement, ObservedRetained, WorthQueryApplicationAdjacencyDirection,
+    WorthQueryApplicationFactKey, WorthQueryApplicationObservedRelation,
+    WorthQueryIndexedSelectionRefusal, WorthQuerySourceCurrentnessFailure,
 };
 pub(in crate::domain_computation::primary_graph) use idempotency::WorthQueryRecordedIntentMatch;
 pub use idempotency::{
@@ -233,7 +227,6 @@ pub use workflow_transition_program::{
 
 pub use retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints as WorthQueryApplicationSourceAdjacencyEndpoints;
 
-#[cfg(test)]
 pub(in crate::domain_computation) use fact::consult_observation;
 
 pub(in crate::domain_computation::primary_graph) use fact::observe_indexed_entity_selection;
@@ -242,7 +235,8 @@ pub(in crate::domain_computation::primary_graph) use read_set::CompletedReadScop
 
 pub(in crate::domain_computation::primary_graph) use compare_and_commit::MaterializedCommittedField;
 
-pub(in crate::domain_computation) use compare_and_commit::WorthQueryPendingApplicationCommitReceipt;
+pub use compare_and_commit::WorthQueryPendingApplicationCommitReceipt;
 
 pub(in crate::domain_computation) use compare_and_commit::RetainedOriginalCleanupCommit;
+pub(in crate::domain_computation::primary_graph) use provider_execution::ReadmittedCommitProgram;
 pub use provider_execution::WorthQueryManagedPhaseStorageForTest;

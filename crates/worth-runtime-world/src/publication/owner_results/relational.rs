@@ -8,6 +8,35 @@ use super::{
 };
 
 impl CompositeOwnerExecutionResults {
+    /// A terminal no-effect release requires the actual closed owner result.
+    pub(crate) fn release_original_component(
+        &self,
+    ) -> Result<
+        Option<(
+            &worth_relational::facade::history::RelationalCommitReceipt,
+            &AdmittedRelationalBranchBasis,
+        )>,
+        (),
+    > {
+        match &self.relational.result {
+            CompositeRelationalOwnerResultKind::RetainedExact
+            | CompositeRelationalOwnerResultKind::Forked { .. } => Ok(None),
+            CompositeRelationalOwnerResultKind::Published {
+                settlement: Some(receipt),
+                successor_basis: Some(basis),
+                ..
+            } => Ok(Some((receipt, basis))),
+            CompositeRelationalOwnerResultKind::Published {
+                settlement: None, ..
+            }
+            | CompositeRelationalOwnerResultKind::Published {
+                successor_basis: None,
+                ..
+            }
+            | CompositeRelationalOwnerResultKind::SettlementRequired { .. }
+            | CompositeRelationalOwnerResultKind::DurabilityUnresolved { .. } => Err(()),
+        }
+    }
     /// Absence is coherent only for a leg that creates no commit snapshot.
     pub(crate) fn result_for_snapshot_cleanup(
         &self,

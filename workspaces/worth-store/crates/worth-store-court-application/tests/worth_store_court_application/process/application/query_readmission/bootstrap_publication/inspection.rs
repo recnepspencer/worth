@@ -69,7 +69,7 @@ pub(super) fn completed(
         panic!("exactly one genuine completion row");
     };
     for (name, expected) in [
-        ("format-version", 1),
+        ("format-version", 2),
         ("principal-bindings", 2),
         ("identity-indexes", 1),
         ("application-equality-indexes", 5),
@@ -104,20 +104,13 @@ pub(super) fn completed(
         "completion is absent at the real terminal seed basis"
     );
 
-    let mut binding = String::from("WQHB1\n");
+    let mut binding = String::from("WQBI2\n");
     let mut item = |value: &str| {
         use std::fmt::Write;
         write!(binding, "{}:{value},", value.len()).unwrap();
     };
     item(&expected.package().render_hex());
     item(&expected.schema().render_hex());
-    item(expected.selected().identity());
-    item(&expected.selected().revision().render_hex());
-    item(&expected.roster().len().to_string());
-    for program in expected.roster() {
-        item(program.identity());
-        item(&program.revision().render_hex());
-    }
     assert_eq!(
         field(row, "bootstrap-publication", "binding"),
         &AspectValue::String(binding.into())

@@ -368,3 +368,5 @@ pub enum WorthQueryDirectGraphStepOutcome {
     Degraded(WorthQueryDirectRunTerminal),
     Failed(WorthQueryDirectRunTerminal),
 }
+
+mod court_doors_for_test;

@@ -1,4 +1,3 @@
-//! Admission into ordinary and projected read attempts.
 use super::*;
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -13,7 +12,7 @@ where
         WorthQueryApplicationAttemptDenial,
     > {
         admission
-            .refuse_stale_home_authority(self.product_runtime.owner.owner_identity())
+            .refuse_stale_home_authority(self.runtime.product_runtime.owner.owner_identity())
             .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
         if !admission.belongs_to(
             self.runtime.authority_identity(),
@@ -25,7 +24,8 @@ where
             ));
         }
         admission
-            .validate_current_authority()
+            .validate_installed_operation(&self.runtime.installed_operations)
+            .and_then(|()| admission.validate_current_authority())
             .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
         let graph = self.runtime.primary_graph().ok_or_else(|| {
             denial(
@@ -47,7 +47,7 @@ where
             SourceFacts::Admitted(validate_source_facts(execution, &mut admission, &lease)?);
         Ok(WorthQueryApplicationReadAttempt {
             execution: *execution,
-            value_decode: crate::domain_computation::primary_graph::value_decode::ValueDecodeState::new(self.installed_schema.value_bindings().clone()),
+            value_decode: super::super::super::value_decode::ValueDecodeState::new(self.installed_schema.value_bindings().clone()),
             admission,
             lease,
             layout: Arc::clone(&graph.layout),
@@ -111,7 +111,7 @@ where
         >,
         WorthQueryApplicationAttemptDenial,
     > {
-        let phase_request = match phase.execution_request_for(&self.product_runtime) {
+        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(request) => request,
             Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "application-read-phase")),
         };
@@ -149,7 +149,7 @@ where
         WorthQueryApplicationAttemptDenial,
     > {
         admission
-            .refuse_stale_home_authority(self.product_runtime.owner.owner_identity())
+            .refuse_stale_home_authority(self.runtime.product_runtime.owner.owner_identity())
             .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
         if !admission.belongs_to(
             self.runtime.authority_identity(),
@@ -160,6 +160,9 @@ where
                 admission.operation(),
             ));
         }
+        admission
+            .validate_installed_operation(&self.runtime.installed_operations)
+            .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
         if !projection.belongs_to(
             self.runtime.authority_identity(),
             &self.installed_schema.binding_identity(),
@@ -202,10 +205,9 @@ where
         let layout = Arc::clone(&lease.layout);
         Ok(WorthQueryApplicationReadAttempt {
             execution: *execution,
-            value_decode:
-                crate::domain_computation::primary_graph::value_decode::ValueDecodeState::new(
-                    self.installed_schema.value_bindings().clone(),
-                ),
+            value_decode: super::super::super::value_decode::ValueDecodeState::new(
+                self.installed_schema.value_bindings().clone(),
+            ),
             admission,
             lease,
             layout,

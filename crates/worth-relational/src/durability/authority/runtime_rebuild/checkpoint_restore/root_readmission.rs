@@ -3,6 +3,7 @@ use crate::durability::data::{DurabilityError, DurableCheckpoint};
 use crate::runtime::HistorySubsystem;
 
 pub(super) fn readmit_selected_images(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     history: &HistorySubsystem,
     checkpoint: &DurableCheckpoint,
     branch_roots: &mut super::branch_root_images::RestoredBranchRootImages,
@@ -12,7 +13,7 @@ pub(super) fn readmit_selected_images(
         crate::history::data::CommitId,
         std::sync::Arc<crate::branch::RelationalBranchRoot>,
     >,
-    DurabilityError,
+    crate::durability::data::RelationalRecoveryStop,
 > {
     let mut roots = std::collections::BTreeMap::new();
     for (commit_id, partitions) in std::mem::take(&mut branch_roots.partitions) {
@@ -47,13 +48,36 @@ pub(super) fn readmit_selected_images(
                     "root has no schema authority",
                 )
             })?;
-        let root = history
-            .readmit_branch_root(partitions, envelope, descriptor, schema, symbols)
-            .map_err(|denial| {
+        let content_records = checkpoint
+            .branch_roots
+            .iter()
+            .find(|image| image.commit_id == commit_id)
+            .map(|image| &image.content_records)
+            .ok_or_else(|| {
                 DurabilityError::new(
                     crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
-                    format!("root readmission: {denial:?}"),
+                    "root has no content image",
                 )
+            })?;
+        let root = history
+            .readmit_branch_root(
+                execution,
+                content_records,
+                partitions,
+                envelope,
+                descriptor,
+                schema,
+                symbols,
+            )
+            .map_err(|denial| match denial {
+                crate::branch::RelationalBranchRootCaptureDenial::Content(cause) => {
+                    crate::durability::data::RelationalRecoveryStop::from(cause)
+                }
+                other => DurabilityError::new(
+                    crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
+                    format!("root readmission: {other:?}"),
+                )
+                .into(),
             })?;
         roots.insert(commit_id, root);
     }

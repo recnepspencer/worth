@@ -4,7 +4,7 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
-use crate::domain_computation::primary_graph::provider::RebaseVerificationReason;
+use crate::domain_computation::primary_graph::provider::RebaseVerificationFailure;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCommittedApplication;
 
 use super::super::RecordedSettlementIdentity;
@@ -97,7 +97,7 @@ pub(in crate::domain_computation::primary_graph) fn register_completed(
 /// continues unchanged, and a predecessor with no row to continue leaves the
 /// republication without one.
 #[allow(clippy::too_many_arguments)]
-pub(in crate::domain_computation::primary_graph) fn register_republished(
+pub fn register_republished(
     owner: &SourceInvalidationOwner,
     predecessor: &RecordedSettlementIdentity,
     identity: Arc<RecordedSettlementIdentity>,
@@ -145,30 +145,9 @@ pub(in crate::domain_computation::primary_graph) fn register_republished(
 
 /// Why the row of a commit that could not rebase its facts requires
 /// verification.
-impl From<RebaseVerificationReason> for FullVerificationReason {
-    fn from(reason: RebaseVerificationReason) -> Self {
-        match reason {
-            // The original owned cause remains in commit evidence; this is
-            // only the post-effect registration's conservative readiness hint.
-            RebaseVerificationReason::ManagedIndex(_) => Self::RegistrationIncomplete,
-            // Pending publication already reported this request stop by value.
-            // A later recovery records the incomplete source registration;
-            // a settlement reason never carries an old request's interruption.
-            RebaseVerificationReason::Execution(_)
-            | RebaseVerificationReason::NativePayloadStorage { .. } => Self::RegistrationIncomplete,
-            RebaseVerificationReason::NativeRevisionUnavailable => Self::NativeRevisionUnavailable,
-            RebaseVerificationReason::NativeFactRevisionUnavailable(ordinal) => {
-                Self::NativeFactRevisionUnavailable(ordinal)
-            }
-            RebaseVerificationReason::IndexedSelectionDenied(denial) => {
-                Self::IndexedSelectionDenied(denial)
-            }
-            RebaseVerificationReason::IndexedSelectionFactDenied(ordinal, denial) => {
-                Self::IndexedSelectionFactDenied(ordinal, denial)
-            }
-            RebaseVerificationReason::UnsupportedDecisionFact => Self::UnsupportedFact,
-            RebaseVerificationReason::AdmissionDenied(stop) => stopped(stop),
-        }
+impl From<RebaseVerificationFailure> for FullVerificationReason {
+    fn from(reason: RebaseVerificationFailure) -> Self {
+        reason.into_registration_requirement()
     }
 }
 
@@ -223,3 +202,5 @@ impl WorthQueryApplicationOutputLineage {
         }
     }
 }
+
+mod court_doors_for_test;

@@ -6,7 +6,7 @@ use std::sync::{
 };
 use worth_execution::{CancellationSource, ExecutionMemoryReservation};
 use worth_relational::facade::{
-    durability::*, publication::PatchStreamPosition, storage::RelationalStorageUnavailableCause,
+    publication::PatchStreamPosition, storage::RelationalStorageUnavailableCause,
 };
 
 #[derive(Debug)]

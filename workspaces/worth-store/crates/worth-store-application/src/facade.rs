@@ -3,8 +3,8 @@
 pub use crate::checkpoint::{
     ApplicationHomeCheckpoint, ApplicationHomeCheckpointDenial,
     ApplicationHomeCheckpointInspection, ApplicationHomeCheckpointJournalObservation,
-    ApplicationHomeCheckpointLimits, ApplicationHomeCheckpointOperation,
-    ApplicationHomeCheckpointRecovery, HomeManifestDenial,
+    ApplicationHomeCheckpointLimits, ApplicationHomeCheckpointMaintenanceDenial,
+    ApplicationHomeCheckpointOperation, ApplicationHomeCheckpointRecovery, HomeManifestDenial,
     RetiredApplicationHomeCheckpointOperation, HOME_CHECKPOINT_PROTOCOL, HOME_CHECKPOINT_VERSION,
 };
 pub use crate::close::{
@@ -34,6 +34,11 @@ pub use crate::open::readmission::transition::{
     ReservedApplicationHomeTransitionPlan,
 };
 pub use crate::open::{admit_home, readmit_relational, recover_home, ApplicationHomeOpenRefusal};
+pub use crate::opening_control::{
+    ApplicationHomeOpeningArrival, ApplicationHomeOpeningControlForTest,
+    ApplicationHomeOpeningEdge, ApplicationHomeOpeningObservation, ApplicationHomeOpeningStage,
+    ApplicationHomePhysicalControlDenial, ApplicationHomePhysicalControlForTest,
+};
 pub use crate::relational_preparation::{
     attach_relational, ApplicationHomeInitializationDenial, ApplicationHomeInitializationRefused,
     ApplicationHomeNativeSchemaPreparation, RelationalAttachmentFailedHome,

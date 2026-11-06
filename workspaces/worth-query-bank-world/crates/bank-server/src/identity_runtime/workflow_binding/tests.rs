@@ -60,6 +60,7 @@ fn workflow_binding_refusal_preserves_inputs_until_real_operation_closes() {
             WorthQueryAuthenticationAdapterAdmission::new(
                 configuration.audience,
                 configuration.method,
+                worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
             ),
             CausalBankAuthenticationAdapter,
         )
@@ -100,7 +101,7 @@ fn workflow_binding_refusal_preserves_inputs_until_real_operation_closes() {
     );
 
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let stopped_principal = block_on(
         authentication.authenticate(CausalCredential::for_identity(&identity), &stopped_scope),
     )

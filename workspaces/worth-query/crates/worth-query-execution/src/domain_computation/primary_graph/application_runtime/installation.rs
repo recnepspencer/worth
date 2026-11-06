@@ -5,6 +5,7 @@ mod assembly;
 pub(in crate::domain_computation::primary_graph) mod home_attachment;
 mod input;
 mod owned_contributions;
+mod schema_admission;
 use super::{
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphBootstrap,
     WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
@@ -16,35 +17,13 @@ use crate::domain_computation::execution_runtime::{
 };
 use assembly::assemble_application_runtime;
 pub(in crate::domain_computation::primary_graph) use input::ApplicationRuntimePublication;
+pub(super) use schema_admission::require_no_conditional_bindings;
+use schema_admission::validate_application_schema;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationSchema,
     WorthQueryInstalledGraphParticipationAuthority,
 };
-pub(super) fn require_no_conditional_bindings<Schema>(
-    runtime: &WorthQueryExecutionRuntime,
-    installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
-) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
-where
-    Schema: ApplicationSchema,
-{
-    let count = runtime
-        .installed_packages()
-        .installed_conditional_node_count_for_schema(
-            installed_schema.owner(),
-            installed_schema.schema_name(),
-        );
-    if count == 0 {
-        Ok(())
-    } else {
-        Err(WorthQueryPrimaryGraphInstallationDenial::new(
-            WorthQueryPrimaryGraphInstallationDenialKind::ConditionalBindingsRequired,
-            format!(
-                "{} declared conditional nodes require the conditional publication progression",
-                count
-            ),
-        ))
-    }
-}
+
 pub(super) fn publish_application_runtime_with_clock<Schema>(
     phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
     input: ApplicationRuntimePublication<Schema>,
@@ -218,7 +197,8 @@ where
     .map_err(super::super::conditional_operation::publication_denial)?;
     owned_contributions::transfer(&mut application, resources, managed_indexes);
     conditional_operations.reconstruct_all(&application)?;
-    conditional_operations.reconcile_all(&mut application.bridge.conditional_lifecycle())?;
+    conditional_operations
+        .reconcile_all(&mut application.runtime.bridge.conditional_lifecycle())?;
     *application
         .conditional_cleanup
         .operations
@@ -238,23 +218,7 @@ pub(super) struct PublishedApplicationGraph<Bridge> {
         Option<worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority>,
     checkpoint_restore_work: Option<worth_relational::facade::durability::CheckpointRestoreWork>,
 }
-fn validate_application_schema<Schema>(
-    runtime: &WorthQueryExecutionRuntime,
-    installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
-) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
-where
-    Schema: ApplicationSchema,
-{
-    runtime
-        .installed_packages()
-        .validate_application_schema(installed_schema)
-        .map_err(|denial| {
-            WorthQueryPrimaryGraphInstallationDenial::new(
-                WorthQueryPrimaryGraphInstallationDenialKind::StaleInstalledSchema,
-                denial.subject(),
-            )
-        })
-}
+
 fn compile_authorization<Schema>(
     bootstrap: &WorthQueryPrimaryGraphBootstrap<Schema>,
     installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,

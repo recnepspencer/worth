@@ -6,6 +6,7 @@ use std::sync::Arc;
 pub struct RelationalRequiredOutputPublication {
     pub(crate) runtime_instance_id: u64,
     pub(crate) envelope: Arc<CanonicalCommitEnvelope>,
+    pub(crate) origin: Arc<crate::history::data::CanonicalRequiredOutputOrigin>,
     pub(crate) authority: worth_proof::RequiredOutputPublicationAuthority,
     pub(crate) readmitted_at: Option<crate::branch::AdmittedRelationalBranchBasis>,
 }
@@ -31,6 +32,12 @@ impl crate::transactions::data::CommitResult {
         .then(|| RelationalRequiredOutputPublication {
             runtime_instance_id: installed.runtime_instance_id,
             envelope: envelope.clone().into_arc(),
+            origin: Arc::clone(
+                envelope
+                    .required_output_origin
+                    .as_ref()
+                    .expect("performed single publication"),
+            ),
             readmitted_at: None,
             authority: installed
                 .authority
@@ -60,10 +67,15 @@ impl crate::runtime::RelationalRuntime {
                 "foreign installed publisher for cold readmission",
             ));
         }
-        let envelope = crate::history::data::validate_codec_output_correspondence(
+        let selected = crate::history::data::validate_codec_output_correspondence(
             execution, self, basis, producer, dependency, meaning, roles,
         )
         .map_err(cold_stop)?;
+        let crate::history::data::SelectedOutputPublication {
+            envelope,
+            origin,
+            ordinal,
+        } = selected;
         if crate::history::data::readmit_required_output_route(execution, self, basis, meaning)
             .map_err(cold_stop)?
             != Some(
@@ -74,10 +86,24 @@ impl crate::runtime::RelationalRuntime {
         {
             return Err(super::origin_denial("superseded complete family publication is historical association, not a current predecessor"));
         }
-        if envelope
-            .required_output_origin
+        if installed
+            .source_scope_ownership
+            .scope_kind(&origin.producer)
+            .is_some()
+            != origin.source_scope_owned
+        {
+            return Err(
+                crate::transactions::data::TransactionCommitError::publication(
+                    crate::publication::data::PublicationError::authored_retirement(
+                        crate::publication::data::AuthoredRetirementRefusal::CorruptPublication,
+                        crate::transactions::data::RecordRef::Entity(origin.meaning.source_scope),
+                    ),
+                ),
+            );
+        }
+        if origin
+            .issuer
             .as_ref()
-            .and_then(|origin| origin.issuer.as_ref())
             .is_some_and(|issuer| !issuer.same_publication_owner(&installed.authority))
         {
             return Err(super::origin_denial(
@@ -86,10 +112,11 @@ impl crate::runtime::RelationalRuntime {
         }
         let authority = installed
             .authority
-            .seal_required_output_publication(envelope.commit.commit_id.0);
+            .seal_required_output_publication_at(envelope.commit.commit_id.0, ordinal);
         Ok(RelationalRequiredOutputPublication {
             runtime_instance_id: installed.runtime_instance_id,
             envelope,
+            origin,
             authority,
             readmitted_at: Some(basis.clone()),
         })

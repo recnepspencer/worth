@@ -110,10 +110,10 @@ impl ReadmittedHomeProgramTransitions {
         binding: &ApplicationHomeBinding,
         successor: &ApplicationHomeBinding,
     ) -> Result<(), Denial> {
-        if let Some(pending) = self.pending(binding)? {
-            if pending.successor() != successor {
-                return Err(Denial::TransitionPending);
-            }
+        if let Some(pending) = self.pending(binding)?
+            && pending.successor() != successor
+        {
+            return Err(Denial::TransitionPending);
         }
         Ok(())
     }

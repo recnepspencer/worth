@@ -2,13 +2,13 @@
 use super::*;
 use crate::basis::CompositeBasisBackingDenial;
 use crate::durability::{WorldOpenAttemptRecord, WorldReadmissionDenial as Denial};
-use crate::history::{PreparedReadmittedPublicationRecord, ReadmittedWorldCommitDenial};
+use crate::history::{ReadmittedPublicationRecordBacking, ReadmittedWorldCommitDenial};
 use worth_relational::facade::durability::RelationalRecoveredPublicationCustody;
 
 pub(crate) struct PreparedReadmittedWorldSuccessor {
     pub(crate) after: ProductBranchReferenceSnapshot,
     pub(crate) attempt: crate::identity::CompositePublicationAttemptIdentity,
-    pub(crate) record: PreparedReadmittedPublicationRecord,
+    pub(crate) record: ReadmittedPublicationRecordBacking,
 }
 
 impl<D, I, E, Ctx, T> RuntimeWorldOwnerRoot<D, I, E, Ctx, T>
@@ -40,7 +40,7 @@ where
             .advance()
             .map_err(Denial::IdentityExhaustion)?;
         let record =
-            PreparedReadmittedPublicationRecord::prepare(request).map_err(Denial::Medium)?;
+            ReadmittedPublicationRecordBacking::prepare(request).map_err(Denial::Medium)?;
         let basis = crate::basis::admit_validated_for_request(
             request,
             &self.state.identities,
@@ -68,7 +68,10 @@ where
             }
             ReadmittedWorldCommitDenial::CapacityOverflow => Denial::RecoveryCapacity,
             ReadmittedWorldCommitDenial::Native(cause) => Denial::NativeSuccessor(cause),
-            ReadmittedWorldCommitDenial::Construction(_) => Denial::OccurrenceEvidenceMismatch,
+            ReadmittedWorldCommitDenial::Construction(
+                crate::history::CompositeCommitConstructionDenial::OwnerMismatch
+                | crate::history::CompositeCommitConstructionDenial::BasisMismatch,
+            ) => Denial::OccurrenceEvidenceMismatch,
         })?;
         let after = ProductBranchReferenceSnapshot::owner_issued(
             owner,

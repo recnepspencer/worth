@@ -1,5 +1,3 @@
-use std::sync::atomic::{AtomicU64, Ordering};
-
 use worth_query_installation::facade::{
     ApplicationSchemaBindingIdentity, WorthQueryInstalledGraphObligation,
     WorthQueryInstalledGraphObligationSetIdentity,
@@ -11,41 +9,13 @@ use crate::domain_computation::execution_resource_admission::{
 };
 use crate::graph_read_access::WorthQueryGraphReadPlanReview;
 
-use super::{WorthQueryGraphWorkIntent, WorthQuerySelectedGraphObligations};
+use super::{
+    WorthQueryGraphWorkAdmissionDenial, WorthQueryGraphWorkIntent,
+    WorthQuerySelectedGraphObligations,
+};
 
-static NEXT_GRAPH_WORK_PLAN_IDENTITY: AtomicU64 = AtomicU64::new(1);
-
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct WorthQueryGraphWorkPlanIdentity(u64);
-
-impl WorthQueryGraphWorkPlanIdentity {
-    pub(super) fn mint() -> Option<Self> {
-        {
-            let update_counter = &NEXT_GRAPH_WORK_PLAN_IDENTITY;
-            let mut value = update_counter.load(Ordering::Relaxed);
-            loop {
-                let Some(updated_value) = value.checked_add(1) else {
-                    break Err(value);
-                };
-                match update_counter.compare_exchange_weak(
-                    value,
-                    updated_value,
-                    Ordering::Relaxed,
-                    Ordering::Relaxed,
-                ) {
-                    Ok(previous) => break Ok(previous),
-                    Err(reloaded_value) => value = reloaded_value,
-                }
-            }
-        }
-        .ok()
-        .map(Self)
-    }
-
-    pub const fn as_u64(self) -> u64 {
-        self.0
-    }
-}
+mod identity;
+pub use identity::WorthQueryGraphWorkPlanIdentity;
 
 pub(super) enum WorthQueryGraphWorkAdmissionMechanics {
     ApplicationInspectionRead {
@@ -81,12 +51,18 @@ pub struct WorthQueryAdmittedGraphWorkPlan {
     mechanics: WorthQueryGraphWorkAdmissionMechanics,
 }
 
+/// No release receipt can be issued for custody already transferred to execution.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryGraphWorkReleaseDenial {
+    OperationCapacityTransferred,
+}
+
 impl WorthQueryAdmittedGraphWorkPlan {
     pub(super) fn seal(
         selected: WorthQuerySelectedGraphObligations,
         mechanics: WorthQueryGraphWorkAdmissionMechanics,
-    ) -> Option<Self> {
-        Some(Self {
+    ) -> Result<Self, WorthQueryGraphWorkAdmissionDenial> {
+        Ok(Self {
             identity: WorthQueryGraphWorkPlanIdentity::mint()?,
             selected,
             mechanics,
@@ -95,6 +71,19 @@ impl WorthQueryAdmittedGraphWorkPlan {
 
     pub const fn identity(&self) -> WorthQueryGraphWorkPlanIdentity {
         self.identity
+    }
+
+    /// Readonly provenance of the exact capacity reservation held by this plan.
+    /// Execution consumes this across the crate boundary when binding a report
+    /// to its live inspection session, before consuming the admitted plan.
+    #[doc(hidden)]
+    pub fn inspection_capacity_identity(&self) -> Option<crate::domain_computation::execution_resource_admission::WorthQueryGraphCapacityReservationIdentity>{
+        match &self.mechanics {
+            WorthQueryGraphWorkAdmissionMechanics::ApplicationInspectionRead { capacity } => {
+                Some(capacity.identity())
+            }
+            _ => None,
+        }
     }
 
     pub fn obligation_identity(&self) -> &WorthQueryInstalledGraphObligationSetIdentity {
@@ -248,22 +237,27 @@ impl WorthQueryAdmittedGraphWorkPlan {
     }
 
     #[doc(hidden)]
-    pub fn release(self) -> WorthQueryExecutionCapacityReleaseReceipt {
+    pub fn release(
+        self,
+    ) -> Result<WorthQueryExecutionCapacityReleaseReceipt, WorthQueryGraphWorkReleaseDenial> {
         match self.mechanics {
             WorthQueryGraphWorkAdmissionMechanics::ApplicationQuery { capacity, .. } => {
-                capacity.release()
+                Ok(capacity.release())
             }
             WorthQueryGraphWorkAdmissionMechanics::ApplicationOperationRead { capacity } => {
-                capacity.release()
+                Ok(capacity.release())
             }
             WorthQueryGraphWorkAdmissionMechanics::ResourceRead { capacity }
             | WorthQueryGraphWorkAdmissionMechanics::ApplicationInspectionRead { capacity }
             | WorthQueryGraphWorkAdmissionMechanics::ManagedIndexRead { capacity } => {
-                capacity.release()
+                Ok(capacity.release())
             }
-            WorthQueryGraphWorkAdmissionMechanics::ApplicationOperation { capacity } => capacity
-                .expect("an untransferred operation plan retains its reservation")
-                .release(),
+            WorthQueryGraphWorkAdmissionMechanics::ApplicationOperation { capacity } => {
+                match capacity {
+                    Some(capacity) => Ok(capacity.release()),
+                    None => Err(WorthQueryGraphWorkReleaseDenial::OperationCapacityTransferred),
+                }
+            }
         }
     }
 }

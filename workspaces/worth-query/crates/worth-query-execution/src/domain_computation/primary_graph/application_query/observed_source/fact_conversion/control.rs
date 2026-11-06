@@ -8,10 +8,7 @@ use worth_execution::{ExecutionRequest, WorkCeilingDenial};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
 #[derive(Clone, Copy)]
-pub(in crate::domain_computation::primary_graph) struct SourceFactExpansionControl<
-    'request,
-    'authority,
-> {
+pub struct SourceFactExpansionControl<'request, 'authority> {
     execution: Option<ExecutionRequest<'request, 'authority>>,
     storage: StorageControl<'request, 'authority>,
 }
@@ -68,7 +65,7 @@ impl<'request, 'authority> SourceFactExpansionControl<'request, 'authority> {
         subject: &str,
     ) -> Result<Self, WorthQuerySourceExpectationDenial> {
         let execution = phase
-            .execution_request_for(&runtime.product_runtime)
+            .execution_request_for(&runtime.runtime.product_runtime)
             .map_err(|_| {
                 WorthQuerySourceExpectationDenial::new(
                     WorthQuerySourceExpectationDenialKind::ForeignOperation,
@@ -78,3 +75,5 @@ impl<'request, 'authority> SourceFactExpansionControl<'request, 'authority> {
         Ok(Self::in_request(execution, request))
     }
 }
+
+mod court_doors_for_test;

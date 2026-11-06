@@ -22,7 +22,7 @@ where
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
     {
-        match self.runtime_authority_for(receiver.product_runtime.owner.owner_identity()) {
+        match self.runtime_authority_for(receiver.runtime.product_runtime.owner.owner_identity()) {
             Ok(_) | Err(worth_proof::HomeIncarnationDenial::ForeignHome) => Ok(()),
             Err(worth_proof::HomeIncarnationDenial::StaleIncarnation) => Err(
                 crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(
@@ -42,9 +42,10 @@ where
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
     {
-        self.runtime_authority_for(receiver.product_runtime.owner.owner_identity())
+        self.runtime_authority_for(receiver.runtime.product_runtime.owner.owner_identity())
             .ok()?;
         receiver
+            .runtime
             .product_runtime
             .admit_product_occurrence(self.product.occurrence())
             .ok()
@@ -77,16 +78,13 @@ where
         self.graph_work_session
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation) fn graph_work_managed_run_identity(
         &self,
     ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkManagedRunIdentity {
         self.graph_work_managed_run
     }
 
-    pub(in crate::domain_computation) fn graph_work_branch(
-        &self,
-    ) -> &worth_relational::facade::history::BranchId {
+    pub fn graph_work_branch(&self) -> &worth_relational::facade::history::BranchId {
         &self.graph_work_branch
     }
 
@@ -197,3 +195,5 @@ where
         self.canonical_work
     }
 }
+
+mod court_doors_for_test;

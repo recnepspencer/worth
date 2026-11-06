@@ -37,6 +37,7 @@ impl std::error::Error for WorthQueryAuthenticationAdapterFailure {}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryAuthenticationDenialKind {
+    ForeignClock,
     AdapterFailed(WorthQueryAuthenticationAdapterFailureKind),
     AudienceMismatch,
     MethodMismatch,

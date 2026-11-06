@@ -10,10 +10,7 @@ use crate::domain_computation::primary_graph::application_contribution::{
 use worth_execution::ExecutionAllocationDenialClass;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
 
-pub(in crate::domain_computation::primary_graph::application_contribution::producer::execution) fn identity_failed(
-    subject: &str,
-    error: Identity,
-) -> ProducerExecutionStop {
+pub fn identity_failed(subject: &str, error: Identity) -> ProducerExecutionStop {
     let control = match &error {
         Identity::DependencyStorage(StoreDenial::RequestInterruption(interruption)) => {
             Some(match interruption {
@@ -57,6 +54,3 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         None => failed(subject, error).into(),
     }
 }
-
-#[cfg(test)]
-mod tests;

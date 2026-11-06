@@ -72,6 +72,7 @@ pub(super) fn mutation(
 ) -> WorthServerSourceDiagnostic {
     use WorthQueryApplicationRequestMutationDenial::*;
     let code = match cause {
+        DocumentHistory(_) => "document_history",
         Authorization(cause) => return authorization(cause),
         ExecutionRequest(_) => "execution_request",
         InputCapture(_) => "input_capture",
@@ -99,6 +100,7 @@ pub(super) fn mutation(
 fn source(cause: &WorthQuerySourceExpectationDenial) -> WorthServerSourceDiagnostic {
     use WorthQuerySourceExpectationDenialKind::*;
     let code = match cause.kind() {
+        AdmissionAuthorization => "admission_authorization",
         MissingExpectation => "missing_expectation",
         ForeignApplication => "foreign_application",
         ForeignInstallation => "foreign_installation",
@@ -138,6 +140,8 @@ pub(super) fn refusal(cause: &WorthQuerySourceOnlyDenial) -> WorthServerSourceDi
 pub(super) fn cleanup(cause: &WorthQueryOperationCloseDenial) -> WorthServerSourceDiagnostic {
     use WorthQueryOperationCloseDenial::*;
     let code = match cause {
+        HistoryGroup(_) => "history_group",
+        OutputRead(_) => "output_read",
         FreshRequestMismatch => "fresh_request_mismatch",
         ManagedCleanup(_) => "managed_cleanup",
         CleanupCapacity => "cleanup_capacity",
@@ -153,6 +157,7 @@ pub(super) fn cleanup(cause: &WorthQueryOperationCloseDenial) -> WorthServerSour
 fn authorization_code(reason: WorthQueryOperationAuthorizationRefusalKind) -> &'static str {
     use WorthQueryOperationAuthorizationRefusalKind::*;
     match reason {
+        InputNotAdmitted => "input_not_admitted",
         ForeignPhase => "foreign_phase",
         ExpiredAuthentication => "expired_authentication",
         ForeignRuntime => "foreign_runtime",

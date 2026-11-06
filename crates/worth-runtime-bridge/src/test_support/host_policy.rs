@@ -5,7 +5,7 @@ impl BridgeExecutionPolicyBaseline {
     pub(crate) fn serial_request(
         self,
         cancellation: worth_execution::CancellationToken,
-        deadline: Option<std::time::Instant>,
+        deadline: Option<worth_execution::MonotonicDeadline>,
     ) -> worth_execution::SerialRequest {
         worth_execution::SerialRequest::from_policy(&self.request_policy(), cancellation, deadline)
     }

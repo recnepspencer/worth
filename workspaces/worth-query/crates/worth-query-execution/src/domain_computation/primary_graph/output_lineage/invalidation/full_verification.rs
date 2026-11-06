@@ -26,13 +26,13 @@ mod root_source;
 use crate::domain_computation::primary_graph::invariant_projection::EvidenceView;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum FullVerificationDecision {
+pub enum FullVerificationDecision {
     Current,
     Changed,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum FullVerificationStop {
+pub enum FullVerificationStop {
     Alignment(FullVerificationReason),
     /// The selected source or a row it reaches belongs to another source.
     Foreign,
@@ -52,7 +52,7 @@ impl From<CompanionPreflightStop> for FullVerificationStop {
 
 /// The observer retains the exact pre-verification image. It grants no edit,
 /// scheduling, equality, or publication authority.
-pub(in crate::domain_computation::primary_graph) struct FullVerificationImage<'selected> {
+pub struct FullVerificationImage<'selected> {
     state: Arc<MarkState>,
     native_only: bool,
     selected: &'selected PositionedRelationalSnapshot,
@@ -121,7 +121,6 @@ impl FullVerificationImage<'_> {
         )
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn verify_root(
         &self,
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -256,3 +255,5 @@ fn reserve_pending<T>(pending: &mut Vec<T>, additional: usize) -> Result<(), Ful
         .try_reserve_exact(target - pending.len())
         .map_err(|_| FullVerificationStop::OutputEvidenceUnavailable)
 }
+
+mod court_doors_for_test;

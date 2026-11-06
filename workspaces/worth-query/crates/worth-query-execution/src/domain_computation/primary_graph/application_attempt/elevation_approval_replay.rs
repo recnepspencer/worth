@@ -44,9 +44,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             })?
             .into_resolution();
         let outcome = match resolution {
+            WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(_) => WorthQueryApplicationCommitOutcome::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::original_effect_released()),
             WorthQueryApplicationIdempotencyResolution::Unseen => return Ok(None),
             WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => {
                 WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt)
+            }
+            WorthQueryApplicationIdempotencyResolution::ProductUnpublished(owner) => {
+                WorthQueryApplicationCommitOutcome::ProductUnpublished(owner)
             }
             WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => {
                 WorthQueryApplicationCommitOutcome::ProductPreparationPending(owner)
@@ -100,9 +104,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             })?
             .into_resolution();
         let outcome = match resolution {
+            WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(_) => WorthQueryApplicationCommitOutcome::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::original_effect_released()),
             WorthQueryApplicationIdempotencyResolution::Unseen => return Ok(None),
             WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => {
                 WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt)
+            }
+            WorthQueryApplicationIdempotencyResolution::ProductUnpublished(owner) => {
+                WorthQueryApplicationCommitOutcome::ProductUnpublished(owner)
             }
             WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => {
                 WorthQueryApplicationCommitOutcome::ProductPreparationPending(owner)

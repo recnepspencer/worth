@@ -11,22 +11,21 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBi
 pub(in crate::domain_computation::primary_graph) type WorthQueryPendingApplicationPublicationRegistryOwner =
     Arc<Mutex<WorthQueryPendingApplicationPublicationRegistry>>;
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryPendingApplicationPublicationRegistry
-{
+pub struct WorthQueryPendingApplicationPublicationRegistry {
     maximum_slots: usize,
-    slots: BTreeMap<ProductBranchIncarnation, Arc<WorthQueryApplicationPublicationRecoverySlot>>,
+    pub slots:
+        BTreeMap<ProductBranchIncarnation, Arc<WorthQueryApplicationPublicationRecoverySlot>>,
     corrections: BTreeMap<[u8; 32], ProductBranchIncarnation>,
 }
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationPublicationRecoveryReservation
-{
+pub struct WorthQueryApplicationPublicationRecoveryReservation {
     registry: Arc<Mutex<WorthQueryPendingApplicationPublicationRegistry>>,
     occurrence: ProductBranchIncarnation,
     slot: Arc<WorthQueryApplicationPublicationRecoverySlot>,
     active: bool,
 }
 
-pub(super) struct WorthQueryApplicationPublicationRecoverySlot {
+pub struct WorthQueryApplicationPublicationRecoverySlot {
     binding: Option<WorthQueryApplicationIdempotencyBinding>,
     state: Mutex<WorthQueryApplicationPublicationRecoveryState>,
 }
@@ -36,9 +35,6 @@ enum WorthQueryApplicationPublicationRecoveryState {
     Pending(WorthQueryPendingApplicationPublication),
     Complete,
 }
-
-#[cfg(test)]
-mod correction_tests;
 
 impl super::WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn inspect_pending_correction_idempotency(
@@ -57,7 +53,7 @@ impl super::WorthQueryPrimaryGraphProvider {
     }
 }
 
-pub(super) enum WorthQueryPendingApplicationIdempotency {
+pub enum WorthQueryPendingApplicationIdempotency {
     Reserved,
     Pending(
         crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
@@ -149,7 +145,6 @@ impl WorthQueryPendingApplicationPublicationRegistry {
         }
     }
 
-    #[cfg(test)]
     pub(super) fn active_slot_count(&self) -> usize {
         self.slots.len()
     }
@@ -240,3 +235,5 @@ impl WorthQueryApplicationPublicationRecoverySlot {
         *state = WorthQueryApplicationPublicationRecoveryState::Complete;
     }
 }
+
+mod court_doors_for_test;

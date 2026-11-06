@@ -32,7 +32,7 @@ pub(super) fn collect<'owner, 'custody, 'collection, Schema, Family>(
     caller_installed: &InstalledProducerProvider<Schema>,
     caller_contacts: usize,
     caller_kind: crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind,
-    authority: &WorthQueryProducerCommitAuthority,
+    authority: &ProducerInvocationAuthority<'owner>,
     performed: &'owner std::cell::RefCell<super::super::performed::PerformedMembers>,
 ) -> Result<CollectedRequiredWave<'owner, 'collection, Schema>, WorthQueryOutputDemandDenial>
 where
@@ -41,7 +41,7 @@ where
 {
     if wave.is_frozen() {
         let execution = phase
-            .execution_request_for(&runtime.product_runtime)
+            .execution_request_for(&runtime.runtime.product_runtime)
             .map_err(|cause| {
                 WorthQueryOutputDemandDenial::new(
                     WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
@@ -90,6 +90,7 @@ where
                 )
             {
                 let declared = runtime
+                    .runtime
                     .output_demands
                     .declared_required_predecessors(frontier.members[index].key())?;
                 let mut pending = None;
@@ -143,7 +144,11 @@ where
             let caller = member.caller;
             let queued = member.queued;
             if caller && wave.target == RequiredWaveTarget::Caller {
-                member.ready.selected().completion().advanced_in(authority);
+                member
+                    .ready
+                    .selected()
+                    .completion()
+                    .advanced_in(authority.mode());
             }
             let contacts = if index == 0 && wave.target == RequiredWaveTarget::Caller {
                 caller_contacts
@@ -155,7 +160,7 @@ where
             } else {
                 &mut *queue_storage
             };
-            storage.reserve_one(&runtime.output_demands)?;
+            storage.reserve_one(&runtime.runtime.output_demands)?;
             let view = resolved.view_two(caller_storage.entries(), queue_storage.entries());
             let permission = super::super::super::refresh::permit_refresh(
                 if index == 0 && wave.target == RequiredWaveTarget::Caller {
@@ -179,6 +184,7 @@ where
                 view.as_ref(),
                 contacts,
                 permission,
+                authority.clone(),
                 performed,
             );
             match result {
@@ -189,7 +195,10 @@ where
                         &mut *queue_storage
                     };
                     storage.release_unused();
-                    runtime.output_demands.clear_required_stop(member.key());
+                    runtime
+                        .runtime
+                        .output_demands
+                        .clear_required_stop(member.key());
                     if index == 0 {
                         frontier.members[index].state = MemberState::Current(Some(proof));
                         return Ok(CollectedRequiredWave::Live(PreparedRequiredWave {
@@ -237,6 +246,7 @@ where
                     frontier.members[index].dependency_schedule =
                         DependencySchedule::PendingConsumed;
                     let prerequisites = runtime
+                        .runtime
                         .output_demands
                         .declared_required_readmissions(frontier.members[index].ready.selected())?;
                     for prerequisite in prerequisites {

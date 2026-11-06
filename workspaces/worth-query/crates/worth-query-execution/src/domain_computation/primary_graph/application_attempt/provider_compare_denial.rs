@@ -5,9 +5,7 @@ use super::{
 };
 use crate::domain_computation::WorthQueryProviderCompareAndCommitDenial as Compare;
 
-pub(in crate::domain_computation::primary_graph) fn provider_compare_denied(
-    denial: Compare,
-) -> Progression {
+pub fn provider_compare_denied(denial: Compare) -> Progression {
     let denial = match denial {
         Compare::ProviderSession(failure) => {
             if let Some(allocation) = failure.allocation_denial() {
@@ -42,7 +40,7 @@ pub(in crate::domain_computation::primary_graph) fn provider_compare_denied(
     Progression::Denied(denial)
 }
 
-pub(in crate::domain_computation::primary_graph) fn provider_session_denied(
+pub fn provider_session_denied(
     failure: crate::domain_computation::WorthQueryProviderSessionFailure,
 ) -> Denial {
     use crate::domain_computation::WorthQueryProviderSessionDenialKind as Kind;
@@ -91,6 +89,8 @@ pub(in crate::domain_computation::primary_graph) fn provider_session_denied(
         }
         Kind::ProjectionContract { .. }
         | Kind::HistoricalVisibility { .. }
+        | Kind::ContentInconsistency
+        | Kind::Content(_)
         | Kind::StorageUnavailable(_)
         | Kind::ExecutionResource { .. }
         | Kind::ExecutionNestedPatternStopped { .. }
@@ -178,7 +178,7 @@ pub(in crate::domain_computation::primary_graph) fn provider_session_admission_d
     }
 }
 
-pub(in crate::domain_computation::primary_graph) fn provider_session_execution_denied(
+pub fn provider_session_execution_denied(
     stop: Result<
         crate::domain_computation::WorthQueryProviderSessionDenialKind,
         crate::domain_computation::WorthQueryProviderSessionControlStopKind,
@@ -191,7 +191,7 @@ pub(in crate::domain_computation::primary_graph) fn provider_session_execution_d
     Denial::provider_execution_denied(stage, stop, detail)
 }
 
-pub(in crate::domain_computation::primary_graph) fn control_stopped_outcome(
+pub fn control_stopped_outcome(
     stopped: crate::domain_computation::WorthQueryProviderSessionCommitControlStopped,
 ) -> Progression {
     if stopped.is_execution_preparation() {

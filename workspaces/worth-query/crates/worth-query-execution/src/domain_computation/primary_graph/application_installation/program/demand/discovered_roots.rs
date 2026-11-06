@@ -56,7 +56,7 @@ where
             + worth_query_declaration::facade::application_program::ApplicationDiscoveredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationDiscoveredOutputConnection<Schema>,
     {
-        let phase_request = match phase.execution_request_for(&self.backing.runtime().product_runtime) {
+        let phase_request = match phase.execution_request_for(&self.backing.runtime().runtime.product_runtime) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "program-source-phase")),
         };
@@ -75,7 +75,7 @@ where
                 "discovered continuation differs from its original runtime or publication",
             ));
         }
-        self.backing.runtime().output_demands.validate_recovery_root_kind(
+        self.backing.runtime().runtime.output_demands.validate_recovery_root_kind(
             receipt,
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Discovered(TypeId::of::<Root>()),
         )?;
@@ -135,7 +135,7 @@ where
                 "the program source belongs to another runtime",
             ));
         }
-        self.backing.runtime().output_demands.retain_program_source(
+        self.backing.runtime().runtime.output_demands.retain_program_source(
             prepared,
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Discovered(TypeId::of::<Root>()),
         )
@@ -208,7 +208,7 @@ where
             + worth_query_declaration::facade::application_program::ApplicationDiscoveredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationDiscoveredOutputConnection<Schema>,
     {
-        let phase_request = match phase.execution_request_for(&self.backing.runtime().product_runtime) {
+        let phase_request = match phase.execution_request_for(&self.backing.runtime().runtime.product_runtime) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
@@ -232,6 +232,7 @@ where
             )
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
+                original_root_completion: None,
                 target_feature: TypeId::of::<<<Root as ApplicationOutputGraphShape<Schema>>::RootConnection as ApplicationConnectionShape<Schema>>::TargetFeature>(),
                 artifact,
                 marker: std::marker::PhantomData,
@@ -265,7 +266,7 @@ where
             + worth_query_declaration::facade::application_program::ApplicationDiscoveredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationDiscoveredOutputConnection<Schema>,
     {
-        let phase_request = match phase.execution_request_for(&self.backing.runtime().product_runtime) {
+        let phase_request = match phase.execution_request_for(&self.backing.runtime().runtime.product_runtime) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
@@ -294,6 +295,7 @@ where
             )
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
+                original_root_completion: None,
                 target_feature: TypeId::of::<<<Root as ApplicationOutputGraphShape<Schema>>::RootConnection as ApplicationConnectionShape<Schema>>::TargetFeature>(),
                 artifact,
                 marker: std::marker::PhantomData,

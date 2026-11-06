@@ -1,6 +1,5 @@
 use sha2::{Digest, Sha256};
 
-#[cfg(test)]
 std::thread_local! {
     static TEST_HASH_PARTS_CALL_COUNT: std::cell::Cell<u64> = const {
         std::cell::Cell::new(0)
@@ -11,7 +10,6 @@ std::thread_local! {
 }
 
 pub(crate) fn hash_parts(parts: &[String]) -> String {
-    #[cfg(test)]
     TEST_HASH_PARTS_CALL_COUNT.with(|count| {
         count.set(
             count
@@ -20,7 +18,6 @@ pub(crate) fn hash_parts(parts: &[String]) -> String {
                 .expect("test execution-digest counter must not wrap"),
         );
     });
-    #[cfg(test)]
     TEST_HASH_PARTS_DOMAINS.with(|domains| {
         domains
             .borrow_mut()
@@ -34,13 +31,11 @@ pub(crate) fn hash_parts(parts: &[String]) -> String {
     format!("{:x}", hasher.finalize())
 }
 
-#[cfg(test)]
-pub(crate) fn test_hash_parts_call_count() -> u64 {
+pub fn test_hash_parts_call_count() -> u64 {
     TEST_HASH_PARTS_CALL_COUNT.with(std::cell::Cell::get)
 }
 
-#[cfg(test)]
-pub(crate) fn test_hash_parts_domains_since(start: u64) -> Vec<String> {
+pub fn test_hash_parts_domains_since(start: u64) -> Vec<String> {
     let start = usize::try_from(start).expect("test digest count fits usize");
     TEST_HASH_PARTS_DOMAINS.with(|domains| domains.borrow()[start..].to_vec())
 }

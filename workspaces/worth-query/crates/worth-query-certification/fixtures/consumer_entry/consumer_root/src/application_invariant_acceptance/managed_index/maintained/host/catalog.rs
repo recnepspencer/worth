@@ -1,5 +1,6 @@
 //! The original maintained catalog contribution, configuration and program.
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 worth_query_decl::facade::worth_query_operation_reads!(mutation::RenameItem => [ItemEnabled]);
 
 pub struct Contribution;
@@ -30,7 +31,7 @@ impl ApplicationSchemaContribution<Catalog> for Contribution {
     }
 }
 pub struct Configuration {
-    pub(super) prefix: Arc<prefix::Calls>,
+    pub(super) prefix: Arc<prefix_observation::Calls>,
     pub(super) rules: Arc<rule::Calls>,
     pub(super) decision_read: DecisionRead,
     pub(super) geometry: geometry::Configuration,

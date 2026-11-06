@@ -1,10 +1,18 @@
 //! Owning action composition delegates the native mutation and output owners.
 mod cleanup;
 mod close;
+mod history_mode;
+mod history_request;
 mod mode_construction;
+pub use history_mode::WorthQueryHistoryOperationMode;
+pub(in crate::application_entry) use history_mode::{
+    HistoryMode, HistoryOperationAdvance, HistoryOperationDriver, HistoryRecordingSource,
+};
 pub(super) mod native_publication;
 mod source_admission;
 mod source_only;
+pub(in crate::application_entry) use source_only::SourceAssessmentDriver;
+pub(in crate::application_entry) use source_only::WorthQueryClosingSourceOperation;
 mod workflow;
 mod workflow_birth;
 pub use cleanup::{WorthQueryOperationCleanup, WorthQueryOperationCleanupReceipt};
@@ -61,6 +69,7 @@ mod discovered_handoff_contract;
 mod fixed;
 mod fixed_advance;
 mod fixed_close;
+mod fixed_group_disposal;
 mod fixed_outputs;
 mod fixed_publication;
 mod fixed_recovery;
@@ -86,7 +95,7 @@ pub use fixed::{
     WorthQueryOperationProgress,
 };
 pub use settled::{WorthQueryOperationDeliveryDenial, WorthQuerySettledFixedOperation};
-pub use terminal::WorthQueryTerminalFixedOperation;
+pub use terminal::{WorthQueryClosedFixedTerminal, WorthQueryTerminalFixedOperation};
 
 use super::*;
 use worth_query_declaration::facade::application_operation::{

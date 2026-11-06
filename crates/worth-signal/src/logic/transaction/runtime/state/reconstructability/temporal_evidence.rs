@@ -19,7 +19,7 @@ pub struct TemporalReconstructabilityArtifact {
     #[serde(default, skip_serializing_if = "is_zero_u64")]
     pub expired_retired_wake_high_water: u64,
     #[serde(default, skip_serializing_if = "is_zero_digest")]
-    pub expired_retired_wake_digest: [u8; 32],
+    pub expired_retired_wake_digest: worth_foundational::CanonicalDigestId,
     pub rescheduled_wake_count: u64,
     pub reused_wake_count: u64,
     pub interval_regeneration_count: u64,
@@ -70,8 +70,8 @@ fn is_zero_u64(value: &u64) -> bool {
     *value == 0
 }
 
-fn is_zero_digest(value: &[u8; 32]) -> bool {
-    *value == [0; 32]
+fn is_zero_digest(value: &worth_foundational::CanonicalDigestId) -> bool {
+    value.bytes() == &[0; 32]
 }
 
 impl Default for TemporalReconstructabilityArtifact {
@@ -169,7 +169,9 @@ impl TemporalReconstructabilityArtifact {
             ready_wake_digest: &ready_wake_digest,
             retired_wake_digest: &retired_wake_digest,
             expired_retired_wake_count: omitted.count(),
-            expired_retired_wake_digest: omitted.digest(),
+            expired_retired_wake_digest: worth_foundational::CanonicalDigestId::new(
+                omitted.digest(),
+            ),
             rescheduled_wake_digest: &rescheduled_wake_digest,
             reused_wake_digest: &reused_wake_digest,
             interval_regeneration_digest: &interval_regeneration_digest,
@@ -185,7 +187,9 @@ impl TemporalReconstructabilityArtifact {
             retired_wake_count: evidence.retired_wakes.len() as u64,
             expired_retired_wake_count: omitted.count(),
             expired_retired_wake_high_water: omitted.high_water(),
-            expired_retired_wake_digest: omitted.digest(),
+            expired_retired_wake_digest: worth_foundational::CanonicalDigestId::new(
+                omitted.digest(),
+            ),
             rescheduled_wake_count: evidence.rescheduled_wakes.len() as u64,
             reused_wake_count: evidence.reused_wakes.len() as u64,
             interval_regeneration_count: evidence.interval_regenerations.len() as u64,
@@ -234,7 +238,7 @@ struct TemporalCertificationDigestBasis<'a> {
     #[serde(skip_serializing_if = "is_zero_u64")]
     expired_retired_wake_count: u64,
     #[serde(skip_serializing_if = "is_zero_digest")]
-    expired_retired_wake_digest: [u8; 32],
+    expired_retired_wake_digest: worth_foundational::CanonicalDigestId,
     rescheduled_wake_digest: &'a str,
     reused_wake_digest: &'a str,
     interval_regeneration_digest: &'a str,

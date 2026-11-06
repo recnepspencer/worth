@@ -101,7 +101,6 @@ fn aspect_shape_key(shape: &AspectShape) -> String {
         AspectShape::Reference(reference) => {
             length_delimited(["reference".to_owned(), reference_key(*reference).to_owned()])
         }
-        AspectShape::Content => length_delimited(["content".to_owned()]),
     }
 }
 

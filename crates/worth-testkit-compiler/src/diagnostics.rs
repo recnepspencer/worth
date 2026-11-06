@@ -46,6 +46,9 @@ pub(crate) fn codegen_attributed(messages: &[serde_json::Value], source: &Path) 
     let mut pending = None;
     let mut instantiation_note_allowed = false;
     for message in messages {
+        if crate::driver_summary::is_abort_summary(message) {
+            continue;
+        }
         if message["level"] == "error" {
             if pending == Some(false) {
                 return false;

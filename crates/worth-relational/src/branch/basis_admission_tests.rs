@@ -13,8 +13,8 @@ struct DescriptorTransportPayload {
     reference: RelationalBranchReferenceObservation,
     truth_version: RelationalBranchVersion,
     root_identity: u64,
-    schema_commitment: [u8; 32],
-    visibility_commitment: [u8; 32],
+    schema_commitment: worth_foundational::CanonicalDigestId,
+    visibility_commitment: worth_foundational::CanonicalDigestId,
     posture: RelationalBranchBasisPosture,
 }
 
@@ -40,8 +40,12 @@ fn hostile_transport_descriptor(
         reference: descriptor.reference().clone(),
         truth_version: descriptor.truth_version(),
         root_identity: descriptor.root_identity(),
-        schema_commitment: descriptor.schema_commitment(),
-        visibility_commitment: descriptor.visibility_commitment(),
+        schema_commitment: worth_foundational::CanonicalDigestId::new(
+            descriptor.schema_commitment(),
+        ),
+        visibility_commitment: worth_foundational::CanonicalDigestId::new(
+            descriptor.visibility_commitment(),
+        ),
         posture: descriptor.posture(),
     };
     match mutation {
@@ -51,8 +55,12 @@ fn hostile_transport_descriptor(
         DescriptorTransportMutation::Reference(value) => payload.reference = value,
         DescriptorTransportMutation::TruthVersion(value) => payload.truth_version = value,
         DescriptorTransportMutation::RootIdentity(value) => payload.root_identity = value,
-        DescriptorTransportMutation::Schema(value) => payload.schema_commitment = value,
-        DescriptorTransportMutation::Visibility(value) => payload.visibility_commitment = value,
+        DescriptorTransportMutation::Schema(value) => {
+            payload.schema_commitment = worth_foundational::CanonicalDigestId::new(value)
+        }
+        DescriptorTransportMutation::Visibility(value) => {
+            payload.visibility_commitment = worth_foundational::CanonicalDigestId::new(value)
+        }
     }
     let encoded = rmp_serde::to_vec_named(&payload).expect("hostile descriptor payload encodes");
     rmp_serde::from_slice(&encoded).expect("transport accepts descriptive hostile payload")

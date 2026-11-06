@@ -26,6 +26,7 @@ pub enum BankApplicationLiveProjectionDenial {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankApplicationLiveCauseDenial {
+    Content(worth_query_host::facade::primary_graph::RelationalContentDenial),
     TargetIdentityUnavailable,
     TargetOutsideScope,
     ResultShapeUnavailable,
@@ -85,6 +86,7 @@ impl BankApplicationLiveProjectionDenial {
 impl BankApplicationLiveCauseDenial {
     pub const fn code(self) -> &'static str {
         match self {
+            Self::Content(_) => "content",
             Self::TargetIdentityUnavailable => "target-identity-unavailable",
             Self::TargetOutsideScope => "target-outside-scope",
             Self::ResultShapeUnavailable => "result-shape-unavailable",
@@ -94,6 +96,7 @@ impl BankApplicationLiveCauseDenial {
     pub(crate) const fn from_query(kind: WorthQueryApplicationLiveCauseDenialKind) -> Self {
         use WorthQueryApplicationLiveCauseDenialKind as Query;
         match kind {
+            Query::Content(cause) => Self::Content(cause),
             Query::TargetIdentityUnavailable => Self::TargetIdentityUnavailable,
             Query::TargetOutsideScope => Self::TargetOutsideScope,
             Query::ResultShapeUnavailable => Self::ResultShapeUnavailable,

@@ -14,7 +14,7 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade::{
     InstalledCorrectionAuthority, InstalledCorrectionMechanism,
 };
-pub(in crate::domain_computation::primary_graph) mod source_outputs;
+pub(crate) mod source_outputs;
 pub use source_outputs::WorthQueryCorrectionOutputProjectionDenial;
 
 pub(super) fn mechanism<'a, S: ApplicationSchema>(
@@ -102,7 +102,7 @@ pub(super) fn derive<S: ApplicationSchema, C: ApplicationCorrectionBinding<S>>(
     }
 }
 
-pub(in crate::domain_computation::primary_graph) fn finish_derivation<T>(
+pub fn finish_derivation<T>(
     result: Result<T, worth_query_declaration::facade::application_aftermath::ApplicationCorrectionDerivationDenial>,
     failure: Option<WorthQueryCorrectionOutputProjectionDenial>,
 ) -> Result<T, Denial> {

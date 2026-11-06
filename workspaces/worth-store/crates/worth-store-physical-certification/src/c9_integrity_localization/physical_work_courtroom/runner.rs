@@ -1,5 +1,6 @@
 use std::path::Path;
 use std::time::{Duration, Instant};
+use worth_foundational::CanonicalDigestId;
 
 use super::super::process_execution::{fresh_identity, hex, run_offline_observer, run_subject};
 use super::super::process_manifest::ProcessTreeSnapshot;
@@ -57,8 +58,8 @@ pub(in crate::c9_integrity_localization) fn run(observer_executable: &Path) {
         role: Role::PendingProducer,
         root: pending.clone(),
         report: reports.join("pending-producer.json"),
-        scenario,
-        run: fresh_identity("pending-producer", world),
+        scenario: CanonicalDigestId::new(scenario),
+        run: CanonicalDigestId::new(fresh_identity("pending-producer", world)),
     };
     let mut producer_process = PendingProducerProcess {
         child: spawn(&request),
@@ -89,7 +90,7 @@ pub(in crate::c9_integrity_localization) fn run(observer_executable: &Path) {
         hex(executable_sha256(&parent_executable).unwrap())
     );
     assert_eq!(producer["scenario"], hex(scenario));
-    assert_eq!(producer["run"], hex(request.run));
+    assert_eq!(producer["run"], hex(request.run.bytes()));
     assert_eq!(producer["matching_target_operations"], 1);
     assert_eq!(
         producer["boundary"],
@@ -122,8 +123,11 @@ pub(in crate::c9_integrity_localization) fn run(observer_executable: &Path) {
             role: Role::Editor(operator),
             root: root.clone(),
             report: reports.join(format!("{}.editor.json", operator.label())),
-            scenario,
-            run: fresh_identity(&format!("{}-editor", operator.label()), world),
+            scenario: CanonicalDigestId::new(scenario),
+            run: CanonicalDigestId::new(fresh_identity(
+                &format!("{}-editor", operator.label()),
+                world,
+            )),
         };
         let edited = execute(&editor);
         assert_eq!(edited["operator"], operator.label());
@@ -150,7 +154,7 @@ pub(in crate::c9_integrity_localization) fn run(observer_executable: &Path) {
         assert_eq!(offline.report["version"], 1);
         assert_eq!(offline.report["completeness"], "complete");
         assert_eq!(
-            offline.executable_sha256,
+            *offline.executable_sha256.bytes(),
             executable_sha256(observer_executable).unwrap()
         );
         assert_eq!(offline.report["run"], hex(offline_run));
@@ -164,8 +168,11 @@ pub(in crate::c9_integrity_localization) fn run(observer_executable: &Path) {
             role: Role::RuntimeObserver,
             root: root.clone(),
             report: reports.join(format!("{}.runtime.json", operator.label())),
-            scenario,
-            run: fresh_identity(&format!("{}-runtime", operator.label()), world),
+            scenario: CanonicalDigestId::new(scenario),
+            run: CanonicalDigestId::new(fresh_identity(
+                &format!("{}-runtime", operator.label()),
+                world,
+            )),
         });
         assert_eq!(runtime["store"], hex(artifact.store));
         // Ordinary Store admission updates this one preexisting OS lease

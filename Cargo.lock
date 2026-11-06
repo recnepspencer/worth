@@ -1901,6 +1901,7 @@ dependencies = [
  "sha2",
  "worth-execution",
  "worth-foundational",
+ "worth-proof",
  "worth-relational",
  "worth-testkit-relational",
 ]
@@ -2301,7 +2302,7 @@ dependencies = [
 
 [[package]]
 name = "worth-signal-wasm"
-version = "1.5.0"
+version = "1.6.4"
 dependencies = [
  "base64",
  "console_error_panic_hook",

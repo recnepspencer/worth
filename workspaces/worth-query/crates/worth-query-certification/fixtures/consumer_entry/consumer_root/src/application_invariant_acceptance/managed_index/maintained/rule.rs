@@ -1,10 +1,9 @@
 //! The actual installed per-directory law, with observation-only fixture evidence.
-use super::{prefix, query, schema::*};
+use super::{prefix, schema::*};
 use worth_query_decl::facade::{
     application_query::{ApplicationManagedIndexBinding, ApplicationManagedIndexColdSource},
     application_schema::*,
 };
-use worth_query_host::facade::application_invariants::*;
 
 pub(super) struct ReservedName;
 impl ApplicationInvariantMarkerIdentity<Catalog> for ReservedName {
@@ -36,4 +35,4 @@ pub(super) fn definition() -> ApplicationInvariantDefinition<Catalog, ReservedNa
 }
 
 mod evaluation;
-pub(super) use evaluation::{resolve, Calls, Record, Rule};
+pub(super) use evaluation::{resolve, Calls};

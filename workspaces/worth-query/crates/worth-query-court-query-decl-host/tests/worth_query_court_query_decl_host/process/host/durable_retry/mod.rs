@@ -6,11 +6,11 @@ use std::{
         atomic::{AtomicUsize, Ordering},
         Arc,
     },
-    time::{Duration, Instant},
+    time::Duration,
 };
 use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome as Outcome;
 use worth_query_host::facade::{
-    admission::authenticated_principal::{WorthQueryCancellationSource, WorthQueryRequestScope},
+    admission::authenticated_principal::WorthQueryRequestScope,
     application_contribution::{
         with_bootstrap_advancement_from_request, WorthQueryAdvancementDenial,
     },

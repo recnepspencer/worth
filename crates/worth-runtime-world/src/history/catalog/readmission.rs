@@ -65,7 +65,7 @@ impl CompositeHistoryCatalog {
                     return Err(Denial::NativeMismatch);
                 }
                 crate::history::ReadmittedPublicationRecord::from_source(
-                    crate::history::PreparedReadmittedPublicationRecord::prepare(request).map_err(
+                    crate::history::ReadmittedPublicationRecordBacking::prepare(request).map_err(
                         |cause| {
                             Denial::Source(Box::new(
                                 crate::durability::WorldReadmissionDenial::Medium(cause),

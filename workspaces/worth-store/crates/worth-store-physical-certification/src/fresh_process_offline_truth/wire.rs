@@ -1,6 +1,7 @@
 use std::fs::OpenOptions;
 use std::io::Read;
 use std::path::Path;
+use worth_foundational::CanonicalDigestId;
 
 use worth_store_offline_verifier::OperationalTruthRegion;
 
@@ -24,11 +25,11 @@ pub(super) enum TruthRegionKind {
 }
 
 pub(super) struct FreshProcessTruthReport {
-    pub(super) challenge: [u8; 32],
+    pub(super) challenge: CanonicalDigestId,
     pub(super) observer_process_id: u32,
-    pub(super) source_inspection_identity: [u8; 32],
-    pub(super) truth_evidence_identity: [u8; 32],
-    pub(super) observed_content_digest: [u8; 32],
+    pub(super) source_inspection_identity: CanonicalDigestId,
+    pub(super) truth_evidence_identity: CanonicalDigestId,
+    pub(super) observed_content_digest: CanonicalDigestId,
     pub(super) region_kind: TruthRegionKind,
     pub(super) start: u64,
     pub(super) end: u64,
@@ -69,11 +70,11 @@ pub(super) fn write_report(
 ) -> Result<(), FreshProcessOfflineTruthDenial> {
     let mut bytes = Vec::with_capacity(REPORT_BYTES);
     bytes.extend_from_slice(MAGIC);
-    bytes.extend_from_slice(&report.challenge);
+    bytes.extend_from_slice(report.challenge.bytes());
     bytes.extend_from_slice(&report.observer_process_id.to_be_bytes());
-    bytes.extend_from_slice(&report.source_inspection_identity);
-    bytes.extend_from_slice(&report.truth_evidence_identity);
-    bytes.extend_from_slice(&report.observed_content_digest);
+    bytes.extend_from_slice(report.source_inspection_identity.bytes());
+    bytes.extend_from_slice(report.truth_evidence_identity.bytes());
+    bytes.extend_from_slice(report.observed_content_digest.bytes());
     bytes.push(report.region_kind as u8);
     bytes.extend_from_slice(&report.start.to_be_bytes());
     bytes.extend_from_slice(&report.end.to_be_bytes());
@@ -97,11 +98,11 @@ pub(super) fn read_report(
         return Err(FreshProcessOfflineTruthDenial::MissingOrMalformedReport);
     }
     let report = FreshProcessTruthReport {
-        challenge: cursor.array()?,
+        challenge: CanonicalDigestId::new(cursor.array()?),
         observer_process_id: u32::from_be_bytes(cursor.array()?),
-        source_inspection_identity: cursor.array()?,
-        truth_evidence_identity: cursor.array()?,
-        observed_content_digest: cursor.array()?,
+        source_inspection_identity: CanonicalDigestId::new(cursor.array()?),
+        truth_evidence_identity: CanonicalDigestId::new(cursor.array()?),
+        observed_content_digest: CanonicalDigestId::new(cursor.array()?),
         region_kind: TruthRegionKind::decode(cursor.byte()?)
             .ok_or(FreshProcessOfflineTruthDenial::MissingOrMalformedReport)?,
         start: u64::from_be_bytes(cursor.array()?),

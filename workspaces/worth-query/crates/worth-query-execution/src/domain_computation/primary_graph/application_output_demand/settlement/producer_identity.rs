@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::{
     application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity,
 };
 use std::sync::Arc;
-pub(super) enum SettlementProducerIdentity {
+pub enum SettlementProducerIdentity {
     Current(String),
     Recovered {
         text: Arc<String>,
@@ -30,3 +30,5 @@ impl SettlementProducerIdentity {
         }
     }
 }
+
+mod court_doors_for_test;

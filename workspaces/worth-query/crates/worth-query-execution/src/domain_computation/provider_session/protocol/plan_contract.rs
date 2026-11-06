@@ -314,3 +314,5 @@ impl WorthQueryProviderExecutionPlanContract {
             + self.invariant_requirements.len()
     }
 }
+
+mod court_doors_for_test;

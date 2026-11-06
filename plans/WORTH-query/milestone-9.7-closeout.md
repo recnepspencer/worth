@@ -34,8 +34,8 @@ The Phase 18 implementation closeout is recorded in
 
 ## Defended Exclusions
 
-- Store-backed execution parity belongs to Milestone 10.
-- Durable restart and artifact reload belong to Milestone 11.
+- Store-backed execution parity belongs to Store execution/historical integration.
+- Durable restart and artifact reload belong to Store Milestone 11.
 
 These exclusions are not gaps in Milestone 9.7. They name later milestone-class
 owners and are intentionally excluded from the concurrent read authority and

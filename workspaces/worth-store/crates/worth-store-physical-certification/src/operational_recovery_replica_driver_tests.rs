@@ -1,3 +1,4 @@
+use worth_foundational::CanonicalDigestId;
 use worth_store_operations::{
     AuthorizationReplayPolicy, AuthorizationRevocationObservation, OperationalOperationId,
     OperationalSecurityScope, OperationalTransitionId, ReplicaBootstrapIntent,
@@ -196,7 +197,7 @@ fn run_bootstrap(pause: Option<Point>) -> BootstrapRun {
             .unwrap();
         let mut owner = ExactBootstrapOwner {
             frontier: fixture.frontier(),
-            target_identity: [0xD4; 32],
+            target_identity: CanonicalDigestId::new([0xD4; 32]),
         };
         let transferred = match driver.bootstrap_transfer(ready, &mut owner).unwrap() {
             DrivenOperationalTransition::Completed(transferred) => transferred,
@@ -241,7 +242,7 @@ fn run_bootstrap(pause: Option<Point>) -> BootstrapRun {
 
 struct ExactBootstrapOwner {
     frontier: ReplicaRecoveryFrontier,
-    target_identity: [u8; 32],
+    target_identity: CanonicalDigestId,
 }
 
 impl ReplicaBootstrapExecutionPort for ExactBootstrapOwner {
@@ -252,7 +253,7 @@ impl ReplicaBootstrapExecutionPort for ExactBootstrapOwner {
         Ok(ReplicaBootstrapExecutionReport::from_replication_owner(
             plan.source_lease_identity(),
             self.frontier,
-            self.target_identity,
+            *self.target_identity.bytes(),
             ReplicaBootstrapExecutionCounters::measured(64, 64, 2, 16).unwrap(),
         ))
     }

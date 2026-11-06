@@ -31,7 +31,7 @@ impl WorkflowAdvanceCompletion {
         } = self;
         let projected = match outcome.landed() {
             Ok(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationLandedCommit::Live { receipt }) => {
-                application.primary_provider
+                application.runtime.primary_provider
                     .graph
                     .with_runtime(execution, |runtime| {
                         project(
@@ -58,6 +58,7 @@ impl WorkflowAdvanceCompletion {
             let committed_revision = performed.receipt().commit_reference().version_id;
             let progress_key = progress_update.key();
             let _ = application
+                .runtime
                 .primary_provider
                 .graph
                 .with_workflow_instance_progress_mut(progress_key, |retention| {

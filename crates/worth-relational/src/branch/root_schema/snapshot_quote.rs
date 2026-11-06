@@ -55,6 +55,10 @@ pub(super) fn temporary(
             size(domain.parts.clone_allocation_bytes(control)?)?,
         )?;
     }
+    add(
+        &mut bytes,
+        registry.content_formats.snapshot().owned_bytes(),
+    )?;
     Ok(bytes)
 }
 

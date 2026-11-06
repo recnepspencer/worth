@@ -327,7 +327,10 @@ fn elapsed_deadline_is_distinct_from_cancellation() {
 
     let (world, _) = certified_supply_chain_world(execution, worth_testkit_relational::relational_certification::ordinary_context::world::supply_chain::scale::SupplyChainScale::court());
     let control = worth_relational::facade::mvcc::RelationalOperationControl::uninterrupted()
-        .with_deadline(std::time::Instant::now() - std::time::Duration::from_millis(1));
+        .with_deadline(
+            worth_execution::MonotonicClock::system()
+                .deadline_at(std::time::Instant::now() - std::time::Duration::from_millis(1)),
+        );
     assert_eq!(
         world
             .runtime

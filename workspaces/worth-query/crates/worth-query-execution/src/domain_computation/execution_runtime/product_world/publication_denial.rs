@@ -3,12 +3,13 @@ use worth_runtime_world::facade::{
     NoEffectCompositePublication, RuntimeWorldSettledRelationalAdoptionDenial,
 };
 #[derive(Debug)]
-pub(crate) enum WorthQueryProductPublicationDenial<Refusal> {
+pub enum WorthQueryProductPublicationDenial<Refusal> {
+    ClockMismatch,
     Stopped(worth_execution::WorkCeilingDenial),
     Refused(Refusal),
 }
 #[derive(Debug)]
-pub(crate) enum WorthQueryProductPublicationOutcome<
+pub enum WorthQueryProductPublicationOutcome<
     Performed = worth_runtime_world::facade::PerformedCompositePublication,
     Unpublished = worth_runtime_world::facade::ProductUnpublishedOwnerEffects,
 > {

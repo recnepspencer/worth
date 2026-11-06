@@ -172,6 +172,12 @@ impl<'a> Fold<'a> {
         entry: &'a TransitionOriginalRecord,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Refusal> {
+        if matches!(&entry.transition, Transition::RetainedFork { .. }) {
+            return Err(Refusal::Native(crate::durability::data::DurabilityError::new(
+                crate::durability::data::RecoveryFailureClass::UnsupportedRetainedForkReplay,
+                "retained-source forks require original live root custody; historical tail reconstruction is unsupported",
+            ).into()));
+        }
         if let Transition::Fork {
             target,
             source,
@@ -221,7 +227,9 @@ impl<'a> Fold<'a> {
                 prior_truth_version,
                 ..
             } => (*prior_generation, *prior_truth_version),
-            Transition::Fork { .. } => unreachable!("fork is handled above"),
+            Transition::Fork { .. } | Transition::RetainedFork { .. } => {
+                unreachable!("fork is handled above")
+            }
         };
         if state.removed
             || state.generation != generation
@@ -256,7 +264,9 @@ impl<'a> Fold<'a> {
                 state.lifecycle = Lifecycle::Deleting;
                 state.removed = true;
             }
-            Transition::Fork { .. } => unreachable!("fork is handled above"),
+            Transition::Fork { .. } | Transition::RetainedFork { .. } => {
+                unreachable!("fork is handled above")
+            }
         }
         self.record(branch, state, request)
     }

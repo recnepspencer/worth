@@ -46,8 +46,12 @@ pub(super) fn restore(
             .map_err(crate::runtime::ColdSymbolDirectoryDenial::into_recovery_stop)?;
         paged
     };
-    let mut regions =
-        ReadmittedRegionDirectory::new(directory.clone(), paged_symbols.clone(), execution)?;
+    let mut regions = ReadmittedRegionDirectory::new(
+        directory.clone(),
+        paged_symbols.clone(),
+        execution,
+        &runtime.config.schema.registry.content_formats,
+    )?;
     let heads = checkpoint
         .envelopes
         .iter()
@@ -133,6 +137,11 @@ pub(super) fn restore(
             .cloned()
             .ok_or_else(|| corrupt("root has no commit descriptor"))?;
         let leaves = regions.regions(image.schema_carrier_digest, &image.regions, execution)?;
+        let content_records = crate::durability::checkpoints::content::read_records(
+            execution,
+            &image.content,
+            directory.source.as_ref(),
+        )?;
         let root = if directory.admission_image.is_some() {
             let artifact = history
                 .commit_artifact(image.commit_id)
@@ -150,13 +159,20 @@ pub(super) fn restore(
                 .admitted_commit(&entry)
                 .map_err(RelationalRecoveryStop::AdmissionImage)?
                 .ok_or_else(|| corrupt("root has no admitted checkpoint row"))?;
-            history.readmit_checkpoint_region_directory(leaves, commit, execution)
+            history.readmit_checkpoint_region_directory(leaves, commit, &content_records, execution)
         } else {
             let envelope = heads
                 .get(&image.commit_id)
                 .cloned()
                 .ok_or_else(|| corrupt("root has no admitted head envelope"))?;
-            history.readmit_branch_region_directory(leaves, envelope, descriptor, schema.clone())
+            history.readmit_branch_region_directory(
+                execution,
+                &content_records,
+                leaves,
+                envelope,
+                descriptor,
+                schema.clone(),
+            )
         }
         .map_err(super::super::original_inputs::root_stop)?;
         roots.insert(image.commit_id, root);

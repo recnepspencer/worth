@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 use std::process::Command;
+use worth_foundational::CanonicalDigestId;
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -43,7 +44,7 @@ pub struct SealedProcessProbeInput {
     scenario_identity: String,
     fault_schedule_identity: String,
     artifacts: Vec<ProcessArtifactPath>,
-    identity: [u8; 32],
+    identity: CanonicalDigestId,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -52,11 +53,11 @@ pub struct ProcessProbeDeclaration {
     role: ProcessRole,
     isolation: ProcessIsolationRequirement,
     required_termination: ProcessTerminationRequirement,
-    input_identity: [u8; 32],
-    executable_identity: [u8; 32],
+    input_identity: CanonicalDigestId,
+    executable_identity: CanonicalDigestId,
     working_directory: String,
-    environment_identity: [u8; 32],
-    declaration_identity: [u8; 32],
+    environment_identity: CanonicalDigestId,
+    declaration_identity: CanonicalDigestId,
 }
 
 #[derive(Debug, Clone)]
@@ -65,8 +66,8 @@ pub struct ProcessProbeIntent {
     role: ProcessRole,
     isolation: ProcessIsolationRequirement,
     required_termination: ProcessTerminationRequirement,
-    input_identity: [u8; 32],
-    executable_identity: [u8; 32],
+    input_identity: CanonicalDigestId,
+    executable_identity: CanonicalDigestId,
     working_directory: String,
 }
 
@@ -100,7 +101,7 @@ impl SealedProcessProbeInput {
             scenario_identity,
             fault_schedule_identity,
             artifacts,
-            identity,
+            identity: CanonicalDigestId::new(identity),
         })
     }
 
@@ -117,7 +118,7 @@ impl SealedProcessProbeInput {
     }
 
     pub const fn identity(&self) -> [u8; 32] {
-        self.identity
+        *self.identity.bytes()
     }
 
     pub(crate) fn admits_output_path(&self, path: &std::path::Path) -> Result<bool, String> {
@@ -181,8 +182,8 @@ impl ProcessProbeIntent {
             role,
             isolation,
             required_termination,
-            input_identity: input.identity(),
-            executable_identity,
+            input_identity: CanonicalDigestId::new(input.identity()),
+            executable_identity: CanonicalDigestId::new(executable_identity),
             working_directory,
         })
     }
@@ -200,7 +201,7 @@ impl ProcessProbeIntent {
             self.input_identity,
             self.executable_identity,
             &self.working_directory,
-            environment_identity,
+            CanonicalDigestId::new(environment_identity),
         ))?;
         Ok(ProcessProbeDeclaration {
             scenario_identity: self.scenario_identity,
@@ -210,8 +211,8 @@ impl ProcessProbeIntent {
             input_identity: self.input_identity,
             executable_identity: self.executable_identity,
             working_directory: self.working_directory,
-            environment_identity,
-            declaration_identity,
+            environment_identity: CanonicalDigestId::new(environment_identity),
+            declaration_identity: CanonicalDigestId::new(declaration_identity),
         })
     }
 
@@ -220,7 +221,7 @@ impl ProcessProbeIntent {
     }
 
     pub const fn input_identity(&self) -> [u8; 32] {
-        self.input_identity
+        *self.input_identity.bytes()
     }
 }
 
@@ -285,11 +286,11 @@ impl ProcessProbeDeclaration {
     }
 
     pub const fn input_identity(&self) -> [u8; 32] {
-        self.input_identity
+        *self.input_identity.bytes()
     }
 
     pub const fn executable_identity(&self) -> [u8; 32] {
-        self.executable_identity
+        *self.executable_identity.bytes()
     }
 
     pub fn working_directory(&self) -> &str {
@@ -297,11 +298,11 @@ impl ProcessProbeDeclaration {
     }
 
     pub const fn environment_identity(&self) -> [u8; 32] {
-        self.environment_identity
+        *self.environment_identity.bytes()
     }
 
     pub const fn declaration_identity(&self) -> [u8; 32] {
-        self.declaration_identity
+        *self.declaration_identity.bytes()
     }
 }
 

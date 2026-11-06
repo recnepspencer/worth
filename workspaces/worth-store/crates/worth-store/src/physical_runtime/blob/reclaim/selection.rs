@@ -133,7 +133,7 @@ pub(super) fn select(
     let basis = FailedIngestReclaimBasisV1::new(
         token.session,
         token.declaration_record,
-        token.declaration_digest,
+        *token.declaration_digest.bytes(),
         abandoned_record,
         abandoned_digest,
     )

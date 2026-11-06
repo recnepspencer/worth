@@ -94,14 +94,8 @@ impl Fact {
                         .map_err(super::super::retained_decision_facts::StoreDenial::ExecutionRequest)
                 }, &mut |bytes| execution.reserve_retained_memory(bytes)
                     .map_err(super::super::retained_decision_facts::StoreDenial::ExecutionRequest),
-                    &mut |cause| {
-                        use crate::domain_computation::primary_graph::application_query::ProjectionContentStorageFault as Fault;
-                        use super::super::retained_decision_facts::StoreDenial;
-                        match cause {
-                            Fault::CapacityOverflow => StoreDenial::Representability,
-                            Fault::AllocationFailed => StoreDenial::PhysicalAllocation,
-                        }
-                    })?;
+                    &mut comparison_fault,
+                    &mut |left, right| left.same_content(&execution, right).map_err(super::super::retained_decision_facts::StoreDenial::Content))?;
                 control.check_live()?;
                 Ok(equal)
             }
@@ -288,3 +282,16 @@ mod tests {
         );
     }
 }
+
+fn comparison_fault(
+    cause: crate::domain_computation::primary_graph::application_query::ProjectionContentComparisonFault,
+) -> super::super::retained_decision_facts::StoreDenial {
+    use super::super::retained_decision_facts::StoreDenial;
+    use crate::domain_computation::primary_graph::application_query::ProjectionContentComparisonFault as Fault;
+    match cause {
+        Fault::ContentInconsistency => StoreDenial::ContentInconsistency,
+        Fault::CapacityOverflow => StoreDenial::Representability,
+        Fault::AllocationFailed => StoreDenial::PhysicalAllocation,
+    }
+}
+mod court_doors_for_test;

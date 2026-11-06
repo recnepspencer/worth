@@ -10,7 +10,7 @@ pub(in super::super) fn encode(
     if rows.len() as u64 != cut.canonical_through() {
         return Err(Refusal::InvalidProjectedMeaning);
     }
-    let description = cut.clone();
+    let description = *cut;
     let cut = crate::durability::artifact_payload_emission::request::encode_named_charged(
         &[],
         &super::super::binary_encoding::BinaryFixedArrays(cut),

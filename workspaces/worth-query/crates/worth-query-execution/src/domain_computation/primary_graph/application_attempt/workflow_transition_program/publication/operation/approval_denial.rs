@@ -52,6 +52,9 @@ pub(super) fn denial(
         | WorthQueryOperationAuthorizationDenialKind::Refused(
             AuthorizationRefusal::StaleInstalledOperation,
         )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::InputNotAdmitted,
+        )
         | WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::StaleScope)
         | WorthQueryOperationAuthorizationDenialKind::Refused(
             AuthorizationRefusal::MutationPreconditionRejected,

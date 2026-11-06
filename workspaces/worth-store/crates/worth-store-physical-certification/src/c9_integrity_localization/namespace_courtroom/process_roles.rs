@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::path::PathBuf;
 use std::process::Command;
+use worth_foundational::CanonicalDigestId;
 use worth_store_physical_backend::QualifiedRecoveryFilesystemMedia;
 
 use super::super::process_execution::hex;
@@ -22,8 +23,8 @@ pub(super) struct Request {
     pub root: PathBuf,
     pub report: PathBuf,
     pub role: Role,
-    pub scenario: [u8; 32],
-    pub run: [u8; 32],
+    pub scenario: CanonicalDigestId,
+    pub run: CanonicalDigestId,
 }
 
 pub(super) fn execute(request: Request) -> Value {
@@ -59,8 +60,8 @@ pub(super) fn execute(request: Request) -> Value {
     let report: Value = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(report["process_id"], pid);
     assert_eq!(report["version"], 1);
-    assert_eq!(report["scenario"], hex(request.scenario));
-    assert_eq!(report["run"], hex(request.run));
+    assert_eq!(report["scenario"], hex(request.scenario.bytes()));
+    assert_eq!(report["run"], hex(request.run.bytes()));
     assert_eq!(report["role"], role_name(&request.role));
     assert_eq!(
         report["executable_sha256"],
@@ -78,8 +79,8 @@ pub(super) fn run_subject(request: Request) {
         Role::C4Observer => observe_c4(&request.root),
     };
     let mut report = json!({"version": 1, "role": role_name(&request.role),
-        "process_id": std::process::id(), "scenario": hex(request.scenario),
-        "run": hex(request.run),
+        "process_id": std::process::id(), "scenario": hex(request.scenario.bytes()),
+        "run": hex(request.run.bytes()),
         "executable_sha256": hex(executable_sha256(&std::env::current_exe().unwrap()).unwrap())});
     report
         .as_object_mut()

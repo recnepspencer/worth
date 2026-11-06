@@ -21,7 +21,7 @@ pub(super) enum NativeValue {
         bits: u64,
     },
     ExactText(InternedString),
-    BytesDigest([u8; 32]),
+    BytesDigest(CanonicalDigestId),
     DecimalText(InternedString),
     BigIntText(InternedString),
     RationalText {
@@ -29,7 +29,7 @@ pub(super) enum NativeValue {
         denominator: InternedString,
     },
     BytesRefId(u64),
-    ContentRefId(u64),
+    ContentRefId([u8; 32]),
     EntityRef {
         partition_id: u32,
         local_slot: u64,
@@ -83,7 +83,7 @@ impl TryFrom<&CanonicalBasisValue> for NativeValue {
                 bits: *bits,
             },
             CanonicalBasisValue::ExactText(value) => Self::ExactText(value.clone()),
-            CanonicalBasisValue::BytesDigest(value) => Self::BytesDigest(*value.bytes()),
+            CanonicalBasisValue::BytesDigest(value) => Self::BytesDigest(*value),
             CanonicalBasisValue::DecimalText(value) => Self::DecimalText(value.clone()),
             CanonicalBasisValue::BigIntText(value) => Self::BigIntText(value.clone()),
             CanonicalBasisValue::RationalText {
@@ -141,7 +141,7 @@ impl TryFrom<NativeValue> for CanonicalBasisValue {
                 bits,
             },
             NativeValue::ExactText(value) => Self::ExactText(value),
-            NativeValue::BytesDigest(value) => Self::BytesDigest(CanonicalDigestId::new(value)),
+            NativeValue::BytesDigest(value) => Self::BytesDigest(value),
             NativeValue::DecimalText(value) => Self::DecimalText(value),
             NativeValue::BigIntText(value) => Self::BigIntText(value),
             NativeValue::RationalText {

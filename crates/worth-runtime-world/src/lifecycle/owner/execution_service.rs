@@ -51,12 +51,13 @@ where
     type SignalContext = Ctx;
     type SignalTransactionKey = T;
 
-    fn execute_without_signal(
+    fn execute_without_signal_with_cutover(
         &self,
         execution: worth_execution::ExecutionRequest<'_, '_>,
 
         prepared: PreparedCompositePublicationWithoutSignal,
         cancellation: &RuntimeWorldCancellationToken,
+        cutover: Option<&mut super::RelationalCutoverHandoff<'_>>,
     ) -> OwnerExecutionOutcome {
         let signal_request: SignalExecutionRequest<
             '_,
@@ -71,10 +72,11 @@ where
             prepared.into_attempt(),
             cancellation,
             signal_request,
+            cutover,
         )
     }
 
-    fn execute_with_signal<F>(
+    fn execute_with_signal_with_cutover<F>(
         &self,
         execution: worth_execution::ExecutionRequest<'_, '_>,
 
@@ -82,6 +84,7 @@ where
         runtime_ctx: &mut Ctx,
         cancellation: &RuntimeWorldCancellationToken,
         apply: F,
+        cutover: Option<&mut super::RelationalCutoverHandoff<'_>>,
     ) -> OwnerExecutionOutcome
     where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
@@ -95,10 +98,11 @@ where
                 apply,
                 admit_activation: admit_no_activation,
             },
+            cutover,
         )
     }
 
-    fn execute_conditional_definition_with_signal<F, H>(
+    fn execute_conditional_definition_with_signal_and_cutover<F, H>(
         &self,
         execution: worth_execution::ExecutionRequest<'_, '_>,
 
@@ -108,6 +112,7 @@ where
         cancellation: &RuntimeWorldCancellationToken,
         apply: F,
         admit_activation: H,
+        cutover: Option<&mut super::RelationalCutoverHandoff<'_>>,
     ) -> OwnerExecutionOutcome
     where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
@@ -123,6 +128,7 @@ where
                 apply,
                 admit_activation: |_| admit_activation(),
             },
+            cutover,
         )
     }
 }
@@ -143,6 +149,7 @@ where
         mut attempt: ReservedCompositePublicationAttempt,
         cancellation: &RuntimeWorldCancellationToken,
         signal_request: SignalExecutionRequest<'_, Ctx, F, H>,
+        cutover: Option<&mut super::RelationalCutoverHandoff<'_>>,
     ) -> OwnerExecutionOutcome
     where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
@@ -150,6 +157,14 @@ where
             Option<worth_signal::facade::branch::SignalConditionalDefinitionAdvanceBinding>,
         ) -> Result<(), SignalError>,
     {
+        if cutover.is_some()
+            && attempt.plan().relational().posture()
+                != crate::publication::RelationalComponentPlanPosture::PublishPrepared
+        {
+            return self.no_effect(attempt, crate::publication::NoEffectCause::CurrentReadDependency(
+                crate::publication::CurrentProductReadDependencyDenial::UnsupportedComponentPlan,
+            ));
+        }
         let signal_request = match signal_request {
             SignalExecutionRequest::PublishConditionalDefinition {
                 publication: SignalDefinitionPublicationAdmission::Prepared(publication),
@@ -190,7 +205,7 @@ where
             .settled_adoption()
             .map(SignalAttemptProgress::retained_image)
             .unwrap_or_else(SignalAttemptProgress::untouched);
-        let relational = match self.execute_relational(execution, &mut attempt) {
+        let relational = match self.execute_relational(execution, &mut attempt, cutover) {
             Ok(progress) => progress,
             Err(RelationalExecutionFailure {
                 cause,

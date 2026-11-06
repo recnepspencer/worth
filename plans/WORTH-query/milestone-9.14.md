@@ -120,7 +120,7 @@ boundaries.
   Query, Relational, Bridge, and Signal types remain authoritative.
 - `WORTH_query_roadmap.md` protects one canonical runtime-backed Query meaning
   that later providers must preserve; 9.14 closes downstream consumer safety
-  after 9.13 and before Milestone 13 exports provider-independent oracles.
+  after 9.13, with provider-independent qualification owned by this capability.
 - CAD `ROAD.md` protects foundation-first kernel sequencing; the entry,
   publication, lineage, and graph-participation substrate must close before
   later B-rep, boolean, feature, modification, UI, and AI roads depend on it.
@@ -3412,7 +3412,7 @@ cannot reappear as an alternate public path.
 - Query facade and module visibility
 - compile-pass/compile-fail consumer harnesses
 - boundary checker and source/API residue certification
-- Milestone 13 provider-independent certification oracle
+- this capability's provider-independent qualification cases
 
 **Relevant APIs**
 - public facade snapshots and semver surface checks
@@ -3496,7 +3496,7 @@ cannot reappear as an alternate public path.
   condition evaluation, comparator reimplementation, eligibility restamping,
   bridge-request assembly, output-presence inference, or condition-specific
   replay/invalidation/sharing mirrors.
-- Adversarial oracle-export test: Milestone 13 can drive the complete bound
+- Adversarial oracle-export test: a second admitted provider can drive the complete bound
   capability journey against a second admitted provider without weakening or
   reinterpreting Query semantics.
 - Adversarial certification-kit test: a representative downstream domain can
@@ -3513,7 +3513,7 @@ cannot reappear as an alternate public path.
 - Boundary rules enforce the single-root and replay-audience contracts across
   Query and downstream entry, derived, app/UI, solver, resolver, pack, and cert
   bands.
-- The provider-independent parity bundle becomes a required Milestone 13 input,
+- The provider-independent parity cases remain this capability's acceptance evidence,
   not a separate interpretation of Query meaning.
 - Generic construction impossibility is certified once at Query's facade;
   downstream certification is proportional to domain semantics rather than the
@@ -3789,8 +3789,8 @@ bridge. It does not create a Query-owned truth-change interpreter, Signal-slot
 allocator, or evaluator, and it does not expose Signal internals as Query
 authoring.
 
-It precedes Milestone 13 because Query's provider-independent certification
-oracle must export the non-detachable capability journey, not the lower-level
+This capability's provider-independent qualification must export the
+non-detachable capability journey, not the lower-level
 ingredient surfaces that this milestone removes. It must include consumer
 support, workflow trace, replay, reversal, lineage, dependency impact, sharing
 and lease lifecycle, semantic-aspect correspondence, conditional

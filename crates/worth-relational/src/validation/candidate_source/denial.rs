@@ -4,6 +4,7 @@ use crate::mvcc::{CompanionPreflightStop, PublicationCompanionRegistrationStop};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ManagedIndexSourcePreparationDenial {
+    Content(crate::content::RelationalContentDenial),
     Source(DerivedRelationReadDenial),
     Provider(super::ManagedIndexSourceProviderFailure),
     Publication(CompanionPreflightStop),
@@ -61,6 +62,9 @@ impl ManagedIndexSourcePreparationDenial {
         use crate::validation::data::{CustomInvariantInterruption, StructuralWalkDenialKind};
 
         match self {
+            Self::Content(crate::content::RelationalContentDenial::Execution(cause)) => {
+                Some(*cause)
+            }
             Self::Source(DerivedRelationReadDenial::Request(cause)) => Some(*cause),
             Self::Source(DerivedRelationReadDenial::Structural(
                 StructuralWalkDenialKind::Interrupted(interruption),
@@ -75,5 +79,11 @@ impl ManagedIndexSourcePreparationDenial {
             )),
             _ => None,
         }
+    }
+}
+
+impl From<crate::derived_relation::DerivedRelationDenial> for ManagedIndexSourcePreparationDenial {
+    fn from(cause: crate::derived_relation::DerivedRelationDenial) -> Self {
+        Self::Source(cause.into())
     }
 }

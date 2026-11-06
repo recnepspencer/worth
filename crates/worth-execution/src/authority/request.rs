@@ -173,7 +173,8 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
                 request.cancellation.is_cancelled(),
                 request
                     .deadline
-                    .is_some_and(|deadline| std::time::Instant::now() >= deadline),
+                    .as_ref()
+                    .is_some_and(|deadline| deadline.is_elapsed()),
             ),
         };
         if cancelled {
@@ -205,18 +206,18 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
 
     /// The earliest deadline on this actual request and its active lineage.
     /// This observation grants no lease, replacement request or new allowance.
-    pub fn deadline(self) -> Option<std::time::Instant> {
+    pub fn deadline(self) -> Option<crate::MonotonicDeadline> {
         let original = match self.form {
             RequestBacking::Leased(lease) => {
                 let descendant = lease.current_descendant();
                 descendant.as_ref().unwrap_or(lease).deadline()
             }
-            RequestBacking::Serial(request) => request.deadline,
+            RequestBacking::Serial(request) => request.deadline.clone(),
         };
         original
             .into_iter()
             .chain(crate::backend::active_deadline())
-            .min()
+            .reduce(crate::MonotonicDeadline::meet)
     }
 
     /// The request's own policy ceiling. This does not observe active ancestors

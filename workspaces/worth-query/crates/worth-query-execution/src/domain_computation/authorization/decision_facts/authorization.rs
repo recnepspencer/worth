@@ -20,7 +20,7 @@ mod source_support;
 pub(in crate::domain_computation::authorization) use delegation_activation::WorthQueryDelegationActivationDecisionFact;
 
 #[derive(Clone)]
-pub(in crate::domain_computation) struct WorthQueryAuthorizationDecisionFact {
+pub struct WorthQueryAuthorizationDecisionFact {
     session_identity:
         crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
     relational: Arc<RelationalAuthorizationObservationEvidence>,
@@ -190,7 +190,6 @@ impl WorthQueryAuthorizationDecisionFact {
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         bridge: &BridgeAuthorizationRuntime,
     ) -> Result<bool, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
-        #[cfg(test)]
         let _scope = crate::domain_computation::primary_graph::application_attempt::consult_observation::ReadConsultScopeForTest::enter_for_test(crate::domain_computation::primary_graph::application_attempt::consult_observation::Door::Approval);
         if !self.bridge_is_retained(bridge)
             || !observation_is_current(execution, runtime, snapshot, &self.relational)?

@@ -21,6 +21,8 @@ impl DecodedQuote {
             .checked_add(self.semantic.transient)
             .and_then(|bytes| bytes.checked_add(self.association.transient))
             .and_then(|bytes| bytes.checked_add(self.origin.transient))
+            .and_then(|bytes| bytes.checked_add(self.cascades.transient))
+            .and_then(|bytes| bytes.checked_add(self.selection.transient))
             .and_then(|bytes| bytes.checked_add(self.index_delta.transient))
             .and_then(|bytes| bytes.checked_add(self.index_writes.transient))
             .ok_or_else(malformed)?;
@@ -40,6 +42,8 @@ impl DecodedQuote {
             index_delta: reserve(request, self.index_delta.retained)?,
             index_writes: reserve(request, self.index_writes.retained)?,
             origin: reserve(request, self.origin.retained)?,
+            cascades: reserve_shared(request, self.cascades.retained)?,
+            selection: reserve_shared(request, self.selection.retained)?,
             merge: None,
             schema: None,
             strategy: None,
@@ -103,4 +107,17 @@ pub(in super::super) fn admit_canonical(
     memory.codec_declarations = Some(codec);
     memory.merge = super::merge::prepare_canonical_readmission(canonical, request)?;
     Ok((memory, transient))
+}
+
+fn reserve_shared(
+    request: &ExecutionRequest<'_, '_>,
+    bytes: u64,
+) -> Result<Option<std::sync::Arc<ExecutionMemoryReservation>>, Refusal> {
+    if bytes == 0 {
+        return Ok(None);
+    }
+    let total = bytes
+        .checked_add(shared_root::<ExecutionMemoryReservation>()?.retained)
+        .ok_or_else(malformed)?;
+    Ok(reserve(request, total)?.map(std::sync::Arc::new))
 }

@@ -202,8 +202,10 @@ fn portable_coverage(
             checkpoint_identity: checkpoint_identity.clone(),
             manifest_generation: *manifest_generation,
             durable_checkpoint_lsn: *durable_checkpoint_lsn,
-            authority_fingerprint: *authority_fingerprint,
-            frontier_digest: *frontier_digest,
+            authority_fingerprint: worth_foundational::CanonicalDigestId::new(
+                *authority_fingerprint,
+            ),
+            frontier_digest: worth_foundational::CanonicalDigestId::new(*frontier_digest),
         },
         BackupArtifactCoverage::WalSegment {
             start_lsn,

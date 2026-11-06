@@ -5,6 +5,8 @@ use super::source::assembly::HomeQueryPreparation;
 use super::*;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime;
 use worth_runtime_world::facade::*;
+mod custody;
+pub use custody::{QueryHomeCustodyReadmissionDenial, QueryHomeCustodyReadmissionRefused};
 #[cfg(test)]
 #[path = "world/tests.rs"]
 mod tests;
@@ -113,7 +115,7 @@ where
         QueryHomeWorldAttachmentRefused<Schema, Program>,
     > {
         let prepared = (|| {
-            let (provider, participation, authorization, handlers, resources) =
+            let (provider, participation, authorization, handlers, resources, mutation_partitions) =
                 home_attachment::preflight_home_application(
                     phase,
                     &mut self.bootstrap,
@@ -160,21 +162,30 @@ where
                 handlers,
                 resources,
                 product,
+                mutation_partitions,
             ))
         })();
-        let (publication, provider, participation, authorization, handlers, resources, product) =
-            match prepared {
-                Ok(prepared) => prepared,
-                Err(cause) => {
-                    return Err(QueryHomeWorldAttachmentRefused {
-                        custody: HomeWorldAttachmentCustody::Prepared {
-                            _prepared: self,
-                            _root: root,
-                            cause,
-                        },
-                    })
-                }
-            };
+        let (
+            publication,
+            provider,
+            participation,
+            authorization,
+            handlers,
+            resources,
+            product,
+            mutation_partitions,
+        ) = match prepared {
+            Ok(prepared) => prepared,
+            Err(cause) => {
+                return Err(QueryHomeWorldAttachmentRefused {
+                    custody: HomeWorldAttachmentCustody::Prepared {
+                        _prepared: self,
+                        _root: root,
+                        cause,
+                    },
+                })
+            }
+        };
         // The actual configured providers remain in the refused preparation
         // through every fallible attachment check. Success transfers them once.
         let managed_indexes = std::mem::take(&mut self.bootstrap.managed_indexes);
@@ -205,6 +216,7 @@ where
             managed_indexes,
             bridge,
             product,
+            mutation_partitions,
         );
         application.program_support = Some(
             super::super::super::program_occurrence::WorthQueryInstalledProgramSupport::installed(
@@ -213,6 +225,7 @@ where
             ),
         );
         application
+            .runtime
             .primary_provider
             .graph
             .output_lineage

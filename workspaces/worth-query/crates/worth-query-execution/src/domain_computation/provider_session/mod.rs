@@ -1,22 +1,21 @@
 mod attempt_evidence;
 mod decision_read_set;
 mod direct_attempt;
-mod execution_attempt_identity;
-mod graph_obligation;
+pub(crate) mod execution_attempt_identity;
+pub(crate) mod graph_obligation;
+pub use graph_obligation::WorthQueryManagedGraphWorkSessionStartDenial;
 pub(in crate::domain_computation) use graph_obligation::{
-    WorthQueryInspectionReadCompletion, WorthQueryInspectionReadTerminalDenial,
-    WorthQueryManagedGraphReadDenial, WorthQueryManagedGraphWorkSessionStartDenial,
-    WorthQueryManagedIndexReadSession, WorthQueryManagedIndexSelectionProof,
-    WorthQueryManagedIndexSessionDenial, WorthQueryPreparedQueryPin,
-    WorthQueryPreparedReadCompletion, WorthQueryPreparedSessionRead,
+    WorthQueryInspectionReadCompletion, WorthQueryManagedIndexReadSession,
+    WorthQueryManagedIndexSelectionProof, WorthQueryManagedIndexSessionDenial,
+    WorthQueryPreparedQueryPin, WorthQueryPreparedReadCompletion, WorthQueryPreparedSessionRead,
     WorthQueryResourceReadCompletion, WorthQuerySessionInspectionReadProof,
     WorthQuerySessionResourceReadProof,
 };
 pub(crate) mod graph_provider;
-mod protocol;
+pub(crate) mod protocol;
 mod provisional_attempt;
 pub(crate) mod readmission;
-mod session_identity;
+pub(crate) mod session_identity;
 mod workflow_attempt;
 
 pub use attempt_evidence::WorthQueryExecutionResourceAttemptEvidence;
@@ -52,25 +51,10 @@ pub use workflow_attempt::{
     WorthQueryWorkflowExecutionAttemptReleaseReceipt, WorthQueryWorkflowExecutionResourceAttempt,
 };
 
-#[cfg(test)]
-mod tests;
-#[cfg(test)]
-pub(crate) use tests::execution_resource_support_for_envelope;
-
-#[cfg(test)]
-pub(crate) use tests::{
-    admitted_plan, admitted_plan_with_graph_support, admitted_yield_plan,
-    execution_resource_support, execution_resource_support_with_partial_effects,
-    execution_resource_support_with_yield,
-    execution_resource_support_with_yield_and_partial_effects,
-};
-
 pub(in crate::domain_computation) use provisional_attempt::check_invariant_request_live;
 /// Borrowed request view supplied by Query to an admitted provider invocation.
 pub use worth_execution::ExecutionRequest;
 
-#[cfg(test)]
-pub(in crate::domain_computation) use graph_obligation::pin_panic;
-
-#[cfg(test)]
-pub(in crate::domain_computation) use graph_obligation::pin_control;
+pub use graph_obligation::{
+    WorthQueryInspectionReadTerminalDenial, WorthQueryManagedGraphReadDenial,
+};

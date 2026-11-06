@@ -8,9 +8,9 @@ pub use crate::durability::{
     WorldCheckpointOriginRetirement, WorldCheckpointOriginRetirementDenial, WorldCheckpointPort,
     WorldCheckpointReadSource, WorldCheckpointReadView, WorldCheckpointSelection,
     WorldCheckpointSubject, WorldDurableArtifact, WorldDurableFrameDenial, WorldDurableHomeBinding,
-    WorldDurableMediumDenial, WorldPublicationObservation, WorldPublicationTaskPosture,
-    WorldReadmissionDenial, WORLD_ARTIFACT_PROTOCOL, WORLD_ARTIFACT_VERSION,
-    WORLD_CHECKPOINT_PROTOCOL, WORLD_CHECKPOINT_VERSION,
+    WorldDurableMediumDenial, WorldPublicationCompletion, WorldPublicationObservation,
+    WorldPublicationTaskPosture, WorldReadmissionDenial, WORLD_ARTIFACT_PROTOCOL,
+    WORLD_ARTIFACT_VERSION, WORLD_CHECKPOINT_PROTOCOL, WORLD_CHECKPOINT_VERSION,
 };
 
 // Public signatures below name the already-issued component owner bundles and
@@ -49,7 +49,8 @@ pub use crate::branch::{
     ProductBranchReferenceReadmissionDenial, ProductBranchReferenceSnapshot,
     ProductBranchRetirementReport, ProductExactHistoryCursor, ProductExactHistoryDenial,
     ProductExactHistoryPage, RecoveredRuntimeWorldRootAuthority, RelationalBranchCreationPlan,
-    RuntimeWorldBootstrapIntent, RuntimeWorldBootstrapNoEffectCause, RuntimeWorldBootstrapOutcome,
+    RetainedProductBranchCreationSource, RuntimeWorldBootstrapIntent,
+    RuntimeWorldBootstrapNoEffectCause, RuntimeWorldBootstrapOutcome,
     RuntimeWorldBranchAdmissionDenial, RuntimeWorldBranchRetirementDenial,
     SignalBranchCreationPlan, WorldDurableBootstrapOutcome, WorldDurableBootstrapRefusal,
     PRODUCT_BRANCH_REFERENCE_DESCRIPTION_VERSION,
@@ -95,18 +96,19 @@ pub use crate::publication::{
 };
 
 pub use crate::lifecycle::{
-    MissingRuntimeWorldInput, RuntimeWorldBranchCreationOutcome, RuntimeWorldBranchPort,
-    RuntimeWorldBuildDenial, RuntimeWorldClock, RuntimeWorldClockSource, RuntimeWorldCloseDenial,
-    RuntimeWorldCloseReport, RuntimeWorldExecutionPlacement, RuntimeWorldHomeBuilder,
-    RuntimeWorldInspectionPort, RuntimeWorldInstant, RuntimeWorldLifecyclePort,
-    RuntimeWorldObservationPort, RuntimeWorldOwnedAsyncManagedRevalidationDenial,
-    RuntimeWorldOwnedAsyncRequestAdmissionDenial, RuntimeWorldOwnedAsyncRevalidationDenial,
-    RuntimeWorldOwner, RuntimeWorldOwnerBuilder, RuntimeWorldOwnerLifecycleObservation,
-    RuntimeWorldOwnerUnavailable, RuntimeWorldPreCloseAdmission, RuntimeWorldPublicationPort,
-    RuntimeWorldRecoveredCustodyReport, RuntimeWorldRecoveryPort,
-    RuntimeWorldResultSnapshotCleanup, RuntimeWorldResultSnapshotCleanupDenial,
-    RuntimeWorldResultSnapshotCleanupProgress, RuntimeWorldResultSnapshotCleanupReport,
-    RuntimeWorldRetainedRecordReport, RuntimeWorldServiceDenial,
+    MissingRuntimeWorldInput, PreparedWorldRelationalCutover, RuntimeWorldBranchCreationOutcome,
+    RuntimeWorldBranchPort, RuntimeWorldBuildDenial, RuntimeWorldClock, RuntimeWorldClockSource,
+    RuntimeWorldCloseDenial, RuntimeWorldCloseReport, RuntimeWorldExecutionPlacement,
+    RuntimeWorldHomeBuilder, RuntimeWorldInspectionPort, RuntimeWorldInstant,
+    RuntimeWorldLifecyclePort, RuntimeWorldObservationPort,
+    RuntimeWorldOwnedAsyncManagedRevalidationDenial, RuntimeWorldOwnedAsyncRequestAdmissionDenial,
+    RuntimeWorldOwnedAsyncRevalidationDenial, RuntimeWorldOwner, RuntimeWorldOwnerBuilder,
+    RuntimeWorldOwnerLifecycleObservation, RuntimeWorldOwnerUnavailable,
+    RuntimeWorldPreCloseAdmission, RuntimeWorldPublicationPort, RuntimeWorldRecoveredCustodyReport,
+    RuntimeWorldRecoveryPort, RuntimeWorldResultSnapshotCleanup,
+    RuntimeWorldResultSnapshotCleanupDenial, RuntimeWorldResultSnapshotCleanupProgress,
+    RuntimeWorldResultSnapshotCleanupReport, RuntimeWorldRetainedRecordReport,
+    RuntimeWorldServiceDenial,
 };
 
 pub use crate::publication::{
@@ -114,11 +116,12 @@ pub use crate::publication::{
     CompositeLateCancellationPosture, CompositeOwnerExecutionResults,
     CompositePublicationCostCounters, CompositePublicationIntent, CompositePublicationOrder,
     CompositeRelationalOwnerResult, CompositeSignalOwnerResult, ConsumedCompositePublication,
-    NoEffectCause, NoEffectCompositePublication, PerformedCompositePublication,
-    PlannedProductReferenceSuccessor, PreparedCompositePublicationWithSignal,
-    PreparedCompositePublicationWithoutSignal, PreparedConditionalDefinitionRecovery,
-    RelationalAttemptProgress, RelationalAttemptProgressPosture, RelationalComponentPlan,
-    RelationalComponentPlanPosture, RuntimeWorldCancellationSource, RuntimeWorldCancellationToken,
+    CurrentProductReadDependencyDenial, NoEffectCause, NoEffectCompositePublication,
+    PerformedCompositePublication, PlannedProductReferenceSuccessor,
+    PreparedCompositePublicationWithSignal, PreparedCompositePublicationWithoutSignal,
+    PreparedConditionalDefinitionRecovery, RelationalAttemptProgress,
+    RelationalAttemptProgressPosture, RelationalComponentPlan, RelationalComponentPlanPosture,
+    RuntimeWorldCancellationSource, RuntimeWorldCancellationToken,
     RuntimeWorldConditionalDefinitionPublicationOutcome, RuntimeWorldPublicationOutcome,
     RuntimeWorldPublicationPhase, RuntimeWorldUnpublishedConditionalDefinition,
     SignalAttemptProgress, SignalAttemptProgressPosture, SignalComponentPlan,
@@ -129,8 +132,10 @@ pub use crate::recovery::{
     PerformedPublicationRecoveryDenial, ProductUnpublishedCause, ProductUnpublishedCleanup,
     ProductUnpublishedNextAction, ProductUnpublishedOwnerEffects, ProductUnpublishedRecoveryHandle,
     ProductUnpublishedRetentionPosture, RecoveryContinuationContract, RuntimeWorldRecoveryDenial,
-    RuntimeWorldSettledRelationalAdoptionDenial, WorldRecoveredReleaseOutcome,
-    WorldRecoveredUnpublishedEffects, WorldReleasedRecoveredEffects,
+    RuntimeWorldSettledRelationalAdoptionDenial, WorldRecoveredContinuationDenial,
+    WorldRecoveredContinuationOutcome, WorldRecoveredReleaseOutcome,
+    WorldRecoveredUnpublishedEffects, WorldReleasedEffects, WorldReleasedOriginal,
+    WorldReleasedOriginalPage,
 };
 
 pub use crate::inspection::{
@@ -142,7 +147,7 @@ pub use crate::inspection::{
 
 pub use crate::retention::{
     ComponentBasisDependencyClass, ComponentBasisDependencyCounts, RetentionCostSnapshot,
-    RetentionReclamationReport,
+    RetentionObligationDenial, RetentionReclamationReport, RetentionTransferDenial,
 };
 
 pub use worth_relational::facade::transactions::CommitResult;
@@ -150,6 +155,7 @@ pub use worth_relational::facade::transactions::CommitResult;
 pub use crate::lifecycle::{
     RuntimeWorldOperationControlForTest, RuntimeWorldPerformedPublicationObservationForTest,
     RuntimeWorldProductComparePauseForTest, RuntimeWorldProductCurrentnessPauseForTest,
+    RuntimeWorldRecoveredDispositionObservationForTest,
 };
 
 pub use crate::lifecycle::{

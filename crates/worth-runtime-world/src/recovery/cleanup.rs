@@ -51,6 +51,7 @@ pub(crate) enum RecoveryCleanupDenial {
     StaleIncarnation,
     CallerCapabilityLive,
     SettlementRequired,
+    OriginalChanged,
     TooYoung,
     ClockRegressed,
 }
@@ -85,6 +86,10 @@ impl super::catalog::ProductUnpublishedRecoveryCatalog {
         &self,
         handle: &super::ProductUnpublishedRecoveryHandle,
         age: Option<(crate::lifecycle::RuntimeWorldInstant, u64)>,
+        subject: Option<
+            &std::sync::Weak<super::product_unpublished::ProductUnpublishedOwnerEffectsRecord>,
+        >,
+        after_removal: impl FnOnce(),
     ) -> Result<RecoveryCleanupOutcome, RecoveryCleanupDenial> {
         if let Err(cause) = self.admit_handle_incarnation(handle) {
             return Err(match cause {
@@ -101,6 +106,10 @@ impl super::catalog::ProductUnpublishedRecoveryCatalog {
         }
         let mut denial = RecoveryCleanupDenial::SettlementRequired;
         let removed = self.remove_record_if_exclusive(handle, |record| {
+            if subject.is_some_and(|subject| !std::ptr::eq(subject.as_ptr(), record)) {
+                denial = RecoveryCleanupDenial::OriginalChanged;
+                return false;
+            }
             if record.settlement_required() {
                 return false;
             }
@@ -118,6 +127,7 @@ impl super::catalog::ProductUnpublishedRecoveryCatalog {
         });
         match removed {
             Ok(Some(record)) => {
+                after_removal();
                 let identity = record.identity().clone();
                 let destination = record
                     .destination()
@@ -153,6 +163,7 @@ impl From<RecoveryCleanupDenial> for super::RuntimeWorldRecoveryDenial {
             RecoveryCleanupDenial::TooYoung => Self::TooYoung,
             RecoveryCleanupDenial::ClockRegressed => Self::ClockRegressed,
             RecoveryCleanupDenial::SettlementRequired => Self::SettlementRequired,
+            RecoveryCleanupDenial::OriginalChanged => Self::OriginalSourceMismatch,
         }
     }
 }

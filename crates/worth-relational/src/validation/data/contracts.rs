@@ -24,6 +24,21 @@ pub struct InvariantPlanContract {
 }
 
 impl InvariantPlanContract {
+    pub(crate) fn retained_entity_selection() -> Self {
+        Self {
+            may_invalidate: InvariantGroupSet::of(InvariantGroup::IdentityCoherence)
+                .union(InvariantGroupSet::of(InvariantGroup::SchemaCompliance)),
+            must_rejudge: InvariantGroupSet::all(),
+        }
+    }
+
+    pub(crate) fn union(self, other: Self) -> Self {
+        Self {
+            may_invalidate: self.may_invalidate.union(other.may_invalidate),
+            must_rejudge: self.must_rejudge.union(other.must_rejudge),
+        }
+    }
+
     pub fn from_merged_plan(plan: &MergedCommitPlan) -> Self {
         let mut contract = Self::default();
         for intent in &plan.merged_intents {

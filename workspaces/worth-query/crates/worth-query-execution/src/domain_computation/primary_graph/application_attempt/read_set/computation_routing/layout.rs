@@ -5,14 +5,12 @@ use worth_query_installation::facade::WorthQueryCompiledApplicationOperationCont
 use worth_relational::facade::identity::EntityId;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(super) enum SealedReadLayout {
+pub enum SealedReadLayout {
     Checked(Arc<CheckedReadLayout>),
-    #[cfg(test)]
     OwnerFixture,
 }
 
-pub(in crate::domain_computation::primary_graph::application_attempt::read_set) struct CheckedReadLayout
-{
+pub struct CheckedReadLayout {
     pub(super) contracts: Arc<WorthQueryCompiledApplicationOperationContracts>,
     pub(super) scopes:
         crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
@@ -62,7 +60,6 @@ impl SealedReadLayout {
     pub(super) fn checked(&self) -> Option<&Arc<CheckedReadLayout>> {
         match self {
             Self::Checked(layout) => Some(layout),
-            #[cfg(test)]
             Self::OwnerFixture => None,
         }
     }

@@ -1,6 +1,7 @@
 //! Real retirement, reclamation and recreated Source identity cross both prepared roots.
 use super::super::authoring::Edit;
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 
 #[test]
 fn retired_shared_source_is_removed_and_reclaimed_generation_does_not_inherit_membership() {
@@ -8,7 +9,7 @@ fn retired_shared_source_is_removed_and_reclaimed_generation_does_not_inherit_me
 }
 
 fn journey() {
-    let provider = Arc::new(prefix::Calls::default());
+    let provider = Arc::new(prefix_observation::Calls::default());
     let rules = Arc::new(rule::Calls::new(Arc::clone(&provider)));
     let world = host::install(Arc::clone(&provider), Arc::clone(&rules));
     let scope = authentication::request_scope();
@@ -59,8 +60,8 @@ fn journey() {
         assert_eq!(records.len(), 2);
         assert!(records
             .iter()
-            .any(|record| values(&record.after) == vec![("y".into(), "taken".into())]));
-        assert!(records.iter().any(|record| record.after.is_empty()));
+            .any(|record| values(&record.source.after) == vec![("y".into(), "taken".into())]));
+        assert!(records.iter().any(|record| record.source.after.is_empty()));
     }
     rules.records.lock().unwrap().clear();
     let stopped = request

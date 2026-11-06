@@ -1,7 +1,8 @@
 use super::rejection::{attach_rejection, elapsed_micros};
+use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
 use crate::identity::data::VersionId;
 use crate::runtime::RelationalPreparationRuntime;
-use crate::transactions::data::{CommitLog, CommitPhase, CommitPhaseTiming, MergedCommitPlan};
+use crate::transactions::data::{CommitLog, CommitPhase, CommitPhaseTiming};
 use crate::validation::engine::InvariantExecutionResult;
 
 pub(super) fn enforce_commit_boundary_phase(
@@ -11,7 +12,7 @@ pub(super) fn enforce_commit_boundary_phase(
     selected_branch_state: &crate::branch::SelectedRelationalBranchState,
     proposed_working_state: &crate::storage::overlay::WorkingState,
     proposed_version_id: crate::identity::data::VersionId,
-    merged_plan: &MergedCommitPlan,
+    merged_plan: RelationalSemanticPlan<'_>,
     proposal_identity: Option<&crate::mvcc::RelationalMutationProposalIdentity>,
     aggregate_source: Option<crate::aggregate_identity::AggregateProposalBorrow<'_>>,
     prevalidated_commit_boundary: Option<InvariantExecutionResult>,
@@ -53,7 +54,7 @@ pub(super) fn enforce_snapshot_publication_phase(
     working_state: &crate::storage::overlay::WorkingState,
     created_entities: &crate::transactions::data::CommitCreatedEntityBindings,
     version_id: VersionId,
-    merged_plan: &MergedCommitPlan,
+    merged_plan: RelationalSemanticPlan<'_>,
     proposal_identity: Option<&crate::mvcc::RelationalMutationProposalIdentity>,
     aggregate_source: Option<crate::aggregate_identity::AggregateProposalBorrow<'_>>,
     prevalidated_snapshot_publication: Option<InvariantExecutionResult>,

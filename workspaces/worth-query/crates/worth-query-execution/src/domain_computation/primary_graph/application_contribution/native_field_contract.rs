@@ -4,7 +4,7 @@ use worth_query_declaration::facade::application_schema as schema;
 use worth_query_installation::facade as domain;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(super) struct NativeFieldBindingExpectation {
+pub struct NativeFieldBindingExpectation {
     pub(super) locus: schema::ApplicationFieldBindingLocus,
     pub(super) binding: TypeId,
     pub(super) value: TypeId,
@@ -51,16 +51,14 @@ impl NativeFieldBindingExpectation {
 }
 
 #[derive(Debug)]
-pub(super) struct NativeFieldContractDenial {
+pub struct NativeFieldContractDenial {
     pub(super) locus: schema::ApplicationFieldBindingLocus,
     pub(super) detail: String,
 }
 impl NativeFieldContractDenial {
-    #[cfg(test)]
     pub(super) fn detail(&self) -> &str {
         &self.detail
     }
-    #[cfg(test)]
     pub(super) fn field_locus(&self) -> Option<&schema::ApplicationFieldBindingLocus> {
         Some(&self.locus)
     }
@@ -76,7 +74,7 @@ fn field_denial(
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(super) struct FieldExpectation {
+pub struct FieldExpectation {
     pub(super) binding: NativeFieldBindingExpectation,
     pub(super) aspect: domain::AspectContract,
     pub(super) native_binding: domain::AspectBinding,
@@ -192,3 +190,5 @@ impl FieldExpectation {
         Ok(())
     }
 }
+
+mod court_doors_for_test;

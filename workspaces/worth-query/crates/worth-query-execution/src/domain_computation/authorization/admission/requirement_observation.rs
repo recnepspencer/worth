@@ -104,7 +104,7 @@ where
         requirement: &worth_query_installation::facade::WorthQueryInstalledAbilityRequirement,
     ) -> Result<WorthQueryAuthorizationDecisionFact, WorthQueryOperationAuthorizationDenial> {
         self.validate_scope(requirement)?;
-        let installed = runtime.authorization.policy(requirement)?;
+        let installed = runtime.runtime.authorization.policy(requirement)?;
         self.validate_installation(runtime, installed, requirement)?;
         let evidence = self.observe_relational(execution, installed, requirement)?;
         let dependency_identity = *evidence.observation_identity().bytes();
@@ -115,6 +115,7 @@ where
             requirement.policy(),
         )?;
         let bridge = runtime
+            .runtime
             .authorization
             .bridge()
             .evaluate(bridge_observation)
@@ -127,7 +128,7 @@ where
                 )
             })?;
         validate_decision(
-            runtime.authorization.bridge(),
+            runtime.runtime.authorization.bridge(),
             &evidence,
             &bridge,
             dependency_identity,
@@ -173,7 +174,11 @@ where
                 requirement.scope_entity(),
             ));
         }
-        let matches = runtime.authorization.bridge().matches_installed_policy(
+        let matches = runtime
+            .runtime
+            .authorization
+            .bridge()
+            .matches_installed_policy(
             installed.correspondence(),
             &crate::domain_computation::authorization::bridge_authorization_binding_identity(
                 self.binding_identity,

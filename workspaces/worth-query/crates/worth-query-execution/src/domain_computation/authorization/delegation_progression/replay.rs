@@ -70,7 +70,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         access
             .refuse_stale_incarnation(self)
             .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
-        let execution = match phase.execution_request_for(&self.product_runtime) {
+        let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(execution) => execution,
             Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
         };
@@ -129,7 +129,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         access
             .refuse_stale_incarnation(self)
             .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
-        let Some(installed) = self.authorization.capability_plan(target) else {
+        let Some(installed) = self.runtime.authorization.capability_plan(target) else {
             return Ok(None);
         };
         if super::validate_activation_operation(installed, operation).is_err() {
@@ -186,6 +186,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             )?
             .into_resolution();
         Ok(match resolution {
+            WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(_) => Some(WorthQueryApplicationCommitOutcome::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::original_effect_released())),
+            WorthQueryApplicationIdempotencyResolution::ProductUnpublished(effects) => Some(
+                WorthQueryApplicationCommitOutcome::ProductUnpublished(effects),
+            ),
             WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(pending) => {
                 Some(WorthQueryApplicationCommitOutcome::ProductPreparationPending(pending))
             }

@@ -1,4 +1,5 @@
 use std::path::Path;
+use worth_foundational::CanonicalDigestId;
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -17,15 +18,15 @@ pub(crate) struct DeclaredProcessPoison {
     role: RootArtifactRole,
     offset: u64,
     xor_mask: u8,
-    manifest_identity: [u8; 32],
-    identity: [u8; 32],
+    manifest_identity: CanonicalDigestId,
+    identity: CanonicalDigestId,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub(crate) struct ProcessEditorAudit {
-    declaration_identity: [u8; 32],
-    before_sha256: [u8; 32],
-    after_sha256: [u8; 32],
+    declaration_identity: CanonicalDigestId,
+    before_sha256: CanonicalDigestId,
+    after_sha256: CanonicalDigestId,
     changed_offset: u64,
 }
 
@@ -78,7 +79,7 @@ impl DeclaredProcessPoison {
             role,
             offset,
             xor_mask,
-            manifest_identity,
+            CanonicalDigestId::new(manifest_identity),
         ))
         .map(|bytes| Sha256::digest(bytes).into())
         .map_err(|_| ProcessPoisonDenial::IdentityEncoding)?;
@@ -86,8 +87,8 @@ impl DeclaredProcessPoison {
             role,
             offset,
             xor_mask,
-            manifest_identity,
-            identity,
+            manifest_identity: CanonicalDigestId::new(manifest_identity),
+            identity: CanonicalDigestId::new(identity),
         })
     }
 
@@ -98,7 +99,7 @@ impl DeclaredProcessPoison {
         self.offset
     }
     pub(crate) const fn identity(&self) -> [u8; 32] {
-        self.identity
+        *self.identity.bytes()
     }
     pub(crate) const fn xor_mask(&self) -> u8 {
         self.xor_mask
@@ -110,7 +111,7 @@ pub(crate) fn apply_process_poison(
     manifest: &ClosedStoreProcessManifest,
     declaration: &DeclaredProcessPoison,
 ) -> Result<ProcessEditorAudit, ProcessPoisonDenial> {
-    if declaration.manifest_identity != manifest.identity() {
+    if *declaration.manifest_identity.bytes() != manifest.identity() {
         return Err(ProcessPoisonDenial::ManifestSubstitution);
     }
     manifest
@@ -134,21 +135,21 @@ pub(crate) fn apply_process_poison(
     std::fs::write(path, &bytes).map_err(|_| ProcessPoisonDenial::Write)?;
     Ok(ProcessEditorAudit {
         declaration_identity: declaration.identity,
-        before_sha256: artifact.content_sha256(),
-        after_sha256: Sha256::digest(bytes).into(),
+        before_sha256: CanonicalDigestId::new(artifact.content_sha256()),
+        after_sha256: CanonicalDigestId::new(Sha256::digest(bytes).into()),
         changed_offset: declaration.offset,
     })
 }
 
 impl ProcessEditorAudit {
     pub(crate) const fn declaration_identity(&self) -> [u8; 32] {
-        self.declaration_identity
+        *self.declaration_identity.bytes()
     }
     pub(crate) const fn before_sha256(&self) -> [u8; 32] {
-        self.before_sha256
+        *self.before_sha256.bytes()
     }
     pub(crate) const fn after_sha256(&self) -> [u8; 32] {
-        self.after_sha256
+        *self.after_sha256.bytes()
     }
     pub(crate) const fn changed_offset(&self) -> u64 {
         self.changed_offset

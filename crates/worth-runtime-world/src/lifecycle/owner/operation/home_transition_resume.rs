@@ -83,7 +83,7 @@ where
                 .unwrap_or_else(|cause| cause.into_inner())
             {
                 RecoveredNativeCustody::OpenOnly => {}
-                RecoveredNativeCustody::Relational(_) => {
+                RecoveredNativeCustody::Prepared(_) | RecoveredNativeCustody::Relational(_) => {
                     return Err(Denial::NativeEffectAlreadyDurable)
                 }
                 RecoveredNativeCustody::Continuing(_) => {

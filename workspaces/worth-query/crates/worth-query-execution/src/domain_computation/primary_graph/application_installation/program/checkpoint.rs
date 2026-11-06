@@ -81,6 +81,46 @@ where
     )
 }
 
+/// Restores the sole checkpoint model source under the caller's original opening request.
+/// Work, memory, cancellation and deadline belong to that phase; the installed
+/// World retains its declared business request policy. No initializer or transition runs.
+pub fn in_memory_rostered_program_from_checkpoint_in_advancement<Schema, Program>(
+    phase: &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
+    program: ValidatedApplicationProgram<Schema, Program>,
+    roster: WorthQueryApplicationProgramRoster<'_, Schema>,
+    declaration: ApplicationSchemaDeclaration<Schema>,
+    configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
+    build_identity: worth_foundational::facade::ApplicationBuildIdentity,
+    limits: WorthQueryInMemoryApplicationLimits,
+    checkpoint: crate::domain_computation::primary_graph::WorthQueryApplicationCheckpoint,
+) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryInMemoryApplicationDenial>
+where
+    Schema: ApplicationSchemaComposition,
+    Program: ApplicationProgramDefinition<Schema>,
+    Program::Outputs:
+        ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
+    Program::Contributions: WorthQueryApplicationContributionTuple<Schema>,
+{
+    phase.execution_request().consult().map_err(|cause| {
+        WorthQueryInMemoryApplicationDenial::Graph(crate::domain_computation::primary_graph::bootstrap::request_denial(
+            crate::domain_computation::primary_graph::application_contribution::advancement_denial(cause),
+        ))
+    })?;
+    super::construction::in_memory_program_in_advancement(
+        phase,
+        program,
+        roster,
+        declaration,
+        configuration,
+        build_identity,
+        limits,
+        |_phase, _graph, _installed| Ok(()),
+        None,
+        Some(checkpoint),
+        None,
+    )
+}
+
 /// Restore while retaining privileged, read-only invariant projection authority.
 ///
 /// Only the composition root performing restoration receives this authority.

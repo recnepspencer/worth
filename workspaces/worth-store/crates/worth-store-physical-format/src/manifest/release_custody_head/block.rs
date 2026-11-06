@@ -1,4 +1,5 @@
 use sha2::{Digest, Sha256};
+use worth_foundational::CanonicalDigestId;
 
 use crate::record_framing::{encode_durable_frame_schema, DURABLE_FRAME_HEADER_BYTES};
 use crate::{DurableFrameKind, PhysicalRecordFormatDeclaration};
@@ -23,7 +24,7 @@ pub struct ReleaseCustodyHeadBlockReferenceV1 {
     level: u16,
     first: ReleaseCustodyHeadKeyV1,
     last: ReleaseCustodyHeadKeyV1,
-    frame_sha256: [u8; 32],
+    frame_sha256: CanonicalDigestId,
 }
 
 impl ReleaseCustodyHeadBlockReferenceV1 {
@@ -43,7 +44,7 @@ impl ReleaseCustodyHeadBlockReferenceV1 {
                 level,
                 first,
                 last,
-                frame_sha256,
+                frame_sha256: CanonicalDigestId::new(frame_sha256),
             },
         )
     }
@@ -63,7 +64,7 @@ impl ReleaseCustodyHeadBlockReferenceV1 {
         self.last
     }
     pub const fn frame_sha256(self) -> [u8; 32] {
-        self.frame_sha256
+        *self.frame_sha256.bytes()
     }
 
     pub fn encode_into(self, target: &mut [u8; REFERENCE_BYTES]) {
@@ -73,7 +74,7 @@ impl ReleaseCustodyHeadBlockReferenceV1 {
         target[16..18].copy_from_slice(&self.level.to_le_bytes());
         encode_key(self.first, (&mut target[24..48]).try_into().unwrap());
         encode_key(self.last, (&mut target[48..72]).try_into().unwrap());
-        target[72..104].copy_from_slice(&self.frame_sha256);
+        target[72..104].copy_from_slice(self.frame_sha256.bytes());
     }
 
     pub fn decode(bytes: &[u8]) -> Result<Self, ReleaseCustodyHeadDenial> {

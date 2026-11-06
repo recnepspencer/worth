@@ -78,9 +78,12 @@ pub(super) fn caller_disposal_before_progress_recovers(
     let WorthQueryApplicationPerformedMutationOutcome::NotPerformed(replay) = replay else {
         panic!("the source retry must not perform twice")
     };
-    let replay_receipt = replay
-        .receipt()
-        .expect("an idempotent retry retains its committed receipt");
+    // D9: keyed resolution returns original meaning, never a recreated live receipt.
+    assert!(matches!(replay, worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::RecoveredCommitted(_)));
+    let replay_receipt = replay.recovered_receipt().unwrap();
+    assert!(replay.receipt().is_none());
+    assert!(replay.result().is_none());
+    assert!(source_receipt.matches_recorded_original(replay_receipt));
     assert_eq!(
         replay_receipt.commit_reference(),
         source_receipt.commit_reference()
@@ -96,7 +99,7 @@ pub(super) fn caller_disposal_before_progress_recovers(
         .advanced()
         .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerTruncatedProgramRoot>(
             &world.application,
-            replay_receipt,
+            &source_receipt,
             PlanarOutputDemand::new("anchor-b"),
             output_controls(),
         );
@@ -167,7 +170,7 @@ pub(super) fn caller_disposal_before_progress_recovers(
         .advanced()
         .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             &world.application,
-            replay_receipt,
+            &source_receipt,
             PlanarOutputDemand::new("anchor-b"),
             controls,
         )

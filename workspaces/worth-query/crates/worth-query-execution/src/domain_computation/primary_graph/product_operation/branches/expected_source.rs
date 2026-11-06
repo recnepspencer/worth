@@ -13,6 +13,7 @@ use crate::domain_computation::primary_graph::{
 use worth_query_declaration::facade::branch::WorthQueryProductBranchComponents;
 
 mod adoption;
+pub(in crate::domain_computation::primary_graph) use adoption::ProductBranchAdoptionRelease;
 pub use adoption::{
     WorthQueryExpectedProductBranchAdoptionDenial, WorthQueryExpectedProductBranchAdoptionFailure,
 };
@@ -60,8 +61,15 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
                 .branches
                 .fork_expected(source)
                 .with_application_lifecycle(
-                    std::sync::Arc::clone(&self.application.primary_provider.graph.output_lineage),
-                    &self.application.primary_provider,
+                    std::sync::Arc::clone(
+                        &self
+                            .application
+                            .runtime
+                            .primary_provider
+                            .graph
+                            .output_lineage,
+                    ),
+                    &self.application.runtime.primary_provider,
                     self.application,
                 ),
         })
@@ -92,6 +100,20 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranchFork<'r
 }
 
 impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runtime, Schema> {
+    /// Transfer this created branch into the application's move-only head slot.
+    /// This releases the original expected-source lease: the branch is no longer
+    /// a pending adoption against that source. Domain model attachment and
+    /// current operation authorization remain separate admissions.
+    pub fn into_owned_head(self) -> super::WorthQueryOwnedProductHead<'runtime, Schema> {
+        let Self {
+            application,
+            branch,
+            source,
+        } = self;
+        drop(source);
+        super::WorthQueryOwnedProductHead::from_created_branch(application, branch)
+    }
+
     pub fn branch(&self) -> WorthQueryProductBranch {
         self.branch
     }
@@ -99,6 +121,18 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
     /// Descriptive comparison data; the live source admission stays in this owner.
     pub fn expected_source(&self) -> WorthQueryProductBranchReadIdentity {
         WorthQueryProductBranchReadIdentity::from_observation(self.source.observation())
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn application(
+        &self,
+    ) -> &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+        self.application
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn retained_expected_source(
+        &self,
+    ) -> crate::basis::WorthQueryProductObservationLease {
+        self.source.read_lease()
     }
 
     pub fn close(

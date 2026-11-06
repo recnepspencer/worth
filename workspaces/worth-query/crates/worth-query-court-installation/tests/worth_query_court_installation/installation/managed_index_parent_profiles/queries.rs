@@ -15,6 +15,8 @@ worth_query_application_query!(pub SourceQuery for Schema: ModelSchema,
 worth_query_application_query!(pub ParentQuery for Schema: ModelSchema,
     identity "worth.query.tests.managed-parent-read.v1", parameters ParametersBinding,
     result PrincipalQueryResultBinding, scope Principal => "Principal", name "managed_parent_read");
+pub struct ContentSlot;
+worth_query_portable_type!(ContentSlot => "worth.query.tests.managed-parent-content-slot.v1");
 pub struct IdentitySlot;
 pub struct ProbeParameter;
 worth_query_portable_type!(IdentitySlot => "worth.query.tests.managed-parent-slot.v1");
@@ -56,8 +58,8 @@ fn shape<S: ModelSchema, Q: ApplicationQueryMarkerIdentity<S>>() -> TypedApplica
     PrincipalQueryResult,
     PrincipalQueryResultBinding,
 > {
-    ApplicationQueryResultShapeBuilder::new(Principal::reference())
-        .field(ApplicationQueryResultFieldRef::<
+    let shape = ApplicationQueryResultShapeBuilder::new(Principal::reference()).field(
+        ApplicationQueryResultFieldRef::<
             Q,
             IdentitySlot,
             S,
@@ -68,8 +70,25 @@ fn shape<S: ModelSchema, Q: ApplicationQueryMarkerIdentity<S>>() -> TypedApplica
             ReadOnly,
             EqualityPredicate,
             NoApplicationUnit,
-        >::new("identity", PrincipalIdentity::reference()))
-        .build()
+        >::new("identity", PrincipalIdentity::reference()),
+    );
+    let shape = if S::MODE == 8 {
+        shape.field(ApplicationQueryResultFieldRef::<
+            Q,
+            ContentSlot,
+            S,
+            Principal,
+            PrincipalFacts,
+            ContentSamples,
+            worth_foundational::facade::ContentRefId,
+            ReadOnly,
+            NoEqualityPredicate,
+            NoApplicationUnit,
+        >::new("samples", ContentSamples::reference()))
+    } else {
+        shape
+    };
+    shape.build()
 }
 pub fn source<S: ModelSchema>(
 ) -> ApplicationQueryDefinition<S, SourceQuery, (), PrincipalQueryResult, Principal> {

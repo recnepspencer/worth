@@ -92,13 +92,11 @@ impl WorthQueryRecoveryHandle {
     }
 
     /// Owner-test observation of this handle's instance registry.
-    #[cfg(test)]
     pub(crate) fn registry_arc(&self) -> Arc<WorthQueryRecoveryHandleRegistry> {
         Arc::clone(&self.registry)
     }
 
     /// Owner-test observation of this handle's opaque membership slot.
-    #[cfg(test)]
     pub(crate) const fn registry_slot(&self) -> WorthQueryRecoveryRegistrySlot {
         self.slot
     }
@@ -178,13 +176,11 @@ impl WorthQueryRecoveryHandle {
     }
 
     /// Named fixture handle for resolve binding proofs. Not production.
-    #[cfg(test)]
     pub(crate) fn axis_probe(binding: WorthQueryRecoveryHandleBinding) -> Self {
         let registry = Arc::new(WorthQueryRecoveryHandleRegistry::new());
         Self::axis_probe_in_registry(binding, registry)
     }
 
-    #[cfg(test)]
     pub(crate) fn axis_probe_in_registry(
         binding: WorthQueryRecoveryHandleBinding,
         registry: Arc<WorthQueryRecoveryHandleRegistry>,
@@ -283,3 +279,5 @@ impl std::fmt::Debug for WorthQueryRecoveryHandle {
             .finish_non_exhaustive()
     }
 }
+
+mod court_doors_for_test;

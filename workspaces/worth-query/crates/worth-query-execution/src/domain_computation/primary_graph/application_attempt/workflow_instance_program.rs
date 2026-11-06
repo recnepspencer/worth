@@ -32,7 +32,7 @@ pub use birth::{
 mod discovery_intent;
 pub use discovery_intent::WorthQueryWorkflowInstanceDiscoveryIntent;
 mod intent_identity;
-mod migration;
+pub(crate) mod migration;
 mod performed;
 mod preparation;
 mod publication;
@@ -144,6 +144,7 @@ where
             retain_client_observation: false,
             producer_required_invariants: &[],
             output_currentness_facts: None,
+            content_attachments: Default::default(),
         };
         Ok(PreparedWorkflowInstanceStart {
             program,

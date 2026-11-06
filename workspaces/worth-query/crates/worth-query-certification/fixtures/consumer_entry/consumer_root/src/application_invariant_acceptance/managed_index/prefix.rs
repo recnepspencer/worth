@@ -1,29 +1,25 @@
 //! Entry adapter: pure prefix mechanics borrow actual query rows and finite storage.
 use super::{query, schema::Catalog};
-use std::sync::{
-    atomic::{AtomicUsize, Ordering},
-    Arc, Mutex,
+use crate::application_invariant_acceptance::managed_index::structure_fault;
+use crate::application_invariant_acceptance::managed_index::{
+    prefix_cost_stages,
+    prefix_observation::{Calls, OBSERVED_COORDINATES},
 };
+use std::sync::{atomic::Ordering, Arc};
 use worth_query_consumer_values::{
     insert_prefix_source, remove_prefix_source, PrefixIndexDenial, PrefixNode,
 };
 use worth_query_decl::facade::application_query::ApplicationManagedIndexBinding;
 use worth_query_host::facade::primary_graph::*;
 
-#[cfg(test)]
-#[path = "prefix/cost_stages.rs"]
-pub(super) mod cost_stages;
-#[path = "prefix/installed_version.rs"]
-mod installed_version;
-#[path = "prefix/storage.rs"]
-mod storage;
-pub use installed_version::IncompatibleVersion;
 #[path = "prefix/definition.rs"]
 mod definition;
 #[path = "prefix/predicate.rs"]
 mod predicate;
 #[path = "prefix/refinement.rs"]
 mod refinement;
+#[path = "prefix/storage.rs"]
+mod storage;
 #[path = "prefix/structure.rs"]
 pub(super) mod structure;
 #[path = "prefix/summary.rs"]
@@ -32,7 +28,6 @@ mod summary;
 #[path = "prefix/text_read.rs"]
 mod text_read;
 pub use definition::PrefixIndex;
-const OBSERVED_COORDINATES: usize = 8;
 pub type Node = PrefixNode<WorthQueryManagedIndexNodeId, WorthQueryManagedIndexSourceSlot>;
 pub type Stop = WorthQueryManagedIndexProviderStop<PrefixIndexDenial>;
 fn text_denial(cause: WorthQueryManagedIndexTextReadDenial) -> Stop {
@@ -41,65 +36,6 @@ fn text_denial(cause: WorthQueryManagedIndexTextReadDenial) -> Stop {
         WorthQueryManagedIndexTextReadDenial::Projection(_) => {
             Stop::Domain(PrefixIndexDenial::InvalidTopology)
         }
-    }
-}
-#[derive(Default)]
-pub struct Calls {
-    #[cfg(test)]
-    pub omit_refinement: std::sync::atomic::AtomicBool,
-    #[cfg(test)]
-    pub reject_refinement: std::sync::atomic::AtomicBool,
-    #[cfg(test)]
-    pub after_refinement: Mutex<Option<Box<dyn FnOnce() + Send>>>,
-    #[cfg(test)]
-    pub predicate_regions: AtomicUsize,
-    #[cfg(test)]
-    pub(super) cost_stages: cost_stages::CostStages,
-    #[cfg(test)]
-    pub query_read_first: std::sync::atomic::AtomicBool,
-    #[cfg(test)]
-    pub query_region_reads: AtomicUsize,
-    #[cfg(test)]
-    pub summary_repetitions: AtomicUsize,
-    #[cfg(test)]
-    pub inspect_text: std::sync::atomic::AtomicBool,
-    #[cfg(test)]
-    pub wrong_text_binding: std::sync::atomic::AtomicBool,
-    #[cfg(test)]
-    pub text_reads: AtomicUsize,
-    #[cfg(test)]
-    pub after_text: Mutex<Option<Box<dyn FnOnce() + Send>>>,
-    #[cfg(test)]
-    pub summary_read_first: std::sync::atomic::AtomicBool,
-    #[cfg(test)]
-    pub(super) first_source: Mutex<Option<WorthQueryManagedIndexSourceSlot>>,
-    #[cfg(test)]
-    pub(super) after_second_match: Mutex<Option<Box<dyn FnOnce() + Send>>>,
-    #[cfg(test)]
-    pub(super) repeat_candidates: std::sync::atomic::AtomicBool,
-    #[cfg(test)]
-    pub(super) foreign_candidate: Mutex<Option<WorthQueryManagedIndexSourceSlot>>,
-    pub matched_sources: AtomicUsize,
-    pub successful_matches: AtomicUsize,
-    pub summary_comparisons: AtomicUsize,
-    #[cfg(test)]
-    pub(super) structure_fault: Mutex<structure::Fault>,
-    pub capacity: AtomicUsize,
-    pub builds: AtomicUsize,
-    pub probe_validations: AtomicUsize,
-    pub updates: AtomicUsize,
-    pub canonical_rows: AtomicUsize,
-    // Consumer fixture observation, invoked only after a genuine first node write.
-    pub after_first_node: Mutex<Option<Box<dyn FnOnce() + Send>>>,
-    pub canonical_coordinates: Mutex<[(u32, u64, u32); OBSERVED_COORDINATES]>,
-}
-impl Calls {
-    pub fn totals(&self) -> (usize, usize, usize) {
-        (
-            self.capacity.load(Ordering::SeqCst),
-            self.builds.load(Ordering::SeqCst),
-            self.probe_validations.load(Ordering::SeqCst),
-        )
     }
 }
 pub struct Provider(pub Arc<Calls>);
@@ -151,10 +87,14 @@ impl<I: PrefixSourceIndex> WorthQueryManagedIndexProvider<Catalog, I> for Provid
                 .map_err(text_denial)?;
         }
         #[cfg(test)]
-        self.0.cost_stages.record(cost_stages::Stage::MergeBegin);
+        self.0
+            .cost_stages
+            .record(prefix_cost_stages::Stage::MergeBegin);
         let result = summary::merge(parts, sources, control, &self.0);
         #[cfg(test)]
-        self.0.cost_stages.record(cost_stages::Stage::MergeEnd);
+        self.0
+            .cost_stages
+            .record(prefix_cost_stages::Stage::MergeEnd);
         result
     }
     fn node_summary(
@@ -174,7 +114,9 @@ impl<I: PrefixSourceIndex> WorthQueryManagedIndexProvider<Catalog, I> for Provid
     ) -> Result<bool, Stop> {
         self.0.summary_comparisons.fetch_add(1, Ordering::SeqCst);
         #[cfg(test)]
-        self.0.cost_stages.record(cost_stages::Stage::BoundsBegin);
+        self.0
+            .cost_stages
+            .record(prefix_cost_stages::Stage::BoundsBegin);
         let result = summary::may_match(bounds, sources, probe, control, &self.0)?;
         #[cfg(test)]
         {
@@ -199,7 +141,9 @@ impl<I: PrefixSourceIndex> WorthQueryManagedIndexProvider<Catalog, I> for Provid
             }
         }
         #[cfg(test)]
-        self.0.cost_stages.record(cost_stages::Stage::BoundsEnd);
+        self.0
+            .cost_stages
+            .record(prefix_cost_stages::Stage::BoundsEnd);
         Ok(result)
     }
     fn node_capacity(
@@ -241,7 +185,7 @@ impl<I: PrefixSourceIndex> WorthQueryManagedIndexProvider<Catalog, I> for Provid
         }
         self.0.canonical_rows.store(sources.len(), Ordering::SeqCst);
         #[cfg(test)]
-        if *self.0.structure_fault.lock().unwrap() == structure::Fault::DisconnectedCycle {
+        if *self.0.structure_fault.lock().unwrap() == structure_fault::Fault::DisconnectedCycle {
             return structure::cyclic_sources(sources, nodes);
         }
         let mut storage = storage::Build {
@@ -267,9 +211,11 @@ impl<I: PrefixSourceIndex> WorthQueryManagedIndexProvider<Catalog, I> for Provid
     ) -> Result<Option<WorthQueryManagedIndexNodeId>, Stop> {
         self.0.updates.fetch_add(1, Ordering::SeqCst);
         #[cfg(test)]
-        self.0.cost_stages.record(cost_stages::Stage::UpdateBegin);
+        self.0
+            .cost_stages
+            .record(prefix_cost_stages::Stage::UpdateBegin);
         #[cfg(test)]
-        if *self.0.structure_fault.lock().unwrap() == structure::Fault::DuplicateChild {
+        if *self.0.structure_fault.lock().unwrap() == structure_fault::Fault::DuplicateChild {
             // A genuine value-only write of the exact predecessor node. Its
             // first child is therefore a retained edge when describe duplicates
             // it. No pure edit can replace that child before the hostile check.
@@ -310,7 +256,9 @@ impl<I: PrefixSourceIndex> WorthQueryManagedIndexProvider<Catalog, I> for Provid
             }
         }
         #[cfg(test)]
-        self.0.cost_stages.record(cost_stages::Stage::UpdateEnd);
+        self.0
+            .cost_stages
+            .record(prefix_cost_stages::Stage::UpdateEnd);
         Ok(root)
     }
     fn query(

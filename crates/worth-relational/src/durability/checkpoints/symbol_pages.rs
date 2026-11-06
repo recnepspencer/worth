@@ -20,11 +20,43 @@ pub(crate) fn readmit(
     let failure =
         |cause| Failure::StorageUnavailable(RelationalStorageUnavailable { subject, cause });
     let payload = member_frame::decode(bytes, locator, MemberKind::Symbols).map_err(failure)?;
-    SymbolTableSnapshot::readmit_current(execution, payload).map_err(|stop| match stop {
+    SymbolTableSnapshot::readmit_current(execution, payload)
+        .map_err(|stop| readmission_failure(stop, subject))
+}
+
+fn readmission_failure(stop: RelationalRecoveryStop, subject: RelationalStorageSubject) -> Failure {
+    let failure =
+        |cause| Failure::StorageUnavailable(RelationalStorageUnavailable { subject, cause });
+    match stop {
         RelationalRecoveryStop::Request(cause) => Failure::Request(cause),
         RelationalRecoveryStop::Allocation(_) => failure(Cause::MemoryExhausted),
+        RelationalRecoveryStop::Content(cause) => Failure::Content(cause),
         RelationalRecoveryStop::Durability(_) | RelationalRecoveryStop::AdmissionImage(_) => {
             failure(Cause::Damaged)
         }
-    })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn content_size_refusal_survives_symbol_page_readmission() {
+        let refusal =
+            RelationalRecoveryStop::Content(crate::content::RelationalContentDenial::SizeLimit {
+                observed: 97,
+                maximum: 31,
+            });
+        let subject = RelationalStorageSubject::Symbols {
+            first: crate::symbols::data::Symbol(1),
+            last: crate::symbols::data::Symbol(2),
+        };
+        assert!(matches!(
+            readmission_failure(refusal, subject),
+            Failure::Content(crate::content::RelationalContentDenial::SizeLimit {
+                observed: 97,
+                maximum: 31,
+            })
+        ));
+    }
 }

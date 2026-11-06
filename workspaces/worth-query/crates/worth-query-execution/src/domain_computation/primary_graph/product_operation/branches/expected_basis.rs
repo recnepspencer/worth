@@ -36,7 +36,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
         use WorthQueryExpectedProductBasisSelectionDenial as Denial;
         let application = self.application;
         let execution = phase
-            .execution_request_for(&application.product_runtime)
+            .execution_request_for(&application.runtime.product_runtime)
             .map_err(|_| {
                 Denial::Admission(WorthQueryProductBranchAdmissionDenial::Refused(
                     crate::basis::WorthQueryProductBranchAdmissionRefusalKind::ForeignPhase,
@@ -50,6 +50,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
         let product = application
             .admit_with_observation_room(|| {
                 application
+                    .runtime
                     .product_runtime
                     .readmit_product_reference(description.world())
             })
@@ -57,6 +58,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
         // Native readmission also admits retained history. Currentness must
         // therefore be checked by that same owner before composing the selection.
         let (native, currentness) = application
+            .runtime
             .primary_provider
             .graph
             .with_runtime(&execution, |runtime| {

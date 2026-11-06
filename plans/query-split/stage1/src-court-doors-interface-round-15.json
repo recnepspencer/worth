@@ -1,0 +1,14 @@
+{
+ "interface_items": [
+  "domain_computation::authorization::operation_scope_binding::WorthQueryDecisionScopeWitness",
+  "domain_computation::execution_runtime::product_world::publication_binding::WorthQueryProductPublicationBinding",
+  "domain_computation::primary_graph::application_attempt::read_set::decision_reuse::CompletedDecisionReuseProof",
+  "domain_computation::primary_graph::application_checkpoint::DecodedApplicationCheckpoint",
+  "domain_computation::primary_graph::freshness::WorthQueryPrincipalReuseWitness",
+  "domain_computation::primary_graph::output_lineage::restoration::RestoredRecord",
+  "domain_computation::primary_graph::program_occurrence::presented_program::WorthQueryPresentedProgram",
+  "domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::publication::committed_application::WorthQueryPrimaryGraphCommittedApplication",
+  "domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::WorthQueryPrimaryGraphCommitEvidence",
+  "domain_computation::primary_graph::schema_layout::program_activation::WorthQueryProgramActivationLayout"
+ ]
+}

@@ -21,15 +21,19 @@ pub(super) fn merge<I: PrefixSourceIndex>(
             None => bounds,
             Some(before) => join_prefix_bounds(before, bounds, |left, right| {
                 #[cfg(test)]
-                calls.cost_stages.record(cost_stages::Stage::LoanBegin);
+                calls
+                    .cost_stages
+                    .record(prefix_cost_stages::Stage::LoanBegin);
                 let a = sources.get(left)?;
                 #[cfg(test)]
-                calls.cost_stages.record(cost_stages::Stage::LoanEnd);
+                calls.cost_stages.record(prefix_cost_stages::Stage::LoanEnd);
                 #[cfg(test)]
-                calls.cost_stages.record(cost_stages::Stage::LoanBegin);
+                calls
+                    .cost_stages
+                    .record(prefix_cost_stages::Stage::LoanBegin);
                 let b = sources.get(right)?;
                 #[cfg(test)]
-                calls.cost_stages.record(cost_stages::Stage::LoanEnd);
+                calls.cost_stages.record(prefix_cost_stages::Stage::LoanEnd);
                 a.with_text(query::name(), |a| {
                     b.with_text(query::name(), |b| {
                         compare_prefix_keys(a, 0, b, 0, |units| {
@@ -55,15 +59,19 @@ pub(super) fn may_match<I: PrefixSourceIndex>(
     #[cfg(not(test))]
     let _ = calls;
     #[cfg(test)]
-    calls.cost_stages.record(cost_stages::Stage::LoanBegin);
+    calls
+        .cost_stages
+        .record(prefix_cost_stages::Stage::LoanBegin);
     let lower = sources.get(bounds.lower)?;
     #[cfg(test)]
-    calls.cost_stages.record(cost_stages::Stage::LoanEnd);
+    calls.cost_stages.record(prefix_cost_stages::Stage::LoanEnd);
     #[cfg(test)]
-    calls.cost_stages.record(cost_stages::Stage::LoanBegin);
+    calls
+        .cost_stages
+        .record(prefix_cost_stages::Stage::LoanBegin);
     let upper = sources.get(bounds.upper)?;
     #[cfg(test)]
-    calls.cost_stages.record(cost_stages::Stage::LoanEnd);
+    calls.cost_stages.record(prefix_cost_stages::Stage::LoanEnd);
     lower
         .with_text(query::name(), |lower| {
             upper

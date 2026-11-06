@@ -6,6 +6,7 @@
 //! generation the publisher observed.
 
 use crate::PersistedRecordIdentity;
+use worth_foundational::CanonicalDigestId;
 
 use super::durable_root_routing::{decode_identity, encode_identity};
 
@@ -62,7 +63,7 @@ impl RecordAnchorName {
 pub struct RecordAnchor {
     name: RecordAnchorName,
     record: PersistedRecordIdentity,
-    record_payload_sha256: [u8; 32],
+    record_payload_sha256: CanonicalDigestId,
     generation: u64,
 }
 
@@ -74,7 +75,7 @@ impl RecordAnchor {
         self.record
     }
     pub const fn record_payload_sha256(self) -> [u8; 32] {
-        self.record_payload_sha256
+        *self.record_payload_sha256.bytes()
     }
     pub const fn generation(self) -> u64 {
         self.generation
@@ -88,7 +89,7 @@ pub struct RecordAnchorAdvance {
     name: RecordAnchorName,
     expected_generation: u64,
     record: PersistedRecordIdentity,
-    record_payload_sha256: [u8; 32],
+    record_payload_sha256: CanonicalDigestId,
 }
 
 impl RecordAnchorAdvance {
@@ -102,7 +103,7 @@ impl RecordAnchorAdvance {
             name,
             expected_generation,
             record,
-            record_payload_sha256,
+            record_payload_sha256: CanonicalDigestId::new(record_payload_sha256),
         })
     }
     pub const fn name(self) -> RecordAnchorName {
@@ -118,7 +119,7 @@ impl RecordAnchorAdvance {
         self.record
     }
     pub const fn record_payload_sha256(self) -> [u8; 32] {
-        self.record_payload_sha256
+        *self.record_payload_sha256.bytes()
     }
 }
 
@@ -192,7 +193,7 @@ impl RecordAnchorTable {
                 &mut target[8 + index * RECORD_ANCHOR_ENTRY_BYTES..][..RECORD_ANCHOR_ENTRY_BYTES];
             entry[..32].copy_from_slice(&anchor.name.0);
             encode_identity(&mut entry[32..56], anchor.record);
-            entry[56..88].copy_from_slice(&anchor.record_payload_sha256);
+            entry[56..88].copy_from_slice(anchor.record_payload_sha256.bytes());
             entry[88..96].copy_from_slice(&anchor.generation.to_le_bytes());
         }
     }
@@ -216,7 +217,7 @@ impl RecordAnchorTable {
             let anchor = RecordAnchor {
                 name: RecordAnchorName::decode(&entry[..32])?,
                 record: decode_identity(&entry[32..56])?,
-                record_payload_sha256: entry[56..88].try_into().ok()?,
+                record_payload_sha256: CanonicalDigestId::new(entry[56..88].try_into().ok()?),
                 generation: u64::from_le_bytes(entry[88..96].try_into().ok()?),
             };
             if anchor.generation == 0

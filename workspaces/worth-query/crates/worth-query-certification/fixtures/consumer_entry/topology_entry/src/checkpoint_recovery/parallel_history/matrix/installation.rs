@@ -74,5 +74,9 @@ where
     use crate::checkpoint_recovery::support::authentication_fixture::{
         authenticate_in_realm, FixtureAuthenticationRealm,
     };
-    authenticate_in_realm(application, FixtureAuthenticationRealm::NeutralHistory)
+    authenticate_in_realm(
+        application,
+        FixtureAuthenticationRealm::NeutralHistory,
+        authentication::WorthQueryAdmissionClock::system(),
+    )
 }

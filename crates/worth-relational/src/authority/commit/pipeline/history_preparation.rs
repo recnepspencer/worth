@@ -28,6 +28,5 @@ fn prepare_draft(
     context: AuthoritativeCommitContext,
 ) -> Result<CommitPhaseBacking<PreparedCommitExecution>, TransactionCommitError> {
     let admitted = super::execution_admission::admit_commit_execution(runtime, context)?;
-    let prepared = super::draft_execution::prepare_commit_execution(execution, runtime, admitted)?;
-    CommitPhaseBacking::new(execution, prepared)
+    super::draft_execution::prepare_commit_execution(execution, runtime, admitted)
 }

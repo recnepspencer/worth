@@ -141,7 +141,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
         .activation()
         .published()
         .ok_or(WorthQueryBranchAdoptionPreparationDenial::ProgramActivationUnavailable)?;
-    let graph = &application.primary_provider.graph;
+    let graph = &application.runtime.primary_provider.graph;
     let layout = graph.layout.program_activation().clone();
     let basis = selected.product().relational_basis();
 
@@ -161,7 +161,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
         let workflow_request = WorkflowAdoptionInventoryRequest {
             layout: graph.layout.workflow(),
             branch_occurrence: selected.product().product_branch().occurrence_ordinal(),
-            coverage: &application.workflow_coverage,
+            coverage: &application.runtime.workflow_coverage,
             requirements: &requirements,
             source: &source,
             target,
@@ -234,11 +234,16 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
             .prepare_branch_transaction(execution, transaction)
             .map_err(map_relational_preparation_denial)
     })?;
-    super::selector_indexes::prepare(execution, selected, &mut candidate)?;
+    super::super::super::candidate_selectors::prepare(execution, selected, &mut candidate)
+        .map_err(|cause| match cause {
+            super::super::super::candidate_selectors::CandidateSelectorMaintenanceDenial::Snapshot(cause) => WorthQueryBranchAdoptionPreparationDenial::SelectorSnapshot(cause),
+            super::super::super::candidate_selectors::CandidateSelectorMaintenanceDenial::Maintenance(cause) => WorthQueryBranchAdoptionPreparationDenial::SelectorMaintenance(cause),
+        })?;
     let successor_observation_requested = false;
     let recovery = selected.product().publication_binding().recovery();
     let disposition = selected
         .application()
+        .runtime
         .primary_provider
         .unpublished_idempotency_disposition();
     admission.validate_current_authority().map_err(|cause| WorthQueryBranchAdoptionPreparationDenial::Authorization(super::super::authorization::WorthQueryProgramAdoptionAuthorizationDenial::Authorization(cause)))?;
@@ -247,7 +252,10 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
         .publication_binding()
         .prepare_relational_candidate(candidate, request, successor_observation_requested)
         .map_err(|denial| match denial {
-            PublicationDenial::Stopped(stop) => {
+            PublicationDenial::ClockMismatch => {
+                WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))
+            },
+PublicationDenial::Stopped(stop) => {
                 WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(advancement_denial(stop))
             }
             PublicationDenial::Refused(no_effect) => {
@@ -258,6 +266,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
         branch: selected.product().product_branch(),
         owner_identity: selected
             .application()
+            .runtime
             .product_runtime
             .owner
             .owner_identity(),

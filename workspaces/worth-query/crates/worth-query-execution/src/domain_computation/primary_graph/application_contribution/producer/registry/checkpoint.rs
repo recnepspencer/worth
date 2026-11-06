@@ -39,8 +39,10 @@ where
                     checkpoint.scope.local_slot(),
                     checkpoint.scope.generation(),
                 ),
-                source_partition: checkpoint.source_partition,
-                source_epoch: checkpoint.source,
+                source_partition: worth_foundational::CanonicalDigestId::new(
+                    checkpoint.source_partition,
+                ),
+                source_epoch: worth_foundational::CanonicalDigestId::new(checkpoint.source),
             },
         )
     }
@@ -78,7 +80,7 @@ where
     }
 }
 
-pub(super) fn installed_checkpoint_producer<'entries, Schema>(
+pub fn installed_checkpoint_producer<'entries, Schema>(
     entries: &'entries std::collections::BTreeMap<
         String,
         std::sync::Arc<super::InstalledProducerProvider<Schema>>,
@@ -91,7 +93,7 @@ pub(super) fn installed_checkpoint_producer<'entries, Schema>(
         .ok_or_else(|| format!("checkpoint output producer {producer} is not installed"))
 }
 
-pub(super) fn validate_checkpoint_output_meaning(
+pub fn validate_checkpoint_output_meaning(
     installed: &super::DeclaredProducerBinding,
     checkpoint: &crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity,
 ) -> Result<(), String> {

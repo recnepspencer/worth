@@ -38,6 +38,23 @@ where
         Ok(attempt)
     }
 
+    pub(in crate::lifecycle::owner) fn prepare_retained_creation(
+        &self,
+        source: ProductBranchObservation,
+        intent: ProductBranchCreationIntent,
+        retained: worth_relational::facade::branch::AdmittedRelationalRetainedForkSource,
+        cancellation: &RuntimeWorldCancellationToken,
+        deadline: Option<RuntimeWorldInstant>,
+    ) -> Result<ReservedBranchCreationAttempt, RuntimeWorldBranchAdmissionDenial> {
+        self.admit_retained_source_lifecycle(&source)?;
+        creation_pre_effect_denial(self, cancellation, deadline)?;
+        let plan =
+            LoweredBranchCreationPlan::lower(source.clone(), intent)?.from_retained(retained);
+        let attempt = self.reserve_creation_attempt(source, plan, deadline)?;
+        creation_pre_effect_denial(self, cancellation, deadline)?;
+        Ok(attempt)
+    }
+
     /// The pre-reservation admission for a creation: this owner, an open and
     /// bootstrapped world, an intent that carries both per-owner postures, and
     /// an admitted source that still matches the registry's current head for

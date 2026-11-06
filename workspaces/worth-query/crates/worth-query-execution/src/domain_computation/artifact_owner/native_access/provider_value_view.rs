@@ -22,7 +22,6 @@ pub enum WorthQueryArtifactProviderValueView<'a> {
     BigInt(&'a CanonicalBigInt),
     Rational(&'a CanonicalRational),
     String(&'a InternedString),
-    Bytes(&'a ContentRefId),
     Uuid(&'a [u8; 16]),
     Date(&'a CanonicalDate),
     Time(&'a CanonicalTime),
@@ -57,7 +56,6 @@ impl WorthQueryArtifactProviderValueView<'_> {
                 InternedString::Raw(value) => value.capacity(),
                 InternedString::Symbol(_) => 0,
             }),
-            Self::Bytes(value) => std::mem::size_of_val(value),
             Self::Uuid(value) => std::mem::size_of_val(value),
             Self::Date(value) => std::mem::size_of_val(value),
             Self::Time(value) => std::mem::size_of_val(value),
@@ -92,7 +90,6 @@ impl WorthQueryArtifactProviderValueView<'_> {
                 | (Self::BigInt(_), AspectShape::Scalar(Scalar::BigInt))
                 | (Self::Rational(_), AspectShape::Scalar(Scalar::Rational))
                 | (Self::String(_), AspectShape::Scalar(Scalar::String))
-                | (Self::Bytes(_), AspectShape::Scalar(Scalar::Bytes))
                 | (Self::Uuid(_), AspectShape::Scalar(Scalar::Uuid))
                 | (Self::Date(_), AspectShape::Scalar(Scalar::Date))
                 | (Self::Time(_), AspectShape::Scalar(Scalar::Time))
@@ -108,5 +105,4 @@ impl WorthQueryArtifactProviderValueView<'_> {
     }
 }
 
-#[cfg(test)]
-mod tests;
+mod court_doors_for_test;

@@ -19,6 +19,7 @@ use worth_query_testkit_host::facade::host::{
 };
 use worth_store_application::*;
 mod inspection;
+mod retired_format;
 pub(super) type DirectoryHome = WorldReadmittedApplicationHome<(), (), (), (), ()>;
 pub(super) type Query = PreparedHomeQueryRuntime<HomeIdentitySchema, HomeProgram>;
 
@@ -265,7 +266,7 @@ pub(super) fn meaning() -> PreparedHomeApplication<HomeIdentitySchema, HomeProgr
 }
 
 #[test]
-fn memory_multibatch_bootstrap_keeps_its_original_three_commit_basis() {
+fn memory_multibatch_bootstrap_publishes_the_same_completion_basis_as_directory() {
     use worth_query_host::facade::{
         admission::authenticated_principal::{
             WorthQueryCancellationSource, WorthQueryRequestScope,
@@ -295,7 +296,7 @@ fn memory_multibatch_bootstrap_keeps_its_original_three_commit_basis() {
     .unwrap()
     .unwrap_or_else(|refused| panic!("Memory bootstrap: {refused:?}"));
     let cancellation = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     {
         let runtime = home.runtime();
         let principal = identity::inspection_authentication::authenticate(
@@ -308,7 +309,7 @@ fn memory_multibatch_bootstrap_keeps_its_original_three_commit_basis() {
             .execute()
             .unwrap();
         assert_eq!(result.rows(), &[7]);
-        assert_eq!(result.receipt().inspect().basis().version(), 3);
+        assert_eq!(result.receipt().inspect().basis().version(), 4);
         assert_eq!(runtime.runtime().publication().principal_binding_count(), 2);
     }
     let refused = home

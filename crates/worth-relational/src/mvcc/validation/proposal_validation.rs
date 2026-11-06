@@ -4,6 +4,7 @@ use crate::transactions::data::{
 };
 
 use super::proposal_invariants::stale_validated_proposal;
+use super::proposal_source::RelationalProposalSource;
 use super::validated_proposal::{
     RelationalMutationInvariantEvidence, StrategyProposalDecoration, ValidatedProposalState,
     ValidatedRelationalProposal,
@@ -30,7 +31,15 @@ impl RelationalPreparationRuntime {
             self.clone()
         };
         runtime
-            .validate_branch_transaction_source(execution, transaction, None, None, context)
+            .validate_branch_transaction_source(
+                execution,
+                transaction,
+                RelationalProposalSource::Transaction {
+                    lowered: None,
+                    strategy: None,
+                },
+                context,
+            )
             .map_err(crate::execution::allocation_commit_error)
     }
 
@@ -50,8 +59,29 @@ impl RelationalPreparationRuntime {
         runtime.validate_branch_transaction_source(
             execution,
             transaction,
-            Some((selected_branch_state, merged_plan)),
-            Some(strategy),
+            RelationalProposalSource::Transaction {
+                lowered: Some((selected_branch_state, merged_plan)),
+                strategy: Some(strategy),
+            },
+            None,
+        )
+    }
+
+    pub(in crate::mvcc) fn validate_consulted_retained_entity_selection(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        transaction: crate::mvcc::BranchBoundRelationalTransaction,
+        retained: crate::authority::commit::semantic_plan::PreparedRetainedEntityPayload,
+    ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
+        let runtime = if execution.is_leased() {
+            self.with_commit_work_budget(None)
+        } else {
+            self.clone()
+        };
+        runtime.validate_branch_transaction_source(
+            execution,
+            transaction,
+            RelationalProposalSource::RetainedEntitySelection(retained),
             None,
         )
     }
@@ -60,32 +90,18 @@ impl RelationalPreparationRuntime {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
-        lowered: Option<(
-            crate::branch::SelectedRelationalBranchState,
-            crate::transactions::data::MergedCommitPlan,
-        )>,
-        strategy: Option<StrategyProposalDecoration>,
+        source: RelationalProposalSource,
         context: Option<&dyn crate::validation::candidate_source::ManagedIndexSourceContextFactory>,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
         self.select_home_contracts(&transaction.basis, transaction.home_target.as_ref())?
-            .validate_selected_branch_transaction_source(
-                execution,
-                transaction,
-                lowered,
-                strategy,
-                context,
-            )
+            .validate_selected_branch_transaction_source(execution, transaction, source, context)
     }
 
     fn validate_selected_branch_transaction_source(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         mut transaction: crate::mvcc::BranchBoundRelationalTransaction,
-        lowered: Option<(
-            crate::branch::SelectedRelationalBranchState,
-            crate::transactions::data::MergedCommitPlan,
-        )>,
-        strategy: Option<StrategyProposalDecoration>,
+        source: RelationalProposalSource,
         context: Option<&dyn crate::validation::candidate_source::ManagedIndexSourceContextFactory>,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
         self.durability_admission
@@ -152,7 +168,7 @@ impl RelationalPreparationRuntime {
             commit_boundary,
             mutation_sensitive,
             publication,
-        } = self.prepare_proposal_round(execution, &mut transaction, lowered.as_ref(), context)?;
+        } = self.prepare_proposal_round(execution, &mut transaction, &source, context)?;
         require_not_interrupted(
             &transaction.control,
             &transaction.basis.inner.retention_binding,
@@ -170,11 +186,12 @@ impl RelationalPreparationRuntime {
                 [&commit_boundary, &mutation_sensitive, &publication],
                 &self.schema_contract_runtime.custom_invariant_registries,
             );
+        let strategy = source.into_strategy();
         let strategy_commit_artifacts = strategy.as_ref().map(|strategy| {
             let validation_cost =
                 crate::commit_strategies::data::StrategyPreviewValidationCostSummary::new(
                     proposed_version,
-                    prepared.merged_plan.plan().merged_intents.len(),
+                    prepared.plan.view().commands().merged_intents.len(),
                     prepared.structural_summary.touched_partitions.len(),
                     prepared.structural_summary.bulk_entity_slots_reserved,
                     prepared.structural_summary.bulk_relation_slots_reserved,
@@ -291,7 +308,7 @@ impl RelationalRuntime {
     }
 }
 
-fn require_not_interrupted(
+pub(in crate::mvcc) fn require_not_interrupted(
     control: &crate::mvcc::RelationalOperationControl,
     retention_binding: &crate::history::retention::RelationalBranchRetentionBinding,
     boundary: crate::mvcc::RelationalInterruptionBoundary,

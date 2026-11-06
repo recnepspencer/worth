@@ -55,6 +55,10 @@ use worth_query_host::facade::{
     },
 };
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-builder=1 thread-spawn=1: The example joins one actor with its declared bootstrap stack; native request computation retains its Execution authority."
+)]
 fn main() {
     std::thread::Builder::new()
         .name("authored-workflow".to_owned())

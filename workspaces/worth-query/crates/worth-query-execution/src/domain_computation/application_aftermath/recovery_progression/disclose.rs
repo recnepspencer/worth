@@ -79,7 +79,7 @@ where
         Input: ApplicationCapabilityRequest<Schema, Capability>,
     {
         let authority = access
-            .runtime_authority_for(self.product_runtime.owner.owner_identity())
+            .runtime_authority_for(self.runtime.product_runtime.owner.owner_identity())
             .map_err(|cause| {
                 WorthQueryRecoveryHandleDenial::new(match cause {
                     worth_proof::HomeIncarnationDenial::StaleIncarnation => {
@@ -99,7 +99,7 @@ where
         }
         Ok(WorthQueryRecoveryDisclosureAdmission::mint(
             self.runtime.authority_identity(),
-            self.product_runtime.owner.owner_identity(),
+            self.runtime.product_runtime.owner.owner_identity(),
         ))
     }
 }

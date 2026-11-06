@@ -1,7 +1,7 @@
 error[E0271]: type mismatch resolving `<FoundationalBoundaryReportSurface<&str> as FoundationalBoundaryCategorySurface>::Category == SummaryCategory`
- --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_artifacts/categories/report_surface_cannot_satisfy_summary_surface_api.rs
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_artifacts/categories/report_surface_cannot_satisfy_summary_surface_api.rs:7:42
   |
-  |     let _ = boundary_summary_category_of(&report);
+7 |     let _ = boundary_summary_category_of(&report);
   |             ---------------------------- ^^^^^^^ expected `SummaryCategory`, found `ReportCategory`
   |             |
   |             required by a bound introduced by this call

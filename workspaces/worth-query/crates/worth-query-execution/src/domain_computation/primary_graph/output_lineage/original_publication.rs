@@ -128,6 +128,3 @@ impl WorthQueryApplicationOutputLineage {
         }
     }
 }
-
-#[cfg(test)]
-mod tests;

@@ -142,6 +142,52 @@ fn inline_header_allocation_walk_matches_actual_child_nodes_and_delta() {
     assert_eq!(owners(&old).0, before.0);
 }
 #[test]
+fn custody_only_replacement_visits_each_actual_owner_in_both_directions() {
+    let budget = worth_execution::SerialMemoryBudget::new(Some(1 << 20));
+    let custody = || {
+        HistoricalKindCustody::new(std::sync::Mutex::new(
+            budget
+                .reserve(HistoricalKindCustody::layout_bytes())
+                .unwrap(),
+        ))
+    };
+    let mut old = SparseAdjacencyTable::default();
+    old.ensure(11, &policy(AdjacencyBackend::InlineSmallDegreeAdjacency));
+    for owner in [custody(), custody()] {
+        let mut current = old.clone();
+        current
+            .get_mut(11)
+            .unwrap()
+            .reset_historical_kind_buckets_with_custody(Some(owner));
+        let old_set = old.get(11).unwrap();
+        let current_set = current.get(11).unwrap();
+        assert!(old_set
+            .entries()
+            .current
+            .same_storage(&current_set.entries().current));
+        assert!(!old_set.same_storage(current_set));
+        assert!(current_set.same_storage(&current_set.clone()));
+        for (new, previous) in [(&current, &old), (&old, &current)] {
+            let before = owners(previous);
+            let after = owners(new);
+            let expected = after
+                .0
+                .iter()
+                .filter(|(id, _)| !before.0.contains_key(id))
+                .map(|(&id, &bytes)| (id, bytes))
+                .collect::<BTreeMap<_, _>>();
+            let mut actual = Owners::default();
+            new.visit_new_authoritative_allocations(previous, &mut actual);
+            new.visit_new_cache_allocations(previous, &mut actual);
+            assert_eq!(actual.0, expected);
+        }
+        old = current;
+    }
+    drop(old);
+    assert_eq!(budget.charged_memory_bytes(), 0);
+}
+
+#[test]
 fn inline_adjacency_views_preserve_legacy_named_and_compact_sequence_wire() {
     let mut set = AdjacencySet::new(&policy(AdjacencyBackend::CompressedFanoutAdjacency));
     set.insert_at(KindId(7), relation(3), VersionId(1));

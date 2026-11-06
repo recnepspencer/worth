@@ -208,7 +208,7 @@ fn readmit_contiguous_tail(
             .into());
         }
         let readmitted = artifact
-            .readmit_owned(execution)
+            .readmit_framed(execution)
             .map_err(|refusal| artifact_refusal_stop(expected, refusal))?;
         tail.push(readmitted);
     }
@@ -222,6 +222,18 @@ fn artifact_refusal_stop(
     match refusal {
         RelationalCanonicalCommitArtifactRefusal::Request(cause) => {
             RelationalRecoveryStop::Request(cause)
+        }
+        RelationalCanonicalCommitArtifactRefusal::Content(cause) => cause.into(),
+        RelationalCanonicalCommitArtifactRefusal::FieldText(cause) => {
+            match crate::symbols::data::field_text_recovery_stop(cause) {
+                RelationalRecoveryStop::Durability(mut error)
+                    if error.class == RecoveryFailureClass::CorruptCheckpoint =>
+                {
+                    error.class = RecoveryFailureClass::CorruptCanonicalArtifact;
+                    error.into()
+                }
+                stop => stop,
+            }
         }
         refusal => DurabilityError::new(
             RecoveryFailureClass::CorruptCanonicalArtifact,

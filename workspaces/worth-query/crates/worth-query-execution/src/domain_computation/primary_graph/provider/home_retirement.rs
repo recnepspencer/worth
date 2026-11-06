@@ -21,6 +21,12 @@ enum ProviderRetirementStage {
 }
 
 impl PrimaryProviderCustody {
+    pub(in crate::domain_computation::primary_graph) fn retained_for_teardown(
+        &self,
+    ) -> Option<Arc<WorthQueryPrimaryGraphProvider>> {
+        self.serving.clone()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn new(
         provider: Arc<WorthQueryPrimaryGraphProvider>,
     ) -> Self {

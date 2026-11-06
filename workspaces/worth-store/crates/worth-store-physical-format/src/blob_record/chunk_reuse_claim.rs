@@ -1,4 +1,5 @@
 use crate::PersistedRecordIdentity;
+use worth_foundational::CanonicalDigestId;
 
 use super::envelope::{admitted_chunk_size, encode, nonzero_16, nonzero_32};
 use super::{BlobRecordDenial, BlobRecordKind};
@@ -13,10 +14,10 @@ pub struct BlobChunkReuseClaimV1 {
     store: [u8; 16],
     destination_session: [u8; 16],
     destination_ordinal: u64,
-    scope: [u8; 32],
+    scope: CanonicalDigestId,
     chunk_size: u32,
     chunk_length: u32,
-    stored_digest: [u8; 32],
+    stored_digest: CanonicalDigestId,
     selected_chunk: PersistedRecordIdentity,
     source_publication: PersistedRecordIdentity,
     source_ordinal: u64,
@@ -44,10 +45,10 @@ impl BlobChunkReuseClaimV1 {
             store: nonzero_16(store)?,
             destination_session: nonzero_16(destination_session)?,
             destination_ordinal,
-            scope: nonzero_32(scope)?,
+            scope: CanonicalDigestId::new(nonzero_32(scope)?),
             chunk_size,
             chunk_length,
-            stored_digest: nonzero_32(stored_digest)?,
+            stored_digest: CanonicalDigestId::new(nonzero_32(stored_digest)?),
             selected_chunk,
             source_publication,
             source_ordinal,
@@ -59,10 +60,10 @@ impl BlobChunkReuseClaimV1 {
         payload.extend_from_slice(&self.store);
         payload.extend_from_slice(&self.destination_session);
         payload.extend_from_slice(&self.destination_ordinal.to_le_bytes());
-        payload.extend_from_slice(&self.scope);
+        payload.extend_from_slice(self.scope.bytes());
         payload.extend_from_slice(&self.chunk_size.to_le_bytes());
         payload.extend_from_slice(&self.chunk_length.to_le_bytes());
-        payload.extend_from_slice(&self.stored_digest);
+        payload.extend_from_slice(self.stored_digest.bytes());
         put_record(&mut payload, self.selected_chunk);
         put_record(&mut payload, self.source_publication);
         payload.extend_from_slice(&self.source_ordinal.to_le_bytes());
@@ -106,7 +107,7 @@ impl BlobChunkReuseClaimV1 {
         self.destination_ordinal
     }
     pub const fn scope(self) -> [u8; 32] {
-        self.scope
+        *self.scope.bytes()
     }
     pub const fn chunk_size(self) -> u32 {
         self.chunk_size
@@ -115,7 +116,7 @@ impl BlobChunkReuseClaimV1 {
         self.chunk_length
     }
     pub const fn stored_digest(self) -> [u8; 32] {
-        self.stored_digest
+        *self.stored_digest.bytes()
     }
     pub const fn selected_chunk(self) -> PersistedRecordIdentity {
         self.selected_chunk

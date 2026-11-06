@@ -168,9 +168,10 @@ fn nonempty_source_and_native_rule_compilation_obeys_the_original_memory_and_can
         let limited = SerialMemoryBudget::new(Some(charged - 1));
         let request =
             SerialRequest::from_memory(limited.clone(), CancellationSource::new().token(), None);
-        let denied = compile(&ExecutionRequest::serial(&request))
-            .err()
-            .expect("the original finite budget cannot retain the measured compilation");
+        let denied = match compile(&ExecutionRequest::serial(&request)) {
+            Ok(_) => panic!("the original finite budget cannot retain the measured compilation"),
+            Err(denied) => denied,
+        };
         let cause = match denied {
             Denial::Execution(cause) => cause,
             Denial::Request(cause) => Cause::from(cause),
@@ -231,10 +232,10 @@ fn fresh_native_installation_refuses_original_memory_before_publication_and_fund
         SerialRequest::from_memory(memory.clone(), CancellationSource::new().token(), None);
     let attempt =
         fresh_installation::install(&mut home, &setup, &ExecutionRequest::serial(&request));
-    let refused = attempt
-        .result
-        .err()
-        .expect("the actual zero policy must refuse installation");
+    let refused = match attempt.result {
+        Ok(_) => panic!("the actual zero policy must refuse installation"),
+        Err(refused) => refused,
+    };
     assert!(matches!(
         refused.kind(),
         Kind::Request(Cause::PolicyMemoryExhausted { .. })
@@ -303,10 +304,10 @@ fn cancellation_during_fresh_native_rule_emission_refunds_backing_before_publica
         observed.load(Ordering::SeqCst),
         "the real admitted native emission frame must be observed"
     );
-    let refused = attempt
-        .result
-        .err()
-        .expect("the original cancellation must stop the real compiler");
+    let refused = match attempt.result {
+        Ok(_) => panic!("the original cancellation must stop the real compiler"),
+        Err(refused) => refused,
+    };
     assert_eq!(refused.kind(), Kind::Request(Cause::Cancelled));
     assert_eq!(attempt.before, attempt.after);
     assert_eq!(memory.charged_memory_bytes(), 0);

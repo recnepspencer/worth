@@ -1,11 +1,12 @@
 use crate::PersistedRecordIdentity;
+use worth_foundational::CanonicalDigestId;
 
 /// The authoritative publication whose selected bytes a derived directory has indexed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct IndexedThroughBlobPublication {
     root_generation: u64,
     record: PersistedRecordIdentity,
-    encoded_digest: [u8; 32],
+    encoded_digest: CanonicalDigestId,
 }
 
 impl IndexedThroughBlobPublication {
@@ -17,7 +18,7 @@ impl IndexedThroughBlobPublication {
         (root_generation != 0).then_some(Self {
             root_generation,
             record,
-            encoded_digest,
+            encoded_digest: CanonicalDigestId::new(encoded_digest),
         })
     }
 
@@ -30,7 +31,7 @@ impl IndexedThroughBlobPublication {
     }
 
     pub const fn encoded_digest(self) -> [u8; 32] {
-        self.encoded_digest
+        *self.encoded_digest.bytes()
     }
 }
 

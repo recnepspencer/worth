@@ -1,6 +1,8 @@
 //! Exact original source/input and producer/output joins, after fresh diagnostics.
 use super::WorthQueryApplicationInspectionTarget;
 mod evaluation;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) use evaluation::require_compared;
 mod output_refusal;
 pub use evaluation::{
     WorthQueryApplicationProducerEvaluation, WorthQueryProducerEvaluationDecision,
@@ -49,9 +51,12 @@ pub enum WorthQueryProducerConnectionDenial {
 }
 
 /// Only the connection owner can attach output evidence after diagnostic admission.
-pub(super) enum ConnectionRefusal {
+pub enum ConnectionRefusal {
     General(WorthQueryProducerConnectionDenial),
     Output(WorthQueryProducerOutputConnectionDenial),
+    Capture(
+        crate::domain_computation::primary_graph::application_attempt::OutputFieldCaptureFailure,
+    ),
 }
 impl From<WorthQueryProducerConnectionDenial> for ConnectionRefusal {
     fn from(cause: WorthQueryProducerConnectionDenial) -> Self {
@@ -63,6 +68,9 @@ impl ConnectionRefusal {
         match self {
             Self::General(cause) => *cause,
             Self::Output(_) => WorthQueryProducerConnectionDenial::OutputUnconnected,
+            Self::Capture(_) => WorthQueryProducerConnectionDenial::Evaluation(
+                WorthQueryProducerEvaluationDenial::OriginalCaptureUnavailable,
+            ),
         }
     }
 }
@@ -166,7 +174,7 @@ pub(super) fn connect<Schema: worth_query_installation::facade::ApplicationSchem
         let observed = overlap::ObservationConnection {
             original,
             diagnostic,
-            layout: &runtime.primary_provider.graph.layout,
+            layout: &runtime.runtime.primary_provider.graph.layout,
             contracts: runtime.installed_schema().native_contracts(),
         };
         source::require_input(

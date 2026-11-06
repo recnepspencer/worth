@@ -3,13 +3,11 @@ use super::{OwnedProjectionRows, WorthQueryApplicationProjectionNode};
 use crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance;
 use worth_relational::facade::identity::EntityId;
 
-pub(in crate::domain_computation::primary_graph::application_query) struct WorthQueryApplicationWorkingProjectionTree
-{
+pub struct WorthQueryApplicationWorkingProjectionTree {
     rows: Vec<WorthQueryApplicationProjectionNode>,
 }
 
-pub(in crate::domain_computation::primary_graph::application_query) struct WorthQueryApplicationDisclosedProjectionTree
-{
+pub struct WorthQueryApplicationDisclosedProjectionTree {
     rows: DisclosedRows,
 }
 
@@ -21,9 +19,7 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Worth
 }
 
 impl WorthQueryApplicationWorkingProjectionTree {
-    pub(in crate::domain_computation::primary_graph::application_query) fn new(
-        rows: Vec<WorthQueryApplicationProjectionNode>,
-    ) -> Self {
+    pub fn new(rows: Vec<WorthQueryApplicationProjectionNode>) -> Self {
         Self { rows }
     }
 
@@ -42,17 +38,13 @@ impl WorthQueryApplicationWorkingProjectionTree {
 }
 
 impl WorthQueryApplicationDisclosedProjectionTree {
-    pub(in crate::domain_computation::primary_graph::application_query) fn from_managed(
-        rows: OwnedProjectionRows,
-    ) -> Self {
+    pub fn from_managed(rows: OwnedProjectionRows) -> Self {
         Self {
             rows: DisclosedRows::Owned(rows),
         }
     }
 
-    pub(in crate::domain_computation::primary_graph::application_query) fn raw_rows(
-        &self,
-    ) -> &[WorthQueryApplicationProjectionNode] {
+    pub fn raw_rows(&self) -> &[WorthQueryApplicationProjectionNode] {
         self.rows.rows()
     }
 
@@ -166,3 +158,5 @@ impl worth_execution::ChargedBytes for WorthQueryApplicationDisclosedProjectionT
         self.rows.payload_bytes() as u64
     }
 }
+
+mod court_doors_for_test;

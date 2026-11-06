@@ -8,6 +8,14 @@ pub(crate) fn storage_read_denial(
     failure: RelationalResidencyDemandFailure,
 ) -> TransactionCommitError {
     match failure {
+        RelationalResidencyDemandFailure::Content(cause) => {
+            TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
+                kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+                    cause.into_execution_cause(),
+                ),
+                partition_identity: None,
+            })
+        }
         RelationalResidencyDemandFailure::StorageUnavailable(failure) => {
             TransactionCommitError::preparation(CommitPreparationError::storage_unavailable(
                 basis.identity().branch_id().clone(),

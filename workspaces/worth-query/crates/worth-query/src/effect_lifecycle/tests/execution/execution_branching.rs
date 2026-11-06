@@ -34,23 +34,23 @@ fn lowered_mutation_execution_preserves_branch_scoped_authority_target() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = relational_runtime_with_intent_strategy();
+    let runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(
         request_execution,
-        &mut runtime,
+        &runtime,
         "before",
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
         request_execution,
-        &mut runtime,
+        &runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),
     )
     .expect("branch-a should be created");
     let main_head_before = update_entity_name(
         request_execution,
-        &mut runtime,
+        &runtime,
         entity_id,
         "main-diverged",
         BranchId("main".to_string()),
@@ -70,7 +70,7 @@ fn lowered_mutation_execution_preserves_branch_scoped_authority_target() {
     let executed = lowered
         .execute_with(
             request_execution,
-            EffectExecutionAuthority::relational(&mut runtime),
+            EffectExecutionAuthority::relational(&runtime),
         )
         .expect("lowered mutation should execute");
 
@@ -87,7 +87,7 @@ fn lowered_mutation_execution_preserves_branch_scoped_authority_target() {
         exact_branch_head_commit_id(&runtime, "branch-a"),
         commit.outcome().commit.commit_id
     );
-    let snapshot = exact_branch_snapshot(&mut runtime, "branch-a");
+    let snapshot = exact_branch_snapshot(&runtime, "branch-a");
     let read_view = runtime
         .read_truth()
         .read_snapshot(&snapshot, request_execution)
@@ -107,16 +107,16 @@ fn retained_lowered_mutation_denies_after_intervening_truth_change() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = relational_runtime_with_intent_strategy();
+    let runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(
         request_execution,
-        &mut runtime,
+        &runtime,
         "before",
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
         request_execution,
-        &mut runtime,
+        &runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),
     )
@@ -135,7 +135,7 @@ fn retained_lowered_mutation_denies_after_intervening_truth_change() {
     let branch_head_before = exact_branch_head_commit_id(&runtime, "branch-a");
     update_entity_name(
         request_execution,
-        &mut runtime,
+        &runtime,
         entity_id,
         "intervening",
         BranchId("branch-a".to_string()),
@@ -144,7 +144,7 @@ fn retained_lowered_mutation_denies_after_intervening_truth_change() {
     let denial = lowered
         .execute_with(
             request_execution,
-            EffectExecutionAuthority::relational(&mut runtime),
+            EffectExecutionAuthority::relational(&runtime),
         )
         .expect_err("retained lowered mutation should deny stale exact-basis replay");
     let denial = denial.denial().expect("stale replay is a denial");
@@ -166,7 +166,7 @@ fn retained_lowered_mutation_denies_after_intervening_truth_change() {
         exact_branch_head_commit_id(&runtime, "branch-a"),
         branch_head_before
     );
-    let snapshot = exact_branch_snapshot(&mut runtime, "branch-a");
+    let snapshot = exact_branch_snapshot(&runtime, "branch-a");
     let read_view = runtime
         .read_truth()
         .read_snapshot(&snapshot, request_execution)
@@ -186,16 +186,16 @@ fn lowered_branch_mutation_does_not_deny_when_only_another_branch_moves() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = relational_runtime_with_intent_strategy();
+    let runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(
         request_execution,
-        &mut runtime,
+        &runtime,
         "before",
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
         request_execution,
-        &mut runtime,
+        &runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),
     )
@@ -213,7 +213,7 @@ fn lowered_branch_mutation_does_not_deny_when_only_another_branch_moves() {
 
     let main_head_before = update_entity_name(
         request_execution,
-        &mut runtime,
+        &runtime,
         entity_id,
         "main-only-intervening",
         BranchId("main".to_string()),
@@ -222,7 +222,7 @@ fn lowered_branch_mutation_does_not_deny_when_only_another_branch_moves() {
     let executed = lowered
         .execute_with(
             request_execution,
-            EffectExecutionAuthority::relational(&mut runtime),
+            EffectExecutionAuthority::relational(&runtime),
         )
         .expect("unrelated main-branch movement should not stale-deny branch-a mutation");
 

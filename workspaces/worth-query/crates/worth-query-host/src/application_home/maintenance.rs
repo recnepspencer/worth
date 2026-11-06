@@ -21,18 +21,28 @@ impl WorthQueryHomeMaintenance for HomeMaintenance {
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), worth_query_execution::facade::primary_graph::WorthQueryHomeRetirementDenial>
     {
+        if self
+            .operation
+            .as_ref()
+            .is_some_and(|operation| operation.checkpoint_maintenance_is_active())
+        {
+            use worth_query_execution::facade::primary_graph::{
+                WorthQueryHomeRetirementDenial, WorthQueryHomeRetirementOwner,
+            };
+            return Err(WorthQueryHomeRetirementDenial::Busy(
+                WorthQueryHomeRetirementOwner::HomeMaintenance,
+            ));
+        }
         request.consult().map_err(
             worth_query_execution::facade::primary_graph::WorthQueryHomeRetirementDenial::Execution,
         )
     }
-    fn after_advancement(&self, request: &ExecutionRequest<'_, '_>) {
+    fn after_advancement(&self, _: &ExecutionRequest<'_, '_>) {
         // Query retains the exact business value. Actual work/refusal stays in
         // this SAME Store operation's attempt/coverage; there is no error ledger.
-        let _ = self
-            .operation
-            .as_ref()
-            .expect("only serving Query invokes maintenance")
-            .after_advancement(request);
+        if let Some(operation) = self.operation.as_ref() {
+            let _ = operation.automatic_checkpoint_maintenance();
+        }
     }
 }
 pub(super) fn prepare(
@@ -50,8 +60,7 @@ pub(super) fn prepare(
     let memory = request
         .reserve_retained_memory(bytes as u64)
         .map_err(Denial::Execution)?;
-    // This private Arc is only installed in Query; no public Arc/Weak door
-    // exposes its backing independently of the operation and LAST grant.
+    operation.install_home_checkpoint_maintenance()?;
     Ok(Arc::new(HomeMaintenance {
         operation: Some(operation),
         retired_operation: None,

@@ -11,6 +11,7 @@ use worth_store_relational::{
 
 #[derive(Default)]
 pub(crate) struct HomeCheckpointOwner {
+    pub(super) maintenance: super::maintenance::CheckpointMaintenance,
     pending: Mutex<Option<Arc<HomeCheckpointAttempt>>>,
     acknowledged_native: Mutex<[u64; 2]>,
 }

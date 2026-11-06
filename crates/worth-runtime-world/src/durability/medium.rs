@@ -1,9 +1,9 @@
 use super::{WorldDurableArtifact, WorldDurableFrameDenial};
 use std::fmt::Debug;
 use worth_execution::{ExecutionRequest, WorkCeilingDenial};
-use worth_foundational::facade::{
-    DurablePublicationFate, DurableWorldOwnerIdentity, HomeIncarnation,
-};
+use worth_foundational::facade::{DurableWorldOwnerIdentity, HomeIncarnation};
+mod completion;
+pub use completion::WorldPublicationCompletion;
 
 #[derive(Clone, Debug)]
 pub struct WorldDurableHomeBinding {
@@ -96,7 +96,7 @@ pub enum WorldPublicationObservation {
     /// Selection is known, but the actual owner-issued committed carrier has
     /// not been readmitted. This does not describe an unknown physical fate.
     EvidenceRequired,
-    Finished(DurablePublicationFate<WorldDurableMediumDenial>),
+    Finished(WorldPublicationCompletion),
 }
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum WorldPublicationTaskPosture {

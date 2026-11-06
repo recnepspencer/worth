@@ -42,13 +42,19 @@ installation before its first World root becomes available. An existing or
 partially initialized directory never becomes a fresh initialization opportunity.
 Do not rerun seed suppliers after an owning opening refusal.
 
-For a journal-only Home, construct another ordinary request for the same
-Directory and supported program/schema. Reopen admits the original completion,
-program activation, World occurrence and Native history without calling
-`initial_state` again. Reads follow the published World basis even when Native
-history has advanced independently. Keep an opening refusal and consume its
-`close` route; the refusal may retain the physical Home and lease, and another
-close refusal retains that same custody.
+Fresh Memory and Directory bootstrap publish the same completion commit after
+all seed batches and indexes succeed, before World genesis. Its record binds
+installed package/schema meaning, the terminal seed receipt and aggregate
+counts; it gives Memory no durable association. Completion refusal retains
+accepted seeds; Directory keeps the same Home through its owning opening
+refusal, without replaying initialization. Retired development completion
+formats refuse Query readmission with a typed recovery denial; no migration runs.
+Reopen the same Directory with the same admitted schema/program meaning and
+ordinary Home request. Existing artifacts readmit their completion and program
+activation at the recovered World root; the initializer and seed suppliers
+never run again. Reads use that published World basis even when an independent
+Native commit is newer. Recovered index definitions and their selected-basis
+generations must be admitted before service escapes.
 
 ### Relational-only Directory installation
 
@@ -66,11 +72,26 @@ physical Home creation or World bootstrap. Match
 `WorthQueryInMemoryApplicationDenial::UnsupportedSeed` cause. The cause carries
 `WorthQueryDurableStateAdmissionDenial::Unsupported { family, supported_from_phase }`:
 
-| Installation input | Required family | Supported from phase |
-|---|---|---|
-| Producer | `SignalNodeDefinitions` | 5 |
-| Conditional | `BridgeConditionalDefinitions` | 5 |
-| Application resource pool | `BridgeOwnedAsyncDefinitions` | 5 |
+Inspect `next_actions()` through `facade::primary_graph::ProductUnpublishedNextAction`
+and the canonical `RuntimeWorldRecoveryDenial`. A persistent live open reports
+`ReopenRequired`, with actions `[Inspect, ReopenRequired]`. Preserve stable
+request/correlation data, end ownership of the current Home, and reopen the same
+location under Store's new mutation lease for recovered reconciliation. Close
+can retain or refuse accepted custody; ordinary disposal is not release or a
+successful close. The old Home's lease blocks concurrent opening, and old
+recovery handles cannot cross incarnations: obtain claims from the newly
+readmitted Home. Neither zero observed effects nor this diagnostic proves
+release, restores a proposal, or permits resubmission.
+Reopen admits actual recovered World custody and its original source-backed Query
+key before service. The original key returns `ProductUnpublished` with
+`RecoveredWithoutProductMovement`; its Native semantic result and predecessor
+remain original, without a reconstructed Rust return value. Obtain a fresh
+recovery claim from this Home. `continue_original_in_request` publishes that
+original occurrence without handler/effect replay; release records the durable
+disposition before removing live custody. Pending and refused actions retain the
+same catalog owner. An acknowledged `Continued` permits continuation, never
+release, including after another reopen. Persisted workflow, outbox, inbound-completion and aftermath rows also
+refuse cold service; compiled workflow declarations alone remain allowed.
 
 MemoryOnly keeps its ordinary producer, conditional and resource installation.
 The richer contribution, output, workflow and adoption examples below use that

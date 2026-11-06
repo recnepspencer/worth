@@ -33,8 +33,7 @@ async fn completed_payment_callback_waits_for_fresh_workflow_advance() {
     let request_cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
         Some(Instant::now() + Duration::from_secs(60)),
-        request_cancellation.token(),
-    );
+        request_cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let authority = ApprovePayment {
         payment: payment_id,
         approver: principal_id(APPROVER),

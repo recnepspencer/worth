@@ -134,7 +134,6 @@ where
         self.queue.buffered_cause_count()
     }
 
-    #[cfg(test)]
     pub(crate) fn fixture_phase<'scope>(
         &self,
         host: &crate::domain_computation::primary_graph::TestHostRequest<'scope>,
@@ -148,7 +147,7 @@ where
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         request: &WorthQueryRequestScope,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
-        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(&self.runtime.runtime.product_runtime) {
             Ok(request) => request,
             Err(_) => return WorthQueryApplicationLiveOutcome::AuthorizationDenied(Box::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
         };
@@ -167,7 +166,7 @@ where
             };
             let expected_scope = &self.scope_identity;
             self.queue.fill(
-                &self.runtime.primary_provider.live_delivery,
+                &self.runtime.runtime.primary_provider.live_delivery,
                 basis,
                 Binding::effect(),
                 self.controls.buffer_capacity(),
@@ -275,16 +274,4 @@ where
     }
 }
 
-#[cfg(test)]
-#[path = "lease/delivery_tests.rs"]
-mod delivery_tests;
-#[cfg(test)]
-#[path = "lease/reservation_race_tests.rs"]
-mod reservation_race_tests;
-#[cfg(test)]
-#[path = "lease/sibling_delivery_tests.rs"]
-mod sibling_delivery_tests;
-
-#[cfg(test)]
-#[path = "lease/foreign_phase_tests.rs"]
-mod foreign_phase_tests;
+mod court_doors_for_test;

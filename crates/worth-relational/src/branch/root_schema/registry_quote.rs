@@ -77,6 +77,10 @@ pub(super) fn retained(
             )?)?,
         )?;
     }
+    add(
+        &mut bytes,
+        registry.content_formats.snapshot().owned_bytes(),
+    )?;
     Ok(bytes)
 }
 

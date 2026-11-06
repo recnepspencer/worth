@@ -11,7 +11,7 @@ use crate::domain_computation::{
     WorthQueryProviderSessionDenialKind as Session,
 };
 
-pub(super) fn classify_denial(denial: &Denial) -> Outcome {
+pub fn classify_denial(denial: &Denial) -> Outcome {
     if let Some(invariant) = denial.custom_invariant_denial() {
         return Outcome::TerminalFailure(Terminal::CustomInvariant(invariant.clone()));
     }
@@ -84,6 +84,7 @@ pub(super) fn classify_denial(denial: &Denial) -> Outcome {
                             | Resource::WorkLimit
                             | Resource::NestedLeaseMisuse
                             | Resource::NestedAdvancementOpening
+                            | Resource::ForeignAdmissionClock
                             | Resource::ForeignAdvancementPhase
                             | Resource::NoActiveExecutionScope
                             | Resource::EquivalenceContractUnavailable,
@@ -91,6 +92,8 @@ pub(super) fn classify_denial(denial: &Denial) -> Outcome {
                     }
                     | Session::ProjectionContract { .. }
                     | Session::HistoricalVisibility { .. }
+                    | Session::ContentInconsistency
+                    | Session::Content(_)
                     | Session::StorageUnavailable(_)
                     | Session::ForeignOperationAttempt
                     | Session::ForeignExecutionBasis
@@ -128,10 +131,12 @@ pub(super) fn classify_denial(denial: &Denial) -> Outcome {
     classify_kind(denial.kind())
 }
 
-fn classify_kind(kind: Kind) -> Outcome {
+pub fn classify_kind(kind: Kind) -> Outcome {
     match kind {
         Kind::IdempotencyPreparationBusy => Outcome::RetryableCommitFailure(kind),
-        Kind::StorageUnavailable(_) => Outcome::TerminalFailure(Terminal::ApplicationCommit(kind)),
+        Kind::ContentInconsistency | Kind::Content(_) | Kind::StorageUnavailable(_) => {
+            Outcome::TerminalFailure(Terminal::ApplicationCommit(kind))
+        }
         Kind::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
         } => Outcome::SnapshotCapacityBackpressured {
@@ -165,7 +170,7 @@ fn classify_kind(kind: Kind) -> Outcome {
                 Outcome::TerminalFailure(Terminal::ApplicationCommit(kind))
             }
             // A phase from another installed runtime is a caller defect, never pressure.
-            Resource::ForeignAdvancementPhase => {
+            Resource::ForeignAdvancementPhase | Resource::ForeignAdmissionClock => {
                 Outcome::TerminalFailure(Terminal::ApplicationCommit(kind))
             }
             // Unreachable at HEAD: Relational's remaining-work child retains the
@@ -196,6 +201,7 @@ fn classify_kind(kind: Kind) -> Outcome {
         | Kind::IndexGenerationIdentityExhausted
         | Kind::IdempotencyForeignAffinity
         | Kind::IdempotencyIntentDrift
+        | Kind::OriginalEffectReleased
         | Kind::IdempotencyIntentUnverifiable
         | Kind::MutationBindingMismatch
         | Kind::MutationInputMismatch
@@ -226,6 +232,3 @@ fn classify_kind(kind: Kind) -> Outcome {
         }
     }
 }
-
-#[cfg(test)]
-pub(super) mod tests;

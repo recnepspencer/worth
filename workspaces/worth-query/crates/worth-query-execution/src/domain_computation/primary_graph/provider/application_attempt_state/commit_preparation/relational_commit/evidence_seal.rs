@@ -1,8 +1,9 @@
 //! Exact-commit evidence minted only from the committed session stage.
 
-mod postcommit_currentness;
+pub(crate) mod postcommit_currentness;
+pub use postcommit_currentness::{FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason};
 pub(in crate::domain_computation::primary_graph) use postcommit_currentness::{
-    FactlessCurrentness, FailedRebase, OwnEffectOnReads, RebaseVerificationReason,
+    FailedRebase, RebaseVerificationFailure,
 };
 
 use super::commit_execution::WorthQueryCommittedApplicationSession;
@@ -14,7 +15,7 @@ use crate::domain_computation::primary_graph::provider::{
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphCommitEvidence {
+pub struct WorthQueryPrimaryGraphCommitEvidence {
     workflow_origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,
     provider_session_binding:
         crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
@@ -100,7 +101,7 @@ pub(super) fn seal(
     let performed_output_fields = if retain_output_field_evidence {
         use crate::domain_computation::primary_graph::application_attempt::OutputFieldCaptureFailure as Failure;
         Some(match observed_source_facts.retained() {
-            Err(cause) => Err(Failure::Rebase { reason: cause.reason, own_effect: cause.own_effect }),
+            Err(cause) => Err(Failure::Rebase { reason: cause.reason.into_reason(), own_effect: cause.own_effect }),
             Ok(facts) => crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::copy_performed_field_reads(
                 &facts,
                 crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(execution.allocation_policy(), Some(&request)),
@@ -167,6 +168,14 @@ impl WorthQueryPrimaryGraphCommitEvidence {
     ) -> Option<&crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>{
         self.workflow_origin.as_ref()
     }
+    pub(in crate::domain_computation::primary_graph) fn retain_original_authority(
+        &self,
+    ) -> std::sync::Arc<
+        crate::domain_computation::primary_graph::WorthQueryApplicationCommitAuthorityBinding,
+    > {
+        std::sync::Arc::clone(&self.original_authority)
+    }
+
     /// Original admitted meaning co-retained with the performed occurrence.
     /// This is historical evidence; current authority is admitted separately.
     pub(in crate::domain_computation::primary_graph) fn original_authority(
@@ -244,11 +253,18 @@ impl WorthQueryPrimaryGraphCommitEvidence {
         &self,
     ) -> Option<worth_relational::facade::transactions::RelationalExecutionDenialCause> {
         match self.observed_source_facts.retained() {
-            Err(FailedRebase {
-                reason: RebaseVerificationReason::Execution(cause),
-                ..
-            }) => Some(cause),
-            _ => None,
+            Err(FailedRebase { reason, .. }) => match reason.into_reason() {
+                RebaseVerificationReason::Execution(cause) => Some(cause),
+                RebaseVerificationReason::ManagedIndex(_)
+                | RebaseVerificationReason::NativeRevisionUnavailable
+                | RebaseVerificationReason::NativeFactRevisionUnavailable
+                | RebaseVerificationReason::IndexedSelectionDenied(_)
+                | RebaseVerificationReason::IndexedSelectionFactDenied(_)
+                | RebaseVerificationReason::UnsupportedDecisionFact
+                | RebaseVerificationReason::NativePayloadStorage { .. }
+                | RebaseVerificationReason::AdmissionDenied(_) => None,
+            },
+            Ok(_) => None,
         }
     }
 
@@ -276,9 +292,7 @@ impl WorthQueryPrimaryGraphCommitEvidence {
     }
 
     /// Ordinals of the retained source facts the committed effect itself moved.
-    pub(in crate::domain_computation::primary_graph) fn source_facts_superseded_by_own_effect(
-        &self,
-    ) -> impl Iterator<Item = usize> + '_ {
+    pub fn source_facts_superseded_by_own_effect(&self) -> impl Iterator<Item = usize> + '_ {
         self.observed_source_facts.superseded_by_own_effect()
     }
 }
@@ -286,3 +300,5 @@ impl WorthQueryPrimaryGraphCommitEvidence {
 pub(in crate::domain_computation::primary_graph) use postcommit_currentness::{
     PreparedRebaseDenial, PreparedSourceFactRebase,
 };
+
+mod court_doors_for_test;

@@ -65,7 +65,7 @@ pub(super) fn map_transaction_staging_failure(
     )
 }
 
-pub(in crate::domain_computation::primary_graph) fn map_validation_failure(
+pub fn map_validation_failure(
     failure: worth_relational::facade::mvcc::TransactionCommitError,
 ) -> WorthQueryInvariantExecutionFailure {
     use worth_relational::facade::mvcc::{
@@ -95,6 +95,9 @@ pub(in crate::domain_computation::primary_graph) fn map_validation_failure(
             return map_invariant_failure(fields, detail);
         }
         Error::Publication { error, .. } => {
+            if error.authored_retirement_refusal().is_some() {
+                return WorthQueryInvariantExecutionFailure::authored_retirement(error);
+            }
             return match error.into_invariant_violation() {
                 Some(violation) => map_invariant_failure(violation.fields, violation.detail),
                 None => owner_failure(),

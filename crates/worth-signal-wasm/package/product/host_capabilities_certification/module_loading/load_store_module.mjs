@@ -12,6 +12,7 @@ export async function loadStoreModule() {
   const tempDir = await mkdtemp(path.join(tmpdir(), "worth-signal-react-store-"));
   const sourceFiles = [
     ["model.ts", "model.js"],
+    ["signal_snapshot_equality.ts", "signal_snapshot_equality.js"],
     ["store.ts", "store.js"],
   ];
   try {

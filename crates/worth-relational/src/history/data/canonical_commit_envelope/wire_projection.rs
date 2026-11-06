@@ -17,6 +17,10 @@ pub(super) fn serialize<S: serde::Serializer>(
     projection: EnvelopeProjection,
 ) -> Result<S::Ok, S::Error> {
     let CanonicalCommitEnvelopeBody {
+        content,
+        producer_cascade_retirement,
+        authored_cascade_retirement,
+        authored_cascade_restoration,
         index_definition_delta,
         caller_association,
         authored_index_writes,
@@ -54,7 +58,9 @@ pub(super) fn serialize<S: serde::Serializer>(
         entries: Vec::new(),
     };
     let omitted_indexes = DerivedIndexArtifacts::default();
-    let field_count = 29 + usize::from(!authored_index_writes.is_unavailable());
+    let field_count = 32
+        + usize::from(!authored_index_writes.is_unavailable())
+        + usize::from(producer_cascade_retirement.is_some());
     let mut fields = serializer.serialize_struct("CanonicalCommitEnvelope", field_count)?;
     fields.serialize_field("caller_association", caller_association)?;
     fields.serialize_field("index_definition_delta", index_definition_delta)?;
@@ -67,6 +73,12 @@ pub(super) fn serialize<S: serde::Serializer>(
         required_output_codec_retirements,
     )?;
     fields.serialize_field("required_output_origin", required_output_origin)?;
+    if producer_cascade_retirement.is_some() {
+        fields.serialize_field("producer_cascade_retirement", producer_cascade_retirement)?;
+    }
+    fields.serialize_field("authored_cascade_retirement", authored_cascade_retirement)?;
+    fields.serialize_field("authored_cascade_restoration", authored_cascade_restoration)?;
+    fields.serialize_field("content", content)?;
     fields.serialize_field(
         "required_output_materialization",
         required_output_materialization,

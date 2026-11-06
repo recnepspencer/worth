@@ -24,7 +24,6 @@ pub use validation::{
     RelationalInvariantCheckMeaning, RelationalInvariantCustomProvenanceMeaning,
     RelationalInvariantDecisionMeaning, RelationalInvariantExecutionMeaning,
     RelationalInvariantMetadataMeaning, RelationalInvariantProofScopeMeaning,
-    RelationalValidationPreparationFailure,
 };
 pub(crate) use validation::{
     ValidationLeafMemory, ValidationReadmissionMemory, ValidationTouchedMemory,

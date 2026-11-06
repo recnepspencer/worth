@@ -2,6 +2,13 @@
 use super::{charge, request, CodecRetirementClosureStop as Stop};
 use crate::{branch::AdmittedRelationalBranchBasis, runtime::RelationalRuntime};
 use worth_execution::{ExecutionRequest, ExecutionWorkCeiling};
+#[derive(Clone)]
+pub(crate) struct SelectedOutputPublication {
+    pub(crate) envelope: std::sync::Arc<crate::history::data::CanonicalCommitEnvelope>,
+    pub(crate) origin: std::sync::Arc<crate::history::data::CanonicalRequiredOutputOrigin>,
+    pub(crate) ordinal: usize,
+}
+
 type Origin =
     std::sync::Arc<super::super::canonical_commit_envelope::CanonicalRequiredOutputOrigin>;
 pub(crate) fn validate_codec_output_correspondence(
@@ -12,7 +19,7 @@ pub(crate) fn validate_codec_output_correspondence(
     dependency: &[u8; 32],
     meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
     roles: &[crate::mvcc::RequiredOutputRoleTarget],
-) -> Result<std::sync::Arc<crate::history::data::CanonicalCommitEnvelope>, Stop> {
+) -> Result<SelectedOutputPublication, Stop> {
     let result = execution.in_scope(|lease| {
         ExecutionWorkCeiling::new(execution.work_ceiling()).run_with_checkpoint(
             lease,
@@ -96,7 +103,7 @@ pub(crate) fn validate_codec_output_correspondence(
                         && member.role == role.role && member.entity_name == role.entity_name) {
                         return Err("output role differs from complete performed native correspondence".into());
                     }
-                    if origin.producer != producer || &origin.dependency_identity != dependency || &origin.meaning != meaning {
+                    if origin.producer != producer || origin.dependency_identity.bytes() != dependency || &origin.meaning != meaning {
                         return Err(
                             "output correspondence producer association differs from native publication"
                                 .into(),
@@ -132,7 +139,15 @@ pub(crate) fn validate_codec_output_correspondence(
                 let origin = first.ok_or("complete output association absent")?;
                 super::relations::validate_complete_publication(runtime, &basis.inner.root, &origin, context, lease)?;
                 charge(context, bound)?;
-                runtime.history.canonical_envelope(origin.commit.commit_id).ok_or_else(|| Stop::from("complete publication history absent"))
+                let envelope = runtime.history.canonical_envelope(origin.commit.commit_id)
+                    .ok_or("complete publication history absent")?;
+                let mut ordinal = None;
+                for (index, candidate) in envelope.output_origins().enumerate() {
+                    charge(context, 1)?;
+                    if std::sync::Arc::ptr_eq(candidate, &origin) { ordinal = Some(index); break; }
+                }
+                let ordinal = ordinal.ok_or("selected publication lost its canonical route coordinate")?;
+                Ok(SelectedOutputPublication { envelope, origin, ordinal })
             },
         )
     });

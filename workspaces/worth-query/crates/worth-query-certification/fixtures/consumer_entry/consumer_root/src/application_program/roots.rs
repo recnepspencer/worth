@@ -16,7 +16,12 @@ use super::{
 
 mod initial;
 #[cfg(test)]
+pub(crate) use initial::ConsumerInitialBranchedProgramRoot;
 pub use initial::ConsumerInitialFixedProgramRoot;
+#[cfg(test)]
+pub(crate) use initial::ConsumerInitialLeafProgramRoot;
+#[cfg(test)]
+pub(crate) use initial::ConsumerOwnerDiscoveryRoot;
 pub use initial::{ConsumerInitialDiscoveredProgramRoot, InitialDiscoveredPlanarRoot};
 
 pub struct SecondaryPlanarRoot;

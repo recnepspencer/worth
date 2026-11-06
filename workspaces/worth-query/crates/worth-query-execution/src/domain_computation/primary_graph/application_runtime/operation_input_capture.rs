@@ -66,7 +66,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     {
         use WorthQueryOperationInputCaptureDenial as Denial;
         let execution = phase
-            .checked_execution_request_for(&self.product_runtime)
+            .checked_execution_request_for(&self.runtime.product_runtime)
             .map_err(Denial::Execution)?;
         let control = RequestAllocationControl::new(request, execution.allocation_policy());
         let mut payload =

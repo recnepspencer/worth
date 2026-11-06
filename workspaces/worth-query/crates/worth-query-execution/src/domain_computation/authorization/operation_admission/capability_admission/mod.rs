@@ -17,7 +17,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime,
 };
 
-mod preparation;
+pub(crate) mod preparation;
 
 pub use preparation::WorthQueryAdmittedApplicationCapabilityAccess;
 use preparation::{
@@ -62,6 +62,12 @@ where
         >,
     Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
 {
+    crate::domain_computation::authorization::admission::validate_admission_clock(
+        &runtime.runtime,
+        principal.clock(),
+        request,
+        capability.contract().operation(),
+    )?;
     admit_request(request, capability.contract().operation())?;
     let prepared = prepare_capability_admission(
         execution,
@@ -81,7 +87,7 @@ where
 /// Admission reuses the carrier's identity as the governed input identity and
 /// reports only the work the carrier still has to report, so the input is
 /// never encoded twice for one request.
-pub(in crate::domain_computation) fn admit_encoded_capability_access<
+pub fn admit_encoded_capability_access<
     Schema,
     Principal,
     PrincipalIdentity,
@@ -107,6 +113,12 @@ where
     Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
     Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
 {
+    crate::domain_computation::authorization::admission::validate_admission_clock(
+        &runtime.runtime,
+        principal.clock(),
+        request,
+        capability.contract().operation(),
+    )?;
     admit_request(request, capability.contract().operation())?;
     let mut prepared = prepare_capability_admission(
         execution,

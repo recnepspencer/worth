@@ -17,13 +17,7 @@ pub(super) fn validate_boundary(
     CommitPhaseBacking<boundary_validation::BoundaryValidatedCommitExecution>,
     TransactionCommitError,
 > {
-    let boundary = boundary_validation::validate_commit_boundary(
-        request,
-        runtime,
-        source.into_inner(),
-        control,
-    )?;
-    CommitPhaseBacking::new(request, boundary)
+    boundary_validation::validate_commit_boundary(request, runtime, source, control)
 }
 
 #[inline(never)]
@@ -34,13 +28,7 @@ pub(super) fn mutate(
     control: &InvariantPreparationControl<'_, '_>,
 ) -> Result<CommitPhaseBacking<mutation_execution::MutatedCommitExecution>, TransactionCommitError>
 {
-    let mutated = mutation_execution::mutate_commit_execution(
-        request,
-        runtime,
-        source.into_inner(),
-        control,
-    )?;
-    CommitPhaseBacking::new(request, mutated)
+    mutation_execution::mutate_commit_execution(request, runtime, source, control)
 }
 
 #[inline(never)]
@@ -50,6 +38,5 @@ pub(super) fn bind(
     source: CommitPhaseBacking<mutation_execution::MutatedCommitExecution>,
 ) -> Result<CommitPhaseBacking<history_binding::HistoryBoundCommitExecution>, TransactionCommitError>
 {
-    let history = history_binding::bind_commit_history(request, runtime, source.into_inner())?;
-    CommitPhaseBacking::new(request, history)
+    history_binding::bind_commit_history(request, runtime, source)
 }

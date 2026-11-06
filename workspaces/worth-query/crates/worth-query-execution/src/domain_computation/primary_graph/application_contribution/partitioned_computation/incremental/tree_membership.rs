@@ -6,7 +6,7 @@ use worth_execution::ReductionPlan;
 use worth_foundational::facade::PartitionIdentity;
 use worth_proof::CanonicalUniqueVec;
 
-pub(super) enum TreeTarget {
+pub enum TreeTarget {
     Current {
         routing: Arc<ComputationPartitionRouting>,
         removed: CanonicalUniqueVec<PartitionIdentity>,

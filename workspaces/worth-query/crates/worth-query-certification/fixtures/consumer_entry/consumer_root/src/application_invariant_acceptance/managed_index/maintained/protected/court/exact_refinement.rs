@@ -1,5 +1,6 @@
 //! Omitted inputs need influence permission even for non-Live exact membership.
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 #[test]
 fn exact_refinement_governed_non_live_membership_checks_hidden_input_influence() {
     lifecycle::isolated_allocation_case(
@@ -11,7 +12,7 @@ fn exact_refinement_governed_non_live_membership_checks_hidden_input_influence()
     );
 }
 fn run() {
-    let calls = Arc::new(prefix::Calls::default());
+    let calls = Arc::new(prefix_observation::Calls::default());
     let world = host::install(calls.clone(), Arc::new(rule::Calls::new(calls.clone())));
     let scope = authentication::request_scope();
     let principal = authentication::block_on(

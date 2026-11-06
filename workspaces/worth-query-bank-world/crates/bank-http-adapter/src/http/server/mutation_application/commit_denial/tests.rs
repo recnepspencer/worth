@@ -5,6 +5,18 @@ use worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind
 
 #[test]
 fn preparation_and_pending_execution_next_actions_are_explicit_per_cause() {
+    let released = BankHttpDenial::new(
+        BankHttpDenialKind::OriginalEffectReleased,
+        BankHttpNextAction::ContactOperator,
+    );
+    assert_eq!(
+        commit_denial(WorthQueryApplicationCommitDenialKind::OriginalEffectReleased),
+        released
+    );
+    assert_eq!(
+        super::super::denial::request_mutation_denial(Request::OriginalEffectReleased),
+        released
+    );
     use BankHttpNextAction::{ContactOperator as Operator, CorrectRequest as Correct, Retry};
     let resources = [
         ("WorkerLimitExceedsParent", Resource::WorkerLimit, Operator),

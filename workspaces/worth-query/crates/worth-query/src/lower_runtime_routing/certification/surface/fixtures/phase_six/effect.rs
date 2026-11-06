@@ -34,13 +34,8 @@ use super::effect_support::{
 pub(crate) fn representative_effect_relational_mutation_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> RepresentativeArtifacts {
-    let mut runtime = relational_runtime_with_intent_strategy();
-    let entity_id = create_entity(
-        execution,
-        &mut runtime,
-        "before",
-        BranchId("main".to_string()),
-    );
+    let runtime = relational_runtime_with_intent_strategy();
+    let entity_id = create_entity(execution, &runtime, "before", BranchId("main".to_string()));
     let raw = RawEffectIntent::Mutation {
         binding: runtime_workflow_binding_for_snapshot_identity(exact_branch_snapshot_identity(
             &runtime, "main",
@@ -66,10 +61,7 @@ pub(crate) fn representative_effect_relational_mutation_row(
     ))
     .lower()
     .expect("relational mutation should lower")
-    .execute_with(
-        execution,
-        EffectExecutionAuthority::relational(&mut runtime),
-    )
+    .execute_with(execution, EffectExecutionAuthority::relational(&runtime))
     .expect("relational mutation should execute");
     route_planned_row(
         WorthQueryLowerRuntimeSeamKey::EffectBackedRelationalMutation,
@@ -88,23 +80,18 @@ pub(crate) fn representative_effect_relational_mutation_row(
 pub(crate) fn representative_effect_relational_merge_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> RepresentativeArtifacts {
-    let mut runtime = relational_runtime_with_intent_strategy();
-    create_entity(
-        execution,
-        &mut runtime,
-        "main",
-        BranchId("main".to_string()),
-    );
+    let runtime = relational_runtime_with_intent_strategy();
+    create_entity(execution, &runtime, "main", BranchId("main".to_string()));
     crate::runtime::fork_branch_from_exact_source(
         execution,
-        &mut runtime,
+        &runtime,
         BranchId("candidate".to_string()),
         &BranchId("main".to_string()),
     )
     .expect("candidate branch should exist");
     create_entity(
         execution,
-        &mut runtime,
+        &runtime,
         "candidate-only",
         BranchId("candidate".to_string()),
     );
@@ -127,7 +114,7 @@ pub(crate) fn representative_effect_relational_merge_row(
     .expect("relational merge should lower")
     .execute_with(
         execution,
-        EffectExecutionAuthority::crate_relational_without_application_schema(&mut runtime),
+        EffectExecutionAuthority::crate_relational_without_application_schema(&runtime),
     )
     .expect("relational merge should execute");
     route_planned_row(

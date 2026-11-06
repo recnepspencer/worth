@@ -1,6 +1,7 @@
 //! Own one applied proposal round while the transaction keeps unique authority.
+use super::proposal_source::RelationalProposalSource;
 use crate::authority::commit::phases::applied_mutation::{
-    apply_mutation_draft, AppliedMutationDraft,
+    apply_mutation_draft, apply_retained_entity_selection_draft, AppliedMutationDraft,
 };
 use crate::authority::commit::phases::prepare::{
     prepare_lowered_working_state_scope, prepare_working_state_scope, PreparedWorkingStateScope,
@@ -27,10 +28,7 @@ impl RelationalPreparationRuntime {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: &mut BranchBoundRelationalTransaction,
-        lowered: Option<&(
-            crate::branch::SelectedRelationalBranchState,
-            crate::transactions::data::MergedCommitPlan,
-        )>,
+        source: &RelationalProposalSource,
         context: Option<&dyn crate::validation::candidate_source::ManagedIndexSourceContextFactory>,
     ) -> Result<PreparedProposalRound, TransactionCommitError> {
         let basis = transaction.basis.clone();
@@ -45,7 +43,7 @@ impl RelationalPreparationRuntime {
                 let answer = round.prepare_proposal_symbol_round(
                     execution,
                     transaction,
-                    lowered,
+                    source,
                     read,
                     context,
                 );
@@ -80,10 +78,7 @@ impl RelationalPreparationRuntime {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: &mut BranchBoundRelationalTransaction,
-        lowered: Option<&(
-            crate::branch::SelectedRelationalBranchState,
-            crate::transactions::data::MergedCommitPlan,
-        )>,
+        source: &RelationalProposalSource,
         selected: crate::branch::SelectedRelationalBranchRead<'_>,
         context: Option<&dyn crate::validation::candidate_source::ManagedIndexSourceContextFactory>,
     ) -> Result<PreparedProposalRound, TransactionCommitError> {
@@ -109,40 +104,55 @@ impl RelationalPreparationRuntime {
                         execution.allocation_policy(),
                     )?;
                     let runtime = round.with_candidate_symbols(&symbols);
-                    let prepared = match lowered {
-                        Some((_, plan)) => prepare_lowered_working_state_scope(
+                    let prepared = match source {
+                        RelationalProposalSource::Transaction { lowered: Some((_, plan)), .. } => prepare_lowered_working_state_scope(
                             &runtime,
                             transaction,
                             selected,
                             crate::mvcc::OwnedNormalizedPlan::copy_for_request(plan, execution)?,
                         ),
-                        None => {
-                            prepare_working_state_scope(&runtime, transaction, selected, execution)?
+                        RelationalProposalSource::Transaction { lowered: None, .. } => prepare_working_state_scope(
+                            &runtime,
+                            transaction,
+                            selected,
+                            execution,
+                        )?,
+                        RelationalProposalSource::RetainedEntitySelection(retained) => {
+                            crate::authority::commit::phases::prepare::retained_entity_selection::prepare(
+                                &runtime, transaction, selected, retained, execution.allocation_policy(),
+                            )?
                         }
                     };
                     let validation_input =
                         RelationalTransactionValidationInput::from_transaction(transaction);
-                    let mut mutation = apply_mutation_draft(
+                    let mut mutation = match prepared.plan.retained() {
+                        Some(retained) => apply_retained_entity_selection_draft(
+                            execution, &runtime, &selected, &prepared.working_state, retained,
+                            prepared.schema_authority.as_ref(), &identity, symbols,
+                            source_interpretation, &validation_input.content,
+                        ),
+                        None => apply_mutation_draft(
                         execution,
                         &runtime,
                         &selected,
                         &prepared.working_state,
-                        prepared.merged_plan.plan(),
+                        prepared.plan.view().commands(),
                         prepared.schema_authority.as_ref(),
                         &identity,
                         symbols,
                         source_interpretation,
-                    )?;
+                        &validation_input.content,
+                    ),
+                    }?;
                     let runtime = round.with_candidate_symbols(mutation.candidate_symbols());
                     mutation.prepare_managed_sources(
                         *execution,
                         &runtime,
                         selected,
                         &identity,
-                        validation_input
-                            .merge_parent_bases()
-                            .is_empty()
-                            .then_some(prepared.merged_plan.plan()),
+                        (validation_input.merge_parent_bases().is_empty()
+                            && prepared.plan.retained().is_none())
+                            .then_some(prepared.plan.view().commands()),
                     )?;
                     let control =
                         crate::validation::engine::InvariantPreparationControl::for_transaction(
@@ -156,7 +166,7 @@ impl RelationalPreparationRuntime {
                             &selected,
                             mutation.state(),
                             identity.proposed_version_id(),
-                            prepared.merged_plan.plan(),
+                            prepared.plan.view(),
                             Some(&identity),
                             mutation.aggregate_source(selected),
                             execution,
@@ -177,7 +187,7 @@ impl RelationalPreparationRuntime {
                         execution,
                         round,
                         selected,
-                        prepared.merged_plan.plan(),
+                        prepared.plan.view().commands(),
                     )?;
                     Ok(PreparedProposalRound {
                         prepared,

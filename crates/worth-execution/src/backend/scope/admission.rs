@@ -76,6 +76,7 @@ pub(super) fn admit_scope<'a, 'lease>(
     if request.lease.is_none() && RunLimits::has_leased_parent() {
         return Err(LeaseDenial::unrelated_nested_lease());
     }
+    crate::backend::setup_observation::admission();
     let limits = request.limits();
     let memory_bytes = request
         .charged_memory_bytes(&limits)

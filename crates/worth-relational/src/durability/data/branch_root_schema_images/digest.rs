@@ -34,6 +34,9 @@ impl SchemaImageData {
             &mut output.0,
             &self.projected_member_domains,
         );
+        output.0.update(b"worth.native.content-schema-carrier.v1\0");
+        self.content_formats
+            .serialize(&mut rmp_serde::Serializer::new(&mut output))?;
         Ok(output.0.finalize().into())
     }
 }

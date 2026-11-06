@@ -8,9 +8,7 @@ use worth_query_installation::facade::{
 };
 
 #[derive(Clone, Copy)]
-pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) enum InspectionSubject<
-    'a,
-> {
+pub enum InspectionSubject<'a> {
     Query(&'a super::super::super::application_observation::WorthQueryApplicationQueryObservation),
     Source(&'a SourceOriginal),
 }

@@ -19,6 +19,7 @@ fn changed_host_build_keeps_initializer_closed_and_reaches_native_readmission() 
     let scope = WorthQueryRequestScope::new(
         Some(std::time::Instant::now() + std::time::Duration::from_secs(60)),
         cancellation.token(),
+        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let set = |home: &Home| {
         let runtime = home.runtime();

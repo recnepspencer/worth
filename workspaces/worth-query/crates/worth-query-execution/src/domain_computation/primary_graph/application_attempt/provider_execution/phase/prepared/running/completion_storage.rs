@@ -8,11 +8,10 @@ use worth_execution::{
     ExecutionArray, ExecutionRequest, ExecutionRequestArrayBuilder, ExecutionRequestArrayDenial,
 };
 
-pub(super) struct ApplicationCommitCompletionStorage {
+pub struct ApplicationCommitCompletionStorage {
     storage: PhaseStorage<WorthQueryProgressedApplicationCommit>,
 }
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) struct CompletedApplicationCommit
-{
+pub struct CompletedApplicationCommit {
     storage: PhaseStorage<WorthQueryProgressedApplicationCommit>,
 }
 impl ApplicationCommitCompletionStorage {
@@ -103,3 +102,13 @@ fn denied(cause: ExecutionRequestArrayDenial) -> WorthQueryApplicationCommitOutc
 
 mod control;
 pub use control::WorthQueryManagedPhaseStorageForTest;
+
+impl ApplicationCommitCompletionStorage {
+    #[doc(hidden)]
+    pub fn complete_for_test(
+        self,
+        actual: WorthQueryProgressedApplicationCommit,
+    ) -> CompletedApplicationCommit {
+        self.complete(actual)
+    }
+}

@@ -62,9 +62,9 @@ where
                 }
             }
             RecoveredNativeCustody::OpenOnly => return Err(Denial::NativeEffectRequired),
-            RecoveredNativeCustody::Continuing(_) | RecoveredNativeCustody::Working => {
-                return Err(Denial::Recovery(Recovery::Busy))
-            }
+            RecoveredNativeCustody::Prepared(_)
+            | RecoveredNativeCustody::Continuing(_)
+            | RecoveredNativeCustody::Working => return Err(Denial::Recovery(Recovery::Busy)),
             RecoveredNativeCustody::Released => return Err(Denial::ReleaseInProgress),
         }
         let retired = {

@@ -1,0 +1,24 @@
+#[path = "current_output/mod.rs"]
+pub mod current_output;
+#[path = "input_cutoff/mod.rs"]
+pub mod input_cutoff;
+#[path = "input_reuse_key/mod.rs"]
+pub mod input_reuse_key;
+#[path = "invalidation/mod.rs"]
+pub mod invalidation;
+#[path = "native_output_witness/mod.rs"]
+pub mod native_output_witness;
+#[path = "own_write_fixture/mod.rs"]
+pub mod own_write_fixture;
+#[path = "prepared_slot/mod.rs"]
+pub mod prepared_slot;
+#[path = "required_publication/mod.rs"]
+pub mod required_publication;
+#[path = "required_settlement/mod.rs"]
+pub mod required_settlement;
+#[path = "retained_computation/mod.rs"]
+pub mod retained_computation;
+#[path = "tests/mod.rs"]
+pub mod tests;
+
+pub mod original_publication;

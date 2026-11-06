@@ -1,12 +1,13 @@
 //! Independently admitted public queries cannot widen the owning operation's Parent read.
 use super::super::handler::DecisionRead;
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 
 #[test]
 fn decision_index_requires_the_declared_parent_and_the_original_operation_scope() {
     lifecycle::run(|| {
         for mode in [DecisionRead::OtherScope, DecisionRead::Undeclared] {
-            let provider = Arc::new(prefix::Calls::default());
+            let provider = Arc::new(prefix_observation::Calls::default());
             let rules = Arc::new(rule::Calls::new(Arc::clone(&provider)));
             let world =
                 host::install_decision_read(Arc::clone(&provider), Arc::clone(&rules), mode);

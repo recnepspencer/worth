@@ -96,7 +96,7 @@ fn fixed_superseded_registration_is_terminal_historical_evidence() {
         Advance::Refused { denial, .. } | Advance::Terminal { denial, .. } => panic!("wrong supersession refusal: {denial:?}"),
         _ => panic!("superseded registration cannot settle its outputs"),
     };
-    assert!(matches!(terminal.native_outcome(), Some(worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::AlreadyCommitted(_))));
+    assert!(matches!(terminal.native_outcome(), Some(worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::RecoveredCommitted(_))));
     assert_eq!(
         request
             .query(PlanarRead {

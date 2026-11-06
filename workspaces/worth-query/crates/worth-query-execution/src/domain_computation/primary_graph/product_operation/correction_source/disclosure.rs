@@ -108,9 +108,10 @@ where
         return Err(Denial::TargetIncarnationChanged);
     }
     let execution = phase
-        .execution_request_for(&application.product_runtime)
+        .execution_request_for(&application.runtime.product_runtime)
         .map_err(|_| Denial::ForeignPhase)?;
     let ancestry = application
+        .runtime
         .product_runtime
         .owner
         .observation_port()

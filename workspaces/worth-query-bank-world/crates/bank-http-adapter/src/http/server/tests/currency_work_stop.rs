@@ -19,8 +19,7 @@ async fn one_unit_short_at_currency_has_the_execution_http_status() {
     let source = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
         Some(Instant::now() + Duration::from_secs(60)),
-        source.token(),
-    );
+        source.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = application.authenticate(&scope).await;
     let indexes = application
         .runtime

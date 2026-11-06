@@ -1,5 +1,6 @@
 //! The actual ordered-event Source participates in ordinary invariant dispatch.
 use super::{prefix, query, schema::*};
+use crate::application_invariant_acceptance::managed_index::maintained::source_observation::SourceObservation;
 use std::sync::{Arc, Mutex};
 use worth_query_decl::facade::{
     application_query::{ApplicationManagedIndexBinding, ApplicationManagedIndexColdSource},
@@ -42,13 +43,7 @@ pub(super) fn definition() -> ApplicationInvariantDefinition<Catalog, CompleteNe
 }
 #[derive(Default)]
 pub(in super::super) struct Calls {
-    pub(super) records: Mutex<Vec<Record>>,
-}
-#[derive(Debug)]
-pub(super) struct Record {
-    pub scope: (u32, u64, u32),
-    pub before: Option<Vec<query::ItemRow>>,
-    pub after: Vec<query::ItemRow>,
+    pub(super) records: Mutex<Vec<SourceObservation<query::ItemRow>>>,
 }
 pub(super) struct Rule {
     index: WorthQueryApplicationInvariantManagedIndexBinding<Catalog, prefix::PrefixIndex>,
@@ -143,7 +138,7 @@ impl Rule {
             Err(cause) => return Err(execution(cause)),
         };
         let mut invalid = false;
-        let mut bytes = size_of::<Record>();
+        let mut bytes = size_of::<SourceObservation<query::ItemRow>>();
         for rows in before.iter().chain(std::iter::once(&after)) {
             bytes = bytes
                 .checked_add(layout::<query::ItemRow>(rows.capacity())?)
@@ -172,7 +167,7 @@ impl Rule {
             return Err(execution("original record storage stopped"));
         }
         let id = scope.scope_identity();
-        self.calls.records.lock().unwrap().push(Record {
+        self.calls.records.lock().unwrap().push(SourceObservation {
             scope: (
                 id.partition_value(),
                 id.local_slot_value(),

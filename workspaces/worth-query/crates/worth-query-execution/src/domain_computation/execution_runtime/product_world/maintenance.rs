@@ -2,7 +2,8 @@
 use worth_execution::ExecutionRequest;
 
 /// The closed Host implementation owns the actual Store maintenance operation.
-/// It retains no Home lifecycle owner and must use the original invoking meter.
+/// It retains no Home lifecycle owner. Automatic upkeep uses the Host's own
+/// allowance; the invoking request is context, never its execution funding.
 /// Failures remain actual Home attempt/coverage custody; they cannot replace a
 /// completed business result or become a process-local last-error ledger.
 pub trait WorthQueryHomeMaintenance: std::any::Any + std::fmt::Debug + Send + Sync {

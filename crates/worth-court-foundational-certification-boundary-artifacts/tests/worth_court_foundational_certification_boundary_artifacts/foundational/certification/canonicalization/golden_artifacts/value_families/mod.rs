@@ -36,7 +36,6 @@ fn value_family_golden_covers_every_value_variant() {
             .expect("non-zero denominator"),
         ),
         worth_foundational::AspectValue::String("Ada".into()),
-        worth_foundational::AspectValue::Bytes(ContentRefId(77)),
         worth_foundational::AspectValue::Uuid([1; 16]),
         worth_foundational::AspectValue::Date(CanonicalDate {
             days_from_unix_epoch: 20_000,
@@ -56,7 +55,10 @@ fn value_family_golden_covers_every_value_variant() {
             9,
             1,
         )),
-        worth_foundational::AspectValue::ContentRef(ContentRefId(88)),
+        worth_foundational::AspectValue::ContentRef(ContentRefId([
+            88, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0,
+        ])),
     ];
 
     let families: Vec<_> = values
@@ -83,7 +85,6 @@ fn value_family_golden_covers_every_value_variant() {
             worth_foundational::ScalarAspectType::BigInt,
             worth_foundational::ScalarAspectType::Rational,
             worth_foundational::ScalarAspectType::String,
-            worth_foundational::ScalarAspectType::Bytes,
             worth_foundational::ScalarAspectType::Uuid,
             worth_foundational::ScalarAspectType::Date,
             worth_foundational::ScalarAspectType::Time,

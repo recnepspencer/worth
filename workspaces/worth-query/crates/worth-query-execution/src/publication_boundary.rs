@@ -29,6 +29,63 @@ pub fn program_publication_access() -> WorthQueryProgramPublicationAccess {
     WorthQueryProgramPublicationAccess { _private: () }
 }
 
+pub mod original_read_outputs {
+    pub use crate::domain_computation::primary_graph::WorthQueryOriginalReadOutputDenial;
+}
+
+pub mod document_history {
+    pub use crate::domain_computation::primary_graph::application_query::{
+        WorthQueryDocumentHistoryRead, WorthQueryHistoryPreviewReadAdmission,
+    };
+    pub use crate::domain_computation::primary_graph::WorthQueryCompletedHistoryOutputs;
+    #[doc(hidden)]
+    pub use crate::domain_computation::primary_graph::WorthQueryDocumentHistoryCapturePauseForTest;
+    #[doc(hidden)]
+    pub use crate::domain_computation::primary_graph::WorthQueryHistoryNavigationPauseForTest;
+    pub use crate::domain_computation::primary_graph::WorthQueryHistoryOutputAuthority;
+    pub use crate::domain_computation::primary_graph::WorthQueryHistoryOutputIntent;
+    pub use crate::domain_computation::primary_graph::WorthQueryHistoryOutputNavigationAdvance;
+    pub use crate::domain_computation::primary_graph::WorthQueryHistoryOutputNavigationDenial;
+    pub use crate::domain_computation::primary_graph::{
+        WorthQueryAdmittedHistoryProgramOutput, WorthQueryHistoryDependentOutputRead,
+        WorthQueryHistoryOutputAdvanceDenial, WorthQueryHistoryOutputControlDenial,
+        WorthQueryHistoryOutputDiscovery, WorthQueryHistoryOutputReadDenial,
+        WorthQueryHistoryProgramOutputAdvance, WorthQueryHistoryRootOutputAdmissionDenial,
+        WorthQueryHistoryRootOutputRead, WorthQuerySettledHistoryProgramOutput,
+    };
+    pub use crate::domain_computation::primary_graph::{
+        WorthQueryDocumentHistory, WorthQueryDocumentHistoryAdoptionFailure,
+        WorthQueryDocumentHistoryAttachmentFailure, WorthQueryDocumentHistoryCandidateDenial,
+        WorthQueryDocumentHistoryCloseFailure, WorthQueryDocumentHistoryCloseReceipt,
+        WorthQueryDocumentHistoryClosing, WorthQueryDocumentHistoryClosingDenial,
+        WorthQueryDocumentHistoryDenial, WorthQueryDocumentHistoryGroupAborting,
+        WorthQueryDocumentHistoryGroupAdoptionFailure, WorthQueryDocumentHistoryGroupPreparation,
+        WorthQueryDocumentHistoryGroupReservation, WorthQueryDocumentHistoryNavigation,
+        WorthQueryDocumentHistoryOperation, WorthQueryDocumentHistoryOperationConstraint,
+        WorthQueryDocumentHistoryRecordPreparation, WorthQueryDocumentHistoryReservation,
+        WorthQueryHistoryCommandContextDenial, WorthQueryHistoryContextRefreshDenial,
+        WorthQueryHistoryContextRefreshLimits, WorthQueryHistoryContextRefreshPauseForTest,
+        WorthQueryHistoryDescriptionContext, WorthQueryHistoryGroupMemberAdmission,
+        WorthQueryHistoryNavigationCompletion, WorthQueryHistoryNavigationDenial,
+        WorthQueryHistoryNavigationEligibilityDenial, WorthQueryHistoryNavigationIntent,
+        WorthQueryHistoryNavigationPosture, WorthQueryHistoryNodeId,
+        WorthQueryHistoryOutputProfile, WorthQueryHistoryOutputSource, WorthQueryHistoryPage,
+        WorthQueryHistoryPageAssemblyPauseForTest, WorthQueryHistoryPageCursor,
+        WorthQueryHistoryPageDenial, WorthQueryHistoryPageEntry, WorthQueryHistoryPageLimits,
+        WorthQueryHistoryPageRow, WorthQueryHistoryParentBoundary, WorthQueryHistoryPreview,
+        WorthQueryHistoryRedoChoice, WorthQueryHistoryRedoChoices, WorthQueryHistoryReleaseOutcome,
+        WorthQueryHistoryRetentionChangePauseForTest, WorthQueryHistoryRetentionStatus,
+        WorthQueryHistorySelection, WorthQueryHistoryStep,
+    };
+    pub use crate::domain_computation::primary_graph::{
+        WorthQueryDocumentHistoryIdentity, WorthQueryHistoryGroupCandidateCreation,
+    };
+    #[doc(hidden)]
+    pub use crate::domain_computation::primary_graph::{
+        WorthQueryHistoryEnrollmentObservationForTest, WorthQueryHistoryEnrollmentReportForTest,
+    };
+}
+
 pub mod recorded_correction {
     pub use crate::domain_computation::primary_graph::{
         WorthQueryCorrectionActionInputSelection, WorthQueryCorrectionAlternativeRef,

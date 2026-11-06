@@ -236,7 +236,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let selected = product.product_observation();
         let Some(guard) = product.current_security_guard() else {
             return self.admit_with_observation_room(|| {
-                self.product_runtime.with_product_observation(
+                self.runtime.product_runtime.with_product_observation(
                     selected.branch_identity(),
                     |observation| {
                         if observation.lifecycle_incarnation() != selected.lifecycle_incarnation() {
@@ -260,8 +260,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             });
         };
         self.admit_with_observation_room(|| {
-            self.product_runtime
-                .with_product_observation(guard.branch_identity(), |current| {
+            self.runtime.product_runtime.with_product_observation(
+                guard.branch_identity(),
+                |current| {
                     if current.lifecycle_incarnation() != guard.lifecycle_incarnation()
                         || current.selected_commit() != guard.selected_commit()
                         || current
@@ -289,7 +290,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         application_basis,
                         _selected_program: selected_program,
                     })
-                })
+                },
+            )
         })
     }
 }

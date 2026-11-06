@@ -1,0 +1,10 @@
+{
+  "original_base_head": "29f8c2eaf085097189fa514ad19346b0f1352356",
+  "integration_source_head": "ea739387f6a20e134462c6811fe08c3a361d5165",
+  "wip_head": "a5fd44a3131a20c5c68e996a5e44ba6bf503dcac",
+  "original_dirty_paths_verified": 163,
+  "all_git_normalized_blobs_and_deletions_preserved": true,
+  "mismatches": [],
+  "integration_source_tree_matches_validated_staged_tree": true,
+  "validated_tree": "31c89e4d3abe7c99fe6c0d8964117f968329cd74"
+}

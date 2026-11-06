@@ -31,6 +31,14 @@ pub(crate) fn prepare_consulted_authoritative_commit(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     context: AuthoritativeCommitContext,
 ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
+    if matches!(&context.authority_input,
+        super::authority_context::CommitAuthorityInput::Mutation(plan) if plan.retained().is_some())
+        && runtime.durability_admission.has_attached_medium()
+    {
+        return Err(TransactionCommitError::publication_denied(
+            crate::mvcc::RelationalPublicationDenial::RetainedEntitySelectionDurabilityUnsupported,
+        ));
+    }
     runtime
         .durability_admission
         .admit_home_program_write(
@@ -48,18 +56,17 @@ pub(crate) fn prepare_consulted_authoritative_commit(
                 crate::mvcc::RelationalPublicationDenial::HomeProgramTransition(cause),
             )
         })?;
-    if let Some(step) = context.validation_input.home_step() {
-        if !context
+    if let Some(step) = context.validation_input.home_step()
+        && !context
             .caller_association
             .as_ref()
             .is_some_and(|association| step.admits_association(association.as_bytes()))
-        {
-            return Err(TransactionCommitError::publication_denied(
-                crate::mvcc::RelationalPublicationDenial::HomeProgramTransition(
-                    crate::durability::medium::RelationalHomeProgramWriteDenial::TransitionRequired,
-                ),
-            ));
-        }
+    {
+        return Err(TransactionCommitError::publication_denied(
+            crate::mvcc::RelationalPublicationDenial::HomeProgramTransition(
+                crate::durability::medium::RelationalHomeProgramWriteDenial::TransitionRequired,
+            ),
+        ));
     }
     let history = prepare_history(execution, runtime, context)?;
     let validated = stages::validate(execution, history)?;

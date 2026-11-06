@@ -1,6 +1,9 @@
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, RwLock, RwLockReadGuard};
 
+#[path = "canonical_publication_routes/narrowed_cutover_control.rs"]
+mod narrowed_cutover_control;
+
 use dashmap::DashMap;
 
 use crate::history::data::{CanonicalCommitEnvelope, CommitId, PositionedCanonicalCommit};
@@ -102,6 +105,9 @@ pub(crate) enum CanonicalPublicationRecordError {
     MemoryFrame(
         crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial,
     ),
+    /// A caller narrowed the memory cutover and its deadline elapsed before
+    /// canonical assignment. No position or owner effect was produced.
+    CutoverDeadlineElapsed,
     /// The durable step did not make the positioned commit durable, so the
     /// position was not consumed and nothing was installed.
     Durable(crate::durability::medium::RelationalDurableStepStop),
@@ -151,8 +157,7 @@ impl RelationalCanonicalPublicationRoutes {
         roots: crate::branch::RelationalBranchRootDescriptor,
     ) -> Result<(), &'static str> {
         let (positioned, route) = recovered_source::prepare_route(positioned, envelope, roots)?;
-        let installs_version_route = positioned.envelope().authority_kind()
-            != crate::history::data::CanonicalCommitAuthorityKind::BranchReferenceMovement;
+        let installs_version_route = positioned.envelope().authority_kind().advances_version();
         if self
             .by_commit
             .insert(positioned.envelope().commit.commit_id, Arc::clone(&route))
@@ -298,8 +303,8 @@ impl PreparedCanonicalPublicationRoute {
         &self,
         publication_cell: crate::branch::RelationalBranchPublicationCell,
         admission: PatchPositionReservationAdmission<'_, '_, '_>,
+        cutover_before: Option<std::time::Instant>,
         medium: Option<&crate::durability::medium::RelationalDurableMediumBinding>,
-        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         cutover: impl FnOnce(crate::publication::patch::data::PatchStreamPosition) -> T,
     ) -> Result<(Arc<PositionedCanonicalCommit>, T), CanonicalPublicationRecordError> {
@@ -314,8 +319,8 @@ impl PreparedCanonicalPublicationRoute {
             Arc::clone(&self.route),
             &self.original_payload,
             admission,
+            cutover_before,
             medium,
-            policy,
             execution,
             cutover,
         )

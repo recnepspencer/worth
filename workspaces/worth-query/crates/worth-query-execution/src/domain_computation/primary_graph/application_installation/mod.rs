@@ -9,7 +9,8 @@ use construction::in_memory_with_contributions_in_advancement;
 mod denial;
 mod limits;
 mod profile;
-mod program;
+pub(crate) mod program;
+pub(in crate::domain_computation::primary_graph) use program::OriginalProgramRootCompletion;
 pub(in crate::domain_computation::primary_graph) use program::WorthQuerySupportedProgramRecord;
 pub(in crate::domain_computation::primary_graph) mod program_admission;
 pub use super::bootstrap::checkpoint_transition::{
@@ -25,6 +26,7 @@ pub use program::{
     in_memory_program_from_checkpoint_with_projection,
     in_memory_program_with_authorization_time_source, in_memory_rostered_program,
     in_memory_rostered_program_from_checkpoint,
+    in_memory_rostered_program_from_checkpoint_in_advancement,
     in_memory_rostered_program_from_checkpoint_with_transition,
     in_memory_rostered_program_from_checkpoint_with_transition_in_advancement,
     in_memory_rostered_program_in_advancement,
@@ -178,3 +180,5 @@ where
         WorthQueryInMemoryApplicationDenial::Graph(super::bootstrap::request_denial(cause))
     })?
 }
+
+mod source_scope_ownership;

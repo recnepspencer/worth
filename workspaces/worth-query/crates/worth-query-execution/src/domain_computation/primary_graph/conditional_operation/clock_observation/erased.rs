@@ -1,6 +1,6 @@
 use worth_query_installation::facade::WorthQueryClockCoordinate;
 
-pub(in crate::domain_computation::primary_graph) struct ErasedClockObservationReceipt {
+pub struct ErasedClockObservationReceipt {
     pub(in crate::domain_computation::primary_graph::conditional_operation) sequence: u64,
     pub(in crate::domain_computation::primary_graph::conditional_operation) observed_coordinate:
         u64,
@@ -41,7 +41,7 @@ pub(in crate::domain_computation::primary_graph) struct ErasedClockObservationRe
         crate::domain_computation::primary_graph::WorthQueryGranularInvalidationCoverage,
 }
 
-pub(in crate::domain_computation::primary_graph) enum ErasedClockObservationOutcome {
+pub enum ErasedClockObservationOutcome {
     Accepted(ErasedClockObservationReceipt),
     Duplicate(ErasedClockObservationReceipt),
     Stale,
@@ -118,3 +118,5 @@ impl ErasedClockObservationReceipt {
         }
     }
 }
+
+mod court_doors_for_test;

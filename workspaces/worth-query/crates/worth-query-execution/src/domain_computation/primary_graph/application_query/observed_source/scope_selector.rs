@@ -68,9 +68,7 @@ impl<Query> WorthQueryObservedSource<Query> {
 
     /// The same source under another query marker. Only a caller that has
     /// already checked the query this source names may change its marker.
-    pub(in crate::domain_computation::primary_graph) fn retyped<Other>(
-        &self,
-    ) -> WorthQueryObservedSource<Other> {
+    pub fn retyped<Other>(&self) -> WorthQueryObservedSource<Other> {
         WorthQueryObservedSource {
             expression_context: self.expression_context.clone(),
             runtime_authority: self.runtime_authority,
@@ -91,3 +89,5 @@ impl<Query> WorthQueryObservedSource<Query> {
         }
     }
 }
+
+mod court_doors_for_test;

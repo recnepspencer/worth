@@ -9,7 +9,7 @@ use crate::domain_computation::{
 use std::{cmp::Ordering, sync::Arc};
 
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct SourcePublicationRead {
+pub struct SourcePublicationRead {
     admission: WorthQueryOperationAdmissionIdentity,
     address: Arc<OutputSourceAddress>,
 }

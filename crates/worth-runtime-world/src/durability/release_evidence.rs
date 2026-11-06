@@ -13,7 +13,7 @@ pub(crate) struct WorldRelationalReleaseEvidence {
 struct ReleaseMeaning {
     receipt: RelationalCommitReceipt,
     position: u64,
-    digest: [u8; 32],
+    digest: worth_foundational::CanonicalDigestId,
     #[serde(skip)]
     _funding: Option<ExecutionMemoryReservation>,
 }
@@ -54,7 +54,7 @@ impl WorldRelationalReleaseEvidence {
             meaning: Arc::new(ReleaseMeaning {
                 receipt: receipt.clone(),
                 position,
-                digest,
+                digest: worth_foundational::CanonicalDigestId::new(digest),
                 _funding: funding,
             }),
         })
@@ -69,7 +69,7 @@ impl WorldRelationalReleaseEvidence {
             #[serde(borrow)]
             receipt: &'a serde_json::value::RawValue,
             position: u64,
-            digest: [u8; 32],
+            digest: worth_foundational::CanonicalDigestId,
         }
         let work = u64::try_from(bytes.len()).map_err(|_| Denial::Frame(Frame::SizeLimit))?;
         execution
@@ -117,6 +117,6 @@ impl WorldRelationalReleaseEvidence {
         self.meaning.position
     }
     pub(crate) fn digest(&self) -> &[u8; 32] {
-        &self.meaning.digest
+        self.meaning.digest.bytes()
     }
 }

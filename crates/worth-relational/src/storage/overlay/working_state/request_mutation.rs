@@ -42,6 +42,8 @@ impl WorkingState {
                 crate::storage::overlay::EntityWorkingSetLayout::CanonicalSoA,
             partitions: partitions.clone(),
             mutation_journal: Default::default(),
+            // Original row replay reconstructs content separately at root admission.
+            content: Default::default(),
         }
     }
 

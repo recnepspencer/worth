@@ -1,4 +1,5 @@
 // Diagnostic counters keep their valid numeric prefix on unwind; they grant no authority.
+use crate::authority::commit::semantic_plan::PreparedRelationalCommitPlan;
 use crate::authority::commit::structural_summary::CommitStructuralSummary;
 use crate::branch::{SelectedRelationalBranchRead, SelectedRelationalBranchState};
 use crate::runtime::RelationalPreparationRuntime;
@@ -14,10 +15,12 @@ use crate::transactions::data::{
 };
 use std::collections::{BTreeMap, BTreeSet};
 use std::time::Instant;
+#[path = "prepare/retained_entity_selection.rs"]
+pub(crate) mod retained_entity_selection;
 
 pub(crate) struct PreparedWorkingStateScope {
     pub(crate) selected_branch_state: SelectedRelationalBranchState,
-    pub(crate) merged_plan: crate::mvcc::OwnedNormalizedPlan,
+    pub(crate) plan: PreparedRelationalCommitPlan,
     pub(crate) structural_summary: CommitStructuralSummary,
     pub(crate) working_state: WorkingState,
     pub(crate) phase_timing: CommitPhaseTiming,
@@ -198,7 +201,7 @@ pub(crate) fn prepare_working_state_scope(
 
     Ok(PreparedWorkingStateScope {
         selected_branch_state: selected.selected().clone(),
-        merged_plan,
+        plan: PreparedRelationalCommitPlan::Mutation(merged_plan),
         structural_summary,
         working_state,
         phase_timing,
@@ -224,7 +227,7 @@ pub(crate) fn prepare_lowered_working_state_scope(
 
     PreparedWorkingStateScope {
         selected_branch_state: selected.selected().clone(),
-        merged_plan,
+        plan: PreparedRelationalCommitPlan::Mutation(merged_plan),
         structural_summary,
         working_state,
         phase_timing,

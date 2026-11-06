@@ -51,8 +51,7 @@ impl WorldSealedApplicationHome {
     ) -> R {
         retire(
             self.home.relational().runtime(),
-            &self
-                .composition
+            self.composition
                 .as_ref()
                 .expect("Query Home owns its original composition")
                 .conditional

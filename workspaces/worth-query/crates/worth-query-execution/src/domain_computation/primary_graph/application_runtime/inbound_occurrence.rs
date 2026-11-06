@@ -12,8 +12,8 @@ use super::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::application_aftermath::WorthQueryInboundOccurrenceVerifier;
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 
-mod receive;
-mod transport_binding;
+pub(crate) mod receive;
+pub(crate) mod transport_binding;
 mod transport_publication_permit;
 pub(in crate::domain_computation) use transport_binding::WorthQueryInstalledTransportCompletionBinding;
 mod cleanup;
@@ -28,8 +28,7 @@ pub use cost::WorthQueryInboundCostObservation;
 pub use maintenance::WorthQueryInboundMaintenanceReport;
 pub use observe::WorthQueryInboundTerminalObservation;
 pub use rebuild::WorthQueryInboundIndexRepairDenial;
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use receive::WorthQueryInboundAdmission;
+
 pub use receive::{
     WorthQueryAdmittedInboundOccurrence, WorthQueryAuthenticatedInboundOccurrence,
     WorthQueryCorrelatedInboundOccurrence, WorthQueryInboundAdmissionDenial,
@@ -129,6 +128,7 @@ where
             return Err(WorthQueryInboundVerifierInstallationDenial::IncompatibleVerifier);
         }
         let mut installed = self
+            .runtime
             .inbound_verifiers
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -160,6 +160,7 @@ where
             return None;
         }
         let installed = self
+            .runtime
             .inbound_verifiers
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -171,7 +172,8 @@ where
         &self,
         operation: &str,
     ) -> Option<WorthQueryInboundSourcePosture> {
-        self.inbound_verifiers
+        self.runtime
+            .inbound_verifiers
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .get(operation)

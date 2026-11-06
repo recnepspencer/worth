@@ -1,4 +1,5 @@
 use sha2::{Digest, Sha256};
+use worth_foundational::CanonicalDigestId;
 use worth_store_operations::OperationalControlSessionObservation;
 
 #[cfg(test)]
@@ -21,7 +22,7 @@ pub enum OperationalRecoveryCrashCutDenial {
 pub struct OperationalRecoveryCrashCutEvidence {
     yieldpoint: OperationalRecoveryYieldpoint,
     operation_identities: Vec<String>,
-    evidence_identity: [u8; 32],
+    evidence_identity: CanonicalDigestId,
 }
 
 impl OperationalRecoveryCrashCutEvidence {
@@ -77,7 +78,7 @@ impl OperationalRecoveryCrashCutEvidence {
         Ok(Self {
             yieldpoint,
             operation_identities: trace.operation_identities().to_vec(),
-            evidence_identity: digest.finalize().into(),
+            evidence_identity: CanonicalDigestId::new(digest.finalize().into()),
         })
     }
 
@@ -118,7 +119,7 @@ impl OperationalRecoveryCrashCutEvidence {
         Ok(Self {
             yieldpoint,
             operation_identities,
-            evidence_identity: digest.finalize().into(),
+            evidence_identity: CanonicalDigestId::new(digest.finalize().into()),
         })
     }
 
@@ -131,7 +132,7 @@ impl OperationalRecoveryCrashCutEvidence {
     }
 
     pub const fn evidence_identity(&self) -> [u8; 32] {
-        self.evidence_identity
+        *self.evidence_identity.bytes()
     }
 }
 

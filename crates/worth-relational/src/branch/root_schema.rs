@@ -1,4 +1,10 @@
+#[path = "root_schema/registry_rebinding.rs"]
+mod registry_rebinding;
+use registry_rebinding::registry_for_snapshot;
 use std::sync::Arc;
+#[cfg(test)]
+#[path = "root_schema_content_tests.rs"]
+mod content_tests;
 
 use worth_foundational::facade::{
     AspectContract, AspectContractRevision, AspectIdentity, AspectKey, PortableAspectContractLookup,
@@ -22,8 +28,6 @@ mod compiled_retention;
 mod home_target;
 #[path = "root_schema/recorded_image.rs"]
 mod recorded_image;
-#[path = "root_schema/registry_binding.rs"]
-mod registry_binding;
 #[path = "root_schema/registry_quote.rs"]
 mod registry_quote;
 #[path = "root_schema/snapshot_match.rs"]
@@ -35,7 +39,6 @@ mod standard_tree_quote;
 pub(crate) use compiled_retention::{
     RetainedRelationalAspectPlans, RetainedRelationalSchemaRegistry,
 };
-use registry_binding::registry_for_snapshot;
 pub(crate) use standard_tree_quote::retained_tree_bytes as retained_compilation_tree_bytes;
 #[path = "root_schema/allocation_observation.rs"]
 mod allocation_observation;

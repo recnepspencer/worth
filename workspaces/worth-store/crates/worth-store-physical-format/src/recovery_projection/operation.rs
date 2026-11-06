@@ -3,6 +3,7 @@ use crate::{
     PersistedRecordIdentity, RecordAnchorAdvance, ReleaseCustodyHeadMutationV1,
     SelectedRecordContentClass,
 };
+use worth_foundational::CanonicalDigestId;
 
 use super::{
     PersistedDerivedDirectoryRetirement, PersistedReleaseCustodyHeadEffectV1,
@@ -55,7 +56,7 @@ impl PersistedDerivedDirectoryRecordBinding {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PersistedBlobSemanticRecordBinding {
     record: PersistedRecordIdentity,
-    record_payload_sha256: [u8; 32],
+    record_payload_sha256: CanonicalDigestId,
     candidate_root_generation: u64,
 }
 
@@ -114,7 +115,7 @@ impl PersistedBlobSemanticRecordBinding {
     ) -> Option<Self> {
         (candidate_root_generation != 0).then_some(Self {
             record,
-            record_payload_sha256,
+            record_payload_sha256: CanonicalDigestId::new(record_payload_sha256),
             candidate_root_generation,
         })
     }
@@ -124,7 +125,7 @@ impl PersistedBlobSemanticRecordBinding {
     }
 
     pub const fn record_payload_sha256(self) -> [u8; 32] {
-        self.record_payload_sha256
+        *self.record_payload_sha256.bytes()
     }
 
     pub const fn candidate_root_generation(self) -> u64 {

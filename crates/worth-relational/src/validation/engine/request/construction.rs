@@ -1,4 +1,5 @@
 use super::InvariantPreparationControl;
+use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
 use crate::transactions::data::MergedCommitPlan;
 use crate::validation::data::InvariantPlanContract;
 use std::collections::BTreeMap;
@@ -48,6 +49,28 @@ impl<'state> InvariantExecutionRequest<'state> {
         plan_contract: Option<InvariantPlanContract>,
         control: &InvariantPreparationControl<'_, '_>,
     ) -> Result<Self, crate::transactions::data::TransactionCommitError> {
+        Self::from_semantic_plan(
+            profile,
+            runtime,
+            observation,
+            version_id,
+            current_version_id,
+            merged_plan.map(RelationalSemanticPlan::Mutation),
+            plan_contract,
+            control,
+        )
+    }
+
+    pub(crate) fn from_semantic_plan<'runtime>(
+        profile: InvariantRequestProfile,
+        runtime: &crate::validation::engine::InvariantRuntimeView<'runtime>,
+        observation: InvariantObservation<'state>,
+        version_id: crate::identity::data::VersionId,
+        current_version_id: crate::identity::data::VersionId,
+        semantic_plan: Option<RelationalSemanticPlan<'state>>,
+        plan_contract: Option<InvariantPlanContract>,
+        control: &InvariantPreparationControl<'_, '_>,
+    ) -> Result<Self, crate::transactions::data::TransactionCommitError> {
         control.check()?;
         debug_assert!(
             /* Proof: Request construction is private to the invariant planner, which selects each profile by supports_observation before building its packet. Unsupported registrations are refused at runtime construction. */
@@ -67,7 +90,7 @@ impl<'state> InvariantExecutionRequest<'state> {
         let relation_scope_requirements =
             relation_scope_requirements_for(runtime, profile, control)?;
         let relation_integrity_scopes = prepare_relation_integrity_scopes(
-            merged_plan,
+            semantic_plan,
             runtime.home_target.is_some(),
             observation.committed_partition_access(),
             version_id,
@@ -85,7 +108,7 @@ impl<'state> InvariantExecutionRequest<'state> {
             consumed_groups,
             applicable_groups,
             plan_contract,
-            merged_plan,
+            semantic_plan,
             relation_integrity_scopes,
             proposal_identity,
         })

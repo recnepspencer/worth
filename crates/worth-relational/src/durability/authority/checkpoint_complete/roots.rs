@@ -75,6 +75,9 @@ impl FoldedRoots {
                 None => RelationalBranchRoot::readmit_for_request(
                     &issuer,
                     &applied.partitions,
+                    target.map_or(&crate::content::ContentDirectory::default(), |target| {
+                        target.root.retained_content()
+                    }),
                     commit.envelope.clone(),
                     commit.artifact.roots().clone(),
                     commit.inputs.result_schema.clone(),

@@ -1,17 +1,13 @@
 export function createReactiveFormBindings(signalNamespace, formId, formRef) {
+  let currentRevision = 0;
   const formScope = signalNamespace.scope(`${formId}:reactive`);
-  const summaryState = formScope.input(null, {
-    debugName: `${formId}.summaryState`,
+  const mutationRevision = formScope.input(0, {
+    debugName: `${formId}.mutationRevision`,
   });
-  const summarySignal = formScope.computed(
-    () => summaryState() ?? readSummary(formRef()),
-    {
-      debugName: `${formId}.summary`,
-    },
-  );
+  let summarySignal = null;
 
   function noteMutation() {
-    return summaryState.set(readSummary(formRef()));
+    return mutationRevision.set(++currentRevision);
   }
 
   function summarySignalHandle() {
@@ -19,6 +15,12 @@ export function createReactiveFormBindings(signalNamespace, formId, formRef) {
   }
 
   return Object.freeze({
+    initialize() {
+      summarySignal = formScope.computed(
+        () => { mutationRevision(); return readSummary(formRef()); },
+        { debugName: `${formId}.summary` },
+      );
+    },
     noteMutation,
     summarySignalHandle,
     wrapFieldHandle(handle) {
@@ -69,6 +71,7 @@ const FIELD_MUTATION_METHODS = Object.freeze([
 ]);
 
 const FORM_MUTATION_METHODS = Object.freeze([
+  'setFields',
   "attemptAction",
   "executeAction",
   "fulfillAction",
@@ -98,7 +101,8 @@ const FORM_MUTATION_METHODS = Object.freeze([
 
 function wrapMutationMethods(target, methodNames, noteMutation, options) {
   for (const methodName of methodNames) {
-    wrapMutationMethod(target, methodName, noteMutation, options);
+    wrapMutationMethod(target, methodName, noteMutation,
+      methodName === 'setFields' ? { ...options, awaitSummaryPublish: true } : options);
   }
 }
 

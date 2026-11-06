@@ -1,5 +1,6 @@
 //! Actual original-payer cleanup after populated text reuse and semantic/cancelled denial.
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 #[test]
 fn decoded_text_reuses_nested_loans_refuses_nominal_hits_and_releases_original_payer() {
     lifecycle::run(|| {
@@ -8,7 +9,7 @@ fn decoded_text_reuses_nested_loans_refuses_nominal_hits_and_releases_original_p
     });
 }
 fn journey(cancel: bool) {
-    let provider = Arc::new(prefix::Calls::default());
+    let provider = Arc::new(prefix_observation::Calls::default());
     let rules = Arc::new(rule::Calls::new(provider.clone()));
     let world = host::install(provider.clone(), rules.clone());
     let scope = authentication::request_scope();
@@ -44,7 +45,7 @@ fn journey(cancel: bool) {
     let baseline = memory.charged_memory_bytes();
     let charged = Arc::new(Mutex::new(None));
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     provider.inspect_text.store(true, Ordering::SeqCst);
     if cancel {
         let seen = charged.clone();

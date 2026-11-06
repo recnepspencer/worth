@@ -65,7 +65,9 @@ impl WorldPendingOpenAttempt {
             .publish(&self.original.subject, execution)
         {
             Ok(committed) => {
-                self.original.durable_custody.acknowledge(committed);
+                self.original
+                    .durable_custody
+                    .acknowledge(committed.into_witness());
                 WorldOpenAttemptOutcome::Opened(WorldOpenedPublicationAttempt {
                     original: self.original,
                 })

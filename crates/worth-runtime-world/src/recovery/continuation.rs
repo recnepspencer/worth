@@ -3,6 +3,7 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ProductUnpublishedNextAction {
     SettleOwnerEffects,
+    ContinueOriginalPublication,
     ReleaseObligations,
     Inspect,
     ReopenRequired,

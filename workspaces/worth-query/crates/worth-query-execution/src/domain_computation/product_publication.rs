@@ -1,5 +1,6 @@
 mod discovery;
-mod read_close;
+mod owner_close;
+mod recovered_release;
 mod recovery;
 mod stale;
 mod unpublished;
@@ -7,7 +8,7 @@ mod unpublished;
 pub use recovery::{
     WorthQueryProductUnpublishedRecovery, WorthQueryProductUnpublishedRecoveryFailure,
     WorthQueryProductUnpublishedRecoveryReleaseDenial,
-    WorthQueryProductUnpublishedRecoveryReleaseFailure,
+    WorthQueryProductUnpublishedRecoveryReleaseFailure, WorthQueryRecoveredProductReleaseDenial,
 };
 pub use stale::WorthQueryProductStaleApplication;
 pub use unpublished::WorthQueryProductUnpublishedApplication;

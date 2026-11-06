@@ -1,4 +1,5 @@
 use std::time::Duration;
+use worth_foundational::CanonicalDigestId;
 
 use crate::OfflinePhysicalArtifactFamily;
 use worth_store_physical_backend::{OfflineMediaClosureEntry, OfflineMediaFileIdentity};
@@ -24,15 +25,15 @@ pub struct OfflineInspectionCheckpoint {
     pub(super) elapsed: Duration,
     pub(super) completed: Vec<CheckpointFileObservation>,
     pub(super) partial_source: Option<CheckpointSourceIdentity>,
-    pub(super) partial_digest: Option<[u8; 32]>,
+    pub(super) partial_digest: Option<CanonicalDigestId>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct CheckpointSourceIdentity {
     length: u64,
-    metadata_fingerprint: [u8; 32],
+    metadata_fingerprint: CanonicalDigestId,
     physical_alias_group: u64,
-    physical_key_fingerprint: [u8; 32],
+    physical_key_fingerprint: CanonicalDigestId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -40,7 +41,7 @@ pub(super) struct CheckpointFileObservation {
     file_index: usize,
     source: CheckpointSourceIdentity,
     family: OfflinePhysicalArtifactFamily,
-    content_digest: [u8; 32],
+    content_digest: CanonicalDigestId,
 }
 
 impl OfflineInspectionCheckpoint {
@@ -80,17 +81,17 @@ impl CheckpointSourceIdentity {
     pub(super) fn from_source(source: &OfflineMediaFileIdentity) -> Self {
         Self {
             length: source.length(),
-            metadata_fingerprint: source.metadata_fingerprint(),
+            metadata_fingerprint: CanonicalDigestId::new(source.metadata_fingerprint()),
             physical_alias_group: source.physical_alias_group(),
-            physical_key_fingerprint: source.physical_key_fingerprint(),
+            physical_key_fingerprint: CanonicalDigestId::new(source.physical_key_fingerprint()),
         }
     }
 
     pub(super) fn matches(&self, source: &OfflineMediaFileIdentity) -> bool {
         self.length == source.length()
-            && self.metadata_fingerprint == source.metadata_fingerprint()
+            && *self.metadata_fingerprint.bytes() == source.metadata_fingerprint()
             && self.physical_alias_group == source.physical_alias_group()
-            && self.physical_key_fingerprint == source.physical_key_fingerprint()
+            && *self.physical_key_fingerprint.bytes() == source.physical_key_fingerprint()
     }
 }
 
@@ -100,7 +101,7 @@ impl CheckpointFileObservation {
             file_index,
             source: CheckpointSourceIdentity::from_source(file.source()),
             family: file.family(),
-            content_digest: file.content_digest(),
+            content_digest: CanonicalDigestId::new(file.content_digest()),
         }
     }
 
@@ -114,7 +115,7 @@ impl CheckpointFileObservation {
         self.file_index == file_index
             && self.source.matches(source)
             && self.family == family
-            && self.content_digest == expected.content_digest()
+            && *self.content_digest.bytes() == expected.content_digest()
             && source.length() == expected.bytes()
     }
 
@@ -128,7 +129,7 @@ impl CheckpointFileObservation {
         self.family
     }
     pub(super) const fn content_digest(&self) -> [u8; 32] {
-        self.content_digest
+        *self.content_digest.bytes()
     }
 }
 
@@ -141,17 +142,17 @@ impl CheckpointSourceIdentity {
     ) -> Self {
         Self {
             length,
-            metadata_fingerprint,
+            metadata_fingerprint: CanonicalDigestId::new(metadata_fingerprint),
             physical_alias_group,
-            physical_key_fingerprint,
+            physical_key_fingerprint: CanonicalDigestId::new(physical_key_fingerprint),
         }
     }
     pub(super) const fn encoded_fields(&self) -> (u64, [u8; 32], u64, [u8; 32]) {
         (
             self.length,
-            self.metadata_fingerprint,
+            *self.metadata_fingerprint.bytes(),
             self.physical_alias_group,
-            self.physical_key_fingerprint,
+            *self.physical_key_fingerprint.bytes(),
         )
     }
 }
@@ -167,7 +168,7 @@ impl CheckpointFileObservation {
             file_index,
             source,
             family,
-            content_digest,
+            content_digest: CanonicalDigestId::new(content_digest),
         }
     }
 }

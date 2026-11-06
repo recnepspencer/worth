@@ -26,7 +26,7 @@ impl<'a, 'p, 's, Schema: ApplicationSchema>
             .select_application_read_observation(phase, &self.observation)
             .map_err(WorthQueryRequiredOutputPreparationDenial::ReadObservation)?
             .retain_query_dependencies(phase, &program_publication_access(), source)
-            .map_err(WorthQueryRequiredOutputPreparationDenial::Dependencies)
+            .map_err(WorthQueryRequiredOutputPreparationDenial::from)
     }
     pub(in crate::application_entry) fn combine_query_dependencies<'d, I>(
         &self,
@@ -40,7 +40,7 @@ impl<'a, 'p, 's, Schema: ApplicationSchema>
             .select_application_read_observation(phase, &self.observation)
             .map_err(WorthQueryRequiredOutputPreparationDenial::ReadObservation)?
             .combine_query_dependencies(phase, &program_publication_access(), parts)
-            .map_err(WorthQueryRequiredOutputPreparationDenial::Dependencies)
+            .map_err(WorthQueryRequiredOutputPreparationDenial::from)
     }
     pub(in crate::application_entry) fn require_current_required_set_in_advancement<'d>(
         &self,

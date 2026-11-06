@@ -154,6 +154,7 @@ impl PreparedPrimaryGraphMeaning {
         product_world_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
     ) -> WorthQueryPrimaryGraphBootstrap<Schema> {
         WorthQueryPrimaryGraphBootstrap {
+            installed_operations: installed.installed_view().retain_operation_catalog(),
             value_bindings: installed.value_bindings().clone(),
             runtime_authority: runtime.authority_identity(),
             installed_packages: runtime.retain_installed_packages(),

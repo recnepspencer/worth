@@ -1,0 +1,9 @@
+{
+ "authority_doors": [],
+ "constructor_doors": [
+  "domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource::new"
+ ],
+ "field_doors": [],
+ "method_doors": [],
+ "unplaced": []
+}

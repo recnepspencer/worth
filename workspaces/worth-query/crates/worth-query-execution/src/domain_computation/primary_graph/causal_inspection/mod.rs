@@ -2,16 +2,16 @@ mod admission;
 mod admission_decision;
 mod admission_trace;
 mod anchor;
-mod application_inspection;
+pub(crate) mod application_inspection;
 mod application_observation;
 pub(in crate::domain_computation) use application_inspection::WorthQueryApplicationInspectionTarget;
 mod builder;
 mod builder_bridge;
 mod builder_support;
-mod identity;
+pub(crate) mod identity;
 mod inventory;
-mod materialization;
-mod observation_identity;
+pub(crate) mod materialization;
+pub(crate) mod observation_identity;
 mod receipt_types;
 mod reference;
 mod reference_index;
@@ -37,18 +37,25 @@ pub use anchor::{
     CausalObservationMissingReferencePosture,
 };
 pub use application_inspection::{
-    WorthQueryApplicationInspectionCanonicalRefusal, WorthQueryApplicationInspectionDenial,
+    DiagnosticComparisonDenial, FactlessCurrentness, IndexedSelectionReobserveDenial,
+    OutputFieldCaptureFailure, OwnEffectOnReads, RebaseVerificationReason, StoreDenial,
+    WorthQueryApplicationDisclosureContractDenial, WorthQueryApplicationInspectionCanonicalRefusal,
+    WorthQueryApplicationInspectionDenial, WorthQueryApplicationInspectionOwnerRefusal,
     WorthQueryApplicationInspectionRequest, WorthQueryApplicationInspectionResourceRefusal,
-    WorthQueryApplicationInspectionStopKind, WorthQueryApplicationProducerConnection,
-    WorthQueryApplicationProducerEvaluation, WorthQueryChangedInspectionRequest,
+    WorthQueryApplicationInspectionStage, WorthQueryApplicationInspectionStopKind,
+    WorthQueryApplicationProducerConnection, WorthQueryApplicationProducerEvaluation,
+    WorthQueryApplicationQueryGovernanceDenialKind, WorthQueryApplicationQueryInstallationDenial,
+    WorthQueryApplicationQueryInstallationDenialKind, WorthQueryChangedInspectionRequest,
     WorthQueryChangedReferenceOnlyInspectionRequest, WorthQueryComparedApplicationInspection,
     WorthQueryConditionalHistoryAvailability, WorthQueryConditionalHistoryDecisionClass,
     WorthQueryConditionalHistoryOutcome, WorthQueryConnectedApplicationInspection,
     WorthQueryConnectedInspectionRequest, WorthQueryConnectedReferenceOnlyInspectionRequest,
     WorthQueryEvaluatedApplicationInspection, WorthQueryEvaluatedInspectionRequest,
     WorthQueryEvaluatedReferenceOnlyInspectionRequest, WorthQueryInspectionEvidenceAvailability,
-    WorthQueryInspectionRetainedEvidence, WorthQueryInspectionSupplierEvidence,
-    WorthQueryMaterializedConditionalHistory, WorthQueryMaterializedConnectedInspectionRequest,
+    WorthQueryInspectionReadTerminalDenial, WorthQueryInspectionRetainedEvidence,
+    WorthQueryInspectionSupplierEvidence, WorthQueryManagedGraphReadDenial,
+    WorthQueryManagedGraphWorkSessionStartDenial, WorthQueryMaterializedConditionalHistory,
+    WorthQueryMaterializedConnectedInspectionRequest,
     WorthQueryMaterializedPerformedSourceInspection, WorthQueryMaterializedSourceInspectionRequest,
     WorthQueryObservedApplicationInspection, WorthQueryObservedInspectionRequest,
     WorthQueryPerformedSourceInspection, WorthQueryPerformedSourceInspectionRequest,

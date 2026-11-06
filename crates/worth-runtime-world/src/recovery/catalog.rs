@@ -17,6 +17,8 @@ mod initialization;
 mod page;
 mod reactivation;
 mod recovered_publication;
+mod released;
+pub(crate) use released::PreparedReleasedOriginal;
 #[path = "catalog/update.rs"]
 mod update;
 pub(crate) use update::ReservedProductUnpublishedRecordUpdate;
@@ -56,6 +58,10 @@ struct RecoveryCatalogState {
     reserved_metadata_bytes: usize,
     updating_slots: usize,
     metadata_bytes: usize,
+    released: worth_execution::ExecutionOrderedMap<
+        u64,
+        Arc<super::released_original::ReleasedOriginalSlot>,
+    >,
 }
 
 /// Runtime World capacity for records whose owner effects outlived product

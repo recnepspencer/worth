@@ -7,7 +7,7 @@ use crate::publication::NoEffectCause;
 use crate::recovery::{RecoveryCatalogDenial, ReservedProductUnpublishedSlot};
 use crate::retention::ReservedComponentPinPairCapacity;
 mod readmitted;
-pub(super) use readmitted::{reserve_readmitted_resources, ReservedReadmittedCommitResources};
+pub(super) use readmitted::reserve_readmitted_resources;
 
 use super::{
     LoweredOwnerComponentPlan, ProductBranchObservation, ReservedAttemptCapacities,
@@ -44,6 +44,9 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    if owner.state.recovery.has_recovered() {
+        return Err(NoEffectCause::OwnerDeniedBeforeEffect);
+    }
     issue_publication_identities_for_attempt(owner, None)
 }
 

@@ -1,11 +1,12 @@
 //! Rebuilt candidate content is compared at the real target, with fresh coverage.
 use super::super::super::refinement::{self, mutation::RenameExact};
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 
 #[test]
 fn restored_managed_content_keeps_independent_parent_predicate_revision_requirements() {
     lifecycle::run(|| {
-        let calls = Arc::new(prefix::Calls::default());
+        let calls = Arc::new(prefix_observation::Calls::default());
         let world = host::install_decision_read(
             calls.clone(),
             Arc::new(rule::Calls::new(calls)),
@@ -121,7 +122,7 @@ fn restored_managed_content_keeps_independent_parent_predicate_revision_requirem
 #[test]
 fn restored_exact_reject_support_is_equal_only_after_its_hidden_candidate_field_returns() {
     lifecycle::run(|| {
-        let calls = Arc::new(prefix::Calls::default());
+        let calls = Arc::new(prefix_observation::Calls::default());
         let world = host::install(calls.clone(), Arc::new(rule::Calls::new(calls)));
         let scope = authentication::request_scope();
         let principal = authentication::block_on(

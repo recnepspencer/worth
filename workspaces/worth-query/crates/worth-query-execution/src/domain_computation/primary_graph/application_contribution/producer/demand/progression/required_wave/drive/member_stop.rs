@@ -38,7 +38,7 @@ impl MemberStop {
     }
 }
 
-pub(super) struct StopRecording(Recording);
+pub struct StopRecording(Recording);
 impl StopRecording {
     /// The continuation owner already recorded this on its genuine successor.
     pub(super) fn successor() -> Self {
@@ -60,3 +60,5 @@ impl StopRecording {
         }
     }
 }
+
+mod court_doors_for_test;

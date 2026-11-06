@@ -18,11 +18,12 @@ pub use capacity_reservation::{
     reserve_execution_resource_plan, reserve_workflow_resource_plan,
     WorthQueryCapacityReservedExecutionResourcePlan,
     WorthQueryCapacityReservedWorkflowResourcePlan, WorthQueryExecutionCapacityReleaseReceipt,
-    WorthQueryExecutionCapacityReservationScope,
+    WorthQueryExecutionCapacityReservationScope, WorthQueryGraphCapacityReservationIdentity,
 };
 pub(crate) use capacity_reservation::{
     reserve_graph_provider_capacity, reserve_graph_provider_capacity_admitted,
-    WorthQueryCapacityReservationAdmissionStop, WorthQueryReservedGraphProviderCapacity,
+    WorthQueryCapacityReservationAdmissionStop,
+    WorthQueryGraphCapacityReservationIdentityExhausted, WorthQueryReservedGraphProviderCapacity,
 };
 pub use lowering::admit_execution_resource_plan;
 

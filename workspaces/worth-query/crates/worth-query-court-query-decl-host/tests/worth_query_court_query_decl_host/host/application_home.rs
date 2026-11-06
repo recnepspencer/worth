@@ -40,8 +40,7 @@ fn fresh_directory_home_journey() {
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
             Some(Instant::now() + Duration::from_secs(60)),
-            cancellation.token(),
-        );
+            cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         let runtime = home.runtime();
         let principal = identity::inspection_authentication::authenticate(
             runtime.runtime().installed_schema(),
@@ -128,10 +127,10 @@ fn directory_pre_effect_pending_retains_key_through_handoff_and_reopen_requireme
         1,
         "a live original key cannot replay the supplier"
     );
-    let duplicate = duplicate
-        .try_into_recovery()
-        .err()
-        .expect("the observation cannot steal the original checked-out owner");
+    let duplicate = match duplicate.try_into_recovery() {
+        Ok(_) => panic!("the observation cannot steal the original checked-out owner"),
+        Err(duplicate) => duplicate,
+    };
     assert_eq!(
         balance(runtime, &live),
         7,
@@ -229,103 +228,7 @@ fn directory_post_native_unwind_retains_original_key_without_handler_replay() {
 
 pub(crate) mod reopening;
 
-#[test]
-fn effect_bearing_native_nine_world_eight_reopens_only_into_owned_custody_refusal() {
-    use pending_support::{balance, pending, scope, set};
-    use worth_query_host::facade::{
-        application_entry::WorthQueryApplicationMutationOutcome, HomeCustodyReadmissionDenial,
-        WorthQueryApplicationHomeOpenRefused,
-    };
-    let location = fixture::location();
-    let initialized = Arc::new(AtomicUsize::new(0));
-    let contacts = Arc::new(AtomicUsize::new(0));
-    let build = ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap();
-    let lease = checkpoint_capture::lease(128 * 1024 * 1024);
-    let execution = worth_execution::ExecutionRequest::leased(&lease);
-    let request = fixture::request(
-        location.clone(),
-        build,
-        initialized.clone(),
-        contacts.clone(),
-    );
-    let home = with_bootstrap_advancement_from_request(execution, |phase| {
-        request.open_in_advancement(&phase)
-    })
-    .unwrap()
-    .unwrap_or_else(|refused| panic!("actual writer: {refused:?}"));
-    let (_, live) = scope();
-    assert!(matches!(
-        set(home.runtime(), &live, 0x9920, 8).unwrap(),
-        WorthQueryApplicationMutationOutcome::Committed { result: 8, .. }
-    ));
-    home.runtime()
-        .runtime()
-        .world_operation_control_for_test()
-        .panic_before_product_compare_once_for_test();
-    let pending = pending(set(home.runtime(), &live, 0x9921, 9));
-    let recovery = pending
-        .try_into_recovery()
-        .unwrap_or_else(|pending| panic!("same actual post-Native owner: {pending:?}"));
-    let effects = recovery.inspect().unwrap();
-    assert!(
-        effects.owner_effect_count() > 0,
-        "the actual control unwinds after the performed Native effect"
-    );
-    assert_eq!(balance(home.runtime(), &live), 8);
-    assert_eq!(contacts.load(Ordering::SeqCst), 2);
-    drop(effects);
-    drop(recovery);
-    // Explicit unbudgeted disposal ends this incarnation; it reports no close
-    // completion, effect release, or recovered business result.
-    drop(home);
-    let request =
-        fixture::request_with_initializer(location.clone(), build, contacts.clone(), |_, _, _| {
-            panic!("effect-bearing existing artifacts cannot initialize")
-        });
-    let refused = with_bootstrap_advancement_from_request(execution, |phase| {
-        request.open_in_advancement(&phase)
-    })
-    .unwrap()
-    .err()
-    .expect("retained durable World custody cannot become service");
-    match &refused {
-        WorthQueryApplicationHomeOpenRefused::CustodyReadmission {
-            cause:
-                HomeCustodyReadmissionDenial::RetainedWorldCustody {
-                    installed,
-                    reserved,
-                    abandoned,
-                    updating,
-                },
-            ..
-        } => assert!(*installed + *reserved + *abandoned + *updating > 0),
-        other => {
-            reopening::opening_failed("actual recovered World custody must block service", other)
-        }
-    }
-    assert_eq!(initialized.load(Ordering::SeqCst), 1);
-    assert_eq!(contacts.load(Ordering::SeqCst), 2);
-    let competing = fixture::request_with_initializer(location, build, contacts, |_, _, _| {
-        panic!("the held mutation lease cannot initialize")
-    });
-    let competing = with_bootstrap_advancement_from_request(execution, |phase| {
-        competing.open_in_advancement(&phase)
-    })
-    .unwrap()
-    .err()
-    .expect("the refusal retains its actual Home lease");
-    assert!(matches!(
-        &competing,
-        WorthQueryApplicationHomeOpenRefused::Physical { .. }
-    ));
-    assert!(competing.detail().contains("MutationOwnerContended"));
-    competing
-        .close(&execution)
-        .unwrap_or_else(|refused| panic!("competing opening disposal: {refused:?}"));
-    // Attempt the actual owning close; dispose any retained close custody
-    // explicitly, without claiming D9 disposition or successful close.
-    drop(refused.close(&execution));
-}
+mod recovered_custody;
 
 mod close_admission;
 mod handler_retirement;

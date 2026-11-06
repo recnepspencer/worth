@@ -67,7 +67,7 @@ impl ReservedBranchCreationAttempt {
         } = inputs;
         let mut custody =
             ActiveAttemptCustody::register(identity.clone(), source.clone(), deadline, capacities);
-        custody.configure_creation(observation_capacity);
+        custody.configure_creation(observation_capacity, plan.source_kind());
         let progress = custody.progress();
         Self {
             identity,
@@ -99,6 +99,11 @@ impl ReservedBranchCreationAttempt {
 
     pub(crate) const fn plan(&self) -> &LoweredBranchCreationPlan {
         &self.plan
+    }
+    pub(crate) fn take_retained_native(
+        &mut self,
+    ) -> Option<worth_relational::facade::branch::AdmittedRelationalRetainedForkSource> {
+        self.plan.take_retained_native()
     }
 
     #[cfg(test)]

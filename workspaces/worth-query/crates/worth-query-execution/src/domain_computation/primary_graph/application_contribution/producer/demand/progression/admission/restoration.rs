@@ -28,6 +28,7 @@ where
     ) -> Result<Option<ReadmittedOutput>, WorthQueryOutputDemandDenial> {
         let checkpoint_source = source_epoch.checkpoint_identity();
         let Some(readmitted) = self
+            .runtime
             .recovered_outputs
             .matching_source_partition(source_scope, observed_source.partition_identity())
             .find(|readmitted| {
@@ -42,6 +43,7 @@ where
             return Ok(None);
         };
         let authority = self
+            .runtime
             .product_runtime
             .recovered_root_authority
             .as_ref()
@@ -59,6 +61,7 @@ where
         }
         // A restored row posts the settlement candidate selection recorded.
         let Some(settlement) = self
+            .runtime
             .primary_provider
             .graph
             .output_lineage
@@ -119,6 +122,7 @@ where
             return Ok(None);
         }
         let current_head = self
+            .runtime
             .product_runtime
             .owner
             .observation_port()
@@ -195,7 +199,7 @@ where
             )
         })?;
         let recorded = self
-            .primary_provider
+            .runtime.primary_provider
             .graph
             .output_lineage
             .lock()
@@ -228,7 +232,7 @@ where
             // Readmission is this output's one full comparison. Recording it
             // as marks lets the next clean demand read them instead; a stop
             // here leaves the output requiring verification.
-            let source_owner = &self.primary_provider.graph.source_owner;
+            let source_owner = &self.runtime.primary_provider.graph.source_owner;
             if let Some(facts) = recorded.facts.for_comparison().filter(|_| {
 use crate::domain_computation::primary_graph::output_lineage::HeadCellRegistrationStop;
 use worth_relational::facade::mvcc::PublicationCompanionRegistrationStop as NativeStop;

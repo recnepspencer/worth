@@ -131,7 +131,7 @@ cleanup concern.
 
 ## Deferred Ownership
 
-Store-backed source admission remains Milestone 10 scope. Durable authority
-artifact reload remains Milestone 11 scope. Both must extend this
+Store-backed source admission remains Store execution/historical integration scope. Durable authority
+artifact reload remains Store Milestone 11 scope. Both must extend this
 canonical authority product through typed support postures; neither may
 reintroduce consumer-side pairing or digest promotion.

@@ -38,7 +38,7 @@ pub(in crate::runtime::tests) fn test_product_world_resources() -> WorthQueryPro
                 owner_created_component_custody_records: 256,
             },
         },
-        WorthQueryProductWorldClock::start(),
+        WorthQueryProductWorldClock::start(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
         worth_query_execution::facade::runtime::WorthQueryInvalidationResources::new(),
         execution_policy,
     )

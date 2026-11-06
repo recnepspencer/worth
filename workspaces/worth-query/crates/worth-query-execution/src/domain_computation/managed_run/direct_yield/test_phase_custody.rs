@@ -8,3 +8,6 @@ impl WorthQueryYieldedDirectRun {
         host.phase_for_managed(&self.relational_basis)
     }
 }
+
+#[path = "test_phase_custody_court_doors_for_test.rs"]
+mod court_doors_for_test;

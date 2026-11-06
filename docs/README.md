@@ -43,6 +43,8 @@ Read these in order the first time. Keep the Glossary open as a reference while 
 | Understand what the runtimes guarantee to my code | [How WORTH Works](how-it-works.md) |
 | Look up a term | [Glossary](glossary.md) |
 | Contribute code to the platform | [Coding Guidelines](coding-guidelines/) and [AGENTS.md](../AGENTS.md) |
+| Set up native Windows development and sccache | [Windows development setup](development/windows.md) (iteration migration destination and current prerequisites) |
+| Understand the iteration refactor and first crate migration | [Iteration architecture migration](../plans/cross-runtime/iteration-speed.md) and [Relational cutover](../plans/WORTH-relational/iteration-cutover.md) |
 | See what is planned or in progress | [`plans/`](../plans/) |
 
 ## Coding guidelines

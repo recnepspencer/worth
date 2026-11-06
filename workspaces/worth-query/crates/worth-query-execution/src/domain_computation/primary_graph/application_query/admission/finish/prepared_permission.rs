@@ -92,6 +92,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             parameters,
             controls,
             basis,
+            security_basis,
             security_product,
             session,
             disclosure,
@@ -141,15 +142,21 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let mut graph_work = graph_work;
         graph_work.set_retained_decision_facts(authorization.exact_fact_count());
         Ok(WorthQueryAdmittedApplicationQueryPlan {
+            history_metadata: None,
             planned_batch_item: None,
             retain_expression_context: false,
             retain_projection_for_inspection: false,
             runtime_authority: self.runtime.authority_identity(),
             graph_authority_identity: self
-                .primary_graph_authority
+                .runtime
+                .primary_graph_authority()
                 .authority_identity()
                 .to_string(),
-            provider_identity: self.primary_graph_authority.provider_identity().to_string(),
+            provider_identity: self
+                .runtime
+                .primary_graph_authority()
+                .provider_identity()
+                .to_string(),
             query,
             principal: access.principal(),
             scope: access.scope(),
@@ -159,6 +166,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             continuation_index_id: prepared.continuation_index_id,
             continuation_state: None,
             basis,
+            security_basis,
             index_posture,
             security_product,
             graph_work,

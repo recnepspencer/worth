@@ -134,10 +134,10 @@ pub(in crate::open::readmission::transition) fn decode(
         request.consult().map_err(Denial::Execution)?;
         let ordinal = read.u64()?;
         let body = HomeProgramTransitionBodyDigest::from_recorded(read.fixed()?);
-        if let Some(shared) = shared_bodies {
-            if shared.values()[step as usize] != body {
-                return Err(Denial::TransitionPlanDrift);
-            }
+        if let Some(shared) = shared_bodies
+            && shared.values()[step as usize] != body
+        {
+            return Err(Denial::TransitionPlanDrift);
         }
         if let Some(bodies) = &mut bodies {
             bodies.push(body).map_err(Denial::Backing)?;

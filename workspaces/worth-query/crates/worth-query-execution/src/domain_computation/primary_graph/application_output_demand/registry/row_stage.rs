@@ -11,22 +11,21 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 
 /// The stage of a demand's row. Reading it claims nothing and moves nothing,
 /// so a demand can decide what it does before it begins the row.
-pub(in crate::domain_computation::primary_graph) enum OutputRowStage {
+pub enum OutputRowStage {
     /// Another call is scheduling, executing or advancing the row.
     Driven,
     Stopped(WorthQueryOutputDemandDenial),
     Ready(ReadyCompletion),
     /// A real committed output still owes delivery or readiness; no call holds it.
     Published,
+    /// Original publication or its keyed receipt delivery still needs advancement.
+    PublicationPending,
     /// Admitted or scheduled, with no committed output: no call holds it.
     BeforeReady,
 }
 
 impl WorthQueryOutputDemandRegistry {
-    pub(in crate::domain_computation::primary_graph) fn row_stage(
-        &self,
-        interest: &WorthQueryOutputDemandInterest,
-    ) -> OutputRowStage {
+    pub fn row_stage(&self, interest: &WorthQueryOutputDemandInterest) -> OutputRowStage {
         let state = self
             .state
             .lock()
@@ -67,12 +66,17 @@ fn stage_of(record: &DemandRecord) -> OutputRowStage {
                 OutputRowStage::Stopped(denial.clone())
             }
             WorthQueryOutputAdvancement::Idle => match &output.checkpoint {
+                Some(WorthQueryOutputCheckpoint::PublicationPending { .. }) => {
+                    OutputRowStage::PublicationPending
+                }
                 Some(WorthQueryOutputCheckpoint::Ready(completion)) => {
                     OutputRowStage::Ready(completion.clone())
                 }
                 Some(
                     WorthQueryOutputCheckpoint::Published { .. }
-                    | WorthQueryOutputCheckpoint::Delivered { .. },
+                    | WorthQueryOutputCheckpoint::RecoveredPublished { .. }
+                    | WorthQueryOutputCheckpoint::Delivered { .. }
+                    | WorthQueryOutputCheckpoint::RecoveredDelivered { .. },
                 ) => OutputRowStage::Published,
                 None => OutputRowStage::BeforeReady,
             },

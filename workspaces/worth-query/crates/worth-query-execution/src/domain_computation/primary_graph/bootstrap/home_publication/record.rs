@@ -2,7 +2,8 @@
 use super::super::WorthQueryPrimaryGraphPublication;
 use super::{codec, denial, WorthQueryPrimaryGraphInstallationDenial as Denial};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
-use worth_foundational::facade::{ApplicationHomeBinding, AspectValue, InternedString};
+use worth_foundational::facade::{AspectValue, InternedString};
+use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
 pub(super) struct BootstrapPublicationRecord {
     pub values: [AspectValue; 8],
@@ -10,7 +11,7 @@ pub(super) struct BootstrapPublicationRecord {
 }
 impl BootstrapPublicationRecord {
     pub fn prepare(
-        binding: &ApplicationHomeBinding,
+        binding: &ApplicationSchemaBindingIdentity,
         publication: &WorthQueryPrimaryGraphPublication,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, Denial> {
@@ -22,7 +23,7 @@ impl BootstrapPublicationRecord {
         let (binding, funding) = codec::encode(binding, execution)?;
         Ok(Self {
             values: [
-                AspectValue::UInt64(1),
+                AspectValue::UInt64(2),
                 AspectValue::String(InternedString::from(binding)),
                 AspectValue::UInt64(publication.bootstrap_commit_id().0),
                 count(publication.principal_binding_count())?,

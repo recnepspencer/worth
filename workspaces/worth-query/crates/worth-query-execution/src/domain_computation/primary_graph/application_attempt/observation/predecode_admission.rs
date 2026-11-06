@@ -7,7 +7,7 @@ use worth_relational::facade::{
     storage::RecordLifecycleState,
 };
 
-pub(in crate::domain_computation::primary_graph) fn observe_field_value_borrowed<Output>(
+pub fn observe_field_value_borrowed<Output>(
     runtime: &RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &SnapshotHandle,

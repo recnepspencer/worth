@@ -4,6 +4,20 @@ use std::any::Any;
 use std::cell::{Cell, RefCell};
 use worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile;
 
+// The four-round independent model captured 77 checkpoints through 162 events.
+// Its ordinary model calls keep their finite World policy; whole-history capture
+// borrows the separate population setup request.
+const FULL_RUN_HISTORY_POLICY: worth_foundational::ExecutionRequestPolicy =
+    worth_foundational::ExecutionRequestPolicy::new(
+        worth_foundational::ExecutionPosture::Serial,
+        worth_foundational::DeterminismContract::CanonicalBitwise,
+        worth_foundational::ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            None,
+            Some(20_000_000),
+        ),
+    );
+
 thread_local! { static MODEL_REPLAY: Cell<bool> = const { Cell::new(false) }; }
 pub(in super::super) fn model_replay() -> bool {
     MODEL_REPLAY.get()
@@ -58,6 +72,11 @@ impl Reference {
         profile: WorthQueryOutputDemandResourceProfile,
         seed: impl FnOnce(&mut Graph, &Model),
     ) -> Application<REUSE, WORK, RUNS, MODE> {
+        let execution_policy = if MODE == 2 {
+            model_history_policy()
+        } else {
+            FULL_RUN_HISTORY_POLICY
+        };
         let mut model = self.model.borrow_mut();
         if !model.as_ref().is_some_and(|model| {
             model
@@ -65,9 +84,16 @@ impl Reference {
                 .is::<Application<REUSE, WORK, RUNS, MODE>>()
         }) {
             *model = Some(ModelRuntime {
-                application: Box::new(installation::install_variant::<REUSE, WORK, RUNS, MODE>(
+                application: Box::new(installation::install_variant_with_observations::<
+                    REUSE,
+                    WORK,
+                    RUNS,
+                    MODE,
+                >(
                     None,
                     profile,
+                    0,
+                    execution_policy,
                     |graph| seed(graph, &self.seed),
                 )),
                 applied: 0,
@@ -113,15 +139,40 @@ impl Reference {
         }
         drop(replay);
         model.applied = self.history.len();
+        let capture = worth_query_host::facade::primary_graph::query_test_execution_authority_for_test()
+            .request_lease(worth_query_host::facade::runtime::LeaseRequest {
+                policy: crate::checkpoint_recovery::support::observation::POPULATION_BOOTSTRAP_POLICY,
+                cancellation: worth_query_host::facade::runtime::CancellationToken::new(),
+                deadline: None,
+            }).expect("the population owns its original checkpoint-capture request");
         let native = application
-            .with_host_advancement(|host_phase| {
+            .with_funded_host_advancement(worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::Execution(&capture), |host_phase| {
                 application
                     .capture_native_truth_checkpoint_for_test(&host_phase)
                     .unwrap()
             })
             .expect("installed host call opens");
-        installation::install_variant::<REUSE, WORK, RUNS, MODE>(Some(native), profile, |_| {
-            panic!("independent Native model truth does not reseed")
-        })
+        installation::install_variant_with_observations::<REUSE, WORK, RUNS, MODE>(
+            Some(native),
+            profile,
+            0,
+            execution_policy,
+            |_| panic!("independent Native model truth does not reseed"),
+        )
     }
+}
+
+// Generated payloads retain their Native creation/deletion history. Its positive
+// checkpoint journey funds content closure, encoding and integrity work separately
+// from the logical partition ceilings; the shared refusal World stays at 8m.
+pub(in super::super) fn model_history_policy() -> worth_foundational::ExecutionRequestPolicy {
+    worth_foundational::ExecutionRequestPolicy::new(
+        worth_foundational::ExecutionPosture::Serial,
+        worth_foundational::DeterminismContract::CanonicalBitwise,
+        worth_foundational::ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            None,
+            Some(16_000_000),
+        ),
+    )
 }

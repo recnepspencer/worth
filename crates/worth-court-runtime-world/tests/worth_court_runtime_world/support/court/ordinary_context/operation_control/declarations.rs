@@ -27,6 +27,8 @@ pub(crate) fn signal_prepared(
         .unwrap()
 }
 pub(crate) fn clean(court: &CompositeSupplyChainCourt, outcome: RuntimeWorldPublicationOutcome) {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host_request);
     match outcome {
         RuntimeWorldPublicationOutcome::Performed(done) => drop(done.consume()),
         RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
@@ -35,8 +37,15 @@ pub(crate) fn clean(court: &CompositeSupplyChainCourt, outcome: RuntimeWorldPubl
             let cleanup = court
                 .world
                 .recovery_port()
-                .release_effects(&handle, 0)
-                .unwrap();
+                .release_effects(
+                    &execution,
+                    &handle,
+                    0,
+                    court.observe_recovery_original(&execution, &handle),
+                )
+                .unwrap()
+                .into_parts();
+            let (_original, cleanup) = cleanup;
             assert!(cleanup.owner_retirement_work().is_empty());
         }
         RuntimeWorldPublicationOutcome::NoEffect(no) => drop(no),

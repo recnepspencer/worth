@@ -19,7 +19,7 @@ use worth_query_installation::facade::InstalledSourceDisclosureBinding;
     clippy::disallowed_methods,
     reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
 )]
-pub(in crate::domain_computation::primary_graph) fn capture_inspection<Schema, Source>(
+pub fn capture_inspection<Schema, Source>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     original: &Source::Input,

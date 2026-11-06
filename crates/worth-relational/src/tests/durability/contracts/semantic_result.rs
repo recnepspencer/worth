@@ -8,6 +8,7 @@ use worth_execution::ExecutionRequest;
 
 mod bulk;
 mod custom_versions;
+mod execution_posture;
 
 #[test]
 fn semantic_result_discovery_must_be_present_in_each_actual_index_entry() {

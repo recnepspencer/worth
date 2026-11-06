@@ -1,5 +1,5 @@
 error[E0451]: field `fields` of struct `StructAspectValue` is private
- --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/struct_aspect_values/struct_value_fields_are_private.rs
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/struct_aspect_values/struct_value_fields_are_private.rs:4:33
   |
-  |     let _ = StructAspectValue { fields: Default::default() };
+4 |     let _ = StructAspectValue { fields: Default::default() };
   |                                 ^^^^^^ private field

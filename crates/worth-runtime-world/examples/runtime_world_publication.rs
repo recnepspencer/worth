@@ -205,8 +205,26 @@ fn publication_workflow() {
         "ProductUnpublished: {:?}; explicit cleanup follows",
         effects.cause()
     );
+    let original_receipt = effects
+        .component_results()
+        .relational_settlement()
+        .unwrap()
+        .clone();
     recovery.continue_effects(effects).unwrap(); // Settlement/cleanup only; never call a sibling or CAS.
-    recovery.release_effects(&handle, 0).unwrap();
+    recovery
+        .release_effects(
+            &execution,
+            &handle,
+            0,
+            Some(
+                records
+                    .runtime
+                    .durability_authority()
+                    .observe_memory_commit(&execution, &original_receipt)
+                    .unwrap(),
+            ),
+        )
+        .unwrap();
     assert_eq!(
         world
             .observation_port()

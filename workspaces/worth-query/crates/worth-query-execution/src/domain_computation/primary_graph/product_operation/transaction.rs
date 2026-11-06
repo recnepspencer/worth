@@ -76,7 +76,9 @@ where
                 let application = self.entry.application;
                 self.change
                     .program
-                    .refuse_stale_home_authority(application.product_runtime.owner.owner_identity())
+                    .refuse_stale_home_authority(
+                        application.runtime.product_runtime.owner.owner_identity(),
+                    )
                     .map_err(|_| WorthQueryProductTransactionCommitError::StaleIncarnation)?;
                 if !self.change.program.belongs_to_application(
                     application.runtime.authority_identity(),
@@ -123,7 +125,7 @@ where
             Ok(execution) => execution,
             Err(cause) => return Ok(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause).into_commit_outcome()),
         };
-        self.change.program.refuse_stale_home_authority(application.product_runtime.owner.owner_identity())
+        self.change.program.refuse_stale_home_authority(application.runtime.product_runtime.owner.owner_identity())
             .map_err(|_| WorthQueryProductTransactionCommitError::StaleIncarnation)?;
         if !std::ptr::eq(application, admitted.runtime.runtime())
             || !self.change.program.belongs_to_application(

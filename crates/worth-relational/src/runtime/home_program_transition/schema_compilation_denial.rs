@@ -4,7 +4,7 @@ use crate::branch::RelationalBranchRootCaptureDenial as Cause;
 
 pub(super) fn translate(cause: Cause) -> Denial {
     match cause {
-        Cause::Request(cause) => Denial::Execution(cause),
+        Cause::Request(cause) | Cause::Execution(cause) => Denial::Execution(cause),
         Cause::AllocationLayoutOverflow
         | Cause::AllocationAccountingOverflow(_)
         | Cause::SlotCountOverflow => Denial::CapacityOverflow,
@@ -13,6 +13,8 @@ pub(super) fn translate(cause: Cause) -> Denial {
         | Cause::DuplicateRegion(_)
         | Cause::InvalidAdjacencyProjection(_)
         | Cause::InvalidHistoryCoverage(_)
+        | Cause::UnadmittedContent
+        | Cause::Content(_)
         | Cause::ContentEncoding(_)
         | Cause::StorageUnavailable(_)
         | Cause::CanonicalEnvelopeMismatch

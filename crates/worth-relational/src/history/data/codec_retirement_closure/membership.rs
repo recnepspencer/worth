@@ -33,11 +33,11 @@ pub(super) fn latest(
             .canonical_envelope(commit)
             .ok_or("output correspondence lost native history")?;
         require_linear_history(&envelope)?;
-        if let Some(origin) = &envelope.required_output_origin {
+        for origin in envelope.output_origins() {
             charge(context, origin.outputs.len())?;
             if origin.outputs.binary_search(&id).is_ok() {
-                envelope.validate_output_membership_header()?;
-                return Ok(envelope);
+                envelope.output_origin_for_entity(id, context)?;
+                return Ok(Arc::clone(&envelope));
             }
         }
         if writes(&envelope, id, context)? {
@@ -70,7 +70,8 @@ pub(super) fn validate_member(
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<Arc<CanonicalRequiredOutputOrigin>, Stop> {
-    let origin = selected.validate_output_membership_header()?;
+    super::restoration_payload::validate_groups(runtime, selected, context)?;
+    let origin = selected.output_origin_for_entity(id, context)?;
     let member = origin
         .members
         .iter()
@@ -132,12 +133,7 @@ pub(super) fn validate_member(
     {
         return Err("present payload differs from native producer patch succession".into());
     }
-    Ok(Arc::clone(
-        selected
-            .required_output_origin
-            .as_ref()
-            .ok_or("required producer origin is absent")?,
-    ))
+    Ok(Arc::clone(selected.output_origin_for_entity(id, context)?))
 }
 
 pub(super) fn reconstruct(
@@ -174,7 +170,8 @@ fn reconstruct_chain(
     lease: Option<&ExecutionResourceLease<'_>>,
     validate_gap_payload: bool,
 ) -> Result<Option<super::payload_reconstruction::ReconstructedPayload>, Stop> {
-    let origin = selected.validate_output_membership_header()?;
+    super::restoration_payload::validate_groups(runtime, selected, context)?;
+    let origin = selected.output_origin_for_entity(id, context)?;
     let _member = origin
         .members
         .iter()
@@ -194,7 +191,7 @@ fn reconstruct_chain(
             return Err("publication succession is cyclic or incomplete".into());
         }
         charge(context, bound)?;
-        let current_origin = current.validate_output_membership_header()?;
+        let current_origin = current.output_origin_for_route(&origin.meaning, context)?;
         chain.push(Arc::clone(&current));
         match current_origin.publication {
             CanonicalOutputPublication::Birth
@@ -208,13 +205,30 @@ fn reconstruct_chain(
                 super::codec_disposition::validate_birth(runtime, &current, context, lease)?;
                 break;
             }
+            CanonicalOutputPublication::AuthoredRestoration {
+                retirement,
+                predecessor,
+            } => {
+                super::restoration_payload::validate_member(
+                    runtime,
+                    &current,
+                    id,
+                    retirement,
+                    predecessor,
+                    plan,
+                    context,
+                    lease,
+                )?;
+                break;
+            }
             CanonicalOutputPublication::Preserve { predecessor }
-            | CanonicalOutputPublication::AuthoredRetirement { predecessor } => {
+            | CanonicalOutputPublication::AuthoredRetirement { predecessor }
+            | CanonicalOutputPublication::ProducerRetirement { predecessor } => {
                 let previous = runtime
                     .history
                     .canonical_envelope(predecessor)
                     .ok_or("publication predecessor history missing")?;
-                let prior = previous.validate_output_membership_header()?;
+                let prior = previous.output_origin_for_route(&current_origin.meaning, context)?;
                 super::publication_succession::validate_succession(
                     runtime, &current, prior, context,
                 )?;
@@ -233,7 +247,7 @@ fn reconstruct_chain(
     }
     let mut reconstructed: Option<super::payload_reconstruction::ReconstructedPayload> = None;
     for envelope in chain.iter().rev() {
-        let membership = envelope.validate_output_membership_header()?;
+        let membership = envelope.output_origin_for_route(&origin.meaning, context)?;
         let member = membership.members.iter().find(|member| member.id == id);
         let Some(member) = member else { continue };
         let patch = envelope

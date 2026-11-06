@@ -106,7 +106,7 @@ pub(super) fn eligible_registrations<'state>(
                 crate::validation::data::PreparedCustomInvariantScope::capture_with_shared_inputs(
                     request.observation(),
                     request.version_id(),
-                    request.merged_plan(),
+                    request.semantic_plan(),
                     registration.access_contract(),
                     &work,
                     runtime.shared_candidate_inputs(),
@@ -144,7 +144,7 @@ pub(super) fn eligible_registrations<'state>(
                     basis: CustomInvariantNonApplicability::NoApplicableTouch,
                 });
             }
-            if request.merged_plan().is_some()
+            if request.semantic_plan().is_some()
                 && registration.managed_sources.is_empty()
                 && has_declared_applicability
                 && !planner.has_applicable_touches()

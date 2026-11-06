@@ -15,7 +15,6 @@ pub use outcomes::{
     RelationalInvariantCheckMeaning, RelationalInvariantCustomProvenanceMeaning,
     RelationalInvariantDecisionMeaning, RelationalInvariantExecutionMeaning,
     RelationalInvariantMetadataMeaning, RelationalInvariantProofScopeMeaning,
-    RelationalValidationPreparationFailure,
 };
 mod primitives;
 

@@ -5,22 +5,22 @@ fn receipt_only_batches_release_each_bounded_published_snapshot() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = relational_runtime_with_intent_strategy();
+    let runtime = relational_runtime_with_intent_strategy();
     let left = create_entity(
         request_execution,
-        &mut runtime,
+        &runtime,
         "left",
         BranchId("main".to_string()),
     );
     let right = create_entity(
         request_execution,
-        &mut runtime,
+        &runtime,
         "right",
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
         request_execution,
-        &mut runtime,
+        &runtime,
         BranchId("batch-receipt-capacity".to_string()),
         &BranchId("main".to_string()),
     )
@@ -60,7 +60,7 @@ fn receipt_only_batches_release_each_bounded_published_snapshot() {
             .unwrap()
             .execute_receipt_with(
                 request_execution,
-                EffectExecutionAuthority::relational(&mut runtime),
+                EffectExecutionAuthority::relational(&runtime),
             )
             .unwrap();
         assert!(matches!(

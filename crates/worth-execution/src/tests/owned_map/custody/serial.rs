@@ -78,7 +78,9 @@ fn expired_serial_request_preserves_callers_input_hold() {
     let request = SerialRequest {
         work_ceiling: None,
         memory: Some(budget.clone()),
-        deadline: Some(Instant::now() - Duration::from_secs(1)),
+        deadline: Some(
+            crate::MonotonicClock::system().deadline_at(Instant::now() - Duration::from_secs(1)),
+        ),
         cancellation: crate::CancellationSource::new().token(),
     };
     // An expired scope rejects before the map can accept the caller's hold.
@@ -121,7 +123,7 @@ fn admitted_serial_owned_map_deadline_preserves_prefix_and_custody() {
         let request = SerialRequest {
             work_ceiling: None,
             memory: Some(budget.clone()),
-            deadline: Some(deadline),
+            deadline: Some(crate::MonotonicClock::system().deadline_at(deadline)),
             cancellation: crate::CancellationSource::new().token(),
         };
         let result = ExecutionWorkCeiling::new(None).run_serial(&request, || {

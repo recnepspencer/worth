@@ -9,6 +9,7 @@ impl Clone for super::super::RelationalBranchRoot {
         Self {
             id: self.id,
             regions: self.regions.clone(),
+            content: self.content.clone(),
             entity_slot_count: self.entity_slot_count,
             relation_slot_count: self.relation_slot_count,
             content_accumulator: self.content_accumulator,

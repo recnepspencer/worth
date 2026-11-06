@@ -5,6 +5,8 @@ pub(super) fn application_commit_cause(
     use crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind as Kind;
     match kind {
         Kind::IdempotencyPreparationBusy
+        | Kind::ContentInconsistency
+        | Kind::Content(_)
         | Kind::StorageUnavailable(_)
         | Kind::ExecutionResource { .. }
         | Kind::ExecutionNestedPatternStopped { .. }
@@ -30,6 +32,7 @@ pub(super) fn application_commit_cause(
         | Kind::IndexGenerationIdentityExhausted
         | Kind::IdempotencyForeignAffinity
         | Kind::IdempotencyIntentDrift
+        | Kind::OriginalEffectReleased
         | Kind::IdempotencyIntentUnverifiable
         | Kind::MutationBindingMismatch
         | Kind::MutationInputMismatch

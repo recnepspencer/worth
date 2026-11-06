@@ -4,7 +4,7 @@ use sha2::{Digest, Sha256};
 use worth_relational::facade::identity::EntityId;
 mod components;
 mod managed_index;
-mod orbit;
+pub(crate) mod orbit;
 pub(in crate::domain_computation::primary_graph::application_query) use components::DeclaredComponentSelection;
 pub(in crate::domain_computation::primary_graph::application_query) use managed_index::{
     DeclaredManagedIndexSelection, ManagedSourceDependencies,
@@ -14,7 +14,7 @@ pub(in crate::domain_computation::primary_graph::application_query) use orbit::D
 
 /// An immutable Query selection witness, retaining its actual physical read facts.
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedRootSelection {
+pub struct WorthQueryObservedRootSelection {
     facts: SourceFacts,
     pub(in crate::domain_computation::primary_graph::application_query) orbit:
         Option<DeclaredOrbitSelection>,
@@ -25,10 +25,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedRootSe
     identity: [u8; 32],
 }
 impl WorthQueryObservedRootSelection {
-    pub(in crate::domain_computation::primary_graph::application_query) fn new(
-        facts: SourceFacts,
-        orbit: Option<DeclaredOrbitSelection>,
-    ) -> Self {
+    pub fn new(facts: SourceFacts, orbit: Option<DeclaredOrbitSelection>) -> Self {
         Self::from_parts(facts, orbit, None, None)
     }
     pub(in crate::domain_computation::primary_graph::application_query) fn with_components(

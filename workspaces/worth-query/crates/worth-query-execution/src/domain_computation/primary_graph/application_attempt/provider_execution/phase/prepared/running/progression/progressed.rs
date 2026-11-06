@@ -11,9 +11,7 @@ use super::WorthQueryProgressedApplicationCommit;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::WorthQueryManagedRunTerminalKind;
 
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) fn finish_application_commit<
-    Schema,
->(
+pub fn finish_application_commit<Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
 
@@ -35,10 +33,11 @@ where
     let terminal = terminal_for(&outcome);
     let snapshot_release = lease.release_custody();
     application
+        .runtime
         .primary_provider
         .observe_managed_application_cleanup();
     let completion = match cleanup.finish(
-        &application.primary_provider,
+        &application.runtime.primary_provider,
         running,
         terminal,
         snapshot_release,
@@ -51,9 +50,9 @@ where
                 original_completion.cleanup_envelope().fill(
                     evidence,
                     failure,
-                    application.product_runtime.clone(),
+                    application.runtime.product_runtime.clone(),
                     original,
-                    application.bridge.conditional_operations(),
+                    application.runtime.bridge.conditional_operations(),
                 ),
             );
         }
@@ -98,7 +97,3 @@ const fn terminal_for(
         }
     }
 }
-
-#[cfg(test)]
-#[path = "association_tests.rs"]
-mod association_tests;

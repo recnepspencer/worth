@@ -19,7 +19,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         index: &WorthQueryManagedIndex<S, I>,
     ) -> Result<(), Denial> {
         let execution = phase
-            .execution_request_for(&self.product_runtime)
+            .execution_request_for(&self.runtime.product_runtime)
             .map_err(|_| Denial::new(ReceiverCause::Refused(Refusal::ForeignPhase), None))?;
         let allocation = SourceFactsAllocation::open(&execution)
             .map_err(|cause| Denial::new(ReceiverCause::Execution(cause), None))?;

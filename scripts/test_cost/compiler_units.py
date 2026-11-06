@@ -137,12 +137,21 @@ def attribute(event, declaration):
     if len(unique) > 1 and 'cargo_dependency_features' in event:
         dependencies = {row['identity']: row for row in declaration['units']}
         observed = event['cargo_dependency_features']
-        unique = {identity: row for identity, row in unique.items()
-                  if all(dependency in dependencies for dependency in row['dependency_units'])
-                  and sorted((dependencies[dependency]['target']['name'],
-                              dependencies[dependency]['features'])
-                             for dependency in row['dependency_units']) ==
-                      sorted((name, features) for name, features in observed)}
+        packages = {}
+        for row in unique.values():
+            for dependency in row['dependency_units']:
+                if dependency in dependencies:
+                    child = dependencies[dependency]
+                    packages.setdefault(child['target']['name'], set()).add(child['package'])
+        # Retained feature observations name crates, not package versions. Keep
+        # the full candidates when those names cannot establish package identity.
+        if all(len(choices) == 1 for choices in packages.values()):
+            unique = {identity: row for identity, row in unique.items()
+                      if all(dependency in dependencies for dependency in row['dependency_units'])
+                      and sorted((dependencies[dependency]['target']['name'],
+                                  dependencies[dependency]['features'])
+                                 for dependency in row['dependency_units']) ==
+                          sorted((name, features) for name, features in observed)}
     if len(unique) > 1:
         from compiler_fingerprint import FingerprintRefusal, resolve
         try:

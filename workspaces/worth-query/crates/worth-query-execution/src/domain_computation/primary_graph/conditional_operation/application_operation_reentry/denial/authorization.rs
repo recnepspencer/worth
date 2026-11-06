@@ -50,6 +50,7 @@ impl WorthQueryTemporalReentryDenial {
             | Kind::Refused(AuthorizationRefusal::StaleIncarnation)
             | Kind::Refused(AuthorizationRefusal::StaleInstalledSchema)
             | Kind::Refused(AuthorizationRefusal::StaleInstalledOperation)
+            | Kind::Refused(AuthorizationRefusal::InputNotAdmitted)
             | Kind::Refused(AuthorizationRefusal::StalePrincipal)
             | Kind::Refused(AuthorizationRefusal::StaleScope)
             | Kind::Refused(AuthorizationRefusal::MutationPreconditionRejected)

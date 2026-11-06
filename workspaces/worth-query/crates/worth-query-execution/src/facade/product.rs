@@ -39,6 +39,7 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryExpectedProductBasisSelectionDenial, WorthQueryExpectedProductBranch,
     WorthQueryExpectedProductBranchAdoptionDenial, WorthQueryExpectedProductBranchAdoptionFailure,
     WorthQueryExpectedProductBranchCloseFailure, WorthQueryExpectedProductBranchFork,
+    WorthQueryOwnedProductHead, WorthQueryOwnedProductHeadCloseFailure,
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrincipalResolutionMode,
     WorthQueryProductEntry, WorthQueryProductHistory, WorthQueryProductHistoryEntry,
     WorthQueryProductQueryControls, WorthQueryProductTransaction,
@@ -48,4 +49,6 @@ pub use worth_runtime_world::facade::{
     CompositeComponentChangePosture, RuntimeWorldCancellationSource, RuntimeWorldCancellationToken,
 };
 
-pub use crate::domain_computation::WorthQueryProductUnpublishedRecoveryReleaseDenial;
+pub use crate::domain_computation::{
+    WorthQueryProductUnpublishedRecoveryReleaseDenial, WorthQueryRecoveredProductReleaseDenial,
+};

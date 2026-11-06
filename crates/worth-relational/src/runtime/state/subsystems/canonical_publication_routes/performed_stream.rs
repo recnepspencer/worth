@@ -14,6 +14,8 @@ use super::patch_position_reservation::{
 use super::{CanonicalPublicationRecordError, CanonicalPublicationRoute};
 use crate::durability::medium::{RelationalCommitPublication, RelationalDurableMediumBinding};
 
+#[path = "performed_stream/cutover_deadline.rs"]
+mod cutover_deadline;
 #[path = "performed_stream/recovered_source.rs"]
 mod recovered_source;
 #[path = "performed_stream/source_retirement.rs"]
@@ -57,6 +59,10 @@ impl PerformedPublicationStream {
             .as_ref()
             .map_or(1, |head| head.index_definition_frontier)
     }
+    pub(super) fn waiting_publisher_count_for_test(&self) -> usize {
+        self.reservation.waiting_publisher_count_for_test()
+    }
+
     pub(super) fn checkpoint_selection(
         &self,
         covered_transitions: crate::branch::RelationalBranchTransitionSequence,
@@ -107,25 +113,27 @@ impl PerformedPublicationStream {
         route: Arc<CanonicalPublicationRoute>,
         original_payload: &crate::durability::canonical_commit_artifact::PreparedOriginalCanonicalPayload,
         admission: PatchPositionReservationAdmission<'_, '_, '_>,
+        cutover_before: Option<std::time::Instant>,
         medium: Option<&RelationalDurableMediumBinding>,
-        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         cutover: impl FnOnce(PatchStreamPosition) -> T,
     ) -> Result<(Arc<PositionedCanonicalCommit>, T), CanonicalPublicationRecordError> {
         let _reservation = self.reservation.enter(admission)?;
+        cutover_deadline::require(admission, cutover_before)?;
         let current = self.head.load_full();
         let prior_position = self.performed_head_position(&current);
         let Some(next_position) = prior_position.checked_add(1) else {
             self.reservation.overflows.fetch_add(1, Ordering::Relaxed);
             return Err(CanonicalPublicationRecordError::PositionCapacityExhausted);
         };
-        let original = RelationalCommitPublication::prepare_memory_frame(
-            PatchStreamPosition(next_position),
-            original_payload,
-            medium,
-            execution,
-        )
-        .map_err(CanonicalPublicationRecordError::MemoryFrame)?;
+        let original = cutover_deadline::prepare_frame(admission, cutover_before, || {
+            RelationalCommitPublication::prepare_memory_frame(
+                PatchStreamPosition(next_position),
+                original_payload,
+                medium,
+                execution,
+            )
+        })?;
         let positioned = Arc::new(PositionedCanonicalCommit::admit(
             super::CanonicalPositionAdmission::performed(
                 PatchStreamPosition(next_position),
@@ -138,7 +146,6 @@ impl PerformedPublicationStream {
             positioned,
             &route.roots,
             medium,
-            policy,
             execution,
             original,
         )

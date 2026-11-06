@@ -1,4 +1,4 @@
-use crate::durability::data::{DurabilityError, RecoveryFailureClass};
+use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::history::data::{HistoryDriftClass, VersionNode};
 use crate::runtime::RelationalRuntime;
@@ -6,11 +6,12 @@ use crate::runtime::RelationalRuntime;
 use super::super::super::derived_index_artifacts::admit_envelope_derived_index_artifacts;
 
 pub(super) fn apply_authoritative_commit_artifacts(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     positioned: &crate::history::data::PositionedCanonicalCommit,
     allow_reconstructed_replacement: bool,
     advance_branch_currentness: bool,
-) -> Result<(), DurabilityError> {
+) -> Result<(), RelationalRecoveryStop> {
     super::unshared_state(runtime)?;
     let envelope = positioned.envelope();
     let index_artifacts = admit_envelope_derived_index_artifacts(envelope)?;
@@ -26,7 +27,8 @@ pub(super) fn apply_authoritative_commit_artifacts(
                 "recovery commit envelope conflicts for commit {}",
                 envelope.commit.commit_id.0
             ),
-        ));
+        )
+        .into());
     }
     let catalog_matches = runtime
         .history
@@ -46,7 +48,8 @@ pub(super) fn apply_authoritative_commit_artifacts(
                 "recovery commit artifact conflicts for commit {}",
                 envelope.commit.commit_id.0
             ),
-        ));
+        )
+        .into());
     }
     runtime.history.insert_commit_graph_node(
         envelope.commit.commit_id,
@@ -60,15 +63,16 @@ pub(super) fn apply_authoritative_commit_artifacts(
     (|| {
         let canonical = runtime
             .history
-            .synchronize_recovered_source_commit(positioned, &symbols)?;
+            .synchronize_recovered_source_commit(execution, positioned, &symbols)?;
         runtime.history.record_recovered_commit(
+            execution,
             &canonical,
             allow_reconstructed_replacement,
             advance_branch_currentness,
             &symbols,
         )
     })()
-    .map_err(|detail| DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, detail))?;
+    .map_err(RelationalRecoveryStop::from)?;
 
     index_artifacts.install(runtime);
     Ok(())

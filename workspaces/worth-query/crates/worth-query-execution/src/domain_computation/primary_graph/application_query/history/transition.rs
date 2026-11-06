@@ -49,6 +49,7 @@ pub(super) fn prepare_world<Schema: ApplicationSchema>(
         limits.maximum_owned_bytes.get(),
     )?;
     let prepared = application
+        .runtime
         .product_runtime
         .prepare_exact_product_history_page(execution, &original.cursor)
         .map_err(Denial::World)?;

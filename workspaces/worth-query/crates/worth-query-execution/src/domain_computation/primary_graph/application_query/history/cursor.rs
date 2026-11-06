@@ -99,6 +99,7 @@ impl<Schema: ApplicationSchema, History: ApplicationHistoryQueryBinding<Schema>>
         let memory = storage::retain(execution, source_bytes)?;
         let position = if has_subjects {
             let cursor = application
+                .runtime
                 .product_runtime
                 .open_exact_product_history(execution, &target)
                 .map_err(Denial::World)?;

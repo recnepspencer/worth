@@ -1,7 +1,7 @@
 //! Closed Host integration stages; Store keeps physical and Native ownership.
 use super::super::{
     application_contribution::PreparedApplicationRuntimeContributions,
-    bootstrap::native_meaning::InstalledNativeSchemaMeaning,
+    bootstrap::native_meaning::{InstalledNativeSchemaMeaning, PreparedNativeSchemaMeaning},
     program_occurrence::WorthQueryProgramActivationCell,
 };
 use super::*;
@@ -18,7 +18,10 @@ use worth_relational::facade::runtime::{
 };
 mod binding;
 mod world;
-pub use world::{QueryHomeWorldAttachmentRefused, ReadmittedHomeQueryService};
+pub use world::{
+    QueryHomeCustodyReadmissionDenial, QueryHomeCustodyReadmissionRefused,
+    QueryHomeWorldAttachmentRefused, ReadmittedHomeQueryService,
+};
 mod existing;
 mod native;
 pub use existing::{
@@ -39,7 +42,7 @@ pub struct PreparedHomeApplication<Schema: ApplicationSchemaComposition, Program
 
 pub struct PreparedHomeNativeMeaning<Schema: ApplicationSchemaComposition, Program> {
     state: HomeApplicationState<Schema, Program>,
-    schema: InstalledNativeSchemaMeaning,
+    schema: PreparedNativeSchemaMeaning,
 }
 
 pub struct ReadmittedHomeNativeMeaning<Schema: ApplicationSchemaComposition, Program> {

@@ -42,10 +42,7 @@ impl SourceInvalidationOwner {
     /// a released row again, so the ones a live row still reads, or an
     /// admission stop left in place, wait here for the next release. Returns
     /// the identities no branch retains any more.
-    pub(in crate::domain_computation::primary_graph) fn retire_released(
-        &self,
-        released: impl IntoIterator<Item = Identity>,
-    ) -> Vec<Identity> {
+    pub fn retire_released(&self, released: impl IntoIterator<Item = Identity>) -> Vec<Identity> {
         let waiting = || {
             self.released
                 .lock()
@@ -320,3 +317,5 @@ fn relink(
         .insert(Arc::clone(identity), Arc::new(link));
     Ok(())
 }
+
+mod court_doors_for_test;

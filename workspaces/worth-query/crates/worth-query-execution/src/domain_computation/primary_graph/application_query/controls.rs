@@ -2,7 +2,6 @@ use super::super::application_output_demand::OriginalSettledProducerObservation;
 use std::marker::PhantomData;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
-use std::time::Instant;
 
 use worth_query_admission::facade::{
     application_query::WorthQueryApplicationQueryLane,
@@ -59,11 +58,12 @@ pub struct WorthQueryApplicationQueryResumeControls<'a> {
 /// freshness, basis deadline, result and work limits, and request scope.
 pub struct WorthQueryAdmittedApplicationQueryControls<'a> {
     producer: Option<Arc<OriginalSettledProducerObservation>>,
+    current_product_one_shot: bool,
     basis: WorthQueryApplicationQueryBasisPosture,
     consistency: WorthQueryApplicationQueryConsistency,
     freshness: WorthQueryApplicationQueryFreshness,
     lane: WorthQueryApplicationQueryLane,
-    basis_deadline: Option<Instant>,
+    basis_deadline: Option<worth_execution::MonotonicDeadline>,
     maximum_result_count: NonZeroUsize,
 
     request_scope: &'a WorthQueryRequestScope,
@@ -80,6 +80,13 @@ pub(super) enum WorthQueryApplicationQueryBasis {
 }
 
 impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
+    pub(in crate::domain_computation::primary_graph::application_query) fn has_security_product(
+        &self,
+        product: &worth_runtime_world::facade::ProductBranchObservation,
+    ) -> bool {
+        self.security_product.observation() == product
+    }
+
     pub(in crate::domain_computation::primary_graph) fn with_selection_origin(
         mut self,
         origin: super::super::product_operation::SelectedQueryOrigin,
@@ -254,6 +261,8 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
     ) {
         let basis_deadline = self.request_scope.deadline();
         let admitted = WorthQueryAdmittedApplicationQueryControls {
+            current_product_one_shot: self.publication_product.is_some()
+                && self.lane == WorthQueryApplicationQueryLane::OneShot,
             basis: self.basis_posture(),
             consistency: self.consistency(),
             freshness: self.freshness(),
@@ -310,6 +319,11 @@ impl<'a> WorthQueryApplicationQueryResumeControls<'a> {
 }
 
 impl WorthQueryAdmittedApplicationQueryControls<'_> {
+    pub(in crate::domain_computation::primary_graph::application_query) fn is_current_product_one_shot(
+        &self,
+    ) -> bool {
+        self.current_product_one_shot
+    }
     pub(super) fn original_settled_producer_for(
         &self,
         actual: &worth_runtime_world::facade::ProductBranchObservation,
@@ -335,13 +349,14 @@ impl WorthQueryAdmittedApplicationQueryControls<'_> {
         self.lane
     }
 
-    pub const fn basis_deadline(&self) -> Option<Instant> {
-        self.basis_deadline
+    pub fn basis_deadline(&self) -> Option<worth_execution::MonotonicDeadline> {
+        self.basis_deadline.clone()
     }
 
     pub fn basis_is_expired(&self) -> bool {
         self.basis_deadline
-            .is_some_and(|deadline| Instant::now() >= deadline)
+            .as_ref()
+            .is_some_and(worth_execution::MonotonicDeadline::is_elapsed)
     }
 
     pub const fn maximum_result_count(&self) -> NonZeroUsize {
@@ -352,3 +367,5 @@ impl WorthQueryAdmittedApplicationQueryControls<'_> {
         self.request_scope
     }
 }
+
+mod court_doors_for_test;

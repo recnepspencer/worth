@@ -30,7 +30,8 @@ where
             Scope,
         >,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
-        admission.refuse_stale_home_authority(self.product_runtime.owner.owner_identity())?;
+        admission
+            .refuse_stale_home_authority(self.runtime.product_runtime.owner.owner_identity())?;
         let authorization = admission
             .authorization()
             .ok_or_else(inconsistent_authorization)?;
@@ -38,13 +39,23 @@ where
         if !authorization.belongs_to_session(session) {
             return Err(inconsistent_authorization());
         }
-        let product = admission
-            .graph_work()
-            .mutation_product()
-            .ok_or_else(inconsistent_authorization)?;
         match authorization.capability_authorization() {
-            Some(capability) => self.validate_retained_capability(execution, capability, product),
-            None => self.validate_retained_conventional(execution, authorization, product),
+            Some(capability) => self.validate_retained_capability(
+                execution,
+                capability,
+                admission
+                    .graph_work()
+                    .mutation_product()
+                    .ok_or_else(inconsistent_authorization)?,
+            ),
+            None => self.validate_retained_conventional(
+                execution,
+                authorization,
+                admission
+                    .graph_work()
+                    .authorization_product()
+                    .ok_or_else(inconsistent_authorization)?,
+            ),
         }
     }
 
@@ -52,7 +63,7 @@ where
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         authorization: &WorthQueryRetainedAuthorizationDecisionFacts,
-        product: &crate::basis::WorthQueryProductBranchLease,
+        product: &crate::basis::WorthQueryProductObservationLease,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
         let security = self
             .admit_product_security_basis(execution, product)
@@ -73,7 +84,7 @@ where
                     authorization,
                     runtime,
                     snapshot,
-                    self.authorization.bridge(),
+                    self.runtime.authorization.bridge(),
                 )
             })
     }
@@ -120,7 +131,7 @@ where
             >,
     {
         access.refuse_stale_incarnation(self)?;
-        let authority = access.runtime_authority_for(self.product_runtime.owner.owner_identity())
+        let authority = access.runtime_authority_for(self.runtime.product_runtime.owner.owner_identity())
             .map_err(|cause| match cause {
                 worth_proof::HomeIncarnationDenial::ForeignHome => inconsistent_authorization(),
                 worth_proof::HomeIncarnationDenial::StaleIncarnation =>
@@ -217,7 +228,12 @@ where
         }
         if !capability
             .decision()
-            .remains_current_in(execution, runtime, snapshot, self.authorization.bridge())
+            .remains_current_in(
+                execution,
+                runtime,
+                snapshot,
+                self.runtime.authorization.bridge(),
+            )
             .map_err(|cause| {
                 crate::domain_computation::authorization::denial::relational_read_denial(
                     cause,
@@ -231,7 +247,7 @@ where
             session: capability.decision().session_identity(),
             relational: runtime,
             snapshot,
-            bridge: self.authorization.bridge(),
+            bridge: self.runtime.authorization.bridge(),
             installed,
             request: capability.request(),
             sample,

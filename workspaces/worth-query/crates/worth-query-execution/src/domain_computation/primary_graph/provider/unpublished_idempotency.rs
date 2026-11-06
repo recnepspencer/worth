@@ -9,16 +9,16 @@ use worth_runtime_world::facade::ProductUnpublishedRecoveryHandle;
 mod before_world;
 mod handle_slots;
 mod managed_recovery;
+pub(super) mod recovered;
 pub(in crate::domain_computation::primary_graph::provider) use before_world::BeforeWorldQueryReservation;
 mod preparation;
 mod release;
-mod reservation;
+pub(crate) mod reservation;
 pub(in crate::domain_computation::primary_graph::provider) use managed_recovery::{
     ManagedUnpublishedRecoveryGuard, ManagedUnpublishedRecoveryStop,
 };
 pub(in crate::domain_computation) use release::WorthQueryUnpublishedReleaseReservation;
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use reservation::unwind_recovery_inspection_count;
+
 pub(in crate::domain_computation) use reservation::QueryDurablePreparationGuard;
 pub(in crate::domain_computation::primary_graph) use reservation::WorthQueryUnpublishedIdempotencyReservation;
 
@@ -31,6 +31,7 @@ enum WorthQueryUnpublishedIdempotencyPosture {
     Retained,
     Recovering,
     Releasing,
+    Released,
 }
 
 struct WorthQueryUnpublishedIdempotencyEntry {
@@ -39,6 +40,7 @@ struct WorthQueryUnpublishedIdempotencyEntry {
     posture: WorthQueryUnpublishedIdempotencyPosture,
     managed: Option<ManagedUnpublishedAttempt>,
     preparing: Option<super::RetainedQueryDurablePreparation>,
+    released: Option<super::idempotency::WorthQueryReleasedApplicationEffect>,
 }
 
 /// Provider-owned bounded evidence that owner effects were not published as a
@@ -46,6 +48,7 @@ struct WorthQueryUnpublishedIdempotencyEntry {
 /// are bound before owner effects begin.
 pub(super) struct WorthQueryUnpublishedIdempotencyStore {
     maximum_entries: Option<usize>,
+    recovered: BTreeMap<WorthQueryUnpublishedIdempotencyKey, recovered::RecoveredIdempotencyEntry>,
     by_key: BTreeMap<
         WorthQueryUnpublishedIdempotencyKey,
         Arc<Mutex<WorthQueryUnpublishedIdempotencyEntry>>,
@@ -63,7 +66,13 @@ pub(in crate::domain_computation) struct WorthQueryUnpublishedIdempotencyDisposi
 
 impl WorthQueryUnpublishedIdempotencyStore {
     pub(super) fn home_close_has_work(&self) -> bool {
-        !self.by_key.is_empty() || !self.by_recovery.is_empty()
+        self.by_key.values().any(|entry| {
+            entry
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .released
+                .is_none()
+        }) || !self.by_recovery.is_empty()
     }
     pub(super) fn new(maximum_entries: Option<usize>) -> Self {
         assert!(
@@ -72,6 +81,7 @@ impl WorthQueryUnpublishedIdempotencyStore {
         );
         Self {
             maximum_entries,
+            recovered: BTreeMap::new(),
             by_key: BTreeMap::new(),
             by_recovery: Vec::new(),
         }
@@ -115,10 +125,11 @@ impl WorthQueryUnpublishedIdempotencyStore {
         (),
     > {
         let key = WorthQueryUnpublishedIdempotencyKey::for_binding(&product, &binding);
-        if self.by_key.contains_key(&key)
+        if self.recovered.contains_key(&key)
+            || self.by_key.contains_key(&key)
             || self
                 .maximum_entries
-                .is_some_and(|maximum| self.by_key.len() >= maximum)
+                .is_some_and(|maximum| self.by_key.len() + self.recovered.len() >= maximum)
             || match self.maximum_entries {
                 Some(_) => self.by_recovery.len() >= self.maximum_recovery_mappings().ok_or(())?,
                 None => false,
@@ -134,6 +145,7 @@ impl WorthQueryUnpublishedIdempotencyStore {
             posture: WorthQueryUnpublishedIdempotencyPosture::Preparing,
             managed: None,
             preparing: None,
+            released: None,
         }));
         // This is an occupied canonical index row, not spare shared capacity.
         self.by_recovery.push((Arc::clone(&slot), key.clone()));
@@ -191,7 +203,9 @@ impl WorthQueryUnpublishedIdempotencyStore {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         Some(if recorded.binding == binding {
-            if recorded.handle_slot.get().is_none() {
+            if let Some(original) = &recorded.released {
+                WorthQueryProviderIdempotencyResolution::ReleasedOriginal(original.clone())
+            } else if recorded.handle_slot.get().is_none() {
                 WorthQueryProviderIdempotencyResolution::PreparationBusy
             } else if let Some(preparing) = &recorded.preparing {
                 WorthQueryProviderIdempotencyResolution::PreparationPending {
@@ -222,10 +236,12 @@ impl WorthQueryUnpublishedIdempotencyStore {
         let recorded = recorded
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if recorded.released.is_some() {
+            return None;
+        }
         Some((recorded.binding, recorded.handle_slot.get()?.clone()))
     }
 
-    #[cfg(test)]
     fn retained_count(&self) -> usize {
         self.by_key.len()
     }
@@ -325,10 +341,7 @@ impl super::WorthQueryPrimaryGraphProvider {
             .inspect_exact(key)
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn unpublished_idempotency_count(
-        &self,
-    ) -> usize {
+    pub fn unpublished_idempotency_count(&self) -> usize {
         self.unpublished_idempotency
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())

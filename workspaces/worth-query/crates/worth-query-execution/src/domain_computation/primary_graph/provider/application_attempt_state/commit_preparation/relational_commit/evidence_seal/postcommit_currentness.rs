@@ -9,12 +9,14 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
 use crate::domain_computation::primary_graph::fact_verification_observation;
 
-mod adjacency;
+mod diagnostic;
+pub use diagnostic::RebaseVerificationReason;
+pub(crate) mod adjacency;
 mod resolution;
-mod retirement;
+pub(crate) mod retirement;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(super) enum RebasedSourceFacts {
+pub enum RebasedSourceFacts {
     Exact(FactPayload),
     /// Exact selected native rebase, paired with the unchanged owner capacity rule.
     Cached {
@@ -37,7 +39,7 @@ pub(super) enum RebasedSourceFacts {
     /// and no verifier compares it. One thing is carried out instead: what
     /// the committed effect did to the facts its source query read.
     VerificationRequired {
-        reason: RebaseVerificationReason,
+        reason: RebaseVerificationFailure,
         own_effect: OwnEffectOnReads,
     },
 }
@@ -45,12 +47,12 @@ pub(super) enum RebasedSourceFacts {
 /// What a commit's own effect did to the facts its source query read, where
 /// its rebase failed. Only the rebase's walk builds one.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct OwnEffectOnReads(OwnEffect);
+pub struct OwnEffectOnReads(OwnEffect);
 
 /// The walk's answer, ordered as answers join: one moved read decides it, and
 /// one the walk asked about and could not compare leaves it undecidable.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-enum OwnEffect {
+pub enum OwnEffect {
     /// No read the walk asked about moved. It asks about a producer
     /// commit's source reads, and the facts an owner call read that the
     /// effect replaced are moved before it asks: every other fact is
@@ -65,7 +67,7 @@ enum OwnEffect {
 
 /// What a commit that kept no fact answers at an observation.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum FactlessCurrentness {
+pub enum FactlessCurrentness {
     /// Its own publication is selected and its effect moved none of its reads.
     Current,
     /// A later publication is selected, its effect moved one of its reads, or
@@ -81,30 +83,20 @@ pub(in crate::domain_computation::primary_graph) enum FactlessCurrentness {
 /// A rebase that failed: why, and what the commit's own effect did to its
 /// reads. No caller holds the one without the other.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct FailedRebase {
-    pub(in crate::domain_computation::primary_graph) reason: RebaseVerificationReason,
+pub struct FailedRebase {
+    pub(in crate::domain_computation::primary_graph) reason: RebaseVerificationFailure,
     pub(in crate::domain_computation::primary_graph) own_effect: OwnEffectOnReads,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum RebaseVerificationReason {
-    ManagedIndex(crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexWorkDenial),
-    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
-    NativeRevisionUnavailable,
-    NativeFactRevisionUnavailable(usize),
-    IndexedSelectionDenied(crate::domain_computation::primary_graph::application_attempt::IndexedSelectionReobserveDenial),
-    IndexedSelectionFactDenied(usize, crate::domain_computation::primary_graph::application_attempt::IndexedSelectionReobserveDenial),
-    UnsupportedDecisionFact,
-    NativePayloadStorage { class: worth_execution::ExecutionAllocationDenialClass, requested: Option<u64> },
-    AdmissionDenied(CompanionPreflightStop),
-}
+pub(crate) mod failure;
+pub(in crate::domain_computation::primary_graph) use failure::RebaseVerificationFailure;
 
 mod full_preparation;
 use full_preparation::FullSourceFactRebase;
 mod preparation;
-mod selected;
+pub(crate) mod selected;
 use preparation::Preparation;
-pub(in crate::domain_computation::primary_graph) struct PreparedSourceFactRebase {
+pub struct PreparedSourceFactRebase {
     preparation: Preparation,
     performed_input_facts: Option<FactPayload>,
     retain_output_field_evidence: bool,
@@ -141,10 +133,7 @@ impl OwnEffectOnReads {
 
     /// The commit's answer where `selected` says whether its own publication
     /// is the one selected.
-    pub(in crate::domain_computation::primary_graph) const fn at_own_publication(
-        self,
-        selected: bool,
-    ) -> FactlessCurrentness {
+    pub const fn at_own_publication(self, selected: bool) -> FactlessCurrentness {
         match (selected, self.0) {
             (true, OwnEffect::Unmoved) => FactlessCurrentness::Current,
             (true, OwnEffect::Undecidable) => FactlessCurrentness::Undecidable,
@@ -187,7 +176,6 @@ impl RebasedSourceFacts {
         }
     }
 
-    #[cfg(test)]
     pub(super) fn retain_exact(&self) -> Option<FactPayload> {
         self.retained().ok()
     }
@@ -215,7 +203,7 @@ impl RebasedSourceFacts {
 /// An output entity this commit retired is read as that retirement; it is not
 /// a source the effect moved.
 #[allow(clippy::too_many_arguments)]
-pub(super) fn rebase_output(
+pub fn rebase_output(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -248,9 +236,8 @@ pub(super) fn rebase_output(
     )
 }
 
-#[cfg(test)]
 #[allow(clippy::too_many_arguments)]
-fn rebase(
+pub fn rebase(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -262,15 +249,9 @@ fn rebase(
 }
 mod rebase_walk;
 
-#[cfg(test)]
-#[path = "postcommit_currentness/tests.rs"]
-mod tests;
-#[cfg(test)]
-mod undecided_tests;
-
 /// Exact physical source refusal stays distinct from legacy temporary Vec refusal.
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) enum PreparedRebaseDenial {
+pub enum PreparedRebaseDenial {
     Admission(CompanionPreflightStop),
     Retention(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial),
     Temporary(std::collections::TryReserveError),
@@ -288,3 +269,5 @@ impl From<std::collections::TryReserveError> for PreparedRebaseDenial {
         Self::Temporary(denial)
     }
 }
+
+mod court_doors_for_test;

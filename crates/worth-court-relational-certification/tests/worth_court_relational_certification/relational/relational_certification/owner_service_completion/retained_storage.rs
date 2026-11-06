@@ -14,7 +14,7 @@ use worth_relational::facade::{
 fn independent_readers_hold_history_until_last_release_then_queued_roots_reclaim() {
     let request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let mut runtime = empty_runtime();
+    let runtime = empty_runtime();
     let services = runtime.owner_component_services();
     let first = commit_through_services(execution, &runtime, &services, "inventory-first");
     let independent = {

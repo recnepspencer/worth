@@ -48,7 +48,12 @@ where
         ));
     WorthQueryAdmittedApplicationCapabilityAccess {
         runtime_authority: prepared.graph_work.runtime_authority(),
-        home_owner: prepared.runtime.product_runtime.owner.owner_identity(),
+        home_owner: prepared
+            .runtime
+            .runtime
+            .product_runtime
+            .owner
+            .owner_identity(),
         binding_identity: prepared.graph_work.binding().clone(),
         capability: prepared.capability.contract().name().into(),
         capability_type: prepared.capability.contract().capability_type().into(),
@@ -64,7 +69,6 @@ where
         authorization,
         operation_admission_identity: prepared.operation_admission_identity,
         graph_work_session: prepared.graph_work.identity(),
-        #[cfg(test)]
         graph_work_managed_run: prepared.graph_work.managed_run_identity(),
         graph_work_branch: prepared.graph_work.branch().relational().clone(),
         graph_work_capability: prepared.graph_work.capability_access_context(),

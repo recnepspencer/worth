@@ -1,0 +1,21 @@
+{
+ "authority_doors": [
+  "domain_computation::primary_graph::application_attempt::commit_authority_binding::WorthQueryApplicationCommitAuthorityBinding::corrupt_original_disclosure"
+ ],
+ "constructor_doors": [],
+ "field_doors": [
+  "domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandRegistry.state",
+  "domain_computation::primary_graph::root::WorthQueryPrimaryGraphIntegrationHandle.layout"
+ ],
+ "method_doors": [
+  "domain_computation::primary_graph::application_attempt::commit_authority_binding::WorthQueryApplicationCommitAuthorityBinding::corrupt_original_disclosure",
+  "domain_computation::primary_graph::application_output_demand::registry::prerequisite_claims::RequiredOutputDemandContext::prepare_prerequisites",
+  "domain_computation::primary_graph::application_output_demand::settlement::producer_identity::SettlementProducerIdentity::as_str",
+  "domain_computation::primary_graph::application_query::retained_read::WorthQueryApplicationReadObservation::original_settled_producer",
+  "domain_computation::primary_graph::application_query::retained_read::WorthQueryApplicationReadObservation::with_original_producer",
+  "domain_computation::primary_graph::provider::session_commit::receipt_basis_retention::WorthQueryReceiptBasisRetentionStore::retain",
+  "domain_computation::primary_graph::root::runtime_access::WorthQueryPrimaryGraphIntegrationHandle::with_runtime_mut",
+  "domain_computation::provider_session::protocol::declared_closure::WorthQueryProviderPlanDeclarations::decision_fact_families"
+ ],
+ "unplaced": []
+}

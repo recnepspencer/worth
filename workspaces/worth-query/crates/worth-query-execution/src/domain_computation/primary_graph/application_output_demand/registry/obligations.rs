@@ -154,7 +154,6 @@ impl DemandRegistryState {
             .records
             .iter()
             .filter(|(key, record)| {
-                #[cfg(test)]
                 super::post_commit::record_sweep_contact();
                 retired(key, record)
                     && record.prepared_prerequisite_claims == 0
@@ -166,7 +165,6 @@ impl DemandRegistryState {
         let mut released = Vec::with_capacity(count);
         let mut settlements = Vec::with_capacity(count);
         for (key, mut record) in &mut self.records {
-            #[cfg(test)]
             super::post_commit::record_sweep_contact();
             if retired(key, &record)
                 && record.prepared_prerequisite_claims == 0
@@ -219,17 +217,10 @@ impl super::WorthQueryAcceptedOutputAuthority {
                 left.is_same_authoritative_commit(right)
             }
             (Self::Stable(left), Self::Stable(right)) => left.same_publication(right),
-            (Self::Restored(left), Self::Restored(right)) => {
-                left.checkpoint == right.checkpoint
-                    && std::sync::Arc::ptr_eq(&left.correspondence, &right.correspondence)
-                    && left.observation == right.observation
-                    && left.source_scope == right.source_scope
-                    && left.source_identity == right.source_identity
-                    && left
-                        .observed_source_facts
-                        .same_backing(&right.observed_source_facts)
-            }
+            (Self::Restored(left), Self::Restored(right)) => left.same_authority(right),
             _ => false,
         }
     }
 }
+
+mod court_doors_for_test;

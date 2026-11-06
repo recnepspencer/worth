@@ -184,7 +184,6 @@ where
     operation_admission_identity: super::super::super::super::WorthQueryOperationAdmissionIdentity,
     graph_work_session:
         crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
-    #[cfg(test)]
     graph_work_managed_run:
         crate::domain_computation::provider_session::WorthQueryGraphWorkManagedRunIdentity,
     graph_work_branch: worth_relational::facade::history::BranchId,

@@ -58,8 +58,12 @@ pub(super) struct PhysicalIntent {
 enum Endpoint {
     Ready(OrderedJournalPublicationOperation),
     Stopped(OrderedJournalStoppedPublication),
-    Committed(OrderedJournalCommitted),
-    Terminal(OrderedJournalPublicationObservation),
+    Committed {
+        _committed: OrderedJournalCommitted,
+    },
+    Terminal {
+        _observation: OrderedJournalPublicationObservation,
+    },
     Refused(Arc<ApplicationHomeTransitionStartRefused>),
     InCaller,
 }
@@ -242,7 +246,9 @@ impl HomeIntentPublication {
         let valid = self.matches(committed.source());
         let mut state = self.state();
         state.invalid |= !valid;
-        state.endpoint = Some(Endpoint::Committed(committed));
+        state.endpoint = Some(Endpoint::Committed {
+            _committed: committed,
+        });
     }
     pub(super) fn install(
         &self,
@@ -262,11 +268,11 @@ impl HomeIntentPublication {
             return Some(ApplicationHomeTransitionIntentOutcome::SourceMismatch);
         }
         match state.endpoint.as_ref()? {
-            Endpoint::Committed(_) => Some(ApplicationHomeTransitionIntentOutcome::Committed),
+            Endpoint::Committed { .. } => Some(ApplicationHomeTransitionIntentOutcome::Committed),
             Endpoint::Refused(cause) => Some(ApplicationHomeTransitionIntentOutcome::Refused(
                 cause.clone(),
             )),
-            Endpoint::Terminal(_) => Some(ApplicationHomeTransitionIntentOutcome::Unresolved),
+            Endpoint::Terminal { .. } => Some(ApplicationHomeTransitionIntentOutcome::Unresolved),
             Endpoint::Ready(_) | Endpoint::Stopped(_) | Endpoint::InCaller => None,
         }
     }

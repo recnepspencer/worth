@@ -44,7 +44,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static>
     ) -> Result<WorthQueryApplicationCheckpointInspection<'a>, WorthQueryCheckpointInspectionDenial>
     {
         let execution = phase
-            .execution_request_for(&self.product_runtime)
+            .execution_request_for(&self.runtime.product_runtime)
             .map_err(WorthQueryCheckpointInspectionDenial::ForeignPhase)?;
         let header::CurrentSections {
             query_header,

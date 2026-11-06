@@ -193,6 +193,10 @@ pub enum RuntimeWorldBranchAdmissionDenial {
     /// A creation intent reached branch creation without the two explicit
     /// component postures a creation cell requires.
     PlansOmitted,
+    /// Retained creation requires a genuine fork destination for both owners.
+    UnsupportedRetainedSourcePlan,
+    /// Historical roots cannot be reopened through the attached durable medium.
+    RetainedSourceDurabilityUnsupported,
     /// The installed owner-created component custody budget has no free slot
     /// for the fork this creation would perform.
     CustodyCapacityExhausted,

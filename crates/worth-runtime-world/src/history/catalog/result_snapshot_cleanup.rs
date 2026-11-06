@@ -21,7 +21,7 @@ impl CompositeHistoryCatalog {
         }
         Ok(RuntimeWorldPublicationFrontier {
             owner: state.owner,
-            catalog_affinity: Arc::as_ptr(&self.state) as usize,
+            catalog_affinity: self.allocation_affinity(),
             revision,
             upper_bound: state.inspection_order.last().cloned(),
         })
@@ -36,7 +36,7 @@ impl CompositeHistoryCatalog {
         // Do not call validate_owner: it also takes the counters mutex.
         if frontier.owner != state.owner
             || frontier.owner.get() != state.owner.get()
-            || frontier.catalog_affinity != Arc::as_ptr(&self.state) as usize
+            || frontier.catalog_affinity != self.allocation_affinity()
             || frontier.revision != state.publication_revision.current()
             || frontier.revision == u64::MAX
         {

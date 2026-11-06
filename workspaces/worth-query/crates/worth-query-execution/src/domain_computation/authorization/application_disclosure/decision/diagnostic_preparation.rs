@@ -9,7 +9,7 @@ use worth_execution::{
 use worth_query_declaration::facade::application_query::ApplicationQueryDisclosureSelector;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 
-pub(in crate::domain_computation) enum DiagnosticPreparationDenial {
+pub enum DiagnosticPreparationDenial {
     #[allow(
         dead_code,
         reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"

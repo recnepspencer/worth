@@ -94,14 +94,19 @@ fn recorded_component_checkpoint_header_tamper_refuses_without_defaults_or_forei
                 let mut descriptor = serde_json::to_value(&components[0]).unwrap();
                 match change {
                     3 => descriptor["runtime_instance_id"] = serde_json::json!(42),
-                    4 => {
-                        let byte = &mut descriptor["reference"]["target"]["Basis"]["roots"]
-                            ["truth_root"][0];
-                        *byte = serde_json::json!(byte.as_u64().unwrap() ^ 1);
-                    }
-                    5 => {
-                        let byte = &mut descriptor["schema_commitment"][0];
-                        *byte = serde_json::json!(byte.as_u64().unwrap() ^ 1);
+                    4 | 5 => {
+                        let field = if change == 4 {
+                            &mut descriptor["reference"]["target"]["Basis"]["roots"]["truth_root"]
+                        } else {
+                            &mut descriptor["schema_commitment"]
+                        };
+                        let digest: worth_foundational::CanonicalDigestId =
+                            serde_json::from_value(field.clone()).unwrap();
+                        let mut bytes = *digest.bytes();
+                        bytes[0] ^= 1;
+                        *field =
+                            serde_json::to_value(worth_foundational::CanonicalDigestId::new(bytes))
+                                .unwrap();
                     }
                     _ => unreachable!(),
                 }
@@ -118,6 +123,7 @@ fn recorded_component_checkpoint_header_tamper_refuses_without_defaults_or_forei
                 components,
                 original.schema_carrier_digest,
                 original.regions.clone(),
+                original.content.clone(),
             );
             manifest.roots = crate::durability::data::CheckpointRoots::from_ordinary(roots);
             wire.manifest = manifest.seal_ordinary();

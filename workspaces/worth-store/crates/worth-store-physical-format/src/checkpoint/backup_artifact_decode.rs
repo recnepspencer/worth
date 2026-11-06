@@ -1,4 +1,5 @@
 use std::io::Read;
+use worth_foundational::CanonicalDigestId;
 
 use sha2::{Digest, Sha256};
 
@@ -16,7 +17,7 @@ use super::backup_artifact::{
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CheckpointBackupArtifactDecodeRequest {
     expected_bytes: u64,
-    expected_digest: [u8; 32],
+    expected_digest: CanonicalDigestId,
     max_buffer_bytes: usize,
 }
 
@@ -28,7 +29,7 @@ impl CheckpointBackupArtifactDecodeRequest {
     ) -> Self {
         Self {
             expected_bytes,
-            expected_digest,
+            expected_digest: CanonicalDigestId::new(expected_digest),
             max_buffer_bytes,
         }
     }
@@ -182,7 +183,7 @@ pub fn decode_checkpoint_backup_artifact_from_reader(
         return Err(CheckpointBackupArtifactDecodeDenial::InternalDigestMismatch);
     }
     artifact_digest.update(footer);
-    if <[u8; 32]>::from(artifact_digest.finalize()) != request.expected_digest {
+    if <[u8; 32]>::from(artifact_digest.finalize()) != *request.expected_digest.bytes() {
         return Err(CheckpointBackupArtifactDecodeDenial::ArtifactDigestMismatch);
     }
 

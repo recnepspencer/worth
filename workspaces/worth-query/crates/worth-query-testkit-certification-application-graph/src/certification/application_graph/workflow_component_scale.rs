@@ -138,8 +138,9 @@ pub fn qualify(occurrences: u16, key: u64) -> (u64, u64) {
     let runtime = application.runtime();
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(300)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(300)),
         cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     let started_at = Instant::now();

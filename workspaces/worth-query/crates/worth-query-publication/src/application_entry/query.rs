@@ -20,7 +20,7 @@ use worth_query_execution::facade::primary_graph::{
 
 use super::WorthQueryApplicationRequestQueryDenial;
 
-mod admitted;
+pub(in crate::application_entry) mod admitted;
 mod continuation;
 mod governed;
 mod governed_continuation;

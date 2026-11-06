@@ -90,7 +90,7 @@ where
                 self.recover_discovered_required_outputs_in_advancement(
                     &phase,
                     application,
-                    receipt,
+                    worth_query_execution::facade::primary_graph::WorthQueryOutputSourceReplay::Retained(receipt),
                     controls,
                 )
             })
@@ -101,7 +101,7 @@ where
         &self,
         phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
-        receipt: &WorthQueryApplicationCommitReceipt,
+        receipt: worth_query_execution::facade::primary_graph::WorthQueryOutputSourceReplay<'_>,
         controls: WorthQueryOutputDemandControls,
     ) -> Result<
         WorthQueryDiscoveredProgramOutputHandle<Schema, Program, Root>,
@@ -134,8 +134,9 @@ where
         if !std::ptr::eq(application.runtime(), self.application) {
             return Err(WorthQueryRequiredOutputPreparationDenial::ForeignProgram);
         }
-        let (discovery, retained, prepared) = application
+        let (receipt, discovery, retained, prepared) = application
             .recover_discovered_program_source::<Root>(
+                phase,
                 &worth_query_execution::publication_boundary::program_publication_access(),
                 receipt,
             )
@@ -145,7 +146,7 @@ where
                 phase,
                 &worth_query_execution::publication_boundary::program_publication_access(),
                 &prepared,
-                receipt,
+                &receipt,
                 &retained,
                 self.principal,
                 self.scope,
@@ -165,7 +166,7 @@ where
         &self,
         phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
-        receipt: &WorthQueryApplicationCommitReceipt,
+        receipt: worth_query_execution::facade::primary_graph::WorthQueryOutputSourceReplay<'_>,
         controls: WorthQueryOutputDemandControls,
         admission: &worth_query_execution::facade::primary_graph::WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<

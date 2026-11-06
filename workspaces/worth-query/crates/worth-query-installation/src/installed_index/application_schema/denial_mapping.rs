@@ -13,6 +13,10 @@ pub(super) fn map_compilation_denial(
     denial: ApplicationSchemaCompilationDenial,
 ) -> WorthQueryInstalledApplicationSchemaDenial {
     let (kind, subject) = match denial {
+        ApplicationSchemaCompilationDenial::History(denial) => (
+            WorthQueryInstalledApplicationSchemaDenialKind::HistoryInstallationDenied,
+            denial.subject().to_owned(),
+        ),
         ApplicationSchemaCompilationDenial::DerivedSourceUnavailable(subject) => (
             WorthQueryInstalledApplicationSchemaDenialKind::DerivedSourceUnavailable,
             subject,
@@ -96,6 +100,9 @@ pub(super) fn map_compilation_denial(
         ),
         ApplicationSchemaCompilationDenial::ValueBinding(denial) => {
             let kind = match denial.kind() {
+                ValueBindingDenialKind::MissingContentBinding => WorthQueryInstalledApplicationSchemaDenialKind::ContentBindingMissing,
+                ValueBindingDenialKind::DuplicateContentFormat => WorthQueryInstalledApplicationSchemaDenialKind::ContentFormatDuplicate,
+                ValueBindingDenialKind::ContentFormatMismatch => WorthQueryInstalledApplicationSchemaDenialKind::ContentFormatMismatch,
                 ValueBindingDenialKind::MissingBinding => {
                     WorthQueryInstalledApplicationSchemaDenialKind::FieldBindingMissing
                 }

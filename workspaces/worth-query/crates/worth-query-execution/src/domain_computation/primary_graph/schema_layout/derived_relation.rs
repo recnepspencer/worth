@@ -16,18 +16,15 @@ use worth_relational::facade::schema::{
 
 mod expression;
 mod laws;
-#[cfg(test)]
-mod tests;
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) struct DerivedRelationLayout {
+pub struct DerivedRelationLayout {
     pub(in crate::domain_computation::primary_graph) orbit_definition:
         Option<worth_foundational::facade::AggregateDefinitionIdentity>,
     pub(in crate::domain_computation::primary_graph) from: ApplicationGraphMemberMeaning,
     pub(in crate::domain_computation::primary_graph) to: ApplicationGraphMemberMeaning,
     pub(in crate::domain_computation::primary_graph) handle: DerivedRelationHandle,
-    pub(in crate::domain_computation::primary_graph) sources:
-        Arc<[(Arc<str>, KindId, KindId, KindId)]>,
+    pub sources: Arc<[(Arc<str>, KindId, KindId, KindId)]>,
     pub(in crate::domain_computation::primary_graph) operations: Arc<[Arc<str>]>,
     pub(in crate::domain_computation::primary_graph) carriers: Arc<[(Arc<str>, KindId)]>,
 }
@@ -146,10 +143,9 @@ pub(super) fn lower(
 }
 
 impl super::WorthQueryPrimaryGraphLayout {
-    pub(in crate::domain_computation::primary_graph) fn derived_relation(
-        &self,
-        name: &str,
-    ) -> Option<&DerivedRelationLayout> {
+    pub fn derived_relation(&self, name: &str) -> Option<&DerivedRelationLayout> {
         self.derived_relations.get(name)
     }
 }
+
+mod court_doors_for_test;

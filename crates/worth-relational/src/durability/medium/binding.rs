@@ -35,6 +35,8 @@ use crate::history::data::PositionedCanonicalCommit;
 #[derive(Debug)]
 pub(crate) struct RelationalDurableMediumBinding {
     transition: Option<worth_proof::HomeProgramTransitionAuthority>,
+    // Admission observes the writer phase without waiting for medium I/O.
+    home_phase: Mutex<Option<RelationalHomeProgramPhase>>,
     state: Mutex<BindingState>,
     cold_source: Option<Arc<dyn super::RelationalDurableColdSource>>,
     unresolved: Arc<OnceLock<RelationalDurabilityUnresolved>>,
@@ -42,7 +44,6 @@ pub(crate) struct RelationalDurableMediumBinding {
 
 #[derive(Debug)]
 struct BindingState {
-    home_phase: Option<RelationalHomeProgramPhase>,
     /// `None` once the medium moved to a recovered runtime.
     medium: Option<Box<dyn RelationalDurableMedium>>,
     unresolved: Arc<OnceLock<RelationalDurabilityUnresolved>>,
@@ -126,8 +127,8 @@ impl RelationalDurableMediumBinding {
         Self {
             transition,
             cold_source: Some(cold_source),
+            home_phase: Mutex::new(Some(phase)),
             state: Mutex::new(BindingState {
-                home_phase: Some(phase),
                 medium: Some(medium),
                 unresolved: unresolved.clone(),
             }),
@@ -149,14 +150,14 @@ impl RelationalDurableMediumBinding {
         &self,
         commit: Arc<PositionedCanonicalCommit>,
         roots: &crate::branch::RelationalBranchRootDescriptor,
-        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<DurablyCommitted<RelationalDurableCommitReadmission>, RelationalDurableStepStop>
     {
         let mut state = self.state();
         let medium = state.admitting_medium()?;
-        let artifact = RelationalCanonicalCommitArtifact::from_positioned(&commit, policy)
-            .map_err(|denial| refused(RelationalDurablePublicationRefusal::Encoding(denial)))?;
+        let artifact =
+            RelationalCanonicalCommitArtifact::from_positioned_request(&commit, execution)
+                .map_err(|denial| refused(RelationalDurablePublicationRefusal::Encoding(denial)))?;
         let entry = crate::history::RetainedCanonicalIndex::from_publication(
             &commit,
             roots,
@@ -164,6 +165,11 @@ impl RelationalDurableMediumBinding {
             execution,
         )
         .map_err(|denial| refused(RelationalDurablePublicationRefusal::Encoding(denial)))?;
+        crate::execution::check_request(execution).map_err(|cause| {
+            refused(RelationalDurablePublicationRefusal::Encoding(
+                crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial::Request(cause),
+            ))
+        })?;
         let answer = medium.publish(&artifact);
         state.settle(
             answer,
@@ -223,11 +229,10 @@ impl RelationalDurableMediumBinding {
     /// runtime's recovery has decided it. `None` if it already moved.
     pub(crate) fn detach(&self) -> Option<RelationalDurableMediumTransfer> {
         let mut state = self.state();
+        // The transfer takes both owners in I/O-then-phase order.
+        let mut phase = self.home_phase();
         let medium = state.medium.take()?;
-        let phase = state
-            .home_phase
-            .take()
-            .expect("the live medium owns its phase");
+        let phase = phase.take().expect("the live medium owns its phase");
         Some(RelationalDurableMediumTransfer { medium, phase })
     }
 
@@ -240,6 +245,12 @@ impl RelationalDurableMediumBinding {
             .medium
             .as_ref()
             .and_then(|medium| medium.in_crate_test_medium())
+    }
+
+    fn home_phase(&self) -> MutexGuard<'_, Option<RelationalHomeProgramPhase>> {
+        self.home_phase
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 
     fn state(&self) -> MutexGuard<'_, BindingState> {

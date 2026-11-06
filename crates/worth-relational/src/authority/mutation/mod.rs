@@ -13,6 +13,7 @@ mod mutation_context;
 mod outcomes;
 mod patch_details;
 mod record_changes;
+pub(crate) mod retained_entity_selection;
 mod round_denial;
 mod stale_targets;
 mod workspace;

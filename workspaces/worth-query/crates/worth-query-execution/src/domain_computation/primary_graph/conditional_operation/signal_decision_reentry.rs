@@ -10,7 +10,7 @@ mod admitted;
 mod selected_projections;
 pub(in crate::domain_computation::primary_graph) use selected_projections::WorthQuerySelectedSignalProjections;
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryConditionalTruthBasis {
+pub struct WorthQueryConditionalTruthBasis {
     product: crate::basis::WorthQueryProductBranchLease,
     _application_basis:
         super::super::application_query::resource_lifecycle::WorthQueryApplicationBasisLease,
@@ -56,13 +56,11 @@ impl WorthQueryConditionalTruthBasis {
         Ok(Self::from_selected(selected.retain_selection(execution)?))
     }
 
-    pub(in crate::domain_computation::primary_graph) fn is_publication(
+    pub(in crate::domain_computation::primary_graph) fn is_product_publication(
         &self,
-        receipt: &super::super::WorthQueryApplicationCommitReceipt,
+        publication: &super::super::WorthQueryCommittedProductPublication,
     ) -> bool {
-        receipt
-            .committed_product_publication()
-            .is_selected_at(self.product.observation())
+        publication.is_selected_at(self.product.observation())
     }
 
     pub(in crate::domain_computation::primary_graph) fn snapshot(&self) -> &TruthSnapshotIdentity {

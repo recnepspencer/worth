@@ -30,6 +30,15 @@ pub struct HandlerExecutionDenial {
 }
 
 impl HandlerExecutionDenial {
+    /// The exact Native stop retained by ordinary or managed-index decision preparation.
+    pub fn native_decision_refusal(
+        &self,
+    ) -> Option<&worth_relational::facade::mvcc::CompanionPreflightStop> {
+        execution::native_decision_cause(self.source.as_ref()).or_else(|| {
+            crate::domain_computation::primary_graph::invariant_projection::native_index_decision_cause(self.source.as_ref())
+        })
+    }
+
     pub fn new(source: impl std::error::Error + Send + Sync + 'static) -> Self {
         Self {
             source: Box::new(source),
