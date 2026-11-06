@@ -5,7 +5,7 @@ use worth_foundational::facade::{
     AspectValue, CanonicalFieldPath, ContractValidatedAspectValueView, FieldKey,
 };
 use worth_relational::facade::runtime::RelationalFieldPresence;
-use WorthQueryProducerEvaluationIneligibility as Refusal;
+use crate::domain_computation::primary_graph::application_output_demand::settlement::output_evaluation::WorthQueryProducerEvaluationIneligibility as Refusal;
 
 pub(super) struct ObservedOutput {
     pub(super) role: usize,

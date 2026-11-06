@@ -21,7 +21,7 @@ pub enum OriginalSettledProducerSource {
             crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
         >,
         conditional: Option<worth_runtime_bridge::facade::BridgeConditionalCausalObservation>,
-        evaluation: Option<Arc<crate::domain_computation::primary_graph::application_contribution::ProducerOutputEvaluation>>,
+        evaluation: Option<Arc<crate::domain_computation::primary_graph::application_output_demand::settlement::output_evaluation::ProducerOutputEvaluation>>,
         disclosure: Option<Arc<OriginalSourceInspectionDisclosure>>,
         original_publication: Option<Arc<super::OriginalProducingPublication>>,
     },

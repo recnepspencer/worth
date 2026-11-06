@@ -8,6 +8,7 @@ use worth_query_declaration::facade::application_schema as schema;
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 
 use super::super::native_field_contract::{FieldExpectation, NativeFieldBindingExpectation};
+use crate::domain_computation::primary_graph::application_output_demand::settlement::output_evaluation::ProducerOutputFieldScope;
 use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
 };
@@ -92,6 +93,19 @@ impl<Schema, Role> WorthQueryProducerOutputEquivalence<Schema, Role> {
 pub struct InstalledProducerOutputEquivalence {
     pub(in super::super) field: FieldExpectation,
     pub(in super::super) meaning: [u8; 32],
+}
+
+/// Retained evaluation evidence reads the sealed field through output demand's scope port.
+impl ProducerOutputFieldScope for InstalledProducerOutputEquivalence {
+    fn locus(&self) -> &schema::ApplicationFieldBindingLocus {
+        &self.field.binding.locus
+    }
+    fn contract_revision(&self) -> worth_foundational::facade::AspectContractRevision {
+        self.field.aspect.revision()
+    }
+    fn meaning(&self) -> [u8; 32] {
+        self.meaning
+    }
 }
 
 pub fn seal<Schema: schema::ApplicationSchema>(
