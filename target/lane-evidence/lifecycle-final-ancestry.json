@@ -1,0 +1,41 @@
+{
+  "head": "c8962903a7014ba338af9771a2f203e8276d79a0",
+  "ancestry": [
+    {
+      "input": "original-reopen",
+      "sha": "655b27b95e",
+      "ancestor": true
+    },
+    {
+      "input": "original-close",
+      "sha": "623efa14bd",
+      "ancestor": true
+    },
+    {
+      "input": "receipts",
+      "sha": "fbc418fde2",
+      "ancestor": true
+    },
+    {
+      "input": "reopen-safe",
+      "sha": "7d0e5189bc",
+      "ancestor": true
+    },
+    {
+      "input": "master",
+      "sha": "14bc0269b14ca96c4fbecf979eaeb1cb921f1367",
+      "ancestor": true
+    },
+    {
+      "input": "lifecycle-safe",
+      "sha": "471fac57ff",
+      "ancestor": true
+    },
+    {
+      "input": "native-fixture-fix",
+      "sha": "503e31d904",
+      "ancestor": true
+    }
+  ],
+  "ui_equals_master": true
+}

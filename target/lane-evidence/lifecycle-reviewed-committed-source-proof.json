@@ -1,0 +1,6 @@
+{
+  "head": "c8962903a7014ba338af9771a2f203e8276d79a0",
+  "inputs": 40420,
+  "mismatches": [],
+  "comparison": "Git blob SHA1 over raw and LF-normalized bytes; raw SHA256 snapshot retained separately"
+}

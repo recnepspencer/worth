@@ -1,0 +1,534 @@
+[
+  {
+    "log": "target/lane-evidence/lifecycle-bank-direct-assessment.log",
+    "start": "2026-11-06T09:58:26.247639+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-bank-happy-focus-v1/build",
+      "worth_query_bank_court_external_rail_server",
+      "oracle::server_owned_effects::server::parallel_history::assessment_history::assessment_history_settles_at_each_request_width"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-bank-direct-transfer.log",
+    "start": "2026-11-06T09:58:32.917647+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-bank-happy-focus-v1/build",
+      "worth_query_bank_court_external_rail_server",
+      "oracle::server_owned_effects::server::parallel_history::transfer_history::seeded_transfers_match_at_host_policy_and_each_request_width"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-consumer-document-drift-recheck-v2.log",
+    "start": "2026-11-06T15:30:34.487859+00:00",
+    "command": [
+      "python",
+      "target/lane-evidence/direct_control.py",
+      "target/lane-evidence/lifecycle-reviewed-consumer-fixture/build",
+      "worth_query_topology_entry",
+      "compiled_example_drift::serial::compiled_examples_match_consumer_documents"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-consumer-document-drift-recheck-v3.log",
+    "start": "2026-11-06T15:30:51.421614+00:00",
+    "command": [
+      "python",
+      "target/lane-evidence/direct_control.py",
+      "target/lane-evidence/lifecycle-reviewed-consumer-fixture/build",
+      "worth_query_topology_entry",
+      "compiled_example_drift::serial::compiled_examples_match_consumer_documents"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-consumer-document-drift-recheck.log",
+    "start": "2026-11-06T15:30:02.666091+00:00",
+    "command": [
+      "python",
+      "target/lane-evidence/direct_control.py",
+      "target/lane-evidence/lifecycle-reviewed-consumer-fixture/build",
+      "worth_query_topology_entry",
+      "compiled_example_drift::serial::compiled_examples_match_consumer_documents"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-final-bank-direct-assessment.log",
+    "start": "2026-11-06T12:04:17.642075+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-final-bank-focus/build",
+      "worth_query_bank_court_external_rail_server",
+      "oracle::server_owned_effects::server::parallel_history::assessment_history::assessment_history_settles_at_each_request_width"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-final-bank-direct-transfer.log",
+    "start": "2026-11-06T12:04:11.042156+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-final-bank-focus/build",
+      "worth_query_bank_court_external_rail_server",
+      "oracle::server_owned_effects::server::parallel_history::transfer_history::seeded_transfers_match_at_host_policy_and_each_request_width"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-final-host-direct-fresh-c0.log",
+    "start": "2026-11-06T11:48:44.729907+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-final-query-focus/build",
+      "worth_query_court_query_decl_host",
+      "host::application_home::fresh_directory_home_journey"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-final-host-direct-fresh-maintenance.log",
+    "start": "2026-11-06T11:48:47.839914+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-final-query-focus/build",
+      "worth_query_court_query_decl_host",
+      "host::application_home::fresh_source::authored_fresh_home_postbootstrap_complete_and_automatic_maintenance_preserve_business_value"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-final-host-direct-image-tail.log",
+    "start": "2026-11-06T11:48:35.330377+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-final-query-focus/build",
+      "worth_query_court_query_decl_host",
+      "host::application_home::reopening::checkpoint_restart::killed_home_reopens_normalized_image_plus_nonempty_tail"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-final-host-direct-interrupted-ack.log",
+    "start": "2026-11-06T11:48:40.011679+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-final-query-focus/build",
+      "worth_query_court_query_decl_host",
+      "host::application_home::reopening::checkpoint_restart::interrupted_owner_ack_resumes_original_attempt_and_reopens_unacknowledged_selection"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-final-host-direct-journal-only.log",
+    "start": "2026-11-06T11:48:25.316956+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-final-query-focus/build",
+      "worth_query_court_query_decl_host",
+      "host::application_home::reopening::checkpoint_restart::journal_only_killed_home_reopens_original_inputs_and_commits_without_initializing"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-final-host-direct-multibatch.log",
+    "start": "2026-11-06T11:48:57.414869+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-final-query-focus/build",
+      "worth_query_court_query_decl_host",
+      "host::application_home::reopening::flushed_and_pending_multibatch_homes_readmit_their_completed_publication"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-final-host-direct-same-directory.log",
+    "start": "2026-11-06T11:48:52.848970+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-final-query-focus/build",
+      "worth_query_court_query_decl_host",
+      "host::application_home::reopening::same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old_key"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-final-host-direct-selected-complete.log",
+    "start": "2026-11-06T11:48:30.604985+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-final-query-focus/build",
+      "worth_query_court_query_decl_host",
+      "host::application_home::reopening::checkpoint_restart::selected_complete_home_reopens_and_selects_another_complete_checkpoint"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-final-store-direct-changed-build.log",
+    "start": "2026-11-06T11:57:26.866891+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-final-store-focus/build",
+      "worth_store_court_application",
+      "process::application::admission::changed_build::changed_host_build_keeps_initializer_closed_and_reaches_native_readmission"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-final-store-direct-coupled-checkpoint.log",
+    "start": "2026-11-06T11:57:37.114608+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-final-store-focus/build",
+      "worth_store_application",
+      "world_section::readmission::tests::composed_home_manual_and_automatic_checkpoint_share_actual_complete_attempt"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-final-store-direct-killed-writer.log",
+    "start": "2026-11-06T11:57:32.435870+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-final-store-focus/build",
+      "worth_store_court_application",
+      "process::application::query_readmission::native_artifacts::home_close::killed_writer::killed_host_without_close_reopens_its_acknowledged_value_and_original_idempotency_record"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-final-store-direct-writer-exclusion.log",
+    "start": "2026-11-06T11:57:29.713024+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-final-store-focus/build",
+      "worth_store_court_application",
+      "process::application::admission::ownership::competing_host_processes_admit_exactly_one_writer_until_process_death"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-host-direct-fresh-c0.log",
+    "start": "2026-11-06T09:43:04.088397+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-query-happy-focus-v2/build",
+      "worth_query_court_query_decl_host",
+      "host::application_home::fresh_directory_home_journey"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-host-direct-fresh-maintenance.log",
+    "start": "2026-11-06T09:43:07.282435+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-query-happy-focus-v2/build",
+      "worth_query_court_query_decl_host",
+      "host::application_home::fresh_source::authored_fresh_home_postbootstrap_complete_and_automatic_maintenance_preserve_business_value"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-host-direct-image-tail.log",
+    "start": "2026-11-06T09:42:55.218826+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-query-happy-focus-v2/build",
+      "worth_query_court_query_decl_host",
+      "host::application_home::reopening::checkpoint_restart::killed_home_reopens_normalized_image_plus_nonempty_tail"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-host-direct-interrupted-ack.log",
+    "start": "2026-11-06T09:42:59.548553+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-query-happy-focus-v2/build",
+      "worth_query_court_query_decl_host",
+      "host::application_home::reopening::checkpoint_restart::interrupted_owner_ack_resumes_original_attempt_and_reopens_unacknowledged_selection"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-host-direct-journal-only.log",
+    "start": "2026-11-06T09:42:45.079186+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-query-happy-focus-v2/build",
+      "worth_query_court_query_decl_host",
+      "host::application_home::reopening::checkpoint_restart::journal_only_killed_home_reopens_original_inputs_and_commits_without_initializing"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-host-direct-multibatch.log",
+    "start": "2026-11-06T09:43:16.424848+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-query-happy-focus-v2/build",
+      "worth_query_court_query_decl_host",
+      "host::application_home::reopening::flushed_and_pending_multibatch_homes_readmit_their_completed_publication"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-host-direct-same-directory.log",
+    "start": "2026-11-06T09:43:11.678183+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-query-happy-focus-v2/build",
+      "worth_query_court_query_decl_host",
+      "host::application_home::reopening::same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old_key"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-host-direct-selected-complete.log",
+    "start": "2026-11-06T09:42:50.811871+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-query-happy-focus-v2/build",
+      "worth_query_court_query_decl_host",
+      "host::application_home::reopening::checkpoint_restart::selected_complete_home_reopens_and_selects_another_complete_checkpoint"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-reviewed-bank-assessment.log",
+    "start": "2026-11-06T14:52:56.719440+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\guarded_build.py",
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-reviewed-bank/build",
+      "worth_query_bank_court_external_rail_server",
+      "oracle::server_owned_effects::server::parallel_history::assessment_history::assessment_history_settles_at_each_request_width"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-reviewed-bank-transfer.log",
+    "start": "2026-11-06T14:53:03.623331+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\guarded_build.py",
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-reviewed-bank/build",
+      "worth_query_bank_court_external_rail_server",
+      "oracle::server_owned_effects::server::parallel_history::transfer_history::seeded_transfers_match_at_host_policy_and_each_request_width"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-stack-followup-bank-assessment.log",
+    "start": "2026-11-06T14:05:47.547139+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-stack-followup-bank-focus/build",
+      "worth_query_bank_court_external_rail_server",
+      "oracle::server_owned_effects::server::parallel_history::assessment_history::assessment_history_settles_at_each_request_width"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-stack-followup-bank-transfer.log",
+    "start": "2026-11-06T14:05:40.947977+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-stack-followup-bank-focus/build",
+      "worth_query_bank_court_external_rail_server",
+      "oracle::server_owned_effects::server::parallel_history::transfer_history::seeded_transfers_match_at_host_policy_and_each_request_width"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-stack-followup-host-fresh-c0.log",
+    "start": "2026-11-06T13:51:19.363129+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-stack-followup-query-focus/build",
+      "worth_query_court_query_decl_host",
+      "host::application_home::fresh_directory_home_journey"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-stack-followup-host-fresh-maintenance.log",
+    "start": "2026-11-06T13:51:22.450743+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-stack-followup-query-focus/build",
+      "worth_query_court_query_decl_host",
+      "host::application_home::fresh_source::authored_fresh_home_postbootstrap_complete_and_automatic_maintenance_preserve_business_value"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-stack-followup-host-image-tail.log",
+    "start": "2026-11-06T13:51:09.436353+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-stack-followup-query-focus/build",
+      "worth_query_court_query_decl_host",
+      "host::application_home::reopening::checkpoint_restart::killed_home_reopens_normalized_image_plus_nonempty_tail"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-stack-followup-host-interrupted-ack.log",
+    "start": "2026-11-06T13:51:14.755804+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-stack-followup-query-focus/build",
+      "worth_query_court_query_decl_host",
+      "host::application_home::reopening::checkpoint_restart::interrupted_owner_ack_resumes_original_attempt_and_reopens_unacknowledged_selection"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-stack-followup-host-journal-only.log",
+    "start": "2026-11-06T13:51:00.089637+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-stack-followup-query-focus/build",
+      "worth_query_court_query_decl_host",
+      "host::application_home::reopening::checkpoint_restart::journal_only_killed_home_reopens_original_inputs_and_commits_without_initializing"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-stack-followup-host-multibatch.log",
+    "start": "2026-11-06T13:51:31.370455+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-stack-followup-query-focus/build",
+      "worth_query_court_query_decl_host",
+      "host::application_home::reopening::flushed_and_pending_multibatch_homes_readmit_their_completed_publication"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-stack-followup-host-same-directory.log",
+    "start": "2026-11-06T13:51:27.006587+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-stack-followup-query-focus/build",
+      "worth_query_court_query_decl_host",
+      "host::application_home::reopening::same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old_key"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-stack-followup-host-selected-complete.log",
+    "start": "2026-11-06T13:51:04.519345+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-stack-followup-query-focus/build",
+      "worth_query_court_query_decl_host",
+      "host::application_home::reopening::checkpoint_restart::selected_complete_home_reopens_and_selects_another_complete_checkpoint"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-stack-followup-store-changed-build.log",
+    "start": "2026-11-06T13:59:15.134851+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-stack-followup-store-focus/build",
+      "worth_store_court_application",
+      "process::application::admission::changed_build::changed_host_build_keeps_initializer_closed_and_reaches_native_readmission"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-stack-followup-store-coupled-checkpoint.log",
+    "start": "2026-11-06T13:59:24.875732+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-stack-followup-store-focus/build",
+      "worth_store_application",
+      "world_section::readmission::tests::composed_home_manual_and_automatic_checkpoint_share_actual_complete_attempt"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-stack-followup-store-killed-writer.log",
+    "start": "2026-11-06T13:59:21.209101+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-stack-followup-store-focus/build",
+      "worth_store_court_application",
+      "process::application::query_readmission::native_artifacts::home_close::killed_writer::killed_host_without_close_reopens_its_acknowledged_value_and_original_idempotency_record"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-stack-followup-store-writer-exclusion.log",
+    "start": "2026-11-06T13:59:18.312330+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-stack-followup-store-focus/build",
+      "worth_store_court_application",
+      "process::application::admission::ownership::competing_host_processes_admit_exactly_one_writer_until_process_death"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-store-direct-acceptance.log",
+    "start": "2026-11-06T09:22:44.080884+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-store-happy-focus-v1/build",
+      "worth_store_court_application",
+      "process::application::query_readmission::native_artifacts::selected::selected_completion_and_activation_failures_keep_owned_home_without_initializing"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-store-direct-changed-build.log",
+    "start": "2026-11-06T09:22:50.671084+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-store-happy-focus-v1/build",
+      "worth_store_court_application",
+      "process::application::admission::changed_build::changed_host_build_keeps_initializer_closed_and_reaches_native_readmission"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-store-direct-coupled-checkpoint.log",
+    "start": "2026-11-06T09:23:01.520389+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-store-happy-focus-v1/build",
+      "worth_store_application",
+      "world_section::readmission::tests::composed_home_manual_and_automatic_checkpoint_share_actual_complete_attempt"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-store-direct-killed-writer.log",
+    "start": "2026-11-06T09:22:56.169699+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-store-happy-focus-v1/build",
+      "worth_store_court_application",
+      "process::application::query_readmission::native_artifacts::home_close::killed_writer::killed_host_without_close_reopens_its_acknowledged_value_and_original_idempotency_record"
+    ]
+  },
+  {
+    "log": "target/lane-evidence/lifecycle-store-direct-writer-exclusion.log",
+    "start": "2026-11-06T09:22:53.541835+00:00",
+    "command": [
+      "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\direct_control.py",
+      "target/lane-evidence/lifecycle-store-happy-focus-v1/build",
+      "worth_store_court_application",
+      "process::application::admission::ownership::competing_host_processes_admit_exactly_one_writer_until_process_death"
+    ]
+  }
+]
