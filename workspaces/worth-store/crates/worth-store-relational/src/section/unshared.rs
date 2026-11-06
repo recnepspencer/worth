@@ -2,6 +2,7 @@
 mod close;
 use super::*;
 mod source_attachment;
+mod source_schema;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::{

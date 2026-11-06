@@ -54,6 +54,7 @@ fn requirements(schema: &ErasedApplicationSchemaDeclaration) -> BTreeMap<&str, C
 }
 
 pub(super) fn lower(
+    sources: super::source_registration::SourceRegistration<'_>,
     mut registry: RelationalSchemaRegistry,
     schema: &ErasedApplicationSchemaDeclaration,
     basis: (&SchemaId, SchemaVersionId),
@@ -87,17 +88,21 @@ pub(super) fn lower(
             name: format!("managed-index-source::{}", definition.parts().name),
         };
         let nodes = membership::path(source, entities, relations, &registry, basis)?;
-        let (next_registry, projection, routes) =
-            projection::lower(registry, source, &identity, entities, relations, fields)?;
+        let (next_registry, projection, routes) = projection::lower(
+            sources, registry, source, &identity, entities, relations, fields,
+        )?;
         registry = next_registry;
-        registry = registry
-            .register_derived_relations(vec![DerivedRelationDefinitionParts {
-                identity: identity.clone(),
-                from: required_kind(entities, source.scope_entity())?.into(),
-                to: required_kind(entities, source.root_entity())?.into(),
-                nodes,
-                laws: None,
-            }])
+        registry = sources
+            .derived(
+                registry,
+                vec![DerivedRelationDefinitionParts {
+                    identity: identity.clone(),
+                    from: required_kind(entities, source.scope_entity())?.into(),
+                    to: required_kind(entities, source.root_entity())?.into(),
+                    nodes,
+                    laws: None,
+                }],
+            )
             .map_err(|_| unsupported(source_name))?;
         let handle = registry
             .derived_relation(&identity)

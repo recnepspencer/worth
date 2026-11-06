@@ -52,9 +52,7 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeNativeMeaning<Sc
                     native,
                     self.schema.receipt.clone(),
                 )
-                .map_err(|cause| {
-                    existing_denial(format!("Home recovered schema authority denied: {cause}"))
-                })?;
+                .map_err(super::super::super::initial_schema_denial::map_initial_schema_installation_denial)?;
             use super::super::super::bootstrap::home_publication::readmission::{
                 inspect_native_completion, RecoveredBootstrapPublication,
             };

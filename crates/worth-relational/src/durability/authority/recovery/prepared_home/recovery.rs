@@ -33,6 +33,19 @@ impl DurabilityRecoveryAuthority<'_> {
             expected
                 .require_same_home_receiver(self.runtime, request)
                 .map_err(Denial::ReceiverInstallation)?;
+            prepared
+                .state
+                .graph
+                .bind_home_executables(
+                    &self.runtime.config().schema.registry.content_formats,
+                    request,
+                )
+                .map_err(Denial::Recovery)?;
+            prepared
+                .state
+                .graph
+                .bind_directories(&mut prepared.state.plan, request)
+                .map_err(Denial::Recovery)?;
             crate::durability::access::rebind_home_receiver_plan(
                 self.runtime,
                 &mut prepared.state.plan,

@@ -17,6 +17,17 @@ impl OriginalSchemaGraph {
         plan: &mut RecoveryPlan,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Option<Self>, RelationalRecoveryStop> {
+        let graph = Self::admit_unbound(plan, request)?;
+        if let Some(graph) = &graph {
+            graph.bind_directories(plan, request)?;
+        }
+        Ok(graph)
+    }
+
+    pub(crate) fn admit_unbound(
+        plan: &RecoveryPlan,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Option<Self>, RelationalRecoveryStop> {
         let Some(original) = &plan.original_source else {
             return Ok(None);
         };
@@ -72,6 +83,14 @@ impl OriginalSchemaGraph {
                     .ok_or_else(|| corrupt("Home transition lacks its original schema role"))?,
             )?;
         }
+        Ok(Some(graph))
+    }
+
+    pub(crate) fn bind_directories(
+        &self,
+        plan: &mut RecoveryPlan,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), RelationalRecoveryStop> {
         if let Some(checkpoint) = &mut plan.checkpoint {
             for directory in checkpoint
                 .directory
@@ -82,11 +101,49 @@ impl OriginalSchemaGraph {
                 // attempt owns only this fixed-size binding; intrinsic manifest,
                 // history and actual selected-read custody stay shared.
                 *directory = crate::durability::data::NativeCheckpointDirectoryEdge::new(
-                    directory.with_source_schemas(graph.schemas.clone(), request)?,
+                    directory.with_source_schemas(self.schemas.clone(), request)?,
                 );
             }
         }
-        Ok(Some(graph))
+        Ok(())
+    }
+
+    pub(crate) fn bind_home_executables(
+        &mut self,
+        available: &crate::content::RelationalContentFormatRegistry,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), RelationalRecoveryStop> {
+        if self
+            .schemas
+            .rows
+            .values()
+            .all(|schema| schema.registry().content_formats.is_bound_to(available))
+        {
+            return Ok(());
+        }
+        if Arc::get_mut(&mut self.schemas).is_none() {
+            return Err(crate::durability::data::DurabilityError::new(
+                crate::durability::data::RecoveryFailureClass::SchemaMismatch,
+                "receiving codecs changed after the original schema graph was shared",
+            )
+            .into());
+        }
+        // Stage funded map edits before publishing them to this same unshared
+        // catalog. Source registrations and its original catalog identity stay.
+        let mut rows = self.schemas.rows.clone();
+        for (digest, schema) in &self.schemas.rows {
+            let bound = schema
+                .bind_home_executables(available, request)
+                .map_err(super::original_inputs::root_stop)?;
+            if !Arc::ptr_eq(schema, &bound) {
+                rows.insert_cloned_native_for_request(digest, &bound, *request)
+                    .map_err(crate::durability::checkpoint_history::capture::map_stop)?;
+            }
+        }
+        Arc::get_mut(&mut self.schemas)
+            .expect("unshared receiving schema catalog")
+            .rows = rows;
+        Ok(())
     }
 
     pub(crate) fn get(

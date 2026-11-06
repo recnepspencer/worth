@@ -24,6 +24,8 @@ mod compilation_quote;
 mod compiled_plans;
 #[path = "root_schema/compiled_retention.rs"]
 mod compiled_retention;
+#[path = "root_schema/home_executables.rs"]
+mod home_executables;
 #[path = "root_schema/home_target.rs"]
 mod home_target;
 #[path = "root_schema/recorded_image.rs"]

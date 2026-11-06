@@ -100,8 +100,8 @@ fn unshared(
         attach_relational(home, &execution).unwrap_or_else(|_| panic!("actual Native attaches"));
     let preparation = home.prepare_native_schema_for_home(&execution).unwrap();
     let query = match preparation {
-        ApplicationHomeNativeSchemaPreparation::Existing { native } => {
-            query.prepare_home_native_receiver_schema(phase, native)
+        ApplicationHomeNativeSchemaPreparation::Existing { native, source } => {
+            query.prepare_home_native_receiver_schema(phase, native, source)
         }
         ApplicationHomeNativeSchemaPreparation::Fresh { .. } => {
             panic!("existing Directory fixture selected fresh initialization")

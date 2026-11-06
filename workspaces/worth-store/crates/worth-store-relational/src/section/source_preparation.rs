@@ -1,4 +1,5 @@
 //! Closed Home preparation retains its exact source before descriptor effects.
+pub(super) mod receiver;
 use super::RelationalSectionReadmissionDenial as Denial;
 use std::sync::Arc;
 use worth_execution::{ExecutionArray, ExecutionImmutableBytes, ExecutionRequest};
@@ -17,6 +18,7 @@ pub struct PreparedFreshRelationalHomeSource {
     pub(super) transition_required: Option<worth_proof::HomeProgramTransitionRequired>,
 }
 pub struct PreparedRelationalHomeSource {
+    pub(super) receiver: receiver::HomeReceiverPreparation,
     pub(super) world_selection: Option<
         Arc<
             worth_proof::VerifiedHomeWorldSelection<
@@ -208,6 +210,7 @@ impl RelationalHomeSourcePreparation {
             .map_err(Denial::Execution)?
             .map_err(Denial::InitialInputs)?;
         Ok(PreparedRelationalHomeSource {
+            receiver: receiver::HomeReceiverPreparation::NotRequested,
             world_selection: None,
             transition: None,
             transition_required: None,

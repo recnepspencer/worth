@@ -5,7 +5,7 @@ native-fresh-source-affinity crates/worth-runtime-world/src/lifecycle/builder/ho
 native-fresh-initial-installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/home_preparation/native.rs
 world-fresh-home workspaces/worth-store/crates/worth-store-application/src/world_section/readmission.rs
 world-fresh-home workspaces/worth-store/crates/worth-store-application/src/tests/world_section/readmission.rs
-native-fresh-home-readmission workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unrecovered.rs
+native-fresh-home-readmission workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unrecovered/schema_preparation.rs
 native-home-source-finalization workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unshared.rs
 application-home-fresh-finalization workspaces/worth-query/crates/worth-query-host/src/application_home/opening/fresh.rs
 application-home-fresh-finalization workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/bootstrap_publication.rs
@@ -197,3 +197,8 @@ native-fresh-home-source crates/worth-court-runtime-world/tests/worth_court_runt
 world-fresh-home crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/retention/artifact_source.rs
 world-home-checkpoint-source crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/retention/artifact_source/journal.rs
 world-home crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/retention/artifact_source.rs
+
+# Shared Home compiler preparation consumes the same original receiver source.
+native-home-schema-installation workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unrecovered/schema_preparation.rs
+native-home-original-source-copy workspaces/worth-store/crates/worth-store-relational/src/section/unshared/source_schema.rs
+native-fresh-home-readmission workspaces/worth-store/crates/worth-store-application/src/relational_preparation/unrecovered.rs

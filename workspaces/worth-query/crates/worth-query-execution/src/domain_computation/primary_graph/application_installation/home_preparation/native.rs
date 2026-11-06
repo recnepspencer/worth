@@ -31,19 +31,6 @@ impl<Schema: ApplicationSchemaComposition, Program>
 }
 
 impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Schema, Program> {
-    /// Consume the same preparation on an actual source-input refusal.
-    pub fn refuse_home_native_schema(
-        self,
-        cause: worth_relational::facade::runtime::RelationalInitialSchemaInstallationDenial,
-    ) -> QueryHomeNativeInstallationRefused<Schema, Program> {
-        QueryHomeNativeInstallationRefused {
-            _state: self.state,
-            cause:
-                super::super::super::initial_schema_denial::map_initial_schema_installation_denial(
-                    cause,
-                ),
-        }
-    }
     pub fn initialize_home_native_schema(
         self,
         phase: &WorthQueryBootstrapAdvancementPhase<'_>,
@@ -76,17 +63,19 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Sche
         self,
         phase: &WorthQueryBootstrapAdvancementPhase<'_>,
         native: &mut RelationalRuntime,
+        source: &worth_relational::facade::schema::RelationalSchemaRegistry,
     ) -> Result<
         PreparedHomeNativeMeaning<Schema, Program>,
         QueryHomeNativeInstallationRefused<Schema, Program>,
     > {
         let Self { state, invariants } = self;
-        match state.authority.prepare_native_schema(
+        match state.authority.prepare_native_schema_from_original(
             phase,
             &state.runtime,
             &state.installed,
             native,
             invariants,
+            source,
         ) {
             Ok(schema) => Ok(PreparedHomeNativeMeaning { state, schema }),
             Err(cause) => Err(QueryHomeNativeInstallationRefused {

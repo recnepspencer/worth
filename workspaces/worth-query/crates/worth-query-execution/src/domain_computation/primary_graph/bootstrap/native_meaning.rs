@@ -42,6 +42,7 @@ impl WorthQueryExecutionInstallationAuthority {
             relational_runtime,
             invariant_factories,
             None,
+            None,
         )
     }
 
@@ -65,6 +66,29 @@ impl WorthQueryExecutionInstallationAuthority {
             relational_runtime,
             invariant_factories,
             Some(initialization),
+            None,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn prepare_native_schema_from_original<
+        Schema: ApplicationSchema,
+    >(
+        &self,
+        phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
+        runtime: &WorthQueryExecutionRuntime,
+        installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
+        relational_runtime: &mut RelationalRuntime,
+        invariant_factories: WorthQueryApplicationInvariantFactories<Schema>,
+        source: &worth_relational::facade::schema::RelationalSchemaRegistry,
+    ) -> Result<PreparedNativeSchemaMeaning, WorthQueryPrimaryGraphInstallationDenial> {
+        self.prepare_native_schema_with_initialization(
+            phase,
+            runtime,
+            installed_schema,
+            relational_runtime,
+            invariant_factories,
+            None,
+            Some(source),
         )
     }
 
@@ -80,6 +104,7 @@ impl WorthQueryExecutionInstallationAuthority {
                 worth_relational::facade::durability::RelationalFreshInitialization,
             >,
         >,
+        source: Option<&worth_relational::facade::schema::RelationalSchemaRegistry>,
     ) -> Result<PreparedNativeSchemaMeaning, WorthQueryPrimaryGraphInstallationDenial> {
         if !self.belongs_to(runtime) {
             return Err(primary_graph_denial(
@@ -102,12 +127,21 @@ impl WorthQueryExecutionInstallationAuthority {
                     denial.subject(),
                 )
             })?;
-        let (layout, additions) = WorthQueryPrimaryGraphLayout::lower(
-            installed_schema.installed_declaration(),
-            installed_schema.native_contracts(),
-            &relational_runtime.config().schema.registry,
-            installed_schema.value_bindings(),
-        )?;
+        let (layout, additions) = match source {
+            Some(source) => WorthQueryPrimaryGraphLayout::lower_with_original(
+                installed_schema.installed_declaration(),
+                installed_schema.native_contracts(),
+                &relational_runtime.config().schema.registry,
+                installed_schema.value_bindings(),
+                Some(source),
+            ),
+            None => WorthQueryPrimaryGraphLayout::lower(
+                installed_schema.installed_declaration(),
+                installed_schema.native_contracts(),
+                &relational_runtime.config().schema.registry,
+                installed_schema.value_bindings(),
+            ),
+        }?;
         let (registrations, managed_sources, source_initializer) = invariant_factories.lower(
             &_phase.execution_request(),
             installed_schema.binding_identity(),

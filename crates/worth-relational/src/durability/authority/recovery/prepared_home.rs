@@ -40,14 +40,14 @@ struct HomeRecoveryPreparation {
 impl PreparedRelationalHomeRecovery {
     pub(in crate::durability) fn prepare(
         runtime: &RelationalRuntime,
-        mut plan: RecoveryPlan,
+        plan: RecoveryPlan,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, Denial> {
         request.consult().map_err(Denial::Request)?;
         let memory = request
             .reserve_retained_memory(std::mem::size_of::<HomeRecoveryPreparation>() as u64)
             .map_err(Denial::Request)?;
-        let graph = OriginalSchemaGraph::admit(&mut plan, request)
+        let graph = OriginalSchemaGraph::admit_unbound(&plan, request)
             .map_err(Denial::Recovery)?
             .ok_or(Denial::MissingOriginalSource)?;
         Ok(Self {
@@ -78,6 +78,31 @@ impl PreparedRelationalHomeRecovery {
             .schemas
             .rows
             .get(&after.schema_carrier)
+            .map(|schema| schema.registry())
+            .ok_or(Denial::SchemaCarrierMissing)
+    }
+
+    /// Receiving compiler DATA comes from the actual birth or installation
+    /// role. A Native-only Home can have a birth without a Query installation.
+    /// Neither the current head nor the last canonical artifact selects it.
+    pub fn receiver_schema_data(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<&RelationalSchemaRegistry, Denial> {
+        use crate::durability::source_initial_inputs::image::InitialInputEntry as Entry;
+        request.consult().map_err(Denial::Request)?;
+        let carrier = match self.state.graph.original.current.entries.as_slice() {
+            [Entry::Birth(birth)] => birth.schema_carrier,
+            [Entry::Birth(_), Entry::Installation { after, .. }] => after.schema_carrier,
+            [] | [Entry::Installation { .. }] | [_, _] | [_, _, _, ..] => {
+                return Err(Denial::InitialInstallationMissing);
+            }
+        };
+        self.state
+            .graph
+            .schemas
+            .rows
+            .get(&carrier)
             .map(|schema| schema.registry())
             .ok_or(Denial::SchemaCarrierMissing)
     }
