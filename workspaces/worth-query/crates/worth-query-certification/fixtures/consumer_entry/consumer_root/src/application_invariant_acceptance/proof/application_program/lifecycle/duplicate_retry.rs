@@ -69,7 +69,27 @@ pub(in super::super) fn duplicate_retry_does_not_schedule_again(
         panic!("identical key must recover its exact original receipt: {duplicate:?}");
     };
     assert!(original.matches_recorded_original(&receipt));
-    assert_eq!(original.basis_descriptor(), receipt.basis_descriptor());
+    // Native records descriptors in its canonical runtime frame (D11). Compare
+    // semantic coordinates and commitments, never live runtime/root allocation IDs.
+    let (live, recorded) = (original.basis_descriptor(), receipt.basis_descriptor());
+    assert_eq!(
+        (
+            live.descriptor_version(),
+            live.branch_id(),
+            live.truth_version(),
+            live.schema_commitment(),
+            live.visibility_commitment(),
+            live.posture()
+        ),
+        (
+            recorded.descriptor_version(),
+            recorded.branch_id(),
+            recorded.truth_version(),
+            recorded.schema_commitment(),
+            recorded.visibility_commitment(),
+            recorded.posture()
+        ),
+    );
     assert_eq!(
         original.changed_record_count(),
         receipt.changed_record_count()
