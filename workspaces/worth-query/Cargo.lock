@@ -676,7 +676,6 @@ dependencies = [
 name = "worth-foundational"
 version = "0.1.0"
 dependencies = [
- "im",
  "serde",
  "serde_json",
  "serde_stacker",

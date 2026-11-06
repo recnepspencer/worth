@@ -6,20 +6,10 @@ use crate::aspects::keys::AspectKey;
 use crate::aspects::structs::StructAspectValue;
 use crate::values::AspectValue;
 use serde::Serialize;
-#[cfg(test)]
-mod clone_observation;
 mod court_doors_for_test;
-#[cfg(test)]
-pub(in crate::aspects) use clone_observation::CloneObservation;
-
-#[derive(Debug, PartialEq, Eq, Serialize)]
-#[serde(transparent)]
-pub struct ContractValidatedAspectValue {
-    value: std::sync::Arc<ValidatedAspect>,
-}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-struct ValidatedAspect {
+pub struct ContractValidatedAspectValue {
     key: AspectKey,
     #[serde(skip)]
     contract: AspectContract,
@@ -28,62 +18,48 @@ struct ValidatedAspect {
     kind: ContractValidatedAspectValueKind,
 }
 
-impl Clone for ContractValidatedAspectValue {
-    fn clone(&self) -> Self {
-        #[cfg(test)]
-        clone_observation::record_clone();
-        Self {
-            value: std::sync::Arc::clone(&self.value),
-        }
-    }
-}
-
 impl ContractValidatedAspectValue {
     pub(crate) fn scalar(contract: AspectContract, value: AspectValue) -> Self {
         Self {
-            value: std::sync::Arc::new(ValidatedAspect {
-                key: contract.key().clone(),
-                contract_identity: contract.identity(),
-                contract_revision: contract.revision(),
-                contract,
-                kind: ContractValidatedAspectValueKind::Scalar(value),
-            }),
+            key: contract.key().clone(),
+            contract_identity: contract.identity(),
+            contract_revision: contract.revision(),
+            contract,
+            kind: ContractValidatedAspectValueKind::Scalar(value),
         }
     }
 
     pub(crate) fn struct_value(contract: AspectContract, value: StructAspectValue) -> Self {
         Self {
-            value: std::sync::Arc::new(ValidatedAspect {
-                key: contract.key().clone(),
-                contract_identity: contract.identity(),
-                contract_revision: contract.revision(),
-                contract,
-                kind: ContractValidatedAspectValueKind::Struct(value),
-            }),
+            key: contract.key().clone(),
+            contract_identity: contract.identity(),
+            contract_revision: contract.revision(),
+            contract,
+            kind: ContractValidatedAspectValueKind::Struct(value),
         }
     }
 
     pub fn key(&self) -> &AspectKey {
-        &self.value.key
+        &self.key
     }
 
     pub fn contract_revision(&self) -> AspectContractRevision {
-        self.value.contract_revision
+        self.contract_revision
     }
 
     pub fn contract_identity(&self) -> AspectIdentity {
-        self.value.contract_identity
+        self.contract_identity
     }
 
     pub fn contract(&self) -> &AspectContract {
-        &self.value.contract
+        &self.contract
     }
 
     /// Stable logical width of the native semantic material retained here.
     ///
     /// This is deliberately independent of allocator layout and formatting.
     pub fn semantic_byte_width(&self) -> usize {
-        let value = match &self.value.kind {
+        let value = match &self.kind {
             ContractValidatedAspectValueKind::Scalar(value) => value.semantic_byte_width(),
             ContractValidatedAspectValueKind::Struct(value) => {
                 value.fields().fold(0_usize, |total, (field, value)| {
@@ -93,14 +69,11 @@ impl ContractValidatedAspectValue {
                 })
             }
         };
-        self.value
-            .contract
-            .semantic_byte_width()
-            .saturating_add(value)
+        self.contract.semantic_byte_width().saturating_add(value)
     }
 
     pub fn view(&self) -> ContractValidatedAspectValueView<'_> {
-        match &self.value.kind {
+        match &self.kind {
             ContractValidatedAspectValueKind::Scalar(value) => {
                 ContractValidatedAspectValueView::Scalar(value)
             }
@@ -113,7 +86,7 @@ impl ContractValidatedAspectValue {
     /// Allocator capacity reachable only through this validated value,
     /// excluding its inline representation in the owning collection.
     pub fn owned_allocation_capacity_bytes(&self) -> usize {
-        let value_bytes = match &self.value.kind {
+        let value_bytes = match &self.kind {
             ContractValidatedAspectValueKind::Scalar(value) => {
                 value.owned_allocation_capacity_bytes()
             }
@@ -121,10 +94,9 @@ impl ContractValidatedAspectValue {
                 value.owned_allocation_capacity_bytes()
             }
         };
-        self.value
-            .key
+        self.key
             .owned_allocation_capacity_bytes()
-            .saturating_add(self.value.contract.owned_allocation_capacity_bytes())
+            .saturating_add(self.contract.owned_allocation_capacity_bytes())
             .saturating_add(value_bytes)
     }
 }

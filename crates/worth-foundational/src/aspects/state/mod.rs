@@ -8,6 +8,3 @@ pub use record_state::{
     AuthoritativeRecordAspectState, AuthoritativeRecordAspectStateAdmitted,
     AuthoritativeRecordAspectStateArtifact,
 };
-
-#[cfg(test)]
-mod sharing_tests;

@@ -6,16 +6,14 @@ use crate::aspects::evolution::{
 
 impl AspectContract {
     pub fn classify_evolution_to(&self, next: &Self) -> AspectEvolutionVerdict {
-        if self.definition.identity != next.definition.identity
-            || self.definition.key != next.definition.key
-        {
+        if self.identity != next.identity || self.key != next.key {
             return AspectEvolutionVerdict::new(
                 AspectEvolutionKind::Incompatible,
                 "aspect identity or key changed",
             );
         }
 
-        match (&self.definition.shape, &next.definition.shape) {
+        match (&self.shape, &next.shape) {
             (AspectShape::Scalar(left), AspectShape::Scalar(right)) if left == right => {
                 AspectEvolutionVerdict::new(
                     AspectEvolutionKind::Unchanged,

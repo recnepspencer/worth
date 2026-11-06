@@ -22,16 +22,14 @@ impl AspectContract {
         evolution: AspectEvolutionPolicy,
     ) -> Self {
         Self {
-            definition: std::sync::Arc::new(super::AspectContractDefinition {
-                key,
-                identity,
-                revision,
-                shape,
-                masks,
-                absence,
-                equivalence,
-                evolution,
-            }),
+            key,
+            identity,
+            revision,
+            shape,
+            masks,
+            absence,
+            equivalence,
+            evolution,
         }
     }
 
