@@ -288,6 +288,7 @@ pub(in crate::domain_computation::primary_graph) use provider_execution::Install
 pub use provider_execution::MandatoryReviewOps;
 pub(in crate::domain_computation::primary_graph) use provider_execution::MandatoryReviewScopedOps;
 pub use provider_execution::OutputSourceOps;
+pub(in crate::domain_computation::primary_graph) use provider_execution::HistoryProducerCommit;
 pub(in crate::domain_computation::primary_graph) use provider_execution::ProviderExecutionProviderExecutionEntryScopedOps;
 pub(in crate::domain_computation::primary_graph) use provider_execution::ReadmittedCommitProgram;
 pub use read_set::ReadSetOps;

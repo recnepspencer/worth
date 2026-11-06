@@ -183,8 +183,8 @@ where
                     Some(history) => {
                         let request = authority.admission().retain_admitted_request();
                         prepared.commit_using(|_provider, session| {
-                            authority.provider().commit_prepared_application_in_history(
-                                session, history.bind_producer_request(&request), control.policy(),
+                            history.commit_prepared_application(
+                                authority.provider(), session, &request, control.policy(),
                             )
                         })
                     }

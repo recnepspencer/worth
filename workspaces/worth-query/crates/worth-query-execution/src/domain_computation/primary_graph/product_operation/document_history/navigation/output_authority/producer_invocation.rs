@@ -43,6 +43,29 @@ impl HistoryProducerCutover<'_> {
     }
 }
 
+/// The attempt carries an advancement's conditions to its commit through
+/// this port and never names them.
+impl crate::domain_computation::primary_graph::application_attempt::HistoryProducerCommit
+    for HistoryProducerInvocation<'_>
+{
+    fn commit_prepared_application(
+        &self,
+        provider: &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
+        session: crate::domain_computation::WorthQueryProviderSessionView<'_>,
+        producer_request: &AdmittedRequestCurrentness,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<
+        crate::domain_computation::WorthQueryProviderTerminalDescription,
+        crate::domain_computation::WorthQueryProviderSessionCommitStop,
+    > {
+        provider.commit_prepared_application_in_history(
+            session,
+            self.bind_producer_request(producer_request),
+            allocation_policy,
+        )
+    }
+}
+
 impl<'invocation> HistoryProducerInvocation<'invocation> {
     pub(in crate::domain_computation::primary_graph) fn bind_producer_request<'call>(
         self,

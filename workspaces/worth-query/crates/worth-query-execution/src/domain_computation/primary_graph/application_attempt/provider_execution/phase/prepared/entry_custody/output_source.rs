@@ -3,7 +3,7 @@ use super::super::super::super::program_occurrence_gate::resolve_occurrence_prog
 use super::*;
 use crate::domain_computation::application_aftermath::ApplicationCommitCausality;
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::ProviderExecutionEntryScopedOps;
-use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
+use crate::domain_computation::primary_graph::application_attempt::HistoryProducerCommit;
 use crate::domain_computation::primary_graph::program_occurrence::WorthQueryPresentedProgram;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
@@ -71,7 +71,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
             &worth_query_declaration::facade::application_program::ApplicationProgramIdentity,
             &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
         )>,
-        history: Option<HistoryProducerInvocation<'_>>,
+        history: Option<&'_ dyn HistoryProducerCommit>,
     ) -> WorthQueryApplicationCommitOutcome
     where
         Operation: 'static,

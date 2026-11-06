@@ -1,6 +1,6 @@
 use super::*;
 use crate::domain_computation::application_aftermath::ApplicationCommitCausality;
-use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
+use crate::domain_computation::primary_graph::application_attempt::HistoryProducerCommit;
 impl<Schema: ApplicationSchema, Operation, Input, Scope>
     CurrentCommitProgram<
         '_,
@@ -16,7 +16,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
 
         idempotency: WorthQueryApplicationIdempotencyBinding,
         retain_output_observation: bool,
-        history: Option<HistoryProducerInvocation<'_>>,
+        history: Option<&'_ dyn HistoryProducerCommit>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationCommitOutcome
     where
@@ -37,7 +37,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
         idempotency: WorthQueryApplicationIdempotencyBinding,
         retain_output_observation: bool,
         causality: ApplicationCommitCausality,
-        history: Option<HistoryProducerInvocation<'_>>,
+        history: Option<&'_ dyn HistoryProducerCommit>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationCommitOutcome
     where

@@ -275,7 +275,9 @@ impl<Schema: ApplicationSchema> super::super::WorthQueryPrimaryGraphApplicationR
             program,
             idempotency,
             selected_program,
-            history,
+            history.as_ref().map(|history| {
+                history as &dyn crate::domain_computation::primary_graph::application_attempt::HistoryProducerCommit
+            }),
         )
     }
 

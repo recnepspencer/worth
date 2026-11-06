@@ -8,25 +8,9 @@ use crate::domain_computation::primary_graph::product_operation::ObservationRoom
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::ProductBranchIdentity;
+use crate::domain_computation::primary_graph::application_attempt::snapshot_lease::SelectedQueryOrigin;
 
-/// How the live selected snapshot entered this operation. This is selection
-/// provenance, not a promise that its head remains latest during execution.
-#[derive(Clone, Copy, Debug, Default)]
-pub(in crate::domain_computation::primary_graph) struct SelectedQueryOrigin {
-    current_at_selection: bool,
-}
 
-impl SelectedQueryOrigin {
-    fn current_at_selection() -> Self {
-        Self {
-            current_at_selection: true,
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn is_current(self) -> bool {
-        self.current_at_selection
-    }
-}
 
 /// Shared application entry bound to one retained World occurrence. Selecting
 /// another occurrence requires a new admission; this context never resolves latest.

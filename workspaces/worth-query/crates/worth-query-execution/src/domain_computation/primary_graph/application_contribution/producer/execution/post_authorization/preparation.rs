@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::ApplicationCommitScopedOps;
 use crate::domain_computation::primary_graph::application_attempt::OutputSourceOps;
+use crate::domain_computation::primary_graph::application_attempt::HistoryProducerCommit;
 use crate::domain_computation::primary_graph::application_entry::PreparationScopedOps;
 use crate::domain_computation::primary_graph::application_query::PreparedExpectationScopedOps;
 use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerCommitAuthority;
@@ -272,13 +273,15 @@ where
             let program = program
                 .with_output_demand_observation()
                 .with_producer_required_invariants(Binding::REQUIRED_INVARIANTS);
+            let history = commit_authority.history_control();
+            let history = history.as_ref().map(|history| history as &dyn HistoryProducerCommit);
             let outcome = match commit_authority.mode() {
                 WorthQueryProducerCommitAuthority::Ordinary => runtime
                     .compare_and_commit_application_in_advancement_with_history(
                         phase,
                         program,
                         idempotency,
-                        commit_authority.history_control(),
+                        history,
                         crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
                     ),
                 WorthQueryProducerCommitAuthority::ProgramOutput => runtime
@@ -288,7 +291,7 @@ where
                         program,
                         idempotency,
                         None,
-                        commit_authority.history_control(),
+                        history,
                     ),
                 WorthQueryProducerCommitAuthority::SelectedProgram { identity, revision } => {
                     runtime.compare_and_commit_application_for_program_output_producer(
@@ -297,7 +300,7 @@ where
                         program,
                         idempotency,
                         Some((identity, revision)),
-                        commit_authority.history_control(),
+                        history,
                     )
                 }
             };
