@@ -1924,3 +1924,24 @@ pre-delete and redo snapshots remain the actual subject. Do not alter expected
 contacts without preserving the producer-fallback premise. Investigate the
 historical fork posting owner as needed for live non-leaf roots; never weaken
 exact address or occurrence checks to work around its collision.
+
+### Non-leaf recording after checkout: boundary audit and next proof
+
+Checkpointc4a5f1d685 qualifies isolated forests, current leaves and removed
+sources (206history/61Native;9mutants), not every live historical-parent fork.
+A navigation's verified-parent owner is sealed to its actual navigation
+qualification and currentC grants. Recording has its own original action origin
+and ordinary SDK root/cleanup; it must not fabricate a navigation frame or an
+ordinary settlement. The demand registry's exact posting index remains single
+owner per canonical settlement address, including original branch incarnation.
+
+First add a public serial/worker court using the real installed non-leaf tree:
+settle it, record a stale source-only future, undo, rejoin the restored tree atC,
+then record an unrelated owned-member edit on its new private candidateD. The
+healthy parent must preserve original identities, run actual discovery of the
+expected children and make zero producer contacts; final source/member/output
+reads independently check the recorded step. Observe the real failure before
+choosing the owner cutover. Preserve exact posting, occurrence and authority
+checks. If the inherited historical row cannot be accepted atD, the real
+current-read/parent owner must carry that acceptance; no fake settlement,
+parallel ownership reader or roster-derived dependent set is acceptable.
