@@ -30,6 +30,9 @@ impl WorthQueryApplicationCommitReceipt {
             }
         };
         same_head
+            && self
+                .committed_changes
+                .matches_recorded_semantic_result(recorded.semantic_result())
             && original.publication_attempt().ordinal() == recorded.attempt_identity().ordinal()
             && self.commit_reference() == recorded.commit_reference()
             && self.idempotency_binding().key_identity() == recorded.idempotency_key_identity()

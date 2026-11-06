@@ -236,6 +236,7 @@ fn actual_candidate_checks_untouched_neighbors(
     assert_eq!(read_y(request, "anchor-b"), 1);
     assert_eq!(read_y(request, "anchor-c"), 10);
 
+    let calls_after_commit = world.invariant_calls.load(Ordering::SeqCst);
     let retry = request
         .advanced()
         .mutate(PlanarEdit(valid))
@@ -246,10 +247,19 @@ fn actual_candidate_checks_untouched_neighbors(
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("the repeated typed request reaches idempotency resolution");
-    let WorthQueryApplicationMutationOutcome::AlreadyCommitted(recovered) = retry else {
+    let WorthQueryApplicationMutationOutcome::RecoveredCommitted(recovered) = retry else {
         panic!("the repeated command must recover its single committed publication")
     };
-    assert!(recovered.is_same_authoritative_commit(&receipt));
+    assert!(receipt.matches_recorded_original(&recovered));
+    assert_eq!(
+        world.invariant_calls.load(Ordering::SeqCst),
+        calls_after_commit
+    );
+    assert_eq!(recovered.commit_reference(), receipt.commit_reference());
+    assert_eq!(
+        recovered.changed_record_count(),
+        receipt.changed_record_count()
+    );
 
     let before = source_version(request);
     let malformed = mutate(request, &world.application, adjust("anchor-a", 12), 11);
