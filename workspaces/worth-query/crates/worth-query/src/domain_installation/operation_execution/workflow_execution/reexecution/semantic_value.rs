@@ -1,4 +1,5 @@
 use super::WorthQueryWorkflowValue;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 /// Typed, owned semantic projection of a workflow value.
 ///
@@ -21,8 +22,10 @@ pub enum WorthQueryWorkflowSemanticValue {
 }
 
 impl WorthQueryWorkflowValue {
-    pub(crate) fn semantic_value(&self) -> WorthQueryWorkflowSemanticValue {
-        match self {
+    pub(crate) fn semantic_value(
+        &self,
+    ) -> Result<WorthQueryWorkflowSemanticValue, IdentityDerivationDenial> {
+        Ok(match self {
             Self::NotRequired => WorthQueryWorkflowSemanticValue::NotRequired,
             Self::Bool(value) => WorthQueryWorkflowSemanticValue::Bool(*value),
             Self::I64(value) => WorthQueryWorkflowSemanticValue::I64(*value),
@@ -32,7 +35,7 @@ impl WorthQueryWorkflowValue {
                 WorthQueryWorkflowSemanticValue::EntityIdentity(value.clone())
             }
             Self::CurrentEntityIdentity(value) => WorthQueryWorkflowSemanticValue::EntityIdentity(
-                value.evidence_identity().as_str().to_owned(),
+                value.evidence_identity()?.as_str().to_owned(),
             ),
             Self::Projection(completion) => WorthQueryWorkflowSemanticValue::Projection {
                 canonical_query_identity: completion
@@ -48,7 +51,7 @@ impl WorthQueryWorkflowValue {
             Self::TransferredArtifact(handle) => {
                 WorthQueryWorkflowSemanticValue::InstalledArtifact(handle.trace_meaning())
             }
-        }
+        })
     }
 
     pub fn domain_evidence_occurrence_identity(&self) -> String {

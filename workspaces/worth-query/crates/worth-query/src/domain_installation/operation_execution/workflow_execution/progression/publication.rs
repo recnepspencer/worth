@@ -11,6 +11,7 @@ use crate::domain_installation::{
     WorthQueryNativeFieldAccess, WorthQueryPublishingOperation, WorthQueryWorkflowRunCounters,
     WorthQueryWorkflowValue,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::hash_parts;
 use crate::ordinary::read::{WorthQueryProjectionDeclaration, WorthQueryProjectionOutcome};
 use crate::projection_consumption::{
@@ -130,10 +131,11 @@ impl<D, O, F, L: BasisOperationLane> WorthQueryPublishedWorkflow<D, O, F, L> {
     pub(crate) fn publication_carries_entity(
         &self,
         subject: &crate::memory_workspace::WorthQueryEntityIdentity,
-    ) -> bool {
-        self.publication_subjects_by_evidence_identity
-            .get(subject.evidence_identity().as_str())
-            == Some(subject)
+    ) -> Result<bool, IdentityDerivationDenial> {
+        Ok(self
+            .publication_subjects_by_evidence_identity
+            .get(subject.evidence_identity()?.as_str())
+            == Some(subject))
     }
     pub fn consume(
         mut self,

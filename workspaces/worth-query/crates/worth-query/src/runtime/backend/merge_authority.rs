@@ -93,7 +93,7 @@ impl WorthQueryBackendMergeAuthority {
                 )
                 .field_evidence_identity(
                     WorthQueryEvidenceTag::new("target_snapshot"),
-                    &target_snapshot_identity.evidence_identity(),
+                    &target_snapshot_identity.evidence_identity()?,
                 )
                 .field_shape(
                     WorthQueryEvidenceTag::new("target_basis"),

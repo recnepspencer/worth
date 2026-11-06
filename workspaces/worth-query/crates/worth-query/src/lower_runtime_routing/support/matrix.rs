@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -33,7 +34,7 @@ impl WorthQueryLowerRuntimeSupportMatrix {
         self.rows.iter().find(|row| row.seam_key() == seam_key)
     }
 
-    pub fn matrix_digest(&self) -> String {
+    pub fn matrix_digest(&self) -> Result<String, IdentityDerivationDenial> {
         let row_identities = self
             .rows
             .iter()
@@ -45,15 +46,17 @@ impl WorthQueryLowerRuntimeSupportMatrix {
                 .seal()
             })
             .collect::<Vec<_>>();
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "lower_runtime_support_matrix_v1",
-            )
-            .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("rows"), &row_identities)
-            .seal()
-            .as_str()
-            .to_string()
+        Ok(WorthQueryEvidenceIdentity::compose(
+            WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "lower_runtime_support_matrix_v1",
+        )
+        .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("rows"), &row_identities)
+        .seal()?
+        .as_str()
+        .to_string())
     }
 }
 

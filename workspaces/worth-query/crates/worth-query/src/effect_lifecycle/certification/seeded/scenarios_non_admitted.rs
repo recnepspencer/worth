@@ -27,7 +27,7 @@ pub(super) fn preview_mutation_rebind_row(
     let normalized = normalize_raw_effect_intent(
         &basis,
         RawEffectIntent::Mutation {
-            binding: preview_workflow_binding(&preview),
+            binding: preview_workflow_binding(&preview)?,
             request: workflow_request(
                 WorkflowDeclarationFamily::MutationLoweringNarrow,
                 WorkflowAuthorityTargetFamily::RelationalMutation,
@@ -77,7 +77,7 @@ pub(super) fn preview_derived_advisory_row(
     let normalized = normalize_raw_effect_intent(
         &basis,
         raw_mutation_effect_with_binding(
-            runtime_workflow_binding(),
+            runtime_workflow_binding()?,
             EntityId::new(PartitionId(1), 200 + index as u64, 0),
             seeded_label("advisory", stepper, index),
         ),
@@ -137,7 +137,7 @@ pub(super) fn tenant_merge_denied_row(
     let normalized = normalize_raw_effect_intent(
         &basis,
         RawEffectIntent::Merge {
-            binding: runtime_workflow_binding(),
+            binding: runtime_workflow_binding()?,
             request: workflow_request(
                 WorkflowDeclarationFamily::MergeLoweringNarrow,
                 WorkflowAuthorityTargetFamily::RelationalMerge,
@@ -179,7 +179,7 @@ pub(super) fn deferred_row(
     let normalized = normalize_raw_effect_intent(
         &basis,
         RawEffectIntent::Writeback {
-            binding: runtime_workflow_binding(),
+            binding: runtime_workflow_binding()?,
             request: workflow_request(
                 WorkflowDeclarationFamily::WritebackLoweringNarrow,
                 WorkflowAuthorityTargetFamily::BridgeWriteback,

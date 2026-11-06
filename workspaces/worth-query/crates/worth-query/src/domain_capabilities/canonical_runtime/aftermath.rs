@@ -248,7 +248,7 @@ where
     Ok(
         match materialize_admitted_projection_consumption(contribution)? {
             TransitionOutcome::Success(admitted) => {
-                TransitionOutcome::Success(admitted.bind_contract())
+                TransitionOutcome::Success(admitted.bind_contract()?)
             }
             TransitionOutcome::Denied(denial) => TransitionOutcome::Denied(denial),
             TransitionOutcome::Stale(stale) => TransitionOutcome::Stale(stale),

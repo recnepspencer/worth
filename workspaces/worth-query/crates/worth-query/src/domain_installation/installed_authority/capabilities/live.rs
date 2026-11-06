@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::marker::PhantomData;
 
 use crate::ordinary::live::{
@@ -156,13 +157,15 @@ impl<D: 'static> WorthQueryInstalledDomainLiveHandle<D> {
         &self,
         read: &WorthQueryInstalledDomainLiveRead,
         declaration: crate::ordinary::read::WorthQueryProjectionDeclaration,
-    ) -> WorthQueryInstalledDomainProjectionOutcome<D> {
+    ) -> Result<WorthQueryInstalledDomainProjectionOutcome<D>, IdentityDerivationDenial> {
         let outcome = self.handle.project(read.result(), declaration);
         let receipt = self.receipt.derive(
             WorthQueryInstalledDomainCapabilityKind::Projection,
             read.receipt().operational_identity().clone(),
-        );
-        WorthQueryInstalledDomainProjectionOutcome::from_outcome(outcome, receipt)
+        )?;
+        Ok(WorthQueryInstalledDomainProjectionOutcome::from_outcome(
+            outcome, receipt,
+        ))
     }
 
     pub fn drain(
@@ -213,15 +216,17 @@ impl<D: 'static> WorthQueryInstalledDomainLiveHandle<D> {
     pub fn checkpoint(
         self,
         workspace: &mut WorthQueryWorkspace,
-    ) -> WorthQueryInstalledDomainLiveCheckpointOutcome<D> {
+    ) -> Result<WorthQueryInstalledDomainLiveCheckpointOutcome<D>, IdentityDerivationDenial> {
         if let Err(drift) = WorthQueryInstalledDomainExecutionDrift::validate::<D>(
             self.receipt.installed_authority(),
             workspace,
         ) {
-            return WorthQueryInstalledDomainLiveCheckpointOutcome::AuthorityStopped(self, drift);
+            return Ok(
+                WorthQueryInstalledDomainLiveCheckpointOutcome::AuthorityStopped(self, drift),
+            );
         }
         let receipt = self.receipt;
-        match self.handle.checkpoint(workspace) {
+        Ok(match self.handle.checkpoint(workspace) {
             WorthQueryManagedLiveCheckpointOutcome::Checkpointed(completion) => {
                 let operational = completion.checkpoint().continuation_identity().clone();
                 WorthQueryInstalledDomainLiveCheckpointOutcome::Checkpointed(
@@ -230,7 +235,7 @@ impl<D: 'static> WorthQueryInstalledDomainLiveHandle<D> {
                         receipt: receipt.derive(
                             WorthQueryInstalledDomainCapabilityKind::LiveCheckpoint,
                             operational,
-                        ),
+                        )?,
                         marker: PhantomData,
                     },
                 )
@@ -244,7 +249,7 @@ impl<D: 'static> WorthQueryInstalledDomainLiveHandle<D> {
                     },
                 )
             }
-        }
+        })
     }
 
     pub fn close(

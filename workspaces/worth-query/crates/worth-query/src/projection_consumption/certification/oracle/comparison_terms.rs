@@ -14,7 +14,9 @@ use super::value_terms::{
     raw_string_snapshot_value,
 };
 
-pub(super) fn row_set_control_expected_digest(row_count: usize) -> String {
+pub(super) fn row_set_control_expected_digest(
+    row_count: usize,
+) -> Result<String, IdentityDerivationDenial> {
     let row_set = certification_row_set(row_count);
     let entries = row_set
         .rows()
@@ -50,14 +52,16 @@ pub(super) fn row_set_control_expected_digest(row_count: usize) -> String {
             ]
         })
         .collect::<Vec<_>>();
-    compose_certification_sequence_digest(
+    Ok(compose_certification_sequence_digest(
         "projection_consumption_oracle_row_set_control_expected_v1",
         "entry",
         entries,
-    )
+    )?)
 }
 
-pub(super) fn row_set_control_actual_digest(facts: &ConsumedProjectionFactSet) -> String {
+pub(super) fn row_set_control_actual_digest(
+    facts: &ConsumedProjectionFactSet,
+) -> Result<String, IdentityDerivationDenial> {
     let entries = facts
         .entity_identities()
         .iter()
@@ -72,11 +76,11 @@ pub(super) fn row_set_control_actual_digest(facts: &ConsumedProjectionFactSet) -
             )
         }))
         .collect::<Vec<_>>();
-    compose_certification_sequence_digest(
+    Ok(compose_certification_sequence_digest(
         "projection_consumption_oracle_row_set_control_actual_v1",
         "entry",
         entries,
-    )
+    )?)
 }
 
 pub(super) fn grouped_worth_expected_digest(
@@ -154,7 +158,7 @@ fn compose_oracle_entity_identity_entry(
     source_row: &str,
     entity_identity: &WorthQueryEntityIdentity,
 ) -> Result<String, IdentityDerivationDenial> {
-    let evidence_identity = entity_identity.evidence_identity();
+    let evidence_identity = entity_identity.evidence_identity()?;
     Ok(seal(
         certification_scope_encoder("projection_consumption_oracle_entity_identity_entry_v1")
             .field_shape(WorthQueryEvidenceTag::new("source_row"), source_row)

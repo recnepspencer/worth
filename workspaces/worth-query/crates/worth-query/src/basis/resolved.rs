@@ -119,14 +119,14 @@ impl ResolvedSnapshotBasis {
         intent: ExecutionBasisIntent,
         identity: ResolvedSnapshotIdentity,
         resolution_mode: BasisResolutionMode,
-    ) -> Self {
-        let proof = ResolvedBasisProof::new(identity.evidence_identity(), resolution_mode.clone());
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        let proof = ResolvedBasisProof::new(identity.evidence_identity()?, resolution_mode.clone());
+        Ok(Self {
             intent,
             identity,
             resolution_mode,
             proof,
-        }
+        })
     }
 
     pub(crate) fn new_with_reporting_label(
@@ -134,15 +134,15 @@ impl ResolvedSnapshotBasis {
         identity: ResolvedSnapshotIdentity,
         resolution_mode: BasisResolutionMode,
         reporting_label: impl Into<String>,
-    ) -> Self {
-        let proof = ResolvedBasisProof::new(identity.evidence_identity(), resolution_mode.clone())
+    ) -> Result<Self, IdentityDerivationDenial> {
+        let proof = ResolvedBasisProof::new(identity.evidence_identity()?, resolution_mode.clone())
             .with_reporting_label(reporting_label);
-        Self {
+        Ok(Self {
             intent,
             identity,
             resolution_mode,
             proof,
-        }
+        })
     }
 
     #[cfg(test)]

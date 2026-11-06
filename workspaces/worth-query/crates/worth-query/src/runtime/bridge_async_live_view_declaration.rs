@@ -61,7 +61,7 @@ impl WorthQueryRuntime {
                             from_async_identity_part,
                     )
                     .collect(),
-            );
+            )?;
         self.declare_bridge_async_live_view_with_selection(
             request_execution,
             name,

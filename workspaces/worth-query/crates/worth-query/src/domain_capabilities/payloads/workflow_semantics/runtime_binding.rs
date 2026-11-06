@@ -90,7 +90,7 @@ impl WorthQueryWorkflowRuntimeBindingSemantics {
                 .field_shape(WorthQueryEvidenceTag::new("kind"), "runtime_preflight")
                 .field_evidence_identity(
                     WorthQueryEvidenceTag::new("runtime_snapshot"),
-                    &runtime_snapshot_identity.evidence_identity(),
+                    &runtime_snapshot_identity.evidence_identity()?,
                 )
                 .seal()?,
             Self::RuntimePreflightBundle { preflight } => {

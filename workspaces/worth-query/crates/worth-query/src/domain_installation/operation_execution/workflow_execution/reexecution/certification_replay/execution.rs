@@ -1,5 +1,6 @@
 use crate::basis_lifecycle::BasisOperationLane;
 use crate::domain_installation::WorthQueryBoundDomainOperation;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::WorthQueryWorkspace;
 use worth_proof::TransitionOutcome;
 use worth_query_installation::facade::WorthQueryOperationReplayContract;
@@ -33,73 +34,77 @@ pub(in crate::domain_installation::operation_execution) fn execute_admitted_repl
     basis_relationship: WorthQueryReplayBasisRelationship,
     mut counters: WorthQueryCertificationReplayCounters,
     phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
-) -> WorthQueryCertificationReplayOutcome<D, O, F, LR>
+) -> Result<WorthQueryCertificationReplayOutcome<D, O, F, LR>, IdentityDerivationDenial>
 where
     O: WorthQueryExecutableDomainOperation<D, F, Execution = WorthQueryWorkflowOperation> + 'static,
 {
     let noise = match installed_replay_noise_contract(&bound) {
         Ok(noise) => noise,
-        Err(denial) => return denied(denial),
+        Err(denial) => return Ok(denied(denial)),
     };
     let original_semantics = original.semantics();
     let original_execution_counters = original.exact_counters();
     if !intent_matches_original_trace(&intent, &original_semantics, &mut counters) {
-        return denied(
+        return Ok(denied(
             WorthQueryCertificationReplayAdmissionDenial::IntentDoesNotMatchOriginalTrace,
-        );
+        ));
     }
     let Some(comparator) = bound.workflow_providers().1.replay_comparator() else {
-        return denied(WorthQueryCertificationReplayAdmissionDenial::ReplayComparatorUnavailable);
+        return Ok(denied(
+            WorthQueryCertificationReplayAdmissionDenial::ReplayComparatorUnavailable,
+        ));
     };
     let admitted = match bound.admit_workflow_resources(resources, workspace) {
         TransitionOutcome::Success(admitted) => admitted,
         TransitionOutcome::Denied(stop) => {
-            return TransitionOutcome::Denied(WorthQueryCertificationReplayStop::ResourceAdmission(
-                stop,
+            return Ok(TransitionOutcome::Denied(
+                WorthQueryCertificationReplayStop::ResourceAdmission(stop),
             ))
         }
         TransitionOutcome::Deferred(stop) => {
-            return TransitionOutcome::Deferred(
+            return Ok(TransitionOutcome::Deferred(
                 WorthQueryCertificationReplayStop::ResourceAdmission(stop),
-            )
+            ))
         }
         TransitionOutcome::Stale(stop) => {
-            return TransitionOutcome::Stale(WorthQueryCertificationReplayStop::ResourceAdmission(
-                stop,
+            return Ok(TransitionOutcome::Stale(
+                WorthQueryCertificationReplayStop::ResourceAdmission(stop),
             ))
         }
         TransitionOutcome::RebindRequired(stop) => {
-            return TransitionOutcome::RebindRequired(
+            return Ok(TransitionOutcome::RebindRequired(
                 WorthQueryCertificationReplayStop::ResourceAdmission(stop),
-            )
+            ))
         }
         TransitionOutcome::Failed(stop) => {
-            return TransitionOutcome::Failed(WorthQueryCertificationReplayStop::ResourceAdmission(
-                stop,
+            return Ok(TransitionOutcome::Failed(
+                WorthQueryCertificationReplayStop::ResourceAdmission(stop),
             ))
         }
     };
     let replay_trace = match admitted.reexecute_in_advancement(phase, intent.clone(), workspace) {
         TransitionOutcome::Success(trace) => trace,
-        TransitionOutcome::Denied(stop) => return TransitionOutcome::Denied(execution(stop)),
+        TransitionOutcome::Denied(stop) => return Ok(TransitionOutcome::Denied(execution(stop))),
         TransitionOutcome::Deferred(WorthQueryWorkflowReexecutionStop::ConditionalDeferred {
             stage_identity,
             ..
         }) => {
-            return TransitionOutcome::Deferred(
+            return Ok(TransitionOutcome::Deferred(
                 WorthQueryCertificationReplayStop::SemanticDivergence(
                     WorthQueryReplayDivergence::ConditionalPath {
                         stage: stage_identity,
                     },
                 ),
-            )
+            ))
         }
-        TransitionOutcome::Deferred(stop) => return TransitionOutcome::Deferred(execution(stop)),
-        TransitionOutcome::Stale(stop) => return TransitionOutcome::Stale(execution(stop)),
+        TransitionOutcome::Deferred(stop) => {
+            return Ok(TransitionOutcome::Deferred(execution(stop)))
+        }
+        TransitionOutcome::Stale(stop) => return Ok(TransitionOutcome::Stale(execution(stop))),
         TransitionOutcome::RebindRequired(stop) => {
-            return TransitionOutcome::RebindRequired(execution(stop))
+            return Ok(TransitionOutcome::RebindRequired(execution(stop)))
         }
-        TransitionOutcome::Failed(stop) => return TransitionOutcome::Failed(execution(stop)),
+        TransitionOutcome::Failed(stop) => return Ok(TransitionOutcome::Failed(execution(stop))),
     };
     let replay_semantics = replay_trace.semantics();
     let replay_trace_identity = replay_trace.identity().to_owned();
@@ -124,21 +129,23 @@ where
         original.identity(),
         &replay_trace_identity,
         comparison == WorthQueryReplayComparison::Equivalent,
-    );
-    TransitionOutcome::Success(WorthQueryCertificationReplayResult {
-        original_trace_identity: original.identity().to_owned(),
-        replay_trace_identity,
-        intent,
-        basis_relationship,
-        original_semantics,
-        replay_semantics,
-        comparison,
-        foundational_attachment,
-        original_execution_counters,
-        replay_execution_counters,
-        counters,
-        _operation: std::marker::PhantomData,
-    })
+    )?;
+    Ok(TransitionOutcome::Success(
+        WorthQueryCertificationReplayResult {
+            original_trace_identity: original.identity().to_owned(),
+            replay_trace_identity,
+            intent,
+            basis_relationship,
+            original_semantics,
+            replay_semantics,
+            comparison,
+            foundational_attachment,
+            original_execution_counters,
+            replay_execution_counters,
+            counters,
+            _operation: std::marker::PhantomData,
+        },
+    ))
 }
 
 fn installed_replay_noise_contract<D, O, F, L: BasisOperationLane>(

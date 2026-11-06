@@ -162,7 +162,7 @@ impl WorthQueryLowerRuntimeCloseoutRegistry {
         .to_string())
     }
 
-    pub fn required_closeout_digest(&self) -> String {
+    pub fn required_closeout_digest(&self) -> Result<String, IdentityDerivationDenial> {
         let closeout_identities = self
             .rows
             .iter()
@@ -177,17 +177,16 @@ impl WorthQueryLowerRuntimeCloseoutRegistry {
                 .seal()
             })
             .collect::<Vec<_>>();
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "lower_runtime_required_closeout_v1",
-            )
-            .field_evidence_identity_sequence(
-                WorthQueryEvidenceTag::new("rows"),
-                &closeout_identities,
-            )
-            .seal()
-            .as_str()
-            .to_string()
+        Ok(WorthQueryEvidenceIdentity::compose(
+            WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "lower_runtime_required_closeout_v1",
+        )
+        .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("rows"), &closeout_identities)
+        .seal()?
+        .as_str()
+        .to_string())
     }
 }

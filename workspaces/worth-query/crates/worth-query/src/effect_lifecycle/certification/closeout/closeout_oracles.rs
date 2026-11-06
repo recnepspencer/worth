@@ -80,7 +80,7 @@ fn scalar_mutation_oracle_digest(
     )
     .expect("closeout oracle branch should be created");
     let raw = raw_mutation_effect_with_binding(
-        runtime_workflow_binding_for_branch(branch_snapshot_identity(&runtime, branch), branch),
+        runtime_workflow_binding_for_branch(branch_snapshot_identity(&runtime, branch), branch)?,
         entity_id,
         "closeout-oracle".to_string(),
     );
@@ -110,7 +110,9 @@ fn scalar_mutation_oracle_digest(
         .to_string())
 }
 
-fn batch_mutation_oracle_digest(execution: &worth_execution::ExecutionRequest<'_, '_>) -> String {
+fn batch_mutation_oracle_digest(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<String, IdentityDerivationDenial> {
     let branch = "closeout-oracle-batch";
     let mut runtime = relational_runtime_with_intent_strategy();
     let left = create_entity(
@@ -133,11 +135,11 @@ fn batch_mutation_oracle_digest(execution: &worth_execution::ExecutionRequest<'_
     )
     .expect("closeout oracle batch branch should be created");
     let binding =
-        runtime_workflow_binding_for_branch(branch_snapshot_identity(&runtime, branch), branch);
+        runtime_workflow_binding_for_branch(branch_snapshot_identity(&runtime, branch), branch)?;
     let executed = effect_batch()
         .using_basis(EffectAuthoringBasis::from(branch_mutation_basis(branch)))
         .push(raw_mutation_effect_with_binding(
-            binding.clone(),
+            binding.clone()?,
             left,
             "left-closeout-oracle".to_string(),
         ))
@@ -156,12 +158,12 @@ fn batch_mutation_oracle_digest(execution: &worth_execution::ExecutionRequest<'_
         )
         .expect("closeout oracle batch should execute");
 
-    executed
+    Ok(executed
         .verify_against_relational_runtime(&runtime)
         .expect("closeout oracle batch should verify")
         .relational_oracle_for_reporting()
         .expect("relational batch oracle digest should exist")
-        .to_string()
+        .to_string())
 }
 
 fn bridge_oracle_digest(
@@ -170,7 +172,7 @@ fn bridge_oracle_digest(
     let bridge = test_bridge_with_writeback_authority();
     let basis = EffectAuthoringBasis::from(tenant_mutation_basis("tenant-a"));
     let raw = RawEffectIntent::Writeback {
-        binding: runtime_workflow_binding(),
+        binding: runtime_workflow_binding()?,
         request: workflow_request(
             WorkflowDeclarationFamily::WritebackLoweringNarrow,
             WorkflowAuthorityTargetFamily::BridgeWriteback,

@@ -330,7 +330,9 @@ impl WorthQueryLowerRuntimeCrossingInventory {
         .seal()?)
     }
 
-    pub fn classification_digest(&self) -> WorthQueryEvidenceIdentity {
+    pub fn classification_digest(
+        &self,
+    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
         let classification_identities = self
             .rows
             .iter()
@@ -346,16 +348,18 @@ impl WorthQueryLowerRuntimeCrossingInventory {
                 .seal()
             })
             .collect::<Vec<_>>();
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "lower_runtime_crossing_classification_v1",
-            )
-            .field_evidence_identity_sequence(
-                WorthQueryEvidenceTag::new("rows"),
-                &classification_identities,
-            )
-            .seal()
+        Ok(WorthQueryEvidenceIdentity::compose(
+            WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "lower_runtime_crossing_classification_v1",
+        )
+        .field_evidence_identity_sequence(
+            WorthQueryEvidenceTag::new("rows"),
+            &classification_identities,
+        )
+        .seal()?)
     }
 }
 use crate::evidence_identity::{

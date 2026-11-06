@@ -1,4 +1,5 @@
 use super::{InstalledIdentityEvolutionKind, InstalledIdentityEvolutionOutcome};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 impl InstalledIdentityEvolutionOutcome {
     pub fn authoritative_subject_count(&self) -> usize {
@@ -18,19 +19,23 @@ impl InstalledIdentityEvolutionOutcome {
     pub(crate) fn authoritative_subject_evidence_identity(
         &self,
         ordinal: usize,
-    ) -> Option<crate::evidence_identity::WorthQueryEvidenceIdentity> {
+    ) -> Result<
+        Option<crate::evidence_identity::WorthQueryEvidenceIdentity>,
+        IdentityDerivationDenial,
+    > {
         if !self.is_authoritative_continuity() {
-            return None;
+            return Ok(None);
         }
         if let Some(target) = &self.lifecycle_target {
-            return (ordinal == 0).then(|| target.evidence_identity());
+            return Ok((ordinal == 0).then(|| target.evidence_identity())?);
         }
-        self.continuity
+        Ok(self
+            .continuity
             .as_ref()?
             .successor_authoritative_identities()
             .get(ordinal)
             .map(crate::runtime::WorthQueryMutationAuthorityIdentity::evidence_identity)
-            .cloned()
+            .cloned())
     }
 
     pub(crate) fn authoritative_subject_entity_identity(

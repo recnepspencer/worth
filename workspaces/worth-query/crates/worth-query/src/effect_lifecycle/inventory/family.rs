@@ -1,4 +1,5 @@
 use crate::basis_lifecycle::BasisFamily;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceTag};
 
 use super::super::planning::EffectAuthorityOwner;
@@ -29,7 +30,7 @@ impl EffectLifecycleFamilyInventoryRow {
         receipt_artifact_kind: EffectReceiptArtifactKind,
         denial_posture: EffectSupportPosture,
         deferred_posture: EffectSupportPosture,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let basis_identities = admitted_basis_families
             .iter()
             .map(|basis| {
@@ -72,8 +73,8 @@ impl EffectLifecycleFamilyInventoryRow {
                 WorthQueryEvidenceTag::new("admitted_basis"),
                 &basis_identities,
             )
-            .seal();
-        Self {
+            .seal()?;
+        Ok(Self {
             family_key,
             authority_owner,
             admitted_basis_families,
@@ -82,7 +83,7 @@ impl EffectLifecycleFamilyInventoryRow {
             denial_posture,
             deferred_posture,
             row_identity,
-        }
+        })
     }
 
     pub fn family_key(&self) -> EffectLifecycleFamilyKey {

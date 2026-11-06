@@ -107,7 +107,7 @@ pub fn projection_consumption_seeded_certification_report(
     let rows = [17_u64, 18_u64, 23_u64]
         .into_iter()
         .map(seed_row)
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     let seeded_sequence_digest = compose_digest_sequence(
         "projection_consumption_seeded_sequence_v1",
         "row",

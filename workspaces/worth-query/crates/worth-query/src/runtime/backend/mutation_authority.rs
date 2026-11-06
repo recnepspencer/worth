@@ -199,8 +199,8 @@ fn writeback_identity(
     target: &WorthQueryBridgeMutationTarget<'_>,
     snapshot_identity: &WorthQuerySnapshotIdentity,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    let snapshot_evidence_identity = snapshot_identity.evidence_identity();
-    let entity_evidence_identity = target.entity_identity.evidence_identity();
+    let snapshot_evidence_identity = snapshot_identity.evidence_identity()?;
+    let entity_evidence_identity = target.entity_identity.evidence_identity()?;
     Ok(WorthQueryEvidenceIdentity::compose(
         WorthQueryEvidenceScope::RuntimeBridgeWritebackAuthority,
     )

@@ -195,7 +195,7 @@ fn inspectable_lowered_story(
     fork_seed_branch_from_main(execution, &mut runtime, branch);
     let basis = EffectAuthoringBasis::from(branch_mutation_basis(branch));
     let binding =
-        runtime_workflow_binding_for_branch(branch_snapshot_identity(&runtime, branch), branch);
+        runtime_workflow_binding_for_branch(branch_snapshot_identity(&runtime, branch), branch)?;
     let raw = RawEffectIntent::Mutation {
         binding,
         request: workflow_request(
@@ -276,7 +276,7 @@ fn writeback_common_path_story(
 fn denial_or_rebind_story() -> Result<DxStoryEvidence, IdentityDerivationDenial> {
     let basis = EffectAuthoringBasis::from(preview_closeout_basis("dx-preview"));
     let raw = RawEffectIntent::Mutation {
-        binding: preview_workflow_binding("dx-preview"),
+        binding: preview_workflow_binding("dx-preview")?,
         request: workflow_request(
             WorkflowDeclarationFamily::MutationLoweringNarrow,
             WorkflowAuthorityTargetFamily::RelationalMutation,

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::marker::PhantomData;
 
 use crate::ordinary::live::{
@@ -62,26 +63,26 @@ impl<D: 'static> WorthQueryInstalledDomainLiveContinuation<D> {
     pub fn resume(
         self,
         workspace: &mut WorthQueryWorkspace,
-    ) -> WorthQueryInstalledDomainLiveResumeOutcome<D> {
+    ) -> Result<WorthQueryInstalledDomainLiveResumeOutcome<D>, IdentityDerivationDenial> {
         if let Err(drift) = WorthQueryInstalledDomainExecutionDrift::validate::<D>(
             self.receipt.installed_authority(),
             workspace,
         ) {
-            return WorthQueryInstalledDomainLiveResumeOutcome::AuthorityStopped(self, drift);
+            return Ok(WorthQueryInstalledDomainLiveResumeOutcome::AuthorityStopped(self, drift));
         }
         let receipt = self.receipt;
-        match self.continuation.resume(workspace) {
+        Ok(match self.continuation.resume(workspace) {
             WorthQueryManagedLiveResumeOutcome::Resumed(completion) => {
                 let resume_receipt = completion.receipt().clone();
                 let execution_receipt = receipt.derive(
                     WorthQueryInstalledDomainCapabilityKind::LiveResume,
                     resume_receipt.resume_identity().clone(),
-                );
+                )?;
                 WorthQueryInstalledDomainLiveResumeOutcome::Resumed(
                     WorthQueryInstalledDomainLiveResumeCompletion {
                         handle: WorthQueryInstalledDomainLiveHandle {
                             handle: completion.into_handle(),
-                            receipt: execution_receipt.clone(),
+                            receipt: execution_receipt.clone()?,
                             marker: PhantomData,
                         },
                         resume_receipt,
@@ -98,7 +99,7 @@ impl<D: 'static> WorthQueryInstalledDomainLiveContinuation<D> {
                     },
                 )
             }
-        }
+        })
     }
 }
 
@@ -204,13 +205,13 @@ impl<D> WorthQueryInstalledDomainLiveCloseStop<D> {
 pub(super) fn close_outcome<D>(
     outcome: WorthQueryManagedLiveCloseOutcome,
     receipt: WorthQueryInstalledDomainExecutionReceipt,
-) -> WorthQueryInstalledDomainLiveCloseOutcome<D> {
-    match outcome {
+) -> Result<WorthQueryInstalledDomainLiveCloseOutcome<D>, IdentityDerivationDenial> {
+    Ok(match outcome {
         WorthQueryManagedLiveCloseOutcome::Closed(close_receipt) => {
             let execution_receipt = receipt.derive(
                 WorthQueryInstalledDomainCapabilityKind::LiveClose,
                 close_receipt.closeout_identity().clone(),
-            );
+            )?;
             WorthQueryInstalledDomainLiveCloseOutcome::Closed(
                 WorthQueryInstalledDomainLiveCloseReceipt {
                     close_receipt,
@@ -227,5 +228,5 @@ pub(super) fn close_outcome<D>(
                 },
             )
         }
-    }
+    })
 }

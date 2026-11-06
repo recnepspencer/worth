@@ -165,7 +165,7 @@ pub(crate) fn compose_consumed_projection_fact_set_digest(
 fn compose_entity_identity_entry(
     fact: &ConsumedEntityIdentityFact,
 ) -> Result<String, IdentityDerivationDenial> {
-    let entity_identity = fact.entity_identity().evidence_identity();
+    let entity_identity = fact.entity_identity().evidence_identity()?;
     Ok(seal(
         scope_encoder("consumed_entity_identity_entry_v1")
             .field_shape(
@@ -248,7 +248,7 @@ fn compose_field_value_entry(
 fn compose_target_identity_entry(
     fact: &ConsumedTargetIdentityFact,
 ) -> Result<String, IdentityDerivationDenial> {
-    let target_identity = fact.target_identity().evidence_identity();
+    let target_identity = fact.target_identity().evidence_identity()?;
     Ok(seal(
         scope_encoder("consumed_target_identity_entry_v1").field_evidence_identity(
             WorthQueryEvidenceTag::new("target_identity"),
@@ -318,7 +318,7 @@ fn compose_relation_endpoint_entry(
                 encoder = encoder.field_shape(WorthQueryEvidenceTag::new("collection"), collection);
             }
             if let Some(entity_identity) = entity_identity {
-                let evidence_identity = entity_identity.evidence_identity();
+                let evidence_identity = entity_identity.evidence_identity()?;
                 encoder = encoder.field_evidence_identity(
                     WorthQueryEvidenceTag::new("entity_identity"),
                     &evidence_identity,

@@ -85,7 +85,7 @@ pub(crate) fn representative_subscription_activation_row(
         &activation,
         crate::runtime::runtime_subscription_support_evidence_identity(
             "certified-subscription-activation-support",
-        ),
+        )?,
         None,
     )?;
     let boundary = SubscriptionActivationBoundaryReceipt::from_activation(

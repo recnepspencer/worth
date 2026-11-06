@@ -239,7 +239,7 @@ fn command_handoff_fingerprint(
     )
     .optional_evidence_identity(
         WorthQueryEvidenceTag::new("declared_entity_identity"),
-        declared_entity_identity.as_ref(),
+        declared_entity_identity.as_ref()?,
     )
     .optional_evidence_identity(
         WorthQueryEvidenceTag::new("declared_collection"),

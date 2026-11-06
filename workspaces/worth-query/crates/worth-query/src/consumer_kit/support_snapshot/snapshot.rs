@@ -24,7 +24,7 @@ impl WorthQuerySupportSnapshot {
         matrix: &WorthQueryRuntimePublicSupportMatrix,
     ) -> Result<Self, IdentityDerivationDenial> {
         let schema_version = WorthQuerySupportSnapshotSchemaVersion::current();
-        let schema_identity = schema_version.identity();
+        let schema_identity = schema_version.identity()?;
         let backend_posture = matrix.backend_posture().as_str().to_string();
         let source_matrix_digest = matrix
             .matrix_digest()
@@ -34,7 +34,7 @@ impl WorthQuerySupportSnapshot {
             .rows()
             .iter()
             .map(|row| WorthQuerySupportSnapshotRow::from_runtime_row(schema_version, row))
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
         let snapshot_digest = support_snapshot_document_identity(
             schema_version,
             &schema_identity,

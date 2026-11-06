@@ -38,7 +38,7 @@ pub(super) fn scalar_mutation_row(
     );
     fork_seed_branch_from_main(execution, &mut runtime, &branch);
     let binding =
-        runtime_workflow_binding_for_branch(branch_snapshot_identity(&runtime, &branch), &branch);
+        runtime_workflow_binding_for_branch(branch_snapshot_identity(&runtime, &branch), &branch)?;
     let basis = EffectAuthoringBasis::from(branch_mutation_basis(&branch));
     let raw = raw_mutation_effect_with_binding(binding, entity_id, updated_name);
     let support = discover_effect_lifecycle_support(basis.family(), EffectFamily::Mutation)?;
@@ -97,7 +97,7 @@ pub(super) fn scalar_writeback_row(
     let branch = seeded_label("branch", stepper, index);
     let basis = EffectAuthoringBasis::from(branch_mutation_basis(&branch));
     let raw = RawEffectIntent::Writeback {
-        binding: runtime_workflow_binding(),
+        binding: runtime_workflow_binding()?,
         request: workflow_request(
             WorkflowDeclarationFamily::WritebackLoweringNarrow,
             WorkflowAuthorityTargetFamily::BridgeWriteback,
@@ -158,7 +158,7 @@ pub(super) fn merge_lowered_row(
     let source = seeded_label("candidate", stepper, index);
     let basis = EffectAuthoringBasis::from(branch_mutation_basis(&branch));
     let raw = RawEffectIntent::Merge {
-        binding: runtime_workflow_binding(),
+        binding: runtime_workflow_binding()?,
         request: workflow_request(
             WorkflowDeclarationFamily::MergeLoweringNarrow,
             WorkflowAuthorityTargetFamily::RelationalMerge,
@@ -237,7 +237,7 @@ pub(super) fn batch_mutation_row(
     let mut draft = effect_batch();
     for (entity_id, desired) in seeded_entities {
         draft = draft.push(raw_mutation_effect_with_binding(
-            binding.clone(),
+            binding.clone()?,
             entity_id,
             desired,
         ));

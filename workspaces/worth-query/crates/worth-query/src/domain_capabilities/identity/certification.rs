@@ -166,14 +166,14 @@ fn compose_certification_bundle_output_entry_digest(
 
 pub(crate) fn compose_certification_bundle_digest(
     outputs: impl IntoIterator<Item = (&'static str, impl AsRef<str>)>,
-) -> String {
+) -> Result<String, IdentityDerivationDenial> {
     let output_entries = outputs
         .into_iter()
         .map(|(name, value)| compose_certification_bundle_output_entry_digest(name, value.as_ref()))
         .collect::<Vec<_>>();
-    compose_certification_sequence_digest(
+    Ok(compose_certification_sequence_digest(
         "domain_capability_certification_bundle_v1",
         "output",
         output_entries,
-    )
+    )?)
 }

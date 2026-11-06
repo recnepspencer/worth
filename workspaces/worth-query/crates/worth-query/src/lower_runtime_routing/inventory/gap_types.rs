@@ -95,7 +95,7 @@ impl WorthQueryLowerRuntimeGapRegistry {
         .to_string())
     }
 
-    pub fn debt_exit_criteria_digest(&self) -> String {
+    pub fn debt_exit_criteria_digest(&self) -> Result<String, IdentityDerivationDenial> {
         let closeout_identities = self
             .rows
             .iter()
@@ -110,17 +110,16 @@ impl WorthQueryLowerRuntimeGapRegistry {
                 .seal()
             })
             .collect::<Vec<_>>();
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "lower_runtime_gap_debt_exit_criteria_v1",
-            )
-            .field_evidence_identity_sequence(
-                WorthQueryEvidenceTag::new("rows"),
-                &closeout_identities,
-            )
-            .seal()
-            .as_str()
-            .to_string()
+        Ok(WorthQueryEvidenceIdentity::compose(
+            WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "lower_runtime_gap_debt_exit_criteria_v1",
+        )
+        .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("rows"), &closeout_identities)
+        .seal()?
+        .as_str()
+        .to_string())
     }
 }

@@ -13,6 +13,7 @@ use crate::correspondence::{
     resolve_correspondence_evidence, CorrespondenceEvaluationRequest,
     StructuralCandidateDiscoveryPlan, StructuralCandidateOrderingContract,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::ordinary::history::WorthQueryHistoricalPathDeclaration;
 use crate::ordinary::read::current;
 use crate::runtime::{WorthQueryReadResult, WorthQueryWorkspace};
@@ -311,26 +312,26 @@ fn lineage_correspondence(
     right: WorthQueryReadResult,
     pair: WorthQueryComparisonBasisPairEvidence,
     counters: WorthQueryComparisonJourneyCounters,
-) -> WorthQueryComparisonOutcome {
+) -> Result<WorthQueryComparisonOutcome, IdentityDerivationDenial> {
     let ([left_row], [right_row]) = (left.rows(), right.rows()) else {
-        return stopped(
+        return Ok(stopped(
             WorthQueryComparisonStopSource::CorrespondenceDenied,
             WorthQueryComparisonNextAction::NarrowCandidates,
             "authoritative lineage comparison requires exactly one row on each basis",
             counters,
-        );
+        ));
     };
-    resolve_correspondence(
+    Ok(resolve_correspondence(
         CorrespondenceEvaluationRequest::lineage_only(
-            left_row.identity().evidence_identity().as_str(),
-            right_row.identity().evidence_identity().as_str(),
+            left_row.identity().evidence_identity()?.as_str(),
+            right_row.identity().evidence_identity()?.as_str(),
             StructuralCandidateDiscoveryPlan::IndexBackedBounded,
             1,
         ),
         left_row.identity().clone(),
         pair,
         counters.resolve_correspondence(),
-    )
+    ))
 }
 
 fn resolve_correspondence(

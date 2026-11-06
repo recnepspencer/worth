@@ -59,34 +59,34 @@ fn materialize_row(
     template: ScenarioTemplate,
     index: usize,
     stepper: &mut SeedStepper,
-) -> EffectLifecycleSeededCertificationRow {
-    match template {
+) -> Result<EffectLifecycleSeededCertificationRow, IdentityDerivationDenial> {
+    Ok(match template {
         ScenarioTemplate::MutationExecuted => {
-            scenarios_executed::scalar_mutation_row(execution, index, stepper)
+            scenarios_executed::scalar_mutation_row(execution, index, stepper)?
         }
         ScenarioTemplate::WritebackExecuted => {
-            scenarios_executed::scalar_writeback_row(execution, index, stepper)
+            scenarios_executed::scalar_writeback_row(execution, index, stepper)?
         }
         ScenarioTemplate::MergeLowered => scenarios_executed::merge_lowered_row(index, stepper),
         ScenarioTemplate::BatchMutationExecuted => {
-            scenarios_executed::batch_mutation_row(execution, index, stepper)
+            scenarios_executed::batch_mutation_row(execution, index, stepper)?
         }
         ScenarioTemplate::PreviewMutationRebind => {
-            scenarios_non_admitted::preview_mutation_rebind_row(index, stepper)
+            scenarios_non_admitted::preview_mutation_rebind_row(index, stepper)?
         }
         ScenarioTemplate::PreviewDerivedAdvisory => {
-            scenarios_non_admitted::preview_derived_advisory_row(index, stepper)
+            scenarios_non_admitted::preview_derived_advisory_row(index, stepper)?
         }
         ScenarioTemplate::StoreBackedDeferred => {
-            scenarios_non_admitted::store_backed_deferred_row(index, stepper)
+            scenarios_non_admitted::store_backed_deferred_row(index, stepper)?
         }
         ScenarioTemplate::DurableReloadDeferred => {
-            scenarios_non_admitted::durable_reload_deferred_row(index, stepper)
+            scenarios_non_admitted::durable_reload_deferred_row(index, stepper)?
         }
         ScenarioTemplate::TenantMergeDenied => {
-            scenarios_non_admitted::tenant_merge_denied_row(index, stepper)
+            scenarios_non_admitted::tenant_merge_denied_row(index, stepper)?
         }
-    }
+    })
 }
 
 pub(super) fn branch_mutation_basis(branch_identity: &str) -> ScopedMutationPreparationBasis {

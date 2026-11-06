@@ -31,7 +31,7 @@ impl ProjectionConsumptionReceipt {
     pub(crate) fn from_fact_set(
         fact_set: &ConsumedProjectionFactSet,
     ) -> Result<Self, IdentityDerivationDenial> {
-        let counter_snapshot_digest = fact_set.counters().digest();
+        let counter_snapshot_digest = fact_set.counters().digest()?;
         let transition_rules = ProjectionConsumptionTransitionRules::current_phase_five_surface()?;
         let deferred_neighbors = transition_rules
             .rules()
@@ -73,7 +73,7 @@ impl ProjectionConsumptionReceipt {
             counter_snapshot_digest,
             integrity_digest,
             receipt_digest,
-        })
+        })?
     }
 
     pub fn declaration_digest(&self) -> &str {

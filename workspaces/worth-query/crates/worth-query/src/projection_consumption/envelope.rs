@@ -76,7 +76,7 @@ impl SelfDescribingProjectionConsumptionEnvelope {
         receipt: &ProjectionConsumptionReceipt,
     ) -> Result<Self, IdentityDerivationDenial> {
         let sources = ProjectionConsumptionEnvelopeSourceRefs::from_receipt(receipt)?;
-        let transition_rules = receipt.transition_rules();
+        let transition_rules = receipt.transition_rules()?;
         let deferred_neighbors = receipt.deferred_neighbors().to_vec();
         let transition_rules_digest = transition_rules.rules_digest().to_string();
         let integrity_digest = receipt.integrity_digest().to_string();

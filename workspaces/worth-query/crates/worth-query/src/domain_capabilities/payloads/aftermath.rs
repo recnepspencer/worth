@@ -137,7 +137,7 @@ fn compose_aftermath_payload_identity(
         .field_shape(WorthQueryEvidenceTag::new("detail"), detail);
     identity = match runtime_semantics {
         Some(runtime) => {
-            let runtime_identity = runtime.semantics_identity();
+            let runtime_identity = runtime.semantics_identity()?;
             identity
                 .field_evidence_identity(WorthQueryEvidenceTag::new("runtime"), &runtime_identity)
         }

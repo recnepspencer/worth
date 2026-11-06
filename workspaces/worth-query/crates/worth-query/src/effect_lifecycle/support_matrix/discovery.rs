@@ -87,7 +87,7 @@ impl EffectLifecycleSupportDiscovery {
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("counters"),
-                &counters.evidence_identity(),
+                &counters.evidence_identity()?,
             );
         discovery = match matched_row_identity.as_ref() {
             Some(row_identity) => discovery
@@ -204,7 +204,7 @@ pub fn effect_lifecycle_support_matrix(
                 row.cause,
             )
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     let row_identities = rows
         .iter()
         .map(|row| row.row_identity().clone())

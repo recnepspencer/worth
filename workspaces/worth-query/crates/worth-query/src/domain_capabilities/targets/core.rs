@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::intent_admission::{
     WorthQueryIntentAdmissionCoveredEntrypoint, WorthQueryIntentAdmissionFamily,
 };
@@ -229,12 +230,12 @@ impl WorthQueryDomainCapabilityTarget {
         self.shared.binding_digest()
     }
 
-    pub fn target_identity(&self) -> WorthQueryEvidenceIdentity {
-        self.shared.target_identity()
+    pub fn target_identity(&self) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(self.shared.target_identity()?)
     }
 
-    pub fn binding_identity(&self) -> WorthQueryEvidenceIdentity {
-        self.shared.binding_identity()
+    pub fn binding_identity(&self) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(self.shared.binding_identity()?)
     }
 
     pub fn semantics(&self) -> &WorthQueryDomainCapabilityTargetSemantics {

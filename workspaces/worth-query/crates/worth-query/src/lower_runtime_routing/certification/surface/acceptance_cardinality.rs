@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::BTreeMap;
 
 use crate::evidence_identity::{
@@ -12,7 +13,7 @@ use super::evidence::WorthQueryLowerRuntimeRepresentativeSurface;
 
 pub(super) fn admitted_crossing_cardinality_digest(
     surface: &WorthQueryLowerRuntimeRepresentativeSurface,
-) -> String {
+) -> Result<String, IdentityDerivationDenial> {
     let crossings = worth_query_lower_runtime_crossing_inventory();
     let request_counts = count_by_seam(
         surface
@@ -132,11 +133,13 @@ pub(super) fn admitted_crossing_cardinality_digest(
             .seal()
         })
         .collect::<Vec<_>>();
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-        .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("rows"), &row_identities)
-        .seal()
-        .as_str()
-        .to_string()
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+            .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("rows"), &row_identities)
+            .seal()?
+            .as_str()
+            .to_string(),
+    )
 }
 
 fn count_by_seam(seams: impl Iterator<Item = &'static str>) -> BTreeMap<&'static str, usize> {

@@ -141,7 +141,7 @@ pub fn projection_consumption_family_inventory(
         .iter()
         .copied()
         .map(inventory_row)
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     let inventory_digest = compose_digest_sequence(
         "projection_consumption_family_inventory_v1",
         "row",
@@ -153,7 +153,8 @@ pub fn projection_consumption_family_inventory(
     })
 }
 
-pub fn projection_consumption_support_matrix() -> ProjectionConsumptionSupportMatrix {
+pub fn projection_consumption_support_matrix(
+) -> Result<ProjectionConsumptionSupportMatrix, IdentityDerivationDenial> {
     let rows = ProjectionConsumptionCertifiedSourceSurface::all()
         .iter()
         .copied()
@@ -163,20 +164,21 @@ pub fn projection_consumption_support_matrix() -> ProjectionConsumptionSupportMa
         "projection_consumption_support_matrix_v1",
         "row",
         rows.iter().map(|row| row.row_digest().to_string()),
-    );
-    let support_traceability_digest = compose_support_traceability_digest(rows.iter().map(|row| {
-        compose_support_traceability_row_digest(
-            row.admission_rule(),
-            row.hostile_neighbor(),
-            row.certification_lane(),
-            row.structural_proof().as_str(),
-        )
-    }));
-    ProjectionConsumptionSupportMatrix {
+    )?;
+    let support_traceability_digest =
+        compose_support_traceability_digest(rows.iter().map(|row| {
+            compose_support_traceability_row_digest(
+                row.admission_rule(),
+                row.hostile_neighbor(),
+                row.certification_lane(),
+                row.structural_proof().as_str(),
+            )
+        }))?;
+    Ok(ProjectionConsumptionSupportMatrix {
         rows,
         matrix_digest,
         support_traceability_digest,
-    }
+    })
 }
 
 fn inventory_row(

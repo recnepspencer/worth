@@ -1,4 +1,5 @@
 use crate::authoring::{AspectFieldSelector, AuthoredResultShapeField};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::facade::foundation::{
     basis_lifecycle, preflight_execution_basis, resolve_snapshot_basis, BasisAuthorityFamily,
     BasisResolutionMode, ExecutionBasisIntent, ResolvedSnapshotIdentity, SnapshotLineageClass,
@@ -182,7 +183,7 @@ fn certification_read_family(
 fn current_context_for_family(
     family: &WorthQueryReadFamily,
     snapshot_identity: WorthQuerySnapshotIdentity,
-) -> ScopedQueryBasisContext {
+) -> Result<ScopedQueryBasisContext, IdentityDerivationDenial> {
     let intent = ExecutionBasisIntent::new(
         BasisAuthorityFamily::Runtime,
         SnapshotLineageClass::CurrentHead,
@@ -191,7 +192,7 @@ fn current_context_for_family(
     let identity = ResolvedSnapshotIdentity::new(
         BasisAuthorityFamily::Runtime,
         None,
-        snapshot_identity.evidence_identity(),
+        snapshot_identity.evidence_identity()?,
         family.read_graph().schema_basis().clone(),
         SnapshotLineageClass::CurrentHead,
     );
@@ -199,11 +200,11 @@ fn current_context_for_family(
         .expect("runtime basis should resolve");
     let preflight = preflight_execution_basis(family.read_graph().execution_plan().clone(), basis)
         .expect("family preflight should build");
-    admit_query_basis_context(
+    Ok(admit_query_basis_context(
         basis_lifecycle().current_head(),
         QueryContextBindingSource::RuntimeCurrent(&preflight),
     )
-    .expect("current basis context should admit")
+    .expect("current basis context should admit"))
 }
 
 fn certification_manager_schema() -> QuerySchemaView {

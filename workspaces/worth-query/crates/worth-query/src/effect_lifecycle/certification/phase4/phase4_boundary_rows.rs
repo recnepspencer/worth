@@ -27,12 +27,13 @@ use super::{
     EffectLifecyclePhase4LaneOutcome,
 };
 
-pub(super) fn batch_lane_denial_row() -> EffectLifecyclePhase4CertificationRow {
+pub(super) fn batch_lane_denial_row(
+) -> Result<EffectLifecyclePhase4CertificationRow, IdentityDerivationDenial> {
     let basis = EffectAuthoringBasis::from(branch_mutation_basis("branch-a"));
     let denial = crate::effect_lifecycle::effect_batch()
         .using_basis(basis)
         .push(RawEffectIntent::Mutation {
-            binding: runtime_workflow_binding(),
+            binding: runtime_workflow_binding()?,
             request: workflow_request(
                 WorkflowDeclarationFamily::MutationLoweringNarrow,
                 WorkflowAuthorityTargetFamily::RelationalMutation,
@@ -51,18 +52,18 @@ pub(super) fn batch_lane_denial_row() -> EffectLifecyclePhase4CertificationRow {
                     )
                     .expect("name patch should be native"),
             },
-        })
+        })?
         .push(RawEffectIntent::Writeback {
-            binding: runtime_workflow_binding(),
+            binding: runtime_workflow_binding()?,
             request: workflow_request(
                 WorkflowDeclarationFamily::WritebackLoweringNarrow,
                 WorkflowAuthorityTargetFamily::BridgeWriteback,
             ),
             input: WritebackLoweringInput::projected_state_diff(),
-        })
+        })?
         .admit()
         .expect_err("mixed authority batch should deny");
-    EffectLifecyclePhase4CertificationRow::new(
+    Ok(EffectLifecyclePhase4CertificationRow::new(
         EffectLifecyclePhase4LaneKind::BatchLaneDenial,
         EffectLifecyclePhase4LaneOutcome::Denied,
         BasisFamily::CurrentHead,
@@ -70,14 +71,14 @@ pub(super) fn batch_lane_denial_row() -> EffectLifecyclePhase4CertificationRow {
         format!("{:?}", denial.denial_kind()),
         denial.message().to_string(),
         denial.counters().clone(),
-    )
+    ))
 }
 
 pub(super) fn preview_rebind_row(
 ) -> Result<EffectLifecyclePhase4CertificationRow, IdentityDerivationDenial> {
     let basis = EffectAuthoringBasis::from(preview_closeout_basis("phase4-preview"));
     let raw = RawEffectIntent::Mutation {
-        binding: preview_workflow_binding("phase4-preview"),
+        binding: preview_workflow_binding("phase4-preview")?,
         request: workflow_request(
             WorkflowDeclarationFamily::MutationLoweringNarrow,
             WorkflowAuthorityTargetFamily::RelationalMutation,
@@ -117,7 +118,7 @@ pub(super) fn deferred_replay_row(
 ) -> Result<EffectLifecyclePhase4CertificationRow, IdentityDerivationDenial> {
     let basis = EffectAuthoringBasis::store_backed("phase4-store-basis");
     let raw = RawEffectIntent::Writeback {
-        binding: runtime_workflow_binding(),
+        binding: runtime_workflow_binding()?,
         request: workflow_request(
             WorkflowDeclarationFamily::WritebackLoweringNarrow,
             WorkflowAuthorityTargetFamily::BridgeWriteback,
@@ -154,7 +155,7 @@ pub(super) fn host_override_denial_row(
     let bridge = test_bridge_with_writeback_authority();
     let basis = EffectAuthoringBasis::from(branch_mutation_basis("branch-a"));
     let raw = raw_mutation_effect_with_binding(
-        runtime_workflow_binding(),
+        runtime_workflow_binding()?,
         entity_id,
         "host-override".to_string(),
     );
@@ -202,7 +203,7 @@ pub(super) fn stale_after_admission_row(
         runtime_workflow_binding_for_branch(
             branch_snapshot_identity(&runtime, "branch-a"),
             "branch-a",
-        ),
+        )?,
         entity_id,
         "stale-after-admission".to_string(),
     );
@@ -263,7 +264,7 @@ pub(super) fn stale_after_lowering_row(
                     runtime_workflow_binding_for_branch(
                         branch_snapshot_identity(&runtime, "branch-a"),
                         "branch-a",
-                    ),
+                    )?,
                     entity_id,
                     "stale-after-lowering".to_string(),
                 ),

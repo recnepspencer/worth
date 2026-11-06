@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQueryEntityIdentity;
 
 /// A domain executor's descriptive correspondence observation. These shapes
@@ -45,7 +46,8 @@ impl WorthQueryInstalledCorrespondenceObservation {
 
     pub(crate) fn into_engine_comparison(
         self,
-    ) -> crate::identity_evolution::CorrespondenceIdentityComparison {
+    ) -> Result<crate::identity_evolution::CorrespondenceIdentityComparison, IdentityDerivationDenial>
+    {
         let identities = match &self {
             Self::AdvisoryCandidatePair { subject, candidate }
             | Self::AmbiguousCandidatePair { subject, candidate }
@@ -53,11 +55,11 @@ impl WorthQueryInstalledCorrespondenceObservation {
                 subject,
                 rejected_candidate: candidate,
             } => (
-                subject.evidence_identity().as_str().to_owned(),
-                candidate.evidence_identity().as_str().to_owned(),
+                subject.evidence_identity()?.as_str().to_owned(),
+                candidate.evidence_identity()?.as_str().to_owned(),
             ),
         };
-        match self {
+        Ok(match self {
             Self::AdvisoryCandidatePair { .. } => {
                 crate::identity_evolution::CorrespondenceIdentityComparison::advisory_between(
                     identities.0,
@@ -76,6 +78,6 @@ impl WorthQueryInstalledCorrespondenceObservation {
                     identities.1,
                 )
             }
-        }
+        })
     }
 }

@@ -79,11 +79,11 @@ impl WorthQueryIntentAdmissionSeededCertificationReport {
 
 pub fn worth_query_intent_admission_seeded_certification_report(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> WorthQueryIntentAdmissionSeededCertificationReport {
+) -> Result<WorthQueryIntentAdmissionSeededCertificationReport, IdentityDerivationDenial> {
     let rows = [17_u64, 18_u64, 23_u64, 29_u64]
         .into_iter()
         .map(|seed| seed_row(execution, seed))
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     let seeded_sequence_digest = hash_parts(
         &rows
             .iter()
@@ -107,12 +107,12 @@ pub fn worth_query_intent_admission_seeded_certification_report(
             .map(|class| class.as_str().to_string())
             .collect::<Vec<_>>(),
     );
-    WorthQueryIntentAdmissionSeededCertificationReport {
+    Ok(WorthQueryIntentAdmissionSeededCertificationReport {
         rows,
         seeded_sequence_digest,
         seed_replay_digest,
         seed_generator_class_digest,
-    }
+    })
 }
 
 fn seed_row(

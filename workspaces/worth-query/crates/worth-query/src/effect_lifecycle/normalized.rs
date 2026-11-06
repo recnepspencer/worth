@@ -47,8 +47,8 @@ impl NormalizedEffectIntent {
         operation_input: EffectOperationInput,
         source_path: &'static str,
     ) -> Result<Self, IdentityDerivationDenial> {
-        let capability_identity = authoring_basis.capability_identity();
-        let scoped_basis_identity = authoring_basis.scoped_basis_identity();
+        let capability_identity = authoring_basis.capability_identity()?;
+        let scoped_basis_identity = authoring_basis.scoped_basis_identity()?;
         let expected_lower_runtime_binding_identity =
             authoring_basis.expected_lower_runtime_binding_identity();
         let mut normalized_identity =

@@ -223,8 +223,8 @@ pub(crate) fn validate_execution_readmission<
 fn basis_witness_from_binding(
     bridge_request: &WorthQueryDeclarationBridgeContinuationRequest,
     binding: &WorthQueryDeclarationBridgeBinding,
-) -> WorthQueryPreparedContinuationBasisWitness {
-    match binding {
+) -> Result<WorthQueryPreparedContinuationBasisWitness, IdentityDerivationDenial> {
+    Ok(match binding {
         WorthQueryDeclarationBridgeBinding::RuntimeRoute(request) => {
             let commit_identity = bridge_commit_evidence_identity(request.commit_identity());
             WorthQueryPreparedContinuationBasisWitness::new(
@@ -250,10 +250,10 @@ fn basis_witness_from_binding(
                 continuation_readmission_basis_identity(kind, request.selector().digest());
             WorthQueryPreparedContinuationBasisWitness::new(
                 kind,
-                selector_identity.clone(),
+                selector_identity.clone()?,
                 Some(continuation_readmission_lower_runtime_binding_identity(
                     request.selector().digest(),
-                )),
+                )?),
                 request
                     .selector()
                     .snapshot_identity()
@@ -273,13 +273,13 @@ fn basis_witness_from_binding(
                 continuation_readmission_basis_identity(
                     WorthQueryPreparedContinuationBasisKind::PreviewDerived,
                     declaration.digest(),
-                ),
+                )?,
                 Some(continuation_readmission_lower_runtime_binding_identity(
                     declaration.truth_view_basis_digest(),
-                )),
+                )?),
                 Some(continuation_readmission_source_basis_identity(
                     declaration.truth_view_basis_digest(),
-                )),
+                )?),
             )
         }
         WorthQueryDeclarationBridgeBinding::PreviewPromotion(binding) => {
@@ -288,13 +288,13 @@ fn basis_witness_from_binding(
                 continuation_readmission_basis_identity(
                     WorthQueryPreparedContinuationBasisKind::PreviewDerived,
                     binding.promotion_continuation_digest(),
-                ),
+                )?,
                 Some(continuation_readmission_lower_runtime_binding_identity(
                     binding.preview_basis_digest(),
-                )),
+                )?),
                 Some(continuation_readmission_source_basis_identity(
                     binding.declaration_digest(),
-                )),
+                )?),
             )
         }
         WorthQueryDeclarationBridgeBinding::SubscriptionPreparation(request) => {
@@ -304,7 +304,7 @@ fn basis_witness_from_binding(
                 continuation_readmission_basis_identity(basis_kind, request.authority_digest()),
                 Some(continuation_readmission_lower_runtime_binding_identity(
                     request.authority_digest(),
-                )),
+                )?),
                 request
                     .child_basis_digests()
                     .first()
@@ -315,34 +315,34 @@ fn basis_witness_from_binding(
             let basis_kind = basis_kind_for_truth_context(bridge_request.truth_context());
             WorthQueryPreparedContinuationBasisWitness::new(
                 basis_kind,
-                continuation_readmission_basis_identity(basis_kind, request.causality().digest()),
+                continuation_readmission_basis_identity(basis_kind, request.causality().digest())?,
                 Some(continuation_readmission_lower_runtime_binding_identity(
                     request.declaration().strategy_descriptor_digest(),
-                )),
+                )?),
                 Some(continuation_readmission_source_basis_identity(
                     request.effect_intent().digest(),
-                )),
+                )?),
             )
         }
-    }
+    })
 }
 
 fn bridge_commit_evidence_identity(
     identity: &worth_runtime_bridge::facade::TruthCommitIdentity,
-) -> WorthQueryEvidenceIdentity {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let commit_id = identity
         .relational_commit_id()
         .expect("continuation readmission commit identity must carry relational payload");
-    WorthQueryCommitIdentity::from_relational_commit_id(commit_id).evidence_identity()
+    Ok(WorthQueryCommitIdentity::from_relational_commit_id(commit_id).evidence_identity()?)
 }
 
 fn bridge_snapshot_evidence_identity(
     identity: &worth_runtime_bridge::facade::TruthSnapshotIdentity,
-) -> WorthQueryEvidenceIdentity {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let parts = identity
         .relational_snapshot_parts()
         .expect("continuation readmission snapshot identity must carry relational payload");
-    WorthQuerySnapshotIdentity::from_relational_snapshot(parts).evidence_identity()
+    Ok(WorthQuerySnapshotIdentity::from_relational_snapshot(parts).evidence_identity()?)
 }
 
 fn authority_witness_from_binding(

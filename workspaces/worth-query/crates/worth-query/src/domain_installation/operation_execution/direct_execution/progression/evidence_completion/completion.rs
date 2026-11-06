@@ -1,6 +1,7 @@
 //! Terminal validation and exact evidence/receipt completion.
 
 use crate::basis_lifecycle::BasisOperationLane;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use super::super::super::{
@@ -154,12 +155,12 @@ impl WorthQueryDirectDomainEvidenceAttachment {
     fn new<D, O, F, L, Output>(
         completion: &WorthQueryValidatedDirectEvidenceCompletion<D, O, F, L, Output>,
         output_occurrence_identity: String,
-    ) -> Self
+    ) -> Result<Self, IdentityDerivationDenial>
     where
         L: BasisOperationLane,
         O: WorthQueryExecutableDomainOperation<D, F>,
     {
-        Self {
+        Ok(Self {
             operation_identity: completion
                 .bound
                 .definition()
@@ -169,7 +170,7 @@ impl WorthQueryDirectDomainEvidenceAttachment {
             basis_identity: completion.bound.basis_identity().to_owned(),
             execution_snapshot_identity: completion
                 .snapshot
-                .evidence_identity()
+                .evidence_identity()?
                 .as_str()
                 .to_owned(),
             contract: completion.bound.direct_domain_evidence_contract(),
@@ -180,7 +181,7 @@ impl WorthQueryDirectDomainEvidenceAttachment {
                 .map(|receipt| receipt.evidence_identity().to_owned())
                 .collect(),
             output_occurrence_identity,
-        }
+        })
     }
 
     pub(in crate::domain_installation::operation_execution) fn contract(

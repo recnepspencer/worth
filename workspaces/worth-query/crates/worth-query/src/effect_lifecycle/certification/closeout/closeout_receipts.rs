@@ -96,7 +96,7 @@ pub(super) fn mutation_receipt_surface(
         scenarios::runtime_workflow_binding_for_branch(
             branch_snapshot_identity(&runtime, branch),
             branch,
-        ),
+        )?,
         entity_id,
         "after".to_string(),
     );
@@ -113,7 +113,7 @@ pub(super) fn writeback_receipt_surface(
 ) -> Result<ReceiptSurfaceEvidence, IdentityDerivationDenial> {
     let basis = EffectAuthoringBasis::from(scenarios::tenant_mutation_basis("tenant-a"));
     let raw = RawEffectIntent::Writeback {
-        binding: scenarios::runtime_workflow_binding(),
+        binding: scenarios::runtime_workflow_binding()?,
         request: scenarios::workflow_request(
             WorkflowDeclarationFamily::WritebackLoweringNarrow,
             WorkflowAuthorityTargetFamily::BridgeWriteback,
@@ -131,7 +131,7 @@ pub(super) fn writeback_receipt_surface(
 
 pub(super) fn batch_receipt_surface(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> ReceiptSurfaceEvidence {
+) -> Result<ReceiptSurfaceEvidence, IdentityDerivationDenial> {
     let branch = "cert-phase6-batch";
     let mut runtime = relational_runtime_with_intent_strategy();
     let main = BranchId("main".to_string());
@@ -142,11 +142,11 @@ pub(super) fn batch_receipt_surface(
     let binding = scenarios::runtime_workflow_binding_for_branch(
         branch_snapshot_identity(&runtime, branch),
         branch,
-    );
+    )?;
     let receipt = effect_batch()
         .using_basis(basis)
         .push(scenarios::raw_mutation_effect_with_binding(
-            binding.clone(),
+            binding.clone()?,
             left,
             "left-after".to_string(),
         ))
@@ -164,9 +164,9 @@ pub(super) fn batch_receipt_surface(
             EffectExecutionAuthority::relational(&mut runtime),
         )
         .expect("closeout batch should execute");
-    let envelope = receipt.effect_envelope();
-    let diagnostics = receipt.materialize_diagnostics(EffectDiagnosticsRequest::forensic());
-    ReceiptSurfaceEvidence {
+    let envelope = receipt.effect_envelope()?;
+    let diagnostics = receipt.materialize_diagnostics(EffectDiagnosticsRequest::forensic())?;
+    Ok(ReceiptSurfaceEvidence {
         raw_digest: hash_parts(&["batch-raw".to_string()]),
         query_digest: hash_parts(&["batch-query".to_string()]),
         family_digest: hash_parts(&["family:mutation".to_string()]),
@@ -188,7 +188,10 @@ pub(super) fn batch_receipt_surface(
         receipt_digest: receipt.receipt_for_reporting().to_string(),
         envelope_digest: envelope.envelope_for_reporting().to_string(),
         diagnostics_digest: diagnostics.diagnostics_for_reporting().to_string(),
-        transition_digest: receipt.transition_rules().rules_for_reporting().to_string(),
+        transition_digest: receipt
+            .transition_rules()?
+            .rules_for_reporting()
+            .to_string(),
         authority_artifact_digest: receipt
             .integrity_markers()
             .authority_artifact_for_reporting()
@@ -223,7 +226,7 @@ pub(super) fn batch_receipt_surface(
             .counter_snapshot_for_reporting()
             .to_string(),
         counters: receipt.delivery_counters().clone(),
-    }
+    })
 }
 
 fn scalar_surface_evidence(
@@ -291,8 +294,8 @@ fn scalar_surface_evidence(
     let receipt = lowered
         .execute_receipt_with(execution, authority)
         .expect("closeout receipt surface should execute");
-    let envelope = receipt.effect_envelope();
-    let diagnostics = receipt.materialize_diagnostics(EffectDiagnosticsRequest::forensic());
+    let envelope = receipt.effect_envelope()?;
+    let diagnostics = receipt.materialize_diagnostics(EffectDiagnosticsRequest::forensic())?;
     Ok(ReceiptSurfaceEvidence {
         raw_digest,
         query_digest,
@@ -309,7 +312,10 @@ fn scalar_surface_evidence(
         receipt_digest: receipt.receipt_for_reporting().to_string(),
         envelope_digest: envelope.envelope_for_reporting().to_string(),
         diagnostics_digest: diagnostics.diagnostics_for_reporting().to_string(),
-        transition_digest: receipt.transition_rules().rules_for_reporting().to_string(),
+        transition_digest: receipt
+            .transition_rules()?
+            .rules_for_reporting()
+            .to_string(),
         authority_artifact_digest: receipt
             .integrity_markers()
             .authority_artifact_for_reporting()

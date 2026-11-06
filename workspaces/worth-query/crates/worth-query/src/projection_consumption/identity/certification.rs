@@ -39,7 +39,7 @@ pub(crate) fn compose_certification_counter_snapshot_digest(
 pub(crate) fn compose_slope_digest(
     label: &str,
     scale_parts: impl IntoIterator<Item = (usize, Vec<(&'static str, String)>)>,
-) -> String {
+) -> Result<String, IdentityDerivationDenial> {
     let entries = scale_parts
         .into_iter()
         .map(|(scale, parts)| {
@@ -52,11 +52,11 @@ pub(crate) fn compose_slope_digest(
             seal(encoder)
         })
         .collect::<Vec<_>>();
-    compose_certification_sequence_digest(
+    Ok(compose_certification_sequence_digest(
         "projection_consumption_slope_v1",
         "scale",
         entries.iter().map(String::as_str),
-    )
+    )?)
 }
 
 fn compose_certified_source_reference_entry_digest(

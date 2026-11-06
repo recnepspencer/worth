@@ -29,7 +29,7 @@ pub(super) fn semantic_evidence_identity(
         )
         .optional_evidence_identity(
             crate::evidence_identity::WorthQueryEvidenceTag::new("lifecycle_target"),
-            lifecycle_identity.as_ref(),
+            lifecycle_identity.as_ref()?,
         )
         .seal()?)
 }
@@ -103,9 +103,9 @@ pub(super) fn engine_matches_authority(
 fn engine_matches_lifecycle_target(
     artifact: &IdentityEvolutionExecutionArtifact,
     target: &crate::memory_workspace::WorthQueryEntityIdentity,
-) -> bool {
-    let evidence = target.evidence_identity();
-    match artifact.family() {
+) -> Result<bool, IdentityDerivationDenial> {
+    let evidence = target.evidence_identity()?;
+    Ok(match artifact.family() {
         IdentityEvolutionExecutionFamily::GeneratedIdentity => artifact
             .result_bundle()
             .as_generated_identity()
@@ -115,7 +115,7 @@ fn engine_matches_lifecycle_target(
             .as_retired_identity()
             .is_some_and(|result| result.authoritative_identity() == evidence.as_str()),
         _ => false,
-    }
+    })
 }
 
 fn engine_matches_comparison_outcome(artifact: &IdentityEvolutionExecutionArtifact) -> bool {

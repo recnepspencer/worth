@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -26,8 +27,8 @@ pub(super) fn metadata_identities(
 
 pub(super) fn naming_identity(
     command: &WorthQueryWriteCommand,
-) -> Option<WorthQueryEvidenceIdentity> {
-    command.naming_intent().map(|intent| {
+) -> Result<Option<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
+    Ok(command.naming_intent().map(|intent| {
         worth_query_evidence_identity(WorthQueryEvidenceScope::AuthoritativeMutationIntentSeed)
             .field_shape(WorthQueryEvidenceTag::new("role"), "naming-intent")
             .field_shape(
@@ -51,13 +52,13 @@ pub(super) fn naming_identity(
                     .map(|identity| identity.evidence_identity()),
             )
             .seal()
-    })
+    })?)
 }
 
 pub(super) fn continuity_identity(
     command: &WorthQueryWriteCommand,
-) -> Option<WorthQueryEvidenceIdentity> {
-    command.continuity_intent().map(|intent| {
+) -> Result<Option<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
+    Ok(command.continuity_intent().map(|intent| {
         worth_query_evidence_identity(WorthQueryEvidenceScope::AuthoritativeMutationIntentSeed)
             .field_shape(WorthQueryEvidenceTag::new("role"), "continuity-intent")
             .field_shape(
@@ -80,7 +81,7 @@ pub(super) fn continuity_identity(
                     .map(|identity| identity.evidence_identity()),
             )
             .seal()
-    })
+    })?)
 }
 
 pub(super) fn mutation_command_shape(command: &WorthQueryWriteCommand) -> &'static str {

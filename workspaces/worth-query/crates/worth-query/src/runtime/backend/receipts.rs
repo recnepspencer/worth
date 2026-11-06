@@ -31,7 +31,7 @@ impl LiveViewDeclarationAdmissionReceipt {
         request: &DeclarativeLiveQueryRequest,
     ) -> Result<Self, IdentityDerivationDenial> {
         let view_name = view_name.into();
-        let target_collection = request.target_collection_identity();
+        let target_collection = request.target_collection_identity()?;
         let view_shape = request.view_shape().clone();
         let query_projection_count = request.query_projection().len();
         let result_field_count = request.result_fields().len();
@@ -131,23 +131,23 @@ impl LiveViewDeclarationAdmissionReceipt {
         &self,
         expected_view_name: &str,
         request: &DeclarativeLiveQueryRequest,
-    ) -> Option<String> {
+    ) -> Result<Option<String>, IdentityDerivationDenial> {
         if self.view_name() != expected_view_name {
-            return Some(format!(
+            return Ok(Some(format!(
                 "live-view admission receipt view drifted: expected `{expected_view_name}`, found `{}`",
                 self.view_name()
-            ));
+            )));
         }
-        let request_target_collection = request.target_collection_identity();
+        let request_target_collection = request.target_collection_identity()?;
         if !self
             .target_collection
             .same_target_collection_as(&request_target_collection)
         {
-            return Some(format!(
+            return Ok(Some(format!(
                 "live-view admission receipt target drifted: expected `{}`, found `{}`",
                 request_target_collection.as_str(),
                 self.target_collection.as_str()
-            ));
+            )));
         }
         if self.view_shape() != request.view_shape()
             || self.query_projection_count() != request.query_projection().len()
@@ -156,11 +156,11 @@ impl LiveViewDeclarationAdmissionReceipt {
             || self.traversal_count() != request.traversal().len()
             || self.ordering_count() != request.ordering().len()
         {
-            return Some(
+            return Ok(Some(
                 "live-view admission receipt shape drifted from the declared request".to_string(),
-            );
+            ));
         }
-        None
+        Ok(None)
     }
 }
 
@@ -198,7 +198,7 @@ impl SubscriptionActivationReceipt {
                 &support_identity,
                 &basis_binding_identity,
             )
-        });
+        })?;
         let receipt_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::SubscriptionActivationReceipt,
         )

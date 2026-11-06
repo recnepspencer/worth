@@ -96,12 +96,14 @@ impl PlanDigest {
         self.0.as_str()
     }
 
-    pub fn evidence_identity(&self) -> WorthQueryEvidenceIdentity {
-        self.0.evidence_identity(
+    pub fn evidence_identity(
+        &self,
+    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(self.0.evidence_identity(
             WorthQueryEvidenceScope::MutationEvidenceSourceDigest,
             "execution_plan_digest_v1",
             "plan_digest",
-        )
+        )?)
     }
 }
 
@@ -133,12 +135,14 @@ impl BasisDigest {
         self.0.as_str()
     }
 
-    pub fn evidence_identity(&self) -> WorthQueryEvidenceIdentity {
-        self.0.evidence_identity(
+    pub fn evidence_identity(
+        &self,
+    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(self.0.evidence_identity(
             WorthQueryEvidenceScope::BasisDigest,
             "basis_digest_evidence_v1",
             "basis_digest",
-        )
+        )?)
     }
 }
 

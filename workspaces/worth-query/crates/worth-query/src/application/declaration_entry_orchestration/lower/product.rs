@@ -13,6 +13,7 @@ use crate::application::{
     WorthQueryDeclarationRouteIntent, WorthQueryDeclarationRoutePlanChecked,
     WorthQueryDomainEntryMarker, WorthQueryDomainOperatingContext,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::target_binding::{resolve_admitted_progression_target, WorthQueryBindingTargetWitness};
 
 use super::super::artifacts::canonical_digest_token;
@@ -47,7 +48,7 @@ pub(crate) fn worth_query_lower_declaration_entry_product_orchestration_from_pro
     artifact_policy: WorthQueryDeclarationEntryOrchestrationArtifactPolicy,
     product: WorthQueryDeclarationEntryOrchestrationProduct,
     route_intent: Option<WorthQueryDeclarationRouteIntent>,
-) -> WorthQueryLoweredDeclarationEntryProductOrchestration<D, I> {
+) -> Result<WorthQueryLoweredDeclarationEntryProductOrchestration<D, I>, IdentityDerivationDenial> {
     let resolved_progression = resolve_admitted_progression_target(progressed);
     let (_, _, _, _, _, aspect_contract, reviewed_aspect_coverage) = resolved_progression
         .target()
@@ -55,7 +56,7 @@ pub(crate) fn worth_query_lower_declaration_entry_product_orchestration_from_pro
         .admitted_declaration_progression()
         .expect("resolved progression target should retain admitted progression semantics");
     let orchestration_input = WorthQueryDeclarationEntryOrchestrationInput::new(
-        handle.retained_world_basis(),
+        handle.retained_world_basis()?,
         aspect_contract.clone(),
         reviewed_aspect_coverage.clone(),
         crate::application::WorthQueryDeclarationAspectCoverageBasis::ReviewedRetainedCoverage,
@@ -102,11 +103,11 @@ pub(crate) fn worth_query_lower_declaration_entry_product_orchestration_from_pro
             WorthQueryDeclarationEntryProductChecked::Envelope(envelope_checked)
         }
     };
-    WorthQueryLoweredDeclarationEntryProductOrchestration {
+    Ok(WorthQueryLoweredDeclarationEntryProductOrchestration {
         plan,
         checked,
         step_records,
-    }
+    })
 }
 
 fn foundational_record<D, I>(

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQuerySnapshotIdentity;
 use crate::runtime::WorthQueryWorkspace;
 
@@ -19,11 +20,12 @@ impl WorthQueryHistoricalContext {
         &self.snapshot_identity
     }
 
-    pub(crate) fn basis_label(&self) -> String {
-        self.snapshot_identity
-            .evidence_identity()
+    pub(crate) fn basis_label(&self) -> Result<String, IdentityDerivationDenial> {
+        Ok(self
+            .snapshot_identity
+            .evidence_identity()?
             .as_str()
-            .to_string()
+            .to_string())
     }
 
     pub(crate) fn admits_snapshot(&self, candidate: &WorthQuerySnapshotIdentity) -> bool {

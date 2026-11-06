@@ -259,7 +259,7 @@ fn hash_effect_pending_delivery(
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("commit"),
-                &pending_delivery.commit_identity().evidence_identity(),
+                &pending_delivery.commit_identity().evidence_identity()?,
             )
             .field_value(
                 WorthQueryEvidenceTag::new("trigger_source"),

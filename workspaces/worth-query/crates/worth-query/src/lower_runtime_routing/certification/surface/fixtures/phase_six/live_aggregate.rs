@@ -245,7 +245,7 @@ fn live_aggregate_fixture() -> Result<LiveAggregateFixture, IdentityDerivationDe
         &activation,
         crate::runtime::runtime_subscription_support_evidence_identity(
             "certified-live-aggregate-support",
-        ),
+        )?,
         None,
     )?;
     let activation_identity = activation_receipt.activation_identity().clone();

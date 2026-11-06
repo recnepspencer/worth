@@ -146,12 +146,14 @@ fn canonical_runtime_semantic_identity(
 
 pub fn materialize_domain_capability_canonical_runtime_artifact<P, T>(
     contribution: super::super::WorthQueryMaterializationReadyDomainCapabilityContribution<P, T>,
-) -> WorthQueryCanonicalRuntimeMaterialization<P, T>
+) -> Result<WorthQueryCanonicalRuntimeMaterialization<P, T>, IdentityDerivationDenial>
 where
     P: WorthQueryDomainCapabilityPayload,
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    WorthQueryCanonicalRuntimeMaterialization::new(contribution)
+    Ok(WorthQueryCanonicalRuntimeMaterialization::new(
+        contribution,
+    )?)
 }
 
 pub type WorthQueryCanonicalAdmissionArtifact<T> =

@@ -81,7 +81,7 @@ pub(crate) fn representative_effect_relational_mutation_row(
             executed
                 .lowered()
                 .lowered_effect_execution_plan_for_reporting(),
-            executed.receipt().receipt_for_reporting(),
+            executed.receipt()?.receipt_for_reporting(),
         )?,
     )?)
 }
@@ -140,7 +140,7 @@ pub(crate) fn representative_effect_relational_merge_row(
             executed
                 .lowered()
                 .lowered_effect_execution_plan_for_reporting(),
-            executed.receipt().receipt_for_reporting(),
+            executed.receipt()?.receipt_for_reporting(),
         )?,
     )?)
 }
@@ -174,7 +174,7 @@ pub(crate) fn representative_effect_bridge_writeback_row(
             executed
                 .lowered()
                 .lowered_effect_execution_plan_for_reporting(),
-            executed.receipt().receipt_for_reporting(),
+            executed.receipt()?.receipt_for_reporting(),
         )?,
     )?)
 }

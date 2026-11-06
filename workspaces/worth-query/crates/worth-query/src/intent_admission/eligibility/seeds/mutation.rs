@@ -195,7 +195,7 @@ fn mutation_input_digest(command: &WorthQueryWriteCommand) -> String {
 
 pub(crate) fn authoritative_mutation_input_identity(
     command: &WorthQueryWriteCommand,
-) -> WorthQueryEvidenceIdentity {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let declared_entity_identity = command
         .declared_entity_identity_ref()
         .map(|identity| identity.evidence_identity());
@@ -240,7 +240,7 @@ pub(crate) fn authoritative_mutation_input_identity(
             )
             .optional_evidence_identity(
                 WorthQueryEvidenceTag::new("declared_entity_identity"),
-                declared_entity_identity.as_ref(),
+                declared_entity_identity.as_ref()?,
             )
             .optional_evidence_identity(
                 WorthQueryEvidenceTag::new("existing_truth_binding"),
@@ -254,11 +254,11 @@ pub(crate) fn authoritative_mutation_input_identity(
             )
             .optional_evidence_identity(
                 WorthQueryEvidenceTag::new("aspect_values"),
-                aspect_value_identity.as_ref(),
+                aspect_value_identity.as_ref()?,
             )
             .optional_evidence_identity(
                 WorthQueryEvidenceTag::new("symbolic_target"),
-                symbolic_target.as_ref(),
+                symbolic_target.as_ref()?,
             )
             .field_evidence_identity_sequence(
                 WorthQueryEvidenceTag::new("symbolic_aspects"),
@@ -282,7 +282,7 @@ pub(crate) fn authoritative_mutation_input_identity(
             &identity_evidence,
         );
     }
-    identity.seal()
+    Ok(identity.seal()?)
 }
 
 fn declared_aspect_operation_identity(
@@ -310,7 +310,7 @@ fn symbolic_target_reference_identity(
     reference: &WorthQuerySymbolicTargetReference,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let symbol_identity =
-        WorthQueryMutationSymbolIdentity::new("authoritative-mutation-seed", reference.symbol());
+        WorthQueryMutationSymbolIdentity::new("authoritative-mutation-seed", reference.symbol())?;
     let collection_identity = reference.target_collection().map(|collection| {
         WorthQueryMutationTargetCollectionIdentity::new(
             "authoritative-mutation-seed-symbolic-target",

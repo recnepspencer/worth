@@ -212,7 +212,7 @@ fn certification_row(
     )
 }
 
-fn former_specialist_closure_digest() -> String {
+fn former_specialist_closure_digest() -> Result<String, IdentityDerivationDenial> {
     let crossings = worth_query_lower_runtime_crossing_inventory();
     let gaps = worth_query_lower_runtime_gap_registry();
     let frontier = crossings
@@ -243,7 +243,10 @@ fn former_specialist_closure_digest() -> String {
         }),
         "former specialist seams must not survive in the gap registry"
     );
-    hash_parts(&[frontier.row_digest(), writeback.row_digest()])
+    Ok(hash_parts(&[
+        frontier.row_digest()?,
+        writeback.row_digest(),
+    ]))
 }
 
 fn deferred_neighbor_failure_digest() -> String {

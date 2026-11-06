@@ -73,7 +73,7 @@ impl super::super::WorthQueryConsumerInvalidationDelta {
     pub fn semantic_projection(
         &self,
     ) -> Result<WorthQueryConsumerInvalidationSemanticProjection, IdentityDerivationDenial> {
-        let impact = self.impact().semantic_projection();
+        let impact = self.impact().semantic_projection()?;
         let affected_native_keys = self
             .affected_native_keys()
             .iter()

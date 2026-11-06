@@ -30,12 +30,12 @@ pub struct QueryObservationReceipt(
     worth_query_execution::facade::causal_inspection::QueryObservationReceipt,
 );
 impl QueryObservationReceipt {
-    fn from_parts(parts: ObservationReceiptParts) -> Self {
-        Self(
+    fn from_parts(parts: ObservationReceiptParts) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self(
             worth_query_execution::facade::causal_inspection::QueryObservationReceipt::from_parts(
                 parts,
-            ),
-        )
+            )?,
+        ))
     }
     #[cfg(test)]
     pub(in crate::runtime) fn inspection_basis_for_test(
@@ -171,7 +171,7 @@ fn result_shape_handle(
             .seal()?;
     Ok(CausalResultShapeContextHandle::from_evidence_identity(
         &identity,
-    ))
+    )?)
 }
 
 fn target_handle(
@@ -190,5 +190,5 @@ fn target_handle(
             .seal()?;
     Ok(CausalObservationTargetHandle::from_evidence_identity(
         &identity,
-    ))
+    )?)
 }

@@ -68,7 +68,7 @@ impl WorthQueryWorkflowRuntimeSemantics {
             domain_capability_scope_encoder("worth_query_workflow_runtime_semantics_v1")
                 .field_evidence_identity(
                     WorthQueryEvidenceTag::new("binding"),
-                    &self.binding.semantics_identity(),
+                    &self.binding.semantics_identity()?,
                 )
                 .field_shape(
                     WorthQueryEvidenceTag::new("declaration_family"),

@@ -206,8 +206,8 @@ pub fn ordinary_projection_outcome_for_certification(
 /// projection outcome for downstream boundary fixtures.
 pub fn ordinary_query_context_advisory_for_certification(
     outcome: crate::ordinary::read::WorthQueryProjectionOutcome,
-) -> crate::ordinary::read::WorthQueryProjectionOutcome {
-    outcome.with_query_context_advisory_for_certification()
+) -> Result<crate::ordinary::read::WorthQueryProjectionOutcome, IdentityDerivationDenial> {
+    Ok(outcome.with_query_context_advisory_for_certification()?)
 }
 
 /// Exercise a non-ordinary projection contract against an ordinary read

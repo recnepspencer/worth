@@ -169,7 +169,7 @@ pub(super) fn certified_admitted_intent_fixture(
                 other => panic!("expected authoritative handoff, got {other:?}"),
             };
             let binding =
-                runtime.prepare_authoritative_intent_execution_binding(authoritative_handoff);
+                runtime.prepare_authoritative_intent_execution_binding(authoritative_handoff)?;
             let receipt = runtime
                 .execute_intent(execution, declaration)
                 .expect("admitted certification intent should execute");
@@ -185,7 +185,7 @@ pub(super) fn certified_admitted_intent_fixture(
             }
         }
         other => panic!("expected admitted decision, got {other:?}"),
-    })
+    })?
 }
 
 pub(super) fn certified_advisory_intent_fixture(
@@ -295,7 +295,7 @@ pub(super) fn legacy_delegation_parity_fixture(
         .admit_authoritative_intent_for_execution(declaration.clone())
         .expect("canonical authoritative handoff should admit");
     let canonical_binding =
-        canonical_runtime.prepare_authoritative_intent_execution_binding(canonical_handoff);
+        canonical_runtime.prepare_authoritative_intent_execution_binding(canonical_handoff)?;
     let authoritative_canonical = canonical_runtime
         .execute_authoritative_intent_execution_binding(execution, canonical_binding)
         .expect("canonical authoritative execution should succeed");
@@ -379,7 +379,7 @@ pub(super) fn legacy_delegation_parity_fixture(
         )
         .expect("canonical effect handoff should admit");
     let canonical_binding = canonical_effect_runtime
-        .prepare_effect_intent_execution_binding(canonical_handoff, &pending_delivery);
+        .prepare_effect_intent_execution_binding(canonical_handoff, &pending_delivery)?;
     let effect_canonical = canonical_effect_runtime
         .execute_effect_intent_execution_binding(execution, canonical_binding)
         .expect("canonical effect execution should succeed");

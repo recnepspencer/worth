@@ -143,18 +143,18 @@ pub(crate) fn worth_query_domain_capability_representative_report_in(
         .lower_runtime_target(&lower_runtime)
         .expect("installed contribution authority must remain current");
     let public_boundary_digest =
-        worth_query_domain_capability_public_surface_inventory().public_surface_digest();
+        worth_query_domain_capability_public_surface_inventory().public_surface_digest()?;
 
     let support_requested = support_traceability_requested(declaration_target.clone());
     let request_digest = support_requested.payload().request_digest().to_string();
     let support_eligible = success(evaluate_requested_domain_capability_contribution(
         support_requested,
     )?);
-    let eligibility_digest = support_eligible.eligibility_for_reporting();
+    let eligibility_digest = support_eligible.eligibility_for_reporting()?;
     let support_admitted = success(admit_eligible_domain_capability_contribution(
         support_eligible,
     ));
-    let admitted_digest = support_admitted.admitted_for_reporting();
+    let admitted_digest = support_admitted.admitted_for_reporting()?;
 
     let support_artifact = success(
         materialize_intent_declaration_support_traceability_artifact(admitted_ready(
@@ -378,7 +378,7 @@ pub(crate) fn worth_query_domain_capability_representative_report_in(
             .rows()
             .len(),
         support_width: support_traceability_report.rows().len() + 2,
-    })
+    })?
 }
 
 fn decision_digest(decision: &crate::runtime::WorthQueryIntentAdmissionDecision) -> String {

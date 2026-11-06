@@ -153,7 +153,7 @@ where
                 None,
                 redaction_policy,
                 materialization_policy,
-            ))
+            )?)
         }
     })
 }
@@ -211,9 +211,9 @@ where
                 request,
                 runtime_semantics.redaction_policy(),
                 runtime_semantics.materialization_policy(),
-            ),
+            )?,
         },
-    ))
+    )?)
 }
 
 fn missing_runtime_semantics_denial(

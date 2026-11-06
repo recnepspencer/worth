@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQuerySnapshotIdentity;
 use crate::query_context::QueryContextExecutionFamily;
 
@@ -18,16 +19,19 @@ pub(crate) enum ProjectionSourceBasisAuthorityKind {
 }
 
 impl ProjectionSourceBasisAuthority {
-    pub fn canonical_digest(&self) -> Option<worth_foundational::facade::CanonicalDerivedDigest> {
-        match &self.kind {
+    pub fn canonical_digest(
+        &self,
+    ) -> Result<Option<worth_foundational::facade::CanonicalDerivedDigest>, IdentityDerivationDenial>
+    {
+        Ok(match &self.kind {
             ProjectionSourceBasisAuthorityKind::RuntimeSnapshot(identity) => {
-                Some(identity.evidence_identity().canonical_digest().clone())
+                Some(identity.evidence_identity()?.canonical_digest().clone())
             }
             ProjectionSourceBasisAuthorityKind::Certification(identity) => {
                 Some(identity.canonical_digest().clone())
             }
             ProjectionSourceBasisAuthorityKind::QueryContext { .. } => None,
-        }
+        })
     }
 
     pub fn snapshot_identity(&self) -> Option<&WorthQuerySnapshotIdentity> {
@@ -46,10 +50,10 @@ impl ProjectionSourceBasisAuthority {
         }
     }
 
-    pub fn terminal_projection_for_reporting(&self) -> String {
-        match &self.kind {
+    pub fn terminal_projection_for_reporting(&self) -> Result<String, IdentityDerivationDenial> {
+        Ok(match &self.kind {
             ProjectionSourceBasisAuthorityKind::RuntimeSnapshot(identity) => {
-                identity.evidence_identity().as_str().to_string()
+                identity.evidence_identity()?.as_str().to_string()
             }
             ProjectionSourceBasisAuthorityKind::QueryContext { basis_digest, .. } => {
                 basis_digest.clone()
@@ -57,7 +61,7 @@ impl ProjectionSourceBasisAuthority {
             ProjectionSourceBasisAuthorityKind::Certification(identity) => {
                 identity.as_str().to_string()
             }
-        }
+        })
     }
 
     pub(crate) fn runtime_snapshot(identity: WorthQuerySnapshotIdentity) -> Self {

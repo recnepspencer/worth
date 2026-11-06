@@ -138,7 +138,7 @@ impl WorthQueryEntityIdentity {
     ) -> Result<std::cmp::Ordering, IdentityDerivationDenial> {
         Ok(self
             .evidence_identity()?
-            .compare_same_scheme(&candidate.evidence_identity())
+            .compare_same_scheme(&candidate.evidence_identity()?)
             .unwrap_or(std::cmp::Ordering::Equal))
     }
 }

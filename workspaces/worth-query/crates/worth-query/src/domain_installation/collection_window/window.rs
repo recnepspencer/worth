@@ -50,7 +50,7 @@ impl WorthQueryCollectionContinuation {
             .field_shape(crate::WorthQueryEvidenceTag::new("posture"), posture)
             .field_evidence_identity(
                 crate::WorthQueryEvidenceTag::new("cursor"),
-                &cursor.identity_evidence(),
+                &cursor.identity_evidence()?,
             )
             .seal()?,
         ))

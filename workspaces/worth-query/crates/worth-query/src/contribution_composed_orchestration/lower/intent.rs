@@ -134,7 +134,7 @@ where
     );
     let evaluation = WorthQueryContributionComposedIntentStageResult::succeeded(
         "contribution request evaluated",
-        Some(requested.requested_identity()),
+        Some(requested.requested_identity()?),
     );
     let eligible = match evaluate_requested_domain_capability_contribution(requested)? {
         TransitionOutcome::Success(value) => value,
@@ -171,7 +171,7 @@ where
     };
     let _eligibility = WorthQueryContributionComposedIntentStageResult::succeeded(
         "contribution request is eligible for admission",
-        Some(eligible.eligibility_identity()),
+        Some(eligible.eligibility_identity()?),
     );
     let admitted = match admit_eligible_domain_capability_contribution(eligible) {
         TransitionOutcome::Success(value) => value,
@@ -240,7 +240,7 @@ where
         installed_authority,
         None,
     );
-    let admitted_digest = admitted.admitted_identity();
+    let admitted_digest = admitted.admitted_identity()?;
     let admission_stage = WorthQueryContributionComposedIntentStageResult::succeeded(
         "contribution admitted",
         Some(admitted_digest),
@@ -298,7 +298,7 @@ where
             }
             TransitionOutcome::Deferred(never) => match never {},
         };
-        let ready_identity = ready.materialization_ready_identity();
+        let ready_identity = ready.materialization_ready_identity()?;
         return Ok(
             match materialize_domain_capability_summary(ready, profile) {
                 Ok(value) => {

@@ -88,7 +88,7 @@ pub fn consumed_projection_authority_support_matrix(
         .iter()
         .copied()
         .map(support_row)
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     let matrix_digest = compose_digest_sequence(
         "consumed_projection_authority_support_matrix_v1",
         "row",

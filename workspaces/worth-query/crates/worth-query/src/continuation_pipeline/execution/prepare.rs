@@ -202,7 +202,7 @@ fn prepare_from_resolved_signal_truth<
             linked,
         ));
     }
-    let bridge_checked = handle.route_bridge_continuation_checked(subject);
+    let bridge_checked = handle.route_bridge_continuation_checked(subject)?;
     let outcome = prepared_outcome_from_bridge_checked(
         handle,
         &bridge_request,
@@ -241,8 +241,8 @@ fn prepared_outcome_from_bridge_checked<
     signal_truth: &super::support::ResolvedSignalContinuationTruth,
     witness_checks: &mut Vec<WorthQueryBindingWitnessCheck>,
     bridge_checked: WorthQueryDeclarationBridgeRoutingChecked<D, I>,
-) -> WorthQueryPreparedContinuationOutcome<D, I> {
-    match bridge_checked {
+) -> Result<WorthQueryPreparedContinuationOutcome<D, I>, IdentityDerivationDenial> {
+    Ok(match bridge_checked {
         WorthQueryDeclarationBridgeRoutingChecked::Routed(routing) => {
             witness_checks.push(WorthQueryBindingWitnessCheck::passed("bridge_routing"));
             let required_capability_families = required_capability_families_for_prepared::<D, I>(
@@ -261,7 +261,7 @@ fn prepared_outcome_from_bridge_checked<
                 linked,
                 signal_truth,
                 &routing,
-            );
+            )?;
             let prepared = WorthQueryPreparedContinuation::new(
                 family_for_mode(bridge_request.mode()),
                 truth_context_for_mode(routing.truth_context()),
@@ -300,7 +300,7 @@ fn prepared_outcome_from_bridge_checked<
             ));
             WorthQueryPreparedContinuationOutcome::Failed(failed.reason().to_string())
         }
-    }
+    })
 }
 
 fn prepare_from_binding_transcript<

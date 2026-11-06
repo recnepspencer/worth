@@ -118,7 +118,7 @@ fn compose_continuity_payload_identity(
     identity = match correspondence_semantics {
         Some(correspondence) => identity.field_evidence_identity(
             WorthQueryEvidenceTag::new("correspondence"),
-            &correspondence.semantics_identity(),
+            &correspondence.semantics_identity()?,
         ),
         None => identity.field_shape(WorthQueryEvidenceTag::new("correspondence"), "none"),
     };
@@ -141,7 +141,7 @@ impl WorthQueryContinuityRuntimeSemantics {
         outcome_class: WorthQueryContinuityMutationOutcomeClass,
         prior_authoritative_identity: impl Into<String>,
         successor_authoritative_identities: I,
-    ) -> Self
+    ) -> Result<Self, IdentityDerivationDenial>
     where
         I: IntoIterator<Item = S>,
         S: Into<String>,
@@ -157,14 +157,14 @@ impl WorthQueryContinuityRuntimeSemantics {
             .enumerate()
             .map(|(index, label)| continuity_successor_authoritative_identity(index, label))
             .collect();
-        Self {
+        Ok(Self {
             family,
             outcome_class,
             prior_authoritative_source_label_for_reporting,
-            prior_authoritative_identity: continuity_authoritative_identity("prior", &prior_label),
+            prior_authoritative_identity: continuity_authoritative_identity("prior", &prior_label)?,
             successor_authoritative_source_labels_for_reporting: successor_labels,
             successor_authoritative_identities,
-        }
+        })
     }
 
     pub fn family(&self) -> WorthQueryContinuityMutationFamily {

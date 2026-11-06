@@ -175,7 +175,7 @@ impl LoweredEffectBatchExecutionPlan {
                 )
                 .field_evidence_identity(
                     WorthQueryEvidenceTag::new("counters"),
-                    &counters.evidence_identity(),
+                    &counters.evidence_identity()?,
                 )
                 .seal()?;
         Ok(Self {

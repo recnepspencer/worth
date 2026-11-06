@@ -219,7 +219,10 @@ where
     pub(crate) fn contribution_target<I>(
         &self,
         declaration: &crate::application::WorthQueryCanonicalDeclarationArtifact<D, I>,
-    ) -> crate::domain_capabilities::WorthQueryInstalledDeclarationContributionTarget
+    ) -> Result<
+        crate::domain_capabilities::WorthQueryInstalledDeclarationContributionTarget,
+        IdentityDerivationDenial,
+    >
     where
         I: crate::application::WorthQueryDeclarationInput<D>,
     {
@@ -227,9 +230,11 @@ where
             crate::domain_capabilities::WorthQueryDeclarationBoundContributionTarget::for_canonical_declaration(
                 declaration,
             );
-        crate::domain_capabilities::WorthQueryInstalledDomainContributionTarget::bind(
-            self.installed_authority.authority_arc(),
-            semantic_target,
+        Ok(
+            crate::domain_capabilities::WorthQueryInstalledDomainContributionTarget::bind(
+                self.installed_authority.authority_arc(),
+                semantic_target,
+            )?,
         )
     }
 

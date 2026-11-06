@@ -49,7 +49,7 @@ pub(super) fn branch_mutation_execution_row(
         runtime_workflow_binding_for_branch(
             branch_snapshot_identity(&runtime, "branch-a"),
             "branch-a",
-        ),
+        )?,
         entity_id,
         "phase4-branch-executed".to_string(),
     );
@@ -109,7 +109,7 @@ pub(super) fn relational_merge_execution_row(
     );
     let basis = EffectAuthoringBasis::from(branch_mutation_basis("main"));
     let raw = RawEffectIntent::Merge {
-        binding: runtime_workflow_binding(),
+        binding: runtime_workflow_binding()?,
         request: workflow_request(
             WorkflowDeclarationFamily::MergeLoweringNarrow,
             WorkflowAuthorityTargetFamily::RelationalMerge,
@@ -156,7 +156,7 @@ pub(super) fn bridge_writeback_execution_row(
     let bridge = test_bridge_with_writeback_authority();
     let basis = EffectAuthoringBasis::from(branch_mutation_basis("branch-a"));
     let raw = RawEffectIntent::Writeback {
-        binding: runtime_workflow_binding(),
+        binding: runtime_workflow_binding()?,
         request: workflow_request(
             WorkflowDeclarationFamily::WritebackLoweringNarrow,
             WorkflowAuthorityTargetFamily::BridgeWriteback,
@@ -218,12 +218,12 @@ pub(super) fn batch_execution_row(
     let binding = runtime_workflow_binding_for_branch(
         branch_snapshot_identity(&runtime, "branch-a"),
         "branch-a",
-    );
+    )?;
     let support = discover_effect_lifecycle_support(basis.family(), EffectFamily::Mutation)?;
     let executed = effect_batch()
         .using_basis(basis.clone())
         .push(raw_mutation_effect_with_binding(
-            binding.clone(),
+            binding.clone()?,
             left,
             "left-phase4-batch".to_string(),
         ))
@@ -282,7 +282,7 @@ pub(super) fn relational_oracle_row(
                     runtime_workflow_binding_for_branch(
                         branch_snapshot_identity(&runtime, "branch-a"),
                         "branch-a",
-                    ),
+                    )?,
                     entity_id,
                     "oracle-mutation".to_string(),
                 ),
@@ -339,7 +339,7 @@ pub(super) fn bridge_oracle_row(
             normalize_raw_effect_intent(
                 &basis,
                 RawEffectIntent::Writeback {
-                    binding: runtime_workflow_binding(),
+                    binding: runtime_workflow_binding()?,
                     request: workflow_request(
                         WorkflowDeclarationFamily::WritebackLoweringNarrow,
                         WorkflowAuthorityTargetFamily::BridgeWriteback,

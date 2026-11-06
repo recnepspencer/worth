@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::{BTreeMap, BTreeSet};
 use std::ops::Bound::{Included, Unbounded};
 
@@ -45,7 +46,7 @@ impl WorthQueryCollectionMaintenanceIndex {
     pub(crate) fn build(
         inputs: WorthQueryCollectionMaintenanceInputs<'_>,
         counters: &mut crate::domain_installation::WorthQueryCollectionCapabilityCounters,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let WorthQueryCollectionMaintenanceInputs {
             request,
             window_policy,
@@ -65,7 +66,7 @@ impl WorthQueryCollectionMaintenanceIndex {
             .collect::<BTreeMap<_, _>>();
         let maintenance_targets = maintenance_targets(&request, &grouping_fields);
         for entity in entities {
-            let source_identity = entity.identity().terminal_projection_for_reporting();
+            let source_identity = entity.identity().terminal_projection_for_reporting()?;
             let handle = handles_by_source
                 .get(source_identity.as_str())
                 .expect("validated collection identity facts must retain every execution row");
@@ -85,7 +86,7 @@ impl WorthQueryCollectionMaintenanceIndex {
             );
             counters.maintenance_rows_indexed += 1;
         }
-        Self {
+        Ok(Self {
             collection: request.target().to_string(),
             request,
             window_policy,
@@ -97,7 +98,7 @@ impl WorthQueryCollectionMaintenanceIndex {
             rows,
             identities,
             source_identities,
-        }
+        })
     }
 
     pub(super) const fn window_policy(
@@ -281,7 +282,7 @@ impl WorthQueryCollectionMaintenanceIndex {
         affected: &BTreeSet<WorthQueryEntityIdentity>,
         counters: &mut WorthQueryCollectionDeliveryCounters,
         mut fresh: impl FnMut(&WorthQueryEntityIdentity) -> Option<WorthQueryEntity>,
-    ) -> WorthQueryCollectionIndexDelta {
+    ) -> Result<WorthQueryCollectionIndexDelta, IdentityDerivationDenial> {
         let mut removals = BTreeSet::new();
         let mut upserts = BTreeMap::new();
         let mut group_transitions = Vec::new();
@@ -315,7 +316,7 @@ impl WorthQueryCollectionMaintenanceIndex {
             let Some(entity) = entity else { continue };
             let source_row_identity = old
                 .map(|row| row.source_row_identity.clone())
-                .unwrap_or_else(|| identity.terminal_projection_for_reporting());
+                .unwrap_or_else(|| identity.terminal_projection_for_reporting())?;
             let view_local_identity = old
                 .map(|row| row.view_local_identity.clone())
                 .unwrap_or_else(|| source_row_identity.clone());
@@ -333,11 +334,11 @@ impl WorthQueryCollectionMaintenanceIndex {
             );
             counters.ordering_index_updates += 1;
         }
-        WorthQueryCollectionIndexDelta {
+        Ok(WorthQueryCollectionIndexDelta {
             removals,
             upserts,
             group_transitions,
-        }
+        })
     }
 
     fn window_rows(

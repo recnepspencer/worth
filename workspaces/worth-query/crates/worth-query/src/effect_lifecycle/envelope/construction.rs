@@ -53,7 +53,7 @@ impl SelfDescribingEffectEnvelope {
         let trace_identity = receipt.decision_trace().decision_trace_identity().clone();
         let integrity_identity = receipt.integrity_markers().integrity_identity().clone();
         let sources = EffectEnvelopeSourceRefs::from_receipt(receipt)?;
-        let transition_rules = receipt.transition_rules();
+        let transition_rules = receipt.transition_rules()?;
         let performance_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
                 .field_shape(
@@ -66,7 +66,7 @@ impl SelfDescribingEffectEnvelope {
                 )
                 .field_evidence_identity(
                     WorthQueryEvidenceTag::new("counters"),
-                    &receipt.delivery_counters().evidence_identity(),
+                    &receipt.delivery_counters().evidence_identity()?,
                 )
                 .seal()?;
         let boundary_identity =

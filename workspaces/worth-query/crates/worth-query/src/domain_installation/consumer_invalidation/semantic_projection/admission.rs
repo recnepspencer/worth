@@ -41,7 +41,7 @@ impl super::super::WorthQueryAdmittedConsumerInvalidation<'_> {
         if !self.remains_current(workspace) {
             return Ok(None);
         }
-        let semantic = self.delta().semantic_projection();
+        let semantic = self.delta().semantic_projection()?;
         let compatibility = match self.delta().compatibility_continuity() {
             crate::domain_installation::operation_execution::WorthQueryProjectionSharingContinuity::Singleton => {
                 WorthQueryInvalidationCompatibilityOutcome::SingletonContinuity

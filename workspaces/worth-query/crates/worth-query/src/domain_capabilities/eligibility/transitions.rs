@@ -135,12 +135,12 @@ where
 
 fn stale_installation_generation_denial<P, T>(
     contribution: &WorthQueryDomainCapabilityContribution<P, T>,
-) -> Option<WorthQueryDomainCapabilityProgressionDenial>
+) -> Result<Option<WorthQueryDomainCapabilityProgressionDenial>, IdentityDerivationDenial>
 where
     P: WorthQueryDomainCapabilityPayload,
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    contribution
+    Ok(contribution
         .installed_authority()
         .is_some_and(|authority| !authority.is_current_installation_generation())
         .then(|| {
@@ -149,7 +149,7 @@ where
                 WorthQueryDomainCapabilityProgressionDenialKind::StaleInstallationGeneration,
                 "the installed domain authority belongs to a stale installation generation",
             )
-        })
+        })?)
 }
 
 fn denial_for<P, T>(

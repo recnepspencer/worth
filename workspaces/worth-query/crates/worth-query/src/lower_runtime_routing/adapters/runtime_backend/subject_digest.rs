@@ -55,7 +55,7 @@ pub(super) fn write_command_subject_identity(
         );
     }
     if let Some(identity) = command.declared_entity_identity_ref() {
-        let entity_identity = identity.evidence_identity();
+        let entity_identity = identity.evidence_identity()?;
         encoder =
             encoder.field_evidence_identity(WorthQueryEvidenceTag::new("entity"), &entity_identity);
     }
@@ -85,7 +85,7 @@ pub(super) fn backend_admissible_mutation_subject_identity(
         );
     }
     if let Some(identity) = mutation.declared_entity_identity_ref() {
-        let entity_identity = identity.evidence_identity();
+        let entity_identity = identity.evidence_identity()?;
         encoder =
             encoder.field_evidence_identity(WorthQueryEvidenceTag::new("entity"), &entity_identity);
     }
@@ -119,8 +119,8 @@ pub(super) fn activation_subject_identity(
 pub(super) fn signal_invalidation_subject_identity(
     receipt: &SignalInvalidationRoutingReceipt,
 ) -> Result<WorthQueryLowerRuntimeSubjectIdentity, IdentityDerivationDenial> {
-    let commit_identity = receipt.commit_identity().evidence_identity();
-    let snapshot_identity = receipt.snapshot_identity().evidence_identity();
+    let commit_identity = receipt.commit_identity().evidence_identity()?;
+    let snapshot_identity = receipt.snapshot_identity().evidence_identity()?;
     Ok(
         WorthQueryLowerRuntimeSubjectIdentity::compose("signal-invalidation-route-subject")
             .field_evidence_identity(

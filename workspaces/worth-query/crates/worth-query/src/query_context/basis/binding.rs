@@ -1,5 +1,6 @@
 use crate::basis::BasisAuthorityFamily;
 use crate::basis::ExecutionPreflightBundle;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::historical::{
     HistoricalEvaluationAdmission, HistoricalMaterializationPathMetadata,
     RequestedHistoricalPathClass, ResolvedHistoricalPathClass,
@@ -229,23 +230,25 @@ impl AdmittedQueryBasisContext {
     pub(crate) fn admits_runtime_snapshot(
         &self,
         snapshot: &crate::memory_workspace::WorthQuerySnapshotIdentity,
-    ) -> bool {
+    ) -> Result<bool, IdentityDerivationDenial> {
         let QueryBasisBindingEvidenceView::Historical {
             admission,
             metadata,
             ..
         } = self.binding.evidence()
         else {
-            return false;
+            return Ok(false);
         };
-        self.family() == &QueryContextFamily::HistoricalSnapshot
-            && self.historical_admission_class() == Some(&HistoricalAdmissionClass::RuntimeRetained)
+        Ok(self.family() == &QueryContextFamily::HistoricalSnapshot
+            && self.historical_admission_class()
+                == Some(&HistoricalAdmissionClass::RuntimeRetained)
             && metadata.requested_path_class()
                 == &RequestedHistoricalPathClass::RequestedRetainedSnapshotPath
             && metadata.resolved_path_class()
                 == &ResolvedHistoricalPathClass::ResolvedRetainedSnapshotPath
-            && snapshot
-                .matches_admitted_historical_projection(admission.requested_path().basis_identity())
+            && snapshot.matches_admitted_historical_projection(
+                admission.requested_path().basis_identity(),
+            )?)
     }
 
     pub(crate) fn binding(&self) -> &QueryBasisContextBinding {

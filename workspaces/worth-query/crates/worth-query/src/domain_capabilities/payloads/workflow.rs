@@ -64,21 +64,21 @@ fn compose_workflow_payload_identity(
     identity = match runtime_semantics {
         Some(runtime) => identity.field_evidence_identity(
             WorthQueryEvidenceTag::new("runtime"),
-            &runtime.semantics_identity(),
+            &runtime.semantics_identity()?,
         ),
         None => identity.field_shape(WorthQueryEvidenceTag::new("runtime"), "none"),
     };
     identity = match lowering_semantics {
         Some(lowering) => identity.field_evidence_identity(
             WorthQueryEvidenceTag::new("lowering"),
-            &lowering.semantics_identity(),
+            &lowering.semantics_identity()?,
         ),
         None => identity.field_shape(WorthQueryEvidenceTag::new("lowering"), "none"),
     };
     identity = match inspection_semantics {
         Some(inspection) => identity.field_evidence_identity(
             WorthQueryEvidenceTag::new("inspection"),
-            &inspection.semantics_identity(),
+            &inspection.semantics_identity()?,
         ),
         None => identity.field_shape(WorthQueryEvidenceTag::new("inspection"), "none"),
     };

@@ -1,6 +1,7 @@
 //! Closed projection minted only from an exactly validated workflow stage.
 
 use crate::basis_lifecycle::BasisOperationLane;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::super::{WorthQueryWorkflowRun, WorthQueryWorkflowStageCompletion};
 
@@ -28,11 +29,11 @@ impl WorthQueryWorkflowDomainEvidenceAttachment {
         stage: &worth_query_installation::facade::WorthQueryPortableWorkflowStage,
         input: &WorthQueryWorkflowStageCompletion,
         output_occurrence_identity: String,
-    ) -> Self
+    ) -> Result<Self, IdentityDerivationDenial>
     where
         L: BasisOperationLane,
     {
-        Self {
+        Ok(Self {
             operation_identity: run.bound.definition().canonical_identity().to_owned(),
             binding_identity: run.bound.binding_identity().to_owned(),
             run_identity: run.identity.clone(),
@@ -40,7 +41,7 @@ impl WorthQueryWorkflowDomainEvidenceAttachment {
             basis_identity: run.bound.basis_identity().to_owned(),
             execution_snapshot_identity: input
                 .execution_snapshot
-                .evidence_identity()
+                .evidence_identity()?
                 .as_str()
                 .to_owned(),
             contract: run.bound.workflow_stage_domain_evidence_contract(stage),
@@ -51,7 +52,7 @@ impl WorthQueryWorkflowDomainEvidenceAttachment {
                 .map(|receipt| receipt.evidence_identity().to_owned())
                 .collect(),
             output_occurrence_identity,
-        }
+        })
     }
 
     pub(in crate::domain_installation::operation_execution) fn contract(

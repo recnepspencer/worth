@@ -187,7 +187,7 @@ impl WorthQuerySupportReport {
         let query_context_support_profile = support_matrix
             .descriptor(WorthQueryCapabilityFamily::QueryContext)
             .filter(|descriptor| descriptor.status() == WorthQueryCapabilityStatus::Admitted)
-            .map(|_| runtime_backed_narrow_query_context_support_profile());
+            .map(|_| runtime_backed_narrow_query_context_support_profile())?;
         let identity_evolution_support_profile = support_matrix
             .descriptor(WorthQueryCapabilityFamily::IdentityEvolution)
             .filter(|descriptor| descriptor.status() == WorthQueryCapabilityStatus::Admitted)

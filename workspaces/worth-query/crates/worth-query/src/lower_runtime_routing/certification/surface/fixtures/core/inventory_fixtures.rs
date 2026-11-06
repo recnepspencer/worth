@@ -108,7 +108,7 @@ pub(crate) fn synthetic_inventory_row(
 pub(crate) fn normalized_parity_digest(
     label: &str,
     envelopes: &[WorthQueryLowerRuntimeBoundaryEnvelope],
-) -> String {
+) -> Result<String, IdentityDerivationDenial> {
     let selected = match label {
         "compose-read" => envelopes
             .iter()
@@ -167,12 +167,14 @@ pub(crate) fn normalized_parity_digest(
             .seal()
         })
         .collect::<Vec<_>>();
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-        .field_shape(WorthQueryEvidenceTag::new("parity_label"), label)
-        .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("rows"), &row_identities)
-        .seal()
-        .as_str()
-        .to_string()
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+            .field_shape(WorthQueryEvidenceTag::new("parity_label"), label)
+            .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("rows"), &row_identities)
+            .seal()?
+            .as_str()
+            .to_string(),
+    )
 }
 
 pub(crate) fn hostile_parity_divergence_digest(

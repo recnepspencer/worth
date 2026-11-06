@@ -98,7 +98,7 @@ impl ProjectionConsumptionSlopeReport {
 
 pub fn projection_consumption_slope_report(
 ) -> Result<ProjectionConsumptionSlopeReport, IdentityDerivationDenial> {
-    let control = control_row_set_lifecycle(2);
+    let control = control_row_set_lifecycle(2)?;
     let counters = control.facts().counters();
     let counter_snapshot = ProjectionConsumptionCertificationCounterSnapshot {
         declared_fact_family_count: counters.declared_fact_family_count(),
@@ -258,7 +258,7 @@ pub fn projection_consumption_slope_report(
                         ),
                     ],
                 )
-            }),
+            })?,
         ),
     })
 }

@@ -97,7 +97,7 @@ impl<'a> WorthQueryRuntimeInspectionIntentAdmissionReview<'a> {
             })?;
         let execution_binding = self
             .runtime
-            .prepare_unified_inspection_execution_binding(handoff.clone());
+            .prepare_unified_inspection_execution_binding(handoff.clone())?;
         Ok(WorthQueryAdmittedRuntimeInspectionIntent {
             runtime: self.runtime,
             review: self.review,
