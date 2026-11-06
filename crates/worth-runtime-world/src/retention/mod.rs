@@ -21,6 +21,9 @@ pub(crate) use unique_component_pin::{ExactComponentBasisKey, ExactComponentPinR
 
 pub use registry::{RetentionCostSnapshot, RetentionReclamationReport};
 
+pub use obligation_transfer::RetentionTransferDenial;
+pub use registry::RetentionObligationDenial;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -38,6 +41,3 @@ mod tests {
         let _ = std::mem::size_of::<RetentionTransferReceipt>();
     }
 }
-
-pub use obligation_transfer::RetentionTransferDenial;
-pub use registry::RetentionObligationDenial;

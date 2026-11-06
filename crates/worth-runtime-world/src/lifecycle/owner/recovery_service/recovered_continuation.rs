@@ -67,13 +67,13 @@ where
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .is_some();
-        if !prepared {
-            if let Err(cause) = self.prepare_recovered_continuation(execution, &mut effects) {
-                return Outcome::Refused {
-                    cause,
-                    custody: effects,
-                };
-            }
+        if !prepared
+            && let Err(cause) = self.prepare_recovered_continuation(execution, &mut effects)
+        {
+            return Outcome::Refused {
+                cause,
+                custody: effects,
+            };
         }
         effects.advance_original(execution, &self.state.operation_control)
     }

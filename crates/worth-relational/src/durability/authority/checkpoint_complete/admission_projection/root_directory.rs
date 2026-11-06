@@ -138,7 +138,7 @@ pub(in crate::durability) fn validate_manifest(
             return Err(crate::durability::canonical_commit_artifact::borrowed_payload::malformed());
         }
         Ok(())
-    }).map_err(|cause| refused.take().unwrap_or_else(|| match cause {
+    }).map_err(|cause| refused.take().unwrap_or(match cause {
         crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::Request(cause) => Refusal::Request(cause),
         _ => Refusal::InvalidProjectedMeaning,
     }))?;

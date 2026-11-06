@@ -83,7 +83,7 @@ pub(super) fn assert_retained_selection_journal_refuses(
 ) {
     let artifacts = runtime
         .durability()
-        .canonical_commit_artifacts(&execution)
+        .canonical_commit_artifacts(execution)
         .map(|artifact| {
             RelationalCanonicalCommitArtifact::from_untrusted_bytes(
                 artifact.unwrap().as_bytes().to_vec(),

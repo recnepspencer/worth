@@ -14,7 +14,7 @@ impl CompositeHistoryCatalog {
             let state = self.state.try_lock().map_err(|_| Denial::Busy)?;
             let image = frontier.get_or_insert_with(|| RuntimeWorldPublicationFrontier {
                 owner: state.owner,
-                catalog_affinity: Arc::as_ptr(&self.state) as usize,
+                catalog_affinity: self.allocation_affinity(),
                 revision: state.publication_revision.current(),
                 upper_bound: state.inspection_order.last().cloned(),
             });
@@ -51,7 +51,7 @@ impl CompositeHistoryCatalog {
     ) -> Result<(), Denial> {
         let state = self.state.try_lock().map_err(|_| Denial::Busy)?;
         if frontier.owner != state.owner
-            || frontier.catalog_affinity != Arc::as_ptr(&self.state) as usize
+            || frontier.catalog_affinity != self.allocation_affinity()
             || frontier.revision == u64::MAX
             || frontier.revision != state.publication_revision.current()
         {

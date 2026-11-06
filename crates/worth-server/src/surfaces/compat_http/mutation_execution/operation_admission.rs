@@ -51,7 +51,7 @@ pub(super) fn admit(
         match crate::WorthServerOperationAdmissionFacade::with_operation_registry(
             facade.operation_registry.clone(),
         )
-        .admit_declared(&admission, &operation_request)
+        .admit_declared(&admission, operation_request)
         {
             Ok(value) => value,
             Err(denial) => {

@@ -141,9 +141,7 @@ impl ProductBranchRegistryReservation {
             snapshot,
             retirement_boundary: None,
         };
-        if let Err(denial) = self.admits_installation(&installed, true) {
-            return Err(denial);
-        }
+        self.admits_installation(&installed, true)?;
         let registry = self.registry.clone();
         self.insert_installed(
             &mut registry.state.lock().unwrap_or_else(|e| e.into_inner()),

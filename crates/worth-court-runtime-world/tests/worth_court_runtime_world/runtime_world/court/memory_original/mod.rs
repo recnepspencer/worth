@@ -102,7 +102,7 @@ fn memory_original_remains_readable_after_its_live_history_is_retired() {
     assert!(court
         .world
         .recovery_port()
-        .retained_commits(&[original.clone()])
+        .retained_commits(std::slice::from_ref(&original))
         .unwrap()
         .is_empty());
     let native = court

@@ -27,7 +27,7 @@ fn rehashed_selection_artifacts_refuse_wrong_source_identity_predecessor_and_mix
     );
     let artifact = runtime
         .durability()
-        .canonical_commit_artifacts(&execution)
+        .canonical_commit_artifacts(execution)
         .map(Result::unwrap)
         .find(|artifact| artifact.commit_id() == selected.commit.commit_id)
         .unwrap();

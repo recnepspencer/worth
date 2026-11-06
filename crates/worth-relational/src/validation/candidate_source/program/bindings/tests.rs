@@ -129,10 +129,6 @@ fn registered_programs_reuse_identity_and_sort_in_actual_bind_order() {
     assert_eq!(first.cmp(&cached), std::cmp::Ordering::Equal);
     assert_ne!(first, second);
     assert!(first < second);
-    #[expect(
-        clippy::mutable_key_type,
-        reason = "Programs compare only their immutable owner-minted order; audience custody cannot affect ordering"
-    )]
     let ordered = std::collections::BTreeSet::from([second.clone(), cached, first.clone()]);
     assert_eq!(ordered.into_iter().collect::<Vec<_>>(), vec![first, second]);
 }

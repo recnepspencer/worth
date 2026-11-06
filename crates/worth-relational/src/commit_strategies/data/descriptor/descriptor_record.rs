@@ -173,6 +173,18 @@ impl RawCommitStrategyDescriptor {
     }
 }
 
+impl Serialize for CommitStrategyDescriptorDigest {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        worth_foundational::CanonicalDigestId::new(self.0).serialize(serializer)
+    }
+}
+impl<'de> Deserialize<'de> for CommitStrategyDescriptorDigest {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        worth_foundational::CanonicalDigestId::deserialize(deserializer)
+            .map(|digest| Self(*digest.bytes()))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -241,17 +253,5 @@ mod tests {
 
         assert_ne!(original_digest, recomputed.digest());
         assert_eq!(forged.digest(), original_digest);
-    }
-}
-
-impl Serialize for CommitStrategyDescriptorDigest {
-    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        worth_foundational::CanonicalDigestId::new(self.0).serialize(serializer)
-    }
-}
-impl<'de> Deserialize<'de> for CommitStrategyDescriptorDigest {
-    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        worth_foundational::CanonicalDigestId::deserialize(deserializer)
-            .map(|digest| Self(*digest.bytes()))
     }
 }

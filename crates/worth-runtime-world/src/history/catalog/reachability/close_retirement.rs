@@ -56,6 +56,39 @@ impl HistoryReachabilityIndex {
 }
 
 #[cfg(test)]
+impl crate::history::CompositeHistoryCatalog {
+    pub(crate) fn assert_observation_close_busy_preserves_history(
+        &self,
+        observation: &mut crate::branch::ProductBranchObservation,
+    ) {
+        let index = self.state.lock().unwrap().reachability.clone();
+        let held = index.lock().unwrap();
+        let slot = held
+            .records
+            .get(observation.selected_commit())
+            .unwrap()
+            .clone();
+        let before = slot.lock().unwrap().as_ref().unwrap().direct_protections;
+        assert!(observation.try_retire_for_close().is_err());
+        assert_eq!(
+            slot.lock().unwrap().as_ref().unwrap().direct_protections,
+            before
+        );
+        drop(held);
+        observation.try_retire_for_close().unwrap();
+        assert_eq!(
+            slot.lock().unwrap().as_ref().unwrap().direct_protections,
+            before - 1
+        );
+        observation.try_retire_for_close().unwrap();
+        assert_eq!(
+            slot.lock().unwrap().as_ref().unwrap().direct_protections,
+            before - 1
+        );
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use crate::branch::reference_test_fixture as fixture;
     #[test]
@@ -124,38 +157,5 @@ mod tests {
         );
         assert_eq!(released, counts.direct_protection_releases() + 1);
         drop(history);
-    }
-}
-
-#[cfg(test)]
-impl crate::history::CompositeHistoryCatalog {
-    pub(crate) fn assert_observation_close_busy_preserves_history(
-        &self,
-        observation: &mut crate::branch::ProductBranchObservation,
-    ) {
-        let index = self.state.lock().unwrap().reachability.clone();
-        let held = index.lock().unwrap();
-        let slot = held
-            .records
-            .get(observation.selected_commit())
-            .unwrap()
-            .clone();
-        let before = slot.lock().unwrap().as_ref().unwrap().direct_protections;
-        assert!(observation.try_retire_for_close().is_err());
-        assert_eq!(
-            slot.lock().unwrap().as_ref().unwrap().direct_protections,
-            before
-        );
-        drop(held);
-        observation.try_retire_for_close().unwrap();
-        assert_eq!(
-            slot.lock().unwrap().as_ref().unwrap().direct_protections,
-            before - 1
-        );
-        observation.try_retire_for_close().unwrap();
-        assert_eq!(
-            slot.lock().unwrap().as_ref().unwrap().direct_protections,
-            before - 1
-        );
     }
 }

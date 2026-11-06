@@ -256,7 +256,7 @@ fn metadata_footer_preserves_legacy_named_and_compact_wire() {
         rmp_serde::to_vec(&legacy).unwrap()
     );
     assert_eq!(
-        format!("{:?}", &*entity),
+        format!("{:?}", *entity),
         format!("{:?}", entity.as_ref().clone())
     );
     drop((entity, relation));

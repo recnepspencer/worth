@@ -189,7 +189,7 @@ fn historical_commit(
 ) -> u64 {
     let artifact = runtime
         .durability()
-        .canonical_commit_artifacts(&execution)
+        .canonical_commit_artifacts(execution)
         .map(Result::unwrap)
         .find(|artifact| artifact.commit_id() == commit.commit.commit_id)
         .unwrap();

@@ -106,7 +106,7 @@ fn checkpoint_catalog_ahead_of_frozen_tail_preserves_original_body_and_refuses_f
             .unwrap();
         let artifacts = recovered
             .durability()
-            .canonical_commit_artifacts(&execution)
+            .canonical_commit_artifacts(execution)
             .map(|artifact| artifact.unwrap())
             .collect::<Vec<_>>();
         assert_eq!(
@@ -337,7 +337,7 @@ fn unselected_original_capture_cannot_acknowledge_definition_introduction() {
     );
     let replayed = recovered
         .durability()
-        .canonical_commit_artifacts(&execution)
+        .canonical_commit_artifacts(execution)
         .last()
         .unwrap()
         .unwrap();

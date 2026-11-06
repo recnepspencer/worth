@@ -41,6 +41,10 @@ impl PreparedWorldReleasedDisposition {
             temporary,
         }))
     }
+    #[expect(
+        clippy::boxed_local,
+        reason = "Consume the already request-funded preparation at acknowledgement without restoring its owner value to the caller frame"
+    )]
     pub(crate) fn seal(
         self: Box<Self>,
         committed: &WorldCommittedPublication,

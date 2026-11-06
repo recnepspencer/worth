@@ -66,10 +66,6 @@ pub(super) fn collect(
     };
     let mut frames = Vec::new();
     push(&mut frames, Frame::Enter(root.clone()), after)?;
-    #[expect(
-        clippy::mutable_key_type,
-        reason = "Position orders only immutable declared path identity, node and direction; the binding cache cannot change those coordinates"
-    )]
     let mut values = BTreeMap::<Position, BTreeSet<Member>>::new();
     let mut support = Vec::new();
     while let Some(frame) = frames.pop() {

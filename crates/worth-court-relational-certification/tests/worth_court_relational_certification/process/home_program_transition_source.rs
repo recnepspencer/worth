@@ -124,7 +124,7 @@ fn publish_migration_step(
         panic!("the actual canonical schema migration must commit")
     };
     let committed = runtime.settle_performed_publication(performed).unwrap();
-    release_test_commit_snapshot(&runtime, &committed);
+    release_test_commit_snapshot(runtime, &committed);
     association
 }
 

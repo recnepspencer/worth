@@ -131,8 +131,7 @@ impl<'selected> ProductBranchCurrentnessScope<'selected> {
             Some(deadline) => cutover.perform_before(deadline),
             None => cutover.perform(),
         })
-        .map_err(|failure| {
-            drop(failure);
+        .map_err(|_failure| {
             crate::publication::CurrentProductReadDependencyDenial::WorldHeadUnavailable
         })
     }

@@ -104,7 +104,7 @@ fn retained_selection_keeps_current_outside_truth_and_intervening_record_history
 
     let artifact = runtime
         .durability()
-        .canonical_commit_artifacts(&execution)
+        .canonical_commit_artifacts(execution)
         .map(Result::unwrap)
         .find(|artifact| artifact.commit_id() == selected.commit.commit_id)
         .unwrap();

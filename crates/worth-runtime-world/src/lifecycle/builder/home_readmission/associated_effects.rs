@@ -64,14 +64,13 @@ pub(super) fn readmit(
             .dispositions
             .get(&association.attempt())
             .map(|row| row.disposition())
-        {
-            if recorded.as_ref().is_none_or(|recorded| {
+            && recorded.as_ref().is_none_or(|recorded| {
                 recorded.receipt() != subject.receipt()
                     || recorded.position() != subject.position().0
                     || recorded.digest() != subject.artifact_digest()
-            }) {
-                return Err(Denial::DispositionEvidenceMismatch);
-            }
+            })
+        {
+            return Err(Denial::DispositionEvidenceMismatch);
         }
         effects.push(&association.attempt(), effect, execution)?;
     }

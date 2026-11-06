@@ -166,7 +166,7 @@ fn frozen_catalog_overlap_preserves_issued_ids_and_never_regresses_after_reverse
     );
     let replayed = recovered
         .durability()
-        .canonical_commit_artifacts(&execution)
+        .canonical_commit_artifacts(execution)
         .map(|artifact| artifact.unwrap().as_bytes().to_vec())
         .collect::<Vec<_>>();
     assert_eq!(
@@ -209,7 +209,7 @@ fn checkpoint_only_definitions_overlap_tail_and_restored_directory_acknowledges_
     assert_eq!(lookup.matching_definition(&later), Some(later.clone()));
     let actual = recovered
         .durability()
-        .canonical_commit_artifacts(&execution)
+        .canonical_commit_artifacts(execution)
         .last()
         .unwrap()
         .unwrap();
