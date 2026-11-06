@@ -12,10 +12,7 @@ use worth_query_declaration::facade::application_program::{
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::compute::{Denial, PreparedRun, WorthQueryPreparedPartitionedComputation};
-use super::incremental::{
-    self, Begun, ComputationInstallation, FullRecording, Suppression,
-    WorthQueryPartitionedComputationFullCause,
-};
+use {super::incremental, super::incremental::Begun, crate::domain_computation::primary_graph::computation_retention::retained_basis::ComputationInstallation, super::incremental::FullRecording, crate::domain_computation::primary_graph::computation_retention::prior_absence::Suppression, crate::domain_computation::primary_graph::computation_retention::full_cause::WorthQueryPartitionedComputationFullCause};
 use super::items::{input_digest, item_digests, planned_items, route_item};
 use super::plan::{GatheredComputationPartition, PlanShape};
 use super::preparation_work::PreparationWork;

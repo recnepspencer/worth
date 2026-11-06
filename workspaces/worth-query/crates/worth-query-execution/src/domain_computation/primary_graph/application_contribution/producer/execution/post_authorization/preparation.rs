@@ -44,7 +44,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     matched_predecessors: Option<super::super::super::demand::MatchedRequiredPredecessors<'_>>,
     successor_of: Option<[u8; 32]>,
     commit_authority: ProducerInvocationAuthority<'owner>,
-    edition: super::super::super::InstalledProducerEdition,
+    edition: crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition,
     producer_contacts: &mut usize,
 ) -> Result<super::super::prepared_plan::ProducerExecutionPlan<'owner>, ProducerExecutionStop>
 where

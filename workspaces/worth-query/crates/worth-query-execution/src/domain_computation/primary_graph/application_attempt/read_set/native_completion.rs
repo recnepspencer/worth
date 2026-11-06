@@ -99,7 +99,7 @@ impl MutationReadAttemptCore<'_, '_, '_> {
         let (inputs, completed) = std::mem::replace(self.computation_reads, (
             crate::domain_computation::primary_graph::invariant_projection::ObservedComputationInputs::None,
             crate::domain_computation::primary_graph::application_contribution::CompletedComputationRetention::Absent(
-                crate::domain_computation::primary_graph::application_contribution::PriorAbsence::NotProduced),
+                crate::domain_computation::primary_graph::computation_retention::prior_absence::PriorAbsence::NotProduced),
         ));
         drop(inputs);
         let (content, content_work) = match refresh.content() {

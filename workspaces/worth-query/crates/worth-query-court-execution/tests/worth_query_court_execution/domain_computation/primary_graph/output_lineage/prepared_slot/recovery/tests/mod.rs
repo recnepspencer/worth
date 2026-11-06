@@ -3,7 +3,7 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
     use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::SealedComputationRetention;
     use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
     use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::sealed_run_for_lineage_test;
-    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::computation_retention::prior_absence::PriorAbsence;
     use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_binding_identity::OutputBindingIdentity;
     use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
     use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;

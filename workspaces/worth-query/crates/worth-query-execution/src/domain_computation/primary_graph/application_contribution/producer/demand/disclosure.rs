@@ -2,7 +2,7 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryAuthentica
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::super::InstalledProducerEdition;
+use crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition;
 use super::FamilySourceQuery;
 use super::FamilySourceValue;
 use super::WorthQueryAdmittedOutputDemand;

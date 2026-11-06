@@ -30,7 +30,7 @@ pub use {conditional::WorthQueryApplicationConditionalBinding, conditional::Wort
 pub use contracts::{
     WorthQueryApplicationContractCatalog, WorthQueryApplicationContributionContracts,
 };
-pub use partitioned_computation::WorthQueryPartitionedComputationFullCause;
+
 pub use partitioned_computation::{
     discarded_computation_retention_on_this_thread_for_test,
     full_partitioned_computation_preparations_on_this_thread_for_test,
@@ -43,12 +43,8 @@ pub use partitioned_computation::{
 };
 pub(in crate::domain_computation::primary_graph) use partitioned_computation::{
     Comparator, CompletedComputationRetention, ComputationDeposit, ComputationRetention,
-    NativeComputationReads,
 };
-pub(in crate::domain_computation) use partitioned_computation::{
-    ComputationPrior, PriorAbsence, RetainedComputation, SealedComputationRetention,
-    SealedComputationRun, Suppression,
-};
+pub(in crate::domain_computation) use {partitioned_computation::ComputationPrior, partitioned_computation::RetainedComputation, partitioned_computation::SealedComputationRetention, partitioned_computation::SealedComputationRun};
 pub use partitioned_computation::{
     WorthQueryCompletedPartitionedComputation, WorthQueryComputationInputDenial,
     WorthQueryComputationPartitionMembers, WorthQueryComputationPartitionPlan,
@@ -65,13 +61,7 @@ pub use {
     computation::WorthQueryManagedComputationOwner,
     computation::WorthQueryPreparedManagedComputation,
 };
-pub(in crate::domain_computation::primary_graph) use {
-    producer::install_output_readiness_routes, producer::InstalledProducerEdition,
-    producer::MatchedRequiredPredecessors, producer::PendingOutputReadiness,
-    producer::QualifiedOutputSource, producer::TypedPendingOutputReadiness,
-    producer::WorthQueryInstalledOutputProducerRoutes,
-    producer::WorthQueryInstalledOutputReadinessRoutes,
-};
+pub(in crate::domain_computation::primary_graph) use {producer::install_output_readiness_routes, producer::MatchedRequiredPredecessors, producer::PendingOutputReadiness, producer::QualifiedOutputSource, producer::TypedPendingOutputReadiness, producer::WorthQueryInstalledOutputProducerRoutes, producer::WorthQueryInstalledOutputReadinessRoutes};
 
 pub use setup::{
     WorthQueryApplicationContributionSetup, WorthQueryManagedIndexProviderRegistration,

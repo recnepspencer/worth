@@ -1,5 +1,6 @@
 //! Lower the selected producer execution into its owner-held plan.
 use super::*;
+use crate::domain_computation::primary_graph::application_contribution::producer::registry::semantic_edition::ProducerEditionAdmission;
 pub(super) fn prepare_selected_execution<'owner, Schema, Binding>(
     this: &TypedInstalledProducer<Schema, Binding>,
     phase: &'owner WorthQueryAdvancementPhase<'owner>,
@@ -15,7 +16,7 @@ pub(super) fn prepare_selected_execution<'owner, Schema, Binding>(
     input: ValidatedProducerInput<'_>,
     successor_of: Option<[u8; 32]>,
     commit_authority: ProducerInvocationAuthority<'owner>,
-    edition: super::super::super::InstalledProducerEdition,
+    edition: crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition,
     producer_contacts: &mut usize,
 ) -> Result<super::super::outcome::PreparedProducerExecutionPlan<'owner>, ProducerExecutionStop>
 where

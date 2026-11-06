@@ -1,6 +1,6 @@
 //! Custody of one handler's total retention result before seal.
 
-use super::{CompletedComputationRetention, PriorAbsence};
+use {super::CompletedComputationRetention, crate::domain_computation::primary_graph::computation_retention::prior_absence::PriorAbsence};
 use std::sync::{Arc, Mutex};
 
 #[derive(Clone)]

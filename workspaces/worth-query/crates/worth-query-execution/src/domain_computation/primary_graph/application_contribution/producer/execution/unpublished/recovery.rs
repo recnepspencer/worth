@@ -31,7 +31,7 @@ impl ContinuationState {
         principal: &WorthQueryAuthenticatedExternalPrincipal<S>,
         request: &WorthQueryRequestScope,
         invocation: &ProducerInvocationAuthority<'_>,
-        edition: super::super::super::InstalledProducerEdition,
+        edition: crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition,
     ) -> Result<Option<RecoveredProducerPublication>, WorthQueryOutputDemandDenial>
     where
         S: ApplicationSchema + 'static,

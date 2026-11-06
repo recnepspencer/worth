@@ -12,8 +12,7 @@ pub(in crate::domain_computation::primary_graph) struct NativeReadRefresh {
     prior: SealedComputationFacts,
     layout: Arc<CheckedReadLayout>,
     // Shared metadata drops before its original settlement's actual funding.
-    _custody:
-        crate::domain_computation::primary_graph::application_contribution::NativeComputationReads,
+    _custody: Arc<dyn NativeCarriageReads>,
 }
 
 impl ComputationFactAttribution {
@@ -36,10 +35,10 @@ impl ComputationFactAttribution {
         let ranges = self.range_closed.as_ref();
         let closes = match ranges {
             Some(ranges) => {
-                ranges.closes(native, &self.fresh_calls)
-                    && completed.closes_native_ranges(native, ranges)
+                ranges.closes(&**native, &self.fresh_calls)
+                    && native.closes_native_ranges(completed, ranges)
             }
-            None => completed.closes_native_reads(native, &self.carried),
+            None => native.closes_native_reads(completed, &self.carried),
         };
         if !closes {
             observation::native_completion_decline("completed-carried-calls");

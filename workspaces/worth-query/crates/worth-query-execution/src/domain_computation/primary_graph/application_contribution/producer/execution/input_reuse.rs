@@ -1,4 +1,4 @@
-use crate::domain_computation::primary_graph::application_contribution::InstalledProducerEdition;
+use crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition;
 use crate::domain_computation::primary_graph::output_lineage::PreparedInputReuseKey;
 use crate::domain_computation::primary_graph::WorthQueryObservedSource;
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;

@@ -134,6 +134,7 @@ pub(in crate::domain_computation::primary_graph) use provider::OutstandingDispat
 pub(in crate::domain_computation) use provider::PrimaryDecisionReadSetComparison;
 pub(in crate::domain_computation) use provider::RegisteredPrimaryRead;
 pub(crate) mod component_selection;
+pub(crate) mod computation_retention;
 mod request_local;
 pub(crate) mod resolution;
 pub(crate) mod resolution_denial;

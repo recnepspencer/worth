@@ -1,3 +1,11 @@
+//! How the registry derives a producer's installed edition from its
+//! declaration, and admits a typed binding against it.
+//!
+//! The edition itself is retention vocabulary
+//! (`computation_retention::producer_edition`); deriving and admitting it
+//! names the registry's declaration and the producer binding traits, so both
+//! stay here as `ProducerEditionAdmission`.
+
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
 use worth_query_declaration::facade::application_operation::{
@@ -5,59 +13,49 @@ use worth_query_declaration::facade::application_operation::{
 };
 
 use super::DeclaredProducerBinding;
-use {crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as DenialKind};
+use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial;
+use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as DenialKind;
+use crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition;
 
-/// The installed declaration's framed semantic meaning. Rust type identities
-/// are runtime guards; the digest contains the portable declared contract.
-/// `retains_computation` is fixed at installation: the producer's operation
-/// runs a partitioned computation whose state its runs retain.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct InstalledProducerEdition {
-    digest: [u8; 32],
-    build_identity: worth_foundational::facade::ApplicationBuildIdentity,
-    binding_type: TypeId,
-    source_type: TypeId,
-    operation_binding_type: TypeId,
-    provider_type: TypeId,
-    retains_computation: bool,
+/// The registry's admission of an installed edition: derived from a
+/// declaration at installation, and matched against a producer binding's
+/// types when the binding runs.
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) trait ProducerEditionAdmission:
+    Sized
+{
+    /// Whether the edition was installed for this binding's types. Generic
+    /// over the binding; the comparison itself is one concrete call.
+    fn admits_binding<Schema, Binding>(self) -> bool
+    where
+        Schema: worth_query_installation::facade::ApplicationSchema + 'static,
+        Binding: super::super::WorthQueryApplicationProducerBinding<Schema> + 'static;
+
+    /// The edition a declaration installs under `build_identity`.
+    fn from_declaration(
+        declaration: &DeclaredProducerBinding,
+        build_identity: worth_foundational::facade::ApplicationBuildIdentity,
+    ) -> Result<Self, WorthQueryPrimaryGraphInstallationDenial>;
 }
 
-impl InstalledProducerEdition {
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn admits_binding<
-        Schema,
-        Binding,
-    >(
-        self,
-    ) -> bool
+impl ProducerEditionAdmission for InstalledProducerEdition {
+    fn admits_binding<Schema, Binding>(self) -> bool
     where
         Schema: worth_query_installation::facade::ApplicationSchema + 'static,
         Binding: super::super::WorthQueryApplicationProducerBinding<Schema> + 'static,
     {
-        self.binding_type == TypeId::of::<Binding>()
-            && self.source_type
-                == TypeId::of::<
-                    <Binding::OutputFamily as super::super::WorthQueryProducerOutputFamily<
-                        Schema,
-                    >>::Source,
-                >()
-            && self.operation_binding_type == TypeId::of::<Binding::Operation>()
-            && self.provider_type == TypeId::of::<Binding::Provider>()
+        self.matches_types(
+            TypeId::of::<Binding>(),
+            TypeId::of::<
+                <Binding::OutputFamily as super::super::WorthQueryProducerOutputFamily<
+                    Schema,
+                >>::Source,
+            >(),
+            TypeId::of::<Binding::Operation>(),
+            TypeId::of::<Binding::Provider>(),
+        )
     }
 
-    pub(super) const fn retaining_computation(self, retains_computation: bool) -> Self {
-        Self {
-            retains_computation,
-            ..self
-        }
-    }
-
-    /// Whether a run of this producer looks up and retains a partitioned
-    /// computation's state.
-    pub(in crate::domain_computation::primary_graph) const fn retains_computation(self) -> bool {
-        self.retains_computation
-    }
-
-    pub(super) fn from_declaration(
+    fn from_declaration(
         declaration: &DeclaredProducerBinding,
         build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     ) -> Result<Self, WorthQueryPrimaryGraphInstallationDenial> {
@@ -212,41 +210,15 @@ impl InstalledProducerEdition {
             )
         })?
         .identity();
-        Ok(Self {
+        Ok(InstalledProducerEdition::from_parts(
             digest,
             build_identity,
-            binding_type: declaration.binding_type,
-            source_type: declaration.source_type,
-            operation_binding_type: declaration.operation_binding_type,
-            provider_type: declaration.provider_type,
-            retains_computation: false,
-        })
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn digest(self) -> [u8; 32] {
-        self.digest
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn build_identity(
-        self,
-    ) -> worth_foundational::facade::ApplicationBuildIdentity {
-        self.build_identity
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn for_test(digest: [u8; 32]) -> Self {
-        let unit = TypeId::of::<()>();
-        Self {
-            digest,
-            build_identity: worth_foundational::facade::ApplicationBuildIdentity::parse(
-                "11111111-1111-1111-1111-111111111111",
-            )
-            .expect("fixture build identity"),
-            binding_type: unit,
-            source_type: unit,
-            operation_binding_type: unit,
-            provider_type: unit,
-            retains_computation: true,
-        }
+            declaration.binding_type,
+            declaration.source_type,
+            declaration.operation_binding_type,
+            declaration.provider_type,
+            false,
+        ))
     }
 }
 

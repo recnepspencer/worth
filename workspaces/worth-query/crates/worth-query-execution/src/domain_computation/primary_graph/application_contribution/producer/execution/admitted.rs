@@ -15,7 +15,7 @@ pub(super) fn execute_fresh<Schema, Binding>(
     disclosure: FreshOutputDisclosure<SourceQuery<Schema, Binding>, SourceValue<Schema, Binding>>,
     successor_of: Option<[u8; 32]>,
     commit_authority: ProducerInvocationAuthority<'_>,
-    edition: super::super::InstalledProducerEdition,
+    edition: crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition,
     producer_contacts: &mut usize,
 ) -> Result<ProducerExecutionOutcome, ProducerExecutionStop>
 where

@@ -3,7 +3,7 @@
 mod refusal;
 mod stable_apply;
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::InstalledProducerEdition;
+use crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition;
 use crate::domain_computation::primary_graph::application_query::PreparedObservedSourceExpectation;
 use crate::domain_computation::primary_graph::fact_verification_observation::input_cutoff as observation;
 use crate::domain_computation::primary_graph::fact_verification_observation::input_cutoff::Gate;
@@ -115,7 +115,7 @@ where
     // looks up or pays for one.
     let prior = if edition.retains_computation() {
         observation::reach(Gate::ComputationPrior);
-        let mut prior = handle
+        let selection = handle
             .output_lineage
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -123,10 +123,10 @@ where
                 scope,
                 observation,
                 source.partition_identity(),
-                edition,
                 &execution,
             )
             .map_err(cutoff_admission_denial)?;
+        let mut prior = ComputationPrior::new(edition, selection.retained, selection.record);
         handle
             .with_runtime(&execution, |relational| {
                 prior.observe_changes(

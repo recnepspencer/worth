@@ -127,7 +127,7 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
     let selected_identity = &(*selected_cell.get().unwrap().settlement_identity_for_test());
     assert!(matches!(&(*(*selected_cell.get().unwrap().mutable_for_test()).lock().unwrap().computation_for_test()),
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation::Absent(
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence::Restored)));
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::computation_retention::prior_absence::PriorAbsence::Restored)));
 
     let selected = lineage
         .prior_input_cutoff_candidate_for_test::<RestoredOutputBinding>(

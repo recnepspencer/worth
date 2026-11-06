@@ -67,6 +67,7 @@
    ["application_invariant", "domain algorithms for installed application invariants"]]},
   {"name": "contribution_and_output_demand", "modules": [
    ["output_reuse", "retained output reuse selection and verification"],
+   ["computation_retention", "what one partitioned computation retains between its producer's runs, and why a record retains nothing"],
    ["output_lineage", "product-local semantic output correspondence"],
    ["invariant_projection", "installation-minted authority for invariant projection"],
    ["application_output_demand", "the output demand registry and its progression"],

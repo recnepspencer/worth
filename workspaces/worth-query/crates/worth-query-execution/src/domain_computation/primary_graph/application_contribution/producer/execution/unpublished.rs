@@ -21,7 +21,7 @@ type Original = Option<std::sync::Arc<crate::domain_computation::primary_graph::
 pub(in crate::domain_computation::primary_graph) struct PreparedProducerPublication {
     input: Box<dyn Any + Send + Sync>,
     slot: Box<Option<ContinuationState>>,
-    edition: super::super::InstalledProducerEdition,
+    edition: crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition,
     mode: WorthQueryProducerCommitAuthority,
     memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
@@ -35,7 +35,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 struct ContinuationState
 {
     input: Option<Box<dyn Any + Send + Sync>>,
-    edition: super::super::InstalledProducerEdition,
+    edition: crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition,
     mode: WorthQueryProducerCommitAuthority,
     idempotency: WorthQueryApplicationIdempotencyBinding,
     state: PublicationState,

@@ -178,7 +178,7 @@ impl RecordedOutput {
         row.verification_requirement = Some(FullVerificationReason::CheckpointRestore);
         // A restored row's computation state is not the one its facts carry.
         row.computation = super::retained_computation::RecordedComputation::Absent(
-            crate::domain_computation::primary_graph::application_contribution::PriorAbsence::Restored,
+            crate::domain_computation::primary_graph::computation_retention::prior_absence::PriorAbsence::Restored,
         );
 
         if let Some(witness) = verified_witness {

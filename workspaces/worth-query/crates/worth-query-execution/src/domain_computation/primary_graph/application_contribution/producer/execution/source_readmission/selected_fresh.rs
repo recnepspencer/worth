@@ -38,7 +38,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     branch: WorthQueryProductBranch,
     retained: &WorthQueryObservedSource<SourceQuery<Schema, Binding>>,
     shared: &SharedSelectedProductOperation<'_, Schema>,
-    edition: super::super::super::InstalledProducerEdition,
+    edition: crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition,
 ) -> Result<
     super::super::super::demand::disclosure::FreshOutputDisclosure<
         SourceQuery<Schema, Binding>,

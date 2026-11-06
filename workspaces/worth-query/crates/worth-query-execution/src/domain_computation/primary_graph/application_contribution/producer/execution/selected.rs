@@ -76,7 +76,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         input: ValidatedProducerInput<'_>,
         successor_of: Option<[u8; 32]>,
         commit_authority: ProducerInvocationAuthority<'owner>,
-        edition: super::super::InstalledProducerEdition,
+        edition: crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition,
         producer_contacts: &mut usize,
     ) -> Result<super::outcome::PreparedProducerExecutionPlan<'owner>, ProducerExecutionStop>;
 
@@ -333,7 +333,7 @@ where
         input: ValidatedProducerInput<'_>,
         successor_of: Option<[u8; 32]>,
         commit_authority: ProducerInvocationAuthority<'owner>,
-        edition: super::super::InstalledProducerEdition,
+        edition: crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition,
         producer_contacts: &mut usize,
     ) -> Result<super::outcome::PreparedProducerExecutionPlan<'owner>, ProducerExecutionStop> {
         execution_plan::prepare_selected_execution::<Schema, Binding>(

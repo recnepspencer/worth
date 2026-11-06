@@ -1,5 +1,6 @@
 //! Guard observations over a genuine installed source and prepared input.
 use super::*;
+use crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition;
 impl<Query: 'static, Value: 'static> PreparedProducerInput<Query, Value> {
     #[expect(
         clippy::disallowed_methods,

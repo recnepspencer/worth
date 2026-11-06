@@ -1,5 +1,6 @@
 //! Certification enters the ordinary full route with the same admitted reader.
 use super::*;
+use crate::domain_computation::primary_graph::computation_retention::retained_basis::ComputationInstallation;
 impl<Schema, Feature, Computation, Owner>
     WorthQueryInstalledPartitionedComputation<Schema, Feature, Computation, Owner>
 where

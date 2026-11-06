@@ -14,10 +14,14 @@ pub(in crate::domain_computation::primary_graph) use computation_inputs::Observe
 pub(in crate::domain_computation::primary_graph) use expected_keys::ExpectedFactKeys;
 
 use super::WorthQueryApplicationOperationInvariantProjectionReader;
-use {crate::domain_computation::primary_graph::application_attempt::ComputationFactAttribution, crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey};
-use crate::domain_computation::primary_graph::application_contribution::{
-    CompletedComputationRetention, ComputationDeposit, ComputationPrior, PriorAbsence, Suppression,
-};
+use crate::domain_computation::primary_graph::application_attempt::ComputationFactAttribution;
+use crate::domain_computation::primary_graph::application_contribution::CompletedComputationRetention;
+use crate::domain_computation::primary_graph::application_contribution::ComputationDeposit;
+use crate::domain_computation::primary_graph::application_contribution::ComputationPrior;
+use crate::domain_computation::primary_graph::computation_retention::prior_absence::PriorAbsence;
+use crate::domain_computation::primary_graph::computation_retention::prior_absence::Suppression;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
 
 /// Every decision fact key of one projection.
 ///
@@ -94,7 +98,7 @@ impl ComputationPriorUnavailable {
             Self::PriorAlreadyTaken => Suppression::PriorAlreadyTaken,
         }
     }
-    pub(in crate::domain_computation::primary_graph) fn full_cause(&self) -> crate::domain_computation::primary_graph::application_contribution::WorthQueryPartitionedComputationFullCause{
+    pub(in crate::domain_computation::primary_graph) fn full_cause(&self) -> crate::domain_computation::primary_graph::computation_retention::full_cause::WorthQueryPartitionedComputationFullCause{
         PriorAbsence::Suppressed(self.suppression()).full_cause()
     }
 }
@@ -246,7 +250,9 @@ impl<Schema, Operation>
     pub(in crate::domain_computation::primary_graph) fn begin_native_carriage(
         &mut self,
         _: &crate::domain_computation::primary_graph::application_contribution::Comparator,
-        native: crate::domain_computation::primary_graph::application_contribution::NativeComputationReads,
+        native: std::sync::Arc<
+            dyn crate::domain_computation::primary_graph::application_attempt::read_set::computation_routing::NativeCarriageReads,
+        >,
     ) {
         self.decision_facts.computation.begin_native(native);
     }

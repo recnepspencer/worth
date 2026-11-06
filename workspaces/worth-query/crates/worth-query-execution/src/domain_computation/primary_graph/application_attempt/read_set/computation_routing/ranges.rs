@@ -1,6 +1,5 @@
 //! Closed canonical preparation progress, paired to original native custody.
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::NativeComputationReads;
 use std::{ops::Range, sync::Arc};
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead;
 
@@ -12,7 +11,7 @@ pub(super) struct CallRangeProgress {
     >,
 }
 pub(in crate::domain_computation::primary_graph) struct NativeCallCarriage {
-    native: NativeComputationReads,
+    native: Arc<dyn NativeCarriageReads>,
     binding: CheckedCallShape,
     fresh: BTreeSet<ComputationRead>,
     transition: Option<
@@ -81,13 +80,13 @@ impl NativeCallCarriage {
     }
     pub(in crate::domain_computation::primary_graph) fn same_native(
         &self,
-        native: &NativeComputationReads,
+        native: &dyn NativeCarriageReads,
     ) -> bool {
         self.native.same_native(native)
     }
     pub(super) fn closes(
         &self,
-        native: &NativeComputationReads,
+        native: &dyn NativeCarriageReads,
         fresh: &BTreeSet<ComputationRead>,
     ) -> bool {
         self.same_native(native)

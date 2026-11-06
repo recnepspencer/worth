@@ -4,6 +4,7 @@ mod current_control;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use current_control::{select_history_control, select_invocation_control};
 use std::sync::Arc;
 
+use super::registry::semantic_edition::ProducerEditionAdmission;
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_operation::ApplicationMutationInputScope;
@@ -88,7 +89,7 @@ pub(super) trait InstalledProducerExecutor<Schema>:
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         invocation: &ProducerInvocationAuthority<'_>,
-        edition: super::InstalledProducerEdition,
+        edition: crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition,
         owner: &mut unpublished::PendingProducerPublication,
     ) -> Result<Option<unpublished::RecoveredProducerPublication>, WorthQueryOutputDemandDenial>;
 
@@ -103,7 +104,7 @@ pub(super) trait InstalledProducerExecutor<Schema>:
         input: ValidatedProducerInput<'_>,
         successor_of: Option<[u8; 32]>,
         commit_authority: ProducerInvocationAuthority<'_>,
-        edition: super::InstalledProducerEdition,
+        edition: crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition,
         producer_contacts: &mut usize,
     ) -> Result<PreparedProducerExecutionOutcome, ProducerExecutionStop>;
 
@@ -148,7 +149,7 @@ where
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         invocation: &ProducerInvocationAuthority<'_>,
-        edition: super::InstalledProducerEdition,
+        edition: crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition,
         owner: &mut unpublished::PendingProducerPublication,
     ) -> Result<Option<unpublished::RecoveredProducerPublication>, WorthQueryOutputDemandDenial>
     {
@@ -190,7 +191,7 @@ where
         input: ValidatedProducerInput<'_>,
         successor_of: Option<[u8; 32]>,
         commit_authority: ProducerInvocationAuthority<'_>,
-        edition: super::InstalledProducerEdition,
+        edition: crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition,
         producer_contacts: &mut usize,
     ) -> Result<PreparedProducerExecutionOutcome, ProducerExecutionStop> {
         let execution = phase

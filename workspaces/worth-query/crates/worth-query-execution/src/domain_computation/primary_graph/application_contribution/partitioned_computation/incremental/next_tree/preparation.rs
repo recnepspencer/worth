@@ -1,5 +1,6 @@
 //! A prepared incremental run holds exactly its carried and gathered partitions.
 use super::*;
+use crate::domain_computation::primary_graph::computation_retention::retained_basis::RetainedBasis;
 impl<Key, Item, Reduced, Gathered> PreparedIncremental<Key, Item, Reduced, Gathered>
 where
     Key: Send + Sync + 'static,

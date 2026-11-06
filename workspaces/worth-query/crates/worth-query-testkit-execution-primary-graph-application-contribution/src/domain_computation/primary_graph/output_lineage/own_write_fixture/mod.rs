@@ -276,7 +276,7 @@ pub fn commit_own_write(
         (*recorded.completed_handler_facts_mut_for_test()) = Some(boundary);
         (*recorded.prepared_input_reuse_key_mut_for_test()) = Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_reuse_key::PreparedInputReuseKey::new_for_test(
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::WorthQueryObservedSourceSelection::selecting_for_test(u64::try_from(count).unwrap()),
-            [11;32], worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::semantic_edition::InstalledProducerEdition::for_test_for_test([12;32])));
+            [11;32], worth_query_execution::court_doors_for_test::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition::for_test_for_test([12;32])));
     }
     let cell = (*handle.output_lineage.lock().unwrap().by_source_for_test())
         .values()

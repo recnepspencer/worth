@@ -97,8 +97,8 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
     use worth_query_execution::court_doors_for_test::domain_computation::vocabulary::primary_graph::decision_reuse::PreparedDecisionReuseContext;
     use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as WorthQueryApplicationOutputPosture;
     use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryCheckpointOutputRole;
-    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::semantic_edition::InstalledProducerEdition;
-    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::computation_retention::prior_absence::PriorAbsence;
     use worth_query_execution::facade::application_contribution::WorthQueryDecisionContextDependencies;
     use worth_query_execution::facade::application_contribution::WorthQueryProducerInputReuseContract;
     use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::WorthQueryObservedSourceSelection;

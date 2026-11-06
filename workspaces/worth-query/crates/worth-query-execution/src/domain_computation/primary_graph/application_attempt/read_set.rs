@@ -221,7 +221,7 @@ where
             read_scope,
             expected_facts: None,
             computation_reads: (crate::domain_computation::primary_graph::invariant_projection::ObservedComputationInputs::None, crate::domain_computation::primary_graph::application_contribution::CompletedComputationRetention::Absent(
-                crate::domain_computation::primary_graph::application_contribution::PriorAbsence::NotProduced)),
+                crate::domain_computation::primary_graph::computation_retention::prior_absence::PriorAbsence::NotProduced)),
             installed_read_scopes: BTreeMap::new(),
             facts: BTreeMap::new(),
             source_facts,

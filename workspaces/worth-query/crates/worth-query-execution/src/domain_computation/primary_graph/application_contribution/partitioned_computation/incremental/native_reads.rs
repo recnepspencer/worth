@@ -1,5 +1,9 @@
 //! Original retained custody paired with the comparator's exact native pin.
+//!
+//! The read set holds this custody only through its own question,
+//! `NativeCarriageReads`, which is answered here.
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::read_set::computation_routing::NativeCarriageReads;
 use crate::domain_computation::primary_graph::application_attempt::SealedComputationFacts;
 use crate::domain_computation::primary_graph::application_contribution::RetainedComputation;
 use worth_relational::facade::snapshots::SnapshotHandle;
@@ -14,9 +18,6 @@ pub struct NativeComputationReads {
     >,
 }
 impl NativeComputationReads {
-    pub(in crate::domain_computation::primary_graph) fn same_native(&self, other: &Self) -> bool {
-        Arc::ptr_eq(&self.prior, &other.prior) && self.snapshot == other.snapshot
-    }
     pub(super) fn call_binding(
         &self,
         sequence:&crate::domain_computation::primary_graph::invariant_projection::ComputationCallSequence,
@@ -44,58 +45,58 @@ impl NativeComputationReads {
         self.rebase_changes = changes;
         self
     }
-    pub(in crate::domain_computation::primary_graph) fn rebase_changes(
+}
+impl NativeCarriageReads for NativeComputationReads {
+    fn identity(&self) -> (*const (), &SnapshotHandle) {
+        (Arc::as_ptr(&self.prior).cast::<()>(), &self.snapshot)
+    }
+    fn at_snapshot(&self, snapshot: &SnapshotHandle) -> bool {
+        &self.snapshot == snapshot
+    }
+    fn facts(&self) -> &SealedComputationFacts {
+        &self.prior.facts
+    }
+    fn rebase_changes(
         &self,
     ) -> Option<
         crate::domain_computation::primary_graph::output_lineage::invalidation::ComputationChanges,
     > {
         self.rebase_changes.clone()
     }
-    pub(in crate::domain_computation::primary_graph) fn facts(&self) -> &SealedComputationFacts {
-        &self.prior.facts
-    }
-    pub(in crate::domain_computation::primary_graph) fn at_snapshot(
+    fn closes_native_ranges(
         &self,
-        snapshot: &SnapshotHandle,
-    ) -> bool {
-        &self.snapshot == snapshot
-    }
-}
-impl CompletedComputationRetention {
-    pub(in crate::domain_computation::primary_graph) fn closes_native_ranges(
-        &self,
-        reads: &NativeComputationReads,
+        completed: &CompletedComputationRetention,
         ranges: &Arc<
             crate::domain_computation::primary_graph::application_attempt::NativeCallCarriage,
         >,
     ) -> bool {
-        let Self::Produced(run) = self else {
+        let CompletedComputationRetention::Produced(run) = completed else {
             return false;
         };
         run.carried.as_ref().is_some_and(|carried| {
-            Arc::ptr_eq(&carried.prior, &reads.prior)
-                && carried.validated_at.as_ref() == Some(&reads.snapshot)
+            Arc::ptr_eq(&carried.prior, &self.prior)
+                && carried.validated_at.as_ref() == Some(&self.snapshot)
                 && carried
                     .ranges
                     .as_ref()
                     .is_some_and(|closed| Arc::ptr_eq(closed, ranges))
-                && ranges.same_native(reads)
+                && ranges.same_native(self)
                 && ranges.matches_target(run.call_sequence.shape())
         })
     }
     /// A descriptive layout cannot authorize carriage without the successful
     /// run that consumed this exact retained custody at the native pin.
-    pub(in crate::domain_computation::primary_graph) fn closes_native_reads(
+    fn closes_native_reads(
         &self,
-        reads: &NativeComputationReads,
+        completed: &CompletedComputationRetention,
         calls: &BTreeSet<ComputationRead>,
     ) -> bool {
-        let Self::Produced(run) = self else {
+        let CompletedComputationRetention::Produced(run) = completed else {
             return false;
         };
         run.carried.as_ref().is_some_and(|carried| {
-            Arc::ptr_eq(&carried.prior, &reads.prior)
-                && carried.validated_at.as_ref() == Some(&reads.snapshot)
+            Arc::ptr_eq(&carried.prior, &self.prior)
+                && carried.validated_at.as_ref() == Some(&self.snapshot)
                 && carried.membership.then_some(ComputationRead::Membership).into_iter()
                     .chain(carried.items.iter().copied().map(ComputationRead::ItemKey))
                     .chain(carried.partitions.iter().map(ComputationRead::Partition))
