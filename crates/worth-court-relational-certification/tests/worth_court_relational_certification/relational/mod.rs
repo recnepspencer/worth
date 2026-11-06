@@ -12,3 +12,5 @@ mod derived_relation_changes;
 mod compound_publication;
 
 mod materialization;
+
+mod restoration_header;
