@@ -14,12 +14,8 @@ mod retirement_equality;
 pub(crate) mod source_currentness;
 mod source_read_authorization;
 pub(in crate::domain_computation::primary_graph) use source_read_authorization::SourceReadAuthorization;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_read_authorization::SourceReadAuthorizationKey;
 mod source_merge;
-mod source_publication_read;
 pub(in crate::domain_computation::primary_graph) use managed_source_read::ManagedSourceRead;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::managed_source_read::ManagedSourceReadKey;
-pub(in crate::domain_computation::primary_graph) use source_publication_read::SourcePublicationRead;
 mod workflow_definition_predecessor;
 pub(crate) mod workflow_history_basis;
 pub(in crate::domain_computation) use workflow_history_basis::WorkflowHistoryRequirement;
@@ -46,41 +42,6 @@ pub struct WorthQueryApplicationObservedRelation {
     pub(in crate::domain_computation::primary_graph) relation_id: RelationId,
     pub(in crate::domain_computation::primary_graph) from: EntityId,
     pub(in crate::domain_computation::primary_graph) to: EntityId,
-}
-
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub enum WorthQueryApplicationFactKey {
-    StructuralWalk(crate::domain_computation::primary_graph::vocabulary::structural_walk::key::StructuralWalkKey),
-    Aggregate(crate::domain_computation::primary_graph::vocabulary::aggregate_observation::key::AggregateKey),
-    ComponentSelection(crate::domain_computation::primary_graph::vocabulary::component_selection::key::ComponentSelectionKey),
-    SourcePublication(SourcePublicationRead),
-    ManagedIndexSource(ManagedSourceReadKey),
-    SourceReadAuthorization(SourceReadAuthorizationKey),
-    Entity {
-        entity: String,
-        entity_id: EntityId,
-    },
-    Field {
-        entity: String,
-        entity_id: EntityId,
-        locator: AspectFieldLocator,
-    },
-    AspectPresence {
-        entity: String,
-        entity_id: EntityId,
-        locator: AspectFieldLocator,
-    },
-    Relation {
-        relation: String,
-        from: EntityId,
-        to: EntityId,
-    },
-    Adjacency {
-        relation: String,
-        anchor: EntityId,
-        direction: WorthQueryApplicationAdjacencyDirection,
-        maximum_work_units: usize,
-    },
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

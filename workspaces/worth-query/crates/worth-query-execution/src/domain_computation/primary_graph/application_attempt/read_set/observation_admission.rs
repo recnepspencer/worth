@@ -3,7 +3,7 @@ use worth_query_installation::facade::{
     WorthQueryOperationGraphReadScope,
 };
 
-use super::super::fact::WorthQueryApplicationFactKey;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
 use super::WorthQueryApplicationReadAttempt;
 use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 

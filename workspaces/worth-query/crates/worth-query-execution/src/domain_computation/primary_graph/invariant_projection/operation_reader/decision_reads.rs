@@ -14,7 +14,7 @@ pub(in crate::domain_computation::primary_graph) use computation_inputs::Observe
 pub(in crate::domain_computation::primary_graph) use expected_keys::ExpectedFactKeys;
 
 use super::WorthQueryApplicationOperationInvariantProjectionReader;
-use {crate::domain_computation::primary_graph::application_attempt::ComputationFactAttribution, crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationFactKey};
+use {crate::domain_computation::primary_graph::application_attempt::ComputationFactAttribution, crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey};
 use crate::domain_computation::primary_graph::application_contribution::{
     CompletedComputationRetention, ComputationDeposit, ComputationPrior, PriorAbsence, Suppression,
 };

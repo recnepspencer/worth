@@ -8,7 +8,7 @@ use worth_query_installation::facade::{
     DeclaredApplicationFieldValue, EqualityPredicate, OperationReads, WritePosture,
 };
 
-use super::fact::{WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey, super::fact::WorthQueryApplicationObservedFact};
 use super::read_phase::{
     WorthQueryOrdinaryApplicationRead, WorthQueryProjectedApplicationMutation,
 };

@@ -1,8 +1,5 @@
 //! Computation input membership survives loss of reusable partition attribution.
-use crate::domain_computation::primary_graph::application_attempt::{
-    ComputationFactAttribution, WorthQueryApplicationFactKey as Key,
-    WorthQueryApplicationObservedFact as Fact,
-};
+use {crate::domain_computation::primary_graph::application_attempt::ComputationFactAttribution, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey as Key, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact};
 use std::collections::BTreeMap;
 
 pub enum ObservedComputationInputs {

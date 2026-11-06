@@ -34,7 +34,7 @@ impl MutationReadAttemptCore<'_, '_, '_> {
                     return false;
                 }
                 if let (
-                    super::super::fact::WorthQueryApplicationFactKey::ComponentSelection(key),
+                    crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey::ComponentSelection(key),
                     super::super::fact::WorthQueryApplicationObservedFact::ComponentSelection {
                         observation,
                     },
@@ -55,7 +55,7 @@ impl MutationReadAttemptCore<'_, '_, '_> {
                     return false;
                 }
                 if let (
-                    super::super::fact::WorthQueryApplicationFactKey::Aggregate(key),
+                    crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey::Aggregate(key),
                     super::super::fact::WorthQueryApplicationObservedFact::Aggregate {
                         observation,
                     },
@@ -76,7 +76,7 @@ impl MutationReadAttemptCore<'_, '_, '_> {
                     return false;
                 }
                 if let (
-                    super::super::fact::WorthQueryApplicationFactKey::StructuralWalk(key),
+                    crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey::StructuralWalk(key),
                     super::super::fact::WorthQueryApplicationObservedFact::StructuralWalk {
                         observation,
                     },
@@ -98,7 +98,7 @@ impl MutationReadAttemptCore<'_, '_, '_> {
                 }
                 if let (
                     crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition::SourceQuery,
-                    super::super::fact::WorthQueryApplicationFactKey::SourcePublication(read),
+                    crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey::SourcePublication(read),
                     super::super::fact::WorthQueryApplicationObservedFact::SourcePublication {
                         observation,
                     },
@@ -115,7 +115,7 @@ impl MutationReadAttemptCore<'_, '_, '_> {
                             .is_some_and(|issued| std::sync::Arc::ptr_eq(issued, observation));
                 }
                 if let (crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition::SourceQuery,
-                    super::super::fact::WorthQueryApplicationFactKey::SourceReadAuthorization(key),
+                    crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey::SourceReadAuthorization(key),
                     super::super::fact::WorthQueryApplicationObservedFact::SourceReadAuthorization { observation },
                 ) = (scope, fact_key, fact) {
                     return self.expected_facts.as_ref().and_then(|expected| expected.source_authorization(
@@ -124,7 +124,7 @@ impl MutationReadAttemptCore<'_, '_, '_> {
                 }
                 if let (
                     crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition::SourceQuery,
-                    super::super::fact::WorthQueryApplicationFactKey::ManagedIndexSource(key),
+                    crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey::ManagedIndexSource(key),
                     super::super::fact::WorthQueryApplicationObservedFact::ManagedIndexSource {
                         observation,
                     },

@@ -8,6 +8,7 @@ use worth_query_installation::facade::WorthQueryCompiledApplicationOperationCont
 use worth_relational::facade::{
     snapshots::SnapshotHandle, transactions::RelationalExecutionDenialCause as Cause,
 };
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
 
 struct Issued {
     body: Arc<StructuralWalkObservation>,

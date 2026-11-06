@@ -16,7 +16,7 @@ impl<Schema, Operation, Input, Scope>
     pub(super) fn observe_source_publication(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        read: &crate::domain_computation::primary_graph::application_attempt::SourcePublicationRead,
+        read: &crate::domain_computation::primary_graph::vocabulary::application_attempt::source_publication_read::SourcePublicationRead,
     ) -> Result<
         (
             crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition,

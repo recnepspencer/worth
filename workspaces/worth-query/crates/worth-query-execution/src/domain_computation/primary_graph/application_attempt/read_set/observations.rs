@@ -7,7 +7,7 @@ use worth_query_installation::facade::{
     ApplicationRelationRef, DeclaredApplicationFieldValue, OperationReads, WritePosture,
 };
 
-use super::super::fact::{WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey, super::super::fact::WorthQueryApplicationObservedFact};
 use super::super::observation::{exact_relations, observe_field_value};
 use super::{denial, WorthQueryApplicationReadAttempt, WorthQueryObservedApplicationRelation};
 use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};

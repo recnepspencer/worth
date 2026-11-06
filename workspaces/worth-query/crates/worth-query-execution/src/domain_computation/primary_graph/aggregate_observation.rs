@@ -10,7 +10,6 @@ use worth_relational::facade::{
 mod currentness;
 mod member;
 
-
 use crate::domain_computation::primary_graph::vocabulary::aggregate_observation::selection::AggregateSelection;
 use crate::domain_computation::primary_graph::vocabulary::aggregate_observation::key::AggregateKey;
 

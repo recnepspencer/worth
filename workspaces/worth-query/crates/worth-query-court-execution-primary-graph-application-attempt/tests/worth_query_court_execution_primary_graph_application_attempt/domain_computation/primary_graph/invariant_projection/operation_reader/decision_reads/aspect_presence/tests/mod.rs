@@ -2,7 +2,7 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
     use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::decision_reads::DecisionReads;
     use worth_foundational::facade::AspectKey;
     use worth_relational::facade::identity::EntityId;
-    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationFactKey as Key;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey as Key;
     use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead;
     use std::collections::BTreeSet;
     use worth_foundational::facade::FieldKey;

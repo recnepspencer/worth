@@ -1,2 +1,3 @@
 //! Doors under `domain_computation::primary_graph::vocabulary::application_attempt::fact`.
 pub use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
+pub use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;

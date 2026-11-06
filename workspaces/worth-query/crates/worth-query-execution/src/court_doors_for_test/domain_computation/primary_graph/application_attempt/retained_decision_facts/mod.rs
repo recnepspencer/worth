@@ -1,8 +1,6 @@
 //! Doors under `domain_computation::primary_graph::application_attempt::retained_decision_facts`.
 #[path = "canonical_key/mod.rs"]
 pub mod canonical_key;
-#[path = "control/mod.rs"]
-pub mod control;
 #[path = "directory/mod.rs"]
 pub mod directory;
 #[path = "fact_store/mod.rs"]
@@ -16,3 +14,4 @@ pub mod storage;
 pub use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::AUTHOR_CHUNK;
 pub use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::RetainedFact;
 pub use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::Slot;
+pub use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::control;

@@ -3,6 +3,7 @@ use crate::domain_computation::primary_graph::vocabulary::application_attempt::r
 use super::*;
 use worth_execution::{ExecutionAllocationPolicy, ExecutionOrderedMap};
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ComputationFactIndex {
     pub(super) ordinals: std::sync::Arc<ExecutionOrderedMap<usize, WorthQueryApplicationFactKey>>,

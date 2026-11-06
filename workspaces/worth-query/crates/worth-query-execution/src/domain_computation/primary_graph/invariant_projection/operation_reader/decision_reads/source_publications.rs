@@ -1,10 +1,11 @@
 //! Original issued fact VALUES travel with this projection; keys carry no proof.
 use super::*;
-use crate::domain_computation::primary_graph::application_attempt::SourcePublicationRead;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_publication_read::SourcePublicationRead;
 
 use crate::domain_computation::primary_graph::output_lineage::invalidation::ObservedSourcePublication;
 use std::sync::Arc;
 use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
 type Value = (SourcePublicationRead, Arc<ObservedSourcePublication>);
 pub(super) struct IssuedSourcePublicationValues {
     values: Vec<Value>,

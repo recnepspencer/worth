@@ -1,5 +1,6 @@
 //! Entity admission for descriptive keys; original issued bodies seal separately.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
 
 pub(super) fn key_entities_are_in_scope(
     key: &WorthQueryApplicationFactKey,

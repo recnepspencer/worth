@@ -7,6 +7,7 @@ use crate::domain_computation::primary_graph::invariant_projection::{
 use crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary;
 use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 use worth_execution::ExecutionAllocationPolicy;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryCompleteApplicationReadSet<
@@ -57,7 +58,7 @@ impl<Schema, Operation, Input, Scope>
         );
         let mut facts = Vec::new();
         for key in keys.iter() {
-            if let super::super::WorthQueryApplicationFactKey::ComponentSelection(key) = key {
+            if let crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey::ComponentSelection(key) = key {
                 let (_, fact) = super::components::observe(
                     execution,
                     &self.admission,
@@ -70,7 +71,7 @@ impl<Schema, Operation, Input, Scope>
                 facts.push(fact);
                 continue;
             }
-            if let super::super::WorthQueryApplicationFactKey::Aggregate(key) = key {
+            if let crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey::Aggregate(key) = key {
                 let (_, fact) = super::aggregate::observe(
                     execution,
                     &self.admission,
@@ -83,7 +84,7 @@ impl<Schema, Operation, Input, Scope>
                 facts.push(fact);
                 continue;
             }
-            if let super::super::WorthQueryApplicationFactKey::StructuralWalk(key) = key {
+            if let crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey::StructuralWalk(key) = key {
                 let (_, fact) = super::structural_walk::observe(
                     execution,
                     &self.admission,

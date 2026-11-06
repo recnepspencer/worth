@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
 
 impl SealedComputationFacts {
     #[doc(hidden)]

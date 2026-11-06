@@ -1,6 +1,8 @@
 //! `application_attempt`'s vocabulary, moved whole from `primary_graph::application_attempt`: its root file's items here, one child per other source file.
+pub(crate) mod application_projection;
 pub(crate) mod approval;
 pub(crate) mod aspect_presence;
+pub(crate) mod attempt_denial;
 pub(crate) mod commit_outcome;
 pub(crate) mod commit_outcome_identity;
 pub(crate) mod computation_routing;
@@ -25,17 +27,16 @@ pub(crate) mod projection;
 pub(crate) mod publication;
 pub(crate) mod recorded_intent;
 pub(crate) mod reference;
+pub(crate) mod retained_decision_facts;
 pub(crate) mod retention;
 pub(crate) mod retention_counters;
 pub(crate) mod role_use;
 pub(crate) mod scope_bindings;
 pub(crate) mod selection;
 pub(crate) mod source_currentness;
+pub(crate) mod source_publication_read;
 pub(crate) mod source_read_authorization;
 pub(crate) mod unobserved_write;
 pub(crate) mod version;
 pub(crate) mod workflow_instance_program_publication;
 pub(crate) mod workflow_transition_program_publication;
-pub(crate) mod attempt_denial;
-pub(crate) mod retained_decision_facts;
-pub(crate) mod application_projection;

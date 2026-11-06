@@ -4,7 +4,7 @@ use key_scope::key_entities_are_in_scope;
 use worth_execution::ExecutionAllocationPolicy;
 use worth_query_installation::facade::{ApplicationRelationRef, OperationReads};
 
-use super::super::fact::{WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey, super::super::fact::WorthQueryApplicationObservedFact};
 use super::super::read_phase::WorthQueryProjectedApplicationMutation;
 use super::{denial, WorthQueryApplicationReadAttempt, WorthQueryCompleteApplicationReadSet};
 use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};

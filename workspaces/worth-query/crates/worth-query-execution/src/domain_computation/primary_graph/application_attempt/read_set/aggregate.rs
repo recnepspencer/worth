@@ -8,6 +8,7 @@ use super::*;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition;
 use {crate::domain_computation::primary_graph::vocabulary::aggregate_observation::key::AggregateKey, crate::domain_computation::primary_graph::aggregate_observation::AggregateObservation, crate::domain_computation::primary_graph::invariant_projection::ExpectedFactKeys};
 use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
 
 pub fn observe<Schema, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -37,7 +38,7 @@ pub fn observe<Schema, Operation, Input, Scope>(
             lease.snapshot(),
         )
         .ok_or_else(mismatch)?;
-    let descriptor = super::super::WorthQueryApplicationFactKey::Aggregate(key.clone());
+    let descriptor = crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey::Aggregate(key.clone());
     let position = position
         .or_else(|| {
             admission

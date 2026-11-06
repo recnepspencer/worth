@@ -9,7 +9,7 @@ pub use worth_foundational::facade::PartitionIdentity;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartitions;
 pub use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::*;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::computation_routing::ComputationFactReaders;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationFactKey;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
 
 /// One item as a number: its identity, its key and its value, so a changed
 /// key or value is a changed digest.

@@ -7,6 +7,7 @@ use std::{collections::BTreeMap, sync::Arc};
 use worth_execution::MapKernelContext;
 use worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts as Contracts;
 use worth_relational::facade::snapshots::SnapshotHandle;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
 
 struct Issued {
     body: Arc<AggregateObservation>,
