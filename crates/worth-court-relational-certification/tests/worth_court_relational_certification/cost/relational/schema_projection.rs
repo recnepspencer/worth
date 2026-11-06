@@ -30,14 +30,24 @@ fn pinned_snapshot_and_view_admission_build_no_schema_projection() {
         .unwrap();
     let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
-    let (_, basis) = runtime
-        .observe_branch(&runtime.main_branch_identity())
-        .unwrap();
-    let snapshot = runtime
-        .snapshots()
-        .snapshot_for_observation(&basis.observation())
-        .unwrap();
     let (_, projections) = RelationalSchemaRegistry::count_authority_projections_for_test(|| {
+        let (_, basis) = runtime
+            .observe_branch(&runtime.main_branch_identity())
+            .unwrap();
+        let observation = basis.observation();
+        let snapshot = runtime
+            .snapshots()
+            .snapshot_for_observation(&observation)
+            .unwrap();
+        runtime
+            .read_truth()
+            .read_observation(&execution, &observation)
+            .unwrap()
+            .unwrap();
+        runtime
+            .read_truth()
+            .project_observation(&observation)
+            .unwrap();
         assert_eq!(
             runtime.read_truth().snapshot_schema_version(&snapshot),
             Some(SchemaVersionId(7))

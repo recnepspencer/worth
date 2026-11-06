@@ -46,7 +46,7 @@ impl VisibilitySnapshotStateKey {
                 branch_id,
                 version_id,
                 root_id: root.id(),
-                schema_commitment: root.schema_authority().registry().authority_digest_bytes(),
+                schema_commitment: root.schema_authority().authority_digest(),
             },
         ))
     }
