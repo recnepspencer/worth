@@ -100,7 +100,7 @@ impl WorthQueryExistingTruthBindingEvidence {
 
     pub(in crate::runtime) fn from_binding(
         binding: &crate::runtime::WorthQueryExistingTruthTargetBinding,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let resolved_entity_identity = binding
             .resolved_target_identity()
             .relational_record_parts()
@@ -108,7 +108,7 @@ impl WorthQueryExistingTruthBindingEvidence {
             .expect(
                 "existing-truth binding evidence must carry a relational record target identity",
             );
-        Self {
+        Ok(Self {
             family: binding.family(),
             outcome: WorthQueryExistingTruthBindingOutcome::ExistingAuthoritativeTarget,
             authoritative_identity: binding.authoritative_identity().clone(),
@@ -117,8 +117,8 @@ impl WorthQueryExistingTruthBindingEvidence {
             binding_digest: WorthQueryMutationEvidenceDigest::source_identity(
                 "existing-truth-binding",
                 binding.binding_evidence_identity(),
-            ),
-        }
+            )?,
+        })
     }
 
     pub fn family(&self) -> crate::runtime::WorthQueryExistingTruthBindingFamily {

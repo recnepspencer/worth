@@ -54,10 +54,10 @@ pub struct WorthQueryLiveViewInspection {
 }
 
 impl WorthQueryLiveViewInspection {
-    pub(in crate::runtime) fn from_state(state: &WorthQueryRuntimeLiveSubscriptionState) -> Self {
+    pub(in crate::runtime) fn from_state(state: &WorthQueryRuntimeLiveSubscriptionState) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let installation = &state.installation;
         let counters =
-            WorthQueryLiveSubscriptionInspectionCounters::from_installation(installation);
+            WorthQueryLiveSubscriptionInspectionCounters::from_installation(installation)?;
         let last_delivery_cause_kind = state
             .last_delivery
             .as_ref()
@@ -113,9 +113,9 @@ impl WorthQueryLiveViewInspection {
                 remask_posture: remask_posture.as_ref(),
                 installation_identity: installation.installation_identity(),
                 counter_inspection_identity: counters.counter_inspection_identity(),
-            });
+            })?;
 
-        Self {
+        Ok(Self {
             view_name: installation.view_name().to_string(),
             authority_lane: installation.authority_lane(),
             query_identity: installation.query_identity().clone(),
@@ -153,7 +153,7 @@ impl WorthQueryLiveViewInspection {
             installation_identity: installation.installation_identity().clone(),
             counters,
             inspection_identity,
-        }
+        })
     }
 
     pub fn view_name(&self) -> &str {

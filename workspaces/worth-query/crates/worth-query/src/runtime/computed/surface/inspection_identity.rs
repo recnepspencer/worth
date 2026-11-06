@@ -7,8 +7,8 @@ pub(super) fn computed_definition_inspection_identity(
     upstream_derived_views: &[String],
     dependency_aspects: &[WorthQueryAspectTouch],
     produced_aspects: &[WorthQueryAspectTouch],
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
         .field_shape(
             WorthQueryEvidenceTag::new("identity_family"),
             "worth_query_computed_definition_inspection_v1",
@@ -42,7 +42,7 @@ pub(super) fn computed_definition_inspection_identity(
                 .iter()
                 .map(WorthQueryAspectTouch::admitted_touch_digest_part),
         )
-        .seal()
+        .seal()?)
 }
 
 pub(super) fn computed_dependency_inspection_identity(
@@ -50,8 +50,8 @@ pub(super) fn computed_dependency_inspection_identity(
     upstream_live_views: &[String],
     upstream_derived_views: &[String],
     dependency_aspects: &[WorthQueryAspectTouch],
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
         .field_shape(
             WorthQueryEvidenceTag::new("identity_family"),
             "worth_query_computed_dependency_inspection_v1",
@@ -71,14 +71,14 @@ pub(super) fn computed_dependency_inspection_identity(
                 .iter()
                 .map(WorthQueryAspectTouch::admitted_touch_digest_part),
         )
-        .seal()
+        .seal()?)
 }
 
 pub(super) fn computed_produced_aspect_inspection_identity(
     name: &str,
     produced_aspects: &[WorthQueryAspectTouch],
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
         .field_shape(
             WorthQueryEvidenceTag::new("identity_family"),
             "worth_query_computed_produced_aspect_inspection_v1",
@@ -94,19 +94,19 @@ pub(super) fn computed_produced_aspect_inspection_identity(
                 .iter()
                 .map(WorthQueryAspectTouch::admitted_touch_digest_part),
         )
-        .seal()
+        .seal()?)
 }
 
 pub(super) fn computed_materialization_inspection_identity(
     name: &str,
     materialized_row_count: usize,
     rows: &[WorthQueryRetainedMaterializedRow],
-) -> WorthQueryEvidenceIdentity {
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
     let row_shapes: Vec<String> = rows
         .iter()
         .map(|row| row.terminal_digest_parts().join(";"))
         .collect();
-    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
         .field_shape(
             WorthQueryEvidenceTag::new("identity_family"),
             "worth_query_computed_materialization_inspection_v1",
@@ -117,7 +117,7 @@ pub(super) fn computed_materialization_inspection_identity(
             WorthQueryEvidenceTag::new("materialized_rows"),
             row_shapes.iter().map(String::as_str),
         )
-        .seal()
+        .seal()?)
 }
 
 pub(super) fn computed_pending_patch_inspection_identity(
@@ -126,8 +126,8 @@ pub(super) fn computed_pending_patch_inspection_identity(
     pending_incremental_patch_count: usize,
     pending_refresh_fallback_count: usize,
     patch_identities: &[WorthQueryEvidenceIdentity],
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
         .field_shape(
             WorthQueryEvidenceTag::new("identity_family"),
             "worth_query_computed_pending_patch_inspection_v1",
@@ -146,13 +146,13 @@ pub(super) fn computed_pending_patch_inspection_identity(
             WorthQueryEvidenceTag::new("patches"),
             patch_identities.iter(),
         )
-        .seal()
+        .seal()?)
 }
 
 pub(super) fn derived_patch_inspection_identity(
     view_name: &str,
     patch: &WorthQueryDerivedPatch,
-) -> WorthQueryEvidenceIdentity {
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
     let family = match patch.family() {
         WorthQueryDerivedPatchFamily::Incremental => "incremental",
         WorthQueryDerivedPatchFamily::RefreshFallback => "refresh_fallback",
@@ -191,5 +191,5 @@ pub(super) fn derived_patch_inspection_identity(
                 .map(WorthQueryAspectTouch::admitted_touch_digest_part),
         );
     }
-    encoder.seal()
+    Ok(encoder.seal()?)
 }

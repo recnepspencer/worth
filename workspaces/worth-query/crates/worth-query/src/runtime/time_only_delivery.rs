@@ -50,7 +50,7 @@ pub(crate) fn emit_time_only_live_subscription_delivery(
         .map_err(|error| time_only_delivery_error(view_name, error))?;
     let delivery_receipt = batch.receipt().clone();
     let runtime_batch =
-        WorthQueryRuntimeDeliveryBatch::from_query_delivery(view_name, &batch, None, None, None);
+        WorthQueryRuntimeDeliveryBatch::from_query_delivery(view_name, &batch, None, None, None)?;
     state.last_delivery = Some(WorthQueryRuntimeRetainedDelivery::from_batch(
         &runtime_batch,
     ));

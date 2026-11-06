@@ -252,7 +252,7 @@ fn symbolic_aspect_reference_digest_row(
     let symbol_identity = WorthQueryMutationSymbolIdentity::new(
         "symbolic-aspect-reference",
         reference.reference().symbol(),
-    );
+    )?;
     let collection_identity = reference.reference().target_collection_identity();
     let mut identity =
         worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)

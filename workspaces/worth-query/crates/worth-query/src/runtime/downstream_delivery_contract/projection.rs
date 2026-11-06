@@ -5,7 +5,7 @@ use super::*;
 pub(crate) fn project_downstream_delivery(
     contract: &WorthQueryRuntimeDownstreamDeliveryContract,
     state: &WorthQueryRuntimeLiveSubscriptionState,
-) -> Option<WorthQueryRuntimeDownstreamDelivery> {
+) -> Result<Option<WorthQueryRuntimeDownstreamDelivery>, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
     let delivery = state.last_delivery.as_ref()?;
     let delivery_class = classify_delivery(delivery, state.async_result_state.as_ref());
     let support_posture = classify_support_posture(state.remask_posture.as_ref());
@@ -49,8 +49,8 @@ pub(crate) fn project_downstream_delivery(
             remask_identity: remask_identity.as_ref(),
             runtime_resume_support_identity: contract.runtime_resume_support_identity(),
             durable_resume_support_identity: contract.durable_resume_support_identity(),
-        });
-    Some(WorthQueryRuntimeDownstreamDelivery::from_projection(
+        })?;
+    Ok(Some(WorthQueryRuntimeDownstreamDelivery::from_projection(
         WorthQueryRuntimeDownstreamDeliveryParts {
             view_name: state.installation.view_name().to_string(),
             delivery_batch_identity,
@@ -70,7 +70,7 @@ pub(crate) fn project_downstream_delivery(
             durable_resume_support_identity: contract.durable_resume_support_identity().clone(),
             delivery_identity,
         },
-    ))
+    )))
 }
 
 fn classify_delivery(

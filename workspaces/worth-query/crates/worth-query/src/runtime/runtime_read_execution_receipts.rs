@@ -25,7 +25,7 @@ pub(crate) fn attach_read_intent_execution_evidence<Product>(
     snapshot_identity: &crate::WorthQueryEvidenceIdentity,
 ) where
     Product: WorthQueryReadExecutionProduct,
-{
+-> Result<(), crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
     let decision_trace_envelope =
         WorthQueryIntentDecisionTraceEnvelope::for_admitted_execution_parts(
             binding.family(),
@@ -50,8 +50,10 @@ pub(crate) fn attach_read_intent_execution_evidence<Product>(
             binding.binding_digest(),
             executed_read.product().receipt().result_digest(),
             snapshot_identity,
-        );
+        )?;
     executed_read
         .product_mut()
         .attach_intent_admission_evidence(decision_trace_envelope, execution_provenance);
+
+Ok(())
 }

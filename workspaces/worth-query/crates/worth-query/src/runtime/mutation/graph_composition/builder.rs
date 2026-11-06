@@ -83,7 +83,7 @@ impl WorthQueryGraphCompositionBuilder {
         self.program_steps.push(graph_program_step(
             component_index,
             WorthQueryGraphCompositionProgramStepKind::RelationDeclaration,
-            Some(graph_program_declared_collection(collection)),
+            Some(graph_program_declared_collection(collection)?),
             None,
             relation_kind_id,
         ));
@@ -244,7 +244,7 @@ impl WorthQueryGraphCompositionBuilder {
             let denial = WorthQueryGraphCompositionDenial::new(
                 WorthQueryGraphCompositionDenialKind::DuplicateSymbolDeclaration,
                 Some(symbol),
-                Some(graph_program_declared_collection(collection)),
+                Some(graph_program_declared_collection(collection)?),
                 message,
             )?;
             self.error = Some(denial.clone());
@@ -293,6 +293,6 @@ fn graph_program_step(
 
 fn graph_program_declared_collection(
     collection: impl Into<String>,
-) -> WorthQueryMutationTargetCollectionIdentity {
-    WorthQueryMutationTargetCollectionIdentity::new("graph-composition-program", collection)
+) -> Result<WorthQueryMutationTargetCollectionIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(WorthQueryMutationTargetCollectionIdentity::new("graph-composition-program", collection)?)
 }

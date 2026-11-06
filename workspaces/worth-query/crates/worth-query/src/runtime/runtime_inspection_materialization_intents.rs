@@ -61,7 +61,7 @@ impl WorthQueryWorkspace {
         Ok(WorthQueryDerivedMaterializationBundle::new(
             snapshot_identity,
             materializations,
-        ))
+        )?)
     }
 
     pub fn materialize_intent<T>(
@@ -314,7 +314,7 @@ impl WorthQueryRuntime {
                 binding.binding_digest(),
                 result.receipt().result_digest(),
                 &snapshot_evidence_identity,
-            );
+            )?;
         result.attach_intent_admission_evidence(decision_trace_envelope, execution_provenance);
         Ok(result)
     }
@@ -354,7 +354,7 @@ impl WorthQueryRuntime {
                 binding.binding_digest(),
                 result.receipt().result_digest(),
                 &snapshot_evidence_identity,
-            );
+            )?;
         result.attach_intent_admission_evidence(decision_trace_envelope, execution_provenance);
         Ok(result)
     }

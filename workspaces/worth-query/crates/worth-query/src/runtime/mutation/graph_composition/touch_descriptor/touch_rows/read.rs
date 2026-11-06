@@ -55,7 +55,7 @@ fn read_touch_row(
             declared_collection: Some(WorthQueryMutationTargetCollectionIdentity::new(
                 "graph-read-touch-row",
                 collection,
-            )),
+            )?),
             relation_kind_id: None,
             declared_symbol: None,
             declared_aspect_operations: Vec::new(),

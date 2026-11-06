@@ -14,8 +14,8 @@ pub(super) fn preview_intent_admission_identity(
     basis_admission: &WorthQueryPreviewBasisAdmission,
     admission: WorthQueryEffectAdmission,
     canonical_input_digest: &str,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::PreviewIntentAdmission)
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::PreviewIntentAdmission)
         .field_shape(
             WorthQueryEvidenceTag::new("intent_name"),
             declaration.name(),
@@ -56,13 +56,13 @@ pub(super) fn preview_intent_admission_identity(
             WorthQueryEvidenceTag::new("basis_admission_identity"),
             basis_admission.admission_identity(),
         )
-        .seal()
+        .seal()?)
 }
 
 pub(super) fn preview_intent_receipt_identity(
     admission_identity: &WorthQueryEvidenceIdentity,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::PreviewIntentReceipt)
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::PreviewIntentReceipt)
         .field_evidence_identity(
             WorthQueryEvidenceTag::new("admission_identity"),
             admission_identity,
@@ -71,5 +71,5 @@ pub(super) fn preview_intent_receipt_identity(
             WorthQueryEvidenceTag::new("posture"),
             "preview-local-staged-no-authoritative-execution",
         )
-        .seal()
+        .seal()?)
 }

@@ -87,13 +87,13 @@ impl WorthQueryRuntime {
                     WorthQueryEvidenceTag::new("displacing_request"),
                     displacing_request.request_identity_for_reporting(),
                 )
-                .seal();
+                .seal()?;
         let superseded = WorthQueryRuntimeAsyncResultState::new(
             WorthQueryRuntimeAsyncResultStateKind::Superseded,
             &causality,
             &basis,
             &checkpoint,
-        );
+        )?;
         state.async_result_state = Some(superseded.clone());
         let remask_posture = state.remask_posture.clone();
         Ok(WorthQueryAsyncResultTransitionBatch::admitted(
@@ -201,9 +201,9 @@ impl WorthQueryRuntime {
                     WorthQueryEvidenceTag::new(request_field),
                     admitted.request_identity_for_reporting(),
                 )
-                .seal();
+                .seal()?;
         let terminal =
-            WorthQueryRuntimeAsyncResultState::new(terminal_kind, &causality, &basis, &checkpoint);
+            WorthQueryRuntimeAsyncResultState::new(terminal_kind, &causality, &basis, &checkpoint)?;
         state.async_result_state = Some(terminal.clone());
         let remask_posture = state.remask_posture.clone();
         Ok(WorthQueryAsyncResultTransitionBatch::admitted(

@@ -203,7 +203,7 @@ impl WorthQueryRuntime {
             summary.refresh_fallback,
             decision_trace_envelope,
             execution_provenance,
-        ))
+        )?)
     }
 
     pub(super) fn route_authoritative_mutation_summary(
@@ -252,7 +252,7 @@ impl WorthQueryRuntime {
             receipt,
             &affected_live_view_targets,
             &affected_derived_view_targets,
-        );
+        )?;
         Ok(WorthQueryRoutedMutationSummary {
             affected_live_view_targets,
             affected_derived_view_targets,

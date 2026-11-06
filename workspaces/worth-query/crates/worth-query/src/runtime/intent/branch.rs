@@ -27,7 +27,7 @@ impl WorthQueryBranchIntentReceipt {
         basis_admission: &WorthQueryBranchBasisAdmission,
         basis_snapshot_identity: &WorthQuerySnapshotIdentity,
         admission: WorthQueryEffectAdmission,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let basis_evidence = basis_admission.evidence().to_vec();
         let canonical_input_digest = declaration.input_digest();
         let admission_identity =
@@ -76,7 +76,7 @@ impl WorthQueryBranchIntentReceipt {
                     WorthQueryEvidenceTag::new("basis_snapshot_identity"),
                     &basis_snapshot_identity.evidence_identity(),
                 )
-                .seal();
+                .seal()?;
         let receipt_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::BranchIntentReceipt)
                 .field_evidence_identity(
@@ -87,8 +87,8 @@ impl WorthQueryBranchIntentReceipt {
                     WorthQueryEvidenceTag::new("posture"),
                     "branch-local-staged-no-authoritative-execution",
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             intent_name: declaration.name().to_string(),
             strategy_identity: declaration.strategy_name().to_string(),
             strategy_version: declaration.strategy_version().to_string(),
@@ -100,7 +100,7 @@ impl WorthQueryBranchIntentReceipt {
             basis_snapshot_identity: basis_snapshot_identity.clone(),
             admission_identity,
             receipt_identity,
-        }
+        })
     }
 
     pub fn intent_name(&self) -> &str {

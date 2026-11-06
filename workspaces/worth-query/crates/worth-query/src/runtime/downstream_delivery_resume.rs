@@ -41,20 +41,20 @@ impl WorthQueryRuntimeDownstreamResumePosture {
         required_basis_identity: Option<WorthQueryEvidenceIdentity>,
         support_posture: WorthQueryLowerRuntimeSupportPosture,
         support_identity: WorthQueryEvidenceIdentity,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let posture_identity = runtime_downstream_resume_posture_identity(
             kind,
             required_basis_identity.as_ref(),
             support_posture,
             &support_identity,
-        );
-        Self {
+        )?;
+        Ok(Self {
             kind,
             required_basis_identity,
             support_posture,
             support_identity,
             posture_identity,
-        }
+        })
     }
 
     pub fn kind(&self) -> WorthQueryRuntimeDownstreamResumePostureKind {
@@ -166,18 +166,20 @@ mod tests {
     }
 
     #[test]
-    fn resume_posture_carries_typed_support_identity() {
+    fn resume_posture_carries_typed_support_identity() -> Result<(), crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let matrix = worth_query_lower_runtime_support_matrix();
         let support = matrix
             .support_for(WorthQueryLowerRuntimeSeamKey::BasisReadmissionFromSubscriptionEvidence)
             .expect("support row must exist");
-        let support_identity = lower_runtime_support_row_identity(support);
+        let support_identity = lower_runtime_support_row_identity(support)?;
         let posture = WorthQueryRuntimeDownstreamResumePosture::new(
             WorthQueryRuntimeDownstreamResumePostureKind::SupportGateDeferred,
             None,
             support.posture(),
             support_identity,
-        );
+        )?;
         assert_eq!(posture.support_identity(), posture.support_identity());
-    }
+    
+Ok(())
+}
 }

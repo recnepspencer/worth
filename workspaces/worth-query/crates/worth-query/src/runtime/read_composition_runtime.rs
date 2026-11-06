@@ -200,15 +200,15 @@ pub(super) fn materialized_fact_posture_for_read_graph(
     ))
 }
 
-fn query_context_basis_digest_identity(basis_digest: &str) -> crate::WorthQueryEvidenceIdentity {
-    crate::WorthQueryEvidenceIdentity::compose(
+fn query_context_basis_digest_identity(basis_digest: &str) -> Result<crate::WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(crate::WorthQueryEvidenceIdentity::compose(
         crate::WorthQueryEvidenceScope::QueryContextCompatibilityBasisLabel,
     )
     .field_value(
         crate::WorthQueryEvidenceTag::new("basis_digest"),
         basis_digest,
     )
-    .seal()
+    .seal()?)
 }
 
 fn ensure_context_matches_read_graph(

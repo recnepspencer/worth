@@ -61,7 +61,7 @@ fn continuity_lineage_digest(
     Ok(WorthQueryMutationEvidenceDigest::aggregate(
         "continuity-lineage",
         lineage_identity,
-    ))
+    )?)
 }
 
 fn continuity_resolution_digest(
@@ -105,5 +105,5 @@ fn continuity_resolution_digest(
     Ok(WorthQueryMutationEvidenceDigest::aggregate(
         "continuity-resolution",
         resolution_identity,
-    ))
+    )?)
 }

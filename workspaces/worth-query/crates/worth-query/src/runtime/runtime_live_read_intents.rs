@@ -239,7 +239,7 @@ impl WorthQueryRuntime {
                 binding.binding_digest(),
                 result.receipt().result_digest(),
                 &snapshot_evidence_identity,
-            );
+            )?;
         result.attach_intent_admission_evidence(decision_trace_envelope, execution_provenance);
         Ok(result)
     }

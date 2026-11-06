@@ -49,22 +49,22 @@ impl WorthQueryIntentReceipt {
         declaration: &WorthQueryIntentDeclaration,
         execution: WorthQueryIntentExecution,
         write_receipt: &WorthQueryWriteReceipt,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let execution_provenance = WorthQueryIntentExecutionProvenance::for_authoritative_binding(
             binding,
             execution.outcome_digest(),
             write_receipt.snapshot_evidence_identity(),
-        );
+        )?;
         let handoff = WorthQueryAdmittedIntentExecutionHandoff::from(binding.handoff().clone());
         let decision_trace_envelope =
             WorthQueryIntentDecisionTraceEnvelope::for_admitted_execution(&handoff, &execution);
-        Self::new(
+        Ok(Self::new(
             declaration,
             execution,
             write_receipt,
             execution_provenance,
             decision_trace_envelope,
-        )
+        ))
     }
 
     pub(in crate::runtime) fn from_effect_binding(
@@ -72,22 +72,22 @@ impl WorthQueryIntentReceipt {
         declaration: &WorthQueryIntentDeclaration,
         execution: WorthQueryIntentExecution,
         write_receipt: &WorthQueryWriteReceipt,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let execution_provenance = WorthQueryIntentExecutionProvenance::for_effect_binding(
             binding,
             execution.outcome_digest(),
             write_receipt.snapshot_evidence_identity(),
-        );
+        )?;
         let handoff = WorthQueryAdmittedIntentExecutionHandoff::from(binding.handoff().clone());
         let decision_trace_envelope =
             WorthQueryIntentDecisionTraceEnvelope::for_admitted_execution(&handoff, &execution);
-        Self::new(
+        Ok(Self::new(
             declaration,
             execution,
             write_receipt,
             execution_provenance,
             decision_trace_envelope,
-        )
+        ))
     }
 
     fn new(

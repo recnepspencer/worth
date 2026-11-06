@@ -48,8 +48,8 @@ impl WorthQueryPreviewExecutionEvidence {
         preview_lane: WorthQueryAuthorityLane,
         source_evidence_identity: &WorthQueryEvidenceIdentity,
         aspect_touches: Vec<WorthQueryAspectTouch>,
-    ) -> Self {
-        Self::new(
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        Ok(Self::new(
             basis_admission,
             kind,
             handle_name,
@@ -58,7 +58,7 @@ impl WorthQueryPreviewExecutionEvidence {
             source_evidence_identity,
             aspect_touches,
             None,
-        )
+        )?)
     }
 
     pub(in crate::runtime::preview) fn for_intent_strategy(
@@ -66,8 +66,8 @@ impl WorthQueryPreviewExecutionEvidence {
         handle_name: &str,
         source_evidence_identity: &WorthQueryEvidenceIdentity,
         intent_strategy_name: &str,
-    ) -> Self {
-        Self::new(
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        Ok(Self::new(
             basis_admission,
             WorthQueryPreviewExecutionKind::PendingWriteIntent,
             handle_name,
@@ -76,7 +76,7 @@ impl WorthQueryPreviewExecutionEvidence {
             source_evidence_identity,
             Vec::new(),
             Some(intent_strategy_name.to_string()),
-        )
+        )?)
     }
 
     fn new(
@@ -88,7 +88,7 @@ impl WorthQueryPreviewExecutionEvidence {
         source_evidence_identity: &WorthQueryEvidenceIdentity,
         aspect_touches: Vec<WorthQueryAspectTouch>,
         intent_strategy_name: Option<String>,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let execution_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::PreviewExecutionEvidence)
                 .field_value(
@@ -119,8 +119,8 @@ impl WorthQueryPreviewExecutionEvidence {
                     WorthQueryEvidenceTag::new("intent_strategy_name"),
                     intent_strategy_name.as_deref(),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             session_label: basis_admission.session_label().clone(),
             kind,
             handle_name: handle_name.to_string(),
@@ -130,7 +130,7 @@ impl WorthQueryPreviewExecutionEvidence {
             aspect_touches,
             intent_strategy_name,
             execution_identity,
-        }
+        })
     }
 
     pub fn label(&self) -> &str {

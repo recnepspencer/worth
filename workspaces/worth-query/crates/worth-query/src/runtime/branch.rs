@@ -108,7 +108,7 @@ impl<'a> WorthQueryBranchSession<'a> {
             &self.basis_admission,
             &self.basis_snapshot_identity,
             admission,
-        );
+        )?;
         self.intent_receipts.push(receipt.clone());
         Ok(receipt)
     }

@@ -30,16 +30,16 @@ pub struct WorthQueryBasisLifecycleInspection {
 impl WorthQueryBasisLifecycleInspection {
     pub(in crate::runtime) fn from_admitted_world_basis(
         basis: &WorthQueryAdmittedWorldBasis,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let basis_digest =
-            runtime_state_snapshot_basis_label_identity(basis.basis_lifecycle_support_identity())
+            runtime_state_snapshot_basis_label_identity(basis.basis_lifecycle_support_identity())?
                 .as_str()
                 .to_string();
         let shape_digest =
-            runtime_state_snapshot_result_shape_label_identity(basis.handle_identity())
+            runtime_state_snapshot_result_shape_label_identity(basis.handle_identity())?
                 .as_str()
                 .to_string();
-        Self::assemble(
+        Ok(Self::assemble(
             "admitted_world_basis",
             WorthQueryAuthorityLane::AuthoritativeTruth,
             basis_digest,
@@ -54,7 +54,7 @@ impl WorthQueryBasisLifecycleInspection {
                 basis.domain_key(),
                 basis.basis_lifecycle_support_for_reporting()
             ),
-        )
+        ))
     }
 
     fn from_scoped(

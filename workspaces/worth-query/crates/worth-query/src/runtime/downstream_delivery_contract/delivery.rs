@@ -165,15 +165,15 @@ impl WorthQueryRuntimeDownstreamDelivery {
     pub fn negotiate_runtime_resume(
         &self,
         basis_identity: Option<&WorthQueryEvidenceIdentity>,
-    ) -> WorthQueryRuntimeDownstreamResumePosture {
+    ) -> Result<WorthQueryRuntimeDownstreamResumePosture, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let support_posture = self.runtime_resume_support_posture;
         if support_posture != WorthQueryLowerRuntimeSupportPosture::Admitted {
-            return WorthQueryRuntimeDownstreamResumePosture::new(
+            return Ok(WorthQueryRuntimeDownstreamResumePosture::new(
                 support_gate_resume_kind(support_posture),
                 Some(self.basis_identity.clone()),
                 support_posture,
                 self.runtime_resume_support_identity.clone(),
-            );
+            )?);
         }
         match basis_identity {
             Some(candidate) if candidate == &self.basis_identity => {
@@ -182,24 +182,26 @@ impl WorthQueryRuntimeDownstreamDelivery {
                     Some(self.basis_identity.clone()),
                     support_posture,
                     self.runtime_resume_support_identity.clone(),
-                )
+                )?
             }
             Some(_) => WorthQueryRuntimeDownstreamResumePosture::new(
                 WorthQueryRuntimeDownstreamResumePostureKind::StaleBasisDenied,
                 Some(self.basis_identity.clone()),
                 support_posture,
                 self.runtime_resume_support_identity.clone(),
-            ),
+            )?,
             None => WorthQueryRuntimeDownstreamResumePosture::new(
                 WorthQueryRuntimeDownstreamResumePostureKind::MissingBasisDenied,
                 Some(self.basis_identity.clone()),
                 support_posture,
                 self.runtime_resume_support_identity.clone(),
-            ),
+            )?,
         }
-    }
+    
+Ok(())
+}
 
-    pub fn durable_resume_posture(&self) -> WorthQueryRuntimeDownstreamResumePosture {
+    pub fn durable_resume_posture(&self) -> Result<WorthQueryRuntimeDownstreamResumePosture, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let support_posture = self.durable_resume_support_posture;
         let kind = match support_posture {
             WorthQueryLowerRuntimeSupportPosture::Deferred => {
@@ -207,11 +209,11 @@ impl WorthQueryRuntimeDownstreamDelivery {
             }
             other => support_gate_resume_kind(other),
         };
-        WorthQueryRuntimeDownstreamResumePosture::new(
+        Ok(WorthQueryRuntimeDownstreamResumePosture::new(
             kind,
             Some(self.basis_identity.clone()),
             support_posture,
             self.durable_resume_support_identity.clone(),
-        )
+        )?)
     }
 }

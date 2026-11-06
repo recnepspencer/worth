@@ -127,7 +127,7 @@ pub(super) fn synthetic_existing_assertion_receipt(
     binding: &WorthQueryExistingTruthTargetBinding,
     snapshot_identity: &WorthQuerySnapshotIdentity,
     declared_aspect_value_digest: Option<&crate::evidence_identity::WorthQueryEvidenceIdentity>,
-) -> WorthQueryMutationReceipt {
+) -> Result<WorthQueryMutationReceipt, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
     let assertion_identity = crate::evidence_identity::WorthQueryEvidenceIdentity::compose(
         crate::evidence_identity::WorthQueryEvidenceScope::WriteReceiptCommitIdentity,
     )
@@ -143,13 +143,13 @@ pub(super) fn synthetic_existing_assertion_receipt(
         crate::evidence_identity::WorthQueryEvidenceTag::new("aspect_digest"),
         declared_aspect_value_digest,
     )
-    .seal();
-    WorthQueryMutationReceipt {
+    .seal()?;
+    Ok(WorthQueryMutationReceipt {
         commit_identity: WorthQueryCommitIdentity::preview(assertion_identity),
         snapshot_identity: snapshot_identity.clone(),
         deltas: Vec::new(),
         bridge_authority: None,
-    }
+    })
 }
 
 pub(super) fn record_same_batch_symbolic_target(
@@ -223,7 +223,7 @@ pub(super) fn resolve_same_batch_symbolic_target(
                     "same-batch symbolic target `{}` was not declared earlier in this mutation batch",
                     reference.symbol()
                 ),
-            ),
+            )?,
         ));
     };
     if let Some(expected_collection) = reference.target_collection_identity()
@@ -245,7 +245,7 @@ pub(super) fn resolve_same_batch_symbolic_target(
                             .unwrap_or("unknown"),
                         expected_collection = expected_collection.as_str(),
                     ),
-                ),
+                )?,
             ));
     }
     Ok(resolved_target.clone())
@@ -271,7 +271,7 @@ pub(super) fn resolve_symbolic_aspect_references(
                     reference.reference(),
                     WorthQuerySymbolicTargetReferenceDenialKind::NonEntityReferenceTarget,
                     "symbolic aspect references require a concrete relational entity identity",
-                ),
+                )?,
             ));
         };
         let native_entity = worth_foundational::facade::EntityId::new(
@@ -309,7 +309,7 @@ pub(super) fn combined_batch_mutation_receipt(
                     .to_string()
             }),
         )
-        .seal(),
+        .seal()?,
     );
     let deltas = receipts
         .iter()

@@ -102,7 +102,7 @@ impl WorthQueryRuntime {
                 binding.binding_digest(),
                 result.receipt().result_digest(),
                 &snapshot_evidence_identity,
-            );
+            )?;
         result.attach_intent_admission_evidence(decision_trace_envelope, execution_provenance);
         Ok(result)
     }
@@ -120,7 +120,7 @@ impl WorthQueryRuntime {
                     .get(&WorthQueryLiveArtifactTarget::from_view_name(view_name))
                     .ok_or_else(|| WorthQueryRuntimeError::MissingLiveSubscription(view_name.clone()))?;
                 Ok(WorthQueryInspection::LiveView(
-                    WorthQueryLiveViewInspection::from_state(state),
+                    WorthQueryLiveViewInspection::from_state(state)?,
                 ))
             }
             crate::intent_admission::WorthQueryGenericInspectionIntentTargetSeed::Effect {
@@ -135,48 +135,48 @@ impl WorthQueryRuntime {
                     .backend
                     .inspect_write_receipt(receipt, &self.evidence_authority)?;
                 Ok(WorthQueryInspection::WriteReceipt(
-                    WorthQueryWriteReceiptInspection::new(receipt, runtime_evidence),
+                    WorthQueryWriteReceiptInspection::new(receipt, runtime_evidence)?,
                 ))
             }
             crate::intent_admission::WorthQueryGenericInspectionIntentTargetSeed::BatchWriteReceipt(
                 receipt,
             ) => Ok(WorthQueryInspection::BatchWriteReceipt(
-                WorthQueryBatchWriteReceiptInspection::new(receipt),
+                WorthQueryBatchWriteReceiptInspection::new(receipt)?,
             )),
             crate::intent_admission::WorthQueryGenericInspectionIntentTargetSeed::IntentReceipt(
                 receipt,
             ) => Ok(WorthQueryInspection::IntentReceipt(
-                WorthQueryIntentReceiptInspection::from_receipt(receipt),
+                WorthQueryIntentReceiptInspection::from_receipt(receipt)?,
             )),
             crate::intent_admission::WorthQueryGenericInspectionIntentTargetSeed::IntentDenial(
                 evidence,
             ) => Ok(WorthQueryInspection::IntentDenial(
-                WorthQueryIntentDenialInspection::from_evidence(evidence),
+                WorthQueryIntentDenialInspection::from_evidence(evidence)?,
             )),
             crate::intent_admission::WorthQueryGenericInspectionIntentTargetSeed::EffectIntentReceipt(
                 receipt,
             ) => Ok(WorthQueryInspection::EffectIntentReceipt(
-                WorthQueryEffectIntentReceiptInspection::from_receipt(receipt),
+                WorthQueryEffectIntentReceiptInspection::from_receipt(receipt)?,
             )),
             crate::intent_admission::WorthQueryGenericInspectionIntentTargetSeed::PreviewBinding(
                 binding,
             ) => Ok(WorthQueryInspection::PreviewBinding(
-                WorthQueryPreviewBindingInspection::from_binding(binding),
+                WorthQueryPreviewBindingInspection::from_binding(binding)?,
             )),
             crate::intent_admission::WorthQueryGenericInspectionIntentTargetSeed::PreviewOutcome(
                 outcome,
             ) => Ok(WorthQueryInspection::PreviewOutcome(
-                WorthQueryPreviewOutcomeInspection::from_outcome(outcome),
+                WorthQueryPreviewOutcomeInspection::from_outcome(outcome)?,
             )),
             crate::intent_admission::WorthQueryGenericInspectionIntentTargetSeed::PreviewIntentReceipt(
                 receipt,
             ) => Ok(WorthQueryInspection::PreviewIntentReceipt(
-                WorthQueryPreviewIntentReceiptInspection::from_receipt(receipt),
+                WorthQueryPreviewIntentReceiptInspection::from_receipt(receipt)?,
             )),
             crate::intent_admission::WorthQueryGenericInspectionIntentTargetSeed::BranchIntentReceipt(
                 receipt,
             ) => Ok(WorthQueryInspection::BranchIntentReceipt(
-                WorthQueryBranchIntentReceiptInspection::from_receipt(receipt),
+                WorthQueryBranchIntentReceiptInspection::from_receipt(receipt)?,
             )),
         }
     }

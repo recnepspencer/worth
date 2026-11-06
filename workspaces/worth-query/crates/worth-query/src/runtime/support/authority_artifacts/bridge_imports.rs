@@ -14,41 +14,41 @@ impl WorthQueryMutationAuthorityIdentity {
     pub(in crate::runtime) fn from_bridge_existing_truth_authority(
         role: &'static str,
         identity: &BridgeExistingTruthBindingAuthoritativeIdentity,
-    ) -> Self {
-        Self::from_bridge_authority(role, "existing-truth", identity.as_str())
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        Ok(Self::from_bridge_authority(role, "existing-truth", identity.as_str())?)
     }
 
     pub(in crate::runtime) fn from_bridge_naming_attachment(
         role: &'static str,
         identity: &BridgeNamingAttachmentIdentity,
-    ) -> Self {
-        Self::from_bridge_authority(role, "naming-attachment", identity.as_str())
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        Ok(Self::from_bridge_authority(role, "naming-attachment", identity.as_str())?)
     }
 
     pub(in crate::runtime) fn from_bridge_naming_authority(
         role: &'static str,
         identity: &BridgeNamingAuthoritativeIdentity,
-    ) -> Self {
-        Self::from_bridge_authority(role, "naming-authority", identity.as_str())
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        Ok(Self::from_bridge_authority(role, "naming-authority", identity.as_str())?)
     }
 
     pub(in crate::runtime) fn from_bridge_continuity_authority(
         role: &'static str,
         identity: &BridgeContinuityAuthoritativeIdentity,
-    ) -> Self {
-        Self::from_bridge_authority(role, "continuity-authority", identity.as_str())
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        Ok(Self::from_bridge_authority(role, "continuity-authority", identity.as_str())?)
     }
 
     fn from_bridge_authority(
         role: &'static str,
         bridge_family: &'static str,
         authority_label: &str,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let bridge_evidence = bridge_evidence_from_authority_label(authority_label);
-        Self {
+        Ok(Self {
             label: authority_label.to_string(),
-            identity: bridge_import_identity(role, bridge_family, &bridge_evidence),
-        }
+            identity: bridge_import_identity(role, bridge_family, &bridge_evidence)?,
+        })
     }
 }
 
@@ -56,12 +56,12 @@ impl WorthQueryMutationSymbolIdentity {
     pub(in crate::runtime) fn from_bridge_symbolic_target(
         role: &'static str,
         identity: &BridgeSymbolicTargetSymbolIdentity,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let bridge_evidence = bridge_evidence_from_authority_label(identity.as_str());
-        Self {
+        Ok(Self {
             label: identity.as_str().to_string(),
-            identity: bridge_import_identity(role, "symbolic-target-symbol", &bridge_evidence),
-        }
+            identity: bridge_import_identity(role, "symbolic-target-symbol", &bridge_evidence)?,
+        })
     }
 }
 
@@ -73,13 +73,13 @@ fn bridge_import_identity(
     role: &'static str,
     bridge_family: &'static str,
     identity: &BridgeIdentityEvidence,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAuthorityIdentity)
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAuthorityIdentity)
         .field_shape(WorthQueryEvidenceTag::new("role"), role)
         .field_shape(WorthQueryEvidenceTag::new("bridge_family"), bridge_family)
         .field_bridge_retained_evidence_identity(
             WorthQueryEvidenceTag::new("bridge_identity"),
             identity,
         )
-        .seal()
+        .seal()?)
 }

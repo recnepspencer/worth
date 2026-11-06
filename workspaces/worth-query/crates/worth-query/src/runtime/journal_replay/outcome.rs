@@ -28,12 +28,12 @@ impl WorthQueryJournalReplayOutcome {
         scanned_entry_count: usize,
         truth_reconstruction_identity: WorthQueryEvidenceIdentity,
         published_artifact_digest: WorthQueryEvidenceIdentity,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let position_schedule = WorthQueryJournalPositionSchedule::derive(
             write_receipts
                 .iter()
                 .map(|receipt| receipt.journal_position().clone()),
-        );
+        )?;
         let resolved_journal_position_count = write_receipts.len();
         let receipt_identities = write_receipts
             .iter()
@@ -77,8 +77,8 @@ impl WorthQueryJournalReplayOutcome {
                     WorthQueryEvidenceTag::new("scanned_entry_count"),
                     scanned_entry_count,
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             segment_identity,
             write_receipts,
             position_schedule,
@@ -89,7 +89,7 @@ impl WorthQueryJournalReplayOutcome {
             truth_reconstruction_identity,
             published_artifact_digest,
             outcome_identity,
-        }
+        })
     }
 
     pub fn segment_identity(&self) -> &WorthQueryJournalSegmentIdentity {
@@ -141,8 +141,8 @@ pub(crate) fn journal_replay_truth_reconstruction_identity(
     committed_truth_identities: &[WorthQueryEvidenceIdentity],
     expected_journal_position_count: usize,
     journal_gap_count: usize,
-) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::JournalReplayOutcome)
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::JournalReplayOutcome)
         .field_evidence_identity_sequence(
             WorthQueryEvidenceTag::new("committed_truth_identity"),
             committed_truth_identities.iter(),
@@ -155,5 +155,5 @@ pub(crate) fn journal_replay_truth_reconstruction_identity(
             WorthQueryEvidenceTag::new("journal_gap_count"),
             journal_gap_count,
         )
-        .seal()
+        .seal()?)
 }

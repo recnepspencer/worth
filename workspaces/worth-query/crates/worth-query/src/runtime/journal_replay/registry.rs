@@ -180,8 +180,8 @@ impl WorthQueryJournalReplayEntry {
 
 pub(in crate::runtime) fn published_artifact_replay_digest(
     diagnostics: &crate::runtime::WorthQueryPublishedArtifactDiagnostics,
-) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::JournalReplayOutcome)
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::JournalReplayOutcome)
         .field_usize(
             WorthQueryEvidenceTag::new("published_artifact_generation_count"),
             diagnostics.retained_generation_count(),
@@ -193,5 +193,5 @@ pub(in crate::runtime) fn published_artifact_replay_digest(
                 .iter()
                 .map(|generation| generation.ordinal().to_string()),
         )
-        .seal()
+        .seal()?)
 }

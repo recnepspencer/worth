@@ -43,7 +43,7 @@ impl WorthQuerySymbolicTargetReference {
         }
         Ok(Self {
             family: WorthQuerySymbolicTargetReferenceFamily::SameBatchDeclaredTarget,
-            symbol: WorthQueryMutationSymbolIdentity::new("symbolic-target-reference", symbol),
+            symbol: WorthQueryMutationSymbolIdentity::new("symbolic-target-reference", symbol)?,
             target_collection: None,
         })
     }
@@ -61,7 +61,7 @@ impl WorthQuerySymbolicTargetReference {
         self.target_collection = Some(WorthQueryMutationTargetCollectionIdentity::new(
             "symbolic-target-reference",
             collection,
-        ));
+        )?);
         Ok(self)
     }
 

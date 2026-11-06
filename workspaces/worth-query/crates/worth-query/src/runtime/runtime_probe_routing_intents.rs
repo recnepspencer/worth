@@ -22,7 +22,7 @@ impl WorthQueryRuntime {
         &self,
         request: WorthQueryExistingTruthProbeRequest,
     ) -> Result<WorthQueryRuntimeIntentAdmissionReviewData, WorthQueryRuntimeError> {
-        let seed = self.build_existing_truth_probe_intent_seed(request);
+        let seed = self.build_existing_truth_probe_intent_seed(request)?;
         let request = crate::intent_admission::WorthQueryRawIntentAdmissionRequest::existing_truth_probe_entrypoint(seed)
             .expect("existing truth probe intent seed should always author successfully");
         Ok(WorthQueryRuntimeIntentAdmissionReviewData::from_request(
@@ -42,14 +42,14 @@ impl WorthQueryRuntime {
             ) => Ok(WorthQueryExistingTruthProbeExecutionHandoff::from_plan(
                 plan,
             )),
-            _ => Err(self.existing_truth_probe_non_admitted_error(&review)),
+            _ => Err(self.existing_truth_probe_non_admitted_error(&review)?),
         }
     }
 
     pub(crate) fn existing_truth_probe_non_admitted_error(
         &self,
         review: &WorthQueryRuntimeIntentAdmissionReviewData,
-    ) -> WorthQueryRuntimeError {
+    ) -> Result<WorthQueryRuntimeError, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let seed = review
             .request()
             .existing_truth_probe_seed()
@@ -69,11 +69,13 @@ impl WorthQueryRuntime {
                         WorthQueryExistingTruthProbeDenialKind::BackendProbeUnsupported,
                         None,
                         violation.message(),
-                    ),
+                    )?,
                 )
             }
         }
-    }
+    
+Ok(())
+}
 
     pub(crate) fn prepare_existing_truth_probe_execution_binding(
         &self,
@@ -129,7 +131,7 @@ impl WorthQueryRuntime {
                 binding.binding_digest(),
                 result.receipt().probe_digest(),
                 &snapshot_evidence_identity,
-            );
+            )?;
         result.attach_intent_admission_evidence(decision_trace_envelope, execution_provenance);
         Ok(result)
     }
@@ -137,21 +139,21 @@ impl WorthQueryRuntime {
     pub(crate) fn build_existing_truth_probe_intent_seed(
         &self,
         request: WorthQueryExistingTruthProbeRequest,
-    ) -> WorthQueryExistingTruthProbeIntentSeed {
+    ) -> Result<WorthQueryExistingTruthProbeIntentSeed, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let preflight = match self.backend.admit_existing_truth_binding(request.binding()) {
             Err(denial) => WorthQueryExistingTruthProbeRoutingPreflight::BindingDenied(denial),
-            Ok(()) => match self.probe_existing_support_denial(request.binding()) {
+            Ok(()) => match self.probe_existing_support_denial(request.binding())? {
                 Some(denial) => WorthQueryExistingTruthProbeRoutingPreflight::ProbeDenied(denial),
                 None => WorthQueryExistingTruthProbeRoutingPreflight::Admitted,
             },
         };
-        WorthQueryExistingTruthProbeIntentSeed::new(request, preflight)
+        Ok(WorthQueryExistingTruthProbeIntentSeed::new(request, preflight))
     }
 
     fn probe_existing_support_denial(
         &self,
         binding: &WorthQueryExistingTruthTargetBinding,
-    ) -> Option<WorthQueryExistingTruthProbeDenial> {
+    ) -> Result<Option<WorthQueryExistingTruthProbeDenial>, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let support_profile = self.backend.support_profile();
         let row = support_profile
             .bridge_backed_verification_support_rows()
@@ -168,15 +170,15 @@ impl WorthQueryRuntime {
             }
         };
         if supported {
-            return None;
+            return Ok(None);
         }
-        Some(WorthQueryExistingTruthProbeDenial::new(
+        Ok(Some(WorthQueryExistingTruthProbeDenial::new(
             binding,
             WorthQueryExistingTruthProbeDenialKind::BackendProbeUnsupported,
             None,
             row.denial_class_when_primary_unsupported().unwrap_or(
                 "this runtime backend does not admit backend-verified existing-truth probes yet",
             ),
-        ))
+        )?))
     }
 }

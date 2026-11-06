@@ -5,8 +5,8 @@ use crate::evidence_identity::{
 
 pub(super) fn intent_execution_provenance_chain_identity(
     provenance: IntentExecutionProvenanceIdentityParts<'_>,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::IntentExecutionProvenanceChain)
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::IntentExecutionProvenanceChain)
         .field_shape(WorthQueryEvidenceTag::new("family"), provenance.family)
         .field_shape(
             WorthQueryEvidenceTag::new("entrypoint"),
@@ -36,7 +36,7 @@ pub(super) fn intent_execution_provenance_chain_identity(
             WorthQueryEvidenceTag::new("snapshot_token"),
             provenance.snapshot_evidence_identity,
         )
-        .seal()
+        .seal()?)
 }
 
 pub(super) struct IntentExecutionProvenanceIdentityParts<'a> {

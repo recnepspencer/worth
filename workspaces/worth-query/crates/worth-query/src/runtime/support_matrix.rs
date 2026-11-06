@@ -38,7 +38,7 @@ impl WorthQueryRuntimePublicSupportMatrixRow {
         parallel_api_forbidden: bool,
         admission_fail_closed: bool,
         support_contract_digest: Option<impl Into<String>>,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let surface = surface.into();
         let owner_milestone = owner_milestone.into();
         let extension_rule = extension_rule.into();
@@ -77,8 +77,8 @@ impl WorthQueryRuntimePublicSupportMatrixRow {
                     WorthQueryEvidenceTag::new("support_contract_digest"),
                     support_contract_digest.as_deref(),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             surface,
             facade_family,
             status,
@@ -89,7 +89,7 @@ impl WorthQueryRuntimePublicSupportMatrixRow {
             admission_fail_closed,
             support_contract_digest,
             row_digest,
-        }
+        })
     }
 
     pub fn surface(&self) -> &str {
@@ -150,7 +150,7 @@ pub struct WorthQueryRuntimePublicSupportMatrix {
 }
 
 impl WorthQueryRuntimePublicSupportMatrix {
-    pub fn from_public_api_contract(contract: &WorthQueryRuntimePublicApiContract) -> Self {
+    pub fn from_public_api_contract(contract: &WorthQueryRuntimePublicApiContract) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let mut rows = contract
             .families()
             .iter()
@@ -305,8 +305,8 @@ impl WorthQueryRuntimePublicSupportMatrix {
                     WorthQueryEvidenceTag::new("row_digest"),
                     rows.iter().map(|row| row.row_digest().as_str()),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             backend_posture: contract.backend_posture(),
             rows,
             stable_row_count,
@@ -315,7 +315,7 @@ impl WorthQueryRuntimePublicSupportMatrix {
             fail_closed_row_count,
             parallel_api_forbidden_row_count,
             matrix_digest,
-        }
+        })
     }
 
     pub fn backend_posture(&self) -> WorthQueryRuntimeBackendPosture {
@@ -364,14 +364,14 @@ impl WorthQueryRuntimePublicSupportMatrix {
     }
 }
 
-fn shared_read_pinning_boundary_closure_contract_digest() -> String {
-    let certification = WorthQuerySharedReadPinningCertification::support_gate_required();
+fn shared_read_pinning_boundary_closure_contract_digest() -> Result<String, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    let certification = WorthQuerySharedReadPinningCertification::support_gate_required()?;
     debug_assert_ne!(certification.closure().posture().as_str(), "closed");
-    certification.closure().closure_digest().to_string()
+    Ok(certification.closure().closure_digest().to_string())
 }
 
-fn milestone_nine_seven_derived_closure_contract_digest() -> String {
-    WorthQueryMilestoneNineSevenDerivedClosure::support_profile_publication_contract()
+fn milestone_nine_seven_derived_closure_contract_digest() -> Result<String, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(WorthQueryMilestoneNineSevenDerivedClosure::support_profile_publication_contract()?
         .closure_digest()
-        .to_string()
+        .to_string())
 }

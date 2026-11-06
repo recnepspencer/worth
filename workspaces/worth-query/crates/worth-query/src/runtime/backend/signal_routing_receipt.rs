@@ -45,7 +45,7 @@ impl SignalInvalidationRoutingReceipt {
         let snapshot_identity = receipt.snapshot_identity.clone();
         let commit_evidence_identity = commit_identity.evidence_identity();
         let snapshot_evidence_identity = snapshot_identity.evidence_identity();
-        let causality_evidence = WorthQueryMutationCausalityEvidence::from_bridge(authority);
+        let causality_evidence = WorthQueryMutationCausalityEvidence::from_bridge(authority)?;
         let provenance_evidence = WorthQueryMutationProvenanceEvidence::from_bridge(authority);
         let receipt_identity = routing_identity_basis(
             &commit_evidence_identity,
@@ -118,16 +118,16 @@ impl SignalInvalidationRoutingReceipt {
     pub(crate) fn drift_from_mutation_receipt(
         &self,
         receipt: &WorthQueryMutationReceipt,
-    ) -> Option<String> {
+    ) -> Result<Option<String>, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let Some(authority) = receipt.bridge_authority.as_ref() else {
-            return Some(
+            return Ok(Some(
                 "signal invalidation routing receipt cannot be checked without bridge authority"
                     .to_string(),
-            );
+            ));
         };
-        let causality_evidence = WorthQueryMutationCausalityEvidence::from_bridge(authority);
+        let causality_evidence = WorthQueryMutationCausalityEvidence::from_bridge(authority)?;
         let provenance_evidence = WorthQueryMutationProvenanceEvidence::from_bridge(authority);
-        (!self
+        Ok((!self
             .commit_identity()
             .is_same_current_identity_as(&receipt.commit_identity)
             || !self
@@ -135,7 +135,7 @@ impl SignalInvalidationRoutingReceipt {
                 .is_same_current_identity_as(&receipt.snapshot_identity)
             || self.causality_evidence() != &causality_evidence
             || self.provenance_evidence() != &provenance_evidence)
-            .then(|| "signal invalidation routing receipt drifted from write receipt".to_string())
+            .then(|| "signal invalidation routing receipt drifted from write receipt".to_string()))
     }
 }
 

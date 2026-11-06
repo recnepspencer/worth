@@ -127,34 +127,34 @@ fn lower_runtime_live_subscription_session(
                 .query()
                 .plan_digest()
                 .evidence_identity(),
-        ),
+        )?,
         canonical_query_digest: session.canonical().query().digest().clone(),
         live_view_identity: live_subscription_source_identity(
             "live_view",
-            &live_subscription_view_shape_source_identity(view_family),
-        ),
+            &live_subscription_view_shape_source_identity(view_family)?,
+        )?,
         canonical_result_shape_digest: session.canonical().result_shape().digest().clone(),
         subscription_family,
         subscription_declaration_identity: live_subscription_source_identity(
             "subscription_declaration",
             admission.query_declaration_identity(),
-        ),
+        )?,
         admission_identity: live_subscription_source_identity(
             "admission",
             admission.evidence_identity(),
-        ),
+        )?,
         bridge_declaration_identity: live_subscription_source_identity(
             "bridge_declaration",
             admission.bridge_declaration_identity(),
-        ),
+        )?,
         basis_binding_identity: live_subscription_source_identity(
             "basis_binding",
             admission.basis_binding_identity(),
-        ),
+        )?,
         signal_strategy_identity: live_subscription_source_identity(
             "signal_strategy",
             admission.signal_strategy_identity(),
-        ),
+        )?,
         activation: prepare_subscription_activation(admission),
     })
 }

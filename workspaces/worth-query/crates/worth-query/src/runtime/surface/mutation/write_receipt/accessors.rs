@@ -279,15 +279,15 @@ impl WorthQueryWriteReceipt {
         reference: &WorthQuerySymbolicTargetReference,
         resolved_entity_identity: WorthQueryEntityIdentity,
         resolved_collection: Option<WorthQueryMutationTargetCollectionIdentity>,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         self.symbolic_target_reference_evidence =
             Some(WorthQuerySymbolicTargetReferenceEvidence::from_reference(
                 reference,
                 &resolved_entity_identity,
-            ));
+            )?);
         self.target_entity_identity = Some(resolved_entity_identity);
         self.target_collection_identity = resolved_collection;
-        self
+        Ok(self)
     }
 
     #[cfg(test)]

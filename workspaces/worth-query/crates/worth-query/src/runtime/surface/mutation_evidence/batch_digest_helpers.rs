@@ -28,7 +28,7 @@ pub(super) fn batch_target_digest(
     Ok(WorthQueryMutationEvidenceDigest::aggregate(
         "batch-target",
         identity,
-    ))
+    )?)
 }
 
 pub(super) fn batch_existing_truth_binding_digest(
@@ -390,5 +390,5 @@ fn aggregate_sequence_identity(
             .field_shape(WorthQueryEvidenceTag::new("role"), role)
             .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("entry"), entries.iter())
             .seal()?;
-    Ok(WorthQueryMutationEvidenceDigest::aggregate(role, identity))
+    Ok(WorthQueryMutationEvidenceDigest::aggregate(role, identity)?)
 }

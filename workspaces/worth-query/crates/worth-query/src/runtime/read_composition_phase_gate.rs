@@ -190,26 +190,26 @@ impl WorthQueryReadCompositionPhaseGate {
 impl WorthQueryRuntime {
     pub fn public_read_composition_phase_gate_for_support_profile(
         support_profile: &WorthQueryRuntimeSupportProfile,
-    ) -> WorthQueryReadCompositionPhaseGate {
+    ) -> Result<WorthQueryReadCompositionPhaseGate, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let public_api_contract =
-            super::WorthQueryRuntimePublicApiContract::from_support_profile(support_profile);
+            super::WorthQueryRuntimePublicApiContract::from_support_profile(support_profile)?;
         let support_matrix =
-            WorthQueryRuntimePublicSupportMatrix::from_public_api_contract(&public_api_contract);
+            WorthQueryRuntimePublicSupportMatrix::from_public_api_contract(&public_api_contract)?;
         let read_support =
             Self::public_read_composition_support_report_for_support_profile(support_profile);
         let phase_one_closeout =
-            Self::public_read_composition_phase_one_closeout_for_support_profile(support_profile);
-        WorthQueryReadCompositionPhaseGate::derive(
+            Self::public_read_composition_phase_one_closeout_for_support_profile(support_profile)?;
+        Ok(WorthQueryReadCompositionPhaseGate::derive(
             public_api_contract.backend_posture(),
             &support_matrix,
             &read_support,
             &phase_one_closeout,
-        )
+        ))
     }
 
-    pub fn public_read_composition_phase_gate(&self) -> WorthQueryReadCompositionPhaseGate {
-        Self::public_read_composition_phase_gate_for_support_profile(
+    pub fn public_read_composition_phase_gate(&self) -> Result<WorthQueryReadCompositionPhaseGate, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        Ok(Self::public_read_composition_phase_gate_for_support_profile(
             &self.backend.support_profile(),
-        )
+        )?)
     }
 }

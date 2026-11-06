@@ -11,24 +11,24 @@ pub struct WorthQueryMutationCausalityEvidence {
 }
 
 impl WorthQueryMutationCausalityEvidence {
-    pub(in crate::runtime) fn from_bridge(bundle: &BridgeMutationAuthorityBundle) -> Self {
+    pub(in crate::runtime) fn from_bridge(bundle: &BridgeMutationAuthorityBundle) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let causality = bundle.causality();
-        Self {
-            causality_digest: imported_artifact("causality-root", causality.causality_digest()),
+        Ok(Self {
+            causality_digest: imported_artifact("causality-root", causality.causality_digest())?,
             truth_trigger_digest: imported_artifact(
                 "causality-truth-trigger",
                 causality.truth_trigger_digest(),
-            ),
-            route_digest: imported_artifact("causality-route", causality.route_digest()),
+            )?,
+            route_digest: imported_artifact("causality-route", causality.route_digest())?,
             evaluation_surface_digest: imported_artifact(
                 "causality-evaluation-surface",
                 causality.evaluation_surface_digest(),
-            ),
+            )?,
             truth_view_digest: imported_artifact(
                 "causality-truth-view",
                 causality.truth_view_digest(),
-            ),
-        }
+            )?,
+        })
     }
 
     pub fn causality_digest(&self) -> &WorthQueryMutationEvidenceDigest {
@@ -55,7 +55,7 @@ impl WorthQueryMutationCausalityEvidence {
 fn imported_artifact(
     role: &'static str,
     artifact: impl Into<String>,
-) -> WorthQueryMutationEvidenceDigest {
-    let artifact = WorthQueryBridgeMutationArtifactIdentity::imported(role, artifact);
-    WorthQueryMutationEvidenceDigest::source_identity(role, artifact.evidence_identity())
+) -> Result<WorthQueryMutationEvidenceDigest, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    let artifact = WorthQueryBridgeMutationArtifactIdentity::imported(role, artifact)?;
+    Ok(WorthQueryMutationEvidenceDigest::source_identity(role, artifact.evidence_identity())?)
 }

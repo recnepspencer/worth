@@ -58,17 +58,17 @@ impl WorthQuerySymbolicTargetReferenceEvidence {
     pub(in crate::runtime) fn from_reference(
         reference: &crate::runtime::WorthQuerySymbolicTargetReference,
         resolved_entity_identity: &WorthQueryEntityIdentity,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        Ok(Self {
             family: reference.family(),
             outcome: WorthQuerySymbolicTargetReferenceOutcome::SameBatchSymbolicTarget,
             symbol: WorthQueryMutationSymbolIdentity::new(
                 "symbolic-target-reference",
                 reference.symbol(),
-            ),
+            )?,
             resolved_entity_identity: resolved_entity_identity.clone(),
             target_collection: reference.target_collection_identity().cloned(),
-        }
+        })
     }
 
     pub fn family(&self) -> crate::runtime::WorthQuerySymbolicTargetReferenceFamily {

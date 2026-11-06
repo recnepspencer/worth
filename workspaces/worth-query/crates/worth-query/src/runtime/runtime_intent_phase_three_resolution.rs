@@ -46,7 +46,7 @@ impl WorthQueryRuntime {
                 None,
                 non_admitted_trace,
                 None,
-            )),
+            )?),
             WorthQueryIntentAdmissionDecision::Advisory(advisory) => Err(self
                 .intent_violation_error(
                     &declaration,
@@ -54,9 +54,9 @@ impl WorthQueryRuntime {
                     None,
                     non_admitted_trace,
                     None,
-                )),
+                )?),
             WorthQueryIntentAdmissionDecision::Violation(violation) => Err(self
-                .intent_violation_error(&declaration, violation, None, non_admitted_trace, None)),
+                .intent_violation_error(&declaration, violation, None, non_admitted_trace, None)?),
         }
     }
 
@@ -101,7 +101,7 @@ impl WorthQueryRuntime {
                 None,
                 non_admitted_trace,
                 None,
-            )),
+            )?),
             WorthQueryIntentAdmissionDecision::Advisory(advisory) => Err(self
                 .intent_violation_error(
                     &declaration,
@@ -109,9 +109,9 @@ impl WorthQueryRuntime {
                     None,
                     non_admitted_trace,
                     None,
-                )),
+                )?),
             WorthQueryIntentAdmissionDecision::Violation(violation) => Err(self
-                .intent_violation_error(&declaration, violation, None, non_admitted_trace, None)),
+                .intent_violation_error(&declaration, violation, None, non_admitted_trace, None)?),
         }
     }
 }

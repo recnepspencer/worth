@@ -55,7 +55,7 @@ impl WorthQueryPublishedArtifactEntry {
     ) -> Result<Self, WorthQueryRuntimeError> {
         let target = WorthQueryDerivedMaterializationTarget::new(view_name);
         let evidence =
-            crate::runtime::WorthQueryComputedInspectionEvidence::from_runtime(runtime_view);
+            crate::runtime::WorthQueryComputedInspectionEvidence::from_runtime(runtime_view)?;
         let receipt = WorthQueryDerivedMaterializationReceipt::from_evidence(
             &evidence,
             snapshot_identity.clone(),
@@ -69,7 +69,7 @@ impl WorthQueryPublishedArtifactEntry {
             view_name,
             evidence.pending_patch_count(),
             evidence.pending_refresh_fallback_count(),
-        );
+        )?;
         if runtime_view.materialization.is_published() {
             return Ok(Self::published(
                 target.clone(),
@@ -79,7 +79,7 @@ impl WorthQueryPublishedArtifactEntry {
         }
         Ok(Self::unpublished(
             target,
-            unpublished_async_result_state(snapshot_identity, view_name),
+            unpublished_async_result_state(snapshot_identity, view_name)?,
         ))
     }
 
@@ -108,12 +108,12 @@ fn bind_shared_read_artifact(
     let bundle = WorthQueryDerivedMaterializationBundle::new(
         snapshot_identity.clone(),
         std::collections::BTreeMap::from([(target.clone(), materialization)]),
-    );
+    )?;
     bundle.bind_retained_artifact_identity(
         shared_read_bind_retained_artifact_label_identity(
             target.terminal_view_name_projection(),
             &snapshot_identity.evidence_identity(),
-        ),
+        )?,
         [target.clone()],
     )
 }
@@ -123,9 +123,9 @@ fn async_result_state_for_shared_read_entry(
     view_name: &str,
     pending_patch_count: usize,
     pending_refresh_fallback_count: usize,
-) -> Option<WorthQueryRuntimeAsyncResultState> {
+) -> Result<Option<WorthQueryRuntimeAsyncResultState>, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
     if pending_patch_count == 0 {
-        return None;
+        return Ok(None);
     }
 
     let kind = if pending_refresh_fallback_count > 0 {
@@ -134,40 +134,40 @@ fn async_result_state_for_shared_read_entry(
         WorthQueryRuntimeAsyncResultStateKind::Stale
     };
 
-    Some(WorthQueryRuntimeAsyncResultState::new(
+    Ok(Some(WorthQueryRuntimeAsyncResultState::new(
         kind,
         &runtime_async_causality_identity(&shared_read_republishing_causality_identity(
             view_name,
             kind,
             &snapshot_identity.evidence_identity(),
-        )),
+        )?)?,
         &snapshot_identity.evidence_identity(),
-        &shared_read_generation_identity(snapshot_identity),
-    ))
+        &shared_read_generation_identity(snapshot_identity)?,
+    )?))
 }
 
 fn unpublished_async_result_state(
     snapshot_identity: &WorthQuerySnapshotIdentity,
     view_name: &str,
-) -> WorthQueryRuntimeAsyncResultState {
-    WorthQueryRuntimeAsyncResultState::new(
+) -> Result<WorthQueryRuntimeAsyncResultState, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(WorthQueryRuntimeAsyncResultState::new(
         WorthQueryRuntimeAsyncResultStateKind::Pending,
         &runtime_async_causality_identity(&shared_read_unpublished_causality_identity(
             view_name,
             &snapshot_identity.evidence_identity(),
-        )),
+        )?)?,
         &snapshot_identity.evidence_identity(),
-        &shared_read_generation_identity(snapshot_identity),
-    )
+        &shared_read_generation_identity(snapshot_identity)?,
+    )?)
 }
 
 fn shared_read_generation_identity(
     snapshot_identity: &WorthQuerySnapshotIdentity,
-) -> crate::evidence_identity::WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::SharedReadGeneration)
+) -> Result<crate::evidence_identity::WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::SharedReadGeneration)
         .field_evidence_identity(
             WorthQueryEvidenceTag::new("snapshot_identity"),
             &snapshot_identity.evidence_identity(),
         )
-        .seal()
+        .seal()?)
 }

@@ -109,7 +109,7 @@ impl WorthQueryPreviewCloseoutEvidence {
         pending_write_intent_residue_count: usize,
         authoritative_residue_count: usize,
         rebinding_identity: Option<WorthQueryEvidenceIdentity>,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let basis_evidence_rows = basis_admission.evidence_rows();
         let mut closeout_builder =
             worth_query_evidence_identity(WorthQueryEvidenceScope::PreviewCloseoutEvidence)
@@ -210,10 +210,10 @@ impl WorthQueryPreviewCloseoutEvidence {
                 rebinding_identity.as_str(),
             );
         }
-        let closeout_identity = closeout_builder.seal();
+        let closeout_identity = closeout_builder.seal()?;
         let basis_evidence = basis_admission.evidence();
         let basis_admission_identity = basis_admission.admission_identity().clone();
-        Self {
+        Ok(Self {
             session_label: basis_admission.session_label().clone(),
             kind,
             effect_policy,
@@ -238,7 +238,7 @@ impl WorthQueryPreviewCloseoutEvidence {
             authoritative_residue_count,
             rebinding_identity,
             closeout_identity,
-        }
+        })
     }
 
     pub fn label(&self) -> &str {

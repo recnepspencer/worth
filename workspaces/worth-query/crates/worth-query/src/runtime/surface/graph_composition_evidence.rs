@@ -74,7 +74,7 @@ impl WorthQueryGraphCompositionEvidence {
                         collection.evidence_identity(),
                     );
                 }
-                entry_identity.seal()
+                entry_identity.seal()?
             })
             .collect::<Vec<_>>();
         let graph_symbolic_resolution_digest =
@@ -87,7 +87,7 @@ impl WorthQueryGraphCompositionEvidence {
                     WorthQueryEvidenceTag::new("entry"),
                     graph_symbolic_resolution_entries.iter(),
                 )
-                .seal();
+                .seal()?;
         let counter_snapshot = diagnostic_counter_snapshot_with_tail(
             &[
                 ("components", breadth.component_count()),
@@ -162,7 +162,7 @@ impl WorthQueryGraphCompositionEvidence {
                     WorthQueryEvidenceTag::new("considered_computed_view_count"),
                     considered_computed_view_count,
                 )
-                .seal();
+                .seal()?;
         Ok(Some(Self {
             graph_composition_digest,
             graph_symbolic_resolution_digest,

@@ -69,14 +69,14 @@ impl WorthQueryRuntimeStateSnapshot {
         result_shape_identity: WorthQueryEvidenceIdentity,
         authority_lane: WorthQueryAuthorityLane,
         explanation: impl Into<String>,
-    ) -> Self {
-        Self::new(
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        Ok(Self::new(
             WorthQueryRuntimeStateKind::Ready,
             basis_identity,
             result_shape_identity,
             authority_lane,
             explanation,
-        )
+        )?)
     }
 
     pub fn deferred(
@@ -85,24 +85,24 @@ impl WorthQueryRuntimeStateSnapshot {
         result_shape_identity: WorthQueryEvidenceIdentity,
         authority_lane: WorthQueryAuthorityLane,
         explanation: impl Into<String>,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         assert!(
             kind != WorthQueryRuntimeStateKind::Ready,
             "ready state should use WorthQueryRuntimeStateSnapshot::ready"
         );
-        Self::new(
+        Ok(Self::new(
             kind,
             basis_identity,
             result_shape_identity,
             authority_lane,
             explanation,
-        )
+        )?)
     }
 
     pub fn with_async_result_state(
         mut self,
         async_result_state: WorthQueryRuntimeAsyncResultState,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         if self.remask_posture.is_none() {
             self.kind = async_result_state.kind().state_kind();
         }
@@ -116,14 +116,14 @@ impl WorthQueryRuntimeStateSnapshot {
             self.ordinary_runtime_posture.as_ref(),
             self.async_result_state.as_ref(),
             self.remask_posture.as_ref(),
-        );
-        self
+        )?;
+        Ok(self)
     }
 
     pub fn with_ordinary_runtime_posture(
         mut self,
         ordinary_runtime_posture: WorthQueryOrdinaryRuntimePosture,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         self.ordinary_runtime_posture = Some(ordinary_runtime_posture);
         self.state_digest = compute_state_digest(
             self.kind,
@@ -134,11 +134,11 @@ impl WorthQueryRuntimeStateSnapshot {
             self.ordinary_runtime_posture.as_ref(),
             self.async_result_state.as_ref(),
             self.remask_posture.as_ref(),
-        );
-        self
+        )?;
+        Ok(self)
     }
 
-    pub fn with_remask_posture(mut self, remask_posture: WorthQueryRuntimeRemaskPosture) -> Self {
+    pub fn with_remask_posture(mut self, remask_posture: WorthQueryRuntimeRemaskPosture) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         self.kind = remask_posture.disposition_kind().state_kind();
         self.remask_posture = Some(remask_posture);
         self.state_digest = compute_state_digest(
@@ -150,8 +150,8 @@ impl WorthQueryRuntimeStateSnapshot {
             self.ordinary_runtime_posture.as_ref(),
             self.async_result_state.as_ref(),
             self.remask_posture.as_ref(),
-        );
-        self
+        )?;
+        Ok(self)
     }
 
     fn new(
@@ -160,7 +160,7 @@ impl WorthQueryRuntimeStateSnapshot {
         result_shape_identity: WorthQueryEvidenceIdentity,
         authority_lane: WorthQueryAuthorityLane,
         explanation: impl Into<String>,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let explanation = explanation.into();
         let ordinary_runtime_posture = None;
         let async_result_state = None;
@@ -174,8 +174,8 @@ impl WorthQueryRuntimeStateSnapshot {
             ordinary_runtime_posture.as_ref(),
             async_result_state.as_ref(),
             remask_posture.as_ref(),
-        );
-        Self {
+        )?;
+        Ok(Self {
             kind,
             basis_identity,
             result_shape_identity,
@@ -185,7 +185,7 @@ impl WorthQueryRuntimeStateSnapshot {
             async_result_state,
             remask_posture,
             state_digest,
-        }
+        })
     }
 
     pub fn kind(&self) -> WorthQueryRuntimeStateKind {
@@ -242,8 +242,8 @@ fn compute_state_digest(
     ordinary_runtime_posture: Option<&WorthQueryOrdinaryRuntimePosture>,
     async_result_state: Option<&WorthQueryRuntimeAsyncResultState>,
     remask_posture: Option<&WorthQueryRuntimeRemaskPosture>,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::RuntimeStateSnapshot)
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::RuntimeStateSnapshot)
         .field_shape(WorthQueryEvidenceTag::new("kind"), kind.as_str())
         .field_evidence_identity(WorthQueryEvidenceTag::new("basis_digest"), basis_identity)
         .field_evidence_identity(
@@ -267,5 +267,5 @@ fn compute_state_digest(
             WorthQueryEvidenceTag::new("remask_posture"),
             remask_posture.map(WorthQueryRuntimeRemaskPosture::remask_identity),
         )
-        .seal()
+        .seal()?)
 }

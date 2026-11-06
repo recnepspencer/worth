@@ -25,7 +25,7 @@ pub struct WorthQueryLiveSubscriptionInspectionCounters {
 impl WorthQueryLiveSubscriptionInspectionCounters {
     pub(in crate::runtime) fn from_installation(
         installation: &WorthQueryRuntimeLiveSubscriptionInstallation,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let counters = installation.counters();
         let active_lane_counters = installation.active_lane_counters();
         let consumer_attachment_counters = installation.consumer_attachment_counters();
@@ -60,9 +60,9 @@ impl WorthQueryLiveSubscriptionInspectionCounters {
             active_lane_handle_issue_count,
             consumer_attachment_count,
             consumer_attachment_denial_count,
-        );
+        )?;
 
-        Self {
+        Ok(Self {
             declaration_counter_identity,
             active_lane_counter_identity,
             consumer_attachment_counter_identity,
@@ -78,7 +78,7 @@ impl WorthQueryLiveSubscriptionInspectionCounters {
             consumer_attachment_count,
             consumer_attachment_denial_count,
             counter_inspection_identity,
-        }
+        })
     }
 
     pub fn declaration_counter_identity(&self) -> &WorthQueryEvidenceIdentity {

@@ -133,25 +133,25 @@ impl WorthQueryReadCompositionPhaseOneCloseout {
 impl WorthQueryRuntime {
     pub fn public_read_composition_phase_one_closeout_for_support_profile(
         support_profile: &WorthQueryRuntimeSupportProfile,
-    ) -> WorthQueryReadCompositionPhaseOneCloseout {
+    ) -> Result<WorthQueryReadCompositionPhaseOneCloseout, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let public_api_contract =
-            super::WorthQueryRuntimePublicApiContract::from_support_profile(support_profile);
+            super::WorthQueryRuntimePublicApiContract::from_support_profile(support_profile)?;
         let support_matrix =
-            WorthQueryRuntimePublicSupportMatrix::from_public_api_contract(&public_api_contract);
+            WorthQueryRuntimePublicSupportMatrix::from_public_api_contract(&public_api_contract)?;
         let read_support =
             Self::public_read_composition_support_report_for_support_profile(support_profile);
-        WorthQueryReadCompositionPhaseOneCloseout::derive(
+        Ok(WorthQueryReadCompositionPhaseOneCloseout::derive(
             public_api_contract.backend_posture(),
             &support_matrix,
             &read_support,
-        )
+        ))
     }
 
     pub fn public_read_composition_phase_one_closeout(
         &self,
-    ) -> WorthQueryReadCompositionPhaseOneCloseout {
-        Self::public_read_composition_phase_one_closeout_for_support_profile(
+    ) -> Result<WorthQueryReadCompositionPhaseOneCloseout, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        Ok(Self::public_read_composition_phase_one_closeout_for_support_profile(
             &self.backend.support_profile(),
-        )
+        )?)
     }
 }

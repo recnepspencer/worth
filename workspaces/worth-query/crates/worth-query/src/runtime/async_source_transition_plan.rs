@@ -75,8 +75,8 @@ pub(super) fn plan_async_result_transitions(
         }
         validate_disposition(transition)?;
         binding.validate_and_advance(transition)?;
-        let basis_identity = transition_basis_identity(transition);
-        let generation_identity = transition_generation_identity(transition);
+        let basis_identity = transition_basis_identity(transition)?;
+        let generation_identity = transition_generation_identity(transition)?;
         if matches!(
             transition.cause(),
             BridgeMixedCauseAsyncResultCause::Revalidation(_)
@@ -86,7 +86,7 @@ pub(super) fn plan_async_result_transitions(
         ) {
             let stale = WorthQueryRuntimeAsyncResultProjection::stale_before_bridge_revalidation(
                 transition,
-            );
+            )?;
             prior_kind = Some(stale.kind());
             transitions.push(WorthQueryPlannedAsyncResultTransition {
                 projection: stale,
@@ -94,7 +94,7 @@ pub(super) fn plan_async_result_transitions(
                 generation_identity: generation_identity.clone(),
             });
         }
-        let projection = WorthQueryRuntimeAsyncResultProjection::from_bridge_transition(transition);
+        let projection = WorthQueryRuntimeAsyncResultProjection::from_bridge_transition(transition)?;
         let next_kind = projection.kind();
         if !legal_result_transition(prior_kind, next_kind) {
             return Err(WorthQueryAsyncSourceBindingError::new(

@@ -66,5 +66,5 @@ fn test_only_digest(
             .field_shape(WorthQueryEvidenceTag::new("role"), role)
             .field_value(WorthQueryEvidenceTag::new("test_value"), value)
             .seal()?;
-    Ok(WorthQueryMutationEvidenceDigest::aggregate(role, identity))
+    Ok(WorthQueryMutationEvidenceDigest::aggregate(role, identity)?)
 }

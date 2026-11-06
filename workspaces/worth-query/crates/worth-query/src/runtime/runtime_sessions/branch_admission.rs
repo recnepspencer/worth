@@ -39,7 +39,7 @@ impl WorthQueryRuntime {
             label.clone(),
             options.effect_policy(),
             "runtime-branch-basis-admission",
-        );
+        )?;
         Ok(WorthQueryBranchSession::new(
             execution,
             label,
@@ -59,7 +59,7 @@ impl WorthQueryRuntime {
             label,
             WorthQueryEffectPolicy::DeriveOnly,
             "runtime-branch-comparison-basis-admission",
-        );
+        )?;
         Ok(WorthQueryRuntimeBranchComparisonBasis::new(
             admission,
             self.current_snapshot_identity_with_request(execution),
@@ -71,7 +71,7 @@ impl WorthQueryRuntime {
         label: WorthQuerySessionLabel,
         effect_policy: WorthQueryEffectPolicy,
         evidence_tag: &'static str,
-    ) -> WorthQueryBranchBasisAdmission {
+    ) -> Result<WorthQueryBranchBasisAdmission, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let branch_support_evidence = self
             .backend
             .support_profile()
@@ -81,18 +81,18 @@ impl WorthQueryRuntime {
         let evidence_rows = std::iter::once(WorthQueryBasisAdmissionEvidenceRow::tagged(
             evidence_tag,
             evidence_tag,
-        ))
+        )?)
         .chain(
             branch_support_evidence
                 .into_iter()
                 .map(WorthQueryBasisAdmissionEvidenceRow::support_profile_token),
         )
         .collect::<Vec<_>>();
-        WorthQueryBranchBasisAdmission::new(
+        Ok(WorthQueryBranchBasisAdmission::new(
             &self.evidence_authority,
             label,
             effect_policy,
             evidence_rows,
-        )
+        )?)
     }
 }

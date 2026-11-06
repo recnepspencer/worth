@@ -33,17 +33,17 @@ pub(super) fn effect_inspection_digests(
     latest_delivery_family: Option<&WorthQueryEffectDeliveryFamily>,
     latest_phase_evidence: Option<&WorthQueryEffectPhaseEvidence>,
     feedback_graph: Option<&WorthQueryFeedbackPhaseGraphInspection>,
-) -> EffectInspectionDigestSet {
-    let trigger_identity = trigger_inspection_identity(effect);
+) -> Result<EffectInspectionDigestSet, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    let trigger_identity = trigger_inspection_identity(effect)?;
     let condition_identity = condition_inspection_identity(
         effect,
         condition_descriptor,
         condition_inputs,
         condition_outputs,
         condition_failure_posture,
-    );
+    )?;
     let declaration_identity =
-        declaration_inspection_identity(effect, &trigger_identity, &condition_identity);
+        declaration_inspection_identity(effect, &trigger_identity, &condition_identity)?;
     let pending_delivery_identity = pending_delivery_inspection_identity(
         effect,
         pending_delivery_count,
@@ -51,7 +51,7 @@ pub(super) fn effect_inspection_digests(
         pending_suppressed_count,
         pending_expression_failure_count,
         pending_write_intent_count,
-    );
+    )?;
     let latest_phase_identity = latest_phase_evidence.map(effect_phase_inspection_identity);
     let inspection_identity = inspection_identity(
         latest_delivery_family,
@@ -59,9 +59,9 @@ pub(super) fn effect_inspection_digests(
         &declaration_identity,
         &pending_delivery_identity,
         latest_phase_identity.as_ref(),
-    );
+    )?;
 
-    EffectInspectionDigestSet {
+    Ok(EffectInspectionDigestSet {
         trigger_digest: trigger_identity.as_str().to_string(),
         condition_digest: condition_identity.as_str().to_string(),
         declaration_digest: declaration_identity.as_str().to_string(),
@@ -70,11 +70,11 @@ pub(super) fn effect_inspection_digests(
             .as_ref()
             .map(|identity| identity.as_str().to_string()),
         inspection_digest: inspection_identity.as_str().to_string(),
-    }
+    })
 }
 
-fn trigger_inspection_identity(effect: &WorthQueryEffectRuntime) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::EffectIntentReceiptInspection)
+fn trigger_inspection_identity(effect: &WorthQueryEffectRuntime) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::EffectIntentReceiptInspection)
         .field_shape(
             WorthQueryEvidenceTag::new("artifact_kind"),
             "effect-trigger-inspection",
@@ -104,7 +104,7 @@ fn trigger_inspection_identity(effect: &WorthQueryEffectRuntime) -> WorthQueryEv
                 .iter()
                 .map(WorthQueryAspectTouch::admitted_touch_digest_part),
         )
-        .seal()
+        .seal()?)
 }
 
 fn condition_inspection_identity(
@@ -113,8 +113,8 @@ fn condition_inspection_identity(
     condition_inputs: &[WorthQueryAspectTouch],
     condition_outputs: &[WorthQueryAspectTouch],
     condition_failure_posture: Option<WorthQueryEffectExpressionFailurePosture>,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::EffectIntentReceiptInspection)
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::EffectIntentReceiptInspection)
         .field_shape(
             WorthQueryEvidenceTag::new("artifact_kind"),
             "effect-condition-inspection",
@@ -143,15 +143,15 @@ fn condition_inspection_identity(
             WorthQueryEvidenceTag::new("failure_posture"),
             effect_condition_failure_posture_label(condition_failure_posture),
         )
-        .seal()
+        .seal()?)
 }
 
 fn declaration_inspection_identity(
     effect: &WorthQueryEffectRuntime,
     trigger_identity: &WorthQueryEvidenceIdentity,
     condition_identity: &WorthQueryEvidenceIdentity,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::EffectIntentReceiptInspection)
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::EffectIntentReceiptInspection)
         .field_shape(
             WorthQueryEvidenceTag::new("artifact_kind"),
             "effect-declaration-inspection",
@@ -182,13 +182,13 @@ fn declaration_inspection_identity(
             WorthQueryEvidenceTag::new("suppression"),
             effect.declaration.suppression_policy().as_str(),
         )
-        .seal()
+        .seal()?)
 }
 
 fn pending_delivery_row_identity(
     delivery: &WorthQueryEffectDelivery,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::EffectIntentReceiptPhase)
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::EffectIntentReceiptPhase)
         .field_shape(
             WorthQueryEvidenceTag::new("effect_name"),
             delivery.effect_name(),
@@ -212,7 +212,7 @@ fn pending_delivery_row_identity(
                 .iter()
                 .map(WorthQueryAspectTouch::admitted_touch_digest_part),
         )
-        .seal()
+        .seal()?)
 }
 
 fn pending_delivery_inspection_identity(
@@ -222,14 +222,14 @@ fn pending_delivery_inspection_identity(
     pending_suppressed_count: usize,
     pending_expression_failure_count: usize,
     pending_write_intent_count: usize,
-) -> WorthQueryEvidenceIdentity {
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
     let delivery_identities = effect
         .deliveries
         .iter()
         .map(pending_delivery_row_identity)
         .collect::<Vec<_>>();
 
-    worth_query_evidence_identity(WorthQueryEvidenceScope::EffectIntentReceiptPhase)
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::EffectIntentReceiptPhase)
         .field_shape(
             WorthQueryEvidenceTag::new("artifact_kind"),
             "pending-delivery",
@@ -262,7 +262,7 @@ fn pending_delivery_inspection_identity(
             WorthQueryEvidenceTag::new("deliveries"),
             delivery_identities.iter(),
         )
-        .seal()
+        .seal()?)
 }
 
 fn inspection_identity(
@@ -271,8 +271,8 @@ fn inspection_identity(
     declaration_identity: &WorthQueryEvidenceIdentity,
     pending_delivery_identity: &WorthQueryEvidenceIdentity,
     latest_phase_identity: Option<&WorthQueryEvidenceIdentity>,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::EffectIntentReceiptInspection)
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::EffectIntentReceiptInspection)
         .field_shape(
             WorthQueryEvidenceTag::new("artifact_kind"),
             "effect-inspection",
@@ -299,7 +299,7 @@ fn inspection_identity(
             WorthQueryEvidenceTag::new("feedback_graph"),
             feedback_graph.map(|graph| graph.graph_identity()),
         )
-        .seal()
+        .seal()?)
 }
 
 fn effect_condition_failure_posture_label(
@@ -325,8 +325,8 @@ fn effect_delivery_family_label(family: &WorthQueryEffectDeliveryFamily) -> &'st
 
 fn effect_phase_inspection_identity(
     phase: &WorthQueryEffectPhaseEvidence,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::EffectIntentReceiptInspection)
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::EffectIntentReceiptInspection)
         .field_shape(
             WorthQueryEvidenceTag::new("artifact_kind"),
             "effect-phase-inspection",
@@ -343,5 +343,5 @@ fn effect_phase_inspection_identity(
             WorthQueryEvidenceTag::new("idempotence"),
             phase.idempotence().as_str(),
         )
-        .seal()
+        .seal()?)
 }

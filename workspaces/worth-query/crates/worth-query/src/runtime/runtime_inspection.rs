@@ -51,7 +51,7 @@ impl WorthQueryRuntime {
         let state = self.live_subscriptions.get(&target).ok_or_else(|| {
             WorthQueryRuntimeError::MissingLiveSubscription(view.name().to_string())
         })?;
-        Ok(WorthQueryLiveViewInspection::from_state(state))
+        Ok(WorthQueryLiveViewInspection::from_state(state)?)
     }
 
     pub fn inspect_receipt<'a>(
@@ -163,7 +163,7 @@ impl WorthQueryRuntime {
             .effects
             .get(&effect_target)
             .ok_or_else(|| WorthQueryRuntimeError::MissingEffect(effect.name().to_string()))?;
-        WorthQueryFeedbackPhaseGraphInspection::from_effect_runtime(runtime).ok_or_else(|| {
+        WorthQueryFeedbackPhaseGraphInspection::from_effect_runtime(runtime)?.ok_or_else(|| {
             WorthQueryRuntimeError::MissingEffect(format!(
                 "{} has no retained feedback delivery",
                 effect.name()
@@ -176,7 +176,7 @@ impl WorthQueryRuntime {
         receipt: &WorthQueryEffectIntentReceipt,
     ) -> Result<WorthQueryFeedbackPhaseGraphInspection, WorthQueryRuntimeError> {
         self.admit_facade_family(WorthQueryRuntimeFacadeFamily::Inspect)?;
-        Ok(WorthQueryFeedbackPhaseGraphInspection::from_effect_intent_receipt(receipt))
+        Ok(WorthQueryFeedbackPhaseGraphInspection::from_effect_intent_receipt(receipt)?)
     }
 
     pub fn inspect<'a, T>(
@@ -191,7 +191,7 @@ impl WorthQueryRuntime {
         match target.into() {
             WorthQueryInspectionTarget::AdmittedWorldBasis(basis) => {
                 Ok(WorthQueryInspection::BasisLifecycle(
-                    WorthQueryBasisLifecycleInspection::from_admitted_world_basis(basis),
+                    WorthQueryBasisLifecycleInspection::from_admitted_world_basis(basis)?,
                 ))
             }
             WorthQueryInspectionTarget::ScopedObservationBasis(basis) => {

@@ -225,7 +225,7 @@ impl WorthQueryRuntime {
                 "derived-declaration",
             )
             .field_value(WorthQueryEvidenceTag::new("view_name"), view_name)
-            .seal(),
+            .seal()?,
         );
         let refresh_metadata = self
             .backend

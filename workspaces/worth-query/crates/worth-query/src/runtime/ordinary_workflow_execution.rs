@@ -264,7 +264,7 @@ impl WorthQueryRuntime {
         materialize_inspection: bool,
     ) -> Result<WorthQueryLowerRuntimePreviewExecution, WorthQueryRuntimeError> {
         let label = basis_admission.session_label().clone();
-        let request_identity = preview_request_identity("read-only", &label, declaration_identity);
+        let request_identity = preview_request_identity("read-only", &label, declaration_identity)?;
         let outcome = {
             let session = self.open_preview_with_admitted_basis(execution, basis_admission)?;
             session.discard()
@@ -288,7 +288,7 @@ impl WorthQueryRuntime {
         materialize_inspection: bool,
     ) -> Result<WorthQueryLowerRuntimePreviewExecution, WorthQueryRuntimeError> {
         let label = basis_admission.session_label().clone();
-        let request_identity = preview_request_identity("promotion", &label, declaration_identity);
+        let request_identity = preview_request_identity("promotion", &label, declaration_identity)?;
         let (receipt_identity, outcome) = {
             let mut session = self.open_preview_with_admitted_basis(execution, basis_admission)?;
             let preview_receipt = session.write(execution, command)?;
@@ -335,8 +335,8 @@ fn preview_request_identity(
     family: &'static str,
     label: &WorthQuerySessionLabel,
     declaration_identity: &WorthQueryEvidenceIdentity,
-) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
         .field_shape(
             WorthQueryEvidenceTag::new("role"),
             "ordinary-preview-request",
@@ -350,5 +350,5 @@ fn preview_request_identity(
             WorthQueryEvidenceTag::new("declaration"),
             declaration_identity,
         )
-        .seal()
+        .seal()?)
 }

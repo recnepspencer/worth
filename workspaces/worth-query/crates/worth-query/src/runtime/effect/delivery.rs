@@ -157,10 +157,10 @@ impl WorthQueryEffectDelivery {
         trigger_source_kind: WorthQueryEffectTriggerSourceKind,
         aspect_touches: Vec<WorthQueryAspectTouch>,
         payload: WorthQueryEffectPayload,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let trigger_commit_evidence_identity =
-            effect_trigger_commit_evidence_identity(&commit_identity);
-        Self {
+            effect_trigger_commit_evidence_identity(&commit_identity)?;
+        Ok(Self {
             effect_name: declaration.name().to_string(),
             commit_identity,
             trigger_commit_evidence_identity,
@@ -177,7 +177,7 @@ impl WorthQueryEffectDelivery {
             write_adjacent_trigger: declaration.write_adjacent_trigger().clone(),
             payload,
             reason: None,
-        }
+        })
     }
     pub(in crate::runtime::effect) fn pending_write_intent(
         declaration: &WorthQueryEffectDeclaration,
@@ -186,10 +186,10 @@ impl WorthQueryEffectDelivery {
         trigger_source_kind: WorthQueryEffectTriggerSourceKind,
         aspect_touches: Vec<WorthQueryAspectTouch>,
         payload: WorthQueryEffectPayload,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let trigger_commit_evidence_identity =
-            effect_trigger_commit_evidence_identity(&commit_identity);
-        Self {
+            effect_trigger_commit_evidence_identity(&commit_identity)?;
+        Ok(Self {
             effect_name: declaration.name().to_string(),
             commit_identity,
             trigger_commit_evidence_identity,
@@ -209,7 +209,7 @@ impl WorthQueryEffectDelivery {
                 "effect lowered to pending write intent; commit execution awaits intent authority"
                     .to_string(),
             ),
-        }
+        })
     }
     pub(in crate::runtime::effect) fn suppressed(
         declaration: &WorthQueryEffectDeclaration,
@@ -217,10 +217,10 @@ impl WorthQueryEffectDelivery {
         trigger_source: impl Into<String>,
         trigger_source_kind: WorthQueryEffectTriggerSourceKind,
         reason: impl Into<String>,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let trigger_commit_evidence_identity =
-            effect_trigger_commit_evidence_identity(&commit_identity);
-        Self {
+            effect_trigger_commit_evidence_identity(&commit_identity)?;
+        Ok(Self {
             effect_name: declaration.name().to_string(),
             commit_identity,
             trigger_commit_evidence_identity,
@@ -237,7 +237,7 @@ impl WorthQueryEffectDelivery {
             write_adjacent_trigger: declaration.write_adjacent_trigger().clone(),
             payload: WorthQueryEffectPayload::empty(),
             reason: Some(reason.into()),
-        }
+        })
     }
     pub(in crate::runtime::effect) fn expression_failed(
         declaration: &WorthQueryEffectDeclaration,
@@ -246,10 +246,10 @@ impl WorthQueryEffectDelivery {
         trigger_source_kind: WorthQueryEffectTriggerSourceKind,
         aspect_touches: Vec<WorthQueryAspectTouch>,
         reason: impl Into<String>,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let trigger_commit_evidence_identity =
-            effect_trigger_commit_evidence_identity(&commit_identity);
-        Self {
+            effect_trigger_commit_evidence_identity(&commit_identity)?;
+        Ok(Self {
             effect_name: declaration.name().to_string(),
             commit_identity,
             trigger_commit_evidence_identity,
@@ -266,7 +266,7 @@ impl WorthQueryEffectDelivery {
             write_adjacent_trigger: declaration.write_adjacent_trigger().clone(),
             payload: WorthQueryEffectPayload::empty(),
             reason: Some(reason.into()),
-        }
+        })
     }
     pub fn effect_name(&self) -> &str {
         &self.effect_name

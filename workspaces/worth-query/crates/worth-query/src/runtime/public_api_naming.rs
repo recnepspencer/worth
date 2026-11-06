@@ -18,7 +18,7 @@ impl WorthQueryRuntimePublicApiNamingRow {
         preferred_name: impl Into<String>,
         alternate_names: impl IntoIterator<Item = impl Into<String>>,
         boundary_crossing: bool,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let concept = concept.into();
         let preferred_name = preferred_name.into();
         let alternate_names = alternate_names
@@ -40,14 +40,14 @@ impl WorthQueryRuntimePublicApiNamingRow {
                     WorthQueryEvidenceTag::new("alternate_name"),
                     alternate_names.iter().map(String::as_str),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             concept,
             preferred_name,
             alternate_names,
             boundary_crossing,
             naming_identity,
-        }
+        })
     }
 
     pub fn concept(&self) -> &str {
@@ -85,7 +85,7 @@ pub struct WorthQueryRuntimePublicApiNamingContract {
 }
 
 impl WorthQueryRuntimePublicApiNamingContract {
-    pub fn standard() -> Self {
+    pub fn standard() -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let rows = vec![
             WorthQueryRuntimePublicApiNamingRow::new(
                 "workspace",
@@ -223,14 +223,14 @@ impl WorthQueryRuntimePublicApiNamingContract {
                     rows.iter()
                         .map(WorthQueryRuntimePublicApiNamingRow::naming_digest),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             rows,
             preferred_entrypoint_count,
             alternate_name_count,
             boundary_crossing_name_count,
             contract_identity,
-        }
+        })
     }
 
     pub fn rows(&self) -> &[WorthQueryRuntimePublicApiNamingRow] {

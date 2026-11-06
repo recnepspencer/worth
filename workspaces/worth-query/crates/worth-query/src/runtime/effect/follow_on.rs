@@ -37,7 +37,7 @@ pub struct WorthQueryEffectWriteAdjacentTrigger {
 }
 
 impl WorthQueryEffectWriteAdjacentTrigger {
-    pub fn ordinary(effect_name: &str) -> Self {
+    pub fn ordinary(effect_name: &str) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let origin_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceiptPhase)
                 .field_shape(
@@ -45,17 +45,17 @@ impl WorthQueryEffectWriteAdjacentTrigger {
                     "ordinary_effect_origin_v1",
                 )
                 .field_value(WorthQueryEvidenceTag::new("effect"), effect_name)
-                .seal();
-        Self::new(
+                .seal()?;
+        Ok(Self::new(
             WorthQueryEffectWriteAdjacentTriggerClass::OrdinaryEffect,
             origin_identity,
-        )
+        )?)
     }
 
     pub fn new(
         class: WorthQueryEffectWriteAdjacentTriggerClass,
         origin_identity: WorthQueryEvidenceIdentity,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceiptPhase)
                 .field_shape(
@@ -64,12 +64,12 @@ impl WorthQueryEffectWriteAdjacentTrigger {
                 )
                 .field_shape(WorthQueryEvidenceTag::new("class"), class.as_str())
                 .field_evidence_identity(WorthQueryEvidenceTag::new("origin"), &origin_identity)
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             class,
             origin_identity,
             identity,
-        }
+        })
     }
 
     pub fn class(&self) -> WorthQueryEffectWriteAdjacentTriggerClass {

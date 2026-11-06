@@ -36,7 +36,7 @@ impl WorthQueryRuntimePublicApiTranscriptEvidence {
         delivery_residue_count: usize,
         authority_lane_digest: impl AsRef<str>,
         meaningful_assertion_count: usize,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let transcript_family = transcript_family.into();
         let support_contract_digest = support_contract_digest.as_ref().to_string();
         let state_digest = state_digest.as_ref().to_string();
@@ -107,8 +107,8 @@ impl WorthQueryRuntimePublicApiTranscriptEvidence {
             WorthQueryEvidenceTag::new("meaningful_assertion_count"),
             meaningful_assertion_count,
         )
-        .seal();
-        Self {
+        .seal()?;
+        Ok(Self {
             transcript_family,
             support_contract_digest,
             state_digest,
@@ -122,7 +122,7 @@ impl WorthQueryRuntimePublicApiTranscriptEvidence {
             authority_lane_digest,
             meaningful_assertion_count,
             transcript_identity,
-        }
+        })
     }
 
     pub fn transcript_family(&self) -> &str {

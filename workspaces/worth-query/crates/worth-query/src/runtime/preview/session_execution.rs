@@ -21,9 +21,9 @@ impl<'a> WorthQueryPreviewSession<'a> {
             &command,
             self.runtime
                 .current_snapshot_identity_with_request(execution),
-        );
+        )?;
         self.pending_commands.push(command);
-        self.route_preview_execution(&receipt);
+        self.route_preview_execution(&receipt)?;
         Ok(receipt)
     }
 
@@ -35,7 +35,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
         &self.intent_receipts
     }
 
-    pub(super) fn route_preview_execution(&mut self, receipt: &WorthQueryWriteReceipt) {
+    pub(super) fn route_preview_execution(&mut self, receipt: &WorthQueryWriteReceipt) -> Result<(), crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let mut live_affected: BTreeMap<WorthQueryLiveArtifactTarget, Vec<WorthQueryAspectTouch>> =
             BTreeMap::new();
         let mut computed_affected: BTreeMap<
@@ -66,7 +66,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
                     WorthQueryAuthorityLane::PreviewTruth,
                     receipt.commit_evidence_identity(),
                     affected_aspects,
-                ));
+                )?);
         }
 
         for binding in self
@@ -96,7 +96,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
                     WorthQueryAuthorityLane::PreviewTruth,
                     receipt.commit_evidence_identity(),
                     affected_aspects,
-                ));
+                )?);
         }
 
         let mut pending_effect_evidence = Vec::new();
@@ -137,8 +137,10 @@ impl<'a> WorthQueryPreviewSession<'a> {
                 WorthQueryAuthorityLane::PreviewTruth,
                 receipt.commit_evidence_identity(),
                 affected_aspects,
-            ));
+            )?);
         }
         self.execution_evidence.extend(pending_effect_evidence);
-    }
+    
+Ok(())
+}
 }

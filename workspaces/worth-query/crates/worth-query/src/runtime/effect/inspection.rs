@@ -47,7 +47,7 @@ pub struct WorthQueryEffectInspectionEvidence {
 }
 
 impl WorthQueryEffectInspectionEvidence {
-    pub(in crate::runtime) fn from_runtime(effect: &WorthQueryEffectRuntime) -> Self {
+    pub(in crate::runtime) fn from_runtime(effect: &WorthQueryEffectRuntime) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let (condition_descriptor, condition_inputs, condition_outputs) =
             match effect.declaration.condition() {
                 WorthQueryEffectCondition::Always => ("always".to_string(), Vec::new(), Vec::new()),
@@ -93,7 +93,7 @@ impl WorthQueryEffectInspectionEvidence {
         let latest_phase_evidence = effect
             .latest_delivery()
             .map(|delivery| delivery.phase_evidence().clone());
-        let feedback_graph = WorthQueryFeedbackPhaseGraphInspection::from_effect_runtime(effect);
+        let feedback_graph = WorthQueryFeedbackPhaseGraphInspection::from_effect_runtime(effect)?;
         let digest_set = effect_inspection_digests(
             effect,
             &condition_descriptor,
@@ -108,9 +108,9 @@ impl WorthQueryEffectInspectionEvidence {
             latest_delivery_family.as_ref(),
             latest_phase_evidence.as_ref(),
             feedback_graph.as_ref(),
-        );
+        )?;
 
-        Self {
+        Ok(Self {
             name: effect.declaration.name().to_string(),
             trigger_source: effect.declaration.trigger().source_name().to_string(),
             trigger_source_kind: effect.declaration.trigger().source_kind(),
@@ -140,7 +140,7 @@ impl WorthQueryEffectInspectionEvidence {
             pending_delivery_digest: digest_set.pending_delivery_digest,
             latest_phase_digest: digest_set.latest_phase_digest,
             inspection_digest: digest_set.inspection_digest,
-        }
+        })
     }
 
     pub fn name(&self) -> &str {

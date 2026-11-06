@@ -66,7 +66,7 @@ impl WorthQueryExistingEntityTarget {
                 collection.into(),
                 "existing-truth target collection may not be empty",
             )?,
-        ));
+        )?);
         Ok(self)
     }
 
@@ -114,7 +114,7 @@ impl WorthQueryExistingRelationTarget {
                 collection.into(),
                 "existing-truth target collection may not be empty",
             )?,
-        ));
+        )?);
         Ok(self)
     }
 
@@ -199,7 +199,7 @@ impl WorthQueryExistingTruthTargetBinding {
                 collection.into(),
                 "existing-truth target collection may not be empty",
             )?,
-        ));
+        )?);
         self.binding_identity = existing_truth_binding_identity(
             self.family,
             &self.authoritative_identity,

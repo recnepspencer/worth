@@ -82,7 +82,7 @@ impl WorthQueryWriteReceiptInspection {
                     WorthQueryEvidenceTag::new("entity_identity"),
                     &delta.entity_identity.evidence_identity(),
                 )
-                .seal()
+                .seal()?
             })
             .collect::<Vec<_>>();
         let declared_aspect_operations = receipt.declared_aspect_operations().to_vec();

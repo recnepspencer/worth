@@ -178,7 +178,7 @@ impl WorthQueryRuntime {
         execution: Option<&WorthQueryIntentExecution>,
         decision_trace_envelope: Option<WorthQueryIntentDecisionTraceEnvelope>,
         execution_provenance: Option<WorthQueryIntentExecutionProvenance>,
-    ) -> WorthQueryRuntimeError {
+    ) -> Result<WorthQueryRuntimeError, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let denial =
             intent::WorthQueryIntentAdmissionDenial::new(violation.stage(), violation.message());
         let evidence = WorthQueryIntentDenialEvidence::new_with_trace(
@@ -187,13 +187,13 @@ impl WorthQueryRuntime {
             execution,
             execution_provenance,
             decision_trace_envelope,
-        );
-        WorthQueryRuntimeError::IntentCommitDenied {
+        )?;
+        Ok(WorthQueryRuntimeError::IntentCommitDenied {
             intent_name: declaration.name().to_string(),
             stage: violation.stage(),
             message: violation.message().to_string(),
             evidence,
-        }
+        })
     }
 
     pub(crate) fn intent_execution_routing_error(
@@ -203,7 +203,7 @@ impl WorthQueryRuntime {
         execution_provenance: WorthQueryIntentExecutionProvenance,
         decision_trace_envelope: WorthQueryIntentDecisionTraceEnvelope,
         source: WorthQueryRuntimeError,
-    ) -> WorthQueryRuntimeError {
+    ) -> Result<WorthQueryRuntimeError, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let stage = "post-execution-routing";
         let message = source.to_string();
         let evidence = intent::WorthQueryIntentExecutionFailureEvidence::new(
@@ -213,14 +213,14 @@ impl WorthQueryRuntime {
             execution,
             execution_provenance,
             decision_trace_envelope,
-        );
-        WorthQueryRuntimeError::IntentExecutionRoutingFailed {
+        )?;
+        Ok(WorthQueryRuntimeError::IntentExecutionRoutingFailed {
             intent_name: declaration.name().to_string(),
             stage,
             message,
             evidence,
             source: Box::new(source),
-        }
+        })
     }
 
     pub(crate) fn admitted_handoff_violation_error(
@@ -228,7 +228,7 @@ impl WorthQueryRuntime {
         handoff: &WorthQueryAdmittedIntentExecutionHandoff,
         stage: &'static str,
         message: impl Into<String>,
-    ) -> WorthQueryRuntimeError {
+    ) -> Result<WorthQueryRuntimeError, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let violation = WorthQueryIntentViolationDecision::new(
             handoff.family(),
             handoff.entrypoint(),
@@ -239,13 +239,13 @@ impl WorthQueryRuntime {
         );
         let decision_trace_envelope =
             WorthQueryIntentDecisionTraceEnvelope::for_handoff_violation(handoff, &violation);
-        self.intent_violation_error(
+        Ok(self.intent_violation_error(
             handoff.declaration(),
             violation,
             None,
             Some(decision_trace_envelope),
             None,
-        )
+        )?)
     }
 
     pub(in crate::runtime) fn pending_effect_write_delivery(

@@ -177,10 +177,10 @@ impl WorthQueryEffectDeclaration {
         name: impl Into<String>,
         trigger: WorthQueryEffectTrigger,
         target: impl Into<String>,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let name = name.into();
-        Self {
-            write_adjacent_trigger: WorthQueryEffectWriteAdjacentTrigger::ordinary(&name),
+        Ok(Self {
+            write_adjacent_trigger: WorthQueryEffectWriteAdjacentTrigger::ordinary(&name)?,
             name,
             trigger,
             condition: WorthQueryEffectCondition::Always,
@@ -189,16 +189,16 @@ impl WorthQueryEffectDeclaration {
             target: target.into(),
             effect_policy: WorthQueryEffectPolicy::AuthoritativeAllowed,
             suppression_policy: WorthQueryEffectSuppressionPolicy::None,
-        }
+        })
     }
     pub fn write_intent(
         name: impl Into<String>,
         trigger: WorthQueryEffectTrigger,
         intent: impl Into<String>,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let name = name.into();
-        Self {
-            write_adjacent_trigger: WorthQueryEffectWriteAdjacentTrigger::ordinary(&name),
+        Ok(Self {
+            write_adjacent_trigger: WorthQueryEffectWriteAdjacentTrigger::ordinary(&name)?,
             name,
             trigger,
             condition: WorthQueryEffectCondition::Always,
@@ -207,7 +207,7 @@ impl WorthQueryEffectDeclaration {
             target: intent.into(),
             effect_policy: WorthQueryEffectPolicy::SandboxedWriteIntent,
             suppression_policy: WorthQueryEffectSuppressionPolicy::None,
-        }
+        })
     }
     pub fn with_condition(mut self, condition: WorthQueryEffectCondition) -> Self {
         self.condition = condition;
@@ -237,10 +237,10 @@ impl WorthQueryEffectDeclaration {
         mut self,
         class: WorthQueryEffectWriteAdjacentTriggerClass,
         origin_identity: WorthQueryEvidenceIdentity,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         self.write_adjacent_trigger =
-            WorthQueryEffectWriteAdjacentTrigger::new(class, origin_identity);
-        self
+            WorthQueryEffectWriteAdjacentTrigger::new(class, origin_identity)?;
+        Ok(self)
     }
     pub fn name(&self) -> &str {
         &self.name

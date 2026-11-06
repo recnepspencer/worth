@@ -35,8 +35,8 @@ impl WorthQueryIntentDenialEvidence {
         declaration: &WorthQueryIntentDeclaration,
         denial: &WorthQueryIntentAdmissionDenial,
         execution: Option<&WorthQueryIntentExecution>,
-    ) -> Self {
-        Self::new_with_trace(declaration, denial, execution, None, None)
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        Ok(Self::new_with_trace(declaration, denial, execution, None, None)?)
     }
 
     pub(in crate::runtime) fn new_with_trace(
@@ -45,7 +45,7 @@ impl WorthQueryIntentDenialEvidence {
         execution: Option<&WorthQueryIntentExecution>,
         execution_provenance: Option<WorthQueryIntentExecutionProvenance>,
         decision_trace_envelope: Option<WorthQueryIntentDecisionTraceEnvelope>,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let execution_kind = execution.map(WorthQueryIntentExecution::execution_kind);
         let returned_strategy_identity =
             execution.map(|execution| execution.strategy_identity.clone());
@@ -130,8 +130,8 @@ impl WorthQueryIntentDenialEvidence {
                         .as_ref()
                         .map(WorthQueryIntentDecisionTraceEnvelope::trace_digest),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             intent_name: declaration.name().to_string(),
             stage: denial.stage(),
             message: denial.message().to_string(),
@@ -150,7 +150,7 @@ impl WorthQueryIntentDenialEvidence {
             execution_provenance,
             decision_trace_envelope,
             denial_digest,
-        }
+        })
     }
 
     pub fn intent_name(&self) -> &str {

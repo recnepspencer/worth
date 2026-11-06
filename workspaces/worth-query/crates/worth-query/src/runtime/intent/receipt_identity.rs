@@ -185,8 +185,8 @@ fn receipt_value_identities(
 pub(super) fn effect_intent_receipt_identity(
     delivery: &WorthQueryEffectDelivery,
     intent_receipt: &super::WorthQueryIntentReceipt,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::EffectIntentReceipt)
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::EffectIntentReceipt)
         .field_shape(
             WorthQueryEvidenceTag::new("effect_name"),
             delivery.effect_name(),
@@ -239,5 +239,5 @@ pub(super) fn effect_intent_receipt_identity(
             WorthQueryEvidenceTag::new("intent_receipt_identity"),
             intent_receipt.receipt_identity(),
         )
-        .seal()
+        .seal()?)
 }

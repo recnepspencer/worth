@@ -205,7 +205,7 @@ mod tests {
     use worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts;
 
     #[test]
-    fn bridge_lowered_continuity_uses_bridge_native_digest_basis() {
+    fn bridge_lowered_continuity_uses_bridge_native_digest_basis() -> Result<(), crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let intent = WorthQueryContinuityMutationIntent::rebind_merge_successor(
             crate::runtime::WorthQueryMutationAuthorityIdentity::continuity_prior_authority(
                 crate::runtime::WorthQueryContinuityPriorAuthorityLabel::new("authority:task-1")
@@ -226,7 +226,7 @@ mod tests {
             RelationalBridgeRecordIdentityParts::entity(1, 42, 1),
         );
         let target_collection =
-            WorthQueryMutationTargetCollectionIdentity::new("test-target", "Task");
+            WorthQueryMutationTargetCollectionIdentity::new("test-target", "Task")?;
         let lowered = bridge_continuity_mutation_bundle(
             &intent,
             None,
@@ -235,7 +235,7 @@ mod tests {
         )
         .expect("bridge continuity bundle should lower");
 
-        let bridge_evidence = WorthQueryContinuityMutationEvidence::from_bridge(&lowered);
+        let bridge_evidence = WorthQueryContinuityMutationEvidence::from_bridge(&lowered)?;
 
         assert_eq!(bridge_evidence.family(), intent.family());
         assert_eq!(
@@ -279,10 +279,12 @@ mod tests {
             .continuity_resolution_digest()
             .as_str()
             .starts_with("worth.query.evidence-identity.v1:"));
-    }
+    
+Ok(())
+}
 
     #[test]
-    fn bridge_lowering_rejects_authored_query_identity_for_native_target() {
+    fn bridge_lowering_rejects_authored_query_identity_for_native_target() -> Result<(), crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let intent = WorthQueryNamingMutationIntent::attach_new_target(
             crate::runtime::WorthQueryMutationAuthorityIdentity::naming_attachment(
                 crate::runtime::WorthQueryNamingAttachmentAuthorityLabel::new("attachment:task-1")
@@ -293,7 +295,7 @@ mod tests {
         let authored_identity =
             crate::memory_workspace::admit_authored_entity_label("entity:task-1");
         let target_collection =
-            WorthQueryMutationTargetCollectionIdentity::new("test-target", "Task");
+            WorthQueryMutationTargetCollectionIdentity::new("test-target", "Task")?;
 
         assert!(
             bridge_naming_mutation_bundle(
@@ -304,5 +306,7 @@ mod tests {
             .is_none(),
             "bridge mutation lowering must not smuggle authored Query evidence into native bridge target identity"
         );
-    }
+    
+Ok(())
+}
 }

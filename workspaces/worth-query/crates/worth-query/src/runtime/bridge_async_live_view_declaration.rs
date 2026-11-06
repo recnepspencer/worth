@@ -92,7 +92,7 @@ impl WorthQueryRuntime {
             schema_view.clone(),
             future_selection,
         )?;
-        let binding = WorthQueryRuntimeAsyncSourceBinding::admit(&name, bridge_request);
+        let binding = WorthQueryRuntimeAsyncSourceBinding::admit(&name, bridge_request)?;
         self.finish_live_view_declaration(name, request, schema_view, activation, Some(binding))
     }
 }

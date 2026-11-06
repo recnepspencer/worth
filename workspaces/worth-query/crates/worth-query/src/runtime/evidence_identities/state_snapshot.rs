@@ -2,20 +2,20 @@ use super::*;
 
 pub(crate) fn runtime_state_snapshot_basis_label_identity(
     basis_identity: &WorthQueryEvidenceIdentity,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
         .field_shape(
             WorthQueryEvidenceTag::new("identity_family"),
             "worth_query_runtime_state_snapshot_basis_v1",
         )
         .field_evidence_identity(WorthQueryEvidenceTag::new("basis"), basis_identity)
-        .seal()
+        .seal()?)
 }
 
 pub(crate) fn runtime_state_snapshot_result_shape_label_identity(
     result_shape_identity: &WorthQueryEvidenceIdentity,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
         .field_shape(
             WorthQueryEvidenceTag::new("identity_family"),
             "worth_query_runtime_state_snapshot_result_shape_v1",
@@ -24,13 +24,13 @@ pub(crate) fn runtime_state_snapshot_result_shape_label_identity(
             WorthQueryEvidenceTag::new("result_shape"),
             result_shape_identity,
         )
-        .seal()
+        .seal()?)
 }
 
 pub(in crate::runtime) fn runtime_state_snapshot_result_shape_facade_family_identity(
     facade_family: WorthQueryRuntimeFacadeFamily,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
         .field_shape(
             WorthQueryEvidenceTag::new("identity_family"),
             "worth_query_runtime_state_snapshot_result_shape_facade_family_v1",
@@ -39,16 +39,16 @@ pub(in crate::runtime) fn runtime_state_snapshot_result_shape_facade_family_iden
             WorthQueryEvidenceTag::new("facade_family"),
             facade_family.as_str(),
         )
-        .seal()
+        .seal()?)
 }
 
 pub(in crate::runtime) fn runtime_state_snapshot_result_shape_write_receipt_identity(
     receipt: &WorthQueryWriteReceipt,
-) -> WorthQueryEvidenceIdentity {
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
     let declared_entity_identity = receipt
         .declared_entity_identity()
         .map(|identity| identity.evidence_identity());
-    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
         .field_shape(
             WorthQueryEvidenceTag::new("identity_family"),
             "worth_query_runtime_state_snapshot_result_shape_write_receipt_v1",
@@ -69,13 +69,13 @@ pub(in crate::runtime) fn runtime_state_snapshot_result_shape_write_receipt_iden
             WorthQueryEvidenceTag::new("declared_entity_identity"),
             declared_entity_identity.as_ref(),
         )
-        .seal()
+        .seal()?)
 }
 
 pub(in crate::runtime) fn runtime_state_snapshot_result_shape_batch_write_receipt_identity(
     receipt: &WorthQueryBatchWriteReceipt,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
         .field_shape(
             WorthQueryEvidenceTag::new("identity_family"),
             "worth_query_runtime_state_snapshot_result_shape_batch_write_receipt_v1",
@@ -84,17 +84,17 @@ pub(in crate::runtime) fn runtime_state_snapshot_result_shape_batch_write_receip
             WorthQueryEvidenceTag::new("write_count"),
             receipt.write_count(),
         )
-        .seal()
+        .seal()?)
 }
 
 pub(in crate::runtime) fn runtime_live_view_consumer_attachment_identity(
     view_name: &str,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
         .field_shape(
             WorthQueryEvidenceTag::new("identity_family"),
             "runtime_live_view_consumer_attachment_v1",
         )
         .field_shape(WorthQueryEvidenceTag::new("view"), view_name)
-        .seal()
+        .seal()?)
 }

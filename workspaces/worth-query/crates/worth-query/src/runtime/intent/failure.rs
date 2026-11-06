@@ -37,7 +37,7 @@ impl WorthQueryIntentExecutionFailureEvidence {
         execution: &WorthQueryIntentExecution,
         execution_provenance: WorthQueryIntentExecutionProvenance,
         decision_trace_envelope: WorthQueryIntentDecisionTraceEnvelope,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let snapshot_identity = execution.mutation_receipt().snapshot_identity.clone();
         let snapshot_evidence_identity = snapshot_identity.evidence_identity();
         let invariant_evidence = execution.invariant_evidence().to_vec();
@@ -105,8 +105,8 @@ impl WorthQueryIntentExecutionFailureEvidence {
                     WorthQueryEvidenceTag::new("decision_trace_digest"),
                     decision_trace_envelope.trace_digest(),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             intent_name: declaration.name().to_string(),
             stage,
             message,
@@ -125,7 +125,7 @@ impl WorthQueryIntentExecutionFailureEvidence {
             execution_provenance,
             decision_trace_envelope,
             failure_digest,
-        }
+        })
     }
 
     pub fn intent_name(&self) -> &str {

@@ -18,7 +18,7 @@ impl WorthQueryRuntime {
         &self,
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         command: WorthQueryWriteCommand,
-    ) -> crate::intent_admission::WorthQueryAuthoritativeMutationIntentSeed {
+    ) -> Result<crate::intent_admission::WorthQueryAuthoritativeMutationIntentSeed, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         use crate::intent_admission::WorthQueryAuthoritativeMutationPreflight as Preflight;
 
         let (preflight, admitted_mutation) = match self.admit_backend_write_command(command.clone())
@@ -33,13 +33,13 @@ impl WorthQueryRuntime {
                         reference,
                         WorthQuerySymbolicTargetReferenceDenialKind::RequiresBatchContext,
                         "same-batch symbolic target references require batch execution",
-                    ))
+                    )?)
                 } else if let Some(reference) = command.symbolic_aspect_references().first() {
                     Preflight::TargetReferenceDenied(WorthQuerySymbolicTargetReferenceDenial::new(
                         reference.reference(),
                         WorthQuerySymbolicTargetReferenceDenialKind::RequiresBatchContext,
                         "same-batch symbolic aspect references require batch execution",
-                    ))
+                    )?)
                 } else if let Some(binding) = command.existing_truth_binding() {
                     match self.backend.admit_existing_truth_binding(binding) {
                         Err(denial) => Preflight::BindingDenied(denial),
@@ -56,11 +56,11 @@ impl WorthQueryRuntime {
             }
         };
 
-        crate::intent_admission::WorthQueryAuthoritativeMutationIntentSeed::new(
+        Ok(crate::intent_admission::WorthQueryAuthoritativeMutationIntentSeed::new(
             command,
             preflight,
             admitted_mutation,
-        )
+        ))
     }
 
     fn scalar_mutation_post_binding_preflight(
@@ -247,7 +247,7 @@ impl WorthQueryRuntime {
                     binding,
                     &self.current_snapshot_identity_with_request(execution),
                     declared_aspect_value_digest,
-                ))
+                )?)
             }
             _ => self
                 .backend

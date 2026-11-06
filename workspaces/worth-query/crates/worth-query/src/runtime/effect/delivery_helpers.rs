@@ -7,14 +7,14 @@ use crate::runtime::WorthQueryAspectTouch;
 
 pub(super) fn effect_trigger_commit_evidence_identity(
     commit_identity: &WorthQueryCommitIdentity,
-) -> WorthQueryEvidenceIdentity {
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
     let commit_evidence_identity = commit_identity.evidence_identity();
-    worth_query_evidence_identity(WorthQueryEvidenceScope::EffectTriggerCommitIdentity)
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::EffectTriggerCommitIdentity)
         .field_evidence_identity(
             WorthQueryEvidenceTag::new("trigger_commit_identity"),
             &commit_evidence_identity,
         )
-        .seal()
+        .seal()?)
 }
 
 pub(super) fn terminal_touch_digest_projection_sequence(

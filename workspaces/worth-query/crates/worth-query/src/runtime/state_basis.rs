@@ -74,30 +74,30 @@ impl_scoped_basis_state_target!(ScopedPreviewCloseoutBasis, "scoped preview-clos
 fn scoped_basis_snapshot(
     basis: &impl ScopedBasisProof,
     label: &str,
-) -> WorthQueryRuntimeStateSnapshot {
-    WorthQueryRuntimeStateSnapshot::ready(
+) -> Result<WorthQueryRuntimeStateSnapshot, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(WorthQueryRuntimeStateSnapshot::ready(
         runtime_state_snapshot_basis_label_identity(&scoped_identity(
             "scoped_basis",
             basis.scoped_basis_digest(),
-        )),
+        )?)?,
         runtime_state_snapshot_result_shape_label_identity(&scoped_identity(
             "basis_capability",
             basis.capability_digest(),
-        )),
+        )?)?,
         authority_lane_for_family(basis.family()),
         format!(
             "{label} is ready with `{}` authority and `{}` lifecycle posture",
             basis.authority().as_str(),
             basis.lifecycle().as_str()
         ),
-    )
+    )?)
 }
 
-fn scoped_identity(family: &'static str, digest: &str) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+fn scoped_identity(family: &'static str, digest: &str) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
         .field_shape(WorthQueryEvidenceTag::new("identity_family"), family)
         .field_shape(WorthQueryEvidenceTag::new("canonical_digest"), digest)
-        .seal()
+        .seal()?)
 }
 
 fn authority_lane_for_family(family: BasisFamily) -> WorthQueryAuthorityLane {

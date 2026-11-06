@@ -58,8 +58,8 @@ impl<'a> WorthQueryPreviewSession<'a> {
         residue_snapshot: PreviewLifecycleResidueSnapshot,
         target_basis_snapshot_identity: &WorthQuerySnapshotIdentity,
         rebinding_identity: Option<crate::WorthQueryEvidenceIdentity>,
-    ) -> WorthQueryPreviewCloseoutEvidence {
-        WorthQueryPreviewCloseoutEvidence::new(
+    ) -> Result<WorthQueryPreviewCloseoutEvidence, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        Ok(WorthQueryPreviewCloseoutEvidence::new(
             kind,
             self.effect_policy,
             &self.basis_admission,
@@ -81,7 +81,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
             self.pending_write_intent_residue_count(),
             residue_snapshot.crossed_authoritative_residue_count,
             rebinding_identity,
-        )
+        )?)
     }
 
     pub(super) fn handle_binding_count(

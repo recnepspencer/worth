@@ -165,11 +165,11 @@ impl WorthQueryRuntimeAsyncResultProjection {
 
     pub(super) fn from_bridge_transition(
         transition: &BridgeMixedCauseAsyncResultTransition,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let causality_identity = runtime_async_causality_from_bridge(
             transition.source_identity(),
             transition.source_digest(),
-        );
+        )?;
         match transition.cause() {
             BridgeMixedCauseAsyncResultCause::Completion(state) => Self::CompletionState {
                 state,
@@ -187,11 +187,13 @@ impl WorthQueryRuntimeAsyncResultProjection {
                 causality_identity,
             },
         }
-    }
+    
+Ok(())
+}
 
     pub(super) fn stale_before_bridge_revalidation(
         transition: &BridgeMixedCauseAsyncResultTransition,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let class = match transition.cause() {
             BridgeMixedCauseAsyncResultCause::Revalidation(
                 BridgeAsyncForwardCausalityClass::RevalidationAfterTruthBasisDrift,
@@ -206,56 +208,56 @@ impl WorthQueryRuntimeAsyncResultProjection {
                 unreachable!("stale precursor is created only for Bridge revalidation lineage")
             }
         };
-        Self::ClassifiedSupersession {
+        Ok(Self::ClassifiedSupersession {
             class,
             causality_identity: runtime_async_causality_from_bridge(
                 transition.source_identity(),
                 transition.source_digest(),
-            ),
-        }
+            )?,
+        })
     }
-    pub(crate) fn pending(causality_label: &str) -> Self {
-        Self::Pending {
+    pub(crate) fn pending(causality_label: &str) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        Ok(Self::Pending {
             causality_identity: runtime_async_causality_identity(
-                &runtime_async_causality_label_identity(causality_label),
-            ),
-        }
+                &runtime_async_causality_label_identity(causality_label)?,
+            )?,
+        })
     }
 
     #[cfg(test)]
     pub(crate) fn completion_state(
         state: BridgeAsyncCompletionState,
         causality_label: &str,
-    ) -> Self {
-        Self::CompletionState {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        Ok(Self::CompletionState {
             state,
             causality_identity: runtime_async_causality_identity(
-                &runtime_async_causality_label_identity(causality_label),
-            ),
-        }
+                &runtime_async_causality_label_identity(causality_label)?,
+            )?,
+        })
     }
 
     #[cfg(test)]
     pub(crate) fn forward_causality(
         class: BridgeAsyncForwardCausalityClass,
         causality_label: &str,
-    ) -> Self {
-        Self::ForwardCausality {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        Ok(Self::ForwardCausality {
             class,
             causality_identity: runtime_async_causality_identity(
-                &runtime_async_causality_label_identity(causality_label),
-            ),
-        }
+                &runtime_async_causality_label_identity(causality_label)?,
+            )?,
+        })
     }
 
     #[cfg(test)]
-    pub(crate) fn supersession(causality_label: &str) -> Self {
-        Self::ClassifiedSupersession {
+    pub(crate) fn supersession(causality_label: &str) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        Ok(Self::ClassifiedSupersession {
             class: BridgeAsyncCompletionSupersessionClass::SignalGenerationSuperseded,
             causality_identity: runtime_async_causality_identity(
-                &runtime_async_causality_label_identity(causality_label),
-            ),
-        }
+                &runtime_async_causality_label_identity(causality_label)?,
+            )?,
+        })
     }
 }
 
@@ -274,7 +276,7 @@ impl WorthQueryRuntimeAsyncResultState {
         causality_identity: &WorthQueryEvidenceIdentity,
         basis_identity: &WorthQueryEvidenceIdentity,
         checkpoint_identity: &WorthQueryEvidenceIdentity,
-    ) -> Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let causality_identity = causality_identity.clone();
         let basis_identity = basis_identity.clone();
         let checkpoint_identity = checkpoint_identity.clone();
@@ -283,14 +285,14 @@ impl WorthQueryRuntimeAsyncResultState {
             &causality_identity,
             &basis_identity,
             &checkpoint_identity,
-        );
-        Self {
+        )?;
+        Ok(Self {
             kind,
             causality_identity,
             basis_identity,
             checkpoint_identity,
             result_state_identity,
-        }
+        })
     }
 
     pub fn kind(&self) -> WorthQueryRuntimeAsyncResultStateKind {
@@ -335,16 +337,18 @@ mod tests {
     use super::*;
 
     #[test]
-    fn effects_indeterminate_completion_maps_only_to_unresolved() {
+    fn effects_indeterminate_completion_maps_only_to_unresolved() -> Result<(), crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let projection = WorthQueryRuntimeAsyncResultProjection::completion_state(
             BridgeAsyncCompletionState::Admitted(BridgeAsyncCompletionClass::EffectsIndeterminate),
             "owner-effects-indeterminate",
-        );
+        )?;
 
         assert_eq!(
             projection.kind(),
             WorthQueryRuntimeAsyncResultStateKind::Unresolved
         );
         assert!(projection.kind().permits_basis_or_generation_drift());
-    }
+    
+Ok(())
+}
 }

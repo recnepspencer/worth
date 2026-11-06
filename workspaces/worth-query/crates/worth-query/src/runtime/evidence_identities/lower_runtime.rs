@@ -2,7 +2,7 @@ use super::*;
 
 pub(in crate::runtime) fn lower_runtime_support_row_identity(
     row: &WorthQueryLowerRuntimeSupportRow,
-) -> WorthQueryEvidenceIdentity {
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
     let mut identity =
         worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_shape(
@@ -55,23 +55,23 @@ pub(in crate::runtime) fn lower_runtime_support_row_identity(
                 );
         }
     }
-    identity.seal()
+    Ok(identity.seal()?)
 }
 
 pub(in crate::runtime) fn lower_runtime_support_rows_aggregate_identity<'a>(
     rows: impl IntoIterator<Item = &'a WorthQueryLowerRuntimeSupportRow>,
-) -> WorthQueryEvidenceIdentity {
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
     let row_identities = rows
         .into_iter()
         .map(lower_runtime_support_row_identity)
         .collect::<Vec<_>>();
-    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
         .field_shape(
             WorthQueryEvidenceTag::new("identity_family"),
             "runtime_downstream_durable_resume_support_v1",
         )
         .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("rows"), &row_identities)
-        .seal()
+        .seal()?)
 }
 
 pub(in crate::runtime) fn runtime_downstream_delivery_contract_identity(
@@ -80,8 +80,8 @@ pub(in crate::runtime) fn runtime_downstream_delivery_contract_identity(
     runtime_resume_support_identity: &WorthQueryEvidenceIdentity,
     durable_resume_support_status: WorthQueryLowerRuntimeSupportPosture,
     durable_resume_support_identity: &WorthQueryEvidenceIdentity,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
         .field_shape(
             WorthQueryEvidenceTag::new("identity_family"),
             "worth_query_runtime_downstream_delivery_contract_v1",
@@ -106,5 +106,5 @@ pub(in crate::runtime) fn runtime_downstream_delivery_contract_identity(
             WorthQueryEvidenceTag::new("durable_resume_support"),
             durable_resume_support_identity,
         )
-        .seal()
+        .seal()?)
 }

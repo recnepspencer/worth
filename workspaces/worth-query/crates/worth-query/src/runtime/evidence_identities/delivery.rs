@@ -19,8 +19,8 @@ pub(in crate::runtime) struct RuntimeDownstreamDeliveryIdentityParts<'a> {
 
 pub(in crate::runtime) fn runtime_downstream_delivery_identity(
     parts: RuntimeDownstreamDeliveryIdentityParts<'_>,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
         .field_shape(
             WorthQueryEvidenceTag::new("identity_family"),
             "worth_query_runtime_downstream_delivery_v1",
@@ -72,5 +72,5 @@ pub(in crate::runtime) fn runtime_downstream_delivery_identity(
             WorthQueryEvidenceTag::new("durable_resume"),
             parts.durable_resume_support_identity,
         )
-        .seal()
+        .seal()?)
 }

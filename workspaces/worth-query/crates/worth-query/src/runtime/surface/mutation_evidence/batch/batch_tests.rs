@@ -75,7 +75,7 @@ fn bridge_existing_truth_binding_preserves_relational_record_identity(
 #[should_panic(
     expected = "existing-truth binding evidence must carry a relational record target identity"
 )]
-fn existing_truth_binding_evidence_rejects_non_relational_target_identity() {
+fn existing_truth_binding_evidence_rejects_non_relational_target_identity() -> Result<(), crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
     let binding = crate::runtime::WorthQueryExistingTruthTargetBinding::direct_entity(
         crate::runtime::WorthQueryMutationAuthorityIdentity::existing_truth_binding_authority(
             crate::runtime::WorthQueryExistingTruthBindingAuthorityLabel::new("authority:left")
@@ -86,7 +86,9 @@ fn existing_truth_binding_evidence_rejects_non_relational_target_identity() {
     )
     .expect("binding constructor should still expose the boundary failure to evidence");
 
-    let _ = WorthQueryExistingTruthBindingEvidence::from_binding(&binding);
+    let _ = WorthQueryExistingTruthBindingEvidence::from_binding(&binding)?;
+
+Ok(())
 }
 
 #[test]

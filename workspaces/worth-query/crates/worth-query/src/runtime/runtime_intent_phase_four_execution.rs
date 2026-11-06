@@ -190,12 +190,12 @@ impl WorthQueryRuntime {
 fn authoritative_execution_provenance(
     binding: &WorthQueryAuthoritativeIntentExecutionBinding,
     execution: &WorthQueryIntentExecution,
-) -> WorthQueryIntentExecutionProvenance {
+) -> Result<WorthQueryIntentExecutionProvenance, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
     let snapshot_identity = execution
         .mutation_receipt()
         .snapshot_identity
         .evidence_identity();
-    WorthQueryIntentExecutionProvenance::for_shared_execution_typed_parts(
+    Ok(WorthQueryIntentExecutionProvenance::for_shared_execution_typed_parts(
         binding.family(),
         binding.entrypoint(),
         binding.execution_seam(),
@@ -204,18 +204,18 @@ fn authoritative_execution_provenance(
         binding.binding_digest(),
         execution.outcome_digest(),
         &snapshot_identity,
-    )
+    )?)
 }
 
 fn effect_execution_provenance(
     binding: &WorthQueryEffectTriggeredIntentExecutionBinding,
     execution: &WorthQueryIntentExecution,
-) -> WorthQueryIntentExecutionProvenance {
+) -> Result<WorthQueryIntentExecutionProvenance, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
     let snapshot_identity = execution
         .mutation_receipt()
         .snapshot_identity
         .evidence_identity();
-    WorthQueryIntentExecutionProvenance::for_shared_execution_typed_parts(
+    Ok(WorthQueryIntentExecutionProvenance::for_shared_execution_typed_parts(
         binding.family(),
         binding.entrypoint(),
         binding.execution_seam(),
@@ -224,5 +224,5 @@ fn effect_execution_provenance(
         binding.binding_digest(),
         execution.outcome_digest(),
         &snapshot_identity,
-    )
+    )?)
 }
