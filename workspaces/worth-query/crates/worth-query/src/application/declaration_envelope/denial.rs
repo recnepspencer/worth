@@ -2,6 +2,7 @@ use crate::application::{
     WorthQueryDeclarationInput, WorthQueryDeclarationReceiptDenialCause,
     WorthQueryDeclarationRoutePlanDenialCause, WorthQueryDomainEntryMarker,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::artifact::WorthQueryDeclarationEnvelope;
 
@@ -90,6 +91,7 @@ pub enum WorthQueryDeclarationEnvelopeTerminalError<
     D: WorthQueryDomainEntryMarker,
     I: WorthQueryDeclarationInput<D>,
 > {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     Deferred(WorthQueryDeclarationEnvelopeDeferred<D, I>),
     Denied(WorthQueryDeclarationEnvelopeDenied<D, I>),
     Failed(WorthQueryDeclarationEnvelopeFailed<D, I>),
@@ -99,6 +101,23 @@ pub enum WorthQueryDeclarationEntryEnvelopeError<
     D: WorthQueryDomainEntryMarker,
     I: WorthQueryDeclarationInput<D>,
 > {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     Entry(crate::application::WorthQueryDeclarationEntryReceiptError<D, I>),
     Envelope(WorthQueryDeclarationEnvelopeTerminalError<D, I>),
+}
+
+impl<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>
+    From<IdentityDerivationDenial> for WorthQueryDeclarationEnvelopeTerminalError<D, I>
+{
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
+    }
+}
+
+impl<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>
+    From<IdentityDerivationDenial> for WorthQueryDeclarationEntryEnvelopeError<D, I>
+{
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
+    }
 }

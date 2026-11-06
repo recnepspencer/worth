@@ -29,7 +29,7 @@ pub(crate) fn worth_query_declaration_envelope_orchestration_from_progressed_on_
         handle,
         progressed,
         route_intent,
-    ) {
+    )? {
         WorthQueryDeclarationEnvelopeChecked::Enveloped(envelope) => Ok(envelope),
         other => Err(envelope_terminal_from_checked(other)),
     }

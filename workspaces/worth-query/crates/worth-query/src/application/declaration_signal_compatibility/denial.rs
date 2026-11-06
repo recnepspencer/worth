@@ -3,6 +3,7 @@ use crate::application::{
     WorthQueryDeclarationSignalExecutionFamily, WorthQueryDomainEntryMarker,
 };
 use crate::basis_lifecycle::BasisFamily;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryDeclarationSignalCompatibilityDenialCause {
@@ -138,6 +139,7 @@ pub enum WorthQueryDeclarationSignalCompatibilityTerminalError<
     D: WorthQueryDomainEntryMarker,
     I: WorthQueryDeclarationInput<D>,
 > {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     Deferred(WorthQueryDeclarationSignalCompatibilityDeferred<D, I>),
     Denied(WorthQueryDeclarationSignalCompatibilityDenied<D, I>),
     Failed(WorthQueryDeclarationSignalCompatibilityFailed<D, I>),
@@ -147,6 +149,23 @@ pub enum WorthQueryDeclarationEntrySignalCompatibilityError<
     D: WorthQueryDomainEntryMarker,
     I: WorthQueryDeclarationInput<D>,
 > {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     Entry(crate::application::WorthQueryDeclarationEntryEnvelopeError<D, I>),
     Compatibility(WorthQueryDeclarationSignalCompatibilityTerminalError<D, I>),
+}
+
+impl<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>
+    From<IdentityDerivationDenial> for WorthQueryDeclarationSignalCompatibilityTerminalError<D, I>
+{
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
+    }
+}
+
+impl<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>
+    From<IdentityDerivationDenial> for WorthQueryDeclarationEntrySignalCompatibilityError<D, I>
+{
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
+    }
 }

@@ -13,6 +13,7 @@ use crate::application::{
     WorthQueryDeclarationSignalExecutionFamily, WorthQueryDomainEntryMarker,
 };
 use crate::basis_lifecycle::BasisFamily;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::super::{
     contribution::{
@@ -242,6 +243,7 @@ pub enum WorthQueryDeclarationEntryInspectionError<
     D: WorthQueryDomainEntryMarker,
     I: WorthQueryDeclarationInput<D>,
 > {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     RetainedSubjectMismatch {
         declaration_family_key: &'static str,
         reason: &'static str,
@@ -284,5 +286,13 @@ impl<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>
             Self::ContributionComposition(error) => Some(error),
             Self::RetainedSubjectMismatch { .. } => None,
         }
+    }
+}
+
+impl<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>
+    From<IdentityDerivationDenial> for WorthQueryDeclarationEntryInspectionError<D, I>
+{
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
     }
 }

@@ -23,7 +23,7 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         WorthQueryDeclarationRelationalRouting<D, I>,
         WorthQueryDeclarationRelationalRoutingTerminalError<D, I>,
     > {
-        match self.route_relational_truth_checked(subject) {
+        match self.route_relational_truth_checked(subject)? {
             WorthQueryDeclarationRelationalRoutingChecked::Routed(routing) => Ok(routing),
             WorthQueryDeclarationRelationalRoutingChecked::Deferred(routing) => {
                 Err(WorthQueryDeclarationRelationalRoutingTerminalError::Deferred(routing))
@@ -132,7 +132,7 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         );
         match self.route_relational_truth_checked(
             WorthQueryDeclarationRelationalRoutingInput::envelope_checked(envelope_checked),
-        ) {
+        )? {
             WorthQueryDeclarationRelationalRoutingChecked::Routed(routing) => Ok(routing),
             WorthQueryDeclarationRelationalRoutingChecked::Deferred(routing) => {
                 Err(WorthQueryDeclarationRelationalRoutingTerminalError::Deferred(routing))

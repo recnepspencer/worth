@@ -36,7 +36,7 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        match self.progress_declaration_checked(legal) {
+        match self.progress_declaration_checked(legal)? {
             WorthQueryDeclarationProgressionChecked::Admitted(admitted) => Ok(admitted),
             WorthQueryDeclarationProgressionChecked::Deferred(progress) => Err(
                 WorthQueryDeclarationProgressionTerminalError::Deferred(progress),
@@ -132,6 +132,15 @@ pub enum WorthQueryDeclarationEntryProgressionError<
     D: WorthQueryDomainEntryMarker,
     I: WorthQueryDeclarationInput<D>,
 > {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     Entry(WorthQueryDeclarationAdmissionOrLegalityError<D, I>),
     Progression(WorthQueryDeclarationProgressionTerminalError<D, I>),
+}
+
+impl<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>
+    From<IdentityDerivationDenial> for WorthQueryDeclarationEntryProgressionError<D, I>
+{
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
+    }
 }

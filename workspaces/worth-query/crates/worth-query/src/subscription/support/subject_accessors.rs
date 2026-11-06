@@ -58,7 +58,9 @@ impl QuerySubscriptionSupportEvidenceError {
         QueryProjectionIdentity<String, QuerySubscriptionIdentityKind>,
         IdentityDerivationDenial,
     > {
-        Ok(subscription_evidence_projection(&self.failure_identity?))
+        Ok(subscription_evidence_projection(
+            self.failure_identity.as_ref().map_err(|cause| *cause)?,
+        ))
     }
 }
 

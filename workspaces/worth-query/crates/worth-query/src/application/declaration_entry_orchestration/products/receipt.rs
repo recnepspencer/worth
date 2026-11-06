@@ -34,7 +34,7 @@ pub(crate) fn worth_query_declaration_receipt_orchestration_from_progressed_on_h
         handle,
         progressed,
         route_intent,
-    ) {
+    )? {
         WorthQueryDeclarationReceiptChecked::Issued(receipt) => Ok(receipt),
         other => Err(receipt_terminal_from_checked(other)),
     }

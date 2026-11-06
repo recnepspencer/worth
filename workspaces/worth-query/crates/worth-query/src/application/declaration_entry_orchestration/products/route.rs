@@ -37,7 +37,7 @@ pub(crate) fn worth_query_declaration_route_orchestration_from_progressed_on_han
         handle,
         progressed,
         route_intent,
-    ) {
+    )? {
         WorthQueryDeclarationRoutePlanChecked::Planned(plan) => Ok(plan),
         other => Err(route_terminal_from_checked(other)),
     }

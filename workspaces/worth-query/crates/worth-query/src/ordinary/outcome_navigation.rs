@@ -195,7 +195,8 @@ impl WorthQueryOutcomeNavigation for workflow::WorthQueryBranchMergeOutcome {
                 WorthQueryOutcomePosture::Unavailable
             }
             Self::Stopped(stop) => match stop.source() {
-                workflow::WorthQueryBranchMergeStopSource::InspectionUnavailable
+                workflow::WorthQueryBranchMergeStopSource::EvidenceIdentityDerivationDenied(_)
+                | workflow::WorthQueryBranchMergeStopSource::InspectionUnavailable
                 | workflow::WorthQueryBranchMergeStopSource::RelationalExecution => {
                     WorthQueryOutcomePosture::Unavailable
                 }

@@ -275,7 +275,7 @@ impl WorthQueryDeclaredReadIntent {
             declarative_request,
             self.schema_view,
             execution_plan,
-        ))
+        )?)
     }
 
     pub(crate) fn new(

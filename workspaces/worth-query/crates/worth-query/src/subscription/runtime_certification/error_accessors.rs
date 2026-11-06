@@ -22,7 +22,7 @@ impl QuerySubscriptionRuntimeCertificationError {
         &self,
     ) -> Result<&crate::evidence_identity::WorthQueryEvidenceIdentity, IdentityDerivationDenial>
     {
-        Ok(&self.failure_identity?)
+        Ok(self.failure_identity.as_ref().map_err(|cause| *cause)?)
     }
 
     pub fn failure_projection(
@@ -31,6 +31,8 @@ impl QuerySubscriptionRuntimeCertificationError {
         QueryProjectionIdentity<String, QuerySubscriptionIdentityKind>,
         IdentityDerivationDenial,
     > {
-        Ok(subscription_evidence_projection(&self.failure_identity?))
+        Ok(subscription_evidence_projection(
+            self.failure_identity.as_ref().map_err(|cause| *cause)?,
+        ))
     }
 }

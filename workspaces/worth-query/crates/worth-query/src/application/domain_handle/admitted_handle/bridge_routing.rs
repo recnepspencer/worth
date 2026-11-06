@@ -23,7 +23,7 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         WorthQueryDeclarationBridgeRouting<D, I>,
         WorthQueryDeclarationBridgeRoutingTerminalError<D, I>,
     > {
-        match self.route_bridge_continuation_checked(subject) {
+        match self.route_bridge_continuation_checked(subject)? {
             WorthQueryDeclarationBridgeRoutingChecked::Routed(routing) => Ok(routing),
             WorthQueryDeclarationBridgeRoutingChecked::Deferred(routing) => Err(
                 WorthQueryDeclarationBridgeRoutingTerminalError::Deferred(routing),
@@ -134,7 +134,7 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         );
         match self.route_bridge_continuation_checked(
             WorthQueryDeclarationBridgeRoutingInput::envelope_checked(envelope_checked),
-        ) {
+        )? {
             WorthQueryDeclarationBridgeRoutingChecked::Routed(routing) => Ok(routing),
             WorthQueryDeclarationBridgeRoutingChecked::Deferred(routing) => Err(
                 WorthQueryDeclarationBridgeRoutingTerminalError::Deferred(routing),
