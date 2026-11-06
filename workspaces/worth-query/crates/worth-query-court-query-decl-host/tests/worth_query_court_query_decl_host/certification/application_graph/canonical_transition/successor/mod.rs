@@ -1,4 +1,5 @@
 pub(crate) use worth_query_testkit_certification_canonical::facade::certification::canonical_transition::successor::*;
+use worth_query_decl::facade::application_schema::ApplicationSchema;
 
 #[test]
 fn actual_v2_installation_produces_and_reads_its_supported_incompatible_output() {

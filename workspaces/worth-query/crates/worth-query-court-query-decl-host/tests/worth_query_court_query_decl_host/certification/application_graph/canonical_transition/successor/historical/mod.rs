@@ -1,4 +1,5 @@
 pub(crate) use worth_query_testkit_certification_canonical::facade::certification::canonical_transition::successor::historical::*;
+use worth_query_decl::facade::application_schema::ApplicationSchema;
 
 #[test]
 fn held_v1_result_snapshot_output_and_observation_survive_independent_v2_adoption() {

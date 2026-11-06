@@ -1,4 +1,5 @@
 pub(crate) use worth_query_testkit_certification_canonical::facade::certification::canonical_transition::successor::adoption::*;
+use worth_query_decl::facade::application_schema::ApplicationSchema;
 
 #[test]
 fn nonempty_v1_native_carrier_adopts_v2_then_produces_edits_and_reopens() {
