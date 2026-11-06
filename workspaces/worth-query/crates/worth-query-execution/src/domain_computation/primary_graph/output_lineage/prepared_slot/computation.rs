@@ -1,6 +1,6 @@
 //! Single-assignment custody of a prepared record's computation completion.
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::PriorAbsence;
+use crate::domain_computation::primary_graph::computation_retention::prior_absence::PriorAbsence;
 
 pub enum PreparedComputationCustody {
     Unassigned,

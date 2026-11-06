@@ -18,7 +18,7 @@ pub use worth_query_execution::court_doors_for_test::domain_computation::primary
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::WorthQueryPriorOutputBindingResolution;
 pub use crate::domain_computation::primary_graph::output_lineage::tests::checkpoint_identity;
 pub use crate::domain_computation::primary_graph::output_lineage::tests::source_facts;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::computation_retention::prior_absence::PriorAbsence;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_binding_identity::OutputBindingIdentity;
 pub use worth_relational::facade::identity::EntityId;
 pub use worth_relational::facade::identity::PartitionId;

@@ -18,10 +18,9 @@ use worth_runtime_world::facade::ProductBranchObservation;
 mod changes;
 use super::recorded_output::RecordedOutput;
 use super::WorthQueryApplicationOutputLineage;
-use crate::domain_computation::primary_graph::application_contribution::ComputationPrior;
-use crate::domain_computation::primary_graph::application_contribution::InstalledProducerEdition;
-use crate::domain_computation::primary_graph::application_contribution::PriorAbsence;
 use crate::domain_computation::primary_graph::application_contribution::SealedComputationRun;
+use crate::domain_computation::primary_graph::computation_retention::full_cause::WorthQueryPartitionedComputationFullCause;
+use crate::domain_computation::primary_graph::computation_retention::prior_absence::PriorAbsence;
 use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 
@@ -47,6 +46,15 @@ impl PriorComputationRecord {
     }
 }
 
+/// What the lineage selected for a producer's run: the state its record
+/// retained, or why it retained none, and that record. The producer builds
+/// its own prior from it.
+pub(in crate::domain_computation::primary_graph) struct PriorRecordSelection {
+    pub(in crate::domain_computation::primary_graph) retained:
+        Result<Arc<RetainedComputation>, WorthQueryPartitionedComputationFullCause>,
+    pub(in crate::domain_computation::primary_graph) record: Option<PriorComputationRecord>,
+}
+
 impl WorthQueryApplicationOutputLineage {
     /// The latest local record is authoritative, including a typed absence.
     /// With no local record, follow exact captured fork horizons recursively.
@@ -60,9 +68,8 @@ impl WorthQueryApplicationOutputLineage {
         scope: &crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
         observation: &ProductBranchObservation,
         source_partition_identity: [u8; 32],
-        edition: InstalledProducerEdition,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<ComputationPrior, CompanionPreflightStop> {
+    ) -> Result<PriorRecordSelection, CompanionPreflightStop> {
         let source = SemanticSource {
             runtime_authority: scope.runtime_authority(),
             schema: scope.binding_identity().clone(),
@@ -82,11 +89,10 @@ impl WorthQueryApplicationOutputLineage {
             execution,
         )?
         else {
-            return Ok(ComputationPrior::new(
-                edition,
-                Err(PriorAbsence::FirstRun.full_cause()),
-                None,
-            ));
+            return Ok(PriorRecordSelection {
+                retained: Err(PriorAbsence::FirstRun.full_cause()),
+                record: None,
+            });
         };
         let retained = match &cell
             .get()
@@ -99,11 +105,10 @@ impl WorthQueryApplicationOutputLineage {
             RecordedComputation::Retained(handle) => Ok(Arc::clone(handle)),
             RecordedComputation::Absent(absence) => Err(absence.full_cause()),
         };
-        Ok(ComputationPrior::new(
-            edition,
+        Ok(PriorRecordSelection {
             retained,
-            Some(PriorComputationRecord { cell }),
-        ))
+            record: Some(PriorComputationRecord { cell }),
+        })
     }
 
     pub(super) fn retain_computation(&self, sealed: SealedComputationRun) -> RecordedComputation {

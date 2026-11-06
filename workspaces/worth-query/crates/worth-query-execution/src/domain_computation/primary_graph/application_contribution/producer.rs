@@ -201,7 +201,7 @@ pub(in crate::domain_computation::primary_graph) use demand::SourceCustodyScoped
 pub(in crate::domain_computation::primary_graph) use demand::SourceRecoveryScopedOps;
 pub(in crate::domain_computation::primary_graph) use demand::UnavailableScopedOps;
 pub(super) use registry::DeclaredProducerBinding;
-pub(in crate::domain_computation::primary_graph) use registry::InstalledProducerEdition;
+
 pub(in crate::domain_computation::primary_graph) use registry::PendingProducerRegistry;
 pub use registry::WorthQueryInstalledApplicationProducerRegistry;
 pub(in crate::domain_computation::primary_graph) use source_qualification::SourceQualificationScopedOps;

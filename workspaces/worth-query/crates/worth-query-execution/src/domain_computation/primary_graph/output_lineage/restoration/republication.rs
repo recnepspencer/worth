@@ -1,6 +1,6 @@
 //! The lineage row of a republished generated output.
 
-use crate::domain_computation::primary_graph::application_contribution::PriorAbsence;
+use crate::domain_computation::primary_graph::computation_retention::prior_absence::PriorAbsence;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::Arc;
 use std::sync::OnceLock;

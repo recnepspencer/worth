@@ -25,6 +25,8 @@ pub mod bootstrap_publication;
 pub mod causal_inspection;
 #[path = "component_selection/mod.rs"]
 pub mod component_selection;
+#[path = "computation_retention/mod.rs"]
+pub mod computation_retention;
 #[path = "conditional_operation/mod.rs"]
 pub mod conditional_operation;
 #[path = "entity_resolution/mod.rs"]

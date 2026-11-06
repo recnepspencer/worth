@@ -6,7 +6,7 @@ use std::sync::OnceLock;
 use crate::domain_computation::primary_graph::output_lineage::tests::republication::Witness;
 use worth_query_execution::court_doors_for_test::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary;
 use worth_query_execution::court_doors_for_test::domain_computation::vocabulary::primary_graph::decision_reuse::PreparedDecisionReuseContext;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::semantic_edition::InstalledProducerEdition;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition;
 use worth_query_execution::facade::application_contribution::WorthQueryDecisionContextDependencies;
 use worth_query_execution::facade::application_contribution::WorthQueryProducerInputReuseContract;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::WorthQueryObservedSourceSelection;

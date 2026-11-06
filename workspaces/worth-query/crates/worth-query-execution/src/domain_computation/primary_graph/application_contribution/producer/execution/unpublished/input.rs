@@ -12,7 +12,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     key: <Operation<S, B> as ApplicationMutationBinding<S>>::IdempotencyKey,
     input: <Operation<S, B> as ApplicationMutationBinding<S>>::Input,
-    edition: super::super::super::InstalledProducerEdition,
+    edition: crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition,
     mode: WorthQueryProducerCommitAuthority,
 ) -> Result<
     (

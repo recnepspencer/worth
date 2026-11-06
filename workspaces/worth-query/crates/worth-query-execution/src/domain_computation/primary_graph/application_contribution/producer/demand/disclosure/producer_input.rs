@@ -1,7 +1,7 @@
 //! Request-local executable input sealing after actual producer selection.
 use std::any::Any;
 
-use super::super::super::registry::InstalledProducerEdition;
+use crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition;
 use super::*;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 

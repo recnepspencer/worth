@@ -7,7 +7,5 @@ pub mod operation_binding_uniqueness;
 pub mod output_family_inventory;
 #[path = "scope_ownership/mod.rs"]
 pub mod scope_ownership;
-#[path = "semantic_edition/mod.rs"]
-pub mod semantic_edition;
 pub use crate::domain_computation::primary_graph::application_contribution::producer::registry::DeclaredProducerBinding;
 pub use crate::domain_computation::primary_graph::application_contribution::producer::registry::InstalledProducerProvider;

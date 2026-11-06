@@ -5,7 +5,7 @@
 
 mod validation;
 
-use crate::domain_computation::primary_graph::application_contribution::producer::registry::InstalledProducerEdition;
+use crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition;
 use crate::domain_computation::primary_graph::application_contribution::producer::registry::InstalledProducerProvider;
 use crate::domain_computation::primary_graph::application_output_demand::SelectedRequiredRefreshClaim;
 use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerCommitAuthority;

@@ -119,9 +119,7 @@ pub struct ComputationFactAttribution {
     calls: BTreeSet<ComputationRead>,
     fresh_calls: BTreeSet<ComputationRead>,
     carried: BTreeSet<ComputationRead>,
-    native: Option<
-        crate::domain_computation::primary_graph::application_contribution::NativeComputationReads,
-    >,
+    native: Option<std::sync::Arc<dyn NativeCarriageReads>>,
     range_progress: Option<ranges::CallRangeProgress>,
     range_closed: Option<std::sync::Arc<ranges::NativeCallCarriage>>,
     // Original walk-authoring payment; consumed after all authoring fields.
@@ -143,7 +141,7 @@ impl ComputationFactAttribution {
     }
     pub(in crate::domain_computation::primary_graph) fn begin_native(
         &mut self,
-        native: crate::domain_computation::primary_graph::application_contribution::NativeComputationReads,
+        native: std::sync::Arc<dyn NativeCarriageReads>,
     ) {
         assert!(
             self.native.is_none(),
@@ -314,6 +312,8 @@ pub struct SealedComputationFacts {
 mod adjacency;
 mod charged;
 pub(crate) mod layout;
+mod native_carriage;
+pub(in crate::domain_computation::primary_graph) use native_carriage::NativeCarriageReads;
 mod ranges;
 mod structural_reads;
 pub(in crate::domain_computation::primary_graph) use layout::CheckedCallShape;

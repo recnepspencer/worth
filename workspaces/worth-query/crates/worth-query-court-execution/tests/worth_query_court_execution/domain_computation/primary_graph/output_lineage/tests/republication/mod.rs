@@ -2,7 +2,7 @@
 //! Performed opaque-reader and request-context rows continue without cutoff proofs.
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::output_binding_identity::OutputBindingIdentity;
 
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::computation_retention::prior_absence::PriorAbsence;
 pub use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 pub use std::collections::BTreeMap;
 pub use std::sync::Arc;

@@ -180,7 +180,7 @@ pub(super) fn readmit_source<Schema, Binding>(
     branch: WorthQueryProductBranch,
     retained: &WorthQueryObservedSource<SourceQuery<Schema, Binding>>,
 
-    edition: super::super::InstalledProducerEdition,
+    edition: crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition,
 ) -> Result<
     super::super::demand::disclosure::FreshOutputDisclosure<
         SourceQuery<Schema, Binding>,
@@ -225,7 +225,7 @@ pub(super) fn readmit_authorized_source<'runtime, Schema, Binding>(
     branch: WorthQueryProductBranch,
     retained: &WorthQueryObservedSource<SourceQuery<Schema, Binding>>,
 
-    edition: super::super::InstalledProducerEdition,
+    edition: crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition,
     authorized: AuthorizedRetainedSource<'runtime, Schema, Binding>,
 ) -> Result<
     super::super::demand::disclosure::FreshOutputDisclosure<

@@ -91,8 +91,10 @@ where
         if let Some(snapshot) = &self.validated_at {
             reader.begin_native_carriage(
                 &COMPARATOR,
-                super::NativeComputationReads::new(self.prior.retain_state(), snapshot.clone())
-                    .with_rebase_changes(self.rebase_changes.clone()),
+                std::sync::Arc::new(
+                    super::NativeComputationReads::new(self.prior.retain_state(), snapshot.clone())
+                        .with_rebase_changes(self.rebase_changes.clone()),
+                ),
             );
         }
         let retained_prior = self.prior.clone();

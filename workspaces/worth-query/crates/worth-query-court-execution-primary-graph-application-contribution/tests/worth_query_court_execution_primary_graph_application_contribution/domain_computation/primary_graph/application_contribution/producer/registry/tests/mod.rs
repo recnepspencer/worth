@@ -20,7 +20,7 @@ pub use worth_query_execution::court_doors_for_test::domain_computation::primary
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::checkpoint::validate_checkpoint_output_meaning;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::operation_binding_uniqueness::duplicate_operation_binding;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::DeclaredProducerBinding;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::semantic_edition::InstalledProducerEdition;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::InstalledProducerProvider;
 
 #[test]

@@ -16,11 +16,12 @@ pub use {
 pub use crate::domain_computation::primary_graph::{
     discarded_computation_retention_on_this_thread_for_test,
     published_partitioned_computations_on_this_thread_for_test,
-    WorthQueryPartitionedComputationFullCause, WorthQueryPartitionedComputationRunForTest,
+    WorthQueryPartitionedComputationRunForTest,
     WorthQueryPartitionedTreeAccounting, WorthQueryPartitionedTreeMetrics,
     WorthQueryPartitionedTreeRebuildCause, WorthQueryPartitionedTreeRun,
     WorthQueryPublishedComputationStateForTest,
 };
+pub use crate::domain_computation::primary_graph::computation_retention::full_cause::WorthQueryPartitionedComputationFullCause;
 /// What a partitioned owner's results and denials declare to execution, the
 /// identity of a planned item, and execution's refusal before dispatch.
 pub use worth_execution::{CanonicalBits, ChargedBytes, PartitionItemId};

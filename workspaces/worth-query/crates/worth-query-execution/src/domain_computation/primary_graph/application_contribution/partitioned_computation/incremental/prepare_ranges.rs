@@ -99,7 +99,7 @@ impl<Key: ApplicationComputationPartition, Item: ApplicationComputationPartition
                     .expect("checked marked call")
             })
             .collect();
-        reader.begin_native_carriage(&COMPARATOR, native);
+        reader.begin_native_carriage(&COMPARATOR, Arc::new(native));
         reader.begin_call_ranges(&COMPARATOR, binding);
         let prefix = sequence
             .summary(0..sequence.prefix(), execution.has_accounting())

@@ -13,13 +13,13 @@ thread_local! {
         const { std::cell::RefCell::new(Vec::new()) };
     static TREES: std::cell::RefCell<Vec<WorthQueryPartitionedTreeRun>> =
         const { std::cell::RefCell::new(Vec::new()) };
-    static FULL_PREPARATIONS: std::cell::RefCell<Vec<super::retained::WorthQueryPartitionedComputationFullCause>> =
+    static FULL_PREPARATIONS: std::cell::RefCell<Vec<crate::domain_computation::primary_graph::computation_retention::full_cause::WorthQueryPartitionedComputationFullCause>> =
         const { std::cell::RefCell::new(Vec::new()) };
 }
 
 /// Preparation chooses a cause before any owner call can stop the full run.
 pub(in super::super) fn observe_full_preparation(
-    cause: super::retained::WorthQueryPartitionedComputationFullCause,
+    cause: crate::domain_computation::primary_graph::computation_retention::full_cause::WorthQueryPartitionedComputationFullCause,
 ) {
     if !crate::domain_computation::execution_observation::is_installed() {
         return;
@@ -32,7 +32,7 @@ pub(in super::super) fn observe_full_preparation(
 
 /// Full preparations include failed runs, which have no completed-run report.
 pub fn full_partitioned_computation_preparations_on_this_thread_for_test(
-) -> Vec<super::retained::WorthQueryPartitionedComputationFullCause> {
+) -> Vec<crate::domain_computation::primary_graph::computation_retention::full_cause::WorthQueryPartitionedComputationFullCause> {
     FULL_PREPARATIONS.with(|runs| std::mem::take(&mut *runs.borrow_mut()))
 }
 
@@ -54,7 +54,7 @@ pub(super) fn observe(
 /// Already-settled native evidence; observing work never interrogates the
 /// kernel context or changes whether its actual result may be carried.
 pub(in super::super::super) fn observe_retained_full_tree<R, F, E, Tree>(
-    cause: super::retained::WorthQueryPartitionedComputationFullCause,
+    cause: crate::domain_computation::primary_graph::computation_retention::full_cause::WorthQueryPartitionedComputationFullCause,
     outcome: &worth_execution::RetainedReduceOutcome<R, F, E, Tree>,
 ) {
     if !crate::domain_computation::execution_observation::is_installed() {

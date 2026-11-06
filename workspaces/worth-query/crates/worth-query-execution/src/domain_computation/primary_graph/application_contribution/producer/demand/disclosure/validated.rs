@@ -1,7 +1,7 @@
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
-use super::super::super::InstalledProducerEdition;
+use crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition;
 use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryRequestAffinity;
 use crate::domain_computation::primary_graph::WorthQueryObservedSource;
 use worth_runtime_world::facade::ProductBranchObservation;

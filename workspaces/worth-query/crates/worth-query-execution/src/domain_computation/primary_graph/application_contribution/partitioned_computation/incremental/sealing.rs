@@ -119,7 +119,7 @@ impl CompletedComputationRun {
 
 #[cfg(test)]
 mod tests {
-    use super::super::{PriorAbsence, Suppression};
+    use {crate::domain_computation::primary_graph::computation_retention::prior_absence::PriorAbsence, crate::domain_computation::primary_graph::computation_retention::prior_absence::Suppression};
     use super::*;
 
     /// Absence is explicit: an empty Produced seal cannot be constructed.

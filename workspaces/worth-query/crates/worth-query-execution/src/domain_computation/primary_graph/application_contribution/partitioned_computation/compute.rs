@@ -12,11 +12,7 @@ use worth_query_installation::facade::ApplicationSchema;
 
 use {crate::domain_computation::primary_graph::vocabulary::application_contribution::nested_failure::MemberComputeFailure, crate::domain_computation::primary_graph::vocabulary::application_contribution::nested_failure::NestedFailureTransport};
 use super::super::execution_denial::kernel_failure;
-use super::incremental::{
-    observe_unretained, CompletedComputationRetention, ComputationDeposit, ComputedIncremental,
-    FullRecording, PreparedIncremental, PriorAbsence, Suppression,
-    WorthQueryPartitionedComputationFullCause,
-};
+use {super::incremental::observe_unretained, super::incremental::CompletedComputationRetention, super::incremental::ComputationDeposit, super::incremental::ComputedIncremental, super::incremental::FullRecording, super::incremental::PreparedIncremental, crate::domain_computation::primary_graph::computation_retention::prior_absence::PriorAbsence, crate::domain_computation::primary_graph::computation_retention::prior_absence::Suppression, crate::domain_computation::primary_graph::computation_retention::full_cause::WorthQueryPartitionedComputationFullCause};
 use super::plan::GatheredComputationPartition;
 use super::{
     WorthQueryComputationPartitionView, WorthQueryInstalledPartitionedComputation,

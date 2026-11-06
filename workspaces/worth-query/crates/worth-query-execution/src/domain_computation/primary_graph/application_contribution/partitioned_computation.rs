@@ -35,7 +35,7 @@ pub use denial::{
     WorthQueryComputationPartitionStop, WorthQueryPartitionedComputationDenial,
     WorthQueryReductionInputDenial,
 };
-pub use incremental::WorthQueryPartitionedComputationFullCause;
+
 pub use incremental::{
     discarded_computation_retention_on_this_thread_for_test,
     full_partitioned_computation_preparations_on_this_thread_for_test,
@@ -47,12 +47,9 @@ pub use incremental::{
     WorthQueryPartitionedTreeRun, WorthQueryPublishedComputationStateForTest,
 };
 pub(in crate::domain_computation::primary_graph) use incremental::{
-    Comparator, CompletedComputationRetention, ComputationDeposit, NativeComputationReads,
+    Comparator, CompletedComputationRetention, ComputationDeposit,
 };
-pub(in crate::domain_computation) use incremental::{
-    ComputationPrior, PriorAbsence, RetainedComputation, SealedComputationRetention,
-    SealedComputationRun, Suppression,
-};
+pub(in crate::domain_computation) use {incremental::ComputationPrior, incremental::RetainedComputation, incremental::SealedComputationRetention, incremental::SealedComputationRun};
 pub(in crate::domain_computation::primary_graph) use installed::ComputationRetention;
 pub use installed::WorthQueryInstalledPartitionedComputation;
 pub use plan::{

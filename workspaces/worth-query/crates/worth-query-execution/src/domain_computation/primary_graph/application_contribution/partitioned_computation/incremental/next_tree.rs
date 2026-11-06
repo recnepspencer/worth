@@ -25,12 +25,9 @@ use super::super::preparation_work::PreparationWork;
 use super::super::routing::ComputationPartitionRouting;
 use super::super::{WorthQueryDeterministicReducer, WorthQueryPartitionedComputationDenial};
 use super::observed::{observe, observe_tree};
-use super::retained::{
-    CarriedCalls, CompletedComputationRun, RetainedBasis, RetainedCall, RetainedPartition,
-    RetainedPartitions, TypedPrior, WorthQueryPartitionedComputationRunForTest,
-};
+use {super::retained::CarriedCalls, super::retained::CompletedComputationRun, crate::domain_computation::primary_graph::computation_retention::retained_basis::RetainedBasis, super::retained::RetainedCall, super::retained::RetainedPartition, super::retained::RetainedPartitions, super::retained::TypedPrior, super::retained::WorthQueryPartitionedComputationRunForTest};
 use super::tree_update::{next_tree, same_bits};
-use super::{CompletedComputationRetention, PriorAbsence};
+use {super::CompletedComputationRetention, crate::domain_computation::primary_graph::computation_retention::prior_absence::PriorAbsence};
 use crate::domain_computation::primary_graph::invariant_projection::ComputationCallCharge;
 use crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial;
 use crate::domain_computation::request_execution::QueryRequestExecution;

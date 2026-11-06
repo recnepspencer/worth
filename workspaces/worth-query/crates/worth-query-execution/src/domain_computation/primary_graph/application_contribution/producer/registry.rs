@@ -86,7 +86,7 @@ pub(crate) mod semantic_edition;
 
 use operation_binding_uniqueness::duplicate_operation_binding;
 pub(in crate::domain_computation::primary_graph) use pending::PendingProducerRegistry;
-pub(in crate::domain_computation::primary_graph) use semantic_edition::InstalledProducerEdition;
+use crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition;
 
 pub struct InstalledProducerProvider<Schema> {
     pub(super) declaration: DeclaredProducerBinding,

@@ -81,7 +81,7 @@ impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition, R>
             };
             marked.insert(ordinal);
         }
-        reader.begin_native_carriage(&COMPARATOR, native);
+        reader.begin_native_carriage(&COMPARATOR, Arc::new(native));
         reader.begin_call_ranges(&COMPARATOR, binding);
         let mut routing = (*retained.routing).clone();
         let mut item_keys = (*retained.item_keys).clone();
