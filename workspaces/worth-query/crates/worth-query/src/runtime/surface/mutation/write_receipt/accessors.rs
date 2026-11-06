@@ -1,5 +1,6 @@
 use super::WorthQueryWriteReceipt;
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::{
     WorthQueryCommitIdentity, WorthQueryEntityIdentity, WorthQueryMutationDelta,
     WorthQueryMutationReceipt, WorthQuerySnapshotIdentity,
@@ -299,7 +300,7 @@ impl WorthQueryWriteReceipt {
         provenance_execution_record_digest: Option<&str>,
         symbolic_target_symbol: Option<&str>,
         continuity: Option<crate::runtime::WorthQueryContinuityMutationEvidence>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let commit_evidence_identity =
             super::write_receipt_commit_evidence_identity(&commit_identity);
         let committed_truth_identity = super::write_receipt_committed_truth_identity(
@@ -308,11 +309,11 @@ impl WorthQueryWriteReceipt {
                 snapshot_identity.clone(),
                 Vec::new(),
             ),
-        );
+        )?;
         let journal_position = WorthQueryJournalPosition::from_commit_identity(&commit_identity);
         let snapshot_evidence_identity =
             super::write_receipt_snapshot_evidence_identity(&snapshot_identity);
-        Self {
+        Ok(Self {
             inner: WorthQueryMutationReceipt::from_authoritative_parts(
                 commit_identity,
                 snapshot_identity,
@@ -376,6 +377,6 @@ impl WorthQueryWriteReceipt {
             refresh_fallback: false,
             decision_trace_envelope: None,
             execution_provenance: None,
-        }
+        })
     }
 }

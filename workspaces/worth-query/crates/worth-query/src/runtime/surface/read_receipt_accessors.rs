@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::intent_admission::WorthQueryIntentDecisionTraceEnvelope;
 use crate::memory_workspace::WorthQuerySnapshotIdentity;
 use crate::projection_consumption::ProjectionMaterializedFactPosture;
@@ -220,7 +221,7 @@ impl WorthQueryReadReceipt {
         basis_digest: impl Into<String>,
         result_digest: impl Into<String>,
         execution_engine: WorthQueryReadExecutionEngine,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let query_digest = query_digest.into();
         let read_graph_digest = read_graph_digest.into();
         let read_graph_identity = WorthQueryEvidenceIdentity::compose(
@@ -234,8 +235,8 @@ impl WorthQueryReadReceipt {
             crate::evidence_identity::WorthQueryEvidenceTag::new("read_graph"),
             &read_graph_digest,
         )
-        .seal();
-        Self {
+        .seal()?;
+        Ok(Self {
             read_graph_identity,
             graph_family: WorthQueryReadGraphFamily::Collection,
             collection_result_family: Some(
@@ -252,7 +253,7 @@ impl WorthQueryReadReceipt {
                 crate::evidence_identity::WorthQueryEvidenceTag::new("execution_plan"),
                 "test-execution-plan",
             )
-            .seal(),
+            .seal()?,
             canonical_query_digest: query_digest.clone(),
             query_digest,
             basis_digest: basis_digest.into(),
@@ -295,7 +296,7 @@ impl WorthQueryReadReceipt {
             graph_read_access_complexity_counters: None,
             decision_trace_envelope: None,
             execution_provenance: None,
-        }
+        })
     }
 
     #[cfg(test)]

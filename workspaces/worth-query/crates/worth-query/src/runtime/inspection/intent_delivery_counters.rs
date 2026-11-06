@@ -3,6 +3,7 @@ use super::intent_identity::{
     intent_inspection_delivery_counter_identity, IntentInspectionDeliveryCounterIdentityParts,
 };
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryIntentInspectionDeliveryCounters {
@@ -20,7 +21,9 @@ pub struct WorthQueryIntentInspectionDeliveryCounters {
 }
 
 impl WorthQueryIntentInspectionDeliveryCounters {
-    pub(in crate::runtime) fn from_receipt(receipt: &WorthQueryIntentReceipt) -> Self {
+    pub(in crate::runtime) fn from_receipt(
+        receipt: &WorthQueryIntentReceipt,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let affected_live_view_count = receipt.affected_live_view_targets().len();
         let affected_derived_view_count = receipt.affected_derived_view_targets().len();
         let considered_computed_view_count = receipt.considered_computed_view_count();
@@ -44,8 +47,8 @@ impl WorthQueryIntentInspectionDeliveryCounters {
                 effect_expression_failure_count,
                 refresh_fallback,
             },
-        );
-        Self {
+        )?;
+        Ok(Self {
             affected_live_view_count,
             affected_derived_view_count,
             considered_computed_view_count,
@@ -57,7 +60,7 @@ impl WorthQueryIntentInspectionDeliveryCounters {
             effect_expression_failure_count,
             refresh_fallback,
             counter_digest,
-        }
+        })
     }
 
     pub fn affected_live_view_count(&self) -> usize {

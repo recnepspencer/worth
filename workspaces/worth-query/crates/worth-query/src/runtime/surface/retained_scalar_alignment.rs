@@ -2,6 +2,7 @@ use super::{
     WorthQueryDerivedArtifactBinding, WorthQueryDerivedMaterializationTarget,
     WorthQueryRetainedFieldPath, WorthQueryRetainedScalarFactSet,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::hash_parts;
 use crate::runtime::computed::WorthQueryDerivedViewHandle;
 use crate::runtime::WorthQueryRuntimeError;
@@ -221,7 +222,9 @@ mod tests {
             .expect("retained row should build")
     }
 
-    fn binding(row: WorthQueryRetainedMaterializedRow) -> WorthQueryDerivedArtifactBinding {
+    fn binding(
+        row: WorthQueryRetainedMaterializedRow,
+    ) -> Result<WorthQueryDerivedArtifactBinding, IdentityDerivationDenial> {
         let snapshot_identity =
             crate::memory_workspace::admit_external_snapshot_label("snapshot:test");
         let materialization = WorthQueryDerivedMaterializationResult::from_retained_rows(
@@ -236,9 +239,11 @@ mod tests {
         let bundle = WorthQueryDerivedMaterializationBundle::new(
             snapshot_identity,
             BTreeMap::from([(target.clone(), materialization)]),
-        );
-        WorthQueryDerivedArtifactBinding::bind(bundle, "artifact:test", [target])
-            .expect("binding should build")
+        )?;
+        Ok(
+            WorthQueryDerivedArtifactBinding::bind(bundle, "artifact:test", [target])
+                .expect("binding should build"),
+        )
     }
 
     fn view_handle() -> WorthQueryDerivedViewHandle<crate::runtime::WorthQueryUnrefinedLiveShape> {
@@ -246,7 +251,7 @@ mod tests {
     }
 
     #[test]
-    fn retained_scalar_alignment_verifies_mapped_fields() {
+    fn retained_scalar_alignment_verifies_mapped_fields() -> Result<(), IdentityDerivationDenial> {
         let left_view = view_handle();
         let right_view = view_handle();
         let alignment = binding(retained_row([
@@ -255,7 +260,7 @@ mod tests {
                 "nested.truth_basis_digest_hex",
                 crate::runtime::WorthQueryAuthoredAspectMutation::native_string_value("basis:test"),
             ),
-        ]))
+        ]))?
         .verify_scalar_alignment(
             &left_view,
             &right_view,
@@ -276,16 +281,18 @@ mod tests {
         assert_eq!(alignment.artifact_name(), "artifact:test");
         assert_eq!(alignment.aligned_field_count(), 2);
         assert!(!alignment.alignment_digest().is_empty());
+
+        Ok(())
     }
 
     #[test]
-    fn retained_scalar_alignment_rejects_divergent_value() {
+    fn retained_scalar_alignment_rejects_divergent_value() -> Result<(), IdentityDerivationDenial> {
         let left_view = view_handle();
         let right_view = view_handle();
         let error = binding(retained_row([
             ("left", AspectValue::Int64(1)),
             ("right", AspectValue::Int64(2)),
-        ]))
+        ]))?
         .verify_scalar_alignment(
             &left_view,
             &right_view,
@@ -300,6 +307,8 @@ mod tests {
             error,
             crate::runtime::WorthQueryRuntimeError::RetainedRowDecode { .. }
         ));
+
+        Ok(())
     }
 
     fn retained_field_path(path: &str) -> Result<WorthQueryRetainedFieldPath, String> {

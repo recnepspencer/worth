@@ -241,7 +241,7 @@ fn sequence_item_locus(tag: WorthQueryEvidenceTag, index: usize) -> String {
 }
 
 /// A refused identity names its semantic subject and original digest limit.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct WorthQueryEvidenceIdentityDerivationDenial {
     pub scope: WorthQueryEvidenceScope,
     pub cause: worth_foundational::facade::CanonicalDigestDerivationDenial,

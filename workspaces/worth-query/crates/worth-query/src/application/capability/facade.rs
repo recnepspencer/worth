@@ -22,6 +22,7 @@ use crate::application::support::{WorthQueryCapabilityFamily, WorthQueryCapabili
 use crate::application::support::{
     WorthQueryCapabilityRegistry, WorthQuerySupportMatrix, WorthQuerySupportReport,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::hash_parts;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -64,11 +65,11 @@ impl WorthQueryApplicationFacade {
         self.support_matrix.clone()
     }
 
-    pub fn support_report(&self) -> WorthQuerySupportReport {
-        WorthQuerySupportReport::from_validated_config_and_matrix(
+    pub fn support_report(&self) -> Result<WorthQuerySupportReport, IdentityDerivationDenial> {
+        Ok(WorthQuerySupportReport::from_validated_config_and_matrix(
             &self.config,
             self.support_matrix.clone(),
-        )
+        )?)
     }
 
     #[cfg(test)]

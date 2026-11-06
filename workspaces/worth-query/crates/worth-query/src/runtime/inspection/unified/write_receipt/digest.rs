@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -32,7 +33,7 @@ pub(super) fn build_write_receipt_inspection_digest(
     declared_aspect_value_digest: Option<&WorthQueryEvidenceIdentity>,
     mutation_metadata: &WorthQueryMutationMetadata,
     live_patch_artifacts: &[WorthQueryEvidenceIdentity],
-) -> WorthQueryEvidenceIdentity {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let commit_identity = receipt.commit_identity().evidence_identity();
     let snapshot_identity = receipt.snapshot_identity().evidence_identity();
     let declared_entity_identity = receipt
@@ -157,7 +158,7 @@ pub(super) fn build_write_receipt_inspection_digest(
                     .map(|breadth| breadth.counter_snapshot()),
             );
 
-    digest_mutation_evidence::append_mutation_evidence_fields(
+    Ok(digest_mutation_evidence::append_mutation_evidence_fields(
         encoder,
         existing_truth_binding_evidence,
         symbolic_target_reference_evidence,
@@ -194,5 +195,5 @@ pub(super) fn build_write_receipt_inspection_digest(
         WorthQueryEvidenceTag::new("live_patch_artifact"),
         live_patch_artifacts.iter(),
     )
-    .seal()
+    .seal()?)
 }

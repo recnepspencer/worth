@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::WorthQueryRuntimePublicSupportMatrix;
 
 use super::document::{
@@ -21,7 +22,7 @@ pub struct WorthQuerySupportSnapshot {
 impl WorthQuerySupportSnapshot {
     pub(crate) fn from_public_support_matrix(
         matrix: &WorthQueryRuntimePublicSupportMatrix,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let schema_version = WorthQuerySupportSnapshotSchemaVersion::current();
         let schema_identity = schema_version.identity();
         let backend_posture = matrix.backend_posture().as_str().to_string();
@@ -40,10 +41,10 @@ impl WorthQuerySupportSnapshot {
             &backend_posture,
             &source_matrix_digest,
             rows.iter(),
-        )
+        )?
         .terminal_projection_for_reporting()
         .to_string();
-        Self {
+        Ok(Self {
             schema_version,
             schema_identity: schema_identity
                 .terminal_projection_for_reporting()
@@ -52,7 +53,7 @@ impl WorthQuerySupportSnapshot {
             source_matrix_digest,
             rows,
             snapshot_digest,
-        }
+        })
     }
 
     pub(crate) fn from_document(

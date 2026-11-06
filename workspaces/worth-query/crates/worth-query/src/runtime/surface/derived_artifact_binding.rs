@@ -2,6 +2,7 @@ use super::{
     WorthQueryDerivedMaterializationBundle, WorthQueryDerivedMaterializationResult,
     WorthQueryDerivedMaterializationTarget,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -80,7 +81,7 @@ impl WorthQueryDerivedArtifactBinding {
                         .iter()
                         .map(WorthQueryDerivedMaterializationTarget::terminal_view_name_projection),
                 )
-                .seal();
+                .seal()?;
 
         Ok(Self {
             artifact_name,
@@ -182,12 +183,15 @@ mod tests {
         )
     }
 
-    fn binding() -> (
-        WorthQueryDerivedArtifactBinding,
-        WorthQueryDerivedViewHandle<WorthQueryUnrefinedLiveShape>,
-        WorthQueryDerivedViewHandle<WorthQueryUnrefinedLiveShape>,
-        WorthQueryDerivedViewHandle<WorthQueryUnrefinedLiveShape>,
-    ) {
+    fn binding() -> Result<
+        (
+            WorthQueryDerivedArtifactBinding,
+            WorthQueryDerivedViewHandle<WorthQueryUnrefinedLiveShape>,
+            WorthQueryDerivedViewHandle<WorthQueryUnrefinedLiveShape>,
+            WorthQueryDerivedViewHandle<WorthQueryUnrefinedLiveShape>,
+        ),
+        IdentityDerivationDenial,
+    > {
         let first = WorthQueryDerivedViewHandle::new("derived.first");
         let second = WorthQueryDerivedViewHandle::new("derived.second");
         let third = WorthQueryDerivedViewHandle::new("derived.third");
@@ -207,7 +211,7 @@ mod tests {
                     retained_row(third.name(), "third"),
                 ),
             ]),
-        );
+        )?;
         let binding = WorthQueryDerivedArtifactBinding::bind(
             bundle,
             "test.binding",
@@ -218,7 +222,7 @@ mod tests {
             ],
         )
         .expect("binding should succeed");
-        (binding, first, second, third)
+        Ok((binding, first, second, third))
     }
 
     fn retained_string_value(
@@ -240,20 +244,24 @@ mod tests {
     }
 
     #[test]
-    fn row_pair_uses_bound_retained_artifact_identity() {
-        let (binding, first, second, _) = binding();
+    fn row_pair_uses_bound_retained_artifact_identity() -> Result<(), IdentityDerivationDenial> {
+        let (binding, first, second, _) = binding()?;
 
         assert_eq!(retained_string_value(&binding, &first), "first");
         assert_eq!(retained_string_value(&binding, &second), "second");
+
+        Ok(())
     }
 
     #[test]
-    fn row_triple_uses_bound_retained_artifact_identity() {
-        let (binding, first, second, third) = binding();
+    fn row_triple_uses_bound_retained_artifact_identity() -> Result<(), IdentityDerivationDenial> {
+        let (binding, first, second, third) = binding()?;
 
         assert_eq!(retained_string_value(&binding, &first), "first");
         assert_eq!(retained_string_value(&binding, &second), "second");
         assert_eq!(retained_string_value(&binding, &third), "third");
+
+        Ok(())
     }
 
     fn retained_field_path(path: &str) -> Result<WorthQueryRetainedFieldPath, String> {

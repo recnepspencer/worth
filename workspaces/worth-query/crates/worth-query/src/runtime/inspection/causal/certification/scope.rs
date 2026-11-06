@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 use super::super::materialization::QueryCausalInspectionArtifact;
@@ -42,14 +43,17 @@ impl CausalInspectionHostileRow {
     fn from_artifact(
         lane: CausalInspectionCertificationLane,
         artifact: &QueryCausalInspectionArtifact,
-    ) -> Self {
-        Self::new(lane, artifact.artifact_identity().evidence_identity())
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
+            lane,
+            artifact.artifact_identity().evidence_identity(),
+        )?)
     }
 
     fn new(
         lane: CausalInspectionCertificationLane,
         evidence_identity: &WorthQueryEvidenceIdentity,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let row_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalInspectionCertificationFailureEvidence,
         )
@@ -59,16 +63,16 @@ impl CausalInspectionHostileRow {
         )
         .field_shape(WorthQueryEvidenceTag::new("lane"), lane.as_str())
         .field_evidence_identity(WorthQueryEvidenceTag::new("evidence"), evidence_identity)
-        .seal();
-        Self {
+        .seal()?;
+        Ok(Self {
             row_digest: row_identity.as_str().to_string(),
-        }
+        })
     }
 
     fn from_terminal_digest(
         lane: CausalInspectionCertificationLane,
         evidence_digest: &str,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let row_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalInspectionCertificationFailureEvidence,
         )
@@ -81,10 +85,10 @@ impl CausalInspectionHostileRow {
             WorthQueryEvidenceTag::new("terminal_evidence_digest"),
             evidence_digest,
         )
-        .seal();
-        Self {
+        .seal()?;
+        Ok(Self {
             row_digest: row_identity.as_str().to_string(),
-        }
+        })
     }
 }
 
@@ -210,48 +214,48 @@ fn build_certification_hostile_rows(
     representative_matrix: &CausalInspectionRepresentativeMatrix,
     performance_certification: &CausalInspectionPerformanceCertificationBundle,
     proof_shape: &CausalInspectionProofShapeCertification,
-) -> CausalInspectionCertificationHostileRows {
+) -> Result<CausalInspectionCertificationHostileRows, IdentityDerivationDenial> {
     let changed_row = CausalInspectionHostileRow::from_artifact(
         CausalInspectionCertificationLane::ChangedResult,
         changed_artifact,
-    );
+    )?;
     let redaction_row = CausalInspectionHostileRow::from_artifact(
         CausalInspectionCertificationLane::PolicyRedacted,
         redacted_artifact,
-    );
+    )?;
     let denied_row = CausalInspectionHostileRow::from_artifact(
         CausalInspectionCertificationLane::DeniedResult,
         denied_artifact,
-    );
+    )?;
     let missing_evidence_row = CausalInspectionHostileRow::from_terminal_digest(
         CausalInspectionCertificationLane::MissingEvidence,
         missing_evidence_failure_digest,
-    );
+    )?;
     let public_boundary_row = CausalInspectionHostileRow::from_terminal_digest(
         CausalInspectionCertificationLane::PublicBoundary,
         boundary_audit.audit_digest(),
-    );
+    )?;
     let representative_matrix_row = CausalInspectionHostileRow::from_terminal_digest(
         CausalInspectionCertificationLane::RepresentativeMatrix,
         representative_matrix.matrix_digest(),
-    );
+    )?;
     let scale_row = CausalInspectionHostileRow::from_terminal_digest(
         CausalInspectionCertificationLane::ScaleMaterialization,
         performance_certification.performance_certification_digest(),
-    );
+    )?;
     let proof_shape_row = CausalInspectionHostileRow::from_terminal_digest(
         CausalInspectionCertificationLane::ProofShape,
         proof_shape.proof_shape_digest(),
-    );
+    )?;
     let bridge_readmission_row = CausalInspectionHostileRow::from_terminal_digest(
         CausalInspectionCertificationLane::BridgeReadmission,
         performance_certification.bridge_readmission_proof_digest(),
-    );
+    )?;
     let artifact_serialization_row = CausalInspectionHostileRow::from_terminal_digest(
         CausalInspectionCertificationLane::ArtifactSerialization,
         performance_certification.artifact_serialization_slope_digest(),
-    );
-    CausalInspectionCertificationHostileRows {
+    )?;
+    Ok(CausalInspectionCertificationHostileRows {
         changed_row,
         redaction_row,
         denied_row,
@@ -262,7 +266,7 @@ fn build_certification_hostile_rows(
         proof_shape_row,
         bridge_readmission_row,
         artifact_serialization_row,
-    }
+    })
 }
 
 fn certification_row_counts(
@@ -281,8 +285,8 @@ fn build_certification_scope_digest(
     performance_certification: &CausalInspectionPerformanceCertificationBundle,
     proof_shape: &CausalInspectionProofShapeCertification,
     row_counts: &CausalInspectionCertificationRowCounts,
-) -> String {
-    WorthQueryEvidenceIdentity::compose(
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(WorthQueryEvidenceIdentity::compose(
         WorthQueryEvidenceScope::CausalInspectionCertificationFailureEvidence,
     )
     .field_shape(
@@ -389,7 +393,7 @@ fn build_certification_scope_digest(
         WorthQueryEvidenceTag::new("scale_count"),
         row_counts.scale_fixture_row_count,
     )
-    .seal()
+    .seal()?
     .as_str()
-    .to_string()
+    .to_string())
 }

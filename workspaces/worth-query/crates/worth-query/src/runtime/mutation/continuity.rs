@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -177,7 +178,7 @@ impl WorthQueryContinuityMutationDenial {
         existing_truth_binding: Option<&crate::runtime::WorthQueryExistingTruthTargetBinding>,
         kind: WorthQueryContinuityMutationDenialKind,
         reason: impl Into<String>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let reason = reason.into();
         let basis_binding_identity =
             existing_truth_binding.map(|binding| binding.binding_evidence_identity());
@@ -218,10 +219,10 @@ impl WorthQueryContinuityMutationDenial {
                     basis_binding_identity,
                 )
                 .field_value(WorthQueryEvidenceTag::new("reason"), &reason)
-                .seal()
+                .seal()?
                 .as_str()
                 .to_string();
-        Self {
+        Ok(Self {
             family: intent.family(),
             kind,
             prior_authoritative_identity: intent.prior_authoritative_identity().clone(),
@@ -231,7 +232,7 @@ impl WorthQueryContinuityMutationDenial {
             basis_binding_digest,
             reason,
             denial_digest,
-        }
+        })
     }
 
     pub fn family(&self) -> WorthQueryContinuityMutationFamily {

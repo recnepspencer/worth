@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQueryMutationReceipt;
 use crate::runtime::mutation::WorthQueryMutationMetadata;
 
@@ -101,10 +102,10 @@ impl WorthQueryWriteReceipt {
         refresh_fallback: bool,
         decision_trace_envelope: Option<WorthQueryIntentDecisionTraceEnvelope>,
         execution_provenance: Option<WorthQueryIntentExecutionProvenance>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let commit_evidence_identity =
             write_receipt_commit_evidence_identity(&inner.commit_identity);
-        let committed_truth_identity = write_receipt_committed_truth_identity(&inner);
+        let committed_truth_identity = write_receipt_committed_truth_identity(&inner)?;
         let journal_position =
             WorthQueryJournalPosition::from_commit_identity(&inner.commit_identity);
         let snapshot_evidence_identity =
@@ -141,7 +142,7 @@ impl WorthQueryWriteReceipt {
             &declared_aspect_operations,
             declared_aspect_value_digest.as_ref(),
             &inner.snapshot_identity,
-        );
+        )?;
         let symbolic_target_reference_evidence = symbolic_target_reference_evidence(
             mutation_family,
             inner
@@ -170,7 +171,7 @@ impl WorthQueryWriteReceipt {
             target_entity_identity.as_ref(),
             target_collection_identity.as_ref(),
         );
-        Self {
+        Ok(Self {
             inner,
             commit_evidence_identity,
             committed_truth_identity,
@@ -207,7 +208,7 @@ impl WorthQueryWriteReceipt {
             refresh_fallback,
             decision_trace_envelope,
             execution_provenance,
-        }
+        })
     }
 
     pub(in crate::runtime) fn batch_component(
@@ -229,10 +230,10 @@ impl WorthQueryWriteReceipt {
         mutation_metadata: WorthQueryMutationMetadata,
         affected_live_view_targets: Vec<WorthQueryLiveArtifactTarget>,
         authority_lane: WorthQueryAuthorityLane,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let commit_evidence_identity =
             write_receipt_commit_evidence_identity(&inner.commit_identity);
-        let committed_truth_identity = write_receipt_committed_truth_identity(&inner);
+        let committed_truth_identity = write_receipt_committed_truth_identity(&inner)?;
         let journal_position =
             WorthQueryJournalPosition::from_commit_identity(&inner.commit_identity);
         let snapshot_evidence_identity =
@@ -269,7 +270,7 @@ impl WorthQueryWriteReceipt {
             &declared_aspect_operations,
             declared_aspect_value_digest.as_ref(),
             &inner.snapshot_identity,
-        );
+        )?;
         let symbolic_target_reference_evidence = symbolic_target_reference_evidence(
             mutation_family,
             inner
@@ -298,7 +299,7 @@ impl WorthQueryWriteReceipt {
             target_entity_identity.as_ref(),
             target_collection_identity.as_ref(),
         );
-        Self {
+        Ok(Self {
             inner,
             commit_evidence_identity,
             committed_truth_identity,
@@ -335,7 +336,7 @@ impl WorthQueryWriteReceipt {
             refresh_fallback: false,
             decision_trace_envelope: None,
             execution_provenance: None,
-        }
+        })
     }
 }
 
@@ -353,7 +354,7 @@ fn write_receipt_snapshot_evidence_identity(
 
 fn write_receipt_committed_truth_identity(
     receipt: &WorthQueryMutationReceipt,
-) -> WorthQueryEvidenceIdentity {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let delta_descriptors = receipt
         .deltas
         .iter()
@@ -367,18 +368,20 @@ fn write_receipt_committed_truth_identity(
             )
         })
         .collect::<Vec<_>>();
-    crate::evidence_identity::WorthQueryEvidenceIdentity::compose(
-        crate::evidence_identity::WorthQueryEvidenceScope::JournalReplayOutcome,
+    Ok(
+        crate::evidence_identity::WorthQueryEvidenceIdentity::compose(
+            crate::evidence_identity::WorthQueryEvidenceScope::JournalReplayOutcome,
+        )
+        .field_evidence_identity(
+            crate::evidence_identity::WorthQueryEvidenceTag::new("committed_write_identity"),
+            &receipt.commit_identity.evidence_identity(),
+        )
+        .field_value_sequence(
+            crate::evidence_identity::WorthQueryEvidenceTag::new("committed_delta_descriptor"),
+            delta_descriptors.iter().map(String::as_str),
+        )
+        .seal()?,
     )
-    .field_evidence_identity(
-        crate::evidence_identity::WorthQueryEvidenceTag::new("committed_write_identity"),
-        &receipt.commit_identity.evidence_identity(),
-    )
-    .field_value_sequence(
-        crate::evidence_identity::WorthQueryEvidenceTag::new("committed_delta_descriptor"),
-        delta_descriptors.iter().map(String::as_str),
-    )
-    .seal()
 }
 
 fn terminal_touched_aspect_digest_projections(touches: &[WorthQueryAspectTouch]) -> Vec<String> {

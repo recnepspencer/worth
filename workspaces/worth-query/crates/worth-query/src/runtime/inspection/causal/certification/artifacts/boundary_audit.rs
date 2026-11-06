@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 use super::super::super::materialization::QueryCausalInspectionArtifact;
@@ -11,7 +12,9 @@ pub struct CausalInspectionBoundaryAudit {
 }
 
 impl CausalInspectionBoundaryAudit {
-    pub fn from_query_artifact_public_surface(artifact: &QueryCausalInspectionArtifact) -> Self {
+    pub fn from_query_artifact_public_surface(
+        artifact: &QueryCausalInspectionArtifact,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let audited_artifact_digest = artifact.artifact_identity().as_str().to_string();
         let audit_digest = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalInspectionCertificationFailureEvidence,
@@ -32,15 +35,15 @@ impl CausalInspectionBoundaryAudit {
             WorthQueryEvidenceTag::new("artifact"),
             artifact.artifact_identity().evidence_identity(),
         )
-        .seal()
+        .seal()?
         .as_str()
         .to_string();
-        Self {
+        Ok(Self {
             ordinary_path_uses_query_artifact: true,
             direct_lower_runtime_stitching_absent: true,
             audited_artifact_digest,
             audit_digest,
-        }
+        })
     }
 
     pub fn ordinary_path_uses_query_artifact(&self) -> bool {

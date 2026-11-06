@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_foundational::FoundationalProfileSet;
 use worth_proof::TransitionOutcome;
 
@@ -58,7 +59,7 @@ fn process_intent(
     intent: WorthQueryContributionIntent,
     materialization_profile: Option<&FoundationalProfileSet>,
     linked_artifacts: WorthQueryBindingLinkedArtifacts,
-) -> WorthQueryContributionComposedIntentResult {
+) -> Result<WorthQueryContributionComposedIntentResult, IdentityDerivationDenial> {
     match intent {
         WorthQueryContributionIntent::Admission(value) => process_requested(
             order_index,
@@ -67,7 +68,7 @@ fn process_intent(
             value.bind_to_installed_target(target),
             materialization_profile,
             linked_artifacts,
-        ),
+        )?,
         WorthQueryContributionIntent::Support(value) => process_requested(
             order_index,
             WorthQueryDeclarationEntryContributionCategoryFamily::SupportTraceability,
@@ -75,7 +76,7 @@ fn process_intent(
             value.bind_to_installed_target(target),
             materialization_profile,
             linked_artifacts,
-        ),
+        )?,
         WorthQueryContributionIntent::Explanation(value) => process_requested(
             order_index,
             WorthQueryDeclarationEntryContributionCategoryFamily::ExplanationInspection,
@@ -83,7 +84,7 @@ fn process_intent(
             value.bind_to_installed_target(target),
             materialization_profile,
             linked_artifacts,
-        ),
+        )?,
         WorthQueryContributionIntent::Workflow(value) => process_requested(
             order_index,
             WorthQueryDeclarationEntryContributionCategoryFamily::WorkflowPreview,
@@ -91,7 +92,7 @@ fn process_intent(
             value.bind_to_installed_target(target),
             materialization_profile,
             linked_artifacts,
-        ),
+        )?,
         WorthQueryContributionIntent::Continuity(value) => process_requested(
             order_index,
             WorthQueryDeclarationEntryContributionCategoryFamily::ContinuityLineage,
@@ -99,8 +100,10 @@ fn process_intent(
             value.bind_to_installed_target(target),
             materialization_profile,
             linked_artifacts,
-        ),
+        )?,
     }
+
+    Ok(())
 }
 
 fn process_requested<P>(
@@ -113,7 +116,7 @@ fn process_requested<P>(
     >,
     materialization_profile: Option<&FoundationalProfileSet>,
     _linked_artifacts: WorthQueryBindingLinkedArtifacts,
-) -> WorthQueryContributionComposedIntentResult
+) -> Result<WorthQueryContributionComposedIntentResult, IdentityDerivationDenial>
 where
     P: WorthQueryDomainCapabilityPayload,
     (P, WorthQueryInstalledDeclarationContributionTarget):
@@ -135,36 +138,36 @@ where
         "contribution request evaluated",
         Some(requested.requested_identity()),
     );
-    let eligible = match evaluate_requested_domain_capability_contribution(requested) {
+    let eligible = match evaluate_requested_domain_capability_contribution(requested)? {
         TransitionOutcome::Success(value) => value,
         TransitionOutcome::Denied(value) => {
-            return denied_result(
+            return Ok(denied_result(
                 request,
                 WorthQueryContributionComposedIntentStageResult::denied(value.message()),
-            )
+            ))
         }
         TransitionOutcome::Stale(value) => {
-            return stale_result(
+            return Ok(stale_result(
                 request,
                 format!(
                     "target {} no longer matches current {}",
                     value.bound_target_for_reporting(),
                     value.current_target_for_reporting()
                 ),
-            )
+            ))
         }
         TransitionOutcome::RebindRequired(value) => {
-            return rebind_required_result(
+            return Ok(rebind_required_result(
                 request,
                 format!(
                     "target {} requires rebind to {}",
                     value.bound_target_for_reporting(),
                     value.current_target_for_reporting()
                 ),
-            )
+            ))
         }
         TransitionOutcome::Failed(value) => {
-            return failed_result(request, value.message().to_string())
+            return Ok(failed_result(request, value.message().to_string()))
         }
         TransitionOutcome::Deferred(never) => match never {},
     };
@@ -175,17 +178,17 @@ where
     let admitted = match admit_eligible_domain_capability_contribution(eligible) {
         TransitionOutcome::Success(value) => value,
         TransitionOutcome::Denied(value) => {
-            return WorthQueryContributionComposedIntentResult::new(
+            return Ok(WorthQueryContributionComposedIntentResult::new(
                 request,
                 evaluation,
                 WorthQueryContributionComposedIntentStageResult::denied(value.message()),
                 WorthQueryContributionComposedIntentStageResult::not_attempted(),
                 WorthQueryContributionComposedIntentClassification::Denied,
                 None,
-            )
+            ))
         }
         TransitionOutcome::Stale(value) => {
-            return WorthQueryContributionComposedIntentResult::new(
+            return Ok(WorthQueryContributionComposedIntentResult::new(
                 request,
                 evaluation,
                 WorthQueryContributionComposedIntentStageResult::stale(format!(
@@ -196,10 +199,10 @@ where
                 WorthQueryContributionComposedIntentStageResult::not_attempted(),
                 WorthQueryContributionComposedIntentClassification::Stale,
                 None,
-            )
+            ))
         }
         TransitionOutcome::RebindRequired(value) => {
-            return WorthQueryContributionComposedIntentResult::new(
+            return Ok(WorthQueryContributionComposedIntentResult::new(
                 request,
                 evaluation,
                 WorthQueryContributionComposedIntentStageResult::rebind_required(format!(
@@ -210,17 +213,17 @@ where
                 WorthQueryContributionComposedIntentStageResult::not_attempted(),
                 WorthQueryContributionComposedIntentClassification::RebindRequired,
                 None,
-            )
+            ))
         }
         TransitionOutcome::Failed(value) => {
-            return WorthQueryContributionComposedIntentResult::new(
+            return Ok(WorthQueryContributionComposedIntentResult::new(
                 request,
                 evaluation,
                 WorthQueryContributionComposedIntentStageResult::failed(value.message()),
                 WorthQueryContributionComposedIntentStageResult::not_attempted(),
                 WorthQueryContributionComposedIntentClassification::Failed,
                 None,
-            )
+            ))
         }
         TransitionOutcome::Deferred(never) => match never {},
     };
@@ -252,16 +255,16 @@ where
         ) {
             TransitionOutcome::Success(value) => value,
             TransitionOutcome::Denied(value) => {
-                return retained_after_admission_result(
+                return Ok(retained_after_admission_result(
                     request,
                     evaluation,
                     admission_stage,
                     WorthQueryContributionComposedIntentStageResult::denied(value.message()),
                     contribution,
-                )
+                ))
             }
             TransitionOutcome::Stale(value) => {
-                return retained_after_admission_result(
+                return Ok(retained_after_admission_result(
                     request,
                     evaluation,
                     admission_stage,
@@ -271,10 +274,10 @@ where
                         value.current_target_for_reporting()
                     )),
                     contribution,
-                )
+                ))
             }
             TransitionOutcome::RebindRequired(value) => {
-                return retained_after_admission_result(
+                return Ok(retained_after_admission_result(
                     request,
                     evaluation,
                     admission_stage,
@@ -284,60 +287,64 @@ where
                         value.current_target_for_reporting()
                     )),
                     contribution,
-                )
+                ))
             }
             TransitionOutcome::Failed(value) => {
-                return retained_after_admission_result(
+                return Ok(retained_after_admission_result(
                     request,
                     evaluation,
                     admission_stage,
                     WorthQueryContributionComposedIntentStageResult::failed(value.message()),
                     contribution,
-                )
+                ))
             }
             TransitionOutcome::Deferred(never) => match never {},
         };
         let ready_identity = ready.materialization_ready_identity();
-        return match materialize_domain_capability_summary(ready, profile) {
-            Ok(value) => {
-                let summary = WorthQueryContributionComposedSummary::new(
-                    ready_identity.as_str().to_string(),
-                    value.outcome_kind(),
-                    format!("{:?}", value.primary_code()),
-                    value.required_row_count(),
-                    value.standard_row_count(),
-                    value.forensic_row_count(),
-                );
-                let contribution = contribution.with_summary(summary);
-                WorthQueryContributionComposedIntentResult::new(
+        return Ok(
+            match materialize_domain_capability_summary(ready, profile) {
+                Ok(value) => {
+                    let summary = WorthQueryContributionComposedSummary::new(
+                        ready_identity.as_str().to_string(),
+                        value.outcome_kind(),
+                        format!("{:?}", value.primary_code()),
+                        value.required_row_count(),
+                        value.standard_row_count(),
+                        value.forensic_row_count(),
+                    );
+                    let contribution = contribution.with_summary(summary);
+                    WorthQueryContributionComposedIntentResult::new(
+                        request,
+                        evaluation,
+                        admission_stage,
+                        WorthQueryContributionComposedIntentStageResult::succeeded(
+                            "contribution summary materialized",
+                            Some(ready_identity),
+                        ),
+                        WorthQueryContributionComposedIntentClassification::Admitted,
+                        Some(contribution),
+                    )
+                }
+                Err(value) => retained_after_admission_result(
                     request,
                     evaluation,
                     admission_stage,
-                    WorthQueryContributionComposedIntentStageResult::succeeded(
-                        "contribution summary materialized",
-                        Some(ready_identity),
-                    ),
-                    WorthQueryContributionComposedIntentClassification::Admitted,
-                    Some(contribution),
-                )
-            }
-            Err(value) => retained_after_admission_result(
-                request,
-                evaluation,
-                admission_stage,
-                WorthQueryContributionComposedIntentStageResult::unsupported(format!("{value:?}")),
-                contribution,
-            ),
-        };
+                    WorthQueryContributionComposedIntentStageResult::unsupported(format!(
+                        "{value:?}"
+                    )),
+                    contribution,
+                ),
+            },
+        );
     }
-    WorthQueryContributionComposedIntentResult::new(
+    Ok(WorthQueryContributionComposedIntentResult::new(
         request,
         evaluation,
         admission_stage,
         WorthQueryContributionComposedIntentStageResult::not_attempted(),
         WorthQueryContributionComposedIntentClassification::Admitted,
         Some(contribution),
-    )
+    ))
 }
 
 fn materialization_profile(

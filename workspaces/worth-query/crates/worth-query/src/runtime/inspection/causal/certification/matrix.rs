@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 use super::super::inventory::CausalEvidenceFamily;
@@ -139,7 +140,7 @@ impl CausalInspectionRepresentativeEvidence {
         family: Option<CausalEvidenceFamily>,
         failure_digest: &str,
         row_digest_set: CausalInspectionRepresentativeRowDigestSet,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let representative_digest = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalInspectionCertificationFailureEvidence,
         )
@@ -159,17 +160,17 @@ impl CausalInspectionRepresentativeEvidence {
             WorthQueryEvidenceTag::new("row_digest_set"),
             row_digest_set.row_digest(),
         )
-        .seal()
+        .seal()?
         .as_str()
         .to_string();
-        Self {
+        Ok(Self {
             kind,
             artifact_digest: None,
             failure_digest: Some(failure_digest.to_string()),
             missing_evidence_family: family,
             row_digest_set,
             representative_digest,
-        }
+        })
     }
 
     pub fn kind(&self) -> CausalInspectionRepresentativeKind {
@@ -291,8 +292,8 @@ fn matrix_digest(
     representative_count: usize,
     missing_evidence_row_count: usize,
     query_only_consumer_row_count: usize,
-) -> String {
-    WorthQueryEvidenceIdentity::compose(
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(WorthQueryEvidenceIdentity::compose(
         WorthQueryEvidenceScope::CausalInspectionCertificationFailureEvidence,
     )
     .field_shape(
@@ -326,9 +327,9 @@ fn matrix_digest(
         WorthQueryEvidenceTag::new("query_only_count"),
         query_only_consumer_row_count,
     )
-    .seal()
+    .seal()?
     .as_str()
-    .to_string()
+    .to_string())
 }
 
 fn validate_non_empty_failure(

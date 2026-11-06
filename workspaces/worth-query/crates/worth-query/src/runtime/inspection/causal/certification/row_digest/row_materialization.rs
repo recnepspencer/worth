@@ -1,10 +1,11 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 impl CausalInspectionRepresentativeRowDigestSet {
     pub(in crate::runtime::inspection::causal::certification) fn from_query_artifact(
         kind: CausalInspectionRepresentativeKind,
         artifact: &QueryCausalInspectionArtifact,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let query_observation_receipt_digest =
             artifact.query_observation_identity().as_str().to_string();
         let causal_observation_anchor_digest =
@@ -14,11 +15,11 @@ impl CausalInspectionRepresentativeRowDigestSet {
         let query_digest = representative_query_digest(
             &query_observation_receipt_digest,
             causal_observation_anchor_digest.as_str(),
-        );
+        )?;
         let inspection_digest = inspection_digest(artifact).to_string();
         let evidence_reference_collection_digest =
-            evidence_reference_collection_digest(artifact, kind);
-        let slots = named_evidence_slots(artifact);
+            evidence_reference_collection_digest(artifact, kind)?;
+        let slots = named_evidence_slots(artifact)?;
         let policy_digest = artifact_policy_digest(artifact).to_string();
         let receipt_digest = artifact_receipt_digest(artifact).to_string();
         let counter_snapshot_digest = artifact
@@ -59,8 +60,8 @@ impl CausalInspectionRepresentativeRowDigestSet {
             materialization_receipt_digest: Some(&receipt_digest),
             counter_snapshot_digest: Some(&counter_snapshot_digest),
             failure_digest: None,
-        });
-        Self {
+        })?;
+        Ok(Self {
             kind,
             query_digest,
             query_observation_receipt_digest,
@@ -91,22 +92,22 @@ impl CausalInspectionRepresentativeRowDigestSet {
             counter_snapshot_digest: Some(counter_snapshot_digest),
             failure_digest: None,
             row_digest,
-        }
+        })
     }
 
     pub(in crate::runtime::inspection::causal::certification) fn from_missing_evidence(
         kind: CausalInspectionRepresentativeKind,
         family: CausalEvidenceFamily,
         failure_digest: &str,
-    ) -> Self {
-        Self::from_failure(kind, family.as_str(), failure_digest)
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::from_failure(kind, family.as_str(), failure_digest)?)
     }
 
     pub(in crate::runtime::inspection::causal::certification) fn from_failure(
         kind: CausalInspectionRepresentativeKind,
         failure_class: &str,
         failure_digest: &str,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let query_observation_receipt_digest = "denied-before-materialization".to_string();
         let causal_observation_anchor_digest =
             RepresentativeCausalObservationAnchorDigest::from_digest(
@@ -120,14 +121,14 @@ impl CausalInspectionRepresentativeRowDigestSet {
                 .field_shape(WorthQueryEvidenceTag::new("kind"), kind.as_str())
                 .field_shape(WorthQueryEvidenceTag::new("failure_class"), failure_class)
                 .field_value(WorthQueryEvidenceTag::new("failure"), failure_digest)
-                .seal()
+                .seal()?
                 .as_str()
                 .to_string(),
             );
         let query_digest = representative_query_digest(
             &query_observation_receipt_digest,
             causal_observation_anchor_digest.as_str(),
-        );
+        )?;
         let counter_snapshot_digest = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalInspectionCertificationFailureEvidence,
         )
@@ -140,7 +141,7 @@ impl CausalInspectionRepresentativeRowDigestSet {
         .field_usize(WorthQueryEvidenceTag::new("reference_resolution"), 1)
         .field_usize(WorthQueryEvidenceTag::new("admission"), 0)
         .field_usize(WorthQueryEvidenceTag::new("materialization"), 0)
-        .seal()
+        .seal()?
         .as_str()
         .to_string();
         let row_digest = row_digest(RowDigestParts {
@@ -173,8 +174,8 @@ impl CausalInspectionRepresentativeRowDigestSet {
             materialization_receipt_digest: None,
             counter_snapshot_digest: Some(&counter_snapshot_digest),
             failure_digest: Some(failure_digest),
-        });
-        Self {
+        })?;
+        Ok(Self {
             kind,
             query_digest,
             query_observation_receipt_digest,
@@ -205,7 +206,7 @@ impl CausalInspectionRepresentativeRowDigestSet {
             counter_snapshot_digest: Some(counter_snapshot_digest),
             failure_digest: Some(failure_digest.to_string()),
             row_digest,
-        }
+        })
     }
 
     pub fn kind(&self) -> CausalInspectionRepresentativeKind {

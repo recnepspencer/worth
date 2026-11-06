@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -80,12 +81,14 @@ impl WorthQueryAdmittedWorldBasis {
 
 pub(crate) fn compose_basis_lifecycle_support_identity(
     matrix_digest: &str,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            "basis_lifecycle_support_matrix_v1",
-        )
-        .field_shape(WorthQueryEvidenceTag::new("support_matrix"), matrix_digest)
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                "basis_lifecycle_support_matrix_v1",
+            )
+            .field_shape(WorthQueryEvidenceTag::new("support_matrix"), matrix_digest)
+            .seal()?,
+    )
 }

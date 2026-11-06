@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -69,9 +70,14 @@ impl WorthQueryExistingTruthProbeDenial {
         kind: WorthQueryExistingTruthProbeDenialKind,
         probed_aspect_touch: Option<WorthQueryAspectTouch>,
         message: impl Into<String>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let probed_aspect_touch = probed_aspect_touch.map(WorthQueryDeniedAspectTouch::Admitted);
-        Self::from_denied_aspect_touch(binding, kind, probed_aspect_touch, message)
+        Ok(Self::from_denied_aspect_touch(
+            binding,
+            kind,
+            probed_aspect_touch,
+            message,
+        )?)
     }
 
     fn from_admitted_touch(
@@ -79,13 +85,13 @@ impl WorthQueryExistingTruthProbeDenial {
         kind: WorthQueryExistingTruthProbeDenialKind,
         probed_aspect_touch: WorthQueryAspectTouch,
         message: impl Into<String>,
-    ) -> Self {
-        Self::from_denied_aspect_touch(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::from_denied_aspect_touch(
             binding,
             kind,
             Some(WorthQueryDeniedAspectTouch::Admitted(probed_aspect_touch)),
             message,
-        )
+        )?)
     }
 
     fn from_denied_aspect_touch(
@@ -93,7 +99,7 @@ impl WorthQueryExistingTruthProbeDenial {
         kind: WorthQueryExistingTruthProbeDenialKind,
         probed_aspect_touch: Option<WorthQueryDeniedAspectTouch>,
         message: impl Into<String>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let message = message.into();
         let probed_aspect_touch_digest = probed_aspect_touch
             .as_ref()
@@ -128,16 +134,16 @@ impl WorthQueryExistingTruthProbeDenial {
                     probed_aspect_touch_digest.as_deref(),
                 )
                 .field_value(WorthQueryEvidenceTag::new("message"), &message)
-                .seal()
+                .seal()?
                 .as_str()
                 .to_string();
-        Self {
+        Ok(Self {
             binding: binding.clone(),
             kind,
             probed_aspect_touch,
             message,
             denial_digest,
-        }
+        })
     }
 
     pub fn binding(&self) -> &WorthQueryExistingTruthTargetBinding {
@@ -213,7 +219,7 @@ impl WorthQueryExistingTruthProbeRequest {
                         .iter()
                         .map(WorthQueryAspectTouch::admitted_touch_digest_part),
                 )
-                .seal()
+                .seal()?
                 .as_str()
                 .to_string();
         Ok(Self {
@@ -247,7 +253,7 @@ impl WorthQueryExistingTruthProbeField {
     pub fn from_admitted_aspect_touch(
         aspect_touch: WorthQueryAspectTouch,
         value: AspectValue,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let target = aspect_touch.into_parsed_target();
         let aspect_touch = WorthQueryAspectTouch::from_parsed_target(target.clone());
         let value_digest =
@@ -264,14 +270,14 @@ impl WorthQueryExistingTruthProbeField {
                     WorthQueryEvidenceTag::new("value"),
                     prepare_aspect_value_identity_basis(&value).as_str(),
                 )
-                .seal()
+                .seal()?
                 .as_str()
                 .to_string();
-        Self {
+        Ok(Self {
             target,
             value,
             value_digest,
-        }
+        })
     }
 
     pub fn aspect_touch(&self) -> WorthQueryAspectTouch {

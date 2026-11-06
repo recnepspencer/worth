@@ -58,7 +58,7 @@ impl SignalInvalidationRoutingReceipt {
             WorthQueryEvidenceTag::new("routed_collection_count"),
             routed_collection_count,
         )
-        .seal();
+        .seal()?;
 
         Ok(Self {
             commit_identity,

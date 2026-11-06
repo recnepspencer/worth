@@ -2,6 +2,7 @@ use super::super::batch_digest_helpers::{
     batch_continuity_mutation_digest, batch_existing_truth_binding_digest,
     batch_naming_mutation_digest, batch_symbolic_target_reference_digest,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQueryEntityIdentity;
 use crate::runtime::{
     WorthQueryContinuityMutationEvidence, WorthQueryContinuityMutationFamily,
@@ -22,39 +23,43 @@ use worth_runtime_bridge::facade::{
 mod existing_truth_mode;
 
 #[test]
-fn existing_truth_binding_batch_digest_changes_with_authoritative_identity() {
+fn existing_truth_binding_batch_digest_changes_with_authoritative_identity(
+) -> Result<(), IdentityDerivationDenial> {
     let left = WorthQueryExistingTruthBindingEvidence::from_bridge(
         &BridgeExistingTruthBindingBundle::direct_entity(
-            bridge_existing_truth_authority("authority:left"),
+            bridge_existing_truth_authority("authority:left")?,
             bridge_existing_truth_target(RelationalBridgeRecordIdentityParts::entity(1, 1, 0)),
             Some(bridge_existing_truth_collection("Task")),
         ),
-    );
+    )?;
     let right = WorthQueryExistingTruthBindingEvidence::from_bridge(
         &BridgeExistingTruthBindingBundle::direct_entity(
-            bridge_existing_truth_authority("authority:right"),
+            bridge_existing_truth_authority("authority:right")?,
             bridge_existing_truth_target(RelationalBridgeRecordIdentityParts::entity(1, 1, 0)),
             Some(bridge_existing_truth_collection("Task")),
         ),
-    );
+    )?;
 
     let left_digest =
-        batch_existing_truth_binding_digest(&[Some(left)]).expect("left digest should exist");
+        batch_existing_truth_binding_digest(&[Some(left)])?.expect("left digest should exist");
     let right_digest =
-        batch_existing_truth_binding_digest(&[Some(right)]).expect("right digest should exist");
+        batch_existing_truth_binding_digest(&[Some(right)])?.expect("right digest should exist");
 
     assert_ne!(left_digest, right_digest);
+
+    Ok(())
 }
 
 #[test]
-fn bridge_existing_truth_binding_preserves_relational_record_identity() {
+fn bridge_existing_truth_binding_preserves_relational_record_identity(
+) -> Result<(), IdentityDerivationDenial> {
     let evidence = WorthQueryExistingTruthBindingEvidence::from_bridge(
         &BridgeExistingTruthBindingBundle::direct_entity(
-            bridge_existing_truth_authority("authority:relational"),
+            bridge_existing_truth_authority("authority:relational")?,
             bridge_existing_truth_target(RelationalBridgeRecordIdentityParts::entity(7, 42, 3)),
             Some(bridge_existing_truth_collection("Task")),
         ),
-    );
+    )?;
 
     assert_eq!(
         evidence
@@ -62,6 +67,8 @@ fn bridge_existing_truth_binding_preserves_relational_record_identity() {
             .relational_record_parts(),
         Some(RelationalBridgeRecordIdentityParts::entity(7, 42, 3))
     );
+
+    Ok(())
 }
 
 #[test]
@@ -105,32 +112,35 @@ fn symbolic_target_batch_digest_changes_with_symbol_identity() {
 }
 
 #[test]
-fn naming_batch_digest_changes_with_attachment_identity() {
+fn naming_batch_digest_changes_with_attachment_identity() -> Result<(), IdentityDerivationDenial> {
     let left = WorthQueryNamingMutationEvidence::from_bridge(
         &BridgeNamingMutationBundle::attach_new_target(
-            bridge_naming_attachment("persistent-name:left"),
+            bridge_naming_attachment("persistent-name:left")?,
             bridge_naming_target(RelationalBridgeRecordIdentityParts::entity(1, 2, 0)),
             Some(bridge_naming_collection("Task")),
         ),
     );
     let right = WorthQueryNamingMutationEvidence::from_bridge(
         &BridgeNamingMutationBundle::attach_new_target(
-            bridge_naming_attachment("persistent-name:right"),
+            bridge_naming_attachment("persistent-name:right")?,
             bridge_naming_target(RelationalBridgeRecordIdentityParts::entity(1, 2, 0)),
             Some(bridge_naming_collection("Task")),
         ),
     );
 
     let left_digest =
-        batch_naming_mutation_digest(&[Some(left)]).expect("left digest should exist");
+        batch_naming_mutation_digest(&[Some(left)])?.expect("left digest should exist");
     let right_digest =
-        batch_naming_mutation_digest(&[Some(right)]).expect("right digest should exist");
+        batch_naming_mutation_digest(&[Some(right)])?.expect("right digest should exist");
 
     assert_ne!(left_digest, right_digest);
+
+    Ok(())
 }
 
 #[test]
-fn split_successor_batch_digest_changes_with_successor_set() {
+fn split_successor_batch_digest_changes_with_successor_set() -> Result<(), IdentityDerivationDenial>
+{
     let left = WorthQueryContinuityMutationEvidence::from_bridge(
         &BridgeContinuityMutationBundle::split_existing_target(
             BridgeContinuityOutcomeClass::ContinuesAsSplitSuccessors,
@@ -143,7 +153,7 @@ fn split_successor_batch_digest_changes_with_successor_set() {
             Some(target_collection("Task")),
         )
         .expect("left split continuity should build"),
-    );
+    )?;
     let right = WorthQueryContinuityMutationEvidence::from_bridge(
         &BridgeContinuityMutationBundle::split_existing_target(
             BridgeContinuityOutcomeClass::ContinuesAsSplitSuccessors,
@@ -156,18 +166,21 @@ fn split_successor_batch_digest_changes_with_successor_set() {
             Some(target_collection("Task")),
         )
         .expect("right split continuity should build"),
-    );
+    )?;
 
     let left_digest =
-        batch_continuity_mutation_digest(&[Some(left)]).expect("left digest should exist");
+        batch_continuity_mutation_digest(&[Some(left)])?.expect("left digest should exist");
     let right_digest =
-        batch_continuity_mutation_digest(&[Some(right)]).expect("right digest should exist");
+        batch_continuity_mutation_digest(&[Some(right)])?.expect("right digest should exist");
 
     assert_ne!(left_digest, right_digest);
+
+    Ok(())
 }
 
 #[test]
-fn split_successor_batch_digest_changes_with_resolved_target_identity() {
+fn split_successor_batch_digest_changes_with_resolved_target_identity(
+) -> Result<(), IdentityDerivationDenial> {
     let left = WorthQueryContinuityMutationEvidence::from_bridge(
         &BridgeContinuityMutationBundle::split_existing_target(
             BridgeContinuityOutcomeClass::ContinuesAsSplitSuccessors,
@@ -183,7 +196,7 @@ fn split_successor_batch_digest_changes_with_resolved_target_identity() {
             Some(target_collection("Task")),
         )
         .expect("left split continuity should build"),
-    );
+    )?;
     let right = WorthQueryContinuityMutationEvidence::from_bridge(
         &BridgeContinuityMutationBundle::split_existing_target(
             BridgeContinuityOutcomeClass::ContinuesAsSplitSuccessors,
@@ -199,18 +212,20 @@ fn split_successor_batch_digest_changes_with_resolved_target_identity() {
             Some(target_collection("Task")),
         )
         .expect("right split continuity should build"),
-    );
+    )?;
 
     let left_digest =
-        batch_continuity_mutation_digest(&[Some(left)]).expect("left digest should exist");
+        batch_continuity_mutation_digest(&[Some(left)])?.expect("left digest should exist");
     let right_digest =
-        batch_continuity_mutation_digest(&[Some(right)]).expect("right digest should exist");
+        batch_continuity_mutation_digest(&[Some(right)])?.expect("right digest should exist");
 
     assert_ne!(left_digest, right_digest);
+
+    Ok(())
 }
 
 #[test]
-fn continuity_batch_digest_changes_with_family() {
+fn continuity_batch_digest_changes_with_family() -> Result<(), IdentityDerivationDenial> {
     let rebind = WorthQueryContinuityMutationEvidence::from_bridge(
         &BridgeContinuityMutationBundle::rebind_existing_target(
             BridgeContinuityOutcomeClass::ContinuesAsSingleSuccessor,
@@ -220,17 +235,19 @@ fn continuity_batch_digest_changes_with_family() {
             Some(target_collection("Task")),
         )
         .expect("rebind continuity should build"),
-    );
+    )?;
     let split = rebind
         .clone()
         .with_test_family(WorthQueryContinuityMutationFamily::SplitExistingTarget);
 
     let rebind_digest =
-        batch_continuity_mutation_digest(&[Some(rebind)]).expect("rebind digest should exist");
+        batch_continuity_mutation_digest(&[Some(rebind)])?.expect("rebind digest should exist");
     let split_digest =
-        batch_continuity_mutation_digest(&[Some(split)]).expect("split digest should exist");
+        batch_continuity_mutation_digest(&[Some(split)])?.expect("split digest should exist");
 
     assert_ne!(rebind_digest, split_digest);
+
+    Ok(())
 }
 
 fn continuity_identity(value: &str) -> BridgeContinuityAuthoritativeIdentity {
@@ -247,11 +264,14 @@ fn target_collection(value: &str) -> BridgeContinuityTargetCollection {
     BridgeContinuityTargetCollection::new(value).expect("test target collection should be native")
 }
 
-fn bridge_existing_truth_authority(value: &str) -> BridgeExistingTruthBindingAuthoritativeIdentity {
-    BridgeExistingTruthBindingAuthoritativeIdentity::from_bridge_evidence(&bridge_test_evidence(
-        "existing-truth-authority",
-        value,
-    ))
+fn bridge_existing_truth_authority(
+    value: &str,
+) -> Result<BridgeExistingTruthBindingAuthoritativeIdentity, IdentityDerivationDenial> {
+    Ok(
+        BridgeExistingTruthBindingAuthoritativeIdentity::from_bridge_evidence(
+            &bridge_test_evidence("existing-truth-authority", value)?,
+        ),
+    )
 }
 
 fn bridge_existing_truth_target(
@@ -264,22 +284,25 @@ fn bridge_existing_truth_collection(value: &str) -> BridgeExistingTruthBindingTa
     BridgeExistingTruthBindingTargetCollection::new(value)
 }
 
-fn bridge_naming_attachment(value: &str) -> BridgeNamingAttachmentIdentity {
-    BridgeNamingAttachmentIdentity::from_bridge_evidence(&bridge_test_evidence(
-        "naming-attachment",
-        value,
+fn bridge_naming_attachment(
+    value: &str,
+) -> Result<BridgeNamingAttachmentIdentity, IdentityDerivationDenial> {
+    Ok(BridgeNamingAttachmentIdentity::from_bridge_evidence(
+        &bridge_test_evidence("naming-attachment", value)?,
     ))
 }
 
 fn bridge_test_evidence(
     role: &'static str,
     value: &str,
-) -> worth_runtime_bridge::facade::BridgeIdentityEvidence {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::RuntimeBridgeWritebackAuthority)
-        .field_shape(WorthQueryEvidenceTag::new("role"), role)
-        .field_value(WorthQueryEvidenceTag::new("value"), value)
-        .seal()
-        .bridge_external_identity_evidence()
+) -> Result<worth_runtime_bridge::facade::BridgeIdentityEvidence, IdentityDerivationDenial> {
+    Ok(WorthQueryEvidenceIdentity::compose(
+        WorthQueryEvidenceScope::RuntimeBridgeWritebackAuthority,
+    )
+    .field_shape(WorthQueryEvidenceTag::new("role"), role)
+    .field_value(WorthQueryEvidenceTag::new("value"), value)
+    .seal()?
+    .bridge_external_identity_evidence())
 }
 
 fn bridge_naming_target(
@@ -306,8 +329,8 @@ fn relational_entity(
 
 pub(super) fn retained_assertion_identity(
     label: &'static str,
-) -> crate::evidence_identity::WorthQueryEvidenceIdentity {
-    crate::evidence_identity::worth_query_evidence_identity(
+) -> Result<crate::evidence_identity::WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(crate::evidence_identity::worth_query_evidence_identity(
         crate::evidence_identity::WorthQueryEvidenceScope::RetainedExistingTruthAssertionEvidence,
     )
     .field_shape(
@@ -318,5 +341,5 @@ pub(super) fn retained_assertion_identity(
         crate::evidence_identity::WorthQueryEvidenceTag::new("label"),
         label,
     )
-    .seal()
+    .seal()?)
 }

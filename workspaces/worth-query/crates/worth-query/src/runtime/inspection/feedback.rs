@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::super::{
     WorthQueryAuthorityLane, WorthQueryEffectDeliveryFamily, WorthQueryEffectIdempotence,
@@ -87,7 +88,7 @@ pub struct WorthQueryFeedbackPhaseGraphInspection {
 impl WorthQueryFeedbackPhaseGraphInspection {
     pub(in crate::runtime) fn from_effect_runtime(
         runtime: &WorthQueryEffectRuntime,
-    ) -> Option<Self> {
+    ) -> Result<Option<Self>, IdentityDerivationDenial> {
         let latest = runtime.latest_delivery()?;
         let phase_nodes = latest
             .phase_evidence()
@@ -113,7 +114,7 @@ impl WorthQueryFeedbackPhaseGraphInspection {
                 WorthQueryFeedbackTermination::ExpressionFailed
             }
         };
-        Some(Self::new(
+        Ok(Some(Self::new(
             runtime.name(),
             latest.trigger_source_kind(),
             latest.write_adjacent_trigger().class(),
@@ -129,12 +130,12 @@ impl WorthQueryFeedbackPhaseGraphInspection {
             0,
             0,
             runtime.pending_write_intent_count(),
-        ))
+        )?))
     }
 
     pub(in crate::runtime) fn from_effect_intent_receipt(
         receipt: &WorthQueryEffectIntentReceipt,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let mut phase_nodes = receipt
             .phase_evidence()
             .phases()
@@ -168,7 +169,7 @@ impl WorthQueryFeedbackPhaseGraphInspection {
                 (WorthQueryFeedbackTermination::CoalescedNoMutation, 0, 0)
             };
 
-        Self::new(
+        Ok(Self::new(
             receipt.effect_name(),
             receipt.trigger_source_kind(),
             receipt.write_adjacent_trigger_class(),
@@ -184,7 +185,7 @@ impl WorthQueryFeedbackPhaseGraphInspection {
             resubscribed_live_view_count,
             resubscribed_derived_view_count,
             receipt.intent_receipt().pending_write_intent_count(),
-        )
+        )?)
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -204,7 +205,7 @@ impl WorthQueryFeedbackPhaseGraphInspection {
         resubscribed_live_view_count: usize,
         resubscribed_derived_view_count: usize,
         pending_write_intent_count: usize,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let graph_digest = feedback_phase_graph_identity(FeedbackPhaseGraphIdentityParts {
             effect_name,
             trigger_source_kind,
@@ -221,9 +222,9 @@ impl WorthQueryFeedbackPhaseGraphInspection {
             resubscribed_live_view_count,
             resubscribed_derived_view_count,
             pending_write_intent_count,
-        });
-        let inspection_digest = feedback_phase_graph_inspection_identity(&graph_digest);
-        Self {
+        })?;
+        let inspection_digest = feedback_phase_graph_inspection_identity(&graph_digest)?;
+        Ok(Self {
             effect_name: effect_name.to_string(),
             trigger_source_kind,
             write_adjacent_trigger_class,
@@ -241,7 +242,7 @@ impl WorthQueryFeedbackPhaseGraphInspection {
             pending_write_intent_count,
             graph_digest,
             inspection_digest,
-        }
+        })
     }
 
     pub fn effect_name(&self) -> &str {

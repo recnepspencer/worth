@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -73,17 +74,17 @@ impl WorthQueryExistingTruthAssertionDenial {
         expected_terminal_value_digest: Option<String>,
         found_terminal_value_digest: Option<String>,
         message: impl Into<String>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let asserted_aspect_touch =
             asserted_aspect_touch.map(WorthQueryDeniedAspectTouch::Admitted);
-        Self::from_denied_aspect_touch(
+        Ok(Self::from_denied_aspect_touch(
             binding,
             kind,
             asserted_aspect_touch,
             expected_terminal_value_digest,
             found_terminal_value_digest,
             message,
-        )
+        )?)
     }
 
     fn from_denied_aspect_touch(
@@ -93,7 +94,7 @@ impl WorthQueryExistingTruthAssertionDenial {
         expected_terminal_value_digest: Option<String>,
         found_terminal_value_digest: Option<String>,
         message: impl Into<String>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let message = message.into();
         let asserted_aspect_touch_digest = asserted_aspect_touch
             .as_ref()
@@ -134,10 +135,10 @@ impl WorthQueryExistingTruthAssertionDenial {
                     found_terminal_value_digest.as_deref(),
                 )
                 .field_value(WorthQueryEvidenceTag::new("message"), &message)
-                .seal()
+                .seal()?
                 .as_str()
                 .to_string();
-        Self {
+        Ok(Self {
             binding: binding.clone(),
             kind,
             asserted_aspect_touch,
@@ -145,7 +146,7 @@ impl WorthQueryExistingTruthAssertionDenial {
             found_terminal_value_digest,
             message,
             denial_digest,
-        }
+        })
     }
 
     pub fn binding(&self) -> &crate::runtime::WorthQueryExistingTruthTargetBinding {
@@ -233,7 +234,7 @@ impl WorthQueryVerifiedExistingTruthAssertion {
             aspect_evidence_rows.clone(),
             cleared_assertion_count,
             snapshot_identity,
-        );
+        )?;
         let verification_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
                 .field_shape(
@@ -252,7 +253,7 @@ impl WorthQueryVerifiedExistingTruthAssertion {
                     WorthQueryEvidenceTag::new("aspect"),
                     aspect_evidence_rows.iter(),
                 )
-                .seal();
+                .seal()?;
         Ok(Self {
             asserted_aspect_count,
             verification_digest,
@@ -293,23 +294,25 @@ impl WorthQueryVerifiedExistingTruthAssertion {
 
 fn existing_truth_assertion_aspect_evidence(
     aspect: &WorthQueryAuthoredAspectMutation,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
-        .field_shape(
-            WorthQueryEvidenceTag::new("role"),
-            "existing-truth-assertion-aspect",
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("aspect_touch"),
-            aspect.aspect_touch().admitted_touch_digest_part(),
-        )
-        .field_bool(
-            WorthQueryEvidenceTag::new("clears_existing_value"),
-            aspect.clears_existing_value(),
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("value"),
-            aspect.terminal_digest_material(),
-        )
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
+            .field_shape(
+                WorthQueryEvidenceTag::new("role"),
+                "existing-truth-assertion-aspect",
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("aspect_touch"),
+                aspect.aspect_touch().admitted_touch_digest_part(),
+            )
+            .field_bool(
+                WorthQueryEvidenceTag::new("clears_existing_value"),
+                aspect.clears_existing_value(),
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("value"),
+                aspect.terminal_digest_material(),
+            )
+            .seal()?,
+    )
 }

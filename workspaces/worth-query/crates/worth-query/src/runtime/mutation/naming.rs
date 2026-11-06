@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -127,7 +128,7 @@ impl WorthQueryNamingMutationDenial {
         intent: &WorthQueryNamingMutationIntent,
         kind: WorthQueryNamingMutationDenialKind,
         reason: impl Into<String>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let reason = reason.into();
         let denial_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
@@ -142,16 +143,16 @@ impl WorthQueryNamingMutationDenial {
                 )
                 .field_shape(WorthQueryEvidenceTag::new("kind"), kind.as_str())
                 .field_value(WorthQueryEvidenceTag::new("reason"), &reason)
-                .seal()
+                .seal()?
                 .as_str()
                 .to_string();
-        Self {
+        Ok(Self {
             family: intent.family(),
             attachment_identity: intent.attachment_identity().clone(),
             kind,
             reason,
             denial_digest,
-        }
+        })
     }
 
     pub fn family(&self) -> WorthQueryNamingMutationFamily {

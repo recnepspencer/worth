@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -30,7 +31,7 @@ impl WorthQuerySharedReadPinningCertification {
         portability: WorthQuerySharedReadPortabilityEvidence,
         stale_basis_denial: WorthQuerySharedReadStaleBasisDenialEvidence,
         counters: WorthQuerySharedReadPinningCounterEvidence,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let closure_evidence = WorthQuerySharedReadPinningBoundaryEvidence::new(
             inventory.total_failure_count(),
             counters.residue_count(),
@@ -39,7 +40,7 @@ impl WorthQuerySharedReadPinningCertification {
             stale_basis_denial.proven_by_typed_denial(),
         );
         let closure =
-            WorthQuerySharedReadPinningBoundaryClosure::derive_from_evidence(&closure_evidence);
+            WorthQuerySharedReadPinningBoundaryClosure::derive_from_evidence(&closure_evidence)?;
         let failure_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::ApplicationSupportReport)
                 .field_usize(
@@ -62,7 +63,7 @@ impl WorthQuerySharedReadPinningCertification {
                     WorthQueryEvidenceTag::new("stale_basis_denial_proven"),
                     stale_basis_denial.proven_by_typed_denial(),
                 )
-                .seal()
+                .seal()?
                 .as_str()
                 .to_string();
         let artifact_digest = worth_query_evidence_identity(
@@ -96,10 +97,10 @@ impl WorthQuerySharedReadPinningCertification {
             WorthQueryEvidenceTag::new("failure_digest"),
             &failure_digest,
         )
-        .seal()
+        .seal()?
         .as_str()
         .to_string();
-        Self {
+        Ok(Self {
             inventory,
             hostile_matrix,
             portability,
@@ -108,11 +109,11 @@ impl WorthQuerySharedReadPinningCertification {
             closure,
             artifact_digest,
             failure_digest,
-        }
+        })
     }
 
-    pub fn support_gate_required() -> Self {
-        Self::from_evidence(
+    pub fn support_gate_required() -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::from_evidence(
             WorthQuerySharedReadPinningInventoryEvidence::new(
                 0,
                 0,
@@ -121,8 +122,8 @@ impl WorthQuerySharedReadPinningCertification {
             WorthQuerySharedReadPinningHostileMatrixEvidence::new(false, ""),
             WorthQuerySharedReadPortabilityEvidence::proven(""),
             WorthQuerySharedReadStaleBasisDenialEvidence::proven(""),
-            WorthQuerySharedReadPinningCounterEvidence::new(0, 0, 0, 0, 0),
-        )
+            WorthQuerySharedReadPinningCounterEvidence::new(0, 0, 0, 0, 0)?,
+        )?)
     }
 
     pub fn closure(&self) -> &WorthQuerySharedReadPinningBoundaryClosure {

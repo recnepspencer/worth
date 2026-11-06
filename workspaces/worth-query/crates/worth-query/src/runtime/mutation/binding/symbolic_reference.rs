@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -127,7 +128,7 @@ impl WorthQuerySymbolicTargetReferenceDenial {
         reference: &WorthQuerySymbolicTargetReference,
         kind: WorthQuerySymbolicTargetReferenceDenialKind,
         message: impl Into<String>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let message = message.into();
         let denial_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
@@ -151,15 +152,15 @@ impl WorthQuerySymbolicTargetReferenceDenial {
                 )
                 .field_shape(WorthQueryEvidenceTag::new("kind"), kind.as_str())
                 .field_value(WorthQueryEvidenceTag::new("message"), &message)
-                .seal()
+                .seal()?
                 .as_str()
                 .to_string();
-        Self {
+        Ok(Self {
             reference: reference.clone(),
             kind,
             message,
             denial_digest,
-        }
+        })
     }
 
     pub fn reference(&self) -> &WorthQuerySymbolicTargetReference {

@@ -4,6 +4,7 @@ use crate::binding_pipeline::{
     WorthQueryBindingRequestDescriptor, WorthQueryBindingWitnessCheck,
 };
 use crate::domain_installation::WorthQueryInstalledDomainExecutionDrift;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::support::transcript_digest;
 use crate::continuation_pipeline::transcript::{
@@ -17,13 +18,13 @@ pub(super) fn prepared_installed_authority_drift_transcript<D, I>(
     request: WorthQueryBindingRequestDescriptor,
     linked: WorthQueryBindingLinkedArtifacts,
     drift: WorthQueryInstalledDomainExecutionDrift,
-) -> WorthQueryPreparedContinuationTranscript<D, I>
+) -> Result<WorthQueryPreparedContinuationTranscript<D, I>, IdentityDerivationDenial>
 where
     I: WorthQueryDeclarationInput<D>,
     D: crate::application::WorthQueryDomainEntryMarker,
 {
     let reason = drift.to_string();
-    WorthQueryPreparedContinuationTranscript::new(
+    Ok(WorthQueryPreparedContinuationTranscript::new(
         request,
         WorthQueryPreparedContinuationOutcome::InstalledAuthorityDrift(drift),
         vec![WorthQueryBindingWitnessCheck::failed(
@@ -38,22 +39,22 @@ where
             I::Family::semantic_family_key(),
             &linked,
             "installed_authority_drift",
-        ),
+        )?,
         linked,
-    )
+    ))
 }
 
 pub(super) fn execution_installed_authority_drift_transcript<D, I>(
     request: WorthQueryBindingRequestDescriptor,
     linked: WorthQueryBindingLinkedArtifacts,
     drift: WorthQueryInstalledDomainExecutionDrift,
-) -> WorthQueryContinuationExecutionTranscript<D, I>
+) -> Result<WorthQueryContinuationExecutionTranscript<D, I>, IdentityDerivationDenial>
 where
     I: WorthQueryDeclarationInput<D>,
     D: crate::application::WorthQueryDomainEntryMarker,
 {
     let reason = drift.to_string();
-    WorthQueryContinuationExecutionTranscript::new(
+    Ok(WorthQueryContinuationExecutionTranscript::new(
         request,
         WorthQueryContinuationExecutionOutcome::InstalledAuthorityDrift(drift),
         vec![WorthQueryBindingWitnessCheck::failed(
@@ -65,7 +66,7 @@ where
             I::Family::semantic_family_key(),
             &linked,
             "installed_authority_drift",
-        ),
+        )?,
         linked,
-    )
+    ))
 }

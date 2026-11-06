@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryBatchMutationEvidence {
@@ -51,9 +52,9 @@ impl WorthQueryBatchMutationEvidence {
         causality_evidence: &[Option<crate::runtime::WorthQueryMutationCausalityEvidence>],
         provenance_evidence: &[Option<crate::runtime::WorthQueryMutationProvenanceEvidence>],
         aggregate_bridge: Option<&BridgeBatchMutationAuthorityBundle>,
-    ) -> Option<Self> {
+    ) -> Result<Option<Self>, IdentityDerivationDenial> {
         if components.is_empty() {
-            return None;
+            return Ok(None);
         }
         let (
             retained_authoritative_assertion_count,
@@ -81,7 +82,7 @@ impl WorthQueryBatchMutationEvidence {
             })
             .count();
 
-        Some(Self {
+        Ok(Some(Self {
             component_count: components.len(),
             target_evidence_count: components.len(),
             existing_truth_assertion_count: existing_truth_assertions
@@ -125,11 +126,11 @@ impl WorthQueryBatchMutationEvidence {
             target_entity_count,
             aggregate_existing_truth_assertion_digest: batch_existing_truth_assertion_digest(
                 existing_truth_assertions,
-            ),
+            )?,
             aggregate_existing_truth_mode_digest,
             aggregate_existing_truth_binding_digest: batch_existing_truth_binding_digest(
                 existing_truth_bindings,
-            ),
+            )?,
             aggregate_symbolic_target_reference_digest: batch_symbolic_target_reference_digest(
                 symbolic_target_references,
             ),
@@ -137,10 +138,10 @@ impl WorthQueryBatchMutationEvidence {
                 symbolic_target_references,
                 symbolic_aspect_resolutions,
             ),
-            aggregate_naming_mutation_digest: batch_naming_mutation_digest(naming_mutations),
+            aggregate_naming_mutation_digest: batch_naming_mutation_digest(naming_mutations)?,
             aggregate_continuity_mutation_digest: batch_continuity_mutation_digest(
                 continuity_mutations,
-            ),
+            )?,
             causality_bundle_count: aggregate_bridge
                 .map_or(0, |bundle| bundle.causality_bundle_count()),
             provenance_bundle_count: aggregate_bridge
@@ -150,7 +151,7 @@ impl WorthQueryBatchMutationEvidence {
                 .map_or(0, |bundle| bundle.authority_request_count()),
             authority_receipt_count: aggregate_bridge
                 .map_or(0, |bundle| bundle.authority_receipt_count()),
-            aggregate_target_digest: batch_target_digest(components),
+            aggregate_target_digest: batch_target_digest(components)?,
             aggregate_causality_digest: causality_evidence
                 .iter()
                 .find_map(Option::as_ref)
@@ -159,7 +160,7 @@ impl WorthQueryBatchMutationEvidence {
                 .iter()
                 .find_map(Option::as_ref)
                 .map(|evidence| evidence.execution_record_digest().clone()),
-        })
+        }))
     }
 
     pub fn component_count(&self) -> usize {

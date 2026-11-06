@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -172,8 +173,11 @@ impl WorthQueryGraphCompositionProgram {
         }
     }
 
-    pub(crate) fn empty() -> Self {
-        Self::new(Vec::new(), &WorthQueryGraphCompositionBreadth::empty())
+    pub(crate) fn empty() -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
+            Vec::new(),
+            &WorthQueryGraphCompositionBreadth::empty()?,
+        ))
     }
 
     pub fn is_empty(&self) -> bool {

@@ -3,6 +3,7 @@ use super::batch_write_digest::{
 };
 use super::WorthQueryBatchWriteComponentInspection;
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQueryCommitIdentity;
 use crate::runtime::{
     WorthQueryAspectTouch, WorthQueryAuthorityLane, WorthQueryBatchMutationEvidence,
@@ -34,7 +35,9 @@ pub struct WorthQueryBatchWriteReceiptInspection {
 }
 
 impl WorthQueryBatchWriteReceiptInspection {
-    pub(in crate::runtime) fn new(receipt: &WorthQueryBatchWriteReceipt) -> Self {
+    pub(in crate::runtime) fn new(
+        receipt: &WorthQueryBatchWriteReceipt,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let commit_identities = receipt
             .write_receipts()
             .iter()
@@ -75,8 +78,8 @@ impl WorthQueryBatchWriteReceiptInspection {
                 touched_aspects: &touched_aspects,
                 affected_live_view_ids: &affected_live_view_ids,
                 affected_derived_view_ids: &affected_derived_view_ids,
-            });
-        Self {
+            })?;
+        Ok(Self {
             authority_lane: receipt.authority_lane(),
             basis_lane: receipt.basis_lane(),
             batch_digest: receipt.batch_identity().clone(),
@@ -94,7 +97,7 @@ impl WorthQueryBatchWriteReceiptInspection {
             affected_live_view_ids,
             affected_derived_view_ids,
             inspection_identity,
-        }
+        })
     }
 
     pub fn authority_lane(&self) -> WorthQueryAuthorityLane {

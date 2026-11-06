@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::{WorthQueryMutationReceipt, WorthQueryWorkspaceError};
 use crate::program::WorthQueryDerivedView;
 use crate::session_label::WorthQuerySessionLabel;
@@ -68,13 +69,13 @@ pub trait WorthQueryRuntimeSubscriptionActivationAdapter {
         &self,
         view_name: &str,
         activation: &SubscriptionActivationInput,
-    ) -> SubscriptionActivationReceipt {
-        SubscriptionActivationReceipt::from_activation(
+    ) -> Result<SubscriptionActivationReceipt, IdentityDerivationDenial> {
+        Ok(SubscriptionActivationReceipt::from_activation(
             view_name,
             activation,
             self.support_evidence_identity(),
             self.remask_projection(view_name, activation),
-        )
+        )?)
     }
 
     fn build_subscription_activation_boundary_receipt(

@@ -139,7 +139,7 @@ impl WorthQueryBatchWriteReceipt {
                     )
                     .iter(),
                 )
-                .seal();
+                .seal()?;
 
         let target_evidence = write_receipts
             .iter()
@@ -194,7 +194,7 @@ impl WorthQueryBatchWriteReceipt {
             &causality_evidence,
             &provenance_evidence,
             aggregate_bridge.as_ref(),
-        )
+        )?
         .expect("non-empty mutation batch must produce batch evidence");
         let graph_composition_resolution_map =
             WorthQueryGraphCompositionResolutionMap::from_write_receipts(&write_receipts);
@@ -263,8 +263,8 @@ impl WorthQueryBatchWriteReceipt {
             write_receipts,
             authority_lane,
             basis_lane,
-            WorthQueryGraphCompositionBreadth::empty(),
-            WorthQueryGraphCompositionProgram::empty(),
+            WorthQueryGraphCompositionBreadth::empty()?,
+            WorthQueryGraphCompositionProgram::empty()?,
             aggregates.touched_aspects,
             aggregates.affected_live_view_targets,
             aggregates.affected_derived_view_targets,

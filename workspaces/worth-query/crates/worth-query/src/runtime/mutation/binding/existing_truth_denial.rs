@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 #[cfg(test)]
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
@@ -43,7 +44,7 @@ impl WorthQueryExistingTruthBindingDenial {
         binding: &WorthQueryExistingTruthTargetBinding,
         kind: WorthQueryExistingTruthBindingDenialKind,
         message: impl Into<String>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let message = message.into();
         let denial_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
@@ -71,15 +72,15 @@ impl WorthQueryExistingTruthBindingDenial {
                 )
                 .field_shape(WorthQueryEvidenceTag::new("kind"), kind.as_str())
                 .field_value(WorthQueryEvidenceTag::new("message"), &message)
-                .seal()
+                .seal()?
                 .as_str()
                 .to_string();
-        Self {
+        Ok(Self {
             binding: binding.clone(),
             kind,
             message,
             denial_digest,
-        }
+        })
     }
 
     pub fn binding(&self) -> &WorthQueryExistingTruthTargetBinding {

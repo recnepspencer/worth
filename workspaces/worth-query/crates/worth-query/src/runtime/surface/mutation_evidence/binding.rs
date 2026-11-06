@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -35,7 +36,9 @@ pub struct WorthQueryExistingTruthBindingEvidence {
 }
 
 impl WorthQueryExistingTruthBindingEvidence {
-    pub(in crate::runtime) fn from_bridge(binding: &BridgeExistingTruthBindingBundle) -> Self {
+    pub(in crate::runtime) fn from_bridge(
+        binding: &BridgeExistingTruthBindingBundle,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let family = match binding.family() {
             BridgeExistingTruthBindingFamily::DirectEntityIdentity => {
                 crate::runtime::WorthQueryExistingTruthBindingFamily::DirectEntityIdentity
@@ -81,8 +84,8 @@ impl WorthQueryExistingTruthBindingEvidence {
                         .as_ref()
                         .map(WorthQueryMutationTargetCollectionIdentity::evidence_identity),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             family,
             outcome,
             authoritative_identity,
@@ -92,7 +95,7 @@ impl WorthQueryExistingTruthBindingEvidence {
                 "existing-truth-binding",
                 binding_identity,
             ),
-        }
+        })
     }
 
     pub(in crate::runtime) fn from_binding(

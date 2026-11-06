@@ -4,6 +4,7 @@ use crate::application::{
     WorthQueryDomainOperatingContext, WorthQueryInstalledDomainDeclarationContext,
 };
 use crate::basis_lifecycle::LowerRuntimeEvidenceAuthority;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -79,47 +80,49 @@ pub(crate) fn current_readmission_evidence_from_handle<
 >(
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     prepared: &WorthQueryPreparedContinuation<D, I>,
-) -> WorthQueryPreparedContinuationCurrentReadmissionEvidence {
+) -> Result<WorthQueryPreparedContinuationCurrentReadmissionEvidence, IdentityDerivationDenial> {
     let retained = prepared.execution_readmission();
     let observation = handle
         .operating_context()
         .continuation_execution_readmission_observation(retained, handle.support_snapshot());
-    WorthQueryPreparedContinuationCurrentReadmissionEvidence::new(
-        observation.authority(),
-        observation.basis_identity().clone(),
-        observation.lower_runtime_binding_identity().cloned(),
-        observation.freshness_posture(),
-        observation.drift_kind(),
-        worth_query_evidence_identity(
-            WorthQueryEvidenceScope::ContinuationExecutionReadmissionEvidence,
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("handle"),
-            handle.handle_identity_digest(),
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("support_snapshot"),
-            handle.support_snapshot().snapshot_digest(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("basis"),
-            observation.basis_identity(),
-        )
-        .optional_evidence_identity(
-            WorthQueryEvidenceTag::new("lower_runtime_binding"),
-            observation.lower_runtime_binding_identity(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("freshness"),
-            observation.freshness_posture().as_str(),
-        )
-        .optional_shape(
-            WorthQueryEvidenceTag::new("drift"),
-            observation.drift_kind().map(|kind| kind.as_str()),
-        )
-        .seal()
-        .as_str()
-        .to_string(),
+    Ok(
+        WorthQueryPreparedContinuationCurrentReadmissionEvidence::new(
+            observation.authority(),
+            observation.basis_identity().clone(),
+            observation.lower_runtime_binding_identity().cloned(),
+            observation.freshness_posture(),
+            observation.drift_kind(),
+            worth_query_evidence_identity(
+                WorthQueryEvidenceScope::ContinuationExecutionReadmissionEvidence,
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("handle"),
+                handle.handle_identity_digest(),
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("support_snapshot"),
+                handle.support_snapshot().snapshot_digest(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("basis"),
+                observation.basis_identity(),
+            )
+            .optional_evidence_identity(
+                WorthQueryEvidenceTag::new("lower_runtime_binding"),
+                observation.lower_runtime_binding_identity(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("freshness"),
+                observation.freshness_posture().as_str(),
+            )
+            .optional_shape(
+                WorthQueryEvidenceTag::new("drift"),
+                observation.drift_kind().map(|kind| kind.as_str()),
+            )
+            .seal()?
+            .as_str()
+            .to_string(),
+        ),
     )
 }
 

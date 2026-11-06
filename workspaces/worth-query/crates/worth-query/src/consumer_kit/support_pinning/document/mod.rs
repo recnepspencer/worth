@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod integrity;
 mod row_documents;
 pub(crate) mod schema;
@@ -80,7 +81,9 @@ pub(crate) struct WorthQuerySupportPinContractDocument {
 }
 
 impl WorthQuerySupportPinContractDocument {
-    pub(crate) fn from_contract(contract: &WorthQuerySupportPinContract) -> Self {
+    pub(crate) fn from_contract(
+        contract: &WorthQuerySupportPinContract,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let mut document = Self {
             schema_version: contract.contract_schema_version().major(),
             schema_identity: contract.contract_schema_identity().to_string(),
@@ -104,10 +107,10 @@ impl WorthQuerySupportPinContractDocument {
                 .collect(),
         };
         document.document_digest =
-            derive_support_pin_contract_document_identity(&document.contract_digest)
+            derive_support_pin_contract_document_identity(&document.contract_digest)?
                 .terminal_projection_for_reporting()
                 .to_string();
-        document
+        Ok(document)
     }
 
     pub fn from_terminal_json_document(

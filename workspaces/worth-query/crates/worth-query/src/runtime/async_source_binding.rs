@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::sync::Arc;
 
 use worth_runtime_bridge::facade::{
@@ -15,6 +16,7 @@ use super::WorthQueryRuntimeAsyncResultState;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryAsyncSourceBindingErrorKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     MissingLiveSubscription,
     MissingBinding,
     ForeignBridgeRuntime,
@@ -333,4 +335,13 @@ fn binding_error(
             transition.request_identity(),
         ),
     )
+}
+
+impl From<IdentityDerivationDenial> for WorthQueryAsyncSourceBindingError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::new(
+            WorthQueryAsyncSourceBindingErrorKind::EvidenceIdentityDerivationDenied(cause),
+            "evidence identity derivation refused",
+        )
+    }
 }

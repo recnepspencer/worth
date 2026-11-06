@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -95,7 +96,7 @@ impl WorthQueryContinuationExecutionReadmissionStop {
     pub(crate) fn new(
         kind: WorthQueryContinuationExecutionReadmissionStopKind,
         reason: impl Into<String>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let next_action = next_action_for(kind);
         let counters =
             WorthQueryContinuationExecutionReadmissionCounters::denied_before_later_work();
@@ -121,14 +122,14 @@ impl WorthQueryContinuationExecutionReadmissionStop {
             WorthQueryEvidenceTag::new("execution_attempts"),
             counters.execution_attempts().to_string(),
         )
-        .seal();
-        Self {
+        .seal()?;
+        Ok(Self {
             kind,
             next_action,
             counters,
             reason,
             stop_identity,
-        }
+        })
     }
 
     pub const fn kind(&self) -> WorthQueryContinuationExecutionReadmissionStopKind {

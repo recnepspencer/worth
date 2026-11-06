@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::BTreeMap;
 
 use crate::runtime::{
@@ -31,7 +32,7 @@ fn row_from_command(
     component_index: usize,
     command: &WorthQueryWriteCommand,
     step: Option<&WorthQueryGraphCompositionProgramStep>,
-) -> WorthQueryGraphTouchDescriptorRow {
+) -> Result<WorthQueryGraphTouchDescriptorRow, IdentityDerivationDenial> {
     let program_step_kind = step.map(WorthQueryGraphCompositionProgramStep::kind);
     let lifecycle_family =
         program_step_kind.map(WorthQueryGraphTouchLifecycleFamily::from_program_step_kind);
@@ -40,21 +41,25 @@ fn row_from_command(
         .or_else(|| step.and_then(|step| step.declared_collection_identity().cloned()));
     let relation_kind_id = step.and_then(WorthQueryGraphCompositionProgramStep::relation_kind_id);
     let declared_symbol = step.and_then(|step| step.declared_symbol().map(str::to_string));
-    WorthQueryGraphTouchDescriptorRow::new(WorthQueryGraphTouchDescriptorRowInput {
-        component_index,
-        mutation_family: command.mutation_family(),
-        read_verb: None,
-        program_step_kind,
-        lifecycle_family,
-        declared_collection,
-        relation_kind_id,
-        declared_symbol,
-        declared_aspect_operations: declared_aspect_operations(command),
-        touched_aspects: sorted_unique_touches(command.admitted_touched_aspects().iter().cloned()),
-        has_symbolic_target_reference: command.symbolic_target_reference().is_some(),
-        has_existing_truth_binding: command.existing_truth_binding().is_some(),
-        symbolic_aspect_reference_count: command.symbolic_aspect_references().len(),
-    })
+    Ok(WorthQueryGraphTouchDescriptorRow::new(
+        WorthQueryGraphTouchDescriptorRowInput {
+            component_index,
+            mutation_family: command.mutation_family(),
+            read_verb: None,
+            program_step_kind,
+            lifecycle_family,
+            declared_collection,
+            relation_kind_id,
+            declared_symbol,
+            declared_aspect_operations: declared_aspect_operations(command),
+            touched_aspects: sorted_unique_touches(
+                command.admitted_touched_aspects().iter().cloned(),
+            ),
+            has_symbolic_target_reference: command.symbolic_target_reference().is_some(),
+            has_existing_truth_binding: command.existing_truth_binding().is_some(),
+            symbolic_aspect_reference_count: command.symbolic_aspect_references().len(),
+        },
+    )?)
 }
 
 fn declared_aspect_operations(

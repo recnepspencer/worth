@@ -1,4 +1,5 @@
 use crate::declarative_live::{DeclarativeLiveQueryRequest, DeclarativeLiveViewShape};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -28,7 +29,7 @@ impl LiveViewDeclarationAdmissionReceipt {
     pub(crate) fn from_request(
         view_name: impl Into<String>,
         request: &DeclarativeLiveQueryRequest,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let view_name = view_name.into();
         let target_collection = request.target_collection_identity();
         let view_shape = request.view_shape().clone();
@@ -67,9 +68,9 @@ impl LiveViewDeclarationAdmissionReceipt {
             traversal_count,
         )
         .field_usize(WorthQueryEvidenceTag::new("ordering_count"), ordering_count)
-        .seal();
+        .seal()?;
 
-        Self {
+        Ok(Self {
             view_name,
             target_collection,
             view_shape,
@@ -79,7 +80,7 @@ impl LiveViewDeclarationAdmissionReceipt {
             traversal_count,
             ordering_count,
             receipt_identity,
-        }
+        })
     }
 
     pub fn view_name(&self) -> &str {
@@ -182,7 +183,7 @@ impl SubscriptionActivationReceipt {
         activation: &SubscriptionActivationInput,
         support_evidence_identity: WorthQueryEvidenceIdentity,
         remask_projection: Option<WorthQueryRuntimeRemaskProjection>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let view_name = view_name.into();
         let activation_identity = activation.evidence_identity().clone();
         let query_declaration_identity = activation.query_declaration_identity().clone();
@@ -190,7 +191,7 @@ impl SubscriptionActivationReceipt {
         let basis_binding_identity = activation.basis_binding_identity().clone();
         let signal_strategy_identity = activation.signal_strategy_identity().clone();
         let support_identity =
-            subscription_activation_receipt_source_identity("support", &support_evidence_identity);
+            subscription_activation_receipt_source_identity("support", &support_evidence_identity)?;
         let remask_posture = remask_projection.map(|projection| {
             WorthQueryRuntimeRemaskPosture::from_activation_projection(
                 &projection,
@@ -233,9 +234,9 @@ impl SubscriptionActivationReceipt {
                 .as_ref()
                 .map(WorthQueryRuntimeRemaskPosture::remask_identity),
         )
-        .seal();
+        .seal()?;
 
-        Self {
+        Ok(Self {
             view_name,
             activation_identity,
             query_declaration_identity,
@@ -245,7 +246,7 @@ impl SubscriptionActivationReceipt {
             support_identity,
             remask_posture,
             receipt_identity,
-        }
+        })
     }
 
     pub fn view_name(&self) -> &str {
@@ -363,15 +364,17 @@ fn typed_identity_drift(
 fn subscription_activation_receipt_source_identity(
     role: &str,
     source_identity: &WorthQueryEvidenceIdentity,
-) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            "subscription_activation_receipt_source_v1",
-        )
-        .field_shape(WorthQueryEvidenceTag::new("role"), role)
-        .field_evidence_identity(WorthQueryEvidenceTag::new("source"), source_identity)
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                "subscription_activation_receipt_source_v1",
+            )
+            .field_shape(WorthQueryEvidenceTag::new("role"), role)
+            .field_evidence_identity(WorthQueryEvidenceTag::new("source"), source_identity)
+            .seal()?,
+    )
 }
 
 #[cfg(test)]

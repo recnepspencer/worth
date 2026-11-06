@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::WorthQueryRuntimePublicSupportMatrixRow;
 
 use super::error::{WorthQuerySupportSnapshotError, WorthQuerySupportSnapshotErrorKind};
@@ -27,7 +28,7 @@ impl WorthQuerySupportSnapshotRow {
     pub(crate) fn from_runtime_row(
         schema_version: WorthQuerySupportSnapshotSchemaVersion,
         row: &WorthQueryRuntimePublicSupportMatrixRow,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let mut snapshot_row = Self {
             surface: row.surface().to_string(),
             facade_family: row
@@ -47,10 +48,10 @@ impl WorthQuerySupportSnapshotRow {
             snapshot_row_digest: String::new(),
         };
         snapshot_row.snapshot_row_digest =
-            support_snapshot_row_identity(schema_version, &snapshot_row)
+            support_snapshot_row_identity(schema_version, &snapshot_row)?
                 .terminal_projection_for_reporting()
                 .to_string();
-        snapshot_row
+        Ok(snapshot_row)
     }
 
     pub fn surface(&self) -> &str {

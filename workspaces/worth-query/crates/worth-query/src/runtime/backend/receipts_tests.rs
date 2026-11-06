@@ -1,5 +1,6 @@
 use super::*;
 use crate::declarative_live::{DeclarativeLiveQueryRequest, DeclarativeLiveViewShape};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::{
     WorthQueryMutationDelta, WorthQueryMutationKind, WorthQueryMutationReceipt,
 };
@@ -17,15 +18,17 @@ use worth_foundational::facade::{
 use worth_runtime_bridge::facade::RelationalBridgeSnapshotIdentityParts;
 
 #[test]
-fn live_view_declaration_receipt_captures_request_shape() {
+fn live_view_declaration_receipt_captures_request_shape() -> Result<(), IdentityDerivationDenial> {
     let request = DeclarativeLiveQueryRequest::new("Task", DeclarativeLiveViewShape::table());
-    let receipt = LiveViewDeclarationAdmissionReceipt::from_request("tasks.table", &request);
+    let receipt = LiveViewDeclarationAdmissionReceipt::from_request("tasks.table", &request)?;
 
     assert_eq!(receipt.view_name(), "tasks.table");
     assert_eq!(receipt.target_collection_for_reporting(), "Task");
     assert_eq!(receipt.view_shape(), &DeclarativeLiveViewShape::table());
     assert_eq!(receipt.view_shape_for_reporting(), "table");
     assert!(!receipt.receipt_for_reporting().is_empty());
+
+    Ok(())
 }
 
 #[test]

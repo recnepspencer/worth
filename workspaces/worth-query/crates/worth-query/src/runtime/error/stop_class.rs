@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryRuntimeMissingComponent {
@@ -41,6 +42,7 @@ pub enum WorthQueryRuntimeDeclarationFailureKind {
 
 #[derive(Clone, Copy, Debug)]
 pub enum WorthQueryStopClass<'a> {
+    EvidenceIdentityDerivationDenied { denial: &'a IdentityDerivationDenial },
     Advancement { denial: &'a worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial },
     ForeignPhase { denial: &'a worth_query_execution::facade::application_contribution::WorthQueryForeignAdvancementPhase },
     InstalledDomainAuthorityDenied {

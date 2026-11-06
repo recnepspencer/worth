@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -25,8 +26,8 @@ impl WorthQueryWriteReceipt {
         sequence: usize,
         command: &WorthQueryWriteCommand,
         snapshot_identity: WorthQuerySnapshotIdentity,
-    ) -> Self {
-        let preview_identity = preview_write_receipt_identity(label, sequence);
+    ) -> Result<Self, IdentityDerivationDenial> {
+        let preview_identity = preview_write_receipt_identity(label, sequence)?;
         let commit_identity = WorthQueryCommitIdentity::preview(preview_identity.clone());
         let commit_evidence_identity =
             super::write_receipt_commit_evidence_identity(&commit_identity);
@@ -34,14 +35,14 @@ impl WorthQueryWriteReceipt {
             WorthQueryJournalPosition::preview(preview_identity.clone(), sequence as u64);
         let snapshot_evidence_identity =
             super::write_receipt_snapshot_evidence_identity(&snapshot_identity);
-        let delta = preview_receipt_delta(command, &preview_identity);
+        let delta = preview_receipt_delta(command, &preview_identity)?;
         let inner = crate::memory_workspace::WorthQueryMutationReceipt {
             commit_identity,
             snapshot_identity,
             deltas: vec![delta.clone()],
             bridge_authority: None,
         };
-        let committed_truth_identity = super::write_receipt_committed_truth_identity(&inner);
+        let committed_truth_identity = super::write_receipt_committed_truth_identity(&inner)?;
         let target_entity_identity = preview_target_entity_identity(command, &delta);
         let declared_collection_identity = command.declared_collection_identity();
         let target_collection_identity = declared_collection_identity.as_ref().map(|collection| {
@@ -67,7 +68,7 @@ impl WorthQueryWriteReceipt {
                 .or(Some(&delta.entity_identity)),
             target_collection_identity.as_ref(),
         );
-        Self {
+        Ok(Self {
             inner,
             commit_evidence_identity,
             committed_truth_identity,
@@ -119,14 +120,14 @@ impl WorthQueryWriteReceipt {
             refresh_fallback: false,
             decision_trace_envelope: None,
             execution_provenance: None,
-        }
+        })
     }
 }
 
 pub(super) fn preview_receipt_delta(
     command: &WorthQueryWriteCommand,
     preview_identity: &WorthQueryEvidenceIdentity,
-) -> crate::memory_workspace::WorthQueryMutationDelta {
+) -> Result<crate::memory_workspace::WorthQueryMutationDelta, IdentityDerivationDenial> {
     match command {
         WorthQueryWriteCommand::InsertAspects { collection, .. } => {
             crate::memory_workspace::WorthQueryMutationDelta::from_touched_aspects(
@@ -208,7 +209,7 @@ pub(super) fn preview_receipt_delta(
                     .target_collection()
                     .map(str::to_string)
                     .unwrap_or_else(|| "preview".to_string()),
-                preview_symbolic_entity_identity(reference),
+                preview_symbolic_entity_identity(reference)?,
                 crate::memory_workspace::WorthQueryMutationKind::Updated,
                 command.declared_aspect_touches(),
             )
@@ -249,7 +250,7 @@ pub(super) fn preview_receipt_delta(
                 .target_collection()
                 .map(str::to_string)
                 .unwrap_or_else(|| "preview".to_string()),
-            preview_symbolic_entity_identity(reference),
+            preview_symbolic_entity_identity(reference)?,
             crate::memory_workspace::WorthQueryMutationKind::Deleted,
             touched_aspects.to_vec(),
         ),
@@ -262,19 +263,23 @@ pub(super) fn preview_receipt_delta(
             )
         }
     }
+
+    Ok(())
 }
 
 fn preview_write_receipt_identity(
     label: &WorthQuerySessionLabel,
     sequence: usize,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::PreviewWriteReceiptIdentity)
-        .field_value(
-            WorthQueryEvidenceTag::new("session_label_identity"),
-            label.identity_digest().as_str(),
-        )
-        .field_usize(WorthQueryEvidenceTag::new("sequence"), sequence)
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::PreviewWriteReceiptIdentity)
+            .field_value(
+                WorthQueryEvidenceTag::new("session_label_identity"),
+                label.identity_digest().as_str(),
+            )
+            .field_usize(WorthQueryEvidenceTag::new("sequence"), sequence)
+            .seal()?,
+    )
 }
 
 fn preview_target_entity_identity(
@@ -289,8 +294,8 @@ fn preview_target_entity_identity(
 
 fn preview_symbolic_entity_identity(
     reference: &crate::runtime::WorthQuerySymbolicTargetReference,
-) -> WorthQueryEntityIdentity {
-    WorthQueryEntityIdentity::preview(
+) -> Result<WorthQueryEntityIdentity, IdentityDerivationDenial> {
+    Ok(WorthQueryEntityIdentity::preview(
         worth_query_evidence_identity(WorthQueryEvidenceScope::PreviewWriteReceiptIdentity)
             .field_value(WorthQueryEvidenceTag::new("symbol"), reference.symbol())
             .optional_evidence_identity(
@@ -299,6 +304,6 @@ fn preview_symbolic_entity_identity(
                     .target_collection_identity()
                     .map(|collection| collection.evidence_identity()),
             )
-            .seal(),
-    )
+            .seal()?,
+    ))
 }

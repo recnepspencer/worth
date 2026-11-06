@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod resolved;
 
 use crate::evidence_identity::{
@@ -130,29 +131,31 @@ impl ResolvedSnapshotIdentity {
         &self.lineage_class
     }
 
-    fn evidence_identity(&self) -> WorthQueryEvidenceIdentity {
-        worth_query_evidence_identity(WorthQueryEvidenceScope::ResolvedSnapshotBasis)
-            .field_shape(
-                WorthQueryEvidenceTag::new("authority_family"),
-                self.authority_family.as_str(),
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("snapshot_identity"),
-                &self.snapshot_identity,
-            )
-            .field_digest(
-                WorthQueryEvidenceTag::new("schema_basis"),
-                self.schema_basis().digest(),
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("lineage_class"),
-                self.lineage_class.as_str(),
-            )
-            .optional_value(
-                WorthQueryEvidenceTag::new("workspace_scope"),
-                self.workspace_scope.as_deref(),
-            )
-            .seal()
+    fn evidence_identity(&self) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(
+            worth_query_evidence_identity(WorthQueryEvidenceScope::ResolvedSnapshotBasis)
+                .field_shape(
+                    WorthQueryEvidenceTag::new("authority_family"),
+                    self.authority_family.as_str(),
+                )
+                .field_evidence_identity(
+                    WorthQueryEvidenceTag::new("snapshot_identity"),
+                    &self.snapshot_identity,
+                )
+                .field_digest(
+                    WorthQueryEvidenceTag::new("schema_basis"),
+                    self.schema_basis().digest(),
+                )
+                .field_shape(
+                    WorthQueryEvidenceTag::new("lineage_class"),
+                    self.lineage_class.as_str(),
+                )
+                .optional_value(
+                    WorthQueryEvidenceTag::new("workspace_scope"),
+                    self.workspace_scope.as_deref(),
+                )
+                .seal()?,
+        )
     }
 }
 

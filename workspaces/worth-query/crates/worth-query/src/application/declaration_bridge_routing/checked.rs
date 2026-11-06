@@ -5,6 +5,7 @@ use crate::application::{
     WorthQueryDeclarationFamilyMarker, WorthQueryDeclarationInput, WorthQueryDomainEntryMarker,
     WorthQueryLowerAuthorityRouteFamily,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::{
     artifact::{WorthQueryDeclarationBridgeRouting, WorthQueryDeclarationBridgeRoutingClass},
@@ -71,12 +72,12 @@ pub(crate) fn worth_query_checked_declaration_bridge_routing<
     I: WorthQueryDeclarationInput<D>,
 >(
     input: WorthQueryDeclarationBridgeRoutingInput<D, I>,
-) -> WorthQueryDeclarationBridgeRoutingChecked<D, I> {
+) -> Result<WorthQueryDeclarationBridgeRoutingChecked<D, I>, IdentityDerivationDenial> {
     match input {
         WorthQueryDeclarationBridgeRoutingInput::EnvelopeChecked(checked) => {
-            worth_query_checked_declaration_bridge_routing(lower_checked_input(checked))
+            worth_query_checked_declaration_bridge_routing(lower_checked_input(checked))?
         }
-        WorthQueryDeclarationBridgeRoutingInput::Enveloped(envelope) => route_enveloped(envelope),
+        WorthQueryDeclarationBridgeRoutingInput::Enveloped(envelope) => route_enveloped(envelope)?,
         WorthQueryDeclarationBridgeRoutingInput::Deferred(envelope) => {
             let reason = envelope.reason();
             WorthQueryDeclarationBridgeRoutingChecked::Deferred(
@@ -106,6 +107,8 @@ pub(crate) fn worth_query_checked_declaration_bridge_routing<
             )
         }
     }
+
+    Ok(())
 }
 
 pub(crate) fn worth_query_checked_declaration_bridge_routing_on_handle<
@@ -116,7 +119,7 @@ pub(crate) fn worth_query_checked_declaration_bridge_routing_on_handle<
     operating_context_identity_digest: &str,
     support_status: WorthQueryDeclarationBridgeRoutingSupportStatus,
     input: WorthQueryDeclarationBridgeRoutingInput<D, I>,
-) -> WorthQueryDeclarationBridgeRoutingChecked<D, I> {
+) -> Result<WorthQueryDeclarationBridgeRoutingChecked<D, I>, IdentityDerivationDenial> {
     match input {
         WorthQueryDeclarationBridgeRoutingInput::EnvelopeChecked(checked) => {
             worth_query_checked_declaration_bridge_routing_on_handle(
@@ -124,7 +127,7 @@ pub(crate) fn worth_query_checked_declaration_bridge_routing_on_handle<
                 operating_context_identity_digest,
                 support_status,
                 lower_checked_input(checked),
-            )
+            )?
         }
         WorthQueryDeclarationBridgeRoutingInput::Enveloped(envelope) => {
             if !envelope_matches_handle(
@@ -132,7 +135,7 @@ pub(crate) fn worth_query_checked_declaration_bridge_routing_on_handle<
                 operating_context_identity_digest,
                 &envelope,
             ) {
-                return WorthQueryDeclarationBridgeRoutingChecked::Denied(
+                return Ok(WorthQueryDeclarationBridgeRoutingChecked::Denied(
                     WorthQueryDeclarationBridgeRoutingDenied::new(
                         envelope,
                         I::Family::bridge_continuation_contract()
@@ -140,10 +143,10 @@ pub(crate) fn worth_query_checked_declaration_bridge_routing_on_handle<
                         I::Family::bridge_continuation_contract().map(|contract| contract.family()),
                         WorthQueryDeclarationBridgeRoutingDenialCause::BridgeEnvelopeMismatch,
                     ),
-                );
+                ));
             }
             if support_status != WorthQueryDeclarationBridgeRoutingSupportStatus::Admitted {
-                return WorthQueryDeclarationBridgeRoutingChecked::Denied(
+                return Ok(WorthQueryDeclarationBridgeRoutingChecked::Denied(
                     WorthQueryDeclarationBridgeRoutingDenied::new(
                         envelope,
                         I::Family::bridge_continuation_contract()
@@ -151,9 +154,9 @@ pub(crate) fn worth_query_checked_declaration_bridge_routing_on_handle<
                         I::Family::bridge_continuation_contract().map(|contract| contract.family()),
                         WorthQueryDeclarationBridgeRoutingDenialCause::BridgeAuthorityUnavailable,
                     ),
-                );
+                ));
             }
-            route_enveloped(envelope)
+            route_enveloped(envelope)?
         }
         other => {
             if !subject_matches_handle(
@@ -161,84 +164,86 @@ pub(crate) fn worth_query_checked_declaration_bridge_routing_on_handle<
                 operating_context_identity_digest,
                 &other,
             ) {
-                return deny_non_success_mismatch(other);
+                return Ok(deny_non_success_mismatch(other));
             }
-            worth_query_checked_declaration_bridge_routing(other)
+            worth_query_checked_declaration_bridge_routing(other)?
         }
     }
+
+    Ok(())
 }
 
 fn route_enveloped<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>(
     envelope: WorthQueryDeclarationEnvelope<D, I>,
-) -> WorthQueryDeclarationBridgeRoutingChecked<D, I> {
+) -> Result<WorthQueryDeclarationBridgeRoutingChecked<D, I>, IdentityDerivationDenial> {
     let Some(contract) = I::Family::bridge_continuation_contract() else {
-        return WorthQueryDeclarationBridgeRoutingChecked::Denied(
+        return Ok(WorthQueryDeclarationBridgeRoutingChecked::Denied(
             WorthQueryDeclarationBridgeRoutingDenied::new(
                 envelope,
                 None,
                 None,
                 WorthQueryDeclarationBridgeRoutingDenialCause::UnsupportedContinuationMode,
             ),
-        );
+        ));
     };
     let denied_request = Some(contract.request());
     let denied_family = Some(contract.family());
     let Some(route_plan) = envelope.route_plan() else {
-        return WorthQueryDeclarationBridgeRoutingChecked::Denied(
+        return Ok(WorthQueryDeclarationBridgeRoutingChecked::Denied(
             WorthQueryDeclarationBridgeRoutingDenied::new(
                 envelope,
                 denied_request,
                 denied_family,
                 WorthQueryDeclarationBridgeRoutingDenialCause::BridgeEnvelopeMismatch,
             ),
-        );
+        ));
     };
     if !route_plan
         .route_families()
         .contains(&WorthQueryLowerAuthorityRouteFamily::Bridge)
     {
-        return WorthQueryDeclarationBridgeRoutingChecked::Denied(
+        return Ok(WorthQueryDeclarationBridgeRoutingChecked::Denied(
             WorthQueryDeclarationBridgeRoutingDenied::new(
                 envelope,
                 denied_request,
                 denied_family,
                 WorthQueryDeclarationBridgeRoutingDenialCause::NonBridgeRoutePlan,
             ),
-        );
+        ));
     }
 
     let authority_aspects =
         BridgeAuthorityAspectGate::from_envelope(&envelope, contract.required_aspects());
     match authority_aspects.fit() {
         WorthQueryDeclarationAspectFit::Conflict => {
-            return WorthQueryDeclarationBridgeRoutingChecked::Denied(
+            return Ok(WorthQueryDeclarationBridgeRoutingChecked::Denied(
                 WorthQueryDeclarationBridgeRoutingDenied::new(
                     envelope,
                     denied_request,
                     denied_family,
                     WorthQueryDeclarationBridgeRoutingDenialCause::AspectConflict,
                 ),
-            );
+            ));
         }
         WorthQueryDeclarationAspectFit::MissingRequired => {
-            return WorthQueryDeclarationBridgeRoutingChecked::Denied(
+            return Ok(WorthQueryDeclarationBridgeRoutingChecked::Denied(
                 WorthQueryDeclarationBridgeRoutingDenied::new(
                     envelope,
                     denied_request,
                     denied_family,
                     WorthQueryDeclarationBridgeRoutingDenialCause::MissingRequiredAspect,
                 ),
-            );
+            ));
         }
         WorthQueryDeclarationAspectFit::Partial => {
-            return WorthQueryDeclarationBridgeRoutingChecked::Denied(
+            return Ok(WorthQueryDeclarationBridgeRoutingChecked::Denied(
                 WorthQueryDeclarationBridgeRoutingDenied::new(
                     envelope,
                     denied_request,
                     denied_family,
                     WorthQueryDeclarationBridgeRoutingDenialCause::AuthorityAspectGap,
                 ),
-            );
+            ));
         }
         WorthQueryDeclarationAspectFit::Exact
         | WorthQueryDeclarationAspectFit::CompatibleSuperset => {}
@@ -247,14 +252,14 @@ fn route_enveloped<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput
         authority_aspects.mapping_fit(),
         WorthQueryDeclarationAspectFit::Partial
     ) {
-        return WorthQueryDeclarationBridgeRoutingChecked::Denied(
+        return Ok(WorthQueryDeclarationBridgeRoutingChecked::Denied(
             WorthQueryDeclarationBridgeRoutingDenied::new(
                 envelope,
                 denied_request,
                 denied_family,
                 WorthQueryDeclarationBridgeRoutingDenialCause::AuthorityAspectGap,
             ),
-        );
+        ));
     }
 
     let mixed_origin = route_plan.route_count() > 1;
@@ -270,7 +275,7 @@ fn route_enveloped<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput
         WorthQueryDeclarationBridgeRoutingClass::ExclusiveBridgeContinuation
     };
     let (continuation_request, continuation_family, binding) =
-        worth_query_lower_bridge_binding(&envelope, contract);
+        worth_query_lower_bridge_binding(&envelope, contract)?;
     let digest = derive_bridge_routing_digest(
         &envelope,
         class,
@@ -287,7 +292,7 @@ fn route_enveloped<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput
         envelope.receipt_denial_cause(),
         &future_projection,
         &basis_lifecycle_support_digest,
-    );
+    )?;
     let mut retained_truths = envelope.explain().retained_truths().to_vec();
     retained_truths.push(format!(
         "bridge-continuation-mode:{}",
@@ -328,21 +333,23 @@ fn route_enveloped<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput
         envelope.evidence_origin(),
         mixed_origin,
     );
-    WorthQueryDeclarationBridgeRoutingChecked::Routed(WorthQueryDeclarationBridgeRouting::new(
-        class,
-        continuation_request,
-        continuation_family,
-        binding,
-        authority_aspects.contract().clone(),
-        authority_aspects.coverage().clone(),
-        authority_aspects.coverage_basis(),
-        authority_aspects.fit(),
-        authority_aspects.mapped_aspects().clone(),
-        authority_aspects.mapping_fit(),
-        future_projection,
-        basis_lifecycle_support_digest,
-        envelope,
-        digest,
-        explanation,
+    Ok(WorthQueryDeclarationBridgeRoutingChecked::Routed(
+        WorthQueryDeclarationBridgeRouting::new(
+            class,
+            continuation_request,
+            continuation_family,
+            binding,
+            authority_aspects.contract().clone(),
+            authority_aspects.coverage().clone(),
+            authority_aspects.coverage_basis(),
+            authority_aspects.fit(),
+            authority_aspects.mapped_aspects().clone(),
+            authority_aspects.mapping_fit(),
+            future_projection,
+            basis_lifecycle_support_digest,
+            envelope,
+            digest,
+            explanation,
+        ),
     ))
 }

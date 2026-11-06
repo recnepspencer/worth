@@ -2,6 +2,7 @@ use super::{
     WorthQueryAspectMutationOperation, WorthQueryAspectMutationOperationKind,
     WorthQueryAuthoredAspectMutation, WorthQuerySymbolicAspectReference,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -216,36 +217,38 @@ fn declared_aspect_value_digest_row(
     aspect_touch: WorthQueryAspectTouch,
     clears_existing_value: bool,
     terminal_value_digest: String,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
-        .field_shape(
-            WorthQueryEvidenceTag::new("role"),
-            "declared-aspect-value-row",
-        )
-        .field_shape(WorthQueryEvidenceTag::new("prefix"), prefix)
-        .field_value(
-            WorthQueryEvidenceTag::new("aspect_touch"),
-            aspect_touch.admitted_touch_digest_part(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("operation"),
-            if clears_existing_value {
-                "clear"
-            } else {
-                "set"
-            },
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("terminal_value"),
-            terminal_value_digest,
-        )
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
+            .field_shape(
+                WorthQueryEvidenceTag::new("role"),
+                "declared-aspect-value-row",
+            )
+            .field_shape(WorthQueryEvidenceTag::new("prefix"), prefix)
+            .field_value(
+                WorthQueryEvidenceTag::new("aspect_touch"),
+                aspect_touch.admitted_touch_digest_part(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("operation"),
+                if clears_existing_value {
+                    "clear"
+                } else {
+                    "set"
+                },
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("terminal_value"),
+                terminal_value_digest,
+            )
+            .seal()?,
+    )
 }
 
 fn symbolic_aspect_reference_digest_row(
     prefix: &'static str,
     reference: &WorthQuerySymbolicAspectReference,
-) -> WorthQueryEvidenceIdentity {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let symbol_identity = WorthQueryMutationSymbolIdentity::new(
         "symbolic-aspect-reference",
         reference.reference().symbol(),
@@ -276,31 +279,35 @@ fn symbolic_aspect_reference_digest_row(
             collection.evidence_identity(),
         );
     }
-    identity.seal()
+    Ok(identity.seal()?)
 }
 
 fn touched_aspect_digest_row(
     prefix: &'static str,
     aspect_touch: &WorthQueryAspectTouch,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
-        .field_shape(WorthQueryEvidenceTag::new("role"), "touched-aspect-row")
-        .field_shape(WorthQueryEvidenceTag::new("prefix"), prefix)
-        .field_value(
-            WorthQueryEvidenceTag::new("aspect_touch"),
-            aspect_touch.admitted_touch_digest_part(),
-        )
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
+            .field_shape(WorthQueryEvidenceTag::new("role"), "touched-aspect-row")
+            .field_shape(WorthQueryEvidenceTag::new("prefix"), prefix)
+            .field_value(
+                WorthQueryEvidenceTag::new("aspect_touch"),
+                aspect_touch.admitted_touch_digest_part(),
+            )
+            .seal()?,
+    )
 }
 
 fn declared_aspect_value_identity(
     rows: Vec<WorthQueryEvidenceIdentity>,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
-        .field_shape(
-            WorthQueryEvidenceTag::new("role"),
-            "declared-aspect-value-digest",
-        )
-        .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("row"), rows.iter())
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
+            .field_shape(
+                WorthQueryEvidenceTag::new("role"),
+                "declared-aspect-value-digest",
+            )
+            .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("row"), rows.iter())
+            .seal()?,
+    )
 }

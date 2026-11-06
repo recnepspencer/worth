@@ -8,6 +8,7 @@ use crate::domain_installation::{
     WorthQueryInstalledGraphReadOperationBindingDenial,
 };
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::SchemaBasisDigest;
 use crate::intent_admission::WorthQueryIntentDecisionTraceEnvelope;
 use crate::memory_workspace::WorthQuerySnapshotIdentity;
@@ -267,7 +268,7 @@ impl WorthQueryReadGraph {
         declarative_request: DeclarativeLiveQueryRequest,
         schema_view: QuerySchemaView,
         execution_plan: ExecutionPlanBundle,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let identity = derive_read_graph_identity(
             &family,
             &scope_class,
@@ -279,7 +280,7 @@ impl WorthQueryReadGraph {
             relationship_proof_admission.as_ref(),
             policy_aware_plan.as_ref(),
             &execution_plan,
-        );
+        )?;
         let canonical_planning =
             prepare_mature_read_graph_planning_basis(&WorthQueryReadGraphPlanningPreparation {
                 schema_basis: &schema_basis,
@@ -288,7 +289,7 @@ impl WorthQueryReadGraph {
                 canonical: &canonical,
                 validated: &validated,
             });
-        Self {
+        Ok(Self {
             identity,
             canonical_planning,
             family,
@@ -307,7 +308,7 @@ impl WorthQueryReadGraph {
             declarative_request,
             schema_view,
             execution_plan,
-        }
+        })
     }
 }
 

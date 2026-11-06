@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::{
     WorthQueryAspectTouch, WorthQueryMutationFamily, WorthQueryMutationTargetCollectionIdentity,
 };
@@ -43,23 +44,25 @@ fn read_touch_row(
     component_index: usize,
     verb: WorthQueryGraphTouchReadVerb,
     shape: &WorthQueryGraphReadTouchShape,
-) -> WorthQueryGraphTouchDescriptorRow {
-    WorthQueryGraphTouchDescriptorRow::new(WorthQueryGraphTouchDescriptorRowInput {
-        component_index,
-        mutation_family: WorthQueryMutationFamily::Assertion,
-        read_verb: Some(verb),
-        program_step_kind: None,
-        lifecycle_family: None,
-        declared_collection: Some(WorthQueryMutationTargetCollectionIdentity::new(
-            "graph-read-touch-row",
-            collection,
-        )),
-        relation_kind_id: None,
-        declared_symbol: None,
-        declared_aspect_operations: Vec::new(),
-        touched_aspects: shape.aspect_touches().to_vec(),
-        has_symbolic_target_reference: false,
-        has_existing_truth_binding: false,
-        symbolic_aspect_reference_count: 0,
-    })
+) -> Result<WorthQueryGraphTouchDescriptorRow, IdentityDerivationDenial> {
+    Ok(WorthQueryGraphTouchDescriptorRow::new(
+        WorthQueryGraphTouchDescriptorRowInput {
+            component_index,
+            mutation_family: WorthQueryMutationFamily::Assertion,
+            read_verb: Some(verb),
+            program_step_kind: None,
+            lifecycle_family: None,
+            declared_collection: Some(WorthQueryMutationTargetCollectionIdentity::new(
+                "graph-read-touch-row",
+                collection,
+            )),
+            relation_kind_id: None,
+            declared_symbol: None,
+            declared_aspect_operations: Vec::new(),
+            touched_aspects: shape.aspect_touches().to_vec(),
+            has_symbolic_target_reference: false,
+            has_existing_truth_binding: false,
+            symbolic_aspect_reference_count: 0,
+        },
+    )?)
 }

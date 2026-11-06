@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -16,7 +17,7 @@ impl WorthQueryGraphCompositionBreadth {
         component_count: usize,
         symbolic_entity_declaration_count: usize,
         symbolic_relation_declaration_count: usize,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let breadth_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
                 .field_shape(
@@ -32,17 +33,17 @@ impl WorthQueryGraphCompositionBreadth {
                     WorthQueryEvidenceTag::new("symbolic_relations"),
                     symbolic_relation_declaration_count,
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             component_count,
             symbolic_entity_declaration_count,
             symbolic_relation_declaration_count,
             breadth_digest,
-        }
+        })
     }
 
-    pub(crate) fn empty() -> Self {
-        Self::new(0, 0, 0)
+    pub(crate) fn empty() -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(0, 0, 0)?)
     }
 
     pub fn component_count(&self) -> usize {

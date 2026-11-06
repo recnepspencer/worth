@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -109,42 +110,47 @@ pub(super) fn assertion_evidence(
     declared_aspect_operations: &[crate::runtime::WorthQueryAspectMutationOperation],
     declared_aspect_value_digest: Option<&WorthQueryEvidenceIdentity>,
     snapshot_identity: &WorthQuerySnapshotIdentity,
-) -> Option<WorthQueryExistingTruthAssertionEvidence> {
+) -> Result<Option<WorthQueryExistingTruthAssertionEvidence>, IdentityDerivationDenial> {
     let _binding = existing_truth_binding?;
     if let Some(verification) = existing_truth_assertion {
-        return Some(WorthQueryExistingTruthAssertionEvidence::backend_verified(
-            verification,
+        return Ok(Some(
+            WorthQueryExistingTruthAssertionEvidence::backend_verified(verification),
         ));
     }
     if mutation_family != WorthQueryMutationFamily::Assertion {
-        return None;
+        return Ok(None);
     }
-    Some(
+    Ok(Some(
         WorthQueryExistingTruthAssertionEvidence::retained_assertion(
             declared_aspect_operations.len(),
-            retained_assertion_verification_digest(snapshot_identity, declared_aspect_value_digest),
+            retained_assertion_verification_digest(
+                snapshot_identity,
+                declared_aspect_value_digest,
+            )?,
         ),
-    )
+    ))
 }
 
 fn retained_assertion_verification_digest(
     snapshot_identity: &WorthQuerySnapshotIdentity,
     declared_aspect_value_digest: Option<&WorthQueryEvidenceIdentity>,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::RetainedExistingTruthAssertionEvidence)
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("snapshot_identity"),
-            &snapshot_identity.evidence_identity(),
-        )
-        .optional_evidence_identity(
-            WorthQueryEvidenceTag::new("declared_aspect_value_digest"),
-            declared_aspect_value_digest,
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("mode"),
-            WorthQueryExistingTruthAssertionMode::RetainedAuthoritativeAssertion.as_str(),
-        )
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(worth_query_evidence_identity(
+        WorthQueryEvidenceScope::RetainedExistingTruthAssertionEvidence,
+    )
+    .field_evidence_identity(
+        WorthQueryEvidenceTag::new("snapshot_identity"),
+        &snapshot_identity.evidence_identity(),
+    )
+    .optional_evidence_identity(
+        WorthQueryEvidenceTag::new("declared_aspect_value_digest"),
+        declared_aspect_value_digest,
+    )
+    .field_shape(
+        WorthQueryEvidenceTag::new("mode"),
+        WorthQueryExistingTruthAssertionMode::RetainedAuthoritativeAssertion.as_str(),
+    )
+    .seal()?)
 }
 
 pub(super) fn target_evidence_from_receipt(

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -88,7 +89,9 @@ pub struct WorthQueryGraphCompositionLineageSummary {
 }
 
 impl WorthQueryGraphCompositionLineageSummary {
-    pub(in crate::runtime) fn derive(write_receipts: &[WorthQueryWriteReceipt]) -> Option<Self> {
+    pub(in crate::runtime) fn derive(
+        write_receipts: &[WorthQueryWriteReceipt],
+    ) -> Result<Option<Self>, IdentityDerivationDenial> {
         let entries = write_receipts
             .iter()
             .enumerate()
@@ -99,7 +102,7 @@ impl WorthQueryGraphCompositionLineageSummary {
             })
             .collect::<Vec<_>>();
         if entries.is_empty() {
-            return None;
+            return Ok(None);
         }
 
         let single_successor_count = entries
@@ -137,13 +140,13 @@ impl WorthQueryGraphCompositionLineageSummary {
             entries
                 .iter()
                 .map(|entry| entry.lineage_digest().evidence_identity()),
-        );
+        )?;
         let aggregate_continuity_resolution_digest = aggregate_digest(
             "worth_query_graph_composition_lineage_resolution_digest_v1",
             entries
                 .iter()
                 .map(|entry| entry.continuity_resolution_digest().evidence_identity()),
-        );
+        )?;
         let entry_digests = entries
             .iter()
             .map(graph_composition_lineage_entry_digest)
@@ -151,7 +154,7 @@ impl WorthQueryGraphCompositionLineageSummary {
         let aggregate_entry_digest = aggregate_digest(
             "worth_query_graph_composition_lineage_entry_digest_v1",
             entry_digests.iter(),
-        );
+        )?;
         let lineage_summary_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
                 .field_shape(
@@ -187,15 +190,15 @@ impl WorthQueryGraphCompositionLineageSummary {
                     WorthQueryEvidenceTag::new("entries"),
                     &aggregate_entry_digest,
                 )
-                .seal();
+                .seal()?;
 
-        Some(Self {
+        Ok(Some(Self {
             entries,
             counter_snapshot,
             aggregate_lineage_digest,
             aggregate_continuity_resolution_digest,
             lineage_summary_digest,
-        })
+        }))
     }
 
     pub fn entries(&self) -> &[WorthQueryGraphCompositionLineageEntry] {
@@ -239,16 +242,18 @@ fn diagnostic_counter_snapshot(fields: &[(&str, usize)]) -> String {
 fn aggregate_digest<'a>(
     label: &str,
     digests: impl IntoIterator<Item = &'a WorthQueryEvidenceIdentity>,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
-        .field_shape(WorthQueryEvidenceTag::new("role"), label)
-        .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("digest"), digests)
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
+            .field_shape(WorthQueryEvidenceTag::new("role"), label)
+            .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("digest"), digests)
+            .seal()?,
+    )
 }
 
 fn graph_composition_lineage_entry_digest(
     entry: &WorthQueryGraphCompositionLineageEntry,
-) -> WorthQueryEvidenceIdentity {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let mut identity =
         worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
             .field_shape(
@@ -293,5 +298,5 @@ fn graph_composition_lineage_entry_digest(
             WorthQueryEvidenceTag::new("continuity_resolution"),
             entry.continuity_resolution_digest().evidence_identity(),
         );
-    identity.seal()
+    Ok(identity.seal()?)
 }

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -49,7 +50,7 @@ impl WorthQueryGraphCompositionAdmissionTrace {
     pub(in crate::runtime) fn new(
         stages: Vec<WorthQueryGraphCompositionAdmissionTraceStage>,
         failure_stage: WorthQueryGraphCompositionAdmissionTraceStage,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         assert!(
             !stages.is_empty(),
             "graph composition admission trace must include at least one stage"
@@ -82,12 +83,12 @@ impl WorthQueryGraphCompositionAdmissionTrace {
                     WorthQueryEvidenceTag::new("failure_stage"),
                     failure_stage.as_str(),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             stages,
             failure_stage,
             admission_trace_digest,
-        }
+        })
     }
 
     pub fn stages(&self) -> &[WorthQueryGraphCompositionAdmissionTraceStage] {
@@ -115,22 +116,28 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "failure stage must appear in the stage list")]
-    fn admission_trace_rejects_failure_stage_outside_stage_list() {
+    fn admission_trace_rejects_failure_stage_outside_stage_list(
+    ) -> Result<(), IdentityDerivationDenial> {
         let _ = WorthQueryGraphCompositionAdmissionTrace::new(
             vec![
                 WorthQueryGraphCompositionAdmissionTraceStage::ProgramParsed,
                 WorthQueryGraphCompositionAdmissionTraceStage::DeniedBeforeExecution,
             ],
             WorthQueryGraphCompositionAdmissionTraceStage::SymbolsValidated,
-        );
+        )?;
+
+        Ok(())
     }
 
     #[test]
     #[should_panic(expected = "must end at denied-before-execution")]
-    fn admission_trace_rejects_non_terminal_denied_marker() {
+    fn admission_trace_rejects_non_terminal_denied_marker() -> Result<(), IdentityDerivationDenial>
+    {
         let _ = WorthQueryGraphCompositionAdmissionTrace::new(
             vec![WorthQueryGraphCompositionAdmissionTraceStage::ProgramParsed],
             WorthQueryGraphCompositionAdmissionTraceStage::ProgramParsed,
-        );
+        )?;
+
+        Ok(())
     }
 }

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -143,7 +144,7 @@ impl WorthQuerySharedReadPinningCounterEvidence {
         unretired_pin_count: usize,
         shared_read_mint_row_clone_count: usize,
         reader_derived_evaluation_count: usize,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let counter_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::ApplicationSupportReport)
                 .field_usize(
@@ -166,17 +167,17 @@ impl WorthQuerySharedReadPinningCounterEvidence {
                     WorthQueryEvidenceTag::new("reader_derived_evaluation_count"),
                     reader_derived_evaluation_count,
                 )
-                .seal()
+                .seal()?
                 .as_str()
                 .to_string();
-        Self {
+        Ok(Self {
             committed_read_hot_path_lock_count,
             orphaned_generation_count,
             unretired_pin_count,
             shared_read_mint_row_clone_count,
             reader_derived_evaluation_count,
             counter_digest,
-        }
+        })
     }
 
     pub fn residue_count(&self) -> usize {
@@ -192,13 +193,13 @@ impl WorthQuerySharedReadPinningCounterEvidence {
     }
 
     #[cfg(test)]
-    pub fn with_unretired_pin_for_sabotage(&self) -> Self {
-        Self::new(
+    pub fn with_unretired_pin_for_sabotage(&self) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             self.committed_read_hot_path_lock_count,
             self.orphaned_generation_count,
             self.unretired_pin_count + 1,
             self.shared_read_mint_row_clone_count,
             self.reader_derived_evaluation_count,
-        )
+        )?)
     }
 }

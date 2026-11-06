@@ -2,6 +2,7 @@ use super::super::{
     WorthQueryAuthorityLane, WorthQueryIntentDenialEvidence, WorthQueryIntentExecutionKind,
     WorthQueryIntentSourceLane,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -30,7 +31,9 @@ pub struct WorthQueryIntentDenialInspection {
 }
 
 impl WorthQueryIntentDenialInspection {
-    pub(in crate::runtime) fn from_evidence(evidence: &WorthQueryIntentDenialEvidence) -> Self {
+    pub(in crate::runtime) fn from_evidence(
+        evidence: &WorthQueryIntentDenialEvidence,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let returned_strategy_identity = evidence.returned_strategy_identity().map(str::to_string);
         let returned_strategy_version = evidence.returned_strategy_version().map(str::to_string);
         let returned_strategy_descriptor_digest = evidence
@@ -102,8 +105,8 @@ impl WorthQueryIntentDenialInspection {
                     WorthQueryEvidenceTag::new("denial_digest"),
                     evidence.denial_digest(),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             intent_name: evidence.intent_name().to_string(),
             stage: evidence.stage(),
             message: evidence.message().to_string(),
@@ -121,7 +124,7 @@ impl WorthQueryIntentDenialInspection {
             snapshot_identity,
             denial_digest: evidence.denial_digest().clone(),
             inspection_digest,
-        }
+        })
     }
 
     pub fn intent_name(&self) -> &str {

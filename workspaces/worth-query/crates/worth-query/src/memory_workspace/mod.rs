@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::view_shape_live::ViewShapePatchEnvelope;
 use worth_foundational::facade::{CanonicalFieldPath, FieldKey};
 use worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner;
@@ -364,6 +365,15 @@ impl
         Self::with_kind(
             WorthQueryWorkspaceErrorKind::ForeignPhase(cause),
             "foreign advancement phase",
+        )
+    }
+}
+
+impl From<IdentityDerivationDenial> for WorthQueryWorkspaceError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::with_kind(
+            WorthQueryWorkspaceErrorKind::EvidenceIdentityDerivationDenied(cause),
+            "evidence identity derivation refused",
         )
     }
 }

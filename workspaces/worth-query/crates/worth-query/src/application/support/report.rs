@@ -9,6 +9,7 @@ use crate::application::config::{
 use crate::composition::{
     runtime_backed_query_composition_support_profile, QueryCompositionSupportProfile,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -51,7 +52,9 @@ pub struct WorthQuerySupportSectionPosture {
 }
 
 impl WorthQuerySupportSectionPosture {
-    fn from_resolution(resolution: WorthQueryConfigSectionResolution) -> Self {
+    fn from_resolution(
+        resolution: WorthQueryConfigSectionResolution,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let section = resolution.section();
         let owner = resolution.owner();
         let enabled = resolution.enabled();
@@ -66,14 +69,14 @@ impl WorthQuerySupportSectionPosture {
             WorthQueryEvidenceTag::new("config_digest"),
             config_digest.clone(),
         )
-        .seal();
-        Self {
+        .seal()?;
+        Ok(Self {
             section,
             owner,
             enabled,
             config_digest,
             posture_identity,
-        }
+        })
     }
 
     pub fn section(&self) -> WorthQueryConfigSectionFamily {
@@ -135,7 +138,7 @@ impl WorthQuerySupportReport {
     pub(crate) fn from_validated_config_and_matrix(
         config: &ValidatedWorthQueryConfig,
         support_matrix: WorthQuerySupportMatrix,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let admitted_capability_families = support_matrix
             .capability_registry()
             .descriptors()
@@ -259,9 +262,9 @@ impl WorthQuerySupportReport {
                     WorthQueryEvidenceTag::new("support_report_generation_count"),
                     counters.support_report_generation_count(),
                 )
-                .seal();
+                .seal()?;
 
-        Self {
+        Ok(Self {
             support_matrix,
             admitted_capability_count,
             deferred_capability_count,
@@ -276,7 +279,7 @@ impl WorthQuerySupportReport {
             validated_config_digest,
             counters,
             report_identity,
-        }
+        })
     }
 
     pub fn support_matrix(&self) -> &WorthQuerySupportMatrix {

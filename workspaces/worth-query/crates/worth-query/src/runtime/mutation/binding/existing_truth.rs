@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -204,7 +205,7 @@ impl WorthQueryExistingTruthTargetBinding {
             &self.authoritative_identity,
             &self.resolved_target_identity,
             self.target_collection.as_ref(),
-        );
+        )?;
         Ok(self)
     }
 
@@ -262,7 +263,7 @@ impl WorthQueryExistingTruthTargetBinding {
             &authoritative_identity,
             &resolved_target_identity,
             target_collection.as_ref(),
-        );
+        )?;
         Ok(Self {
             family,
             authoritative_identity,
@@ -278,29 +279,32 @@ fn existing_truth_binding_identity(
     authoritative_identity: &WorthQueryMutationAuthorityIdentity,
     resolved_target_identity: &WorthQueryEntityIdentity,
     target_collection: Option<&WorthQueryMutationTargetCollectionIdentity>,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
-        .field_shape(WorthQueryEvidenceTag::new("role"), "existing-truth-binding")
-        .field_shape(WorthQueryEvidenceTag::new("family"), family.as_str())
-        .field_shape(
-            WorthQueryEvidenceTag::new("outcome"),
-            crate::runtime::WorthQueryExistingTruthBindingOutcome::ExistingAuthoritativeTarget
-                .as_str(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("authoritative"),
-            authoritative_identity.evidence_identity(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("resolved"),
-            &resolved_target_identity.evidence_identity(),
-        )
-        .optional_evidence_identity(
-            WorthQueryEvidenceTag::new("collection"),
-            target_collection
-                .map(crate::runtime::WorthQueryMutationTargetCollectionIdentity::evidence_identity),
-        )
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
+            .field_shape(WorthQueryEvidenceTag::new("role"), "existing-truth-binding")
+            .field_shape(WorthQueryEvidenceTag::new("family"), family.as_str())
+            .field_shape(
+                WorthQueryEvidenceTag::new("outcome"),
+                crate::runtime::WorthQueryExistingTruthBindingOutcome::ExistingAuthoritativeTarget
+                    .as_str(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("authoritative"),
+                authoritative_identity.evidence_identity(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("resolved"),
+                &resolved_target_identity.evidence_identity(),
+            )
+            .optional_evidence_identity(
+                WorthQueryEvidenceTag::new("collection"),
+                target_collection.map(
+                    crate::runtime::WorthQueryMutationTargetCollectionIdentity::evidence_identity,
+                ),
+            )
+            .seal()?,
+    )
 }
 
 fn normalize_non_empty(value: String, message: &str) -> Result<String, WorthQueryWorkspaceError> {
