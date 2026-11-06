@@ -56,15 +56,8 @@ impl RelationalDurableMediumBinding {
         codec: Option<&crate::durability::RecoveredCodecPublicationCustody>,
     ) -> Result<(), RelationalHomeProgramWriteDenial> {
         use RelationalHomeProgramWriteDenial as Denial;
-        let state = self.state();
-        if state.medium.is_none() {
-            return Err(Denial::MediumMoved);
-        }
-        match state
-            .home_phase
-            .as_ref()
-            .expect("a live medium retains its phase")
-        {
+        let phase = self.home_phase();
+        match phase.as_ref().ok_or(Denial::MediumMoved)? {
             RelationalHomeProgramPhase::Unrestricted => match step {
                 None => Ok(()),
                 Some(_) => Err(Denial::TransitionNotRequested),
@@ -92,24 +85,18 @@ impl RelationalDurableMediumBinding {
         completed: HomeProgramTransitionBindingCommitted,
     ) -> Result<(), RelationalHomeProgramWriteDenial> {
         use RelationalHomeProgramWriteDenial as Denial;
-        let mut state = self.state();
-        if state.medium.is_none() {
-            return Err(Denial::MediumMoved);
-        }
+        let mut phase = self.home_phase();
+        let current = phase.as_ref().ok_or(Denial::MediumMoved)?;
         let authority = self
             .transition
             .as_ref()
             .ok_or(Denial::TransitionNotRequested)?;
-        match state
-            .home_phase
-            .as_ref()
-            .expect("a live medium retains its phase")
-        {
+        match current {
             RelationalHomeProgramPhase::Pending(required) => {
                 authority
                     .admit_binding_committed(required, &completed)
                     .map_err(Denial::Admission)?;
-                state.home_phase = Some(RelationalHomeProgramPhase::Bound {
+                *phase = Some(RelationalHomeProgramPhase::Bound {
                     required: required.clone(),
                     completed,
                 });
