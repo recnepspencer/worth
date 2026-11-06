@@ -1,4 +1,4 @@
-IN PROGRESS: integrating 14b16fa292; FUNDING LANDED bd8d5b6af58d540deba439ebbbb82e6a297c258d remains retained.
+IN PROGRESS: merge bd3ac03d2f51a7d9aabde8976bd328688fe1435d records 14b16fa292; FUNDING MERGED is not certified.
 
 Final2026-11-06 status:34 selected tests pass, final Root/Store Clippy and Query
 check pass, format/context/7677-file dirty caps pass. Independent review02

@@ -1,9 +1,10 @@
 # P-A current state: IN PROGRESS, funding merge not certified
 
 2026-11-06. Real merge parents: P-A25619ac5d1 and integration14b16fa292.
-The source merge has no unresolved conflicts and is preserved in an explicitly
-in-progress local merge commit. Resolve its HEAD from the branch log; the final
-commit-identity log records it. No WIP branch, parked changes or push.
+The source merge has no unresolved conflicts and is preserved in explicitly
+in-progress commit bd3ac03d2f51a7d9aabde8976bd328688fe1435d. The final
+commit-identity log verifies both parents, all accepted funding/quote/queue
+ancestry and a clean worktree at that HEAD. No WIP branch, parked changes or push.
 
 Root, Query and Store compile; final full Root and Store Clippy exit0. The33
 Native warnings match accepted funding diagnostics, with zero additions. All34

@@ -20,6 +20,7 @@ regression qualify that arm without rebuilding unchanged dependent workspaces.
 | [funding-merge-boundary-owner-audit.log](funding-merge-boundary-owner-audit.log) | 0 | 0/0/0 |
 | [funding-merge-boundary.log](funding-merge-boundary.log) | 1 | 0/0/0 |
 | [funding-merge-catalogs.log](funding-merge-catalogs.log) | 0 | 0/0/0 |
+| [funding-merge-commit-identity.log](funding-merge-commit-identity.log) | 0 | 0/0/0 |
 | [funding-merge-final-format.log](funding-merge-final-format.log) | 0 | 0/0/0 |
 | [funding-merge-final-line-caps.log](funding-merge-final-line-caps.log) | 0 | 0/0/0 |
 | [funding-merge-final-source-identity.log](funding-merge-final-source-identity.log) | 0 | 0/0/0 |
@@ -86,7 +87,34 @@ commands built/invoked the mandatory boundary and agent-context tools. The
 multi-workspace/cold-cache budget exception is recorded in merge-14b16-plan.md.
 There was no broad qualification, query-scale, exhaustive Home oracle, Store
 scenario run, or tool self-test suite. D13 receipts/restore, named-digest cutover
-and BC9002 consumer migration are unrun/unimplemented after this pending merge.
+and BC9002 consumer migration are unrun/unimplemented in this merge slice.
+
+## Exact merge seams and compile-only caller cutovers
+
+- Transferred checkpoint_complete/branches.rs was resolved only to retain the
+  actual current/external roots and incoming content ownership. No named digest
+  edit was made there or in original_image.rs. roots.rs/regions/emission.rs use
+  that same held-root custody, without restoring historical replay.
+- The two new private kind_projection/reconstruction leaves separate request
+  installation from the incoming controlled-publication custody driver; neither
+  introduces another projection validator or aggregate funding constructor.
+- Mechanical obsolete reexports removed from these exact Native files:
+  authority/mutation/mod.rs; runtime/mod.rs; runtime/state/mod.rs;
+  runtime/state/subsystems/mod.rs; runtime/state/subsystems/record_identity/mod.rs;
+  runtime/state/subsystems/services/mod.rs;
+  runtime/state/subsystems/services/symbol_table.rs. The private definitions and
+  their real remaining uses/tests are retained.
+- Caller vocabulary/outcome migrations: Foundation values/aspect_value.rs
+  (retired Bytes quote arm); Native durability/checkpoints/aspect_state_images/
+  readmission_funding.rs (retired Content shape), checkpoints/images.rs,
+  storage/residency/region_load.rs and region_load/materialization_funding.rs
+  (typed Content stops), region_load/materialization_funding/aspect_state.rs
+  (retired Bytes scalar spelling), residency/history_fold.rs and overlay/
+  partition_content/digest_index/append_frontier.rs (named digest access).
+  All are small merged-type/caller changes; no new feature or shim is added.
+- Exact retained boundary rows and the five unapplied caller proposals are
+  listed in funding-merge-boundary-handoff.md. The UI lock propagation is only
+  generated resolution for the committed Host/Store dependency graph.
 
 ## Requirement trace
 
