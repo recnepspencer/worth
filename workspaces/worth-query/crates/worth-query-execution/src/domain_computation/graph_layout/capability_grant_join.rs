@@ -10,7 +10,10 @@ use worth_relational::facade::indexes::{
     RelationJoinLeg, RelationJoinSharedEndpoint,
 };
 
-use {super::invalid_member, super::required_kind, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, super::WorthQueryPrimaryRelationLayout};
+use {
+    super::invalid_member, super::required_kind, super::WorthQueryPrimaryRelationLayout,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+};
 
 #[derive(Debug)]
 pub(super) struct WorthQueryCapabilityGrantJoinLayout {

@@ -6,7 +6,6 @@ pub(crate) mod batch;
 pub(crate) mod change_summary;
 pub(crate) mod content_comparison;
 pub(crate) mod content_storage;
-pub(crate) mod control;
 pub(crate) mod denial;
 pub(crate) mod funded_parameters;
 pub(crate) mod history_denial;

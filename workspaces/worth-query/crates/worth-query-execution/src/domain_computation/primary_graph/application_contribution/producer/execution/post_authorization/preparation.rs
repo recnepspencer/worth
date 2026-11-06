@@ -1,8 +1,8 @@
 //! Prepare a producer once and retain owner completion until canonical apply.
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::ApplicationCommitScopedOps;
-use crate::domain_computation::primary_graph::application_attempt::OutputSourceOps;
 use crate::domain_computation::primary_graph::application_attempt::HistoryProducerCommit;
+use crate::domain_computation::primary_graph::application_attempt::OutputSourceOps;
 use crate::domain_computation::primary_graph::application_entry::PreparationScopedOps;
 use crate::domain_computation::primary_graph::application_query::PreparedExpectationScopedOps;
 use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerCommitAuthority;

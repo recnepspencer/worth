@@ -3,7 +3,7 @@
 use crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryPendingDispatchOutbox;
 use crate::domain_computation::vocabulary::primary_graph::outbox_commit::WorthQueryCommittedDispatchOutboxBinding;
 use crate::domain_computation::vocabulary::primary_graph::outbox_commit::WorthQueryCommittedDispatchOutboxBindingDenial;
-use worth_relational::facade::transactions::{CommitResult, RecordRef};
+use worth_relational::facade::transactions::CommitResult;
 
 /// Owner-sealed outcome of binding one pending outbox create to its commit.
 #[derive(Clone, Debug, Eq, PartialEq)]

@@ -1,10 +1,15 @@
 //! Native-founded retirement or historical retention of complete output rows.
 use super::{denial, preserved_outputs::PreservedOutputs, publication::InstalledCheckpointTarget};
-use {crate::domain_computation::primary_graph::application_checkpoint::CheckpointMetadataFunding, crate::domain_computation::primary_graph::application_checkpoint::DecodedApplicationCheckpoint, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphBootstrap, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial};
 use worth_execution::{ExecutionRequest, ExecutionWorkCeiling, MapKernelContext};
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::{
     branch::AdmittedRelationalBranchBasis, durability::RecoveredRelationalRuntimeAuthority,
+};
+use {
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial,
+    crate::domain_computation::primary_graph::application_checkpoint::CheckpointMetadataFunding,
+    crate::domain_computation::primary_graph::application_checkpoint::DecodedApplicationCheckpoint,
+    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphBootstrap,
 };
 
 pub(super) fn classify<Schema: ApplicationSchema + 'static>(

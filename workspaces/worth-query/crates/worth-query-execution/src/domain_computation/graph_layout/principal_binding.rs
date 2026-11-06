@@ -1,14 +1,17 @@
 use std::collections::BTreeMap;
 
-use worth_foundational::facade::AspectFieldLocator;
 use worth_query_installation::facade::{
     ApplicationSchemaMember, ErasedApplicationSchemaDeclaration,
 };
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::indexes::DerivedIndexId;
 
-use {super::contract_space_exhausted, super::planned_field_locator, super::required_kind, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, super::WorthQueryPrimaryGraphLayout};
 use crate::domain_computation::vocabulary::primary_graph::principal_binding::WorthQueryPrimaryPrincipalBindingLayout;
+use {
+    super::contract_space_exhausted, super::planned_field_locator, super::required_kind,
+    super::WorthQueryPrimaryGraphLayout,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+};
 
 impl WorthQueryPrimaryGraphLayout {
     pub(in crate::domain_computation) fn principal_binding(

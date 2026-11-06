@@ -8,7 +8,7 @@ pub(in crate::domain_computation) use dependencies::WorkflowActorDependencies;
 pub(in crate::domain_computation) fn storage_denial(
     cause: worth_execution::ExecutionAllocationDenial,
     subject: &str,
-) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial {
+) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial{
     crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial::Allocation(cause)
         .into_attempt_denial(subject)
 }
@@ -24,7 +24,7 @@ pub(in crate::domain_computation) fn fund_actor_codec(
 ) -> Result<
     std::sync::Arc<ActorCodecFunding>,
     crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
-> {
+>{
     use {crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl, crate::domain_computation::primary_graph::application_checkpoint::facts};
     encoding::check_live(execution)?;
     let payload = facts::CodecPayloadReservation::admit(
@@ -51,7 +51,7 @@ pub(in crate::domain_computation) fn fund_actor_codec(
 pub(in crate::domain_computation::primary_graph) fn decoded_denial(
     cause: crate::domain_computation::authorization::WorkflowApprovalRequestDecodingDenial,
     subject: &str,
-) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial {
+) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial{
     use crate::domain_computation::authorization::WorkflowApprovalRequestDecodingDenial as Cause;
     match cause {
         Cause::Actor(cause) => *cause,

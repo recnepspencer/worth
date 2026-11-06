@@ -3,8 +3,8 @@
 use worth_execution::{ReductionDenial, ReductionMetrics, ReductionRunStop};
 
 use super::super::WorthQueryPartitionedComputationDenial;
-use crate::domain_computation::primary_graph::computation_retention::full_cause::WorthQueryPartitionedComputationFullCause;
 use super::retained::WorthQueryPartitionedComputationRunForTest;
+use crate::domain_computation::primary_graph::computation_retention::full_cause::WorthQueryPartitionedComputationFullCause;
 
 /// Why an incremental tree rebuilt its leaves instead of editing retained paths.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

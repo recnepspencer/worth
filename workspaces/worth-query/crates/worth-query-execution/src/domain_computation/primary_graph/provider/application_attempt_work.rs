@@ -77,5 +77,3 @@ impl WorthQueryApplicationAttemptWorkLedger {
 fn load(counter: &AtomicU64) -> u64 {
     counter.load(Ordering::Relaxed)
 }
-
-mod court_doors_for_test;

@@ -49,7 +49,6 @@ pub use incremental::{
 pub(in crate::domain_computation::primary_graph) use incremental::{
     Comparator, CompletedComputationRetention, ComputationDeposit,
 };
-pub(in crate::domain_computation) use {incremental::ComputationPrior, incremental::RetainedComputation, incremental::SealedComputationRetention, incremental::SealedComputationRun};
 pub(in crate::domain_computation::primary_graph) use installed::ComputationRetention;
 pub use installed::WorthQueryInstalledPartitionedComputation;
 pub use plan::{
@@ -58,6 +57,10 @@ pub use plan::{
 };
 pub use reader::{
     WorthQueryComputationInputDenial, WorthQueryComputationReadDenial, WorthQueryComputationReader,
+};
+pub(in crate::domain_computation) use {
+    incremental::ComputationPrior, incremental::RetainedComputation,
+    incremental::SealedComputationRetention, incremental::SealedComputationRun,
 };
 
 use worth_execution::CanonicalBits;

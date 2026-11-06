@@ -1,6 +1,6 @@
 //! How a provider declares the value its domain denials carry. The declared
 //! binding is the sole encoder; nothing here substitutes or drops a value.
-use crate::domain_computation::primary_graph::vocabulary::application_invariant::refusal::canonical_wire_maximum;
+use crate::domain_computation::vocabulary::provider_session::invariant_refusal_codec::canonical_wire_maximum;
 use std::marker::PhantomData;
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_declaration::facade::application_schema::{

@@ -9,14 +9,17 @@ use worth_query_installation::facade::{
     WorthQueryInstalledApplicationQueryBinding, WorthQueryInstalledPackageIndex,
 };
 
-use {super::denial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as DenialKind};
+use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial;
 use crate::domain_computation::primary_graph::application_contribution::producer::{
     InstalledProducerExecutor, ProducerSourceBinding, ProducerSourceQuery, ProducerSourceValue,
     TypedInstalledProducer, WorthQueryApplicationProducerBinding,
     WorthQueryApplicationProducerProvider,
 };
-use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial;
 use crate::domain_computation::vocabulary::primary_graph::resource_request::application_resource_request;
+use {
+    super::denial,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as DenialKind,
+};
 
 pub(super) trait PendingProducerExecutor<Schema>: Send + Sync {
     fn prepare(

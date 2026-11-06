@@ -48,7 +48,9 @@ struct Sink<'buffer, 'scope, 'authority> {
     format_denial: Option<StoreDenial>,
 }
 impl<'buffer, 'scope, 'authority> Sink<'buffer, 'scope, 'authority> {
-    fn count(policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'scope, 'authority>) -> Self {
+    fn count(
+        policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'scope, 'authority>,
+    ) -> Self {
         Self {
             destination: Destination::Count,
             policy,

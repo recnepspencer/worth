@@ -1,10 +1,13 @@
 //! Producer-owned exact comparison of supplied, already observed Native u64 values.
-use {crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind};
 use std::sync::Arc;
 use worth_runtime_bridge::facade::*;
 use worth_signal::facade::{
     Aspect, AspectVersion, NodeEvaluationResult, SignalConditionalArtifactReuse,
     SignalConditionalVersionComparator,
+};
+use {
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]

@@ -9,10 +9,18 @@ use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
 use super::super::super::workflow_instance_observation::observe_ended_history;
-use {super::super::super::observe_field_value, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::super::super::WorthQueryApplicationObservedFact};
 use super::super::performed;
 use super::HISTORY;
-use {crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceState, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowPerformedEffect, crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout};
+use {
+    super::super::super::observe_field_value,
+    super::super::super::WorthQueryApplicationObservedFact,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
+};
+use {
+    crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout,
+    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceState,
+    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowPerformedEffect,
+};
 
 /// What the recorded cancellation reports, or `None` when the instance
 /// records no cancellation under `identity`.

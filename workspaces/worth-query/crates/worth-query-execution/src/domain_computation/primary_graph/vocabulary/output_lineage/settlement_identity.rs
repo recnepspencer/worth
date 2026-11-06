@@ -80,3 +80,5 @@ impl RecordedSettlementIdentity {
         Self::address(self)
     }
 }
+
+mod court_doors_for_test;

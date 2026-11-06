@@ -5,7 +5,7 @@
 use worth_execution::ChargedBytes;
 use worth_proof::CanonicalUniqueVec;
 
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey, super::super::super::fact::WorthQueryApplicationObservedFact};
+use super::super::super::fact::WorthQueryApplicationObservedFact;
 use super::{ComputationFactReaders, SealedComputationFact};
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::bytes;
 

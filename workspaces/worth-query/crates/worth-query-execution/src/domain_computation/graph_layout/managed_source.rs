@@ -1,6 +1,9 @@
 //! Compile the actual installed Source into Native's existing path owner.
-use {super::required_kind, super::WorthQueryPrimaryFieldLayout, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial};
 use std::collections::BTreeMap;
+use {
+    super::required_kind, super::WorthQueryPrimaryFieldLayout,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial,
+};
 
 mod membership;
 mod projection;
@@ -23,8 +26,7 @@ use worth_relational::facade::schema::{
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation) struct ManagedSource {
     pub(in crate::domain_computation) program: ManagedIndexSourceProgram,
-    pub(in crate::domain_computation) definition:
-        ErasedApplicationManagedIndexDefinition,
+    pub(in crate::domain_computation) definition: ErasedApplicationManagedIndexDefinition,
     pub(in crate::domain_computation) cold: Cold,
 }
 

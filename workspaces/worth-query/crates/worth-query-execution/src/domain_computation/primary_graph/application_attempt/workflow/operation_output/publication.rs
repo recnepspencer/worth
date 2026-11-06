@@ -6,7 +6,11 @@ use worth_relational::facade::{
     symbols::ClientKey,
     transactions::{CreatedEntityRef, EntityReference},
 };
-use {crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCreationPartition, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationRealizedEffect as Effect};
+use {
+    crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout,
+    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCreationPartition,
+    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationRealizedEffect as Effect,
+};
 
 /// O(k) in the actual output inventory, never in unrelated instances or business records.
 pub fn append_operation_outputs<'output>(

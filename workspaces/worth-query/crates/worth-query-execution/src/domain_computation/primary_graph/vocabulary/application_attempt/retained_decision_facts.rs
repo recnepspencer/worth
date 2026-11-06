@@ -44,7 +44,7 @@ impl StoreDenial {
     pub(in crate::domain_computation::primary_graph) fn into_attempt_denial(
         self,
         subject: &str,
-    ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial {
+    ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial{
         use {
             crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial as Denial,
             crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind,
@@ -96,7 +96,7 @@ impl StoreDenial {
     pub fn into_attempt_denial_for_test(
         self,
         subject: &str,
-    ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial {
+    ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial{
         Self::into_attempt_denial(self, subject)
     }
 }

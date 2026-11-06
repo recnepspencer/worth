@@ -4,7 +4,6 @@ use std::sync::Arc;
 
 mod admission;
 
-
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryHostConditionalPredicateProvider,
 };

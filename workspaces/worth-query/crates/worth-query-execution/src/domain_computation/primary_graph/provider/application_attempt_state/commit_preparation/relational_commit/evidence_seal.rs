@@ -216,13 +216,13 @@ impl WorthQueryPrimaryGraphCommitEvidence {
 
     pub(in crate::domain_computation::primary_graph) const fn committed_changes(
         &self,
-    ) -> &crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::WorthQueryApplicationCommittedChanges {
+    ) -> &crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::WorthQueryApplicationCommittedChanges{
         &self.committed_changes
     }
 
     pub(in crate::domain_computation::primary_graph) fn output_correspondence(
         &self,
-    ) -> &crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence {
+    ) -> &crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence{
         self.output_correspondence.as_ref()
     }
 
@@ -230,7 +230,7 @@ impl WorthQueryPrimaryGraphCommitEvidence {
         &self,
     ) -> std::sync::Arc<
         crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence,
-    > {
+    >{
         std::sync::Arc::clone(&self.output_correspondence)
     }
 

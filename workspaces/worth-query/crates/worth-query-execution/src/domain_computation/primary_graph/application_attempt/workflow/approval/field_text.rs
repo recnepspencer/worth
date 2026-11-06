@@ -6,7 +6,10 @@ use worth_relational::facade::{
     runtime::RelationalRuntime,
     symbols::{RelationalFieldText, RelationalFieldTextAdmissionDenial as Native},
 };
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial as Denial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial as Denial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind,
+};
 
 pub struct WorkflowApprovalFieldText {
     pub(super) request: RelationalFieldText,

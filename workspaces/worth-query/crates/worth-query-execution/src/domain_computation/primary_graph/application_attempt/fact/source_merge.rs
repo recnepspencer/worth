@@ -42,7 +42,7 @@ impl Fact {
         &mut self,
         duplicate: Self,
         control: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
-    ) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial> {
+    ) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial>{
         if self.dependency_key() != duplicate.dependency_key() {
             return Ok(false);
         }
@@ -54,7 +54,7 @@ impl Fact {
         &mut self,
         duplicate: Self,
         control: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
-    ) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial> {
+    ) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial>{
         match (self, duplicate) {
             (
                 Fact::SourceReadAuthorization { observation: first },
@@ -285,7 +285,7 @@ mod tests {
 
 fn comparison_fault(
     cause: crate::domain_computation::primary_graph::vocabulary::application_query::content_comparison::ProjectionContentComparisonFault,
-) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial {
+) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial{
     use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial;
     use crate::domain_computation::primary_graph::vocabulary::application_query::content_comparison::ProjectionContentComparisonFault as Fault;
     match cause {

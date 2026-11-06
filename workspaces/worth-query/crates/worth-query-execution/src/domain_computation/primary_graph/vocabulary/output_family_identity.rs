@@ -36,3 +36,5 @@ impl OutputFamilyIdentity {
         Self::declared(identity)
     }
 }
+
+mod court_doors_for_test;

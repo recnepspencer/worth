@@ -9,7 +9,12 @@ use worth_relational::facade::{
     durability::RecoveredRelationalRuntimeAuthority, identity::KindId,
     transactions::RelationalExecutionDenialCause,
 };
-use {crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout, crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerLifecyclePosture, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as DenialKind};
+use {
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as DenialKind,
+    crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
+    crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerLifecyclePosture,
+};
 
 impl<Schema: ApplicationSchema> WorthQueryInstalledApplicationProducerRegistry<Schema> {
     /// Recovery-lane work is bounded by reached native origins, each producer

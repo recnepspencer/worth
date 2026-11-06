@@ -9,11 +9,11 @@ use worth_query_installation::facade::{
 };
 
 use crate::basis::{WorthQueryProductBranch, WorthQueryProductBranchReadIdentity};
+use crate::domain_computation::primary_graph::application_attempt::WorkflowSelectionBasis;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
 use crate::domain_computation::primary_graph::PreparedWorkflowDefinitionPublication;
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
 use crate::domain_computation::primary_graph::WorthQueryOperationProjectionDenial;
-use crate::domain_computation::primary_graph::application_attempt::WorkflowSelectionBasis;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
 
 /// Owner-bound definition contract for one exact selected branch occurrence.
 ///
@@ -185,4 +185,3 @@ where
             .map_err(WorkflowDefinitionPreparationDenial::Attempt)
     }
 }
-

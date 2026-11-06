@@ -15,7 +15,6 @@ use worth_relational::facade::{
     history::{BranchId, RelationalCommitReceipt},
     identity::EntityId,
 };
-use crate::domain_computation::primary_graph::application_attempt::provider_binding::authored_correction_candidate_denial::AuthoredCorrectionCandidateDenial;
 
 /// Native correction meaning retained from derivation through ordinary publication.
 ///
@@ -158,7 +157,7 @@ impl WorthQueryPreparedCorrectionSource {
         &self,
         batch: &worth_relational::facade::transactions::WorkerIntentBatch,
     ) -> Result<(), crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial>
-    {
+{
         match &self.workflow {
             Some(workflow) => workflow.validate_candidate(batch),
             None => Ok(()),
@@ -169,7 +168,7 @@ impl WorthQueryPreparedCorrectionSource {
         roles: impl Iterator<Item = (&'a str, worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture, &'a str, &'a worth_relational::facade::transactions::EntityReference)>,
         batch: &worth_relational::facade::transactions::WorkerIntentBatch,
         request: &WorthQueryRequestScope,
-    ) -> Result<(), crate::domain_computation::primary_graph::application_attempt::provider_binding::authored_correction_candidate_denial::AuthoredCorrectionCandidateDenial> {
+    ) -> Result<(), crate::domain_computation::primary_graph::application_attempt::provider_binding::authored_correction_candidate_denial::AuthoredCorrectionCandidateDenial>{
         match &self.authored_identity {
             Some(identity) => identity.validate_candidate(roles, batch, request),
             None => Ok(()),
@@ -195,7 +194,7 @@ impl WorthQueryPreparedCorrectionSource {
             worth_relational::facade::transactions::CreatedEntityRef,
         )>,
         crate::domain_computation::primary_graph::application_attempt::provider_binding::authored_correction_candidate_denial::AuthoredCorrectionCandidateDenial,
-    > {
+    >{
         self.validate_authored_candidate(roles.clone(), batch, request)?;
         Ok(self
             .authored_identity

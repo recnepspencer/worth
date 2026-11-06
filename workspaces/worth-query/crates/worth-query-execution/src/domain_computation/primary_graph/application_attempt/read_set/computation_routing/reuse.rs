@@ -204,7 +204,7 @@ impl NativeReadRefresh {
         original: &FactPayload,
         changed: &im::OrdSet<usize>,
         control: StorageControl<'_, '_>,
-    ) -> Result<Arc<crate::domain_computation::primary_graph::vocabulary::application_attempt::application_projection::CompletedFactProjection>, StoreDenial> {
+    ) -> Result<Arc<crate::domain_computation::primary_graph::vocabulary::application_attempt::application_projection::CompletedFactProjection>, StoreDenial>{
         match &self.prior.projection {
             Some(projection) => {
                 projection.refresh(&self.prior.original, original, changed, control)

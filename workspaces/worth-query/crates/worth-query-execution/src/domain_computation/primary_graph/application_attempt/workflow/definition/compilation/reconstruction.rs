@@ -15,9 +15,9 @@ use super::reuse::{
     WorkflowDefinitionSemanticReuseKey,
 };
 use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
 use crate::domain_computation::primary_graph::application_attempt::observe_adjacency;
 use crate::domain_computation::primary_graph::application_attempt::observe_field_value;
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef;

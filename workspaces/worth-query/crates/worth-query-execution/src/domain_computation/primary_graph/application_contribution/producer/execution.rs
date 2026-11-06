@@ -22,10 +22,10 @@ use super::WorthQueryApplicationProducerProvider;
 use crate::basis::WorthQueryProductBranch;
 use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerCommitAuthority;
 
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding;
 use crate::domain_computation::primary_graph::RequiredOutputDemandContext;
 use crate::domain_computation::primary_graph::RequiredOutputExecution;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding;
 
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;

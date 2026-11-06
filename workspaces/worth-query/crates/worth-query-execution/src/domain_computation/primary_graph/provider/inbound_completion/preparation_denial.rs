@@ -1,7 +1,6 @@
 //! Completion preparation retains an execution refusal at its original phase.
 use super::WorthQueryInboundCompletionPreparationDenial as Denial;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as Stage;
-use crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial;
 use worth_relational::facade::transactions::{
     CommitExecutionDenialKind, TransactionCommitError as Error,
 };

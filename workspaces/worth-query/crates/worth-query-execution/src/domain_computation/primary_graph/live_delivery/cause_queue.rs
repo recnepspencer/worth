@@ -68,7 +68,7 @@ impl<Payload> WorthQueryLiveCauseQueue<Payload> {
     )>
     where
         Payload: 'static,
-    {
+{
         let cause = self.pending.front()?;
         let batch = cause.batch.batch();
         let payload = batch.emissions.get(cause.emission)?.payload_ref(effect)?;

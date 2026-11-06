@@ -1,5 +1,4 @@
 //! One installed recipe joins descriptive schema meaning to a Native handle.
-use {super::invalid_member, super::required_kind, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use worth_query_declaration::facade::application_schema::{
@@ -12,6 +11,10 @@ use worth_relational::facade::identity::KindId;
 use worth_relational::facade::schema::{
     DerivedRelationDefinitionParts, DerivedRelationHandle, DerivedRelationIdentity,
     RelationalSchemaRegistry, SchemaId, SchemaVersionId,
+};
+use {
+    super::invalid_member, super::required_kind,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial,
 };
 
 mod expression;

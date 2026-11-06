@@ -3,10 +3,16 @@ use super::*;
 use crate::domain_computation::authorization::{
     ReadCompletionAdmission, WorthQueryAdmittedOperation,
 };
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition;
-use {crate::domain_computation::primary_graph::application_contribution::CompletedComputationRetention, crate::domain_computation::primary_graph::computation_retention::prior_absence::PriorAbsence, crate::domain_computation::primary_graph::invariant_projection::ExpectedFactKeys, crate::domain_computation::primary_graph::invariant_projection::ObservedComputationInputs, crate::domain_computation::primary_graph::value_decode::ValueDecodeState};
-use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition;
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
+use {
+    crate::domain_computation::primary_graph::application_contribution::CompletedComputationRetention,
+    crate::domain_computation::primary_graph::computation_retention::prior_absence::PriorAbsence,
+    crate::domain_computation::primary_graph::invariant_projection::ExpectedFactKeys,
+    crate::domain_computation::primary_graph::invariant_projection::ObservedComputationInputs,
+    crate::domain_computation::primary_graph::value_decode::ValueDecodeState,
+};
 
 type ComputationReads = (ObservedComputationInputs, CompletedComputationRetention);
 

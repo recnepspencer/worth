@@ -10,9 +10,17 @@ use worth_foundational::facade::{ExecutionReport, PartitionIdentity};
 use super::super::items::{ItemDigests, Items};
 use super::super::routing::ComputationPartitionRouting;
 use super::observed::observe;
-use {super::retained::CompletedComputationRun, super::retained::RetainedCall, super::retained::RetainedPartitions, crate::domain_computation::primary_graph::computation_retention::full_cause::WorthQueryPartitionedComputationFullCause, super::retained::WorthQueryPartitionedComputationRunForTest};
-use {super::CompletedComputationRetention, crate::domain_computation::primary_graph::computation_retention::prior_absence::PriorAbsence, super::RetainedBasisToken};
 use crate::domain_computation::primary_graph::invariant_projection::ComputationCallCharge;
+use {
+    super::retained::CompletedComputationRun, super::retained::RetainedCall,
+    super::retained::RetainedPartitions,
+    super::retained::WorthQueryPartitionedComputationRunForTest,
+    crate::domain_computation::primary_graph::computation_retention::full_cause::WorthQueryPartitionedComputationFullCause,
+};
+use {
+    super::CompletedComputationRetention, super::RetainedBasisToken,
+    crate::domain_computation::primary_graph::computation_retention::prior_absence::PriorAbsence,
+};
 
 /// The calls, charges and partitions of one full run, recorded as it runs.
 /// A charge that did not measure leaves the run with nothing to retain.

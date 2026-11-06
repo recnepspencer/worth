@@ -1,8 +1,11 @@
 //! Parameter-specific translation of the sole original-request capture owner.
-use {super::request_stopped, super::stopped, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial as Denial};
 use worth_execution::{
     ChargedBytes, ExecutionMemoryReservation, ExecutionRequest, ExecutionResultMemory,
     MapKernelContext, MapKernelFailure,
+};
+use {
+    super::request_stopped, super::stopped,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial as Denial,
 };
 use {
     crate::domain_computation::primary_graph::admitted_capture,

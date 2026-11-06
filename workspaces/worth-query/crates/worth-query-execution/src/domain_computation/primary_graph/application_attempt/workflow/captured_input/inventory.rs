@@ -5,7 +5,12 @@ use crate::domain_computation::{
 };
 use sha2::{Digest, Sha256};
 use worth_query_declaration::facade::application_program::ApplicationWorkflowNodeIdentity;
-use {crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind, crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding};
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
+    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
+    crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct WorkflowCapturedTarget {
@@ -28,7 +33,11 @@ impl WorkflowCapturedInputs {
             facts: Vec::new(),
         }
     }
-    pub(in crate::domain_computation::primary_graph) fn prepare<S: ApplicationSchema, B: ApplicationMutationBinding<S>, C>(
+    pub(in crate::domain_computation::primary_graph) fn prepare<
+        S: ApplicationSchema,
+        B: ApplicationMutationBinding<S>,
+        C,
+    >(
         access: &WorthQueryProgramPublicationAccess,
         selected: &crate::domain_computation::primary_graph::application_attempt::WorkflowSelectionBasis<'_, S>,
         admission: &mut WorthQueryAdmittedApplicationOperation<S, B::Operation, B::Input, C>,

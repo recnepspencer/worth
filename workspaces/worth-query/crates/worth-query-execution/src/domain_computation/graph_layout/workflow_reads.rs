@@ -1,14 +1,12 @@
 //! Query read-index custody installed with this exact graph layout.
+use super::WorthQueryPrimaryGraphLayout;
 use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
 use worth_relational::facade::indexes::{
     DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind, RelatedEntityEndpoint,
     RelatedEntityOrderingDirection, RelatedEntityOrderingField,
 };
-use super::WorthQueryPrimaryGraphLayout;
 impl WorthQueryPrimaryGraphLayout {
-    pub(in crate::domain_computation) fn workflow_reads(
-        &self,
-    ) -> Option<WorkflowReadIndexes> {
+    pub(in crate::domain_computation) fn workflow_reads(&self) -> Option<WorkflowReadIndexes> {
         self.workflow_reads
     }
     pub(in crate::domain_computation) fn set_workflow_reads(

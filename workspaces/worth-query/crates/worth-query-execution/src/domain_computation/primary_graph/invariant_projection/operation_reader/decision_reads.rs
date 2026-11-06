@@ -69,7 +69,7 @@ impl FailedDecisionRead {
     pub(in crate::domain_computation::primary_graph) fn into_attempt_denial(
         self,
         operation: &str,
-    ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial {
+    ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial{
         use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial as Denial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind};
         match self {
             Self::Execution(cause) => Denial::relational_read_stopped(cause, operation),

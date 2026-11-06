@@ -5,7 +5,11 @@ use worth_relational::facade::schema::{
     SchemaVersionId,
 };
 
-use {super::planned_field_locator, super::register_entity, super::valid_aspect_key, super::valid_field_key, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial};
+use {
+    super::planned_field_locator, super::register_entity, super::valid_aspect_key,
+    super::valid_field_key,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+};
 
 const ENTITY: &str = "worth-query-program-activation";
 const ASPECT: &str = "activation";

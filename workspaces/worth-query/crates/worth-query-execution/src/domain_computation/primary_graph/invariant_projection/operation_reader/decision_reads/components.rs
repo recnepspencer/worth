@@ -1,13 +1,16 @@
 //! Original aggregate bodies bound to this projection's admission and contracts.
 use super::structural_walks::WalkRecordDenial as Denial;
 use super::*;
-use {crate::domain_computation::primary_graph::component_selection::ComponentSelection, crate::domain_computation::primary_graph::vocabulary::component_selection::key::ComponentSelectionKey};
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
 use crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity as Admission;
 use std::{collections::BTreeMap, sync::Arc};
 use worth_execution::MapKernelContext;
 use worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts as Contracts;
 use worth_relational::facade::snapshots::SnapshotHandle;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
+use {
+    crate::domain_computation::primary_graph::component_selection::ComponentSelection,
+    crate::domain_computation::primary_graph::vocabulary::component_selection::key::ComponentSelectionKey,
+};
 
 struct Issued {
     body: Arc<ComponentSelection>,

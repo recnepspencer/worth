@@ -1,8 +1,8 @@
 //! Explicit full materialization for adversarial owner fixtures only.
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
-use std::sync::Arc;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
+use std::sync::Arc;
 
 impl SealedComputationFacts {
     pub(super) fn at_seal(

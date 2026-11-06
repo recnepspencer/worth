@@ -6,7 +6,10 @@ use {
     super::super::WorthQuerySessionGraphReadProof,
     crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
 };
-use {crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout, crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity};
+use {
+    crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
+    crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity,
+};
 
 /// A move-only operation on an exact admitted session's source. This excludes
 /// its Send-only capacity reservation and exposes no mutation capability.

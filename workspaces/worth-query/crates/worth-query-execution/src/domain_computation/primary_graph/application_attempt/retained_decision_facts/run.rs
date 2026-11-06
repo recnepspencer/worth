@@ -9,7 +9,10 @@ pub struct Run<T> {
 }
 
 impl<T> Run<T> {
-    pub fn empty(count: usize, policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>) -> Result<Self, StoreDenial> {
+    pub fn empty(
+        count: usize,
+        policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
+    ) -> Result<Self, StoreDenial> {
         policy.check_live()?;
         let mut slots = ExecutionArrayBuilder::allocate(count, policy.policy())?;
         for _ in 0..count {

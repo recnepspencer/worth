@@ -2,15 +2,13 @@ use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusa
 use crate::basis::{
     WorthQueryProductBranch, WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchLease,
 };
+use crate::domain_computation::primary_graph::application_attempt::observation_room::ObservationRoomScopedOps;
+use crate::domain_computation::primary_graph::application_attempt::snapshot_lease::SelectedQueryOrigin;
 use crate::domain_computation::primary_graph::product_activation::InspectionScopedOps;
 use crate::domain_computation::primary_graph::product_operation::ApplicationBasisScopedOps;
-use crate::domain_computation::primary_graph::application_attempt::observation_room::ObservationRoomScopedOps;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::ProductBranchIdentity;
-use crate::domain_computation::primary_graph::application_attempt::snapshot_lease::SelectedQueryOrigin;
-
-
 
 /// Shared application entry bound to one retained World occurrence. Selecting
 /// another occurrence requires a new admission; this context never resolves latest.

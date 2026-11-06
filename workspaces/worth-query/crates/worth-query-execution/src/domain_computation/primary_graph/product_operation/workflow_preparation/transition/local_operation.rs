@@ -14,7 +14,6 @@ use worth_query_declaration::facade::application_operation::{
 use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
 
 impl WorthQueryWorkflowAdvanceAdapter {
-
     #[allow(clippy::too_many_arguments)]
     pub fn prepare_local_action<S, O, I, Scope, Spec, B>(
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
@@ -43,7 +42,6 @@ impl WorthQueryWorkflowAdvanceAdapter {
             kind,
         )
     }
-
 
     /// Reobserve the original route only after exact committed effect evidence.
     /// No old operation authority is restored or made executable again.
@@ -96,7 +94,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         Schema: ApplicationSchema,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
         Binding: ApplicationMutationBinding<Schema>,
-    {
+{
         crate::domain_computation::primary_graph::application_attempt::WorthQueryWorkflowActorContext::bind_owned_operation_actor_context::<Schema, Spec, Binding>(
             access, workflow, required,
         )
@@ -116,7 +114,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         Schema: ApplicationSchema,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
         Binding: ApplicationMutationBinding<Schema>,
-    {
+{
         crate::domain_computation::primary_graph::application_attempt::WorthQueryWorkflowActorContext::bind_approval_actor_context::<Schema, Spec, Binding>(
             access,
             selected.application().authority_identity().as_u64(),
@@ -136,7 +134,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         Schema: ApplicationSchema,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
         Binding: ApplicationMutationBinding<Schema>,
-    {
+{
         crate::domain_computation::primary_graph::application_attempt::WorthQueryWorkflowActorContext::bind_operation_actor_context::<Schema, Spec, Binding>(access, installed, required)
     }
 }

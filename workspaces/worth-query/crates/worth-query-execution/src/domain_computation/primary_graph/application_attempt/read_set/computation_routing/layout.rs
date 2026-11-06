@@ -149,7 +149,7 @@ impl CheckedReadLayout {
         &self,
         transition: &crate::domain_computation::primary_graph::invariant_projection::CallShapeTransition,
         control: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
-    ) -> Result<Arc<Self>, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial> {
+    ) -> Result<Arc<Self>, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial>{
         use super::reattribution::storage_denial;
         control.check_live()?;
         let memory = if control.policy().uses_accounting() {

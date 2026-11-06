@@ -1,7 +1,7 @@
 //! Read-only row projections. Audit is admitted by the caller before any role read.
-use crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowActorFieldsObservation;
 use super::read_fields::ReadFields;
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowActorFieldsObservation;
 use crate::domain_computation::primary_graph::application_discovery::{
     WorthQueryWorkflowApprovalRead as Approval, WorthQueryWorkflowHistoryAudit as Audit,
     WorthQueryWorkflowHistoryEntry as Entry, WorthQueryWorkflowReadDenial as Denial,
@@ -189,7 +189,7 @@ fn observe_approval(
 }
 fn role(
     fields: &ReadFields<'_, '_, '_>,
-    locators:&crate::domain_computation::graph_layout::workflow::actor_fields::WorkflowActorFields,
+    locators: &crate::domain_computation::graph_layout::workflow::actor_fields::WorkflowActorFields,
     entity: EntityId,
     kind: worth_relational::facade::identity::KindId,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,

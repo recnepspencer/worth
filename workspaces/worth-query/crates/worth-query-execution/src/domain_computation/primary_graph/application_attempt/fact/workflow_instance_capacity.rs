@@ -13,7 +13,7 @@ pub fn remains_equal(
     lineage: EntityId,
     maximum_instances: usize,
     expected: &[WorthQueryApplicationObservedRelation],
-) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial> {
+) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial>{
     Ok(expected.len() < maximum_instances
         && observe_adjacency(
             runtime,

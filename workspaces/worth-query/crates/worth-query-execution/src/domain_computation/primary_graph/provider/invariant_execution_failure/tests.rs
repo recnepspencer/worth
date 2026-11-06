@@ -121,11 +121,21 @@ fn semantic_identity() -> CustomInvariantSemanticIdentity {
 
 #[test]
 fn original_law_payload_survives_all_query_refusal_translations() {
-    use {crate::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied, crate::domain_computation::primary_graph::bootstrap_publication::map_bootstrap_commit_denial, crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage};
     use worth_relational::facade::identity::{EntityId, KindId, PartitionId};
     use worth_relational::facade::schema::ContractId;
     use worth_relational::facade::transactions::{CreatedEntityRef, EntityReference};
-    use {crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind, crate::domain_computation::WorthQueryProviderSessionFailure, crate::domain_computation::WorthQueryProviderSessionProtocolStage, crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryRelationLawDenial};
+    use {
+        crate::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied,
+        crate::domain_computation::primary_graph::bootstrap_publication::map_bootstrap_commit_denial,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage,
+        crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial,
+    };
+    use {
+        crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryRelationLawDenial,
+        crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+        crate::domain_computation::WorthQueryProviderSessionFailure,
+        crate::domain_computation::WorthQueryProviderSessionProtocolStage,
+    };
 
     // Payload transport only: these coordinates make no claim of graph admission.
     // The installed public graph court proves actual law/identity derivation.
@@ -270,10 +280,13 @@ fn publication_transport_error(
 
 #[test]
 fn authored_retirement_transport_preserves_typed_refusal_and_record_subject() {
-    use {crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial as Denial, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as Stage};
     use worth_relational::facade::{
         publication::{AuthoredRetirementRefusal, PublicationError, PublicationStage},
         transactions::TransactionCommitError,
+    };
+    use {
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as Stage,
+        crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial as Denial,
     };
     // Wire readmission supplies the same owner error shape; no authority is constructed.
     let mut original = PublicationError::new(PublicationStage::BundleAssembly, "opaque detail");

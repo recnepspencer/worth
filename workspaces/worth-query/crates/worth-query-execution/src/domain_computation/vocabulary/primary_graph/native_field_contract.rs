@@ -11,7 +11,9 @@ impl NativeFieldContractDenial {
     pub(in crate::domain_computation) fn detail(&self) -> &str {
         &self.detail
     }
-    pub(in crate::domain_computation) fn field_locus(&self) -> Option<&schema::ApplicationFieldBindingLocus> {
+    pub(in crate::domain_computation) fn field_locus(
+        &self,
+    ) -> Option<&schema::ApplicationFieldBindingLocus> {
         Some(&self.locus)
     }
 }

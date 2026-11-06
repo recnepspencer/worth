@@ -238,7 +238,7 @@ component definitions share its private storage, with separate membership
 relations. A component definition includes the set's member and normalized source
 meaning; changing the source roster selects a different definition.
 
-The compiled [installation courts](../../../worth-query-execution/src/domain_computation/primary_graph/schema_layout/aggregate_identity/tests/components.rs)
+The compiled [installation courts](../../../worth-query-execution/src/domain_computation/graph_layout/aggregate_identity/tests/components.rs)
 exercise this typed builder and the shared Native storage boundary.
 
 ### Operation Component Scope Declarations

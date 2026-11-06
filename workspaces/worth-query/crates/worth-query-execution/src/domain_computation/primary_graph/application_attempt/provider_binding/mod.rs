@@ -5,7 +5,6 @@ pub(crate) mod authored_correction_candidate_denial;
 mod effect_lowering;
 mod registration;
 
-
 pub(in crate::domain_computation::primary_graph) use registration::WorthQueryProviderEffectRegistrationSeal;
 pub(in crate::domain_computation::primary_graph::application_attempt) use registration::WorthQueryProviderRegistrationInspectionPermit;
 pub(in crate::domain_computation::primary_graph::application_attempt) use registration::WorthQueryRegisteredProviderAttemptSeal;
@@ -20,7 +19,11 @@ use worth_query_installation::facade::{
 use self::effect_accumulator::WorthQueryProviderEffectAccumulator;
 use super::effect_program::WorthQueryApplicationRealizedEffect;
 use super::fact::WorthQueryApplicationObservedFact;
-use {super::WorthQueryAdmittedApplicationEmissionBatch, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationEmission, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
+use {
+    super::WorthQueryAdmittedApplicationEmissionBatch, super::WorthQueryApplicationEmission,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 
 pub struct WorthQueryPreparedApplicationProviderAttempt {
     workflow_origin: Option<crate::domain_computation::primary_graph::application_attempt::workflow::operation_output::WorkflowOperationOrigin>,
@@ -126,9 +129,7 @@ pub(super) fn installed_preimage_demand(
 }
 
 pub fn prepare_provider_attempt<'layout>(
-    unique_fields: crate::domain_computation::graph_layout::WorthQueryUniqueFields<
-        'layout,
-    >,
+    unique_fields: crate::domain_computation::graph_layout::WorthQueryUniqueFields<'layout>,
     contracts: &'layout effect_lowering::AspectContracts<'layout>,
     mutation_partition: worth_relational::facade::identity::PartitionId,
     application_effect_count: usize,
@@ -193,9 +194,7 @@ pub fn prepare_provider_attempt<'layout>(
 }
 
 pub(super) fn prepare_program_migration_batch<'layout>(
-    unique_fields: crate::domain_computation::graph_layout::WorthQueryUniqueFields<
-        'layout,
-    >,
+    unique_fields: crate::domain_computation::graph_layout::WorthQueryUniqueFields<'layout>,
     mutation_partition: worth_relational::facade::identity::PartitionId,
     completed_facts: super::CompletedFactRoutes,
     contracts: &'layout effect_lowering::AspectContracts<'layout>,

@@ -58,12 +58,11 @@ fn cancelled_cleanup_preserves_the_interleaved_peer() {
                 &phase.borrowed_request_for_test(),
                 phase,
                 &world.application,
-                progress_application_commit(
+                progress_application_commit_without_history_for_test(
                     &phase.borrowed_request_for_test(),
                     phase,
                     &world.application,
                     victim,
-                    None,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 ),
             );

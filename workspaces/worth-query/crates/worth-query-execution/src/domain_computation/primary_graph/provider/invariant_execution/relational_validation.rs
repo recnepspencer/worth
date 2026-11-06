@@ -167,14 +167,14 @@ mod tests {
 
     #[test]
     fn interrupted_caller_keeps_validation_work_stop_and_stage() {
+        use crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage;
+        use crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial;
+        use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionDenialKind as Kind;
+        use crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as ExecutionKind;
+        use crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
         use worth_relational::facade::transactions::{
             CommitExecutionDenial, CommitExecutionDenialKind, RelationalExecutionDenialCause,
         };
-use crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage;
-use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionDenialKind as Kind;
-use crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as ExecutionKind;
-use crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
         let source = worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource::new();
         let request =
             worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(

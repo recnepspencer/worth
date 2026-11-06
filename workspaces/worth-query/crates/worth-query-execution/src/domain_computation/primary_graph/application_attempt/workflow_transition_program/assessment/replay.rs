@@ -2,7 +2,18 @@ use crate::domain_computation::primary_graph::application_attempt::IdempotencyRe
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{decode_hex_identity, evidence_meaning, projection_with_locator};
-use {crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryWorkflowAssessmentPosture, crate::domain_computation::primary_graph::PreparedWorkflowAdvance, crate::domain_computation::primary_graph::RequiredWorkflowAssessment, crate::domain_computation::primary_graph::WorkflowProgressOutcome, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolution, crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial, crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted, crate::domain_computation::primary_graph::WorthQueryObservedSource, crate::domain_computation::primary_graph::WorthQueryOutputDemandSettlement};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
+    crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryWorkflowAssessmentPosture,
+    crate::domain_computation::primary_graph::PreparedWorkflowAdvance,
+    crate::domain_computation::primary_graph::RequiredWorkflowAssessment,
+    crate::domain_computation::primary_graph::WorkflowProgressOutcome,
+    crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolution,
+    crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial,
+    crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted,
+    crate::domain_computation::primary_graph::WorthQueryObservedSource,
+    crate::domain_computation::primary_graph::WorthQueryOutputDemandSettlement,
+};
 
 impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation, Input, Scope>
 where
@@ -24,9 +35,7 @@ where
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn resolve_assessment_replay<
-        Query,
-    >(
+    pub(in crate::domain_computation::primary_graph) fn resolve_assessment_replay<Query>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,

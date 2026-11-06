@@ -1,5 +1,9 @@
 use worth_relational::facade::content::RelationalContentDenial;
-use {super::super::HandlerExecutionDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::value_decode::WorthQueryValueDecodeDenial};
+use {
+    super::super::HandlerExecutionDenial,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::value_decode::WorthQueryValueDecodeDenial,
+};
 
 #[derive(Debug)]
 pub enum ContentReadDenial {

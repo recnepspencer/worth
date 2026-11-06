@@ -22,7 +22,6 @@ use stops::failure;
 use stops::snapshot_capacity_failure;
 
 use super::session_commit::snapshot_admission_failure;
-use crate::domain_computation::primary_graph::provider::application_attempt_state::registration::registered_attempt::WorthQueryPrimaryGraphApplicationAttempt;
 use super::WorthQueryPrimaryGraphCommittedApplication;
 use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::WorthQueryProviderSessionFailure;

@@ -1,8 +1,11 @@
-use {super::planned_field_locator, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial};
 use std::collections::BTreeMap;
 use worth_foundational::facade::{AspectContract, AspectFieldLocator};
 use worth_query_installation::facade::{
     ApplicationFieldBindingOwnerKind, WorthQueryInstalledApplicationSchemaContractCatalog,
+};
+use {
+    super::planned_field_locator,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
 };
 
 #[derive(Debug, Default)]

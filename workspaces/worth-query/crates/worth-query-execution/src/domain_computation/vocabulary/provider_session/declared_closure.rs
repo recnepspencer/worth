@@ -353,3 +353,5 @@ impl WorthQueryProviderPlanDeclarations {
         Self::test_direct(graph_role, read_access, touched)
     }
 }
+
+mod court_doors_for_test;

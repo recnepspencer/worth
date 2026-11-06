@@ -5,7 +5,11 @@ use worth_relational::facade::{
     runtime::{ProjectionAspectScope, RelationalRuntime},
     snapshots::SnapshotHandle,
 };
-use {super::super::denial, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
+use {
+    super::super::denial,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 
 // Logical reservation, not RSS: one reusable observation scratch buffer plus
 // per-transition inventory/projection vectors, progress tree nodes and replay

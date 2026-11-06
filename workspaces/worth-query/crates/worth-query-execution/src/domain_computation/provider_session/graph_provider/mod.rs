@@ -17,7 +17,6 @@ mod work_report;
 
 pub(crate) use call::WorthQueryGraphProviderCallReadmissionPlan;
 pub use call::{WorthQueryGraphProviderCall, WorthQueryGraphProviderCallRequest};
-pub use convergence_port::*;
 
 pub use commit_call::{WorthQueryGraphCommitCall, WorthQueryGraphCommitCallRequest};
 pub use materialization::WorthQueryGraphReadRows;

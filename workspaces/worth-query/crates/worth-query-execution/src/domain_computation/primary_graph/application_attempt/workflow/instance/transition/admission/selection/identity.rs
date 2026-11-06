@@ -4,7 +4,10 @@ use worth_relational::facade::identity::EntityId;
 
 use super::{CompiledWorkflowDefinition, CompiledWorkflowNode};
 use crate::domain_computation::canonical_operation_material;
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 
 pub(super) fn transition_identity(
     compiled: &CompiledWorkflowDefinition,

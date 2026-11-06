@@ -7,7 +7,9 @@ pub struct RunDirectory<T> {
     pub slots: Option<ExecutionArray<RefCell<Option<Run<T>>>>>,
 }
 impl<T> RunDirectory<T> {
-    pub fn new(policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>) -> Result<Self, StoreDenial> {
+    pub fn new(
+        policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
+    ) -> Result<Self, StoreDenial> {
         policy.check_live()?;
         let mut slots = ExecutionArrayBuilder::allocate(1, policy.policy())?;
         slots.push(RefCell::new(None))?;

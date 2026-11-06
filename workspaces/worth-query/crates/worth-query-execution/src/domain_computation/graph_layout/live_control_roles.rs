@@ -1,10 +1,13 @@
 //! Installation derives record roles whose payload carries live security authority.
-use {super::required_kind, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, super::WorthQueryPrimaryGraphLayout};
 use std::collections::{BTreeMap, BTreeSet};
 use worth_query_installation::facade::{
     ApplicationSchemaMember, ErasedApplicationSchemaDeclaration,
 };
 use worth_relational::facade::identity::KindId;
+use {
+    super::required_kind, super::WorthQueryPrimaryGraphLayout,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+};
 
 pub(super) fn lower(
     schema: &ErasedApplicationSchemaDeclaration,
@@ -31,10 +34,7 @@ pub(super) fn lower(
 }
 
 impl WorthQueryPrimaryGraphLayout {
-    pub(in crate::domain_computation) fn is_live_control_entity_kind(
-        &self,
-        kind: KindId,
-    ) -> bool {
+    pub(in crate::domain_computation) fn is_live_control_entity_kind(&self, kind: KindId) -> bool {
         self.live_control_entity_kinds.contains(&kind)
     }
 }

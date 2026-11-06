@@ -1,8 +1,12 @@
 //! Borrow the genuine preparation owners together, without replacing them by copied scope data.
-use {crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation};
 use worth_query_declaration::facade::{
     application_operation::{ApplicationMutationBinding, ApplicationMutationScopeBinding},
     application_schema::ApplicationSchema,
+};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
+    crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation,
+    crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation,
 };
 
 pub(super) type Scope<S, M> = <<M as ApplicationMutationBinding<S>>::ScopeBinding as ApplicationMutationScopeBinding<S>>::Scope;

@@ -1,10 +1,13 @@
 //! Admission of native whole-struct effects under actual installed field grants.
-use {super::TouchAdmissionFailure as Failure, crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout};
 use worth_foundational::facade::{AbsenceLaw, AspectMask, AspectShape, MutationMask};
 use worth_query_installation::facade::{
     WorthQueryOperationTouchContract, WorthQueryOperationTouchScope,
 };
 use worth_relational::facade::mvcc::ValidatedEntityStructTouch;
+use {
+    super::TouchAdmissionFailure as Failure,
+    crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
+};
 
 pub(super) fn admit(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

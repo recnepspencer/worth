@@ -1,5 +1,4 @@
 //! Construction values fill required slots; missing configuration never changes meaning.
-use {super::super::super::application_entry::mutation::OperationHandler, super::super::super::WorthQueryApplicationProjection, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as Kind};
 use super::super::producer::{ProducerSourceQuery, ProducerSourceValue};
 use super::super::{
     WorthQueryApplicationConditionalBinding as Conditional, WorthQueryApplicationContributionSetup,
@@ -8,6 +7,12 @@ use super::super::{
 use super::WorthQueryRequiredFeatureContract;
 use worth_query_declaration::facade::{
     application_operation::ApplicationMutationBinding, application_schema::ApplicationSchema,
+};
+use {
+    super::super::super::application_entry::mutation::OperationHandler,
+    super::super::super::WorthQueryApplicationProjection,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as Kind,
 };
 
 /// A configured feature always names both slots, even when a source disables one.

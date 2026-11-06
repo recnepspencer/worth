@@ -1,6 +1,11 @@
 //! Bind the installed producer declarations to the active Native publication handle.
-use {super::super::application_contribution::WorthQueryInstalledApplicationProducerRegistry, super::super::WorthQueryPrimaryGraphBootstrap, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as Kind};
 use worth_query_installation::facade::ApplicationSchema;
+use {
+    super::super::application_contribution::WorthQueryInstalledApplicationProducerRegistry,
+    super::super::WorthQueryPrimaryGraphBootstrap,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as Kind,
+};
 
 pub(super) fn seal<S: ApplicationSchema>(
     graph: &mut WorthQueryPrimaryGraphBootstrap<S>,

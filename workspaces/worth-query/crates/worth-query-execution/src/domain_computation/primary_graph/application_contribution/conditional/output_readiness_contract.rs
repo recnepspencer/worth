@@ -5,8 +5,8 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade as domain;
 pub(super) mod typed;
 use super::super::native_field_contract::FieldExpectation;
-pub use typed::{WorthQueryOutputReadinessContract, WorthQueryReadinessFieldUse};
 use crate::domain_computation::vocabulary::primary_graph::output_readiness_contract::WorthQueryOutputReadinessContractDenial;
+pub use typed::{WorthQueryOutputReadinessContract, WorthQueryReadinessFieldUse};
 
 /// Domain facts needed to declare Query's standard derived-output readiness operation.
 pub struct WorthQueryOutputReadinessContractBuilder {
@@ -26,11 +26,6 @@ pub struct WorthQueryOutputReadinessContractBuilder {
         worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus,
     >,
 }
-
-
-
-
-
 
 impl WorthQueryOutputReadinessContractBuilder {
     #[allow(clippy::too_many_arguments)]
@@ -252,8 +247,5 @@ fn support_contract() -> domain::WorthQueryOperationSupportRequirements {
 }
 
 pub fn denial(detail: impl Into<String>) -> WorthQueryOutputReadinessContractDenial {
-    WorthQueryOutputReadinessContractDenial {
-        detail: detail.into(),
-        locus: None,
-    }
+    WorthQueryOutputReadinessContractDenial::new(detail.into(), None)
 }

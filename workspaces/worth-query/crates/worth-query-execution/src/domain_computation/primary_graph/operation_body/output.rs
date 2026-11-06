@@ -1,5 +1,4 @@
 //! Install fixed authored roles, then use the existing candidate correspondence owner.
-use {crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as Kind};
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse;
 use crate::equality_type_id::EqualityTypeId;
 use worth_query_declaration::facade::{
@@ -9,6 +8,10 @@ use worth_query_declaration::facade::{
     },
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
+use {
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as Kind,
+};
 
 pub(super) struct InstalledBodyOutput {
     pub(super) target: ApplicationOperationBodyOutputTarget,
@@ -94,7 +97,7 @@ pub(super) fn install_outputs<
 pub(super) fn require_related_outputs<Schema>(
     outputs: &[InstalledBodyOutput],
     selections: &crate::domain_computation::primary_graph::vocabulary::operation_body::selection::PreparedBodySelections<Schema>,
-) -> Result<(), crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial> {
+) -> Result<(), crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial>{
     for output in outputs {
         if let ApplicationOperationBodyOutputTarget::Related { relation, from, to } = &output.target
             && selections.selected(relation, from, to).is_none()

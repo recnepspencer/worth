@@ -1,6 +1,11 @@
 use worth_relational::facade::identity::{EntityId, KindId};
 
-use {super::denial, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationObservedFact, super::WorthQueryCompleteApplicationReadSet, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
+use {
+    super::denial, super::WorthQueryApplicationObservedFact,
+    super::WorthQueryCompleteApplicationReadSet,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 
 /// The observed links of one declared relation between two exact entities, as
 /// recorded in a decision read set.

@@ -52,11 +52,11 @@ mod support_admission;
 pub(crate) mod unique_fields;
 pub(crate) mod workflow;
 mod workflow_reads;
-pub(in crate::domain_computation) use workflow_reads::WorkflowReadIndexes;
 pub(in crate::domain_computation) use unique_fields::WorthQueryUniqueFieldFixture;
 pub(in crate::domain_computation) use unique_fields::{
     WorthQueryUniqueFieldIndex, WorthQueryUniqueFields,
 };
+pub(in crate::domain_computation) use workflow_reads::WorkflowReadIndexes;
 
 use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
 use crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxLayout;
@@ -97,8 +97,7 @@ pub struct WorthQueryPrimaryGraphLayout {
     projected_domains: BTreeMap<String, projected_member_domain::ProjectedMemberDomainLayout>,
     application_entity_kinds: BTreeSet<KindId>,
     signing: signed_entities::SignedEntityLayout,
-    pub(in crate::domain_computation) signing_lifecycle:
-        signing_lifecycle::SigningLifecycleLayout,
+    pub(in crate::domain_computation) signing_lifecycle: signing_lifecycle::SigningLifecycleLayout,
     application_relation_kinds: BTreeSet<KindId>,
     fields: BTreeMap<(String, String, String), WorthQueryPrimaryFieldLayout>,
     relation_payload: relation_payload::ApplicationRelationPayloadLayout,
@@ -343,15 +342,21 @@ impl WorthQueryPrimaryGraphLayout {
             .map(|layout| &layout.locator)
     }
 
-    pub(in crate::domain_computation) const fn provider_idempotency(&self) -> &WorthQueryProviderIdempotencyLayout {
+    pub(in crate::domain_computation) const fn provider_idempotency(
+        &self,
+    ) -> &WorthQueryProviderIdempotencyLayout {
         &self.provider_idempotency
     }
 
-    pub(in crate::domain_computation) fn provider_idempotency_mut(&mut self) -> &mut WorthQueryProviderIdempotencyLayout {
+    pub(in crate::domain_computation) fn provider_idempotency_mut(
+        &mut self,
+    ) -> &mut WorthQueryProviderIdempotencyLayout {
         &mut self.provider_idempotency
     }
 
-    pub(in crate::domain_computation) const fn provider_dispatch_outbox(&self) -> &WorthQueryDispatchOutboxLayout {
+    pub(in crate::domain_computation) const fn provider_dispatch_outbox(
+        &self,
+    ) -> &WorthQueryDispatchOutboxLayout {
         &self.provider_dispatch_outbox
     }
 
@@ -359,7 +364,9 @@ impl WorthQueryPrimaryGraphLayout {
         &self.provider_inbound_completion
     }
 
-    pub(in crate::domain_computation) const fn provider_aftermath_causality(&self) -> &WorthQueryAftermathCausalityLayout {
+    pub(in crate::domain_computation) const fn provider_aftermath_causality(
+        &self,
+    ) -> &WorthQueryAftermathCausalityLayout {
         &self.provider_aftermath_causality
     }
 

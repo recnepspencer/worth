@@ -1,7 +1,10 @@
 //! Custody of one handler's total retention result before seal.
 
-use {super::CompletedComputationRetention, crate::domain_computation::primary_graph::computation_retention::prior_absence::PriorAbsence};
 use std::sync::{Arc, Mutex};
+use {
+    super::CompletedComputationRetention,
+    crate::domain_computation::primary_graph::computation_retention::prior_absence::PriorAbsence,
+};
 
 #[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct ComputationDeposit(

@@ -1,12 +1,15 @@
 //! Concrete original-output content certification and original-funded attachment.
 use super::WorthQueryCorrectionOutputProjectionDenial as Denial;
-use {crate::domain_computation::primary_graph::content::require_contract, crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::WorthQueryApplicationCommittedChanges};
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_query_declaration::facade::application_schema::ApplicationContentBindingRecipe;
 use worth_relational::facade::{
     content::{RelationalContentAttachments, RelationalContentDenial, RelationalContentFrame},
     identity::EntityId,
+};
+use {
+    crate::domain_computation::primary_graph::content::require_contract,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::WorthQueryApplicationCommittedChanges,
 };
 pub(super) fn certify(
     request: &ExecutionRequest<'_, '_>,

@@ -1,9 +1,12 @@
 //! Only exact installed destination codecs may admit a computed scalar.
 use crate::domain_computation::primary_graph::vocabulary::operation_body::operation_body_value::InstalledBodyValue;
-use {crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as Kind};
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyCreatedField as Created, ApplicationOperationBodyProgram,
     ApplicationOperationBodyScopeField as Scope,
+};
+use {
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as Kind,
 };
 pub(in crate::domain_computation::primary_graph::operation_body) fn install<
     S: worth_query_installation::facade::ApplicationSchema,

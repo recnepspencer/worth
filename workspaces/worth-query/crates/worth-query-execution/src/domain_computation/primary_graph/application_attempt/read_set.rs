@@ -8,13 +8,19 @@ use worth_query_installation::facade::{
     DeclaredApplicationFieldValue, EqualityPredicate, OperationReads, WritePosture,
 };
 
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey, super::fact::WorthQueryApplicationObservedFact};
 use super::read_phase::{
     WorthQueryOrdinaryApplicationRead, WorthQueryProjectedApplicationMutation,
 };
 use super::read_scope::WorthQueryApplicationReadScope;
 use super::snapshot_lease::WorthQueryApplicationSnapshotLease;
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
+use {
+    super::fact::WorthQueryApplicationObservedFact,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey,
+};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 use {
     crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation,
     crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity,

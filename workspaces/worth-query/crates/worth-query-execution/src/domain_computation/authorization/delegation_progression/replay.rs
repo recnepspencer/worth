@@ -17,7 +17,12 @@ use super::super::{
     },
     WorthQueryAdmittedApplicationCapabilityAccess,
 };
-use {crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolution, crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
+    crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome,
+    crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolution,
+    crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial,
+};
 
 pub trait ReplayOps<Schema: ApplicationSchema>:
     crate::domain_computation::authorization::host::AuthorizationHost<Schema>

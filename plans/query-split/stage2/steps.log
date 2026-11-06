@@ -33,3 +33,9 @@ wave 1, greedy report (module_coupling.py report): primary_graph component 57 of
 wave 1, canonical host order (vocabulary_simulation.py, host-supertrait order, draft stack for ties): primary_graph component 57, 1105 refs against the layering (was 59, 1625); domain component 12, 396 refs (was 12, 432)
   remaining seams under the host order: ownership/vocabulary/after-wave-1/*/host-order-seams.md
   milestone: cargo check --workspace --tests over workspaces/worth-query clean at 1060779246; boundary-check and agent-context check clean; line caps (dirty) pass
+# Wave 2: nine seam packets merged in packets.md order, one combined compile-and-fix pass
+wave 2, canonical host order (fixed stacks: vocabulary and runtime_host at the bottom): primary_graph component 52, 924 refs against the host order (wave 1: 57, 1105); domain component 11, 234 (wave 1: 12, 396)
+wave 2, greedy report: primary_graph component 52 of 80; 112 upward edges, 925 refs (wave 1: 126, 1141); domain component 11 of 23; 12 upward edges, 234 refs (wave 1: 14, 396)
+  stray inherent impls (frozen in the layering baselines, empty by the end of Stage 2): primary graph 48 (72 at e200ba0e00), domain 14 (26)
+  remaining seams under the host order: ownership/vocabulary/after-wave-2/*/host-order-seams.md
+  milestone: cargo check --workspace --tests over workspaces/worth-query clean; no unconditional_recursion; boundary-check, agent-context and line caps (dirty) pass; layering check passes against the regenerated baselines

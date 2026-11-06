@@ -3,7 +3,6 @@ use super::{
     relations::{owned_fact_integrity, register_platform_entity},
     WorkflowOperationOutputLayout,
 };
-use {crate::domain_computation::graph_layout::invalid_member, crate::domain_computation::graph_layout::kind_space_exhausted, crate::domain_computation::graph_layout::planned_field_locator, crate::domain_computation::graph_layout::register_relation, crate::domain_computation::graph_layout::register_relation_to_kinds, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial};
 use worth_foundational::facade::{aspects, AspectIdentity, ScalarAspectType};
 use worth_query_installation::facade::{
     ApplicationRelationCardinality, ApplicationRelationCrossContextPolicy,
@@ -12,6 +11,14 @@ use worth_query_installation::facade::{
 use worth_relational::facade::{
     identity::KindId,
     schema::{RelationalSchemaRegistry, SchemaId, SchemaVersionId},
+};
+use {
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial,
+    crate::domain_computation::graph_layout::invalid_member,
+    crate::domain_computation::graph_layout::kind_space_exhausted,
+    crate::domain_computation::graph_layout::planned_field_locator,
+    crate::domain_computation::graph_layout::register_relation,
+    crate::domain_computation::graph_layout::register_relation_to_kinds,
 };
 
 pub(super) fn lower(

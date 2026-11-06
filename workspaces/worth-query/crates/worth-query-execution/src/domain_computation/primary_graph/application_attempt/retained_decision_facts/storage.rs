@@ -9,7 +9,9 @@ pub struct RetainedFactStore<T> {
     failure: Option<StoreDenial>,
 }
 impl<T> RetainedFactStore<T> {
-    pub fn new(policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>) -> Result<Self, StoreDenial> {
+    pub fn new(
+        policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
+    ) -> Result<Self, StoreDenial> {
         policy.check_live()?;
         Ok(Self::vacant())
     }
@@ -215,7 +217,10 @@ impl<T> RetainedFactStore<T> {
         let record = record.as_mut().unwrap();
         duplicate(&mut record.value, value)
     }
-    fn flush(&mut self, policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>) -> Result<(), StoreDenial> {
+    fn flush(
+        &mut self,
+        policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
+    ) -> Result<(), StoreDenial> {
         let next = Run::empty(AUTHOR_CHUNK, policy)?;
         let mut carry = self.chunk.replace(next).unwrap();
         let mut level = 0;

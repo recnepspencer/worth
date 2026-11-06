@@ -54,7 +54,7 @@ impl OutputCurrentnessFacts {
     pub(in crate::domain_computation::primary_graph::application_attempt) fn admit_owned_program_facts(
         facts: Vec<WorthQueryApplicationObservedFact>,
         control: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
-    ) -> Result<Self, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial> {
+    ) -> Result<Self, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial>{
         use crate::domain_computation::primary_graph::application_checkpoint::facts::NativeFactPayloadBuilder;
         control.check_live()?;
         let mut builder = NativeFactPayloadBuilder::allocate_completed_read(facts.len(), control)?;

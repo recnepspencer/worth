@@ -1,8 +1,11 @@
 //! Migration preserves prior performed effects; lifecycle succession does not.
-use {crate::domain_computation::graph_layout::register_relation, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial};
 use worth_relational::facade::{
     identity::KindId,
     schema::{RelationalSchemaRegistry, SchemaId, SchemaVersionId},
+};
+use {
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+    crate::domain_computation::graph_layout::register_relation,
 };
 
 pub(super) fn register(
@@ -22,7 +25,8 @@ pub(super) fn register(
         migrated_from,
         instance,
         instance,
-        &crate::domain_computation::graph_layout::workflow::relations::single_successor_integrity().into(),
+        &crate::domain_computation::graph_layout::workflow::relations::single_successor_integrity()
+            .into(),
         None,
     )?;
     register_relation(
@@ -33,7 +37,8 @@ pub(super) fn register(
         prior_effect,
         instance,
         transition,
-        &crate::domain_computation::graph_layout::workflow::relations::prior_effect_integrity().into(),
+        &crate::domain_computation::graph_layout::workflow::relations::prior_effect_integrity()
+            .into(),
         None,
     )
 }

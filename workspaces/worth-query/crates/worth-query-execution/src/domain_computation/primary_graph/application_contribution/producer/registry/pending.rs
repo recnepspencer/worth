@@ -2,8 +2,8 @@ use super::super::WorthQueryProducerDenialDeclaration;
 use super::pending_factory::{PendingProducerExecutor, TypedPendingProducer};
 use super::semantic_edition::ProducerEditionAdmission;
 use super::*;
-use crate::equality_type_id::EqualityTypeId as TypeId;
 use crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 pub(in crate::domain_computation::primary_graph) struct PendingProducerRegistry<Schema> {
     declared: BTreeMap<String, DeclaredProducerBinding>,

@@ -9,8 +9,8 @@ use worth_relational::facade::runtime::{
 use worth_relational::facade::storage::RecordLifecycleState;
 
 use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
 use crate::domain_computation::primary_graph::application_attempt::fact::observe_adjacency_checked;
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
 use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;

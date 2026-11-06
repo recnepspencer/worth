@@ -1,7 +1,6 @@
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
 use worth_query_declaration::facade::application_operation::WorthQueryApplicationOutputRoleFamily;
-use worth_query_declaration::facade::application_operation::WorthQueryApplicationOutputRoleNameDenial;
 use worth_relational::facade::identity::EntityId;
 
 use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as WorthQueryApplicationOutputPosture;
@@ -72,7 +71,7 @@ impl CommittedOutputBinding {
 pub struct WorthQueryApplicationOutputCorrespondence {
     binding_type: Option<TypeId>,
     contract_type: Option<TypeId>,
-    storage: std::sync::Arc<CorrespondenceStorage>,
+    pub(in crate::domain_computation::primary_graph) storage: std::sync::Arc<CorrespondenceStorage>,
 }
 
 impl WorthQueryApplicationOutputCorrespondence {

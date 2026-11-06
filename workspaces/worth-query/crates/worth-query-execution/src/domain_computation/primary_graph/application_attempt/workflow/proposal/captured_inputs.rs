@@ -1,5 +1,4 @@
 //! Immutable per-target rows published in the proposal's own native candidate.
-use {super::super::captured_input::WorkflowCapturedTarget, crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout};
 use super::WorkflowProposalMeaning;
 use crate::domain_computation::{
     canonical_operation_material,
@@ -13,6 +12,10 @@ use worth_foundational::facade::{AspectValue, InternedString};
 use worth_relational::facade::{
     symbols::ClientKey,
     transactions::{CreatedEntityRef, EntityReference},
+};
+use {
+    super::super::captured_input::WorkflowCapturedTarget,
+    crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout,
 };
 
 pub(super) fn identity(proposal: &str, node: &str) -> String {

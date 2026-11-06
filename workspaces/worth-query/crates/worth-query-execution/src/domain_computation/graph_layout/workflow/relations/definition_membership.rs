@@ -1,9 +1,13 @@
 //! Definition ownership and control-graph endpoints retain their original native kind offsets.
-use {super::connection_endpoint_integrity, super::current_definition_integrity, super::definition_start_integrity, super::owned_fact_integrity, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial};
 use crate::domain_computation::graph_layout::register_relation;
 use worth_relational::facade::{
     identity::KindId,
     schema::{RelationalSchemaRegistry, SchemaId, SchemaVersionId},
+};
+use {
+    super::connection_endpoint_integrity, super::current_definition_integrity,
+    super::definition_start_integrity, super::owned_fact_integrity,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
 };
 
 pub(in crate::domain_computation::graph_layout::workflow) fn register(

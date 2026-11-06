@@ -111,3 +111,5 @@ impl RebaseVerificationFailure {
         Self::into_reason(self)
     }
 }
+
+mod court_doors_for_test;

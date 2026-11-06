@@ -1,6 +1,9 @@
 //! Exact sorted view of existing projected keys, without another key copy.
-use {crate::domain_computation::primary_graph::application_attempt::ComputationFactAttribution, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey as Key};
 use std::{collections::BTreeSet, sync::Arc};
+use {
+    crate::domain_computation::primary_graph::application_attempt::ComputationFactAttribution,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey as Key,
+};
 
 pub struct ExpectedFactKeys {
     walks: super::structural_walks::IssuedWalkValues,

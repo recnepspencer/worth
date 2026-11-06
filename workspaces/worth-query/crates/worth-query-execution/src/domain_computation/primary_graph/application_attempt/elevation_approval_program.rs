@@ -15,7 +15,12 @@ use crate::domain_computation::application_contract_admission::{
     application_contract_exactly_matches_program_targets, graph_reads_exactly_match_targets,
 };
 use crate::domain_computation::authorization::WorthQueryElevationApprovalBinding;
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationEffectProgram, super::WorthQueryCompleteApplicationReadSet, super::WorthQueryProjectedApplicationMutation, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
+use {
+    super::WorthQueryApplicationEffectProgram, super::WorthQueryCompleteApplicationReadSet,
+    super::WorthQueryProjectedApplicationMutation,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 
 /// Exact approval mutation derived from Query-owned lifecycle authority.
 ///

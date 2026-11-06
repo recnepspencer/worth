@@ -1,10 +1,10 @@
 //! Bind the native completed-chain proof and existing output to one guarded candidate.
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding;
-use super::WorkflowSuccessionAuthority;
-use super::mismatch;
 use super::super::super::WorthQueryApplicationEffectProgram;
 use super::super::super::WorthQueryApplicationRealizedEffect;
+use super::mismatch;
+use super::WorkflowSuccessionAuthority;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding;
 use {
     crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial,
     crate::domain_computation::request_execution::WorthQueryAdvancementPhase,

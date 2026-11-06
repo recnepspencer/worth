@@ -13,7 +13,12 @@ use {
     crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity,
     crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord,
 };
-use {crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::WorthQueryPrimaryMutationWorkEvidence, crate::domain_computation::vocabulary::primary_graph::commit_authority_binding::WorthQueryRetainedGovernedInput};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
+    crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+    crate::domain_computation::primary_graph::WorthQueryPrimaryMutationWorkEvidence,
+    crate::domain_computation::vocabulary::primary_graph::commit_authority_binding::WorthQueryRetainedGovernedInput,
+};
 
 use super::denial::{WorthQueryRecoveryHandleDenial, WorthQueryRecoveryHandleDenialKind};
 
@@ -116,7 +121,7 @@ impl WorthQueryRecoveryHandleBinding {
 
     pub const fn committed_product_publication(
         &self,
-    ) -> &crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication {
+    ) -> &crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication{
         &self.committed_product_publication
     }
 

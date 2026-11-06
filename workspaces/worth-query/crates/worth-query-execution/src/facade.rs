@@ -23,77 +23,8 @@ pub mod causal_inspection {
 
 /// Fresh application inspection; only its supported result and request vocabulary.
 pub mod application_inspection {
-pub use crate::domain_computation::primary_graph::application_output_demand::settlement::output_evaluation::WorthQueryProducerEvaluationIneligibility;
-pub use crate::domain_computation::primary_graph::causal_inspection::CausalInspectionReason;
-pub use crate::domain_computation::primary_graph::causal_inspection::CausalObservationMissingReferencePosture;
-pub use crate::domain_computation::primary_graph::causal_inspection::DiagnosticComparisonDenial;
-pub use crate::domain_computation::primary_graph::causal_inspection::FactlessCurrentness;
-pub use crate::domain_computation::primary_graph::causal_inspection::OutputFieldCaptureFailure;
-pub use crate::domain_computation::primary_graph::causal_inspection::OwnEffectOnReads;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationDisclosureContractDenial;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationEvidenceFamily;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionCanonicalRefusal;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionDenial;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionOwnerRefusal;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionRequest;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionResourceRefusal;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionStage;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionStopKind;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationMaterializationPolicy;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationMaterializationRequest;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationProducerConnection;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationProducerEvaluation;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationQueryGovernanceDenialKind;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationQueryInstallationDenial;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationQueryInstallationDenialKind;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationQueryObservation;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationRichMaterialization;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryChangedInspectionRequest;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryChangedReferenceOnlyInspectionRequest;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryComparedApplicationInspection;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryConditionalHistoryAvailability;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryConditionalHistoryDecisionClass;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryConditionalHistoryOutcome;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryConnectedApplicationInspection;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryConnectedInspectionRequest;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryConnectedReferenceOnlyInspectionRequest;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryEvaluatedApplicationInspection;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryEvaluatedInspectionRequest;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryEvaluatedReferenceOnlyInspectionRequest;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryInspectionEvidenceAvailability;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryInspectionReadTerminalDenial;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryInspectionRetainedEvidence;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryInspectionSupplierEvidence;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryManagedGraphReadDenial;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryManagedGraphWorkSessionStartDenial;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedApplicationInspection;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedConditionalHistory;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedConnectedInspectionRequest;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedEvidenceReference;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedFamilyOutcome;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedFieldValue;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedInspectionRequest;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedPerformedSourceInspection;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedQueryField;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedQueryProjection;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedQueryRelation;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedQueryRow;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedSourceEffects;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedSourceField;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedSourceFieldEffect;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryMaterializedSourceInspectionRequest;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryObservedApplicationInspection;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryObservedInspectionRequest;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryPerformedSourceInspection;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryPerformedSourceInspectionRequest;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryProducerConnectionDenial;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryProducerEvaluationDecision;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryProducerEvaluationDenial;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryProducerOutputConnectionDenial;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryProjectionMaterializationRefusal;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQueryReferenceOnlyInspectionRequest;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQuerySourceInspectionRequest;
-pub use crate::domain_computation::primary_graph::causal_inspection::WorthQuerySourceReferenceOnlyInspectionRequest;
+    pub use crate::domain_computation::primary_graph::application_output_demand::settlement::output_evaluation::WorthQueryProducerEvaluationIneligibility;
+pub use crate::domain_computation::primary_graph::causal_inspection::{CausalInspectionReason, CausalObservationMissingReferencePosture, DiagnosticComparisonDenial, FactlessCurrentness, OutputFieldCaptureFailure, OwnEffectOnReads, WorthQueryApplicationDisclosureContractDenial, WorthQueryApplicationEvidenceFamily, WorthQueryApplicationInspectionCanonicalRefusal, WorthQueryApplicationInspectionDenial, WorthQueryApplicationInspectionOwnerRefusal, WorthQueryApplicationInspectionRequest, WorthQueryApplicationInspectionResourceRefusal, WorthQueryApplicationInspectionStage, WorthQueryApplicationInspectionStopKind, WorthQueryApplicationMaterializationPolicy, WorthQueryApplicationMaterializationRequest, WorthQueryApplicationProducerConnection, WorthQueryApplicationProducerEvaluation, WorthQueryApplicationQueryGovernanceDenialKind, WorthQueryApplicationQueryInstallationDenial, WorthQueryApplicationQueryInstallationDenialKind, WorthQueryApplicationQueryObservation, WorthQueryApplicationRichMaterialization, WorthQueryChangedInspectionRequest, WorthQueryChangedReferenceOnlyInspectionRequest, WorthQueryComparedApplicationInspection, WorthQueryConditionalHistoryAvailability, WorthQueryConditionalHistoryDecisionClass, WorthQueryConditionalHistoryOutcome, WorthQueryConnectedApplicationInspection, WorthQueryConnectedInspectionRequest, WorthQueryConnectedReferenceOnlyInspectionRequest, WorthQueryEvaluatedApplicationInspection, WorthQueryEvaluatedInspectionRequest, WorthQueryEvaluatedReferenceOnlyInspectionRequest, WorthQueryInspectionEvidenceAvailability, WorthQueryInspectionReadTerminalDenial, WorthQueryInspectionRetainedEvidence, WorthQueryInspectionSupplierEvidence, WorthQueryManagedGraphReadDenial, WorthQueryManagedGraphWorkSessionStartDenial, WorthQueryMaterializedApplicationInspection, WorthQueryMaterializedConditionalHistory, WorthQueryMaterializedConnectedInspectionRequest, WorthQueryMaterializedEvidenceReference, WorthQueryMaterializedFamilyOutcome, WorthQueryMaterializedFieldValue, WorthQueryMaterializedInspectionRequest, WorthQueryMaterializedPerformedSourceInspection, WorthQueryMaterializedQueryField, WorthQueryMaterializedQueryProjection, WorthQueryMaterializedQueryRelation, WorthQueryMaterializedQueryRow, WorthQueryMaterializedSourceEffects, WorthQueryMaterializedSourceField, WorthQueryMaterializedSourceFieldEffect, WorthQueryMaterializedSourceInspectionRequest, WorthQueryObservedApplicationInspection, WorthQueryObservedInspectionRequest, WorthQueryPerformedSourceInspection, WorthQueryPerformedSourceInspectionRequest, WorthQueryProducerConnectionDenial, WorthQueryProducerEvaluationDecision, WorthQueryProducerEvaluationDenial, WorthQueryProducerOutputConnectionDenial, WorthQueryProjectionMaterializationRefusal, WorthQueryReferenceOnlyInspectionRequest, WorthQuerySourceInspectionRequest, WorthQuerySourceReferenceOnlyInspectionRequest};
 pub use crate::domain_computation::primary_graph::vocabulary::application_attempt::indexed_entity_selection::IndexedSelectionReobserveDenial;
 pub use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial;
 pub use crate::domain_computation::primary_graph::vocabulary::provider::diagnostic::RebaseVerificationReason;
@@ -118,36 +49,43 @@ pub mod domain_computation {
     pub use crate::domain_computation::managed_run::*;
     pub use crate::domain_computation::operation_binding::*;
     pub use crate::domain_computation::provider_session::*;
-    pub use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryCustomInvariantDenial;
-    pub use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionDenialKind;
-    pub use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailure;
-    pub use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailurePosture;
-    pub use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryRelationLawDenial;
     pub use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
     pub use crate::domain_computation::vocabulary::managed_run::counters::WorthQueryManagedRunCounters;
-    pub use crate::domain_computation::vocabulary::managed_run::evidence::WorthQueryManagedProviderSessionDisposition;
-    pub use crate::domain_computation::vocabulary::managed_run::evidence::WorthQueryManagedProviderWorkEvidence;
-    pub use crate::domain_computation::vocabulary::managed_run::inspection::WorthQueryDirectRunCleanupInspection;
-    pub use crate::domain_computation::vocabulary::managed_run::inspection::WorthQueryDirectRunCleanupReceipt;
+    pub use crate::domain_computation::vocabulary::managed_run::evidence::{
+        WorthQueryManagedProviderSessionDisposition, WorthQueryManagedProviderWorkEvidence,
+    };
+    pub use crate::domain_computation::vocabulary::managed_run::inspection::{
+        WorthQueryDirectRunCleanupInspection, WorthQueryDirectRunCleanupReceipt,
+    };
     pub use crate::domain_computation::vocabulary::managed_run::safe_point_observation::WorthQueryManagedSafePointObservation;
-    pub use crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunCleanupDisposition;
-    pub use crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunCleanupFailureKind;
-    pub use crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunTerminalKind;
+    pub use crate::domain_computation::vocabulary::managed_run::terminal::{
+        WorthQueryManagedRunCleanupDisposition, WorthQueryManagedRunCleanupFailureKind,
+        WorthQueryManagedRunTerminalKind,
+    };
     pub use crate::domain_computation::vocabulary::operation_binding::installed_domain_authority::WorthQueryInstalledDomainExecutionAuthority;
     pub use crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl;
     pub use crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial;
     pub use crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop;
     pub use crate::domain_computation::vocabulary::provider_session::call_kind::WorthQueryGraphProviderCallKind;
     pub use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind;
-    pub use crate::domain_computation::vocabulary::provider_session::denial::WorthQueryGraphProviderStepDenial;
-    pub use crate::domain_computation::vocabulary::provider_session::denial::WorthQueryGraphProviderStepDenialKind;
+    pub use crate::domain_computation::vocabulary::provider_session::denial::{
+        WorthQueryGraphProviderStepDenial, WorthQueryGraphProviderStepDenialKind,
+    };
     pub use crate::domain_computation::vocabulary::provider_session::direct_attempt::WorthQueryDirectExecutionAttemptReleaseReceipt;
     pub use crate::domain_computation::vocabulary::provider_session::failure::WorthQueryGraphProviderFailure;
+    pub use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::{
+        WorthQueryCustomInvariantDenial, WorthQueryInvariantExecutionDenialKind,
+        WorthQueryInvariantExecutionFailure, WorthQueryInvariantExecutionFailurePosture,
+        WorthQueryRelationLawDenial,
+    };
     pub use crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind;
-    pub use crate::domain_computation::vocabulary::provider_session::provider_execution_release::WorthQueryProviderExecutionDestructorDisposition;
-    pub use crate::domain_computation::vocabulary::provider_session::provider_execution_release::WorthQueryProviderExecutionDisposalDisposition;
-    pub use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkManagedRunIdentity;
-    pub use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity;
+    pub use crate::domain_computation::vocabulary::provider_session::provider_execution_release::{
+        WorthQueryProviderExecutionDestructorDisposition,
+        WorthQueryProviderExecutionDisposalDisposition,
+    };
+    pub use crate::domain_computation::vocabulary::provider_session::session_identity::{
+        WorthQueryGraphWorkManagedRunIdentity, WorthQueryGraphWorkSessionIdentity,
+    };
     pub use crate::domain_computation::vocabulary::provider_session::step_failure::WorthQueryGraphProviderStepInvocationDisposition;
     pub use crate::domain_computation::{
         canonical_indexed_operation_material, canonical_operation_material,
@@ -231,20 +169,22 @@ pub mod product;
 
 pub mod provider_session {
     pub use crate::domain_computation::provider_session::*;
-    pub use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryCustomInvariantDenial;
-    pub use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionDenialKind;
-    pub use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailure;
-    pub use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailurePosture;
-    pub use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryRelationLawDenial;
     pub use crate::domain_computation::vocabulary::provider_session::call_kind::WorthQueryGraphProviderCallKind;
     pub use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind;
-    pub use crate::domain_computation::vocabulary::provider_session::denial::WorthQueryGraphProviderStepDenial;
-    pub use crate::domain_computation::vocabulary::provider_session::denial::WorthQueryGraphProviderStepDenialKind;
+    pub use crate::domain_computation::vocabulary::provider_session::denial::{
+        WorthQueryGraphProviderStepDenial, WorthQueryGraphProviderStepDenialKind,
+    };
     pub use crate::domain_computation::vocabulary::provider_session::direct_attempt::WorthQueryDirectExecutionAttemptReleaseReceipt;
     pub use crate::domain_computation::vocabulary::provider_session::failure::WorthQueryGraphProviderFailure;
+    pub use crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::{
+        WorthQueryCustomInvariantDenial, WorthQueryInvariantExecutionDenialKind,
+        WorthQueryInvariantExecutionFailure, WorthQueryInvariantExecutionFailurePosture,
+        WorthQueryRelationLawDenial,
+    };
     pub use crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind;
-    pub use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkManagedRunIdentity;
-    pub use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity;
+    pub use crate::domain_computation::vocabulary::provider_session::session_identity::{
+        WorthQueryGraphWorkManagedRunIdentity, WorthQueryGraphWorkSessionIdentity,
+    };
 }
 
 pub mod primary_graph;
@@ -292,7 +232,11 @@ pub mod integration {
     use crate::domain_computation::execution_runtime::{
         WorthQueryExecutionInstallationAuthority, WorthQueryExecutionRuntime,
     };
-    use {crate::domain_computation::primary_graph::vocabulary::bootstrap::publication::WorthQueryPrimaryGraphPublication, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphBootstrap, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial};
+    use {
+        crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+        crate::domain_computation::primary_graph::vocabulary::bootstrap::publication::WorthQueryPrimaryGraphPublication,
+        crate::domain_computation::primary_graph::WorthQueryPrimaryGraphBootstrap,
+    };
 
     pub use crate::domain_computation::artifact_owner::{
         WorthQueryArtifactAccessAuthority, WorthQueryArtifactProductionAuthority,

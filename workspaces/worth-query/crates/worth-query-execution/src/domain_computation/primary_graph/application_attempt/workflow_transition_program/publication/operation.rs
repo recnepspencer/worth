@@ -260,9 +260,7 @@ impl WorkflowOperationAuthority {
         workflow_execution_requirements:
             worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements,
         handle: WorthQueryPrimaryGraphIntegrationHandle,
-        layout: Arc<
-            crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
-        >,
+        layout: Arc<crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout>,
     ) -> Self {
         Self {
             captured_input: None,
@@ -301,7 +299,7 @@ impl WorkflowOperationAuthority {
     ) -> Result<(), crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial>
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
-    {
+{
         let phase_request = match phase.execution_request_for(runtime.product_runtime()) {
             Ok(request) => request,
             Err(_) => return Err(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "application-read-phase")),

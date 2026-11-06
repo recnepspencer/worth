@@ -74,20 +74,6 @@ impl WorthQueryPriorOutputBindingResolution {
     }
 }
 
-impl ProductCoordinate {
-    #[doc(hidden)]
-    pub fn generation_for_test(&self) -> &u64 {
-        &self.generation
-    }
-}
-
-impl ProductCoordinate {
-    #[doc(hidden)]
-    pub fn occurrence_for_test(&self) -> &worth_runtime_world::facade::ProductBranchIncarnation {
-        &self.occurrence
-    }
-}
-
 impl WorthQueryApplicationOutputLineage {
     #[doc(hidden)]
     pub fn origins_for_test(
@@ -110,13 +96,6 @@ impl WorthQueryApplicationOutputLineage {
     #[doc(hidden)]
     pub fn partition_index_for_test(&self) -> &partition_index::OutputPartitionIndex {
         &self.partition_index
-    }
-}
-
-impl ProductCoordinate {
-    #[doc(hidden)]
-    pub fn generation_mut_for_test(&mut self) -> &mut u64 {
-        &mut self.generation
     }
 }
 

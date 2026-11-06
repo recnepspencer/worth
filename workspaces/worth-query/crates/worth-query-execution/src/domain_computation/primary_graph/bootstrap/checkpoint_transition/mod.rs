@@ -7,13 +7,16 @@ mod preserved_outputs;
 mod publication;
 mod repair;
 mod selection;
-use {crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind};
 pub use authoring::WorthQueryCheckpointMigrationWriter;
 pub(in crate::domain_computation::primary_graph) use publication::{
     transition_checkpoint, InstalledCheckpointTarget,
 };
 pub use repair::WorthQueryCheckpointTransitionRecovery;
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
+use {
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind,
+};
 
 /// Exact descriptive rendering of the predecessor stored in the recovered image.
 /// This value never becomes an admitted program revision or roster member.

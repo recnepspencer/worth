@@ -10,12 +10,11 @@ use super::WorkflowFactCustody;
 fn only_a_new_approval_or_successor_may_link_to_an_existing_fact() {
     let rule = WorkflowFactCustody {
         instance_kind: KindId(20),
-        started_revision:
-            crate::domain_computation::graph_layout::planned_field_locator(
-                "workflow-instance",
-                "started-program-revision",
-            )
-            .unwrap(),
+        started_revision: crate::domain_computation::graph_layout::planned_field_locator(
+            "workflow-instance",
+            "started-program-revision",
+        )
+        .unwrap(),
         entity_kinds: [
             KindId(1),
             KindId(2),

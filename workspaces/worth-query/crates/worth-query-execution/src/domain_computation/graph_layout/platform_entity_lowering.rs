@@ -21,9 +21,15 @@ use super::provider_idempotency::{
 use super::provider_inbound_completion::{
     lower_provider_inbound_completion, WorthQueryInboundCompletionLayout,
 };
-use {super::kind_space_exhausted, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial};
 use crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxLayout;
-use {crate::domain_computation::graph_layout::workflow::lower_workflow, crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout};
+use {
+    super::kind_space_exhausted,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+};
+use {
+    crate::domain_computation::graph_layout::workflow::lower_workflow,
+    crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout,
+};
 
 /// Every platform-owned record layout one lowered application graph carries.
 pub(super) struct WorthQueryPlatformEntityLayouts {

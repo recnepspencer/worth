@@ -16,7 +16,11 @@ use worth_signal::facade::{
     SignalConditionalVersionComparator,
 };
 
-use {crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind};
+use {
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind,
+    crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision,
+};
 
 pub struct WorthQueryInstalledOutputProducerRoute {
     pub(in crate::domain_computation::primary_graph) scheduling:

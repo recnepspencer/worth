@@ -2,8 +2,14 @@ use crate::domain_computation::primary_graph::application_attempt::IdempotencyRe
 use crate::domain_computation::primary_graph::application_attempt::IdempotencyResolutionScopedOps;
 use worth_query_installation::facade::ApplicationSchema;
 
-use {super::approved_outcome, super::WorthQueryApplicationCommitDenial, super::WorthQueryApplicationCommitOutcome, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, super::WorthQueryApplicationIdempotencyResolution, super::WorthQueryApplicationIdempotencyResolutionDenial, super::WorthQueryElevationApprovalOutcome, super::WorthQueryRequestedElevation};
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
+use {
+    super::approved_outcome, super::WorthQueryApplicationCommitDenial,
+    super::WorthQueryApplicationCommitOutcome, super::WorthQueryApplicationIdempotencyResolution,
+    super::WorthQueryApplicationIdempotencyResolutionDenial,
+    super::WorthQueryElevationApprovalOutcome, super::WorthQueryRequestedElevation,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
+};
 
 pub trait ElevationApprovalReplayOps<Schema: ApplicationSchema>:
     crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>

@@ -45,11 +45,14 @@ pub use {
 };
 
 use super::application_contribution::WorthQueryApplicationContributionTuple;
-use {super::WorthQueryPrimaryGraphApplicationRuntime, super::WorthQueryPrimaryGraphBootstrap, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial};
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchemaComposition, ApplicationSchemaDeclaration,
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
+use {
+    super::WorthQueryPrimaryGraphApplicationRuntime, super::WorthQueryPrimaryGraphBootstrap,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+};
 
 /// Installs contribution-owned schema meaning without an application program.
 ///

@@ -1,7 +1,6 @@
 //! Tagged members share the same actual Native aggregate observation owner.
 use super::*;
 use crate::domain_computation::primary_graph::vocabulary::aggregate_observation::key::AggregateKey;
-use crate::domain_computation::primary_graph::vocabulary::aggregate_observation::selection::AggregateSelection;
 use worth_foundational::facade::AggregateDefinitionIdentity;
 use worth_relational::facade::{runtime::PinnedAggregateReadScope, schema::NativeMemberKey as Key};
 impl AggregateObservation<Key> {
@@ -50,25 +49,6 @@ impl AggregateObservation<Key> {
         }
         poll()?;
         Ok(true)
-    }
-}
-impl AggregateKey<Key> {
-    fn for_member(
-        subject: &str,
-        entity_kind: KindId,
-        definition: AggregateDefinitionIdentity,
-        member: Key,
-    ) -> Self {
-        Self {
-            subject: Arc::from(subject),
-            entity_kind,
-            selection: AggregateSelection::ComponentDefinition(definition),
-            member,
-            definition,
-        }
-    }
-    pub(in crate::domain_computation::primary_graph) fn member(&self) -> &Key {
-        &self.member
     }
 }
 

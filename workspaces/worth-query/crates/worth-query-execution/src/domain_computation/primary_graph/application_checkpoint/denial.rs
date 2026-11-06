@@ -17,7 +17,9 @@ pub enum WorthQueryCheckpointCaptureDenial {
     ),
     Allocation(ExecutionAllocationDenial),
     /// Original execution stopped, or cannot fund the required capture contract.
-    Execution(crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial),
+    Execution(
+        crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+    ),
 }
 
 impl From<RelationalNativeCheckpointCaptureDenial> for WorthQueryCheckpointCaptureDenial {

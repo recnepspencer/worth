@@ -1,4 +1,8 @@
-use {super::installation_execution_kind, super::primary_graph_denial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind};
+use {
+    super::installation_execution_kind, super::primary_graph_denial,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind,
+};
 
 pub fn map_bootstrap_commit_denial(
     error: worth_relational::facade::transactions::TransactionCommitError,

@@ -21,11 +21,11 @@ use worth_relational::facade::transactions::{
 };
 
 use super::super::instance::WorkflowInstanceState;
-use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
 use super::{
     AdmittedWorkflowDispositions, WorthQueryWorkflowAdoptionInventory,
     WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowInstanceDisposition,
 };
+use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
 use crate::domain_computation::primary_graph::program_occurrence::program_revision_rendering;
 
 /// Intents for already-admitted `choices`; see

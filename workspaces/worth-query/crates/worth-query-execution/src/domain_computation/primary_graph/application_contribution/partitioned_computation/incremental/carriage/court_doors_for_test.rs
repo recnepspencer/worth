@@ -1,7 +1,7 @@
 //! Sealed test doors over this module's private members.
 use super::*;
-use crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition;
 use crate::domain_computation::primary_graph::computation_retention::full_cause::WorthQueryPartitionedComputationFullCause;
+use crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition;
 
 impl ComputationPrior {
     #[doc(hidden)]

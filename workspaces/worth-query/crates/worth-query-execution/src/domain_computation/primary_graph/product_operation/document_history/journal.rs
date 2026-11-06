@@ -6,12 +6,16 @@ use super::{
     WorthQueryDocumentHistoryDenial as Denial,
 };
 use crate::basis::WorthQueryProductBranchReadIdentity;
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation, crate::domain_computation::primary_graph::WorthQueryOwnedProductHead};
 use std::{
     collections::{BTreeMap, VecDeque},
     sync::Arc,
 };
 use worth_execution::ExecutionRequest;
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
+    crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
+    crate::domain_computation::primary_graph::WorthQueryOwnedProductHead,
+};
 #[path = "journal/group.rs"]
 mod group;
 #[path = "journal/heads.rs"]

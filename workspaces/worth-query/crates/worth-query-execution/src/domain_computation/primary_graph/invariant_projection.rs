@@ -53,13 +53,13 @@ use worth_query_installation::facade::{
     ApplicationSchema, ApplicationSchemaBindingIdentity, DeclaredApplicationFieldValue,
     WritePosture,
 };
-use worth_relational::facade::identity::{EntityId, KindId, VersionId};
+use worth_relational::facade::identity::VersionId;
 
-use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
 use super::{
     WorthQueryInstalledEntityResolutionContext, WorthQueryPrimaryGraphBootstrap,
     WorthQueryPrimaryGraphIntegrationHandle,
 };
+use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
 use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
 
 pub use super::read_observation::WorthQueryInvariantProjectionWork;

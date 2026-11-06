@@ -131,7 +131,7 @@ pub fn remains_equal(
     value: &AspectValue,
     candidate_limit: usize,
     expected: &[EntityId],
-) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial> {
+) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial>{
     match bounded_entity_field_selection(
         runtime,
         execution,

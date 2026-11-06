@@ -2,13 +2,13 @@ use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_declaration::facade::application_program::ApplicationWorkflowSpec;
 
 use super::super::fact::{observe_adjacency, observe_indexed_entity_selection};
+use super::super::WorthQueryApplicationObservedFact;
 use super::WorkflowDefinitionExpectedPredecessor;
-use crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorkflowLineagePublicationTarget;
 use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
+use crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorkflowLineagePublicationTarget;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
 use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
-use super::super::WorthQueryApplicationObservedFact;
 
 const LINEAGE_LOOKUP_LIMIT: usize = 2;
 pub(super) const CURRENT_DEFINITION_WORK_LIMIT: usize = 2;

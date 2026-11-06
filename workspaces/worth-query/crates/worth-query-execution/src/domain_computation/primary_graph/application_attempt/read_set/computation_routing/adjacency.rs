@@ -1,12 +1,12 @@
 //! One replay allowance per actual adjacency, with every original reader.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
 use crate::domain_computation::primary_graph::{
     aggregate_observation::AggregateObservation, structural_walk::memory,
 };
 use std::cmp::Ordering;
 use worth_execution::{ChargedBytes, ExecutionRequest, MapKernelContext};
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
 
 mod admission;
 

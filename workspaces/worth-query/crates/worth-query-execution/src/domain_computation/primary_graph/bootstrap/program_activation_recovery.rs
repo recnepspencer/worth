@@ -6,7 +6,11 @@ use worth_query_installation::facade::WorthQueryProgramSupportRoster;
 use super::super::program_occurrence::{
     program_revision_rendering, WorthQueryProgramActivationCell,
 };
-use {super::super::WorthQueryPrimaryGraph, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind};
+use {
+    super::super::WorthQueryPrimaryGraph,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind,
+};
 
 /// The phase witnesses the caller's request for the inline recovery read.
 pub(in crate::domain_computation::primary_graph) fn recover_program_activation<Schema>(

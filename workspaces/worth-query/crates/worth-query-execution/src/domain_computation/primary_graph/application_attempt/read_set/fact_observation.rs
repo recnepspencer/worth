@@ -5,11 +5,14 @@ use worth_relational::facade::runtime::{ProjectionAspectScope, RelationalRuntime
 use worth_relational::facade::snapshots::SnapshotHandle;
 use worth_relational::facade::storage::RecordLifecycleState;
 
-use {super::super::fact::observe_adjacency, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey, super::super::fact::WorthQueryApplicationObservedFact};
 use super::denial;
 use crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
 use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
+use {
+    super::super::fact::observe_adjacency, super::super::fact::WorthQueryApplicationObservedFact,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey,
+};
 
 /// The most work observing `key` can take, in the relational work units its
 /// read is bounded by, or `None` when nothing bounds it. An entity or a field

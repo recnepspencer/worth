@@ -1,11 +1,14 @@
 //! Lower actual installed recipes and their full field-meaning aliases into Native.
 mod codec;
-use {crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Stop, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as Kind};
 use std::sync::Arc;
 use worth_foundational::facade::{CanonicalDigestId, ContentFormat};
 use worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog as Catalog;
 use worth_relational::facade::{
     content::RelationalContentDenial as Denial, schema::RelationalSchemaRegistry,
+};
+use {
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Stop,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as Kind,
 };
 
 pub(super) fn lower(

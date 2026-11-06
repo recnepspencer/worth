@@ -73,3 +73,18 @@ impl ComputedSlot {
         Self::into_value::<T>(self)
     }
 }
+
+impl PreparedCompute {
+    pub(in crate::domain_computation::primary_graph) fn declared_test_request(
+        rank: usize,
+        fails: bool,
+    ) -> Self {
+        Self::new(move |member| {
+            let (_, poll) = member.into_parts();
+            poll().unwrap();
+            (rank, fails)
+        })
+    }
+}
+
+mod court_doors_for_test;

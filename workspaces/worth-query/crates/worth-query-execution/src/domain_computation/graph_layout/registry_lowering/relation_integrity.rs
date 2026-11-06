@@ -20,7 +20,10 @@ pub(super) fn lower_relation_integrity(
     to_kinds: Vec<KindId>,
     integrity: &ApplicationRelationIntegrityRecord,
     entity_kinds: Option<&BTreeMap<String, KindId>>,
-) -> Result<RelationIntegrityDeclarations, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial> {
+) -> Result<
+    RelationIntegrityDeclarations,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+> {
     if integrity.orbit && to_kinds.as_slice() != [from_kind] {
         return Err(super::super::installation_primitives::invalid_member(
             relation,

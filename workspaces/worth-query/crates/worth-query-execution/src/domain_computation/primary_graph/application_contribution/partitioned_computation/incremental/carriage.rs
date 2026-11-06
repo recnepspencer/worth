@@ -1,8 +1,8 @@
 //! The producer's prior and test-only handoff of completed runs.
 use super::retained::SealedComputationRun;
+use crate::domain_computation::primary_graph::application_contribution::RetainedComputation;
 use crate::domain_computation::primary_graph::computation_retention::full_cause::WorthQueryPartitionedComputationFullCause;
 use crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition;
-use crate::domain_computation::primary_graph::application_contribution::RetainedComputation;
 use crate::domain_computation::primary_graph::output_lineage::PriorComputationRecord;
 use std::sync::Arc;
 /// What a producer hands the partitioned computation its handler runs: the

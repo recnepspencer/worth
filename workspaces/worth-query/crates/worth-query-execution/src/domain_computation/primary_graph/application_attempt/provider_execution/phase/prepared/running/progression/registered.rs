@@ -1,8 +1,8 @@
 use crate::domain_computation::primary_graph::application_attempt::provider_binding::WorthQueryProviderRegistrationInspectionPermit;
 use crate::domain_computation::primary_graph::application_attempt::provider_binding::WorthQueryRegisteredProviderAttemptSeal;
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::outcome::WorthQueryProviderProgressionOutcome;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding;
 
 pub struct WorthQueryRegisteredProviderAttempt<'run> {
     staged: crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>,

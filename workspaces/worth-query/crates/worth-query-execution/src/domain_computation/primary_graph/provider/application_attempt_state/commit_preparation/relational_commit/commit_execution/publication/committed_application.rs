@@ -109,7 +109,7 @@ impl WorthQueryPrimaryGraphCommittedApplication {
 
     pub(in crate::domain_computation::primary_graph) const fn committed_product_publication(
         &self,
-    ) -> &crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication {
+    ) -> &crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication{
         &self.committed_product_publication
     }
 

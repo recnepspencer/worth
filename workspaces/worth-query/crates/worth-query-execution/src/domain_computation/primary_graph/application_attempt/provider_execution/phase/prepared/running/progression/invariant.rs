@@ -1,9 +1,9 @@
 use crate::domain_computation::primary_graph as graph;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as DenialStage;
 use crate::domain_computation::WorthQueryInvariantStateLocator;
 use graph::application_attempt::provider_execution::outcome::{
     progression_denied, WorthQueryProviderProgressionOutcome,
 };
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as DenialStage;
 use graph::WorthQueryApplicationCommitDenial as Denial;
 
 pub(super) fn progress_invariant_candidate<'run>(

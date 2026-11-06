@@ -9,7 +9,11 @@ use worth_query_installation::facade::{
 };
 use worth_relational::facade::identity::KindId;
 
-use {super::WorthQueryApplicationEntityKey, super::WorthQueryPrimaryGraphBootstrap, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind};
+use {
+    super::WorthQueryApplicationEntityKey, super::WorthQueryPrimaryGraphBootstrap,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind,
+};
 
 /// One entity to seed into the primary graph at bootstrap: its kind, key, and
 /// field values.

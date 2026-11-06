@@ -3,8 +3,11 @@ use worth_relational::facade::identity::KindId;
 use worth_relational::facade::schema::{RelationalSchemaRegistry, SchemaId, SchemaVersionId};
 
 use super::{relations::register_platform_entity, WorkflowApprovalLayout};
-use {crate::domain_computation::graph_layout::invalid_member, crate::domain_computation::graph_layout::planned_field_locator};
 use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial;
+use {
+    crate::domain_computation::graph_layout::invalid_member,
+    crate::domain_computation::graph_layout::planned_field_locator,
+};
 
 const APPROVAL_ENTITY: &str = "worth-query-workflow-approval";
 const APPROVAL_ASPECT: &str = "workflow-approval";

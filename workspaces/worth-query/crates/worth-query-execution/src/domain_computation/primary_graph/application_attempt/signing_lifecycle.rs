@@ -118,7 +118,9 @@ fn unavailable() -> Outcome {
 fn capacity() -> Outcome {
     refused(Kind::SigningLifecycleRepresentationCapacity)
 }
-fn attempt(cause: crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial) -> Outcome {
+fn attempt(
+    cause: crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
+) -> Outcome {
     match cause.kind() {
         crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::Cancelled => Outcome::Cancelled,
         crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::DeadlineExceeded => Outcome::TimedOut,

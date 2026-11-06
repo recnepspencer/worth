@@ -59,7 +59,6 @@ where
     )
 }
 
-
 /// The sealed native mode must match the exact installed binding and operation.
 pub(super) fn validate_action_admission<S, Spec, B, Scope>(
     installed: &WorthQueryInstalledApplicationWorkflowSpec<S, Spec>,

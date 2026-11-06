@@ -1,7 +1,7 @@
 //! Recorded approval provenance; never reauthorizes its historical principal.
-use crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowActorFieldsObservation;
 use super::*;
 use crate::domain_computation::graph_layout::workflow::actor_fields::WorkflowActorFields;
+use crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowActorFieldsObservation;
 pub(super) fn approval_actor(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,

@@ -6,7 +6,10 @@ use {
     crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
     crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNode,
 };
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 
 /// Back cannot leave an operation while its approval authority is live.
 ///

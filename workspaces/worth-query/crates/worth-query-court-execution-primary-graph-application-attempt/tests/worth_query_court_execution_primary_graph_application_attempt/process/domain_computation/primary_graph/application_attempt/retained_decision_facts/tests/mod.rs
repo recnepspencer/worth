@@ -15,7 +15,7 @@ pub struct Body {
 pub fn key(
     locator: &[u8],
     predicate: Option<(&[u8], usize)>,
-    policy: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
+    policy: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
 ) -> AdmittedFactKey {
     AdmittedFactKey::write_for_test(
         locator.len(),

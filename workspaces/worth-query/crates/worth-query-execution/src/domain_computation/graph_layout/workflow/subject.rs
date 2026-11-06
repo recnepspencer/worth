@@ -1,8 +1,12 @@
 //! Native instance-to-subject relation, appended after stable platform kinds.
-use {crate::domain_computation::graph_layout::kind_space_exhausted, crate::domain_computation::graph_layout::register_relation_to_kinds, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial};
 use worth_relational::facade::{
     identity::KindId,
     schema::{RelationalSchemaRegistry, SchemaId, SchemaVersionId},
+};
+use {
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+    crate::domain_computation::graph_layout::kind_space_exhausted,
+    crate::domain_computation::graph_layout::register_relation_to_kinds,
 };
 pub(super) fn register(
     registry: RelationalSchemaRegistry,

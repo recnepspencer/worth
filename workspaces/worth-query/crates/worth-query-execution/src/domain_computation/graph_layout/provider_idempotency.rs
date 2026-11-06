@@ -6,7 +6,11 @@ use worth_relational::facade::schema::{
     SchemaVersionId,
 };
 
-use {super::planned_field_locator, super::register_entity, super::valid_aspect_key, super::valid_field_key, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial};
+use {
+    super::planned_field_locator, super::register_entity, super::valid_aspect_key,
+    super::valid_field_key,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+};
 
 const ENTITY: &str = "worth-query-provider-idempotency";
 const ASPECT: &str = "idempotency";
@@ -21,8 +25,7 @@ pub struct WorthQueryProviderIdempotencyLayout {
     pub(in crate::domain_computation) key_locator: AspectFieldLocator,
     pub(in crate::domain_computation) intent_locator: AspectFieldLocator,
     pub(in crate::domain_computation) outcome_identity_locator: AspectFieldLocator,
-    pub(in crate::domain_computation) emitted_effect_count_locator:
-        AspectFieldLocator,
+    pub(in crate::domain_computation) emitted_effect_count_locator: AspectFieldLocator,
     pub(in crate::domain_computation) key_index_id: DerivedIndexId,
 }
 

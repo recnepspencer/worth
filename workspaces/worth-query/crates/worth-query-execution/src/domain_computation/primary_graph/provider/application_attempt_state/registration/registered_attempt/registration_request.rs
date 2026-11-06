@@ -43,13 +43,17 @@ impl<'a> WorthQueryApplicationAttemptRegistration<'a> {
     /// before handing its associations to registration.
     pub(in crate::domain_computation::primary_graph) fn new(
         workflow_origin: Option<crate::domain_computation::primary_graph::application_attempt::workflow::operation_output::WorkflowOperationOrigin>,
-        required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
+        required_output_demand: Option<
+            crate::domain_computation::primary_graph::RequiredOutputDemandContext,
+        >,
         effect_owner: crate::domain_computation::primary_graph::application_attempt::provider_binding::WorthQueryProviderEffectRegistrationSeal,
         affinity: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptAffinity,
         decision_facts: crate::domain_computation::authorization::WorthQueryProviderDecisionFactBinding,
         effects: crate::domain_computation::primary_graph::application_attempt::provider_binding::effect_accumulator::WorthQueryRegisteredProviderEffects,
         idempotency: crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
-        original_authority: std::sync::Arc<crate::domain_computation::primary_graph::WorthQueryApplicationCommitAuthorityBinding>,
+        original_authority: std::sync::Arc<
+            crate::domain_computation::primary_graph::WorthQueryApplicationCommitAuthorityBinding,
+        >,
         outcome_identity: crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity,
         retained_authorization_fact_count: usize,
         external_effect: &'a worth_query_installation::facade::InstalledExternalEffectContract,
@@ -64,7 +68,9 @@ impl<'a> WorthQueryApplicationAttemptRegistration<'a> {
         producer_required_invariants:
             &'static [crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerInvariantRequirement],
         source_fact_rebase: crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase,
-        consumed_outputs: Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
+        consumed_outputs: Vec<
+            crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence,
+        >,
     ) -> Self {
         Self {
             workflow_origin,

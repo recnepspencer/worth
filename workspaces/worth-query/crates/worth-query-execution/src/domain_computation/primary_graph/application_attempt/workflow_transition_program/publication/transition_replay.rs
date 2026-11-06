@@ -1,10 +1,16 @@
 use crate::domain_computation::primary_graph::application_attempt::ApplicationAttemptIdempotencyResolutionScopedOps;
 use crate::domain_computation::primary_graph::application_attempt::IdempotencyResolutionScopedOps;
-use {crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolution, crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial, crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted};
 use worth_query_installation::facade::ApplicationSchema;
 use {
     super::PreparedWorkflowAdvance, super::RequiredWorkflowOperation,
     super::WorkflowProgressOutcome,
+};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
+    crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial,
+    crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolution,
+    crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial,
+    crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted,
 };
 
 #[path = "transition_replay/condition.rs"]
@@ -171,9 +177,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
 
     /// Projects exact prior operation settlement; an unseen confirmation key is sufficient
     /// only for installed local effects whose original receipt created that transition.
-    pub(in crate::domain_computation::primary_graph) fn resolve_operation_replay<
-        Binding,
-    >(
+    pub(in crate::domain_computation::primary_graph) fn resolve_operation_replay<Binding>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,

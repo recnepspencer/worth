@@ -3,9 +3,9 @@ use super::*;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_publication_read::SourcePublicationRead;
 
 use crate::domain_computation::primary_graph::output_lineage::invalidation::ObservedSourcePublication;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
 use std::sync::Arc;
 use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
 type Value = (SourcePublicationRead, Arc<ObservedSourcePublication>);
 pub(super) struct IssuedSourcePublicationValues {
     values: Vec<Value>,

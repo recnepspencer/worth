@@ -1,8 +1,14 @@
 use crate::domain_computation::primary_graph::application_attempt::IdempotencyResolutionOps;
 use worth_query_installation::facade::ApplicationSchema;
 
-use {super::closed_outcome, super::WorthQueryApplicationCommitDenial, super::WorthQueryApplicationCommitOutcome, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, super::WorthQueryApplicationIdempotencyResolution, super::WorthQueryApplicationIdempotencyResolutionDenial, super::WorthQueryApprovedElevation, super::WorthQueryElevationCloseOutcome};
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
+use {
+    super::closed_outcome, super::WorthQueryApplicationCommitDenial,
+    super::WorthQueryApplicationCommitOutcome, super::WorthQueryApplicationIdempotencyResolution,
+    super::WorthQueryApplicationIdempotencyResolutionDenial, super::WorthQueryApprovedElevation,
+    super::WorthQueryElevationCloseOutcome,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
+};
 
 pub trait ElevationCloseReplayOps<Schema: ApplicationSchema>:
     crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>

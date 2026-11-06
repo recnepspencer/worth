@@ -1,6 +1,5 @@
 //! Join authenticated Query activation to the exclusive native codec owner.
 use super::denial;
-use {crate::domain_computation::primary_graph::WorthQueryPrimaryGraphBootstrap, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial};
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::{
     durability::RecoveredRelationalRuntimeAuthority,
@@ -8,6 +7,10 @@ use worth_relational::facade::{
     runtime::{
         RecoveredCheckpointProgramActivationUpdate, RelationalSchemaTransitionAdmissionDenial,
     },
+};
+use {
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphBootstrap,
 };
 
 pub(in crate::domain_computation::primary_graph::bootstrap) fn map_admission(

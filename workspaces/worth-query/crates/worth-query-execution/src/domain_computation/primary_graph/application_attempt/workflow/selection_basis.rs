@@ -52,7 +52,7 @@ impl<'selection, Schema> WorkflowSelectionBasis<'selection, Schema> {
     ) -> Result<
         crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspection,
         crate::domain_computation::primary_graph::vocabulary::product_activation::inspection::WorthQuerySelectedProgramInspectionDenial,
-    > {
+    >{
         self.selected_program.clone()
     }
 }

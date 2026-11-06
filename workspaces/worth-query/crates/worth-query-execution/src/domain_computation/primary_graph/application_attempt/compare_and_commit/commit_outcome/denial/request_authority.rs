@@ -1,6 +1,10 @@
 //! The typed owner evidence a denial carries beside its kind.
 
-use {super::WorthQueryApplicationCommitDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind};
+use {
+    super::WorthQueryApplicationCommitDenial,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage,
+};
 use {
     crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
     crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
@@ -74,7 +78,7 @@ impl WorthQueryApplicationCommitDenial {
 
     pub(super) fn custom_invariant(
         &self,
-    ) -> Option<&crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryCustomInvariantDenial> {
+    ) -> Option<&crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryCustomInvariantDenial>{
         match self.cause.as_deref() {
             Some(DenialCause::InvariantExecution(failure)) => failure.custom_invariant_denial(),
             _ => None,

@@ -50,9 +50,7 @@ where
     }
     let installed = workflow
         .workflow_spec_at_revision(required.original_program_revision())
-        .ok_or_else(|| {
-            D::Attempt(local_mismatch("original local vocabulary is unavailable"))
-        })?;
+        .ok_or_else(|| D::Attempt(local_mismatch("original local vocabulary is unavailable")))?;
     super::local_actions::validate_action_admission::<S, Spec, B, _>(installed, &admission)?;
     let kind = validate_original(selected, installed, required)?;
     let performed = super::super::operation::validate_operation_receipt::<S, B>(
@@ -68,10 +66,8 @@ where
     let execution = phase
         .execution_request_for(runtime.product_runtime())
         .map_err(|_| D::Attempt(local_mismatch("foreign local completion phase")))?;
-    let binding = idempotency.bind_local_workflow_settlement(
-        required.transition_identity_bytes(),
-        &receipt_identity,
-    );
+    let binding = idempotency
+        .bind_local_workflow_settlement(required.transition_identity_bytes(), &receipt_identity);
     if let Some(replayed) = replay::resolve(
         &execution,
         runtime,
@@ -89,21 +85,20 @@ where
         binding: required.binding().map(str::to_owned),
         workflow_execution_requirements: required.workflow_execution_requirements().clone(),
     };
-    let prepared = selected
-        .prepare_local_workflow_transition::<B::Operation, B::Input, _, Spec>(
-            &execution,
-            installed,
-            required.original_instance().clone(),
-            admission,
-            WorkflowTransitionRequestKind::LocalAction {
-                kind,
-                requested,
-                input_identity: *required.input_identity(),
-                completion: Some(VerifiedLocalActionCompletion {
-                    transition: required.transition_identity().to_owned(),
-                }),
-            },
-        )?;
+    let prepared = selected.prepare_local_workflow_transition::<B::Operation, B::Input, _, Spec>(
+        &execution,
+        installed,
+        required.original_instance().clone(),
+        admission,
+        WorkflowTransitionRequestKind::LocalAction {
+            kind,
+            requested,
+            input_identity: *required.input_identity(),
+            completion: Some(VerifiedLocalActionCompletion {
+                transition: required.transition_identity().to_owned(),
+            }),
+        },
+    )?;
     let PreparedWorkflowAdvance::AwaitingOperation(prepared) = prepared else {
         return Err(D::Attempt(local_mismatch(
             "original local occurrence no longer awaits completion",

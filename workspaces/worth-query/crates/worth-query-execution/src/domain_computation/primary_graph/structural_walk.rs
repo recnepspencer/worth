@@ -12,8 +12,8 @@ mod commitment;
 pub(in crate::domain_computation::primary_graph) mod memory;
 pub(crate) mod read;
 
-pub(in crate::domain_computation::primary_graph) use read::StructuralWalkQuery;
 use crate::domain_computation::primary_graph::vocabulary::structural_walk::key::StructuralWalkKey;
+pub(in crate::domain_computation::primary_graph) use read::StructuralWalkQuery;
 
 #[derive(Debug)]
 pub struct StructuralWalkObservation {

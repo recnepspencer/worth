@@ -69,7 +69,11 @@ pub(super) enum Command {
 /// The publication adapter binds a context through these; it never builds one itself.
 impl WorthQueryWorkflowActorContext {
     /// Own only original locators from the exact installed vocabulary; authorization stays fresh.
-    pub(in crate::domain_computation::primary_graph) fn bind_owned_operation_actor_context<Schema, Spec, Binding>(
+    pub(in crate::domain_computation::primary_graph) fn bind_owned_operation_actor_context<
+        Schema,
+        Spec,
+        Binding,
+    >(
         access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         workflow: crate::domain_computation::primary_graph::application_installation::WorthQueryWorkflowVocabulary<'_, Schema, Spec>,
         required: &RequiredWorkflowOperation,
@@ -92,7 +96,11 @@ impl WorthQueryWorkflowActorContext {
 
     /// Publication alone supplies the original typed command before admission.
     /// The context is an untrusted locator; native selection checks its facts.
-    pub(in crate::domain_computation::primary_graph) fn bind_approval_actor_context<Schema, Spec, Binding>(
+    pub(in crate::domain_computation::primary_graph) fn bind_approval_actor_context<
+        Schema,
+        Spec,
+        Binding,
+    >(
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         runtime: u64,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
@@ -109,14 +117,13 @@ impl WorthQueryWorkflowActorContext {
             required: required.clone(),
             proposal: proposal.clone(),
         };
-        context::<Schema, Spec, Binding>(
-            runtime,
-            installed,
-            instance,
-            command,
-        )
+        context::<Schema, Spec, Binding>(runtime, installed, instance, command)
     }
-    pub(in crate::domain_computation::primary_graph) fn bind_operation_actor_context<Schema, Spec, Binding>(
+    pub(in crate::domain_computation::primary_graph) fn bind_operation_actor_context<
+        Schema,
+        Spec,
+        Binding,
+    >(
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         required: &RequiredWorkflowOperation,

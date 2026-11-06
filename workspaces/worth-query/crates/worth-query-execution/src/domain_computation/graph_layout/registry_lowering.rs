@@ -16,7 +16,10 @@ use worth_relational::facade::schema::{
 mod relation_integrity;
 use relation_integrity::lower_relation_integrity;
 
-use {super::kind_space_exhausted, super::relational_schema_denial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial};
+use {
+    super::kind_space_exhausted, super::relational_schema_denial,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+};
 
 pub(super) fn lower_kind_ids(
     schema: &ErasedApplicationSchemaDeclaration,

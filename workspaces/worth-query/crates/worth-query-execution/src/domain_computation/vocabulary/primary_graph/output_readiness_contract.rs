@@ -2,8 +2,8 @@
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryOutputReadinessContractDenial {
-    pub(in crate::domain_computation) detail: String,
-    pub(in crate::domain_computation) locus:
+    detail: String,
+    locus:
         Option<worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus>,
 }
 
@@ -19,6 +19,16 @@ impl From<crate::domain_computation::vocabulary::primary_graph::native_field_con
 }
 
 impl WorthQueryOutputReadinessContractDenial {
+    /// The refusal the readiness contract owner builds: its detail and, for a field, its locus.
+    pub(in crate::domain_computation) fn new(
+        detail: String,
+        locus: Option<
+            worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus,
+        >,
+    ) -> Self {
+        Self { detail, locus }
+    }
+
     pub fn field_locus(
         &self,
     ) -> Option<&worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus>

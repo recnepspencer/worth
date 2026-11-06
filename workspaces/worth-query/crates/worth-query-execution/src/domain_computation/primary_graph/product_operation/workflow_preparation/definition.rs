@@ -1,7 +1,9 @@
 //! The workflow definition program's publication adapters: definition publication and
 //! retirement. Each preparation holds the selection and hands the attempt its
 //! `WorkflowSelectionBasis`.
-use crate::domain_computation::primary_graph::application_attempt::{OutcomeScopedOps, PublicationScopedOps};
+use crate::domain_computation::primary_graph::application_attempt::{
+    OutcomeScopedOps, PublicationScopedOps,
+};
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef;
 use crate::domain_computation::primary_graph::{
     PreparedWorkflowDefinitionPublication, PreparedWorkflowDefinitionRetirement,
@@ -52,12 +54,14 @@ impl WorthQueryWorkflowDefinitionPublicationAdapter {
         };
         let execution = &phase_request;
 
-        selected.workflow_selection_basis().prepare_workflow_publication::<Capability, Operation, Input, Scope, Spec>(
-            execution,
-            contract,
-            expected_predecessor,
-            admission,
-        )
+        selected
+            .workflow_selection_basis()
+            .prepare_workflow_publication::<Capability, Operation, Input, Scope, Spec>(
+                execution,
+                contract,
+                expected_predecessor,
+                admission,
+            )
     }
 
     #[doc(hidden)]

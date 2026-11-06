@@ -1,8 +1,14 @@
 //! Every progression posture owns its actual created branch or World continuation.
 use super::*;
-use {crate::basis::WorthQueryProductObservationLease, crate::domain_computation::execution_runtime::product_world::WorthQueryPreparedProductPublication, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::WorthQueryExpectedProductBranch, crate::domain_computation::WorthQueryProductUnpublishedRecovery};
 use std::sync::{Mutex, MutexGuard};
 use worth_execution::ExecutionMemoryReservation;
+use {
+    crate::basis::WorthQueryProductObservationLease,
+    crate::domain_computation::execution_runtime::product_world::WorthQueryPreparedProductPublication,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
+    crate::domain_computation::primary_graph::WorthQueryExpectedProductBranch,
+    crate::domain_computation::WorthQueryProductUnpublishedRecovery,
+};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryHistoryNavigationPosture {

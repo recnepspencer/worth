@@ -6,7 +6,6 @@ use crate::domain_computation::primary_graph::application_attempt::{
     WorkflowLocalActionKind, WorkflowProgressOutcome, WorkflowTransitionPreparationDenial,
 };
 use crate::domain_computation::primary_graph::application_installation::WorthQueryWorkflowVocabulary;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::approval::WorkflowApprovalDecision;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryApplicationIdempotencyBinding,
     WorthQuerySelectedProductOperation,

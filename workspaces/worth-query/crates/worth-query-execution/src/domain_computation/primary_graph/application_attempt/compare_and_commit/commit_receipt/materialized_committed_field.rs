@@ -1,14 +1,17 @@
 //! An immutable original envelope and full-generation patch seal a Native value position.
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::WorthQueryApplicationCommittedChanges;
+use worth_execution::{MapKernelContext, MapKernelStop};
 use worth_foundational::facade::AspectValue;
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::publication::RecordStructuralChange;
-use worth_relational::facade::transactions::RecordRef;
-use worth_execution::{MapKernelContext, MapKernelStop};
 use worth_relational::facade::publication::{
     PublishedAuthoritativeFieldEffect as Effect, PublishedAuthoritativeFieldValueLocation,
 };
-use {crate::domain_computation::graph_layout::InstalledFieldCoordinate, crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint};
+use worth_relational::facade::transactions::RecordRef;
+use {
+    crate::domain_computation::graph_layout::InstalledFieldCoordinate,
+    crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint,
+};
 
 pub(in crate::domain_computation::primary_graph) struct MaterializedCommittedField {
     original: WorthQueryApplicationCommittedChanges,
@@ -47,8 +50,7 @@ impl CommittedFieldMaterialization for WorthQueryApplicationCommittedChanges {
         coordinate: InstalledFieldCoordinate<'_>,
     ) -> Result<MaterializedCommittedField, MapKernelStop> {
         let mut selected = None;
-        for (index, patch) in self.record_patches().iter().enumerate()
-        {
+        for (index, patch) in self.record_patches().iter().enumerate() {
             checkpoint(context, 1)?;
             if patch.target != RecordRef::Entity(entity) {
                 continue;

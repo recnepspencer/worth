@@ -6,7 +6,10 @@ use worth_foundational::facade::{
 use worth_relational::facade::identity::{EntityId, KindId, RelationId};
 use worth_relational::facade::indexes::DerivedIndexId;
 
-use {super::super::progression_denial, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::super::WorthQueryApplicationObservedFact};
+use {
+    super::super::progression_denial, super::super::WorthQueryApplicationObservedFact,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
+};
 
 /// First matching sealed fact for each effect target. Indexing preserves the
 /// previous first-match semantics while avoiding a full fact scan per effect.

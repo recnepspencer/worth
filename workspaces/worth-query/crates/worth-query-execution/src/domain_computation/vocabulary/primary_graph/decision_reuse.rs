@@ -94,3 +94,5 @@ impl PreparedDecisionReuseContext {
         self.key == prior.key && self.principal == prior.principal && self.scope == prior.scope
     }
 }
+
+mod court_doors_for_test;

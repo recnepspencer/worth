@@ -295,7 +295,7 @@ impl WorthQueryPrimaryGraphInstallationDenial {
     }
     pub fn readiness_denial(
         &self,
-    ) -> Option<&crate::domain_computation::vocabulary::primary_graph::output_readiness_contract::WorthQueryOutputReadinessContractDenial> {
+    ) -> Option<&crate::domain_computation::vocabulary::primary_graph::output_readiness_contract::WorthQueryOutputReadinessContractDenial>{
         match self.cause.as_deref()? {
             InstallationDenialCause::Readiness(denial) => Some(denial),
             _ => None,
@@ -305,7 +305,7 @@ impl WorthQueryPrimaryGraphInstallationDenial {
     /// Original Native preparation/validation failure from the refused seed commit.
     pub fn invariant_execution_failure(
         &self,
-    ) -> Option<&crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailure> {
+    ) -> Option<&crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailure>{
         match self.cause.as_deref()? {
             InstallationDenialCause::NativeValidation(failure) => Some(failure),
             _ => None,
@@ -319,14 +319,14 @@ impl WorthQueryPrimaryGraphInstallationDenial {
     /// Original custom invariant verdict/failure, not a string classification.
     pub fn custom_invariant_denial(
         &self,
-    ) -> Option<&crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryCustomInvariantDenial> {
+    ) -> Option<&crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryCustomInvariantDenial>{
         self.invariant_execution_failure()?
             .custom_invariant_denial()
     }
     /// Original native law evidence from the refused bootstrap commit.
     pub fn relation_law(
         &self,
-    ) -> Option<crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryRelationLawDenial<'_>> {
+    ) -> Option<crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryRelationLawDenial<'_>>{
         self.invariant_execution_failure()?.relation_law()
     }
     pub(in crate::domain_computation) fn with_native_validation_failure(

@@ -54,7 +54,7 @@ impl CompletedFactProjection {
             preimages,
         }
     }
-    pub(in crate::domain_computation::primary_graph) fn scopes(&self) -> &crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes {
+    pub(in crate::domain_computation::primary_graph) fn scopes(&self) -> &crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes{
         &self.scopes
     }
     pub(in crate::domain_computation) fn count(&self) -> usize {

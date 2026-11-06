@@ -1,6 +1,6 @@
 //! Issued values are consumed only by their original admitted projection.
 use super::*;
-use {crate::domain_computation::primary_graph::vocabulary::structural_walk::key::StructuralWalkKey, crate::domain_computation::primary_graph::structural_walk::StructuralWalkObservation};
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
 use crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity as Admission;
 use std::{collections::BTreeMap, sync::Arc};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelContext};
@@ -8,7 +8,10 @@ use worth_query_installation::facade::WorthQueryCompiledApplicationOperationCont
 use worth_relational::facade::{
     snapshots::SnapshotHandle, transactions::RelationalExecutionDenialCause as Cause,
 };
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
+use {
+    crate::domain_computation::primary_graph::structural_walk::StructuralWalkObservation,
+    crate::domain_computation::primary_graph::vocabulary::structural_walk::key::StructuralWalkKey,
+};
 
 struct Issued {
     body: Arc<StructuralWalkObservation>,

@@ -32,7 +32,7 @@ pub(in super::super) fn observe_full_preparation(
 
 /// Full preparations include failed runs, which have no completed-run report.
 pub fn full_partitioned_computation_preparations_on_this_thread_for_test(
-) -> Vec<crate::domain_computation::primary_graph::computation_retention::full_cause::WorthQueryPartitionedComputationFullCause> {
+) -> Vec<crate::domain_computation::primary_graph::computation_retention::full_cause::WorthQueryPartitionedComputationFullCause>{
     FULL_PREPARATIONS.with(|runs| std::mem::take(&mut *runs.borrow_mut()))
 }
 

@@ -1,4 +1,4 @@
-//! Moved whole from `domain_computation::primary_graph::application_attempt::read_set::decision_reuse`: the items below and every impl they own.
+//! Sealed test doors over this module's private members.
 use crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryDecisionScopeWitness;
 use crate::domain_computation::vocabulary::primary_graph::decision_reuse::PreparedDecisionReuseContext;
 use crate::domain_computation::vocabulary::primary_graph::freshness::WorthQueryPrincipalReuseWitness;

@@ -40,8 +40,9 @@ impl<'a, 'provider, Schema, Operation, Input, Scope>
         aftermath_causality: Option<
             crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
         >,
-        history: Option<&'a dyn HistoryProducerCommit>,
     ) -> Self {
+        // A court never names the attempt-owned history commit port: the door builds an
+        // authority without a history producer.
         Self {
             application,
             provider,
@@ -51,7 +52,7 @@ impl<'a, 'provider, Schema, Operation, Input, Scope>
             coordination,
             product,
             aftermath_causality,
-            history,
+            history: None,
         }
     }
 }
@@ -87,4 +88,28 @@ impl WorthQueryProviderProgressionCompletion {
     ) {
         (self.outcome, self.cleanup)
     }
+}
+
+/// Sealed test door: progress a running commit that carries no history producer, so a court
+/// never names the attempt-owned history commit port.
+#[doc(hidden)]
+pub fn progress_application_commit_without_history_for_test<Schema, Operation, Input, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    phase: &WorthQueryAdvancementPhase<'_>,
+    application: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
+    running_commit: WorthQueryRunningApplicationCommit<Schema, Operation, Input, Scope>,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+) -> WorthQueryProgressedApplicationCommit
+where
+    Schema: worth_query_installation::facade::ApplicationSchema,
+    Input: Clone + Send + Sync + 'static,
+{
+    super::progress_application_commit(
+        execution,
+        phase,
+        application,
+        running_commit,
+        None,
+        allocation_policy,
+    )
 }

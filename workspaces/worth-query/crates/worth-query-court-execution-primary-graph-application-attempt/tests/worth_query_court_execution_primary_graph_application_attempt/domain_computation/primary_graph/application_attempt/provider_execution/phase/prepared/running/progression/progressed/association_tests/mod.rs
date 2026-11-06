@@ -1,7 +1,7 @@
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::entry_custody::court_doors_for_test::EntryCustodyEntryCustodyDoorsOps;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::progressed::finish_application_commit;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::entry_custody::preparation::prepare_application_commit;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::progress_application_commit;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::progress_application_commit_without_history_for_test;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::start_managed_application_commit;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::WorthQueryApplicationCommitPreparation;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::WorthQueryApplicationCommitPreparationRequest;
@@ -142,12 +142,11 @@ pub fn assert_interleaved_terminal(
                 &phase.borrowed_request_for_test(),
                 phase,
                 &world.application,
-                progress_application_commit(
+                progress_application_commit_without_history_for_test(
                     &phase.borrowed_request_for_test(),
                     phase,
                     &world.application,
                     victim,
-                    None,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 ),
             );
@@ -212,12 +211,11 @@ pub fn finish_peer(
         &phase.borrowed_request_for_test(),
         phase,
         &world.application,
-        progress_application_commit(
+        progress_application_commit_without_history_for_test(
             &phase.borrowed_request_for_test(),
             phase,
             &world.application,
             peer,
-            None,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         ),
     );

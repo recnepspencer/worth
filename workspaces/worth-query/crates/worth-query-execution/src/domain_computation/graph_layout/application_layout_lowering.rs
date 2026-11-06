@@ -6,7 +6,11 @@ use worth_query_installation::facade::{
 };
 use worth_relational::facade::identity::KindId;
 
-use {super::planned_field_locator, super::required_kind, super::WorthQueryPrimaryFieldLayout, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, super::WorthQueryPrimaryRelationLayout};
+use {
+    super::planned_field_locator, super::required_kind, super::WorthQueryPrimaryFieldLayout,
+    super::WorthQueryPrimaryRelationLayout,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+};
 
 pub(super) fn field_capability_keys<'a>(
     fields: impl IntoIterator<Item = &'a WorthQueryPrimaryFieldLayout>,

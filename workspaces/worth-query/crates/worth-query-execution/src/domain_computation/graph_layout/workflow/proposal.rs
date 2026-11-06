@@ -5,8 +5,11 @@ use worth_relational::facade::schema::{RelationalSchemaRegistry, SchemaId, Schem
 
 use super::relations::register_platform_entity;
 use super::WorkflowProposalLayout;
-use {crate::domain_computation::graph_layout::invalid_member, crate::domain_computation::graph_layout::planned_field_locator};
 use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial;
+use {
+    crate::domain_computation::graph_layout::invalid_member,
+    crate::domain_computation::graph_layout::planned_field_locator,
+};
 
 const PROPOSAL_ENTITY: &str = "worth-query-workflow-proposal";
 const PROPOSAL_ASPECT: &str = "workflow-proposal";

@@ -119,8 +119,11 @@ impl CompletedComputationRun {
 
 #[cfg(test)]
 mod tests {
-    use {crate::domain_computation::primary_graph::computation_retention::prior_absence::PriorAbsence, crate::domain_computation::primary_graph::computation_retention::prior_absence::Suppression};
     use super::*;
+    use {
+        crate::domain_computation::primary_graph::computation_retention::prior_absence::PriorAbsence,
+        crate::domain_computation::primary_graph::computation_retention::prior_absence::Suppression,
+    };
 
     /// Absence is explicit: an empty Produced seal cannot be constructed.
     /// Recording writes Unmeasured when it discards unmeasurable state;

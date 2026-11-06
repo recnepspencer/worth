@@ -7,7 +7,10 @@ use worth_foundational::facade::{
 };
 use worth_relational::facade::identity::KindId;
 
-use {crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind};
+use {
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind,
+};
 
 pub(in crate::domain_computation) fn required_kind(
     kinds: &BTreeMap<String, KindId>,

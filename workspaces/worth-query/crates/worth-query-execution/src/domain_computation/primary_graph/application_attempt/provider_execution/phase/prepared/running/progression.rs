@@ -1,14 +1,14 @@
 use self::session_admission::admit_provider_session;
 use super::WorthQueryRunningApplicationCommit;
+use crate::domain_computation::primary_graph::application_attempt::provider_binding::WorthQueryPreparedApplicationProviderAttempt;
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::outcome::WorthQueryProviderProgressionOutcome;
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::WorthQueryApplicationAttemptBasis;
-use crate::domain_computation::primary_graph::application_attempt::HistoryProducerCommit;
-use crate::domain_computation::primary_graph::application_attempt::provider_binding::WorthQueryPreparedApplicationProviderAttempt;
 use crate::domain_computation::primary_graph::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding;
+use crate::domain_computation::primary_graph::application_attempt::HistoryProducerCommit;
 use crate::domain_computation::primary_graph::provider::{
     WorthQueryApplicationBranchCommitCoordination, WorthQueryPrimaryGraphProvider,
 };
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 
 mod authorized;
@@ -291,4 +291,5 @@ where
     registered_session.progress(execution, &authority, allocation_policy)
 }
 
-mod court_doors_for_test;
+pub(crate) mod court_doors_for_test;
+pub use court_doors_for_test::progress_application_commit_without_history_for_test;

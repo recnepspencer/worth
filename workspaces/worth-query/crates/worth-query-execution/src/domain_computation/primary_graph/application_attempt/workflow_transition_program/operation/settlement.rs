@@ -6,9 +6,7 @@ where
     Schema: ApplicationSchema,
     Operation: 'static,
 {
-    pub(in crate::domain_computation::primary_graph) fn settle<
-        Binding,
-    >(
+    pub(in crate::domain_computation::primary_graph) fn settle<Binding>(
         self,
         runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         receipt: &WorthQueryApplicationCommitReceipt,
@@ -30,9 +28,7 @@ where
         self.settle_validated(performed)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn settle_recovered<
-        Binding,
-    >(
+    pub(in crate::domain_computation::primary_graph) fn settle_recovered<Binding>(
         self,
         runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         receipt: &WorthQueryApplicationCommitReceipt,

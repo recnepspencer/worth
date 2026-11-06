@@ -12,7 +12,10 @@
 
 use std::num::NonZeroU64;
 
-use {crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind};
+use {
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind,
+};
 
 /// Work units the platform's branch program activation read spends: one
 /// structural entity-aspect state read, charged once per candidate evaluation.

@@ -14,7 +14,10 @@ use worth_relational::facade::{
     schema::DerivedRelationDenial as DefinitionDenial,
     transactions::RelationalExecutionDenialCause as Cause,
 };
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey as Fact, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection as Direction};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection as Direction,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey as Fact,
+};
 
 mod member;
 mod source;

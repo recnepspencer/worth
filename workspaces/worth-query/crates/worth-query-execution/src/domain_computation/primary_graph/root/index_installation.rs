@@ -145,9 +145,10 @@ pub fn register_primary_graph_indexes(
             })?
             .index_id;
     }
-    crate::domain_computation::graph_layout::workflow::register_indexes(layout.workflow_mut(), |definition| {
-        installation.install(definition)
-    })?;
+    crate::domain_computation::graph_layout::workflow::register_indexes(
+        layout.workflow_mut(),
+        |definition| installation.install(definition),
+    )?;
     let read_indexes = crate::domain_computation::graph_layout::WorkflowReadIndexes::install(
         layout.workflow(),
         |definition| installation.install(definition),

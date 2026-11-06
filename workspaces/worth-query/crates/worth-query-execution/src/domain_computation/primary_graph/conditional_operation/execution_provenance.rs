@@ -122,7 +122,10 @@ fn cause(
     };
     use super::signal_decision_reentry::WorthQueryOperationBackpressureCause as Backpressure;
     use super::signal_decision_reentry::WorthQueryRetainedConditionalDecision as Decision;
-    use {crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as CommitKind, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as Stage};
+    use {
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as CommitKind,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as Stage,
+    };
     match decision {
         Decision::OperationExecutionControlRetryable(_, kind) => {
             Some(Cause::ApplicationExecutionDenied {

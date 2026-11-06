@@ -1,6 +1,10 @@
 //! Mapping a provider rejection stage into the application commit outcome.
 
-use {super::super::WorthQueryApplicationCommitDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage, super::super::WorthQueryApplicationCommitOutcome};
+use {
+    super::super::WorthQueryApplicationCommitDenial,
+    super::super::WorthQueryApplicationCommitOutcome,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage,
+};
 
 pub(super) fn denied(
     stage: WorthQueryApplicationCommitDenialStage,

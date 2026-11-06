@@ -3,7 +3,11 @@
 use crate::domain_computation::{
     WorthQueryDecisionReadSetDenialKind as Kind, WorthQueryDecisionReadSetFailure,
 };
-use {super::denial_cause::DenialCause, super::WorthQueryApplicationCommitDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as Stage, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as CommitKind};
+use {
+    super::denial_cause::DenialCause, super::WorthQueryApplicationCommitDenial,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as CommitKind,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as Stage,
+};
 
 impl WorthQueryApplicationCommitDenial {
     /// Full read-set refusal, including any original physical allocation cause.

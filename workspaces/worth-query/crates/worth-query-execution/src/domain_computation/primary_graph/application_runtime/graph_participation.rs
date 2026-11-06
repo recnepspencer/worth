@@ -8,7 +8,10 @@ use worth_query_installation::facade::WorthQueryInstalledGraphParticipationAutho
 use crate::domain_computation::execution_runtime::WorthQueryExecutionInstallationAuthority;
 use crate::domain_computation::provider_session::graph_provider::bounded_step::provider_anchor::WorthQueryGraphProviderAnchor;
 
-use {crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind};
+use {
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind,
+};
 
 pub(super) fn install(
     authority: &WorthQueryExecutionInstallationAuthority,

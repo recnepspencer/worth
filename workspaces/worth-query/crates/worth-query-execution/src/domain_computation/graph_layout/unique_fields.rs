@@ -120,9 +120,7 @@ impl WorthQueryUniqueFieldFixture {
 }
 
 impl WorthQueryPrimaryGraphLayout {
-    pub(in crate::domain_computation) fn unique_fields(
-        &self,
-    ) -> WorthQueryUniqueFields<'_> {
+    pub(in crate::domain_computation) fn unique_fields(&self) -> WorthQueryUniqueFields<'_> {
         WorthQueryUniqueFields {
             names: &self.unique_fields.by_kind,
             fields: &self.fields,

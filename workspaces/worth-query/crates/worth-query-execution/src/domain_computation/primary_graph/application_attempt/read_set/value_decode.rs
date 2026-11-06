@@ -2,7 +2,10 @@
 use super::{denial, WorthQueryApplicationReadAttempt};
 use worth_foundational::facade::AspectValue;
 use worth_query_installation::facade::ApplicationReadableScalarValueBinding;
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind,
+};
 
 impl<Schema, Operation, Input, Scope, Phase>
     WorthQueryApplicationReadAttempt<'_, '_, Schema, Operation, Input, Scope, Phase>

@@ -7,7 +7,11 @@ use worth_query_declaration::facade::application_operation::{
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationQueryBinding,
 };
-use {crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt, crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::WorthQueryApplicationCommittedChanges, crate::domain_computation::vocabulary::primary_graph::inspection::OriginalSourceInspectionDisclosure};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::WorthQueryApplicationCommittedChanges,
+    crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+    crate::domain_computation::vocabulary::primary_graph::inspection::OriginalSourceInspectionDisclosure,
+};
 
 #[derive(Clone)]
 pub(super) struct SourceOriginal {

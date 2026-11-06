@@ -47,10 +47,7 @@ fn append_bytes(encoded: &mut String, bytes: &[u8]) {
     }
 }
 
-use super::{
-    mutation_binding, workflow_definition, workflow_instance, workflow_proposal_context,
-    workflow_transition, WorthQueryApplicationIdempotencyBinding,
-};
+use super::WorthQueryApplicationIdempotencyBinding;
 impl WorthQueryApplicationIdempotencyBinding {
     /// Every intent slot, without the encoding's version; `intent_text` is
     /// what a key records.

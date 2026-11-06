@@ -353,8 +353,8 @@ mod tests;
 pub(in crate::domain_computation) const RULE_ID: &str =
     "worth-query.workflow.publication-immutability";
 
-pub(in crate::domain_computation) const RULE_VERSION:
-    CustomInvariantSemanticVersion = CustomInvariantSemanticVersion::new(1, 6);
+pub(in crate::domain_computation) const RULE_VERSION: CustomInvariantSemanticVersion =
+    CustomInvariantSemanticVersion::new(1, 6);
 
 pub(in crate::domain_computation) const fn fact_custody_receipt_contract(
 ) -> (&'static str, u16, u16, Option<u64>) {

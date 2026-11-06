@@ -22,12 +22,17 @@ use super::context_identity::{
 };
 use super::operation_role::installed_lifecycle_owner;
 use super::transition_contract::{approval_program_targets, lifecycle_decision_reads};
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial, crate::domain_computation::primary_graph::WorthQueryElevationApprovalOutcome, crate::domain_computation::primary_graph::WorthQueryRequestedElevation};
 use {
     super::super::WorthQueryAdmittedApplicationCapabilityAccess,
     super::super::WorthQueryAdmittedApplicationOperation,
     super::super::WorthQueryOperationAuthorizationDenial,
     crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
+    crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial,
+    crate::domain_computation::primary_graph::WorthQueryElevationApprovalOutcome,
+    crate::domain_computation::primary_graph::WorthQueryRequestedElevation,
 };
 
 mod support_currentness;

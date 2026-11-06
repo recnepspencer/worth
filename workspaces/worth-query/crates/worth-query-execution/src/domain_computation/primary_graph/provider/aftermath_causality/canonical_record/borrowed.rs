@@ -1,5 +1,4 @@
 //! Compare the existing canonical grammar without owned row/receipt decoding.
-use {super::super::lineage_fields, super::super::source_fields, crate::domain_computation::graph_layout::WorthQueryAftermathCausalityLayout};
 use crate::domain_computation::application_aftermath::{
     WorthQueryAftermathCausalRole, WorthQueryCommittedAftermathCausality,
     WorthQueryRecordedCorrectionSource,
@@ -15,6 +14,10 @@ use worth_foundational::facade::{
 use worth_relational::facade::{
     runtime::RelationalRuntime, snapshots::SnapshotHandle, storage::RecordLifecycleState,
     transactions::RecordRef,
+};
+use {
+    super::super::lineage_fields, super::super::source_fields,
+    crate::domain_computation::graph_layout::WorthQueryAftermathCausalityLayout,
 };
 
 pub(in crate::domain_computation::primary_graph::provider::aftermath_causality) fn matches_reverse(

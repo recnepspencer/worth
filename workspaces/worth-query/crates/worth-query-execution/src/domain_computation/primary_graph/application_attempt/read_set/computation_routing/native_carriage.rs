@@ -19,7 +19,9 @@ use crate::domain_computation::primary_graph::vocabulary::application_attempt::c
 
 /// The native prior a projection's calls were carried from, as the read set
 /// sees it. Holders share one custody through `Arc<dyn NativeCarriageReads>`.
-pub(in crate::domain_computation::primary_graph) trait NativeCarriageReads: Send + Sync {
+pub(in crate::domain_computation::primary_graph) trait NativeCarriageReads:
+    Send + Sync
+{
     /// The retained custody's address and the snapshot it was checked at.
     fn identity(&self) -> (*const (), &SnapshotHandle);
 
@@ -40,7 +42,9 @@ pub(in crate::domain_computation::primary_graph) trait NativeCarriageReads: Send
     /// postcondition carry rebases over.
     fn rebase_changes(
         &self,
-    ) -> Option<crate::domain_computation::primary_graph::output_lineage::invalidation::ComputationChanges>;
+    ) -> Option<
+        crate::domain_computation::primary_graph::output_lineage::invalidation::ComputationChanges,
+    >;
 
     /// Whether `completed` closed over this exact custody at its native pin
     /// with these closed ranges.

@@ -12,7 +12,13 @@ use worth_query_installation::facade::{
 
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse;
 use crate::domain_computation::primary_graph::vocabulary::handler::invariant::HandlerInterruption;
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::super::WorthQueryApplicationEffectProgramBuilder, crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantMutationTarget, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
+use {
+    super::super::WorthQueryApplicationEffectProgramBuilder,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity,
+    crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantMutationTarget,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 
 mod aspect_removal;
 mod content;

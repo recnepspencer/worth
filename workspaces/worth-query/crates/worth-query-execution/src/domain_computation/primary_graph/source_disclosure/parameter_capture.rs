@@ -1,9 +1,12 @@
 //! Source-owned association around the sole funded query-parameter capture.
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime};
 use crate::domain_computation::vocabulary::primary_graph::original::OriginalSourceDisclosure;
 use worth_query_declaration::facade::{
     application_query::{ApplicationQueryBinding, ApplicationQueryParameterSet},
     application_schema::ApplicationSchema,
+};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
 };
 
 pub(in crate::domain_computation::primary_graph) fn capture_parameters<Schema, Binding>(

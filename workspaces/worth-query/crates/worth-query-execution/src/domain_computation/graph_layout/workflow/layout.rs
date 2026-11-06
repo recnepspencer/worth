@@ -43,8 +43,7 @@ pub struct WorkflowLayoutFields {
     pub(in crate::domain_computation) instance: WorkflowInstanceLayout,
     pub(in crate::domain_computation) transition: WorkflowTransitionLayout,
     pub(in crate::domain_computation) proposal: WorkflowProposalLayout,
-    pub(in crate::domain_computation) proposal_coverage:
-        WorkflowProposalCoverageLayout,
+    pub(in crate::domain_computation) proposal_coverage: WorkflowProposalCoverageLayout,
     pub assessment_evidence: WorkflowAssessmentEvidenceLayout,
     pub(in crate::domain_computation) approval: WorkflowApprovalLayout,
     pub evidence_dependency: WorkflowEvidenceDependencyLayout,
@@ -63,8 +62,7 @@ pub struct WorkflowLayoutFields {
     pub(in crate::domain_computation) transition_node_relation: KindId,
     pub(in crate::domain_computation) transition_proposal_relation: KindId,
     pub(in crate::domain_computation) proposal_coverage_relation: KindId,
-    pub(in crate::domain_computation) transition_assessment_evidence_relation:
-        KindId,
+    pub(in crate::domain_computation) transition_assessment_evidence_relation: KindId,
     pub(in crate::domain_computation) transition_approval_relation: KindId,
     pub(in crate::domain_computation) approval_proposal_relation: KindId,
     pub(in crate::domain_computation) approval_evidence_relation: KindId,
@@ -138,14 +136,12 @@ pub struct WorkflowApprovalLayout {
     pub(in crate::domain_computation) identity: AspectFieldLocator,
     pub(in crate::domain_computation) protocol_version: AspectFieldLocator,
     pub(in crate::domain_computation) instance_identity: AspectFieldLocator,
-    pub(in crate::domain_computation) definition_content_identity:
-        AspectFieldLocator,
+    pub(in crate::domain_computation) definition_content_identity: AspectFieldLocator,
     pub(in crate::domain_computation) program_revision: AspectFieldLocator,
     pub(in crate::domain_computation) decision: AspectFieldLocator,
     pub(in crate::domain_computation) approval_operation: AspectFieldLocator,
     pub(in crate::domain_computation) target_operation: AspectFieldLocator,
-    pub(in crate::domain_computation) installed_capability_identity:
-        AspectFieldLocator,
+    pub(in crate::domain_computation) installed_capability_identity: AspectFieldLocator,
     pub(in crate::domain_computation) approver_partition: AspectFieldLocator,
     pub(in crate::domain_computation) approver_slot: AspectFieldLocator,
     pub(in crate::domain_computation) approver_generation: AspectFieldLocator,
@@ -158,8 +154,7 @@ pub struct WorkflowApprovalLayout {
     pub(in crate::domain_computation) authorization_decision: AspectFieldLocator,
     pub(in crate::domain_computation) authorization_request: AspectFieldLocator,
     pub(in crate::domain_computation) authorization_principal: AspectFieldLocator,
-    pub(in crate::domain_computation) capability_authority_identity:
-        AspectFieldLocator,
+    pub(in crate::domain_computation) capability_authority_identity: AspectFieldLocator,
     pub(in crate::domain_computation) authorization_lineage: AspectFieldLocator,
     pub(in crate::domain_computation) authorization_support: AspectFieldLocator,
     pub(in crate::domain_computation) authorization_dependencies: AspectFieldLocator,
@@ -220,17 +215,14 @@ pub struct WorkflowDefinitionLayout {
     pub(in crate::domain_computation) maximum_connections: AspectFieldLocator,
     pub(in crate::domain_computation) maximum_effects: AspectFieldLocator,
     pub(in crate::domain_computation) global_actions: AspectFieldLocator,
-    pub(in crate::domain_computation) maximum_component_occurrences:
-        AspectFieldLocator,
+    pub(in crate::domain_computation) maximum_component_occurrences: AspectFieldLocator,
     pub(in crate::domain_computation) maximum_component_depth: AspectFieldLocator,
     pub(in crate::domain_computation) maximum_node_provenance: AspectFieldLocator,
-    pub(in crate::domain_computation) maximum_connection_provenance:
-        AspectFieldLocator,
+    pub(in crate::domain_computation) maximum_connection_provenance: AspectFieldLocator,
     pub(in crate::domain_computation) maximum_port_provenance: AspectFieldLocator,
     pub(in crate::domain_computation) maximum_canonical_bytes: AspectFieldLocator,
     /// The declared total deadline in milliseconds; absent when none.
-    pub(in crate::domain_computation) total_deadline_milliseconds:
-        AspectFieldLocator,
+    pub(in crate::domain_computation) total_deadline_milliseconds: AspectFieldLocator,
     pub(in crate::domain_computation) content_identity_index_id: DerivedIndexId,
 }
 
@@ -242,8 +234,7 @@ pub struct WorkflowNodeLayout {
     pub(in crate::domain_computation) member: AspectFieldLocator,
     pub(in crate::domain_computation) input_type: AspectFieldLocator,
     pub(in crate::domain_computation) operation_binding: AspectFieldLocator,
-    pub(in crate::domain_computation) workflow_execution_requirements:
-        AspectFieldLocator,
+    pub(in crate::domain_computation) workflow_execution_requirements: AspectFieldLocator,
     pub(in crate::domain_computation) inbound_origin: AspectFieldLocator,
     pub(in crate::domain_computation) inbound_contract: AspectFieldLocator,
     pub(in crate::domain_computation) inbound_wait: AspectFieldLocator,
@@ -251,19 +242,15 @@ pub struct WorkflowNodeLayout {
     pub(in crate::domain_computation) result_type: AspectFieldLocator,
     pub(in crate::domain_computation) assessment_binding: AspectFieldLocator,
     pub(in crate::domain_computation) assessment_subject: AspectFieldLocator,
-    pub(in crate::domain_computation) assessment_applicability_relation:
-        AspectFieldLocator,
-    pub(in crate::domain_computation) assessment_applicability_from:
-        AspectFieldLocator,
-    pub(in crate::domain_computation) assessment_applicability_to:
-        AspectFieldLocator,
+    pub(in crate::domain_computation) assessment_applicability_relation: AspectFieldLocator,
+    pub(in crate::domain_computation) assessment_applicability_from: AspectFieldLocator,
+    pub(in crate::domain_computation) assessment_applicability_to: AspectFieldLocator,
     pub(in crate::domain_computation) condition_binding: AspectFieldLocator,
     /// Present exactly on expression conditions; see `definition::condition`.
     pub(in crate::domain_computation) condition_operands: AspectFieldLocator,
     pub(in crate::domain_computation) capability_type: AspectFieldLocator,
     pub(in crate::domain_computation) approval_operation: AspectFieldLocator,
-    pub(in crate::domain_computation) approval_capability_identity:
-        AspectFieldLocator,
+    pub(in crate::domain_computation) approval_capability_identity: AspectFieldLocator,
     pub(in crate::domain_computation) requires_authority: AspectFieldLocator,
 }
 
@@ -299,8 +286,7 @@ pub struct WorkflowInstanceLayout {
     pub(in crate::domain_computation) started_program_revision: AspectFieldLocator,
     /// Mutable execution revision; Carry may advance it.
     pub(in crate::domain_computation) program_revision: AspectFieldLocator,
-    pub(in crate::domain_computation) definition_content_identity:
-        AspectFieldLocator,
+    pub(in crate::domain_computation) definition_content_identity: AspectFieldLocator,
     pub(in crate::domain_computation) subject_partition: AspectFieldLocator,
     pub(in crate::domain_computation) subject_slot: AspectFieldLocator,
     pub(in crate::domain_computation) subject_generation: AspectFieldLocator,
@@ -332,7 +318,8 @@ pub struct WorkflowTransitionLayout {
     pub(in crate::domain_computation) identity_index_id: DerivedIndexId,
     pub(in crate::domain_computation) output_binding: AspectFieldLocator,
     pub(in crate::domain_computation) output_count: AspectFieldLocator,
-    pub advancer: crate::domain_computation::graph_layout::workflow::actor_fields::WorkflowActorFields,
+    pub advancer:
+        crate::domain_computation::graph_layout::workflow::actor_fields::WorkflowActorFields,
     pub(in crate::domain_computation) executor:
         crate::domain_computation::graph_layout::workflow::actor_fields::WorkflowActorFields,
     pub(in crate::domain_computation) entity_kind: KindId,

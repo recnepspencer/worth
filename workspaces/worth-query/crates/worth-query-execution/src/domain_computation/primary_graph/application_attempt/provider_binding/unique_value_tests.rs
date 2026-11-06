@@ -13,10 +13,10 @@ use worth_relational::facade::identity::{EntityId, KindId, PartitionId};
 use worth_relational::facade::indexes::{DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind};
 
 use super::{prepare_provider_attempt, WorthQueryApplicationRealizedEffect as Effect};
+use crate::domain_computation::graph_layout::WorthQueryUniqueFieldFixture;
 use crate::domain_computation::primary_graph::application_attempt::effect_program::{
     WorthQueryApplicationCreationPartition as Partition, WorthQueryApplicationOptionalFieldWrite,
 };
-use crate::domain_computation::graph_layout::WorthQueryUniqueFieldFixture;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;

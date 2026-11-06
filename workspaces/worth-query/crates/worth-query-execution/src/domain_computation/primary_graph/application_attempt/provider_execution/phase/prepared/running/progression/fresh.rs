@@ -1,4 +1,5 @@
 use crate::domain_computation::primary_graph as graph;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as ExecutionDenialStage;
 use crate::domain_computation::provider_session as session;
 use crate::domain_computation::{
     WorthQueryDecisionReadSetFreshnessOutcome, WorthQueryFreshDecisionReadSet,
@@ -12,7 +13,6 @@ use graph::application_attempt::provider_execution::outcome::{
 };
 use graph::provider::WorthQueryProviderIdempotencyResolutionDenial as IdempotencyDenial;
 use graph::provider::{WorthQueryPrimaryGraphProvider, WorthQueryProviderIdempotencyResolution};
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as ExecutionDenialStage;
 use session::WorthQueryProviderSessionTerminalBinding as TerminalBinding;
 use worth_query_installation::facade::ApplicationSchema;
 use {

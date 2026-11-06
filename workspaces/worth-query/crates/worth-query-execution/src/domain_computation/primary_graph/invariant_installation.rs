@@ -16,7 +16,10 @@ use worth_query_installation::facade::{
 };
 use worth_relational::facade::runtime::CustomInvariantRegistration;
 
-use {crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind};
+use {
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind,
+};
 
 use super::application_invariant::{
     ErasedApplicationInvariantRule, WorthQueryApplicationInvariantRule,

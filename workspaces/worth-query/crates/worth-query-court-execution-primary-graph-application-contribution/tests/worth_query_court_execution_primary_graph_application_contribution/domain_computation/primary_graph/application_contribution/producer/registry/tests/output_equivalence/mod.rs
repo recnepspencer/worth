@@ -1,4 +1,5 @@
 //! Real installed field contracts enter the producer edition through ordinary sealing.
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::semantic_edition::court_doors_for_test::ProducerEditionAdmissionForTest;
 pub use crate::domain_computation::primary_graph::application_contribution::producer::registry::tests::*;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::output_equivalence_contract::seal;
 pub use worth_query_execution::facade::application_contribution::WorthQueryProducerOutputEquivalence;

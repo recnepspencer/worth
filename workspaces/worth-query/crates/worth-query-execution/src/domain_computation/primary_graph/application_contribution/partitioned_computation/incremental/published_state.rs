@@ -1,7 +1,7 @@
 //! Certification observes published and discarded retention without execution authority.
 use super::retained::RetainedPartitions;
-use crate::domain_computation::primary_graph::computation_retention::full_cause::WorthQueryPartitionedComputationFullCause as Cause;
 use crate::domain_computation::primary_graph::application_contribution::RetainedComputation;
+use crate::domain_computation::primary_graph::computation_retention::full_cause::WorthQueryPartitionedComputationFullCause as Cause;
 use std::sync::Arc;
 use worth_execution::CanonicalBits;
 use worth_query_declaration::facade::application_operation::application_computation_item_digest;

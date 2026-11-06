@@ -1,0 +1,126 @@
+# Module coupling: `domain_computation::primary_graph`
+
+- top-level modules: 80
+- acyclic modules: 28
+- largest strongly connected component: 52
+- cross-module references: 7834 (4155 inside components)
+- upward edges against the layering: 112 carrying 925 references {'function': 26, 'module': 7, 'type': 892}
+
+## Layering, top to bottom
+
+application_invariant_preparation > facade > index_refresh > merge_unique_values > ordinary_read > application_contribution > application_runtime > managed_bridge > record_reservations > application_installation > application_query > causal_inspection > source_read_equivalence > product_operation > invariant_projection > application_attempt > access_strategy > application_discovery > product_activation > bootstrap > bootstrap_publication > output_lineage > handler > content > operation_body > application_entry > application_inbound > provider > application_output_demand > conditional_operation > output_reuse > application_resource > principal_currentness_capture > resolution > authenticated_principal > source_read_verification > component_selection > freshness > application_program > application_checkpoint > entity_resolution > runtime_host > index_currency > granular_invalidation > root > typed_bootstrap > root_path_selection > live_delivery > invariant_installation > application_invariant > aggregate_observation > source_facts > program_occurrence > fact_verification_observation > aggregate_projection > source_disclosure > expression > observations > derived_source > structural_walk > resolution_denial > output_binding_identity > exact_basis_access > vocabulary > value_decode > selected_read_indexes > request_local > request_allocation_control > read_observation > publication_request_denial > principal_key > output_family_identity > initial_schema_denial > index_maintenance_budget > entity_resolution_denial > entity_key > computation_retention > application_branch > aggregate_identity > admitted_capture
+
+## Upward edges
+
+- `product_operation -> application_query` (78): `WorthQueryApplicationQueryAccessContext` struct, `WorthQueryApplicationQueryAccessReceipt` struct, `AdmissionScopedOps` trait, `CorrectionDisclosureScopedOps` trait, `WorthQueryApplicationOutputDemandSource` struct, `WorthQueryApplicationQueryBasisCustody` struct, `WorthQueryApplicationQueryBatchAdmission` struct, `WorthQueryApplicationQueryControls` struct, `WorthQueryDocumentHistoryRead` struct, `CompletedMetadataRead` struct, `WorthQueryHistoryOutputIntent` struct, `HistoryOutputControlPlan` type, `OutputReadScopedOps` trait, `WorthQueryHistoryPreviewReadAdmission` struct, `WorthQueryAdmittedApplicationQueryPlan` struct, `ApplicationQueryHost` trait, `WorthQueryManagedIndexDenial` struct, `ApplicationQueryNativeAccess` enum, `WorthQueryObservedSource` struct, `WorthQueryRequiredSetCurrentnessDenial` enum, `WorthQueryRetainedQueryDependencies` struct, `WorthQueryApplicationOneShotResult` struct, `OneShotCorrectionDisclosureScopedOps` trait, `WorthQueryApplicationProjection` trait, `WorthQueryApplicationBasisRegistry` struct, `WorthQueryApplicationBasisLease` struct, `WorthQueryApplicationReadObservation` struct
+- `application_installation -> application_contribution` (51): `WorthQueryApplicationContributionTuple` trait, `WorthQueryConfiguredApplicationContributions` struct, `ApplicationContributionHost` trait, `WorthQueryApplicationOutputDemand` trait, `WorthQueryProducerOutputFamily` trait, `WorthQueryAdmittedOutputDemand` struct, `WorthQueryOutputDemandAdvance` enum, `ProgressionScopedOps` trait, `AdmissionOps` trait, `AdmissionScopedOps` trait, `DependentScopedOps` trait, `SourceCustodyScopedOps` trait, `SourceRecoveryScopedOps` trait, `UnavailableScopedOps` trait, `WorthQueryInstalledApplicationProducerRegistry` struct
+- `provider -> application_attempt` (46): `WorthQueryApplicationCommitAuthorityBinding` struct, `WorthQueryApplicationCommitReceipt` struct, `WorthQueryAdmittedApplicationConditionalDefinition` struct, `WorthQueryAdmittedApplicationEmissionBatch` struct, `WorthQueryApplicationEmission` struct, `WorthQueryApplicationObservedFact` enum, `consult_observation` module, `reobserve` fn, `WorthQueryApplicationIdempotencyResolutionDenial` struct, `OutputFieldCaptureFailure` enum, `WorthQueryRegisteredProviderEffects` struct, `WorthQueryProviderEffectRegistrationSeal` struct, `WorthQueryApplicationAttemptAffinity` struct, `CompletedOriginalRead` struct, `WorkflowOperationOrigin` struct
+- `causal_inspection -> application_query` (37): `WorthQueryApplicationQueryAccessContext` struct, `FreshQueryPermissionStop` enum, `AccessScopedOps` trait, `ReadAuthorizationScopedOps` trait, `SelectedIssuedAccessRoot` struct, `WorthQueryApplicationOutputDemandSource` struct, `ApplicationQueryHost` trait, `WorthQueryObservedSource` struct, `WorthQueryMaterializedQueryField` struct, `WorthQueryMaterializedQueryRelation` struct, `WorthQueryMaterializedQueryRow` struct, `ProjectionComparisonDenial` enum, `compare_original_projections` fn, `WorthQueryMaterializedQueryProjection` struct, `WorthQueryProjectionMaterializationRefusal` enum, `materialize_original_projection` fn
+- `application_output_demand -> output_lineage` (34): `RetainedOutputCurrentnessRead` struct, `PublishedStableLineage` struct, `PreparedInputReuseKey` struct, `SourceInvalidationOwner` struct, `SealedNativeOutputWitness` struct, `RecordedSourceIdentity` enum, `BoundCurrentAcceptedOutput` struct, `PriorComputationRecord` struct, `ComparableSourceFacts` struct
+- `application_output_demand -> application_query` (30): `WorthQueryManagedIndexDenial` struct, `WorthQueryManagedIndexDenialCause` enum, `WorthQueryObservedSource` struct, `WorthQueryRequiredSetCurrentnessDenial` enum, `WorthQueryRetainedQueryDependencies` struct, `WorthQueryObservedSourceEpoch` struct, `WorthQueryApplicationReadObservation` struct
+- `output_lineage -> invariant_projection` (28): `ConsumedOutputEvidence` struct, `SelectedPendingConsumedOutput` struct, `EvidenceView` struct, `ObservedOutputCandidate` struct
+- `application_attempt -> invariant_projection` (27): `WorthQueryApplicationInvariantProjectionAuthority` struct, `ConsumedOutputEvidence` struct, `WorthQueryOperationProjectionDenial` struct, `WorthQueryApplicationOperationInvariantProjectionSnapshot` struct, `BorrowedOperationProjection` struct, `CallShape` struct, `CallShapeTransition` struct, `ObservedComputationInputs` enum, `ExpectedFactKeys` struct, `WorthQueryRealizedProjectionScope` struct
+- `application_output_demand -> application_attempt` (27): `WorthQueryApplicationCleanupRequired` struct, `WorthQueryApplicationUncommitted` enum, `WorthQueryApplicationCommitReceipt` struct, `WorthQueryApplicationObservedFact` enum, `OutputFieldCaptureFailure` enum
+- `application_runtime -> application_contribution` (26): `WorthQueryApplicationConditionalBinding` trait, `WorthQueryInstalledApplicationConditionalRegistry` struct, `ApplicationContributionHost` trait, `WorthQueryOutputProduction` struct, `WorthQueryApplicationProducerBinding` trait, `WorthQueryProducerOutputFamily` trait, `WorthQueryAdmittedOutputDemand` struct, `WorthQueryOutputDemandAdvance` enum, `WorthQuerySelectedApplicationProducer` struct, `ProgressionOps` trait, `AdmissionOps` trait, `RetainedObservationOps` trait, `SourceCustodyOps` trait, `SelectedProgramOps` trait, `SelectionOps` trait, `PendingOutputReadiness` trait, `WorthQueryInstalledOutputReadinessRoutes` type, `install_output_readiness_routes` fn, `WorthQueryInstalledApplicationProducerRegistry` struct, `WorthQueryInstalledOutputProducerRoutes` type
+- `handler -> invariant_projection` (26): `WorthQueryInvariantProjectionComponent` struct, `WorthQueryInvariantGraphMember` struct, `WorthQueryInvariantProjectionTraversalDenial` struct, `WorthQueryInvariantProjectionTraversalDenialKind` enum, `WorthQueryApplicationOperationInvariantProjectionReader` struct, `WorthQueryCurrentOutputSelection` enum, `WorthQueryPreparedEntitySelection` struct, `WorthQueryInvariantDerivedRelation` struct, `WorthQueryInvariantDerivedMemberRelation` struct, `WorthQueryInvariantDerivedWalk` struct, `WorthQueryInvariantGraphComponent` struct, `WorthQueryObservedOutputAvailability` struct, `WorthQueryPriorOutputFamilyMember` struct, `WorthQueryPriorOutputRead` type, `WorthQueryInvariantProjectionOrbit` struct, `WorthQueryInvariantRelation` struct, `WorthQueryInvariantProjectionWalk` struct
+- `output_lineage -> application_attempt` (23): `WorthQueryApplicationCommitReceipt` struct, `WorthQueryApplicationObservedFact` enum
+- `product_operation -> application_contribution` (22): `WorthQueryApplicationOutputDemand` trait, `WorthQueryApplicationProducerBinding` trait, `WorthQueryApplicationProducerProvider` trait, `WorthQueryProducerOutputFamily` trait, `WorthQueryInstalledApplicationProducerRegistry` struct
+- `provider -> application_query` (20): `PreparedManagedViewPublication` struct, `PredicatePreparationFactory` struct, `PredicatePreparationOwner` struct, `PredicatePreparationRetirement` struct, `PreparedPredicatePublication` enum
+- `conditional_operation -> application_attempt` (18): `WorthQueryApplicationCleanupRequired` struct, `WorthQueryApplicationManagedCleanup` struct, `WorthQueryApplicationCommitDeferred` struct, `WorthQueryApplicationCommitDeferredKind` enum, `WorthQueryApplicationCommitOutcome` enum, `WorthQueryApplicationNoEffectCause` enum, `WorthQueryApplicationUncommitted` enum, `WorthQueryApplicationUnresolvedCommitEvidence` struct, `WorthQueryApplicationCommitDenial` struct, `WorthQueryApplicationCommitReceipt` struct, `WorthQueryApplicationEffectProgramBuilder` struct, `ProviderExecutionProviderExecutionEntryScopedOps` trait, `ReadSetScopedOps` trait
+- `provider -> output_lineage` (17): `PostconditionCarry` struct, `ObservedSourcePublication` struct, `SourcePublicationReadFence` struct, `register_completed` fn, `PostingContinuation` struct, `PostingRebaseBasis` struct, `PreparedNativeOutputWitness` struct, `PreparedOutputLineageSlot` struct, `prepare` fn, `PreparedLineageRecoveryMetadata` struct
+- `application_discovery -> application_attempt` (15): `observe_adjacency` fn, `observe_field_value` fn, `observe` fn, `governed_record` module, `history_projection` module, `ReadFields` struct, `ReadOnlyWorkflowHistory` struct, `observe_subject` fn, `WorthQueryWorkflowInstanceDiscoveryIntent` struct
+- `application_checkpoint -> application_attempt` (14): `WorthQueryApplicationObservedFact` enum
+- `application_checkpoint -> application_output_demand` (14): `WorthQueryRecoveredOutputs` struct, `WorthQueryOutputDemandRegistry` struct, `AcceptedCheckpointFactSource` enum, `WorthQueryAcceptedOutputCheckpointIdentity` struct
+- `conditional_operation -> application_query` (14): `WorthQueryApplicationQueryAccessContext` struct, `AdmissionScopedOps` trait, `WorthQueryApplicationQueryControls` struct, `WorthQueryAdmittedApplicationQueryPlan` struct, `ApplicationQueryHost` trait, `OneShotScopedOps` trait, `WorthQueryApplicationProjection` trait, `WorthQueryApplicationBasisLease` struct
+- `invariant_projection -> application_query` (14): `application_query` module, `ManagedDerivedViewRegistry` struct, `WorthQueryManagedIndexDenial` struct, `ApplicationQueryNativeAccess` enum, `ObservedQueryExpressionContext` struct, `SourceQueryObservationStop` enum, `SourceQueryReaderAccess` struct, `WorthQueryApplicationProjection` trait
+- `output_lineage -> application_contribution` (14): `SealedComputationRetention` enum, `observe_published` fn, `RetainedComputation` struct, `SealedComputationRun` struct, `MatchedRequiredPredecessors` struct, `QualifiedOutputSource` struct
+- `application_output_demand -> product_operation` (13): `WorthQueryProductEntry` struct, `WorthQuerySelectedProductOperation` struct, `WorthQueryDocumentHistoryDenial` enum, `WorthQueryHistoryNavigationDenial` enum
+- `conditional_operation -> invariant_projection` (12): `WorthQueryApplicationInvariantProjectionAuthority` struct, `WorthQueryInvariantProjectionDenial` struct, `WorthQueryInvariantProjectionDenialKind` enum, `WorthQueryOperationProjectionDenial` struct, `WorthQueryOperationProjectionDenialKind` enum, `WorthQueryApplicationOperationInvariantProjectionReader` struct, `WorthQueryApplicationOperationInvariantProjectionSnapshot` struct
+- `invariant_projection -> application_contribution` (12): `Comparator` struct, `ComputationPrior` struct, `ComputationDeposit` struct, `CompletedComputationRetention` enum, `WorthQueryApplicationOutputDemand` trait, `WorthQueryProducerOutputFamily` trait, `SourceQualificationScopedOps` trait
+- `product_operation -> application_installation` (12): `WorthQueryAdmittedProgramOutput` struct, `WorthQuerySettledProgramOutput` struct, `OriginalProgramRootCompletion` struct, `WorthQueryProgramOwner` trait, `WorthQueryProgramApplicationRuntime` struct, `WorthQueryAdmittedProgramOperation` struct, `WorthQueryWorkflowVocabulary` struct
+- `application_output_demand -> invariant_projection` (11): `ConsumedOutputEvidence` struct, `SelectedPendingConsumedOutput` struct, `map_verification_stop` fn, `PreparedCurrentInputs` struct, `RequestedOutputRead` struct
+- `conditional_operation -> product_operation` (11): `ContextScopedOps` trait, `WorthQuerySelectedProductOperation` struct, `SharedSelectedProductOperation` struct
+- `application_attempt -> application_query` (10): `ApplicationQueryHost` trait, `WorthQueryObservedSource` struct, `WorthQuerySourceExpectationDenial` struct, `ObservedQueryExpressionContext` struct, `WorthQueryObservedResultSet` struct, `WorthQueryApplicationBasisLease` struct, `WorthQueryApplicationReadObservation` struct
+- `application_discovery -> product_operation` (10): `WorthQuerySelectedProductOperation` struct
+- `product_operation -> application_runtime` (10): `WorthQueryPrimaryGraphApplicationRuntime` struct
+- `bootstrap -> application_query` (9): `ManagedIndexProviderCatalog` struct, `SelectedSources` struct, `SourceInitializationIssuer` struct, `SourceInitializationRequest` struct, `initialization_execution_denial` fn, `ManagedSourceInstallation` struct
+- `operation_body -> handler` (8): `CandidateWriter` struct, `DecisionReader` struct
+- `application_attempt -> application_contribution` (7): `Comparator` struct, `CompletedComputationRetention` enum, `SealedComputationRetention` enum
+- `application_installation -> application_runtime` (7): `WorthQueryPrimaryGraphApplicationRuntime` struct
+- `application_output_demand -> application_contribution` (7): `ComputationPrior` struct, `SealedComputationRetention` enum, `CurrentProof` struct, `OwnerPlan` struct, `PendingProducerPublication` struct
+- `application_attempt -> application_installation` (6): `workflow_approval_authentication_intent` fn, `WorthQueryWorkflowVocabulary` struct
+- `application_entry -> handler` (6): `CandidateWriter` struct, `ConditionalDefinitionAdmission` struct, `DecisionReader` struct, `RegistryScopedOps` trait
+- `operation_body -> invariant_projection` (6): `WorthQueryApplicationInvariantProjectionAuthority` struct, `WorthQueryOperationProjectionDenial` struct, `WorthQueryApplicationOperationInvariantProjectionReader` struct
+- `output_reuse -> application_output_demand` (6): `WorthQueryOutputDemandDenial` struct, `WorthQueryOutputDemandDenialKind` enum
+- `provider -> application_inbound` (6): `InstalledTransportCompletion` struct, `PerformedInstalledTransportCompletion` struct
+- `access_strategy -> application_query` (5): `CheckedManagedFootprintCapture` struct, `SourceImageView` struct, `SourceTree` struct
+- `application_discovery -> application_installation` (5): `WorthQueryWorkflowVocabulary` struct
+- `application_entry -> application_attempt` (5): `WorthQueryApplicationEffectProgram` struct, `WorthQueryProjectedApplicationMutation` struct, `ReadSetScopedOps` trait, `WorthQueryCompleteApplicationReadSet` struct, `SourceFactsScopedOps` trait
+- `application_resource -> application_query` (5): `WorthQueryApplicationQueryAccessContext` struct, `capture_parameters` fn, `ApplicationQueryHost` trait, `ApplicationQueryNativeAccess` enum, `WorthQueryApplicationReadObservation` struct
+- `conditional_operation -> application_contribution` (5): `WorthQueryInstalledApplicationConditionalRegistry` struct, `WorthQueryApplicationProducerBinding` trait, `PendingOutputReadiness` trait, `TypedPendingOutputReadiness` struct, `WorthQueryInstalledApplicationProducerRegistry` struct
+- `conditional_operation -> application_runtime` (5): `WorthQueryPrimaryGraphApplicationRuntime` struct, `ApplicationRuntimePublication` struct, `publish_application_runtime_with_conditionals` fn
+- `entity_resolution -> product_operation` (5): `WorthQuerySelectedProductOperation` struct
+- `handler -> application_contribution` (5): `WorthQueryApplicationConditionalBinding` trait, `WorthQueryInstalledApplicationConditionalRegistry` struct, `WorthQueryApplicationOutputDemand` trait, `WorthQueryProducerOutputFamily` trait
+- `invariant_installation -> application_query` (5): `ManagedIndexProviderCatalog` struct, `SourceInitializationIssuer` struct, `ManagedSourceInstallation` struct
+- `output_lineage -> application_query` (5): `ManagedDerivedViewRegistry` struct, `BoundStableObservedSourceFacts` struct, `WorthQueryObservedSourceSelection` struct, `SourceQueryReadClosure` struct
+- `provider -> product_operation` (5): `HistoryProducerCutover` struct
+- `resolution -> product_operation` (5): `WorthQuerySelectedProductOperation` struct
+- `application_checkpoint -> output_lineage` (4): `WorthQueryApplicationOutputLineage` struct, `ComputationSourceEvidence` struct, `NativePriorCheckpointOutput` struct, `SealedNativeOutputWitness` struct
+- `entity_resolution -> application_query` (4): `ApplicationQueryNativeAccess` enum
+- `provider -> application_installation` (4): `WorthQueryRecoveredProgramOutputSource` struct
+- `application_entry -> application_query` (3): `ApplicationQueryHost` trait, `SourceQueryReaderAccess` struct
+- `application_entry -> invariant_projection` (3): `WorthQueryOperationProjectionDenial` struct, `WorthQueryApplicationOperationInvariantProjectionSnapshot` struct, `native_index_decision_cause` fn
+- `live_delivery -> application_attempt` (3): `WorthQueryAdmittedApplicationEmissionBatch` struct, `WorthQueryApplicationEmission` struct
+- `output_reuse -> application_attempt` (3): `WorthQueryApplicationObservedFact` enum, `FactMovement` struct
+- `program_occurrence -> application_installation` (3): `WorthQuerySupportedProgramRecord` struct
+- `provider -> invariant_projection` (3): `ConsumedOutputEvidence` struct
+- `root -> application_attempt` (3): `WorkflowDefinitionCompilationReuse` struct, `WorkflowInstanceProgressRetention` struct, `default_progress_retention_shards` fn
+- `root -> application_query` (3): `ManagedDerivedViewRegistry` struct, `ManagedSourceInstallation` struct
+- `application_entry -> application_runtime` (2): `WorthQueryPrimaryGraphApplicationRuntime` struct
+- `application_entry -> product_operation` (2): `ProductOperationContextScopedOps` trait, `SharedSelectedProductOperation` struct
+- `application_invariant -> application_query` (2): `invariant_read` module, `WorthQueryApplicationProjection` trait
+- `application_program -> application_installation` (2): `WorthQueryRecoveredProgramOutputSource` struct, `WorthQueryUnpublishedProgramOutputSource` struct
+- `application_program -> application_output_demand` (2): `WorthQueryOutputDemandDenial` struct, `WorthQueryOutputDemandRegistry` struct
+- `expression -> application_query` (2): `WorthQueryApplicationOutputDemandSource` struct, `WorthQueryObservedSource` struct
+- `freshness -> application_attempt` (2): `WorthQueryApplicationObservedFact` enum, `consult_observation` module
+- `handler -> application_attempt` (2): `WorthQueryAdmittedApplicationConditionalDefinition` struct, `WorthQueryApplicationEffectProgramBuilder` struct
+- `handler -> application_query` (2): `WorthQueryApplicationProjection` trait
+- `live_delivery -> application_query` (2): `PreparedPredicatePublication` enum, `PreparedPredicateNotices` struct
+- `operation_body -> application_attempt` (2): `ApplicationAttemptHost` trait, `SourceFactsScopedOps` trait
+- `output_reuse -> output_lineage` (2): `SourceInvalidationOwner` struct, `SealedNativeOutputWitness` struct
+- `program_occurrence -> application_attempt` (2): `WorthQueryApplicationCommitDenial` struct
+- `provider -> application_runtime` (2): `WorthQueryApplicationAttemptOperationControl` struct
+- `resolution -> application_query` (2): `ApplicationQueryNativeAccess` enum
+- `root -> output_lineage` (2): `WorthQueryApplicationOutputLineage` struct, `SourceInvalidationOwner` struct
+- `source_disclosure -> application_runtime` (2): `WorthQueryPrimaryGraphApplicationRuntime` struct
+- `aggregate_projection -> application_attempt` (1): `observe_field_value` fn
+- `application_attempt -> application_runtime` (1): `WorthQueryPrimaryGraphApplicationRuntime` struct
+- `application_checkpoint -> provider` (1): `WorthQueryApplicationBranchCommitLane` struct
+- `application_discovery -> application_query` (1): `WorthQueryApplicationReadObservation` struct
+- `application_entry -> application_contribution` (1): `dispatch` fn
+- `application_output_demand -> application_installation` (1): `WorthQueryProgramApplicationRuntime` struct
+- `application_output_demand -> provider` (1): `FactlessCurrentness` enum
+- `application_program -> application_attempt` (1): `WorthQueryApplicationCommitReceipt` struct
+- `application_program -> application_contribution` (1): `WorthQueryApplicationOutputDemand` trait
+- `application_query -> application_runtime` (1): `WorthQueryApplicationAttemptOperationControl` struct
+- `application_resource -> product_operation` (1): `WorthQuerySelectedProductOperation` struct
+- `application_resource -> provider` (1): `WorthQueryCommittedDispatchOutboxObservation` struct
+- `bootstrap -> application_contribution` (1): `WorthQueryInstalledApplicationProducerRegistry` struct
+- `bootstrap -> application_installation` (1): `WorthQueryInMemoryApplicationDenial` enum
+- `bootstrap_publication -> application_query` (1): `SourceInitializationRequest` struct
+- `component_selection -> application_attempt` (1): `WorthQueryApplicationObservedFact` enum
+- `component_selection -> source_read_verification` (1): `SourceReadVerification` struct
+- `conditional_operation -> application_output_demand` (1): `WorthQueryOutputDemandDenialKind` enum
+- `conditional_operation -> output_lineage` (1): `TouchedCommits` struct
+- `fact_verification_observation -> application_attempt` (1): `WorthQueryApplicationObservedFact` enum
+- `freshness -> authenticated_principal` (1): `WorthQueryAuthenticatedPrincipal` struct
+- `handler -> bootstrap` (1): `WorthQueryPrimaryGraphBootstrap` struct
+- `handler -> product_operation` (1): `AdmissionScopedOps` trait
+- `operation_body -> application_query` (1): `ObservedQueryExpressionContext` struct
+- `output_reuse -> application_query` (1): `WorthQueryObservedSource` struct
+- `product_activation -> application_query` (1): `WorthQueryApplicationBasisLease` struct
+- `program_occurrence -> product_operation` (1): `ProgramAdoptionAdmission` type
+- `runtime_host -> application_runtime` (1): `WorthQueryPrimaryGraphApplicationRuntime` struct
+- `source_disclosure -> application_query` (1): `capture_parameters` fn
+- `source_facts -> application_attempt` (1): `WorthQueryApplicationObservedFact` enum
+- `typed_bootstrap -> bootstrap` (1): `WorthQueryPrimaryGraphBootstrap` struct

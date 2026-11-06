@@ -1,4 +1,6 @@
 //! Doors under `domain_computation::primary_graph::vocabulary`.
+#[path = "aggregate_observation/mod.rs"]
+pub mod aggregate_observation;
 #[path = "application_attempt/mod.rs"]
 pub mod application_attempt;
 #[path = "application_contribution/mod.rs"]

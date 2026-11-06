@@ -1,7 +1,10 @@
 use worth_foundational::facade::AspectIdentity;
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchemaContractCatalog;
 
-use {super::contract_space_exhausted, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial};
+use {
+    super::contract_space_exhausted,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+};
 
 pub(super) fn allocate_platform_aspect_identities(
     catalog: &WorthQueryInstalledApplicationSchemaContractCatalog,

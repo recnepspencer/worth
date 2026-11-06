@@ -1,8 +1,8 @@
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial as SelfDenial;
 use super::{
     adjacency, indexed_entity_selection, workflow_definition_predecessor, workflow_history_basis,
     workflow_instance_capacity, WorthQueryApplicationObservedFact,
 };
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial as SelfDenial;
 
 impl WorthQueryApplicationObservedFact {
     pub(crate) fn remains_equal_in(
@@ -10,7 +10,7 @@ impl WorthQueryApplicationObservedFact {
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    ) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial> {
+    ) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial>{
         super::super::super::fact_verification_observation::value_comparison();
         let check_request = || {
             execution.consult().map_err(|stop| {

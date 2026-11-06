@@ -6,12 +6,15 @@ mod feature;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_query_installation::facade::WorthQueryPortableDomainPackage;
 
-use {crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as DenialKind};
 use super::conditional::{
     validate_required_producer, DeclaredConditionalBinding, PendingConditionalRegistry,
 };
 use super::producer::{DeclaredProducerBinding, PendingProducerRegistry};
 use super::{WorthQueryApplicationConditionalBinding, WorthQueryApplicationProducerBinding};
+use {
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as DenialKind,
+};
 
 pub struct WorthQueryApplicationContributionContracts<'schema, Schema> {
     declaration: &'schema worth_query_declaration::facade::application_schema::ErasedApplicationSchemaDeclaration,

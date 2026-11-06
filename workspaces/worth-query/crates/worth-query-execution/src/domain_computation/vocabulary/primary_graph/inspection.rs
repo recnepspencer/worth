@@ -65,3 +65,5 @@ impl OriginalSourceInspectionDisclosure {
         Self::scope(self)
     }
 }
+
+mod court_doors_for_test;

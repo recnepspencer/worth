@@ -1,20 +1,17 @@
 //! A succession request holds the selection; the attempt seals the succession authority.
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::RequiredWorkflowSuccession;
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIdentities, ApplicationMutationScopeBinding,
     WorthQueryApplicationOutputRole, WorthQueryPreserveOutput,
 };
-use crate::domain_computation::primary_graph::application_attempt::{
-    RequiredWorkflowSuccession, WorkflowSuccessionTarget,
-};
 
 impl WorthQueryWorkflowSuccessionAdapter {
-
     pub fn prepare<Schema, Binding, Role, Spec>(
         phase: &WorthQueryAdvancementPhase<'_>,
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
-        predecessor: super::WorkflowSuccessionTarget<Schema>,
+        predecessor: crate::domain_computation::primary_graph::application_attempt::WorkflowSuccessionTarget<Schema>,
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
         admission: WorthQueryAdmittedApplicationOperation<
             Schema,

@@ -1,13 +1,13 @@
 //! Read subject correspondence according to the persisted instance protocol.
-use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
-use super::AspectValue;
-use super::EntityId;
-use super::WorthQueryApplicationObservedFact;
 use super::adjacency;
 use super::denial;
 use super::exact;
 use super::observe_field_value;
+use super::AspectValue;
+use super::EntityId;
+use super::WorthQueryApplicationObservedFact;
+use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
 
 pub fn observe_subject(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -41,7 +41,10 @@ pub(super) fn read_subject(
         kind,
         &layout.instance.protocol_version,
     )?;
-    use {crate::domain_computation::graph_layout::workflow::version::WORKFLOW_BIRTH_FACT_PROTOCOL_VERSION, crate::domain_computation::graph_layout::workflow::version::WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION};
+    use {
+        crate::domain_computation::graph_layout::workflow::version::WORKFLOW_BIRTH_FACT_PROTOCOL_VERSION,
+        crate::domain_computation::graph_layout::workflow::version::WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION,
+    };
     match protocol {
         Some(AspectValue::UInt64(
             version @ (WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION

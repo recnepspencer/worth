@@ -27,10 +27,10 @@ where
     {
         self.workflow_selection_basis()
             .prepare_workflow_publication::<Capability, Operation, Input, Scope, Spec>(
-            execution,
-            contract,
-            expected_predecessor,
-            admission,
-        )
+                execution,
+                contract,
+                expected_predecessor,
+                admission,
+            )
     }
 }

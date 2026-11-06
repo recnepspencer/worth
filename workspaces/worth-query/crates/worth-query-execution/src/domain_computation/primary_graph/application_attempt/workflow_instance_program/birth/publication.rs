@@ -56,4 +56,3 @@ where
         .map_err(|_| mismatch("foreign birth output role"))?
         .ok_or_else(|| mismatch("birth subject is absent from receipt"))
 }
-

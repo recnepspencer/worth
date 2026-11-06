@@ -1,5 +1,4 @@
 //! One materialization preparation execution projection preserves the Native cause.
-use crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial;
 use worth_relational::facade::{
     branch::RelationalMaterializationError,
     transactions::{CommitExecutionDenialKind, TransactionCommitError},

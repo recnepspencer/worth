@@ -23,7 +23,11 @@ use super::super::bootstrap_publication::{
 use super::super::program_occurrence::{
     program_revision_rendering, WorthQueryProgramActivationCell,
 };
-use {super::super::WorthQueryPrimaryGraph, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind};
+use {
+    super::super::WorthQueryPrimaryGraph,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind,
+};
 
 const ACTIVATION_CLIENT_KEY: &str = "worth-query-program-activation";
 

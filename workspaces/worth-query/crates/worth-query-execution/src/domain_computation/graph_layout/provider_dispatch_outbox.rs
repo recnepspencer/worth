@@ -7,7 +7,11 @@ use worth_relational::facade::schema::{
 
 use crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxLayout;
 
-use {super::planned_field_locator, super::register_entity, super::valid_aspect_key, super::valid_field_key, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial};
+use {
+    super::planned_field_locator, super::register_entity, super::valid_aspect_key,
+    super::valid_field_key,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+};
 
 const ENTITY: &str = "worth-query-dispatch-outbox";
 const ASPECT: &str = "dispatch-outbox";

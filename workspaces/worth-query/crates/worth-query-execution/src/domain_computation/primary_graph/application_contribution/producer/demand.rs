@@ -229,7 +229,6 @@ where
     }
 }
 
-
 mod own_effect_assertions;
 mod own_effect_observation;
 

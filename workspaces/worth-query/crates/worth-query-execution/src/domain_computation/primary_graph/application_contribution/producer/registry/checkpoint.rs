@@ -56,7 +56,7 @@ where
             crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence,
         >,
         crate::domain_computation::primary_graph::application_checkpoint::CheckpointDecodeDenial,
-    > {
+    >{
         execution.consult().map_err(
             crate::domain_computation::primary_graph::application_checkpoint::CheckpointDecodeDenial::execution,
         )?;

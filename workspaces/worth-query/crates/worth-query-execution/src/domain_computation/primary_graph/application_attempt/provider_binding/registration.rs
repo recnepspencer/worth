@@ -2,8 +2,8 @@ use super::super::provider_execution::{
     progression_denied, WorthQueryProviderAttemptRegistrationContext,
     WorthQueryProviderProgressionOutcome, WorthQueryRegisteredProviderAttempt,
 };
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as DenialStage;
 use super::WorthQueryPreparedApplicationProviderAttempt;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as DenialStage;
 
 use crate::domain_computation::primary_graph::provider::application_attempt_state::registration::registered_attempt::ApplicationAttemptRegistrationStop as RegistrationStop;
 use crate::domain_computation::primary_graph::provider::application_attempt_state::registration::registered_attempt::{

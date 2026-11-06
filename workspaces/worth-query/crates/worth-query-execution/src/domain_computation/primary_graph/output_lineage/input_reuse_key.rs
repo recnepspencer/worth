@@ -1,7 +1,10 @@
 use crate::domain_computation::primary_graph::fact_verification_observation::input_cutoff::{
     self as observation, Gate,
 };
-use {crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition, crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceSelection};
+use {
+    crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceSelection,
+    crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition,
+};
 
 /// The exact prepared input of a performed producer output. Its source
 /// selection retains runtime-owned meaning; a row restored from a checkpoint

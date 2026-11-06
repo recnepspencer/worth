@@ -29,22 +29,39 @@ impl WorkflowAdmittedActor {
     }
 }
 
-impl WorkflowActorFields {
+/// Sealed test door over the attempt-owned observation of a workflow actor's fields: the
+/// door lives with the behaviour, not on the lowered type.
+pub trait WorkflowActorFieldsObservationForTest {
     #[doc(hidden)]
-    pub fn observe_for_test(
+    fn observe_for_test(
         &self,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         entity: EntityId,
         kind: worth_relational::facade::identity::KindId,
-        facts: &mut Vec<
-            crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact,
-        >,
+        facts: &mut Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
     ) -> Result<
         Option<EntityId>,
         crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
-    > {
-        Self::observe(self, runtime, execution, snapshot, entity, kind, facts)
+    >;
+}
+
+impl WorkflowActorFieldsObservationForTest for WorkflowActorFields {
+    fn observe_for_test(
+        &self,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        entity: EntityId,
+        kind: worth_relational::facade::identity::KindId,
+        facts: &mut Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
+    ) -> Result<
+        Option<EntityId>,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
+    >{
+        <Self as super::WorkflowActorFieldsObservation>::observe(
+            self, runtime, execution, snapshot, entity, kind, facts,
+        )
     }
 }

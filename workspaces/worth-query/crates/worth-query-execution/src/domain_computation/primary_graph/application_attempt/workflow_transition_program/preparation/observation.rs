@@ -81,7 +81,12 @@ impl<S: ApplicationSchema> WorkflowSelectionBasis<'_, S> {
         }
         Ok(read_set)
     }
-    pub(in crate::domain_computation::primary_graph) fn prepare_local_workflow_transition<O, I, Scope, Spec>(
+    pub(in crate::domain_computation::primary_graph) fn prepare_local_workflow_transition<
+        O,
+        I,
+        Scope,
+        Spec,
+    >(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<S, Spec>,

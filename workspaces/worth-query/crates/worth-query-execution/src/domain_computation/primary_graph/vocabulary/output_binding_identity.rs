@@ -20,3 +20,5 @@ impl OutputBindingIdentity {
         Self::declared(name)
     }
 }
+
+mod court_doors_for_test;

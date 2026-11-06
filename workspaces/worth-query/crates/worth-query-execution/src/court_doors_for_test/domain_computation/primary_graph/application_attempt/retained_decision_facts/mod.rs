@@ -11,7 +11,6 @@ pub mod handoff;
 pub mod run;
 #[path = "storage/mod.rs"]
 pub mod storage;
-pub use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::AUTHOR_CHUNK;
 pub use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::RetainedFact;
 pub use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::Slot;
-pub use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::control;
+pub use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::AUTHOR_CHUNK;

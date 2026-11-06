@@ -9,6 +9,7 @@ pub(crate) mod denial;
 pub(crate) mod direct_attempt;
 pub(crate) mod failure;
 pub(crate) mod invariant_execution_denial;
+pub(crate) mod invariant_refusal_codec;
 pub(crate) mod protocol_denial;
 pub(crate) mod provider_execution_release;
 pub(crate) mod session_identity;

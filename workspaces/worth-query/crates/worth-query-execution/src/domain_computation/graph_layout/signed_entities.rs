@@ -1,5 +1,4 @@
 //! Native immutable entity classification derived from the authored signing declarations.
-use {super::required_kind, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, super::WorthQueryPrimaryGraphLayout};
 use std::collections::{BTreeMap, BTreeSet};
 use worth_query_declaration::facade::application_schema::{
     ApplicationFieldBindingLocus as Locus, ApplicationOperationBodyCreation as Creation,
@@ -9,6 +8,10 @@ use worth_query_installation::facade::{
     ApplicationSchemaMember, ErasedApplicationSchemaDeclaration,
 };
 use worth_relational::facade::identity::KindId;
+use {
+    super::required_kind, super::WorthQueryPrimaryGraphLayout,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+};
 
 #[derive(Debug)]
 pub(super) struct SignedEntityLayout {
@@ -61,10 +64,7 @@ impl WorthQueryPrimaryGraphLayout {
     pub(in crate::domain_computation) fn has_signed_entity_kinds(&self) -> bool {
         !self.signing.kinds.is_empty()
     }
-    pub(in crate::domain_computation) fn is_signed_entity_kind(
-        &self,
-        kind: KindId,
-    ) -> bool {
+    pub(in crate::domain_computation) fn is_signed_entity_kind(&self, kind: KindId) -> bool {
         self.signing.kinds.contains(&kind)
     }
     pub(in crate::domain_computation) fn signing_provenance_encoding(

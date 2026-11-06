@@ -17,12 +17,12 @@ use super::WorthQueryApplicationProducerBinding;
 use super::WorthQueryInstalledOutputProducerRoutes;
 use super::WorthQueryProducerOutputFamily;
 use super::WorthQuerySelectedApplicationProducer;
+use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial;
+use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as DenialKind;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerApplicability;
 use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerInvariantRequirement;
-use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial;
-use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as DenialKind;
 
 /// Selection work on the request's meter; running out is the selection's
 /// work denial.
@@ -84,9 +84,9 @@ mod pending_factory;
 pub(crate) mod scope_ownership;
 pub(crate) mod semantic_edition;
 
+use crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition;
 use operation_binding_uniqueness::duplicate_operation_binding;
 pub(in crate::domain_computation::primary_graph) use pending::PendingProducerRegistry;
-use crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition;
 
 pub struct InstalledProducerProvider<Schema> {
     pub(super) declaration: DeclaredProducerBinding,

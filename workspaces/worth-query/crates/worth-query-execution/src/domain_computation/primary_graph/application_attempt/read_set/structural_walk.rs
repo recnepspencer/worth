@@ -6,9 +6,12 @@ use super::super::{
 use super::*;
 
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition;
-use {crate::domain_computation::primary_graph::invariant_projection::ExpectedFactKeys, crate::domain_computation::primary_graph::vocabulary::structural_walk::key::StructuralWalkKey, crate::domain_computation::primary_graph::structural_walk::StructuralWalkObservation};
 use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey;
+use {
+    crate::domain_computation::primary_graph::invariant_projection::ExpectedFactKeys,
+    crate::domain_computation::primary_graph::structural_walk::StructuralWalkObservation,
+    crate::domain_computation::primary_graph::vocabulary::structural_walk::key::StructuralWalkKey,
+};
 
 pub fn observe<Schema, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

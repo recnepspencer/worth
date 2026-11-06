@@ -7,7 +7,10 @@ use worth_runtime_world::facade::{
     CompositeCommitIdentity, ProductBranchIncarnation, ProductBranchObservation,
     ProductBranchReferenceGeneration, ProductBranchReferenceSnapshot, RuntimeWorldOwnerIdentity,
 };
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome::WorthQueryApplicationStaleAttempt, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome::WorthQueryApplicationStaleAttempt,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum ProducerPublicationStale {

@@ -8,7 +8,12 @@ use worth_query_installation::facade::{
 
 use super::effect_program::WorthQueryApplicationRealizedEffect;
 use crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity;
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationEffectProgram, super::WorthQueryApplicationObservedFact, super::WorthQueryCompleteApplicationReadSet, super::WorthQueryProjectedApplicationMutation, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
+use {
+    super::WorthQueryApplicationEffectProgram, super::WorthQueryApplicationObservedFact,
+    super::WorthQueryCompleteApplicationReadSet, super::WorthQueryProjectedApplicationMutation,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 
 /// Exact `Active -> Revoked` effect minted only from Query-owned transition authority.
 pub struct WorthQueryCapabilityRevocationProgram<Schema, Operation, Input, Scope> {

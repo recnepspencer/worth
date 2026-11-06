@@ -331,7 +331,7 @@ impl From<()> for TouchAdmissionFailure {
 impl TouchAdmissionFailure {
     pub(super) fn into_invariant_failure(
         self,
-    ) -> crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailure {
+    ) -> crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailure{
         use worth_relational::facade::mvcc::ValidatedMutationTouchProjectionError as Error;
         match self {
             Self::Projection(Error::AuthoredRestoration(error)) =>

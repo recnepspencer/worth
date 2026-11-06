@@ -13,8 +13,11 @@ use worth_runtime_bridge::facade::{
     TruthSnapshotReader,
 };
 
-use {crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind};
 use crate::domain_computation::primary_graph::vocabulary::managed_bridge::WorthQueryInstalledApplicationBridge;
+use {
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind,
+};
 
 #[derive(Clone)]
 struct WorthQueryApplicationBridgeSource {

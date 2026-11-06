@@ -1,6 +1,10 @@
 //! Exact native revisions distinguish an untouched subject from an ABA edit.
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::super::WorthQueryApplicationEffectProgram, super::super::WorthQueryApplicationObservedFact as Fact};
 use super::sealing::WorthQuerySignedCreationPreparationDenial as Denial;
+use {
+    super::super::WorthQueryApplicationEffectProgram,
+    super::super::WorthQueryApplicationObservedFact as Fact,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
+};
 use {
     crate::domain_computation::request_execution::QueryMemoryReservation,
     crate::domain_computation::request_execution::QueryRequestExecution,

@@ -1,7 +1,7 @@
 //! The runtime's consumer methods over `domain_computation::primary_graph::provider`; each only calls its subsystem.
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding;
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding;
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;
 use crate::domain_computation::primary_graph::WorthQueryManagedApplicationRecoveryDenial;
 use crate::domain_computation::primary_graph::WorthQueryManagedApplicationRecoveryOutcome;

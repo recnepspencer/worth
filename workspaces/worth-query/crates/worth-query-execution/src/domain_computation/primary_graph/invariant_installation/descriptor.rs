@@ -1,6 +1,10 @@
 //! Lower the installed rule contract into native invariant metadata.
-use {super::denial, super::CustomInvariantRegistration, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind};
 use worth_query_declaration::facade::application_schema::ApplicationInvariantExecutionPoint;
+use {
+    super::denial, super::CustomInvariantRegistration,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind,
+};
 fn lower_access_contract(
     installed: &worth_query_installation::facade::WorthQueryInstalledApplicationInvariantDescriptor,
     layout: &crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,

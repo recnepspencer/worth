@@ -1,6 +1,5 @@
 //! One physical traversal engine for installed Query and operation member paths.
 //! Real read adapters own admission; this kernel cannot turn descriptors into permission.
-use {super::source_facts::SourceFacts, super::source_facts::SourceFactsAllocation, super::source_facts::SourceFactsBuilder, crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
@@ -13,6 +12,11 @@ use worth_query_installation::facade::{
 use worth_relational::facade::{
     identity::EntityId,
     runtime::{RelationalPinnedRead, VisibilityProjectionView},
+};
+use {
+    super::source_facts::SourceFacts, super::source_facts::SourceFactsAllocation,
+    super::source_facts::SourceFactsBuilder,
+    crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
 };
 mod closure;
 mod denial;

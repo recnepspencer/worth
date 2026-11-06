@@ -1,5 +1,4 @@
 //! Producer associated types own both lifecycle slots and readiness correspondence.
-use {crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as DenialKind};
 use std::marker::PhantomData;
 use worth_query_declaration::facade::{
     application_operation::{ApplicationMutationBinding, WorthQueryApplicationOutputRole},
@@ -16,6 +15,10 @@ use {
     super::super::WorthQueryApplicationProducerBinding as Producer,
     super::super::WorthQueryProducerOutputFamily,
     crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerLifecyclePosture,
+};
+use {
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as DenialKind,
 };
 
 /// One required Initial/Preserve declaration. It contains no runtime values.

@@ -25,3 +25,5 @@ impl ProductCoordinate {
         }
     }
 }
+
+mod court_doors_for_test;

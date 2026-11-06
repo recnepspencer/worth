@@ -114,11 +114,12 @@ impl WorkflowActorDependencies {
         let [Some(partition), Some(slot), Some(generation)] = locators else {
             return Err(invalid("recorded role lacks its native field footprint"));
         };
-        let fields = crate::domain_computation::graph_layout::workflow::actor_fields::WorkflowActorFields {
-            partition,
-            slot,
-            generation,
-        };
+        let fields =
+            crate::domain_computation::graph_layout::workflow::actor_fields::WorkflowActorFields {
+                partition,
+                slot,
+                generation,
+            };
         let kind = runtime
             .read_truth()
             .read_exact_snapshot_live_entity_kind_status(execution, snapshot, entity)

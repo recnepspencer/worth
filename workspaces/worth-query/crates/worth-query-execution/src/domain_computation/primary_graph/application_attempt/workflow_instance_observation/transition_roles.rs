@@ -1,6 +1,6 @@
 //! Recorded transition identities, decoded and checked once at the supplied basis.
-use crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowActorFieldsObservation;
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowActorFieldsObservation;
 pub(in crate::domain_computation::primary_graph::application_attempt) struct WorkflowTransitionRoles
 {
     pub(in crate::domain_computation::primary_graph::application_attempt) advancer: EntityId,

@@ -5,7 +5,11 @@ use worth_query_installation::facade::ApplicationSchema;
 
 use super::WorthQueryProductEntry;
 use crate::domain_computation::primary_graph::application_installation::WorthQueryAdmittedProgramOperation;
-use {crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome, crate::domain_computation::primary_graph::WorthQueryApplicationEffectProgram, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
+    crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome,
+    crate::domain_computation::primary_graph::WorthQueryApplicationEffectProgram,
+};
 
 /// An admitted effect program paired with its stable idempotency meaning.
 pub struct WorthQueryAdmittedChange<Schema, Operation, Input, Scope> {

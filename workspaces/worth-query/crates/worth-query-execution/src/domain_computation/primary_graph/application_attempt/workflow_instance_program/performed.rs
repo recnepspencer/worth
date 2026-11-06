@@ -7,16 +7,16 @@ use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
+use super::super::observe_adjacency;
+use super::super::observe_field_value;
 use super::super::workflow_instance_observation::ObservedWorkflowTransition;
+use super::super::WorthQueryApplicationObservedFact;
 use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
 use crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition;
 use crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowPerformedEffect;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
 use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
-use super::super::WorthQueryApplicationObservedFact;
-use super::super::observe_adjacency;
-use super::super::observe_field_value;
 
 /// The instance's own transitions that settled an operation receipt, each at
 /// the path of its node in `compiled`.

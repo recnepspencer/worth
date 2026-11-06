@@ -23,7 +23,9 @@ mod succession;
 mod transition;
 pub(in crate::domain_computation) mod version;
 
-pub(in crate::domain_computation) use fact_custody::{fact_custody_receipt_contract, fact_custody_registration};
+pub(in crate::domain_computation) use fact_custody::{
+    fact_custody_receipt_contract, fact_custody_registration,
+};
 pub(in crate::domain_computation) use indexes::register_indexes;
 pub(in crate::domain_computation) use layout::*;
 
@@ -38,8 +40,8 @@ use relations::{
 };
 use transition::lower_transition;
 
-use crate::domain_computation::graph_layout::register_relation;
 use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial;
+use crate::domain_computation::graph_layout::register_relation;
 
 const LINEAGE_ENTITY: &str = "worth-query-workflow-lineage";
 const DEFINITION_ENTITY: &str = "worth-query-workflow-definition";

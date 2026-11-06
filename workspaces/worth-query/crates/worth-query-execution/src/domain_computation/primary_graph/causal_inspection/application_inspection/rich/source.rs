@@ -1,5 +1,5 @@
 //! Selected canonical source effects retain their actual original envelope owners.
-use crate::domain_computation::primary_graph::application_attempt::compare_and_commit::commit_receipt::materialized_committed_field::CommittedFieldMaterialization;
+use crate::domain_computation::primary_graph::application_attempt::compare_and_commit::commit_receipt::CommittedFieldMaterialization;
 use super::super::{admission::InspectionAdmissionDenial, source_original::SourceOriginal};
 use super::*;
 use std::sync::Arc;

@@ -230,4 +230,4 @@ fn posture_code(posture: ApplicationMutationOutputPosture) -> u8 {
     }
 }
 
-mod court_doors_for_test;
+pub(crate) mod court_doors_for_test;

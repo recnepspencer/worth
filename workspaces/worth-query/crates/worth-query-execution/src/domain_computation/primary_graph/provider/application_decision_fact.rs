@@ -136,7 +136,7 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    ) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial> {
+    ) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial>{
         let _scope = super::super::application_attempt::consult_observation::ReadConsultScopeForTest::enter_for_test(
             super::super::application_attempt::consult_observation::Door::Equality,
         );

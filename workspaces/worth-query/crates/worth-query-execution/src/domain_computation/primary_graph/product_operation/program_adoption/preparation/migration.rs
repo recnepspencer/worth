@@ -8,8 +8,8 @@ use worth_query_declaration::facade::application_schema::{
 };
 use worth_runtime_world::facade::ProductBranchObservation;
 
-use crate::domain_computation::primary_graph::application_entry::mutation::WorthQueryCompletedMutationCandidate;
 use crate::domain_computation::primary_graph::application_attempt::migration::preparation_denial::WorthQueryProgramMigrationPreparationDenial;
+use crate::domain_computation::primary_graph::application_entry::mutation::WorthQueryCompletedMutationCandidate;
 
 /// What a sealed program migration does: the operation that authored it and how
 /// many effects it carries.
@@ -28,7 +28,6 @@ impl WorthQueryProgramMigrationDescription {
         self.effect_count
     }
 }
-
 
 /// Admission to author a program migration for one target program through one
 /// mutation binding.
@@ -189,4 +188,3 @@ impl<
     > MigrationOwnOps<Schema> for HostRuntime
 {
 }
-

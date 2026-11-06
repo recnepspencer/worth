@@ -15,9 +15,12 @@ use worth_query_declaration::facade::application_program::ApplicationWorkflowCon
 use worth_relational::facade::identity::{EntityId, RelationId};
 
 use super::super::adoption::{WorkflowAdoptionReadDenial, WorkflowAdoptionTruth};
-use {crate::domain_computation::graph_layout::workflow::version::WORKFLOW_BIRTH_FACT_PROTOCOL_VERSION, crate::domain_computation::graph_layout::workflow::version::WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION};
-use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
 use super::WorkflowInstanceState;
+use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
+use {
+    crate::domain_computation::graph_layout::workflow::version::WORKFLOW_BIRTH_FACT_PROTOCOL_VERSION,
+    crate::domain_computation::graph_layout::workflow::version::WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION,
+};
 
 pub(in crate::domain_computation::primary_graph) struct WorkflowLiveInstance {
     pub(in crate::domain_computation::primary_graph) instance: EntityId,

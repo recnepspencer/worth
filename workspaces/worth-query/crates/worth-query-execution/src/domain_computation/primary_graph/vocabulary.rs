@@ -6,7 +6,6 @@ pub(crate) mod application_attempt;
 pub(crate) mod application_contribution;
 pub(crate) mod application_inbound;
 pub(crate) mod application_installation;
-pub(crate) mod application_invariant;
 pub(crate) mod application_output_demand;
 pub(crate) mod application_query;
 pub(crate) mod application_runtime;

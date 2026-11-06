@@ -14,7 +14,9 @@ use worth_execution::ExecutionRequest;
 
 /// The attempt's restoration of a committed output correspondence from the
 /// roles an application checkpoint recorded, funded before it allocates.
-pub(in crate::domain_computation::primary_graph) trait OutputCorrespondenceRestoration: Sized {
+pub(in crate::domain_computation::primary_graph) trait OutputCorrespondenceRestoration:
+    Sized
+{
     fn from_checkpoint_roles<'a>(
         binding_type: TypeId,
         contract_type: TypeId,

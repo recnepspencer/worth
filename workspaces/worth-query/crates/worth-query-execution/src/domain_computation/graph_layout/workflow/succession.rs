@@ -1,8 +1,12 @@
 //! A completed chain has at most one fresh successor; old native kind IDs stay stable.
-use {crate::domain_computation::graph_layout::kind_space_exhausted, crate::domain_computation::graph_layout::register_relation, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial};
 use worth_relational::facade::{
     identity::KindId,
     schema::{RelationalSchemaRegistry, SchemaId, SchemaVersionId},
+};
+use {
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+    crate::domain_computation::graph_layout::kind_space_exhausted,
+    crate::domain_computation::graph_layout::register_relation,
 };
 pub(super) fn register(
     registry: RelationalSchemaRegistry,

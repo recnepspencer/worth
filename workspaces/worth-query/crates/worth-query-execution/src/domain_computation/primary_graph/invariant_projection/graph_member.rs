@@ -1,5 +1,4 @@
 //! Read-only selectors share one exact projection snapshot and installed domain.
-use {crate::domain_computation::graph_layout::MemberDomainBinding as Domain, crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation};
 use std::{marker::PhantomData, sync::Arc};
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::{
@@ -10,6 +9,10 @@ use {
     super::WorthQueryInvariantProjectionTraversalDenial as Denial,
     super::WorthQueryInvariantProjectionTraversalDenialKind as Kind,
     crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity as Entity,
+};
+use {
+    crate::domain_computation::graph_layout::MemberDomainBinding as Domain,
+    crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation,
 };
 
 /// A local read-only graph member; a projected case cannot become an Entity target.

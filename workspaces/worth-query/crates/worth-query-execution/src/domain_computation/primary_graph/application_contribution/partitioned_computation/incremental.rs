@@ -49,10 +49,10 @@ pub(crate) mod recording;
 pub(crate) mod retained;
 mod sealing;
 mod typed_prior;
+use crate::domain_computation::primary_graph::computation_retention::prior_absence::Suppression;
 pub(in crate::domain_computation::primary_graph) use deposit::ComputationDeposit;
 pub(in crate::domain_computation::primary_graph) use prior_absence::CompletedComputationRetention;
 pub(in crate::domain_computation) use prior_absence::SealedComputationRetention;
-use crate::domain_computation::primary_graph::computation_retention::prior_absence::Suppression;
 pub(crate) mod tree_attempt;
 mod tree_edits;
 mod tree_membership;
@@ -70,11 +70,11 @@ use std::sync::Arc;
 use worth_execution::PartitionItemId;
 use worth_foundational::facade::PartitionIdentity;
 
+use crate::domain_computation::primary_graph::computation_retention::full_cause::WorthQueryPartitionedComputationFullCause;
+use crate::domain_computation::primary_graph::computation_retention::retained_basis::ComputationInstallation;
 pub(super) use next_tree::{ComputedIncremental, PreparedIncremental};
 pub use observed::partitioned_computation_runs_on_this_thread_for_test;
 pub(super) use recording::{observe_unretained, FullRecording};
-use crate::domain_computation::primary_graph::computation_retention::retained_basis::ComputationInstallation;
-use crate::domain_computation::primary_graph::computation_retention::full_cause::WorthQueryPartitionedComputationFullCause;
 pub use retained::WorthQueryPartitionedComputationRunForTest;
 pub(in crate::domain_computation) use retained::{
     ComputationPrior, RetainedComputation, SealedComputationRun,

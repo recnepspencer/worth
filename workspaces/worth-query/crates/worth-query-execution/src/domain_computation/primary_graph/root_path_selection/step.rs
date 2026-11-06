@@ -1,7 +1,10 @@
 //! One-hop physical traversal and predecessor custody in either authored direction.
-use {super::super::read_observation::WorthQueryInvariantProjectionWork, crate::domain_computation::graph_layout::WorthQueryPrimaryRelationLayout};
 use super::*;
 use worth_relational::facade::runtime::RelationalAdjacencyDirection;
+use {
+    super::super::read_observation::WorthQueryInvariantProjectionWork,
+    crate::domain_computation::graph_layout::WorthQueryPrimaryRelationLayout,
+};
 pub(super) fn advance<E>(
     basis: &RootPathReadBasis<'_, '_, '_>,
     layout: &WorthQueryPrimaryRelationLayout,

@@ -63,7 +63,9 @@ impl<Schema: ApplicationSchema> InstalledResourceRegistry<Schema> {
     }
 }
 
-fn denial(detail: impl Into<String>) -> crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial {
+fn denial(
+    detail: impl Into<String>,
+) -> crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial {
     crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial::new(
         crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind::RuntimeBridgeRejected,
         detail,

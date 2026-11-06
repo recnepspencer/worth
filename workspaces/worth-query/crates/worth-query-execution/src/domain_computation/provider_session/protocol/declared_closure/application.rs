@@ -1,8 +1,8 @@
 use {
+    crate::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclarations,
     crate::domain_computation::vocabulary::provider_session::declared_role_closure::bind_direct_role_closure,
     crate::domain_computation::vocabulary::provider_session::declared_role_closure::effect_families,
     crate::domain_computation::vocabulary::provider_session::declared_role_closure::invariant_slots,
-    crate::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclarations,
     crate::domain_computation::vocabulary::provider_session::declared_role_closure::WorthQueryProviderPlanDeclaredClosure,
 };
 

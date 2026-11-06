@@ -12,7 +12,10 @@ pub enum AggregateSelection {
 }
 
 impl AggregateSelection {
-    pub(in crate::domain_computation::primary_graph) fn scope(self, member: EntityId) -> PinnedAggregateReadScope<'static> {
+    pub(in crate::domain_computation::primary_graph) fn scope(
+        self,
+        member: EntityId,
+    ) -> PinnedAggregateReadScope<'static> {
         match self {
             Self::OrbitRelation(relation) => PinnedAggregateReadScope::new(relation, member),
             Self::ComponentDefinition(definition) => {

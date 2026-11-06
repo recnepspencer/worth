@@ -10,8 +10,8 @@ use worth_relational::facade::{
 mod currentness;
 mod member;
 
-use crate::domain_computation::primary_graph::vocabulary::aggregate_observation::selection::AggregateSelection;
 use crate::domain_computation::primary_graph::vocabulary::aggregate_observation::key::AggregateKey;
+use crate::domain_computation::primary_graph::vocabulary::aggregate_observation::selection::AggregateSelection;
 
 /// Only Native acquisition can construct this body. Source custody is separate
 /// from semantic truth: stored incident lineage is not part of an orbit answer.

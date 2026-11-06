@@ -111,7 +111,7 @@ pub struct WorthQueryRecoveredProgramOutputSource {
 impl WorthQueryRecoveredProgramOutputSource {
     pub(in crate::domain_computation::primary_graph) fn publication(
         &self,
-    ) -> &crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication {
+    ) -> &crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication{
         &self.publication
     }
     pub(in crate::domain_computation::primary_graph) fn product_branch(

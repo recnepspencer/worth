@@ -288,4 +288,3 @@ where
             .map_err(WorkflowTransitionPreparationDenial::Attempt)
     }
 }
-

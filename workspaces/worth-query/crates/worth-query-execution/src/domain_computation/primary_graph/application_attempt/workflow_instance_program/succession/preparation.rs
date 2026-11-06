@@ -17,7 +17,12 @@ use {
     crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation,
     crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
 };
-pub(in crate::domain_computation::primary_graph) fn prepare_succession<Schema, Binding, Role, Spec>(
+pub(in crate::domain_computation::primary_graph) fn prepare_succession<
+    Schema,
+    Binding,
+    Role,
+    Spec,
+>(
     phase: &WorthQueryAdvancementPhase<'_>,
     selected: &crate::domain_computation::primary_graph::application_attempt::WorkflowSelectionBasis<'_, Schema>,
     installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
@@ -85,7 +90,7 @@ where
         branch, scope: scope.clone(), predecessor: predecessor.entity_id(), binding: Binding::IDENTITY, role: Role::NAME,
         input_identity: *identities.input_identity(), key_identity: *identities.key_identity(), identity, instance_identity: instance_identity.clone(),
         capability, facts: read.facts.iter().cloned().collect(), compiled: compiled.clone(), carry, refusal: read.new_commit_refusal,
-        subject: super::super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate::succession_subject::<Schema, Binding, Role>,
+        subject: crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence_candidate::WorthQueryApplicationOutputCorrespondenceCandidate::succession_subject::<Schema, Binding, Role>,
         output_match,
     };
     Ok(RequiredWorkflowSuccession {
@@ -107,4 +112,3 @@ where
         subject_in_receipt: super::publication::subject_in_receipt::<Schema, Binding, Role>,
     })
 }
-

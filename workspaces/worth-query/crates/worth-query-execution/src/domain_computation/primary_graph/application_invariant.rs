@@ -13,7 +13,7 @@ pub use worth_relational::facade::runtime::{
 };
 
 pub(crate) mod refusal;
-pub use refusal::{WorthQueryEmptyInvariantRefusal, WorthQueryInvariantRefusalDecodeDenial};
+pub use refusal::WorthQueryEmptyInvariantRefusal;
 
 /// A domain violation is distinct from failure to evaluate and interruption.
 #[derive(Clone, Debug, Eq, PartialEq)]

@@ -16,7 +16,10 @@ use worth_relational::facade::schema::{
     SchemaVersionId,
 };
 
-use {super::kind_space_exhausted, super::relational_schema_denial, super::required_kind, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial};
+use {
+    super::kind_space_exhausted, super::relational_schema_denial, super::required_kind,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+};
 mod component_layout;
 mod definitions;
 pub(in crate::domain_computation) use component_layout::ComponentSetLayout;

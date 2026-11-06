@@ -3,8 +3,8 @@
 //! The doors sit on the commit receipt, which owns the committed changes they read.
 use super::WorthQueryApplicationCommitReceipt;
 use worth_foundational::facade::AspectValue;
-use worth_relational::facade::identity::EntityId;
 use worth_query_declaration::facade::application_capability::ApplicationWorkflowRecordedRole;
+use worth_relational::facade::identity::EntityId;
 
 impl WorthQueryApplicationCommitReceipt {
     /// Observes the actual committed actor triplet on a known original record.
@@ -16,7 +16,7 @@ impl WorthQueryApplicationCommitReceipt {
     ) -> Result<
         Option<EntityId>,
         crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
-    > {
+    >{
         let invalid = crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::actor_record_corruption;
         use ApplicationWorkflowRecordedRole::*;
         let (aspect, role) = match role {
@@ -26,8 +26,10 @@ impl WorthQueryApplicationCommitReceipt {
             Approver => ("workflow-approval", "approver"),
         };
         let fields = crate::domain_computation::graph_layout::workflow::actor_fields::WorkflowActorFields::planned(aspect, role).map_err(|_| invalid())?;
-        let values = [&fields.partition, &fields.slot, &fields.generation]
-            .map(|locator| self.committed_changes.committed_field_value(entity, locator));
+        let values = [&fields.partition, &fields.slot, &fields.generation].map(|locator| {
+            self.committed_changes
+                .committed_field_value(entity, locator)
+        });
         let mut components = [None; 3];
         for (index, value) in values.into_iter().enumerate() {
             components[index] = match value {
@@ -55,22 +57,22 @@ impl WorthQueryApplicationCommitReceipt {
         runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         approval: EntityId,
     ) -> Result<(), crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial>
-    {
+{
         use crate::domain_computation::authorization::{
             WorkflowApprovalRequestDecodingDenial as Decode, WorthQueryRetainedCapabilityRequest,
         };
         use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial as Denial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind};
         let invalid = |subject: &str| Denial::new(Kind::InvalidAuthoritativeValue, subject);
-        let locator =
-            crate::domain_computation::graph_layout::planned_field_locator(
-                "workflow-approval",
-                "authorization-request",
-            )
-            .map_err(|_| invalid("committed approval request locator is invalid"))?;
+        let locator = crate::domain_computation::graph_layout::planned_field_locator(
+            "workflow-approval",
+            "authorization-request",
+        )
+        .map_err(|_| invalid("committed approval request locator is invalid"))?;
         // The receipt owns this exact artifact; its native runtime identity
         // and canonical commit select the retained poststate, never current head.
         let Some(AspectValue::String(worth_foundational::facade::InternedString::Symbol(symbol))) =
-            self.committed_changes.committed_field_value(approval, &locator)
+            self.committed_changes
+                .committed_field_value(approval, &locator)
         else {
             return Err(invalid(
                 "committed approval request field is missing or not a Symbol",
@@ -155,7 +157,7 @@ impl WorthQueryApplicationCommitReceipt {
     ) -> Result<
         Option<EntityId>,
         crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
-    > {
+    >{
         let invalid = crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::actor_record_corruption;
         let original = self
             .workflow_actor_fields_for_test(entity, role)
@@ -176,13 +178,14 @@ impl WorthQueryApplicationCommitReceipt {
             .map_err(|_| invalid())?;
         let required = match role {
             ApplicationWorkflowRecordedRole::Executor => {
-                let locator =
-                    crate::domain_computation::graph_layout::planned_field_locator(
-                        "workflow-transition",
-                        "operation-receipt-identity",
-                    )
-                    .map_err(|_| invalid())?;
-                self.committed_changes.committed_field_value(entity, &locator).is_some()
+                let locator = crate::domain_computation::graph_layout::planned_field_locator(
+                    "workflow-transition",
+                    "operation-receipt-identity",
+                )
+                .map_err(|_| invalid())?;
+                self.committed_changes
+                    .committed_field_value(entity, &locator)
+                    .is_some()
             }
             _ => true,
         };

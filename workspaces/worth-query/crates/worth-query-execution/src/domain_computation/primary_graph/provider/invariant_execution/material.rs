@@ -1,4 +1,8 @@
-use {crate::domain_computation::WorthQueryBoundInvariantExecutionView, crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailure, crate::domain_computation::WorthQueryInvariantStateLocator};
+use {
+    crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailure,
+    crate::domain_computation::WorthQueryBoundInvariantExecutionView,
+    crate::domain_computation::WorthQueryInvariantStateLocator,
+};
 
 use super::super::application_attempt_state::WorthQueryStagedApplicationAttempt;
 

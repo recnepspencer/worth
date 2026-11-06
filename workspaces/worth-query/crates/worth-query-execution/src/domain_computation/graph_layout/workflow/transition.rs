@@ -4,8 +4,11 @@ use worth_relational::facade::schema::{RelationalSchemaRegistry, SchemaId, Schem
 
 use super::relations::register_platform_entity_at_revision;
 use super::WorkflowTransitionLayout;
-use {crate::domain_computation::graph_layout::invalid_member, crate::domain_computation::graph_layout::planned_field_locator};
 use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial;
+use {
+    crate::domain_computation::graph_layout::invalid_member,
+    crate::domain_computation::graph_layout::planned_field_locator,
+};
 
 const TRANSITION_ENTITY: &str = "worth-query-workflow-transition";
 const TRANSITION_ASPECT: &str = "workflow-transition";

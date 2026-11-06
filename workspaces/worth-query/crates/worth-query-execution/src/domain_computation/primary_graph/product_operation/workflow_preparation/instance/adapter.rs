@@ -28,13 +28,15 @@ impl WorthQueryWorkflowInstanceAdapter {
         };
         let execution = &phase_request;
 
-        selected.workflow_selection_basis().prepare_workflow_instance_start::<Capability, Operation, Input, Scope, Spec>(
-            execution,
-            installed,
-            published,
-            start_key_identity,
-            admission,
-        )
+        selected
+            .workflow_selection_basis()
+            .prepare_workflow_instance_start::<Capability, Operation, Input, Scope, Spec>(
+                execution,
+                installed,
+                published,
+                start_key_identity,
+                admission,
+            )
     }
 
     /// Prepares a successor on the current target definition.
@@ -64,16 +66,18 @@ impl WorthQueryWorkflowInstanceAdapter {
         };
         let execution = &phase_request;
 
-        selected.workflow_selection_basis().prepare_workflow_instance_migration::<Capability, Operation, Input, Scope, Spec>(
-            execution,
-            installed,
-            WorkflowSuccession::Migration,
-            source,
-            target,
-            resume_at,
-            start_key_identity,
-            admission,
-        )
+        selected
+            .workflow_selection_basis()
+            .prepare_workflow_instance_migration::<Capability, Operation, Input, Scope, Spec>(
+                execution,
+                installed,
+                WorkflowSuccession::Migration,
+                source,
+                target,
+                resume_at,
+                start_key_identity,
+                admission,
+            )
     }
 
     /// Prepares a successor for the selected fork copy.
@@ -103,16 +107,18 @@ impl WorthQueryWorkflowInstanceAdapter {
         };
         let execution = &phase_request;
 
-        selected.workflow_selection_basis().prepare_workflow_instance_migration::<Capability, Operation, Input, Scope, Spec>(
-            execution,
-            installed,
-            WorkflowSuccession::ForkContinuation,
-            source,
-            target,
-            resume_at,
-            start_key_identity,
-            admission,
-        )
+        selected
+            .workflow_selection_basis()
+            .prepare_workflow_instance_migration::<Capability, Operation, Input, Scope, Spec>(
+                execution,
+                installed,
+                WorkflowSuccession::ForkContinuation,
+                source,
+                target,
+                resume_at,
+                start_key_identity,
+                admission,
+            )
     }
 
     /// Prepares cancellation on the selected branch.

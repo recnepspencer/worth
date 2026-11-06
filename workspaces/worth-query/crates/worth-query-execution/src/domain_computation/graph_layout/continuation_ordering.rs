@@ -15,7 +15,10 @@ use worth_relational::facade::{
     },
 };
 
-use {super::planned_field_locator, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, super::WorthQueryPrimaryRelationLayout};
+use {
+    super::planned_field_locator, super::WorthQueryPrimaryRelationLayout,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) struct WorthQueryPrimaryContinuationOrderingLayout {
@@ -110,10 +113,7 @@ impl WorthQueryPrimaryContinuationOrderingLayout {
         }
     }
 
-    pub(in crate::domain_computation) const fn bind_index(
-        &mut self,
-        index_id: DerivedIndexId,
-    ) {
+    pub(in crate::domain_computation) const fn bind_index(&mut self, index_id: DerivedIndexId) {
         self.index_id = index_id;
     }
 

@@ -48,7 +48,6 @@ impl WorthQueryProgramActivationUnresolved {
     }
 }
 
-
 /// A typed refusal of a commit before publication, carried by the `Denied`
 /// commit outcome.
 ///
@@ -96,7 +95,7 @@ impl WorthQueryApplicationCommitDenial {
 
     pub fn custom_invariant_denial(
         &self,
-    ) -> Option<&crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryCustomInvariantDenial> {
+    ) -> Option<&crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryCustomInvariantDenial>{
         self.custom_invariant()
     }
 

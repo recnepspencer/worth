@@ -107,7 +107,7 @@ impl<Query, QueryResult> WorthQueryApplicationLiveUpdate<Query, QueryResult> {
 
     pub const fn product_publication(
         &self,
-    ) -> &crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication {
+    ) -> &crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication{
         &self.product_publication
     }
 
@@ -125,7 +125,7 @@ impl<Query, QueryResult> WorthQueryApplicationLiveUpdate<Query, QueryResult> {
         crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication,
         QueryResult,
         WorthQueryApplicationQueryAccessReceipt,
-    ) {
+    ){
         (self.product_publication, self.result, self.receipt)
     }
 
@@ -134,7 +134,7 @@ impl<Query, QueryResult> WorthQueryApplicationLiveUpdate<Query, QueryResult> {
     ) -> (
         crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication,
         super::super::WorthQueryAdmittedDisclosedApplicationResult<Query, QueryResult>,
-    ) {
+    ){
         (
             self.product_publication,
             super::super::WorthQueryAdmittedDisclosedApplicationResult::new(

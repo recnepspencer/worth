@@ -2,8 +2,8 @@
 use super::super::super::native_field_contract::FieldExpectation;
 use super::super::WorthQueryApplicationConditionalPackageContract;
 use super::*;
-use worth_query_declaration::facade::application_schema as schema;
 use crate::domain_computation::vocabulary::primary_graph::output_readiness_contract::WorthQueryOutputReadinessContractDenial;
+use worth_query_declaration::facade::application_schema as schema;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryReadinessFieldUse {
@@ -220,10 +220,7 @@ fn field_denial(
     locus: schema::ApplicationFieldBindingLocus,
     detail: &str,
 ) -> WorthQueryOutputReadinessContractDenial {
-    WorthQueryOutputReadinessContractDenial {
-        detail: detail.into(),
-        locus: Some(locus),
-    }
+    WorthQueryOutputReadinessContractDenial::new(detail.into(), Some(locus))
 }
 
 mod court_doors_for_test;

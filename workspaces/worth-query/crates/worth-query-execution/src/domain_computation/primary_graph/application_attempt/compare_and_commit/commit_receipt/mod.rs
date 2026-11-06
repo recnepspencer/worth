@@ -24,10 +24,10 @@ use {
 
 use {super::super::WorthQueryApplicationCommitAuthorityBinding, super::super::WorthQueryApplicationCommitTerminalEvidence, crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence, crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationTypedOutputCorrespondence, super::super::WorthQueryMutationPreconditionComparisonEvidence, crate::domain_computation::primary_graph::vocabulary::application_attempt::projection::WorthQueryApplicationOutputProjectionDenial};
 
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::WorthQueryApplicationCommittedChanges;
 pub(in crate::domain_computation::primary_graph) use pending::WorthQueryPendingApplicationCommitReceipt;
 pub(in crate::domain_computation::primary_graph) use projection::WorthQueryCommittedReceiptProjection;
 pub use publication_source::WorthQueryApplicationCommitPublicationSource;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::WorthQueryApplicationCommittedChanges;
 
 /// The record of one landed application commit: which branch and commit, what
 /// changed, which records were touched, what must be dispatched, and under what
@@ -150,7 +150,7 @@ impl WorthQueryApplicationCommitReceipt {
 
     pub const fn committed_product_publication(
         &self,
-    ) -> &crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication {
+    ) -> &crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_publication::WorthQueryCommittedProductPublication{
         &self.committed_product_publication
     }
 
@@ -314,7 +314,7 @@ impl WorthQueryApplicationCommitReceipt {
 
     pub const fn idempotency_binding(
         &self,
-    ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding {
+    ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding{
         self.authority_binding.idempotency_binding()
     }
 
@@ -377,11 +377,9 @@ impl WorthQueryApplicationCommitReceipt {
     }
 }
 
-
-
-mod court_doors_for_test;
 mod committed_actor_observation;
 pub(crate) mod committed_field_effect;
+mod court_doors_for_test;
 mod materialized_committed_field;
 pub(in crate::domain_computation::primary_graph) use materialized_committed_field::{
     CommittedFieldMaterialization, MaterializedCommittedField,

@@ -246,7 +246,6 @@ pub fn while_peer_is_registered(
         &coordination,
         &product,
         aftermath_causality,
-        None,
     );
     let peer = finish_application_commit(
         &phase.borrowed_request_for_test(),

@@ -5,7 +5,10 @@ use worth_relational::facade::{
     snapshots::SnapshotHandle,
 };
 
-use {super::denial, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationObservedFact};
+use {
+    super::denial, super::WorthQueryApplicationObservedFact,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
+};
 
 pub(super) fn observed_text(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

@@ -58,10 +58,10 @@ use super::effect_validation::{canonical_key, denial};
 use super::read_set::WorthQueryCompleteApplicationReadSet;
 use crate::domain_computation::primary_graph::WorthQueryApplicationEntityKey;
 
-use target_admission::installed_contract_admits_program_target;
+use super::WorthQueryProjectedApplicationMutation;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
 use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
-use super::WorthQueryProjectedApplicationMutation;
+use target_admission::installed_contract_admits_program_target;
 pub use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as WorthQueryApplicationOutputPosture;
 
 impl<Schema, Operation, Input, Scope>

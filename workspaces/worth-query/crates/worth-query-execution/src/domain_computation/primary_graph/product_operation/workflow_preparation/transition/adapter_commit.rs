@@ -21,7 +21,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         Schema: ApplicationSchema,
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
-    {
+{
         let phase_request = match phase.execution_request_for(runtime.product_runtime()) {
             Ok(request) => request,
             Err(cause) => return Ok(WorkflowProgressOutcome::Application(
@@ -66,7 +66,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         Schema: ApplicationSchema,
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
-    {
+{
         let phase_request = match phase.execution_request_for(runtime.product_runtime()) {
             Ok(request) => request,
             Err(cause) => return Ok(WorkflowProgressOutcome::Application(
@@ -128,7 +128,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
             Schema,
         >,
         EffectInput: Clone + Send + Sync + 'static,
-    {
+{
         let phase_request = match phase.execution_request_for(runtime.product_runtime()) {
             Ok(request) => request,
             Err(cause) => return Ok(WorkflowProgressOutcome::Application(
@@ -209,7 +209,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
 
 fn owner_custody_denial(
     required: &RequiredWorkflowOperation,
-) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial {
+) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial{
     crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::new(
         crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
         required.node_path(),

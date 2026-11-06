@@ -1,8 +1,8 @@
-use crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::CapturedWorkflowIdempotency;
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::read_set::{
     MutationHandlerBindingProof, WorkflowOperationBindingProof,
 };
+use crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::CapturedWorkflowIdempotency;
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>

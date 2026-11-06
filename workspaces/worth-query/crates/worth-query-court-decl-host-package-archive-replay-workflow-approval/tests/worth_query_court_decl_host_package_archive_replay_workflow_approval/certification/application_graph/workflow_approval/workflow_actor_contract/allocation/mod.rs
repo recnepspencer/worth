@@ -25,11 +25,7 @@ fn workflow_actor_contract_retained_wire_refuses_unfunded_storage_and_preserves_
     let execution = worth_execution::ExecutionRequest::leased(&zero);
     let refusal = performed
         .receipt()
-        .retain_workflow_actor_evidence_for_test(
-            &execution,
-            application.runtime(),
-            record,
-        )
+        .retain_workflow_actor_evidence_for_test(&execution, application.runtime(), record)
         .unwrap_err();
     use worth_query_host::facade::{
         application_contribution::{

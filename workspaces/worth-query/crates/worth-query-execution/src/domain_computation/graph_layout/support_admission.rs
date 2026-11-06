@@ -1,10 +1,7 @@
 use super::WorthQueryPrimaryGraphLayout;
 use worth_foundational::facade::{AspectKey, FieldKey};
 impl WorthQueryPrimaryGraphLayout {
-    pub(in crate::domain_computation) fn supports_relation(
-        &self,
-        relation: &str,
-    ) -> bool {
+    pub(in crate::domain_computation) fn supports_relation(&self, relation: &str) -> bool {
         self.relation(relation).is_some()
     }
     pub(in crate::domain_computation) fn supports_equality_field(

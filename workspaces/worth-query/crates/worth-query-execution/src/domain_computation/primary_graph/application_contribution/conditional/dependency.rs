@@ -1,4 +1,7 @@
-use {crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as DenialKind};
+use {
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as DenialKind,
+};
 
 pub(in crate::domain_computation::primary_graph::application_contribution) fn validate_required_producer(
     identity: &str,
@@ -23,7 +26,10 @@ fn denial(
 
 #[cfg(test)]
 mod tests {
-    use {super::validate_required_producer, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as DenialKind};
+    use {
+        super::validate_required_producer,
+        crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as DenialKind,
+    };
 
     #[test]
     fn conditional_dependencies_reject_missing_and_foreign_producers() {

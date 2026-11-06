@@ -19,5 +19,3 @@ pub fn dispatch_outbox_create_intent(
     )
     .map(|(intent, _)| intent)
 }
-
-mod court_doors_for_test;

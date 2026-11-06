@@ -10,7 +10,21 @@ use worth_query_declaration::facade::application_program::ApplicationProgramDefi
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::WorthQueryProgramApplicationRuntime;
-use {crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial, crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome, crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::WorthQueryCapabilityRevocationProgram, crate::domain_computation::primary_graph::WorthQueryDelegationActivationProgram, crate::domain_computation::primary_graph::WorthQueryElevationApprovalOutcome, crate::domain_computation::primary_graph::WorthQueryElevationApprovalProgram, crate::domain_computation::primary_graph::WorthQueryElevationCloseOutcome, crate::domain_computation::primary_graph::WorthQueryElevationCloseProgram, crate::domain_computation::primary_graph::WorthQueryElevationRequestOutcome, crate::domain_computation::primary_graph::WorthQueryElevationRequestProgram, crate::domain_computation::primary_graph::WorthQueryMandatoryReviewOutcome, crate::domain_computation::primary_graph::WorthQueryMandatoryReviewProgram};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding,
+    crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial,
+    crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome,
+    crate::domain_computation::primary_graph::WorthQueryCapabilityRevocationProgram,
+    crate::domain_computation::primary_graph::WorthQueryDelegationActivationProgram,
+    crate::domain_computation::primary_graph::WorthQueryElevationApprovalOutcome,
+    crate::domain_computation::primary_graph::WorthQueryElevationApprovalProgram,
+    crate::domain_computation::primary_graph::WorthQueryElevationCloseOutcome,
+    crate::domain_computation::primary_graph::WorthQueryElevationCloseProgram,
+    crate::domain_computation::primary_graph::WorthQueryElevationRequestOutcome,
+    crate::domain_computation::primary_graph::WorthQueryElevationRequestProgram,
+    crate::domain_computation::primary_graph::WorthQueryMandatoryReviewOutcome,
+    crate::domain_computation::primary_graph::WorthQueryMandatoryReviewProgram,
+};
 
 /// Exact installed-program membership, admitted before specialized preparation.
 pub struct WorthQueryAdmittedProgramOperation<'a, Schema, Program, Operation> {

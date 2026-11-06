@@ -1,5 +1,9 @@
 //! Lifecycle refusals occur before either source or consequence is published.
-use {super::WorthQueryApplicationCommitDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind};
+use {
+    super::WorthQueryApplicationCommitDenial,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage,
+};
 impl WorthQueryApplicationCommitDenial {
     pub(in crate::domain_computation::primary_graph::application_attempt) fn signing_lifecycle_attempt(
         cause: crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
@@ -17,7 +21,7 @@ impl WorthQueryApplicationCommitDenial {
     }
     pub fn signing_lifecycle_observation_failure(
         &self,
-    ) -> Option<&crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial> {
+    ) -> Option<&crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial>{
         match self.cause.as_deref() {
             Some(super::denial_cause::DenialCause::SigningLifecycleAttempt(cause)) => Some(cause),
             _ => None,

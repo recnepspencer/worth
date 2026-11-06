@@ -25,20 +25,18 @@ fn genuinely_interleaved_equivalent_sessions_validate_retry_cleanup_separately()
                 let binding = idempotency(139, 140);
                 let left = start(phase, &world.application, left, binding);
                 let right = start(phase, &world.application, right, binding);
-                let left = progress_application_commit(
+                let left = progress_application_commit_without_history_for_test(
                     &phase.borrowed_request_for_test(),
                     phase,
                     &world.application,
                     left,
-                    None,
                     ExecutionAllocationPolicy::SystemAllocation,
                 );
-                let right = progress_application_commit(
+                let right = progress_application_commit_without_history_for_test(
                     &phase.borrowed_request_for_test(),
                     phase,
                     &world.application,
                     right,
-                    None,
                     ExecutionAllocationPolicy::SystemAllocation,
                 );
                 assert_eq!(

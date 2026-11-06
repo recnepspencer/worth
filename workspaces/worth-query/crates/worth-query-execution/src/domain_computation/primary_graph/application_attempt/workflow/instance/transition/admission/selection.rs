@@ -12,7 +12,10 @@ use {
     crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionProgressBasis,
     crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionReplayProjection,
 };
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 
 mod proposal_need;
 pub(in crate::domain_computation::primary_graph) use proposal_need::{

@@ -293,3 +293,32 @@ impl WorthQueryInvariantExecutionFailure {
         self.custom_invariant.as_ref()
     }
 }
+
+impl WorthQueryCustomInvariantDenial {
+    pub fn decode_refusal<Binding: worth_query_declaration::facade::application_schema::ApplicationReadableScalarValueBinding>(
+        &self,
+    ) -> Result<Binding::Value, crate::domain_computation::vocabulary::provider_session::invariant_refusal_codec::WorthQueryInvariantRefusalDecodeDenial>{
+        match self {
+            Self::Violation { refusal, .. } => crate::domain_computation::vocabulary::provider_session::invariant_refusal_codec::decode::<Binding>(refusal),
+            Self::Failure { .. } => Err(crate::domain_computation::vocabulary::provider_session::invariant_refusal_codec::WorthQueryInvariantRefusalDecodeDenial::NoDomainRefusal),
+        }
+    }
+
+    pub fn refusal_bytes(&self) -> Option<&[u8]> {
+        match self {
+            Self::Violation {
+                refusal:
+                    worth_relational::facade::runtime::CustomInvariantRefusal::DeclaredValue {
+                        bytes,
+                        ..
+                    },
+                ..
+            } => Some(bytes),
+            Self::Violation {
+                refusal: worth_relational::facade::runtime::CustomInvariantRefusal::Empty,
+                ..
+            }
+            | Self::Failure { .. } => None,
+        }
+    }
+}

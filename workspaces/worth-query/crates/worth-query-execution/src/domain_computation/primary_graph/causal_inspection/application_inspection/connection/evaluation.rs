@@ -14,7 +14,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
 ) -> Result<
     &crate::domain_computation::primary_graph::application_output_demand::settlement::output_evaluation::ComparedProducerOutput,
     ConnectionRefusal,
-> {
+>{
     match state {
         ProducerOutputEvaluationState::Compared(compared) => Ok(compared),
         // All members are fixed diagnostic values or share their original funded Arc.
@@ -57,7 +57,7 @@ impl WorthQueryApplicationProducerEvaluation {
     fn compared(
         &self,
     ) -> &crate::domain_computation::primary_graph::application_output_demand::settlement::output_evaluation::ComparedProducerOutput
-    {
+{
         let ProducerOutputEvaluationState::Compared(compared) = &self.evaluation.state else {
             unreachable!("only an actual comparison can issue an admitted evaluation report")
         };

@@ -4,10 +4,14 @@ use super::{
     WorthQueryInvariantProjectionTraversalDenial as Denial,
     WorthQueryInvariantProjectionTraversalDenialKind as Kind,
 };
-use {crate::domain_computation::primary_graph::aggregate_observation::AggregateObservation, crate::domain_computation::primary_graph::aggregate_observation::AggregateQuery, crate::domain_computation::primary_graph::vocabulary::aggregate_observation::selection::AggregateSelection};
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::runtime::{
     PinnedAggregateReadDenial, PinnedAggregateReadDenialKind, RelationalPinnedReadAdmissionDenial,
+};
+use {
+    crate::domain_computation::primary_graph::aggregate_observation::AggregateObservation,
+    crate::domain_computation::primary_graph::aggregate_observation::AggregateQuery,
+    crate::domain_computation::primary_graph::vocabulary::aggregate_observation::selection::AggregateSelection,
 };
 impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'_, Schema> {
     pub(super) fn read_aggregate_identity(

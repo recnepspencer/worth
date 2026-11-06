@@ -9,10 +9,14 @@ use super::effect_lowering::{
     lower_provider_effect, CreatedEffectReferences, ObservedFactIndex, UniqueValueWrites,
     WorthQueryLoweredProviderEffect,
 };
-use {super::invalid_emission_denial, super::WorthQueryAdmittedApplicationEmissionBatch, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationRealizedEffect};
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationEmission;
 use crate::domain_computation::graph_layout::WorthQueryUniqueFields;
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationEmission;
 use crate::domain_computation::WorthQueryProvisionalEffectStep;
+use {
+    super::invalid_emission_denial, super::WorthQueryAdmittedApplicationEmissionBatch,
+    super::WorthQueryApplicationRealizedEffect,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
+};
 
 mod commit_projections;
 #[cfg(test)]
@@ -193,11 +197,15 @@ impl WorthQueryRegisteredProviderEffects {
         self.output_correspondence.native_witness_roles()
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn output_binding_type(&self) -> Option<TypeId> {
+    pub(in crate::domain_computation::primary_graph) const fn output_binding_type(
+        &self,
+    ) -> Option<TypeId> {
         self.output_correspondence.binding_type()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn expected_steps(&self) -> &[WorthQueryProvisionalEffectStep] {
+    pub(in crate::domain_computation::primary_graph) fn expected_steps(
+        &self,
+    ) -> &[WorthQueryProvisionalEffectStep] {
         self.expected_steps.steps()
     }
 
@@ -222,7 +230,9 @@ impl WorthQueryRegisteredProviderEffects {
         Ok(self.batch)
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn emissions(&self) -> &WorthQueryAdmittedApplicationEmissionBatch {
+    pub(in crate::domain_computation::primary_graph) const fn emissions(
+        &self,
+    ) -> &WorthQueryAdmittedApplicationEmissionBatch {
         &self.emissions
     }
 
@@ -279,14 +289,16 @@ impl WorthQueryRegisteredProviderEffects {
         ))
     }
 
-    pub(in crate::domain_computation::primary_graph) fn into_emissions(self) -> WorthQueryAdmittedApplicationEmissionBatch {
+    pub(in crate::domain_computation::primary_graph) fn into_emissions(
+        self,
+    ) -> WorthQueryAdmittedApplicationEmissionBatch {
         self.emissions
     }
 
     pub(in crate::domain_computation::primary_graph) fn seal_output_correspondence(
         &self,
         commit: &worth_relational::facade::transactions::CommitResult,
-    ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence {
+    ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryApplicationOutputCorrespondence{
         self.output_correspondence.clone().seal(commit)
     }
 }

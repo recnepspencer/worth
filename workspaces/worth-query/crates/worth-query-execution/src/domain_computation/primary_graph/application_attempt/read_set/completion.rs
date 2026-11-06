@@ -1,11 +1,17 @@
 //! Full read completion over the original borrowed admission and read state.
+use super::application_projection::CompletedFactProjectionRouting;
 use super::complete_read_set_core::{
     CompleteReadSetCore, CompletedReadFacts, PreparedReadCompletion,
 };
 use super::mutation_read_attempt_core::MutationReadAttemptCore;
-use super::application_projection::CompletedFactProjectionRouting;
 use worth_execution::ExecutionAllocationPolicy;
-use {super::denial, super::observation_admission, super::SealedComputationFacts, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryCompleteApplicationReadSet, crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
+use {
+    super::denial, super::observation_admission, super::SealedComputationFacts,
+    super::WorthQueryCompleteApplicationReadSet,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 
 impl MutationReadAttemptCore<'_, '_, '_> {
     pub(super) fn complete_full(

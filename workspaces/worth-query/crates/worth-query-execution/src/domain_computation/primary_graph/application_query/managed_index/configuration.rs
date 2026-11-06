@@ -3,13 +3,17 @@ use super::{
     adapter::{ErasedIndexExecutor, InstalledIndexProvider, TypedIndexProvider},
     WorthQueryManagedIndexProvider,
 };
-use {crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as Kind, crate::equality_type_id::EqualityTypeId};
 use std::{any::Any, collections::HashMap, marker::PhantomData, sync::Arc};
 use worth_query_declaration::facade::{
     application_query::ApplicationManagedIndexBinding,
     application_schema::{ApplicationSchema, ApplicationSchemaMember},
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
+use {
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenialKind as Kind,
+    crate::equality_type_id::EqualityTypeId,
+};
 
 struct ConfiguredProvider<S> {
     name: String,

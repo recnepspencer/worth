@@ -49,7 +49,7 @@ impl AdmittedAdjacencyEndpoints {
             &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
         >,
     ) -> Result<Self, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial>
-    {
+{
         Self::preserve(
             input,
             crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(allocation_policy, request),

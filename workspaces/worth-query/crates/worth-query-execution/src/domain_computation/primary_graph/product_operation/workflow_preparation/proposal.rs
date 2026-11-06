@@ -131,15 +131,17 @@ impl WorthQueryWorkflowProposalAdapter {
         };
         let execution = &phase_request;
 
-        selected.workflow_selection_basis().prepare_workflow_proposal(
-            execution,
-            installed,
-            instance,
-            admission,
-            *idempotency.intent_identity(),
-            idempotency.source_identity(),
-            captured,
-        )
+        selected
+            .workflow_selection_basis()
+            .prepare_workflow_proposal(
+                execution,
+                installed,
+                instance,
+                admission,
+                *idempotency.intent_identity(),
+                idempotency.source_identity(),
+                captured,
+            )
     }
 
     pub fn compare_and_commit<Schema, Operation, Input, Scope>(

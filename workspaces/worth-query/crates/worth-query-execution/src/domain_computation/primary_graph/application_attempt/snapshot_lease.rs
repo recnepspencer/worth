@@ -71,14 +71,15 @@ pub struct WorthQueryApplicationSnapshotLease {
     custody: Option<SnapshotCustody>,
     product: crate::basis::WorthQueryProductBranchLease,
     selection_origin: SelectedQueryOrigin,
-    pub(super) layout: std::sync::Arc<crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout>,
+    pub(super) layout:
+        std::sync::Arc<crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout>,
 }
 
 impl WorthQueryApplicationSnapshotLease {
     pub(super) fn share_original(
         mut self,
         control: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
-    ) -> Result<(Self, Self), crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial> {
+    ) -> Result<(Self, Self), crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial>{
         let memory = control
             .policy()
             .reserve_memory((size_of::<SharedOriginalSnapshot>() + 2 * size_of::<usize>()) as u64);
@@ -104,7 +105,9 @@ impl WorthQueryApplicationSnapshotLease {
     pub(in crate::domain_computation) fn acquire(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         handle: WorthQueryPrimaryGraphIntegrationHandle,
-        layout: std::sync::Arc<crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout>,
+        layout: std::sync::Arc<
+            crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
+        >,
         product: crate::basis::WorthQueryProductBranchLease,
     ) -> Result<Self, WorthQueryApplicationSnapshotLeaseDenial> {
         let basis = product.relational_basis().clone();
@@ -137,7 +140,9 @@ impl WorthQueryApplicationSnapshotLease {
 
     pub(in crate::domain_computation::primary_graph) fn from_existing(
         handle: WorthQueryPrimaryGraphIntegrationHandle,
-        layout: std::sync::Arc<crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout>,
+        layout: std::sync::Arc<
+            crate::domain_computation::graph_layout::WorthQueryPrimaryGraphLayout,
+        >,
         basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
         snapshot: SnapshotHandle,
         product: crate::basis::WorthQueryProductBranchLease,

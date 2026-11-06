@@ -202,7 +202,10 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
         );
     }
 
-    pub(in crate::domain_computation::primary_graph::application_attempt::effect_program) fn bind<Schema, Entity>(
+    pub(in crate::domain_computation::primary_graph::application_attempt::effect_program) fn bind<
+        Schema,
+        Entity,
+    >(
         &mut self,
         role: OutputRoleUse,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,

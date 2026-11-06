@@ -26,9 +26,17 @@ pub use composition::{
     WorthQueryApplicationContribution, WorthQueryApplicationContributionTuple,
     WorthQueryConfiguredApplicationContributions,
 };
-pub use {conditional::WorthQueryApplicationConditionalBinding, conditional::WorthQueryApplicationConditionalPackageContract, conditional::WorthQueryApplicationConditionalProducerAccess, conditional::WorthQueryInstalledApplicationConditionalRegistry, conditional::WorthQueryOutputReadinessContract, conditional::WorthQueryOutputReadinessContractBuilder, conditional::WorthQueryReadinessFieldUse};
 pub use contracts::{
     WorthQueryApplicationContractCatalog, WorthQueryApplicationContributionContracts,
+};
+pub use {
+    conditional::WorthQueryApplicationConditionalBinding,
+    conditional::WorthQueryApplicationConditionalPackageContract,
+    conditional::WorthQueryApplicationConditionalProducerAccess,
+    conditional::WorthQueryInstalledApplicationConditionalRegistry,
+    conditional::WorthQueryOutputReadinessContract,
+    conditional::WorthQueryOutputReadinessContractBuilder,
+    conditional::WorthQueryReadinessFieldUse,
 };
 
 pub use partitioned_computation::{
@@ -44,7 +52,6 @@ pub use partitioned_computation::{
 pub(in crate::domain_computation::primary_graph) use partitioned_computation::{
     Comparator, CompletedComputationRetention, ComputationDeposit, ComputationRetention,
 };
-pub(in crate::domain_computation) use {partitioned_computation::ComputationPrior, partitioned_computation::RetainedComputation, partitioned_computation::SealedComputationRetention, partitioned_computation::SealedComputationRun};
 pub use partitioned_computation::{
     WorthQueryCompletedPartitionedComputation, WorthQueryComputationInputDenial,
     WorthQueryComputationPartitionMembers, WorthQueryComputationPartitionPlan,
@@ -61,7 +68,17 @@ pub use {
     computation::WorthQueryManagedComputationOwner,
     computation::WorthQueryPreparedManagedComputation,
 };
-pub(in crate::domain_computation::primary_graph) use {producer::install_output_readiness_routes, producer::MatchedRequiredPredecessors, producer::PendingOutputReadiness, producer::QualifiedOutputSource, producer::TypedPendingOutputReadiness, producer::WorthQueryInstalledOutputProducerRoutes, producer::WorthQueryInstalledOutputReadinessRoutes};
+pub(in crate::domain_computation) use {
+    partitioned_computation::ComputationPrior, partitioned_computation::RetainedComputation,
+    partitioned_computation::SealedComputationRetention,
+    partitioned_computation::SealedComputationRun,
+};
+pub(in crate::domain_computation::primary_graph) use {
+    producer::install_output_readiness_routes, producer::MatchedRequiredPredecessors,
+    producer::PendingOutputReadiness, producer::QualifiedOutputSource,
+    producer::TypedPendingOutputReadiness, producer::WorthQueryInstalledOutputProducerRoutes,
+    producer::WorthQueryInstalledOutputReadinessRoutes,
+};
 
 pub use setup::{
     WorthQueryApplicationContributionSetup, WorthQueryManagedIndexProviderRegistration,
@@ -72,10 +89,9 @@ pub use {
     producer::WorthQueryApplicationProducerProvider,
     producer::WorthQueryInstalledApplicationProducerRegistry,
     producer::WorthQueryOutputDemandAdvance, producer::WorthQueryProducerDenialDeclaration,
-    producer::WorthQueryProducerDenialProjection,
-    producer::WorthQueryProducerOutputEquivalence, producer::WorthQueryProducerOutputFamily,
-    producer::WorthQueryProjectedProducerDenial, producer::WorthQuerySelectedApplicationProducer,
-    producer::WorthQueryUndeclaredProducerDenial,
+    producer::WorthQueryProducerDenialProjection, producer::WorthQueryProducerOutputEquivalence,
+    producer::WorthQueryProducerOutputFamily, producer::WorthQueryProjectedProducerDenial,
+    producer::WorthQuerySelectedApplicationProducer, producer::WorthQueryUndeclaredProducerDenial,
     producer::WorthQueryWorkflowAssessmentOutputFamily,
 };
 

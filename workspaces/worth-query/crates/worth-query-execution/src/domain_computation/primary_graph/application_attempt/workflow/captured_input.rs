@@ -49,11 +49,13 @@ pub struct WorkflowCapturedInputContract {
 pub struct PreparedWorkflowCapturedInput {
     pub(in crate::domain_computation::primary_graph) contract: WorkflowCapturedInputContract,
     pub(in crate::domain_computation::primary_graph) facts: Vec<WorthQueryApplicationObservedFact>,
-    pub(in crate::domain_computation::primary_graph) basis: crate::basis::WorthQueryProductBranchReadIdentity,
+    pub(in crate::domain_computation::primary_graph) basis:
+        crate::basis::WorthQueryProductBranchReadIdentity,
     pub(in crate::domain_computation::primary_graph) runtime: u64,
     pub(in crate::domain_computation::primary_graph) request_work:
         worth_query_declaration::facade::application_operation::ApplicationCanonicalWork,
-    pub(in crate::domain_computation::primary_graph) precondition_work: worth_query_installation::facade::WorthQueryCanonicalWorkEvidence,
+    pub(in crate::domain_computation::primary_graph) precondition_work:
+        worth_query_installation::facade::WorthQueryCanonicalWorkEvidence,
 }
 
 #[derive(Debug)]

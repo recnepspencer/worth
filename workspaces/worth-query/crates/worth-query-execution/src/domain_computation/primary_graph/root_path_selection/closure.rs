@@ -1,8 +1,15 @@
 //! Complete Native closure retains the actual body and predecessor provenance.
-use {super::super::read_observation::WorthQueryInvariantProjectionWork, crate::domain_computation::graph_layout::WorthQueryPrimaryRelationLayout, super::super::structural_walk::memory, super::super::structural_walk::StructuralWalkDependencies, super::super::structural_walk::StructuralWalkObservation, super::super::structural_walk::StructuralWalkQuery};
 use super::*;
 use std::{cell::RefCell, sync::Arc};
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
+use {
+    super::super::read_observation::WorthQueryInvariantProjectionWork,
+    super::super::structural_walk::memory,
+    super::super::structural_walk::StructuralWalkDependencies,
+    super::super::structural_walk::StructuralWalkObservation,
+    super::super::structural_walk::StructuralWalkQuery,
+    crate::domain_computation::graph_layout::WorthQueryPrimaryRelationLayout,
+};
 pub(super) fn advance<E>(
     basis: &RootPathReadBasis<'_, '_, '_>,
     layout: &WorthQueryPrimaryRelationLayout,

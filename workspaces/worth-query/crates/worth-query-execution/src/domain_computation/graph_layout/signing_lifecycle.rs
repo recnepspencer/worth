@@ -1,10 +1,13 @@
 //! Native-owned immutable consequence records and protected association kinds.
-use {super::required_kind, crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial};
 use std::collections::BTreeSet;
 use worth_query_installation::facade::{
     ApplicationSchemaMember as Member, ErasedApplicationSchemaDeclaration,
 };
 use worth_relational::facade::identity::KindId;
+use {
+    super::required_kind,
+    crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial as Denial,
+};
 
 #[derive(Debug, Default)]
 pub(in crate::domain_computation) struct SigningLifecycleLayout {
@@ -47,22 +50,13 @@ impl SigningLifecycleLayout {
     pub(in crate::domain_computation) fn is_record(&self, kind: KindId) -> bool {
         self.records.contains(&kind)
     }
-    pub(in crate::domain_computation) fn is_association(
-        &self,
-        kind: KindId,
-    ) -> bool {
+    pub(in crate::domain_computation) fn is_association(&self, kind: KindId) -> bool {
         self.associations.contains(&kind)
     }
-    pub(in crate::domain_computation) fn is_consequence(
-        &self,
-        kind: KindId,
-    ) -> bool {
+    pub(in crate::domain_computation) fn is_consequence(&self, kind: KindId) -> bool {
         self.consequences.contains(&kind)
     }
-    pub(in crate::domain_computation) fn is_protected_relation(
-        &self,
-        kind: KindId,
-    ) -> bool {
+    pub(in crate::domain_computation) fn is_protected_relation(&self, kind: KindId) -> bool {
         self.is_association(kind) || self.is_consequence(kind)
     }
     pub(in crate::domain_computation) fn is_empty(&self) -> bool {

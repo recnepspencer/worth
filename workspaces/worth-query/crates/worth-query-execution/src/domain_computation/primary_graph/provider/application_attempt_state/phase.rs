@@ -162,7 +162,7 @@ impl WorthQueryApplicationAttemptState {
         }
     }
 
-    pub(super) const fn attempt(&self) -> &crate::domain_computation::primary_graph::provider::application_attempt_state::registration::registered_attempt::WorthQueryPrimaryGraphApplicationAttempt {
+    pub(super) const fn attempt(&self) -> &crate::domain_computation::primary_graph::provider::application_attempt_state::registration::registered_attempt::WorthQueryPrimaryGraphApplicationAttempt{
         &self.attempt
     }
 
@@ -213,7 +213,7 @@ impl WorthQueryApplicationAttemptState {
     ) -> Option<(
         crate::domain_computation::primary_graph::provider::application_attempt_state::registration::registered_attempt::WorthQueryPrimaryGraphApplicationAttempt,
         WorthQueryApprovedApplicationCandidate,
-    )> {
+    )>{
         let approved = self.phase.take_commit_ready()?;
         Some((self.attempt, approved))
     }

@@ -1,9 +1,11 @@
 //! A scoped answer retains original Native bodies and the physical visibility facts.
-use {super::aggregate_observation::AggregateObservation, crate::domain_computation::graph_layout::ComponentSetLayout, super::source_facts::SourceFacts};
 use std::sync::Arc;
-use worth_foundational::facade::AggregateDefinitionIdentity;
 use worth_query_installation::facade::WorthQueryOperationComponentReadScope;
 use worth_relational::facade::{identity::EntityId, snapshots::SnapshotHandle};
+use {
+    super::aggregate_observation::AggregateObservation, super::source_facts::SourceFacts,
+    crate::domain_computation::graph_layout::ComponentSetLayout,
+};
 pub(in crate::domain_computation::primary_graph) mod acquisition;
 mod aggregates;
 mod commitment;
@@ -13,9 +15,9 @@ pub(in crate::domain_computation::primary_graph) use aggregates::ComponentAggreg
 mod currentness;
 mod origin;
 
-use origin::ComponentSelectionOrigin;
 use crate::domain_computation::primary_graph::vocabulary::component_selection::key::ComponentSelectionKey;
 use crate::domain_computation::primary_graph::vocabulary::component_selection::key::ComponentSelectionSubject;
+use origin::ComponentSelectionOrigin;
 
 #[derive(Debug)]
 pub struct ComponentSelection {

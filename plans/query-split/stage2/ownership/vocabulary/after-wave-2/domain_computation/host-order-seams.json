@@ -1,0 +1,678 @@
+{
+ "after": {
+  "against_fresh_layering": 229,
+  "against_host_order": 229,
+  "largest_component": 11
+ },
+ "before": {
+  "against_fresh_layering": 234,
+  "against_host_order": 234,
+  "largest_component": 11
+ },
+ "largest_component_after": [
+  "application_aftermath",
+  "artifact_owner",
+  "authorization",
+  "domain_evidence_binding",
+  "execution_runtime",
+  "invalidation_equivalence_control",
+  "managed_run",
+  "operation_binding",
+  "primary_graph",
+  "product_publication",
+  "provider_session"
+ ],
+ "modules": {
+  "vocabulary:primary_graph": {
+   "items": 2,
+   "kinds": {
+    "enum": 1,
+    "fn": 1
+   },
+   "lines": 116,
+   "top_source_modules": {
+    "primary_graph::vocabulary::application_attempt::denial": 1,
+    "primary_graph::vocabulary::provider::relational_execution_denial": 1
+   }
+  },
+  "vocabulary:vocabulary": {
+   "items": 4,
+   "kinds": {
+    "enum": 4
+   },
+   "lines": 136,
+   "top_source_modules": {
+    "vocabulary::provider_session::control_stopped": 1,
+    "vocabulary::provider_session::protocol_denial": 1,
+    "vocabulary::request_execution::execution_refusal": 2
+   }
+  }
+ },
+ "moved": 6,
+ "moves": [
+  {
+   "from": "primary_graph",
+   "item": "primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage",
+   "kind": "enum",
+   "to": "vocabulary:primary_graph"
+  },
+  {
+   "from": "primary_graph",
+   "item": "primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind",
+   "kind": "fn",
+   "to": "vocabulary:primary_graph"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::request_execution::execution_refusal::WorthQueryMemoryLimitLevel",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  }
+ ],
+ "parent": "domain_computation",
+ "rounds": [
+  6
+ ],
+ "seams": [
+  {
+   "against": 158,
+   "items": 63,
+   "pair": [
+    "authorization",
+    "primary_graph"
+   ],
+   "references": {
+    "authorization -> primary_graph": 158,
+    "primary_graph -> authorization": 568
+   },
+   "top_items": [
+    {
+     "item": "primary_graph::application_attempt::workflow_transition_program::actor_selection::WorkflowRecordedActorObservation",
+     "references": 10
+    },
+    {
+     "item": "primary_graph::application_attempt::precondition_binding::WorthQueryBoundMutationPreconditions",
+     "references": 8
+    },
+    {
+     "item": "primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact",
+     "references": 7
+    },
+    {
+     "item": "primary_graph::application_attempt::elevation_approval_outcome::WorthQueryApprovedElevation",
+     "references": 6
+    },
+    {
+     "item": "primary_graph::application_attempt::workflow::actor::ActorCodecFunding",
+     "references": 6
+    },
+    {
+     "item": "primary_graph::causal_inspection::application_inspection::target::WorthQueryApplicationInspectionTarget",
+     "references": 5
+    },
+    {
+     "item": "primary_graph::application_attempt::workflow::actor::fund_actor_codec",
+     "references": 5
+    },
+    {
+     "item": "primary_graph::application_attempt::workflow::actor::encoding::check_live",
+     "references": 5
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "primary_graph::authenticated_principal::WorthQueryAuthenticatedPrincipal",
+     "in": "not vocabulary: struct",
+     "item": "primary_graph::authenticated_principal::WorthQueryAuthenticatedPrincipal"
+    },
+    {
+     "blocked_by": "primary_graph::product_operation::shared_query_basis::SharedSelectedProductOperation",
+     "in": "not vocabulary: struct",
+     "item": "primary_graph::product_operation::shared_query_basis::SharedSelectedProductOperation"
+    },
+    {
+     "blocked_by": "primary_graph::authenticated_principal::WorthQueryAuthenticatedPrincipal",
+     "in": "declaration",
+     "item": "primary_graph::resolution::selected_product::admitted::issued_principal::WorthQueryIssuedSelectedPrincipal"
+    },
+    {
+     "blocked_by": "primary_graph::product_operation::context::WorthQuerySelectedProductOperation",
+     "in": "declaration",
+     "item": "primary_graph::resolution::selected_product::admitted::issued_principal::WorthQueryIssuedSelectedPrincipal"
+    },
+    {
+     "blocked_by": "primary_graph::source_facts::allocation::SourceFactsAllocation",
+     "in": "not vocabulary: struct",
+     "item": "primary_graph::source_facts::allocation::SourceFactsAllocation"
+    },
+    {
+     "blocked_by": "graph_layout::WorthQueryPrimaryGraphLayout",
+     "in": "body",
+     "item": "primary_graph::application_attempt::precondition_binding::bind_mutation_preconditions"
+    }
+   ]
+  },
+  {
+   "against": 25,
+   "items": 11,
+   "pair": [
+    "application_aftermath",
+    "primary_graph"
+   ],
+   "references": {
+    "application_aftermath -> primary_graph": 25,
+    "primary_graph -> application_aftermath": 214
+   },
+   "top_items": [
+    {
+     "item": "primary_graph::provider::committed_dispatch_outbox::WorthQueryCommittedDispatchOutboxObservation",
+     "references": 6
+    },
+    {
+     "item": "primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding",
+     "references": 4
+    },
+    {
+     "item": "primary_graph::application_attempt::compare_and_commit::commit_receipt::WorthQueryApplicationCommitReceipt",
+     "references": 4
+    },
+    {
+     "item": "primary_graph::product_operation::correction_source::preparation::WorthQueryPreparedCorrectionSource",
+     "references": 3
+    },
+    {
+     "item": "primary_graph::application_attempt::idempotency_resolution::WorthQueryApplicationIdempotencyResolution",
+     "references": 2
+    },
+    {
+     "item": "primary_graph::provider::mutation_work::WorthQueryPrimaryMutationWorkEvidence",
+     "references": 1
+    },
+    {
+     "item": "primary_graph::application_attempt::compare_and_commit::commit_outcome::denial::WorthQueryApplicationCommitDenial",
+     "references": 1
+    },
+    {
+     "item": "primary_graph::application_inbound::inbound_publication::outcome::WorthQueryUnpublishedInboundCompletion",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "primary_graph::provider::mutation_work::WorthQueryPrimaryMutationWorkEvidence",
+     "in": "not vocabulary: struct",
+     "item": "primary_graph::provider::mutation_work::WorthQueryPrimaryMutationWorkEvidence"
+    },
+    {
+     "blocked_by": "primary_graph::provider::committed_dispatch_outbox::WorthQueryCommittedDispatchOutboxObservation",
+     "in": "not vocabulary: struct",
+     "item": "primary_graph::provider::committed_dispatch_outbox::WorthQueryCommittedDispatchOutboxObservation"
+    },
+    {
+     "blocked_by": "primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding",
+     "in": "not vocabulary: struct",
+     "item": "primary_graph::vocabulary::application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding"
+    },
+    {
+     "blocked_by": "primary_graph::application_attempt::compare_and_commit::commit_outcome::denial::WorthQueryApplicationCommitDenial",
+     "in": "not vocabulary: struct",
+     "item": "primary_graph::application_attempt::compare_and_commit::commit_outcome::denial::WorthQueryApplicationCommitDenial"
+    },
+    {
+     "blocked_by": "application_aftermath::external_effect::inbound::custody::WorthQueryAcceptedInboundOccurrence",
+     "in": "declaration",
+     "item": "primary_graph::application_inbound::inbound_publication::outcome::WorthQueryUnpublishedInboundCompletion"
+    },
+    {
+     "blocked_by": "product_publication::unpublished::WorthQueryProductUnpublishedApplication",
+     "in": "declaration",
+     "item": "primary_graph::application_inbound::inbound_publication::outcome::WorthQueryUnpublishedInboundCompletion"
+    }
+   ]
+  },
+  {
+   "against": 19,
+   "items": 11,
+   "pair": [
+    "provider_session",
+    "primary_graph"
+   ],
+   "references": {
+    "primary_graph -> provider_session": 433,
+    "provider_session -> primary_graph": 19
+   },
+   "top_items": [
+    {
+     "item": "primary_graph::causal_inspection::application_inspection::target::WorthQueryApplicationInspectionTarget",
+     "references": 4
+    },
+    {
+     "item": "primary_graph::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease",
+     "references": 3
+    },
+    {
+     "item": "primary_graph::application_attempt::provider_execution::application_attempt_affinity::WorthQueryApplicationAttemptAffinity",
+     "references": 2
+    },
+    {
+     "item": "primary_graph::provider::application_attempt_state::registered_reads::RegisteredPrimaryRead",
+     "references": 2
+    },
+    {
+     "item": "primary_graph::application_attempt::provider_execution::application_attempt_affinity::WorthQueryApplicationAttemptBasis",
+     "references": 2
+    },
+    {
+     "item": "primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial",
+     "references": 1
+    },
+    {
+     "item": "primary_graph::root::WorthQueryPrimaryGraphIntegrationHandle",
+     "references": 1
+    },
+    {
+     "item": "primary_graph::application_output_demand::denial::kind::WorthQueryOutputDemandDenialKind",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial",
+     "in": "not vocabulary: struct",
+     "item": "primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial"
+    },
+    {
+     "blocked_by": "primary_graph::causal_inspection::application_inspection::target::InspectionOriginal",
+     "in": "declaration",
+     "item": "primary_graph::causal_inspection::application_inspection::target::WorthQueryApplicationInspectionTarget"
+    },
+    {
+     "blocked_by": "primary_graph::causal_inspection::application_inspection::source_original::SourceOriginal",
+     "in": "impl WorthQueryApplicationInspectionTarget",
+     "item": "primary_graph::causal_inspection::application_inspection::target::WorthQueryApplicationInspectionTarget"
+    },
+    {
+     "blocked_by": "execution_runtime::product_world::publication_binding::WorthQueryProductPublicationBinding",
+     "in": "declaration",
+     "item": "primary_graph::application_attempt::provider_execution::application_attempt_affinity::WorthQueryApplicationAttemptAffinity"
+    },
+    {
+     "blocked_by": "execution_runtime::product_world::publication_binding::WorthQueryProductPublicationBinding",
+     "in": "impl WorthQueryApplicationAttemptAffinity",
+     "item": "primary_graph::application_attempt::provider_execution::application_attempt_affinity::WorthQueryApplicationAttemptAffinity"
+    },
+    {
+     "blocked_by": "primary_graph::root::WorthQueryPrimaryGraphIntegrationHandle",
+     "in": "not vocabulary: struct",
+     "item": "primary_graph::root::WorthQueryPrimaryGraphIntegrationHandle"
+    }
+   ]
+  },
+  {
+   "against": 10,
+   "items": 5,
+   "pair": [
+    "provider_session",
+    "managed_run"
+   ],
+   "references": {
+    "managed_run -> provider_session": 175,
+    "provider_session -> managed_run": 10
+   },
+   "top_items": [
+    {
+     "item": "managed_run::direct::WorthQueryRunningDirectRun",
+     "references": 4
+    },
+    {
+     "item": "managed_run::workflow_graph_execution::step_outcome::WorthQueryCompletedWorkflowEvidenceOwner",
+     "references": 2
+    },
+    {
+     "item": "managed_run::direct_graph_execution::completion::WorthQueryCompletedDirectEvidenceOwner",
+     "references": 2
+    },
+    {
+     "item": "managed_run::workflow::WorthQueryRunningWorkflowRun",
+     "references": 1
+    },
+    {
+     "item": "managed_run::direct_terminal::cleanup::WorthQueryDirectRunCleanupFailure",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "managed_run::direct::WorthQueryRunningDirectRun",
+     "in": "not vocabulary: struct",
+     "item": "managed_run::direct::WorthQueryRunningDirectRun"
+    },
+    {
+     "blocked_by": "operation_binding::authority::WorthQueryExecutionBoundOperationAuthority",
+     "in": "declaration",
+     "item": "managed_run::workflow_graph_execution::step_outcome::WorthQueryCompletedWorkflowEvidenceOwner"
+    },
+    {
+     "blocked_by": "provider_session::graph_provider::receipt::WorthQueryBoundGraphExecutionReceipt",
+     "in": "declaration",
+     "item": "managed_run::workflow_graph_execution::step_outcome::WorthQueryCompletedWorkflowEvidenceOwner"
+    },
+    {
+     "blocked_by": "operation_binding::authority::WorthQueryExecutionBoundOperationAuthority",
+     "in": "declaration",
+     "item": "managed_run::direct_graph_execution::completion::WorthQueryCompletedDirectEvidenceOwner"
+    },
+    {
+     "blocked_by": "provider_session::graph_provider::receipt::WorthQueryBoundGraphExecutionReceipt",
+     "in": "declaration",
+     "item": "managed_run::direct_graph_execution::completion::WorthQueryCompletedDirectEvidenceOwner"
+    },
+    {
+     "blocked_by": "artifact_owner::workflow_authority::WorthQueryWorkflowArtifactAuthority",
+     "in": "declaration",
+     "item": "managed_run::workflow::WorthQueryRunningWorkflowRun"
+    }
+   ]
+  },
+  {
+   "against": 5,
+   "items": 4,
+   "pair": [
+    "execution_runtime",
+    "primary_graph"
+   ],
+   "references": {
+    "execution_runtime -> primary_graph": 5,
+    "primary_graph -> execution_runtime": 250
+   },
+   "top_items": [
+    {
+     "item": "primary_graph::output_lineage::invalidation::owner::SourceInvalidationOwner",
+     "references": 2
+    },
+    {
+     "item": "primary_graph::root::WorthQueryPrimaryGraph",
+     "references": 1
+    },
+    {
+     "item": "primary_graph::output_lineage::invalidation::head_cell::HeadCellRegistrationStop",
+     "references": 1
+    },
+    {
+     "item": "primary_graph::root::WorthQueryPrimaryGraphIntegrationHandle",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "primary_graph::root::WorthQueryPrimaryGraph",
+     "in": "not vocabulary: struct",
+     "item": "primary_graph::root::WorthQueryPrimaryGraph"
+    },
+    {
+     "blocked_by": "primary_graph::output_lineage::invalidation::owner::SourceInvalidationOwner",
+     "in": "not vocabulary: struct",
+     "item": "primary_graph::output_lineage::invalidation::owner::SourceInvalidationOwner"
+    },
+    {
+     "blocked_by": "primary_graph::output_lineage::invalidation::head_cell::HeadCellRegistrationStop",
+     "in": "not vocabulary: enum",
+     "item": "primary_graph::output_lineage::invalidation::head_cell::HeadCellRegistrationStop"
+    },
+    {
+     "blocked_by": "primary_graph::root::WorthQueryPrimaryGraphIntegrationHandle",
+     "in": "not vocabulary: struct",
+     "item": "primary_graph::root::WorthQueryPrimaryGraphIntegrationHandle"
+    }
+   ]
+  },
+  {
+   "against": 4,
+   "items": 2,
+   "pair": [
+    "product_publication",
+    "primary_graph"
+   ],
+   "references": {
+    "primary_graph -> product_publication": 94,
+    "product_publication -> primary_graph": 4
+   },
+   "top_items": [
+    {
+     "item": "primary_graph::provider::unpublished_idempotency::WorthQueryUnpublishedIdempotencyDisposition",
+     "references": 3
+    },
+    {
+     "item": "primary_graph::application_output_demand::denial::recovery_release::WorthQueryProductRecoveryClose",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "primary_graph::provider::unpublished_idempotency::WorthQueryUnpublishedIdempotencyStore",
+     "in": "declaration",
+     "item": "primary_graph::provider::unpublished_idempotency::WorthQueryUnpublishedIdempotencyDisposition"
+    },
+    {
+     "blocked_by": "primary_graph::provider::unpublished_idempotency::WorthQueryUnpublishedIdempotencyStore",
+     "in": "impl WorthQueryUnpublishedIdempotencyDisposition",
+     "item": "primary_graph::provider::unpublished_idempotency::WorthQueryUnpublishedIdempotencyDisposition"
+    },
+    {
+     "blocked_by": "primary_graph::application_output_demand::denial::recovery_release::WorthQueryProductRecoveryClose",
+     "in": "not vocabulary: trait",
+     "item": "primary_graph::application_output_demand::denial::recovery_release::WorthQueryProductRecoveryClose"
+    }
+   ]
+  },
+  {
+   "against": 2,
+   "items": 2,
+   "pair": [
+    "domain_evidence_binding",
+    "provider_session"
+   ],
+   "references": {
+    "domain_evidence_binding -> provider_session": 2,
+    "provider_session -> domain_evidence_binding": 7
+   },
+   "top_items": [
+    {
+     "item": "provider_session::graph_provider::receipt_association::WorthQueryCompletedDomainEvidenceDerivation",
+     "references": 1
+    },
+    {
+     "item": "provider_session::graph_provider::receipt_association::WorthQueryBoundGraphExecutionAssociation",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "provider_session::graph_provider::receipt_association::WorthQueryBoundGraphExecutionAssociation",
+     "in": "declaration",
+     "item": "provider_session::graph_provider::receipt_association::WorthQueryCompletedDomainEvidenceDerivation"
+    },
+    {
+     "blocked_by": "provider_session::graph_provider::receipt_association::WorthQueryBoundGraphExecutionAssociation",
+     "in": "impl WorthQueryCompletedDomainEvidenceDerivation",
+     "item": "provider_session::graph_provider::receipt_association::WorthQueryCompletedDomainEvidenceDerivation"
+    },
+    {
+     "blocked_by": "provider_session::graph_provider::receipt_association::WorthQueryBoundGraphExecutionAssociation",
+     "in": "not vocabulary: struct",
+     "item": "provider_session::graph_provider::receipt_association::WorthQueryBoundGraphExecutionAssociation"
+    }
+   ]
+  },
+  {
+   "against": 2,
+   "items": 2,
+   "pair": [
+    "operation_binding",
+    "provider_session"
+   ],
+   "references": {
+    "operation_binding -> provider_session": 2,
+    "provider_session -> operation_binding": 12
+   },
+   "top_items": [
+    {
+     "item": "provider_session::protocol::plan_contract::WorthQueryProviderExecutionPlanContract",
+     "references": 1
+    },
+    {
+     "item": "provider_session::protocol::execution_plan::WorthQueryValidatedProviderPlan",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "provider_session::protocol::execution_plan::WorthQueryValidatedProviderPlan",
+     "in": "impl WorthQueryProviderExecutionPlanContract",
+     "item": "provider_session::protocol::plan_contract::WorthQueryProviderExecutionPlanContract"
+    },
+    {
+     "blocked_by": "operation_binding::authority::WorthQueryExecutionBoundOperationAuthority",
+     "in": "declaration",
+     "item": "provider_session::protocol::execution_plan::WorthQueryValidatedProviderPlan"
+    },
+    {
+     "blocked_by": "operation_binding::authority::WorthQueryExecutionBoundOperationAuthority",
+     "in": "impl WorthQueryValidatedProviderPlan<'_>",
+     "item": "provider_session::protocol::execution_plan::WorthQueryValidatedProviderPlan"
+    }
+   ]
+  },
+  {
+   "against": 1,
+   "items": 1,
+   "pair": [
+    "artifact_owner",
+    "operation_binding"
+   ],
+   "references": {
+    "artifact_owner -> operation_binding": 1,
+    "operation_binding -> artifact_owner": 5
+   },
+   "top_items": [
+    {
+     "item": "operation_binding::authority::WorthQueryExecutionBoundOperationAuthority",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "operation_binding::authority::WorthQueryExecutionBoundOperationAuthority",
+     "in": "not vocabulary: struct",
+     "item": "operation_binding::authority::WorthQueryExecutionBoundOperationAuthority"
+    }
+   ]
+  },
+  {
+   "against": 1,
+   "items": 1,
+   "pair": [
+    "execution_runtime",
+    "product_publication"
+   ],
+   "references": {
+    "execution_runtime -> product_publication": 1,
+    "product_publication -> execution_runtime": 7
+   },
+   "top_items": [
+    {
+     "item": "product_publication::unpublished::WorthQueryProductUnpublishedApplication",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "primary_graph::provider::unpublished_idempotency::WorthQueryUnpublishedIdempotencyDisposition",
+     "in": "declaration",
+     "item": "product_publication::unpublished::WorthQueryProductUnpublishedApplication"
+    },
+    {
+     "blocked_by": "primary_graph::provider::unpublished_idempotency::WorthQueryUnpublishedIdempotencyDisposition",
+     "in": "impl WorthQueryProductUnpublishedApplication",
+     "item": "product_publication::unpublished::WorthQueryProductUnpublishedApplication"
+    }
+   ]
+  },
+  {
+   "against": 1,
+   "items": 1,
+   "pair": [
+    "execution_runtime",
+    "managed_run"
+   ],
+   "references": {
+    "execution_runtime -> managed_run": 1,
+    "managed_run -> execution_runtime": 12
+   },
+   "top_items": [
+    {
+     "item": "managed_run::direct_admission::WorthQueryManagedRunAdmission",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "execution_runtime::runtime_root::WorthQueryExecutionRuntime",
+     "in": "declaration",
+     "item": "managed_run::direct_admission::WorthQueryManagedRunAdmission"
+    },
+    {
+     "blocked_by": "managed_run::admission::validate_direct_run_head",
+     "in": "impl WorthQueryManagedRunAdmission<'_>",
+     "item": "managed_run::direct_admission::WorthQueryManagedRunAdmission"
+    }
+   ]
+  },
+  {
+   "against": 1,
+   "items": 1,
+   "pair": [
+    "execution_runtime",
+    "invalidation_equivalence_control"
+   ],
+   "references": {
+    "execution_runtime -> invalidation_equivalence_control": 1,
+    "invalidation_equivalence_control -> execution_runtime": 2
+   },
+   "top_items": [
+    {
+     "item": "invalidation_equivalence_control::attach_constructed_receiver",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "invalidation_equivalence_control::attach_constructed_receiver",
+     "in": "not vocabulary: fn",
+     "item": "invalidation_equivalence_control::attach_constructed_receiver"
+    }
+   ]
+  }
+ ],
+ "vocabulary_cycles": [],
+ "vocabulary_edges": {},
+ "vocabulary_upward": {}
+}

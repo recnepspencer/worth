@@ -2,9 +2,9 @@
 use crate::domain_computation::graph_layout::InstalledFieldCoordinate;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::WorthQueryApplicationCommittedChanges;
 use worth_relational::facade::identity::EntityId;
+use worth_relational::facade::publication::PublishedAuthoritativeFieldEffect as Effect;
 use worth_relational::facade::publication::RecordStructuralChange;
 use worth_relational::facade::transactions::RecordRef;
-use worth_relational::facade::publication::PublishedAuthoritativeFieldEffect as Effect;
 
 /// The attempt's reading of one committed field through its installed Native
 /// coordinate.

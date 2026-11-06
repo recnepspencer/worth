@@ -3,6 +3,7 @@ use crate::domain_computation::primary_graph::vocabulary::aggregate_observation:
 use std::sync::Arc;
 use worth_foundational::facade::AggregateDefinitionIdentity;
 use worth_relational::facade::identity::{EntityId, KindId};
+use worth_relational::facade::schema::NativeMemberKey as Key;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct AggregateKey<Member = EntityId> {
@@ -89,3 +90,23 @@ impl<Member> AggregateKey<Member> {
 }
 
 mod court_doors_for_test;
+
+impl AggregateKey<Key> {
+    pub(in crate::domain_computation::primary_graph) fn for_member(
+        subject: &str,
+        entity_kind: KindId,
+        definition: AggregateDefinitionIdentity,
+        member: Key,
+    ) -> Self {
+        Self {
+            subject: Arc::from(subject),
+            entity_kind,
+            selection: AggregateSelection::ComponentDefinition(definition),
+            member,
+            definition,
+        }
+    }
+    pub(in crate::domain_computation::primary_graph) fn member(&self) -> &Key {
+        &self.member
+    }
+}

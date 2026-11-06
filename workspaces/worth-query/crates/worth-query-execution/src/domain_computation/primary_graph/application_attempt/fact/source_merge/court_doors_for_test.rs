@@ -7,7 +7,7 @@ impl Fact {
         &mut self,
         duplicate: Self,
         control: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
-    ) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial> {
+    ) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial>{
         Self::merge_same_source_fact(self, duplicate, control)
     }
 }

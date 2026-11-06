@@ -1,4 +1,7 @@
-use {crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionDenialKind, crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailure};
+use {
+    crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionDenialKind,
+    crate::domain_computation::vocabulary::provider_session::invariant_execution_denial::WorthQueryInvariantExecutionFailure,
+};
 
 pub(super) fn map_transaction_admission_failure(
     denial: worth_relational::facade::mvcc::RelationalBranchTransactionAdmissionDenial,

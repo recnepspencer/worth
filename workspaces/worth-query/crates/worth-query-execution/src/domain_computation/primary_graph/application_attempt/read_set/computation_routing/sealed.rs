@@ -41,7 +41,7 @@ impl SealedComputationFacts {
         ordered: impl Iterator<Item = &'a WorthQueryApplicationFactKey>,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<PreparedComputationFacts, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial>
-    {
+{
         let mut readers = attribution.readers;
         let mut handler = attribution.handler.map(|handler| {
             Arc::try_unwrap(handler)

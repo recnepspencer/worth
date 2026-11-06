@@ -45,7 +45,8 @@ impl CompletedFactProjectionRouting for CompletedFactProjection {
             .checked_mul(768)
             .and_then(|n| {
                 n.checked_add(
-                    (std::mem::size_of::<CompletedFactProjection>() + 2 * std::mem::size_of::<usize>()) as u64,
+                    (std::mem::size_of::<CompletedFactProjection>()
+                        + 2 * std::mem::size_of::<usize>()) as u64,
                 )
             })
             .ok_or(StoreDenial::Representability)?;

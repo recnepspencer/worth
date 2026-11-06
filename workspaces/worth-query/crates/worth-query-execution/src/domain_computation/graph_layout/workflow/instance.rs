@@ -7,8 +7,11 @@ use super::{
     relations::register_platform_entity_at_revision, WorkflowInstanceLayout, INSTANCE_ASPECT,
     INSTANCE_ENTITY,
 };
-use {crate::domain_computation::graph_layout::invalid_member, crate::domain_computation::graph_layout::planned_field_locator};
 use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial;
+use {
+    crate::domain_computation::graph_layout::invalid_member,
+    crate::domain_computation::graph_layout::planned_field_locator,
+};
 
 pub(super) fn lower_instance(
     registry: RelationalSchemaRegistry,

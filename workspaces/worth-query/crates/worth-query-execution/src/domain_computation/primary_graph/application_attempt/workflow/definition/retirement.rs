@@ -12,16 +12,22 @@ use worth_query_installation::facade::{
 
 use super::{WorkflowDefinitionBindingDenial, WorkflowDefinitionPreparationDenial};
 use crate::basis::WorthQueryProductBranchReadIdentity;
-use crate::domain_computation::primary_graph::PreparedWorkflowDefinitionRetirement;
-use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
 use crate::domain_computation::primary_graph::application_attempt::WorkflowSelectionBasis;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef;
+use crate::domain_computation::primary_graph::PreparedWorkflowDefinitionRetirement;
+use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
 
 impl<Schema> WorkflowSelectionBasis<'_, Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(in crate::domain_computation::primary_graph) fn prepare_workflow_definition_retirement<Capability, Operation, Input, Scope, Spec>(
+    pub(in crate::domain_computation::primary_graph) fn prepare_workflow_definition_retirement<
+        Capability,
+        Operation,
+        Input,
+        Scope,
+        Spec,
+    >(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,

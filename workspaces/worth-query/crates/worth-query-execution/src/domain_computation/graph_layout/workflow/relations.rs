@@ -11,8 +11,15 @@ use super::{
     CONNECTION_ASPECT, CONNECTION_ENTITY, DEFINITION_ASPECT, DEFINITION_ENTITY, LINEAGE_ASPECT,
     LINEAGE_ENTITY, NODE_ASPECT, NODE_ENTITY,
 };
-use {crate::domain_computation::graph_layout::invalid_member, crate::domain_computation::graph_layout::kind_space_exhausted, crate::domain_computation::graph_layout::planned_field_locator, crate::domain_computation::graph_layout::register_entity, crate::domain_computation::graph_layout::valid_aspect_key, crate::domain_computation::graph_layout::valid_field_key};
 use crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial;
+use {
+    crate::domain_computation::graph_layout::invalid_member,
+    crate::domain_computation::graph_layout::kind_space_exhausted,
+    crate::domain_computation::graph_layout::planned_field_locator,
+    crate::domain_computation::graph_layout::register_entity,
+    crate::domain_computation::graph_layout::valid_aspect_key,
+    crate::domain_computation::graph_layout::valid_field_key,
+};
 
 pub(super) mod definition_membership;
 #[path = "relations/integrity.rs"]

@@ -1,8 +1,8 @@
 //! One typed field binding, completed Native contract, and installed sealing authority.
+use crate::domain_computation::vocabulary::primary_graph::native_field_contract::NativeFieldContractDenial;
 use std::any::TypeId;
 use worth_query_declaration::facade::application_schema as schema;
 use worth_query_installation::facade as domain;
-use crate::domain_computation::vocabulary::primary_graph::native_field_contract::NativeFieldContractDenial;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct NativeFieldBindingExpectation {

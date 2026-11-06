@@ -14,7 +14,7 @@ pub fn remains_equal(
     direction: WorthQueryApplicationAdjacencyDirection,
     maximum_work_units: usize,
     expected: &[WorthQueryApplicationObservedRelation],
-) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial> {
+) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial>{
     Ok(observe_adjacency(
         runtime,
         execution,
@@ -38,7 +38,7 @@ pub fn observe_adjacency(
 ) -> Result<
     Option<Vec<WorthQueryApplicationObservedRelation>>,
     crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
-> {
+>{
     let observed = observe_adjacency_checked(
         runtime,
         execution,
@@ -62,7 +62,7 @@ pub fn observe_audit_outgoing_adjacency(
 ) -> Result<
     Option<Vec<WorthQueryApplicationObservedRelation>>,
     crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
-> {
+>{
     resolve_observation(
         observe_with_posture(
             runtime,
@@ -83,7 +83,7 @@ fn resolve_observation(
 ) -> Result<
     Option<Vec<WorthQueryApplicationObservedRelation>>,
     crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
-> {
+>{
     match observed {
         Ok(relations) => Ok(Some(relations)),
         Err(AdjacencyObservationDenial::Execution(cause)) => Err(

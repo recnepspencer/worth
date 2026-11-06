@@ -8,7 +8,10 @@ pub use dispositions::{
     WorthQueryProgramCustodyDisposition, WorthQueryProgramCustodyDispositionInventory,
     WorthQueryProgramCustodyDispositionKind,
 };
-pub use {migration::WorthQueryAdmittedProgramMigration, migration::WorthQueryPreparedProgramMigration, migration::WorthQueryProgramMigrationDescription};
+pub use {
+    migration::WorthQueryAdmittedProgramMigration, migration::WorthQueryPreparedProgramMigration,
+    migration::WorthQueryProgramMigrationDescription,
+};
 
 use worth_query_declaration::facade::application_program::ApplicationProgramMigrationAssessmentRequirement;
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;

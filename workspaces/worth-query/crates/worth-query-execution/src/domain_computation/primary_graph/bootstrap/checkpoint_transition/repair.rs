@@ -79,8 +79,9 @@ impl WorthQueryCheckpointTransitionRecovery {
     /// Original post-performance refusal. Capture retries never replace it.
     pub fn finalization_denial(
         &self,
-    ) -> Option<&crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial>
-    {
+    ) -> Option<
+        &crate::domain_computation::graph_layout::denial::WorthQueryPrimaryGraphInstallationDenial,
+    > {
         self.finalization_denial.as_deref()
     }
 

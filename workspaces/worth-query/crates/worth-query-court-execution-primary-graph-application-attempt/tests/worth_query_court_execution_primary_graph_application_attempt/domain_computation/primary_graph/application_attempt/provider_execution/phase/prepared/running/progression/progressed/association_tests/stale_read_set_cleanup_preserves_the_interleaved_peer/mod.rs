@@ -29,7 +29,7 @@ let host_custody = active_phase.test_host_request_for_test();
         let victim = finish_application_commit(&phase.borrowed_request_for_test(),
             phase,
             &world.application,
-            progress_application_commit(&phase.borrowed_request_for_test(), phase, &world.application, victim, None, worth_execution::ExecutionAllocationPolicy::SystemAllocation),
+            progress_application_commit_without_history_for_test(&phase.borrowed_request_for_test(), phase, &world.application, victim, worth_execution::ExecutionAllocationPolicy::SystemAllocation),
         );
         worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::application_attempt::decision_currentness::assert_product_basis_stale(
         victim,

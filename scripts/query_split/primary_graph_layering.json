@@ -5,7 +5,6 @@
   "index_refresh",
   "merge_unique_values",
   "ordinary_read",
-  "output_family_identity",
   "application_contribution",
   "application_runtime",
   "managed_bridge",
@@ -14,57 +13,54 @@
   "application_query",
   "causal_inspection",
   "source_read_equivalence",
+  "product_operation",
   "invariant_projection",
-  "output_lineage",
-  "provider",
+  "application_attempt",
+  "access_strategy",
+  "application_discovery",
+  "product_activation",
   "bootstrap",
   "bootstrap_publication",
-  "invariant_installation",
+  "output_lineage",
+  "handler",
+  "content",
+  "operation_body",
+  "application_entry",
+  "application_inbound",
+  "provider",
+  "application_output_demand",
   "conditional_operation",
+  "output_reuse",
   "application_resource",
   "principal_currentness_capture",
   "resolution",
-  "application_attempt",
-  "application_inbound",
-  "application_invariant",
-  "handler",
-  "operation_body",
-  "component_selection",
-  "root_path_selection",
-  "product_operation",
-  "access_strategy",
-  "content",
-  "entity_resolution",
-  "product_activation",
-  "application_entry",
-  "application_output_demand",
-  "output_reuse",
-  "source_read_verification",
-  "aggregate_observation",
-  "application_checkpoint",
-  "application_discovery",
-  "index_currency",
-  "live_delivery",
-  "runtime_host",
-  "granular_invalidation",
   "authenticated_principal",
+  "source_read_verification",
+  "component_selection",
   "freshness",
-  "root",
-  "source_facts",
-  "schema_layout",
   "application_program",
+  "application_checkpoint",
+  "entity_resolution",
+  "runtime_host",
+  "index_currency",
+  "granular_invalidation",
+  "root",
+  "typed_bootstrap",
+  "root_path_selection",
+  "live_delivery",
+  "invariant_installation",
+  "application_invariant",
+  "aggregate_observation",
+  "source_facts",
   "program_occurrence",
-  "source_disclosure",
   "fact_verification_observation",
   "aggregate_projection",
-  "typed_bootstrap",
-  "observations",
-  "resolution_denial",
+  "source_disclosure",
   "expression",
-  "initial_schema_denial",
-  "denial",
+  "observations",
   "derived_source",
   "structural_walk",
+  "resolution_denial",
   "output_binding_identity",
   "exact_basis_access",
   "vocabulary",
@@ -75,32 +71,20 @@
   "read_observation",
   "publication_request_denial",
   "principal_key",
+  "output_family_identity",
+  "initial_schema_denial",
   "index_maintenance_budget",
   "entity_resolution_denial",
   "entity_key",
+  "computation_retention",
   "application_branch",
   "aggregate_identity",
   "admitted_capture"
  ],
  "parent": "domain_computation::primary_graph",
  "stray_impls": [
-  "domain_computation::primary_graph::application_attempt::commit_outcome_identity::court_doors_for_test -> domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity",
-  "domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::court_doors_for_test -> domain_computation::primary_graph::vocabulary::application_attempt::output_correspondence::WorthQueryCheckpointOutputRole",
-  "domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::role_use::court_doors_for_test -> domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse",
-  "domain_computation::primary_graph::application_attempt::provider_binding::registration::provider_registration -> domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider",
   "domain_computation::primary_graph::application_attempt::provider_execution::external_dispatch::denial -> domain_computation::primary_graph::application_inbound::inbound_publication::custody::InstalledTransportPendingReason",
   "domain_computation::primary_graph::application_attempt::provider_execution::external_dispatch::denial::court_doors_for_test -> domain_computation::primary_graph::application_inbound::inbound_publication::custody::InstalledTransportPendingReason",
-  "domain_computation::primary_graph::application_attempt::workflow::captured_input -> domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation",
-  "domain_computation::primary_graph::application_attempt::workflow::definition::preparation -> domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation",
-  "domain_computation::primary_graph::application_attempt::workflow::definition::preparation::court_doors_for_test -> domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation",
-  "domain_computation::primary_graph::application_attempt::workflow::definition::retirement -> domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation",
-  "domain_computation::primary_graph::application_attempt::workflow_instance_program::preparation -> domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation",
-  "domain_computation::primary_graph::application_attempt::workflow_proposal_program::preparation -> domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation",
-  "domain_computation::primary_graph::application_attempt::workflow_transition_program::preparation -> domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation",
-  "domain_computation::primary_graph::application_attempt::workflow_transition_program::preparation::observation -> domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation",
-  "domain_computation::primary_graph::application_contribution::computation::member_execution::court_doors_for_test -> domain_computation::primary_graph::vocabulary::application_contribution::member_execution::WorthQueryMemberExecution",
-  "domain_computation::primary_graph::application_contribution::computation::prepared_request -> domain_computation::primary_graph::vocabulary::application_contribution::prepared_request::PreparedCompute",
-  "domain_computation::primary_graph::application_contribution::computation::prepared_request::court_doors_for_test -> domain_computation::primary_graph::vocabulary::application_contribution::prepared_request::PreparedCompute",
   "domain_computation::primary_graph::application_discovery::workflow::definition -> domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation",
   "domain_computation::primary_graph::application_discovery::workflow::enumeration -> domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation",
   "domain_computation::primary_graph::application_discovery::workflow::history_page -> domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation",
@@ -119,7 +103,6 @@
   "domain_computation::primary_graph::application_query::observed_source::retained_dependencies -> domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation",
   "domain_computation::primary_graph::application_query::observed_source::retained_dependencies::comparison -> domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation",
   "domain_computation::primary_graph::application_query::observed_source::retained_dependencies::coverage -> domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation",
-  "domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::court_doors_for_test -> domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryCheckpointSourceIdentity",
   "domain_computation::primary_graph::application_query::observed_source::workflow_capture -> domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation",
   "domain_computation::primary_graph::application_query::readiness -> domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation",
   "domain_computation::primary_graph::application_query::retained_read -> domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation",
@@ -137,20 +120,12 @@
   "domain_computation::primary_graph::index_currency -> domain_computation::primary_graph::root::WorthQueryPrimaryGraphIntegrationHandle",
   "domain_computation::primary_graph::index_currency::court_doors_for_test -> domain_computation::primary_graph::root::WorthQueryPrimaryGraphIntegrationHandle",
   "domain_computation::primary_graph::index_refresh -> domain_computation::primary_graph::root::WorthQueryPrimaryGraphIntegrationHandle",
-  "domain_computation::primary_graph::invariant_projection::court_doors_for_test -> domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity",
   "domain_computation::primary_graph::invariant_projection::retention -> domain_computation::primary_graph::bootstrap::WorthQueryPrimaryGraphBootstrap",
   "domain_computation::primary_graph::merge_unique_values -> domain_computation::primary_graph::root::WorthQueryPrimaryGraphIntegrationHandle",
   "domain_computation::primary_graph::ordinary_read::projection -> domain_computation::primary_graph::invariant_projection::WorthQueryApplicationInvariantProjectionAuthority",
-  "domain_computation::primary_graph::output_binding_identity::court_doors_for_test -> domain_computation::primary_graph::vocabulary::output_binding_identity::OutputBindingIdentity",
-  "domain_computation::primary_graph::output_family_identity::court_doors_for_test -> domain_computation::primary_graph::vocabulary::output_family_identity::OutputFamilyIdentity",
-  "domain_computation::primary_graph::output_lineage::court_doors_for_test -> domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate",
-  "domain_computation::primary_graph::output_lineage::semantic_source::court_doors_for_test -> domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource",
-  "domain_computation::primary_graph::output_lineage::settlement_identity::court_doors_for_test -> domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity",
   "domain_computation::primary_graph::product_operation::document_history::navigation::output_completion -> domain_computation::primary_graph::application_installation::program::program_runtime::WorthQueryProgramApplicationRuntime",
   "domain_computation::primary_graph::product_operation::document_history::navigation::output_profile -> domain_computation::primary_graph::application_installation::program::program_runtime::WorthQueryProgramApplicationRuntime",
   "domain_computation::primary_graph::product_operation::document_history::navigation::output_source -> domain_computation::primary_graph::application_installation::program::program_runtime::WorthQueryProgramApplicationRuntime",
-  "domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::failure::court_doors_for_test -> domain_computation::primary_graph::vocabulary::provider::failure::RebaseVerificationFailure",
-  "domain_computation::primary_graph::provider::application_attempt_work::court_doors_for_test -> domain_computation::primary_graph::vocabulary::provider::application_attempt_work::WorthQueryApplicationAttemptWorkSnapshot",
   "domain_computation::primary_graph::resolution::selected_product -> domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation",
   "domain_computation::primary_graph::resolution::selected_product::admitted -> domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation",
   "domain_computation::primary_graph::resolution::selected_product::admitted::court_doors_for_test -> domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation",
@@ -185,14 +160,6 @@
   [
    "application_attempt",
    "invariant_projection"
-  ],
-  [
-   "application_attempt",
-   "output_lineage"
-  ],
-  [
-   "application_attempt",
-   "provider"
   ],
   [
    "application_checkpoint",
@@ -255,18 +222,6 @@
    "product_operation"
   ],
   [
-   "application_inbound",
-   "application_attempt"
-  ],
-  [
-   "application_inbound",
-   "application_runtime"
-  ],
-  [
-   "application_inbound",
-   "provider"
-  ],
-  [
    "application_installation",
    "application_contribution"
   ],
@@ -293,10 +248,6 @@
   [
    "application_output_demand",
    "application_query"
-  ],
-  [
-   "application_output_demand",
-   "conditional_operation"
   ],
   [
    "application_output_demand",
@@ -340,6 +291,10 @@
   ],
   [
    "application_resource",
+   "product_operation"
+  ],
+  [
+   "application_resource",
    "provider"
   ],
   [
@@ -359,20 +314,8 @@
    "application_query"
   ],
   [
-   "bootstrap",
-   "provider"
-  ],
-  [
    "bootstrap_publication",
    "application_query"
-  ],
-  [
-   "bootstrap_publication",
-   "provider"
-  ],
-  [
-   "causal_inspection",
-   "application_contribution"
   ],
   [
    "causal_inspection",
@@ -383,8 +326,20 @@
    "application_attempt"
   ],
   [
+   "component_selection",
+   "source_read_verification"
+  ],
+  [
+   "conditional_operation",
+   "application_attempt"
+  ],
+  [
    "conditional_operation",
    "application_contribution"
+  ],
+  [
+   "conditional_operation",
+   "application_output_demand"
   ],
   [
    "conditional_operation",
@@ -404,15 +359,7 @@
   ],
   [
    "conditional_operation",
-   "provider"
-  ],
-  [
-   "content",
-   "application_attempt"
-  ],
-  [
-   "denial",
-   "application_contribution"
+   "product_operation"
   ],
   [
    "entity_resolution",
@@ -459,6 +406,10 @@
    "invariant_projection"
   ],
   [
+   "handler",
+   "product_operation"
+  ],
+  [
    "invariant_installation",
    "application_query"
   ],
@@ -496,6 +447,10 @@
   ],
   [
    "output_lineage",
+   "application_attempt"
+  ],
+  [
+   "output_lineage",
    "application_contribution"
   ],
   [
@@ -523,20 +478,8 @@
    "output_lineage"
   ],
   [
-   "output_reuse",
-   "provider"
-  ],
-  [
    "product_activation",
    "application_query"
-  ],
-  [
-   "product_activation",
-   "provider"
-  ],
-  [
-   "product_operation",
-   "application_attempt"
   ],
   [
    "product_operation",
@@ -555,18 +498,6 @@
    "application_runtime"
   ],
   [
-   "product_operation",
-   "conditional_operation"
-  ],
-  [
-   "product_operation",
-   "output_lineage"
-  ],
-  [
-   "product_operation",
-   "provider"
-  ],
-  [
    "program_occurrence",
    "application_attempt"
   ],
@@ -577,6 +508,14 @@
   [
    "program_occurrence",
    "product_operation"
+  ],
+  [
+   "provider",
+   "application_attempt"
+  ],
+  [
+   "provider",
+   "application_inbound"
   ],
   [
    "provider",
@@ -599,24 +538,20 @@
    "output_lineage"
   ],
   [
+   "provider",
+   "product_operation"
+  ],
+  [
    "resolution",
    "application_query"
   ],
   [
    "resolution",
-   "provider"
-  ],
-  [
-   "resolution_denial",
-   "provider"
+   "product_operation"
   ],
   [
    "root",
    "application_attempt"
-  ],
-  [
-   "root",
-   "application_discovery"
   ],
   [
    "root",
@@ -631,18 +566,6 @@
    "application_runtime"
   ],
   [
-   "schema_layout",
-   "application_attempt"
-  ],
-  [
-   "schema_layout",
-   "application_discovery"
-  ],
-  [
-   "source_disclosure",
-   "application_attempt"
-  ],
-  [
    "source_disclosure",
    "application_query"
   ],
@@ -653,10 +576,6 @@
   [
    "source_facts",
    "application_attempt"
-  ],
-  [
-   "source_read_verification",
-   "component_selection"
   ],
   [
    "typed_bootstrap",

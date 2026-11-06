@@ -8,10 +8,3 @@ impl OutputBindingInventory {
         Self::identity(self, binding)
     }
 }
-
-impl OutputBindingIdentity {
-    #[doc(hidden)]
-    pub fn as_str_for_test(&self) -> &str {
-        Self::as_str(self)
-    }
-}

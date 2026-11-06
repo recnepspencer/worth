@@ -41,7 +41,6 @@ use crate::domain_computation::primary_graph::vocabulary::application_contributi
 mod decision_plan;
 mod denial;
 mod preparation_loans;
-pub(crate) mod prepared_request;
 pub(crate) mod wave_dispatch;
 
 pub use denial::WorthQueryManagedComputationDenial;

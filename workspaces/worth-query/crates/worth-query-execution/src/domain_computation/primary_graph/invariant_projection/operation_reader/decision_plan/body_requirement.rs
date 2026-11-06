@@ -1,9 +1,13 @@
 //! Native expression operands share ordinary decision-read and adjacency sealing.
-use {super::ApplicationOperationDecisionReadTarget, super::ApplicationSchema, super::DecisionReadOutcome, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey, super::WorthQueryApplicationOperationInvariantProjectionReader};
 use worth_foundational::expression_api::ExpressionValue;
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyRequirementDirection as Direction,
     ApplicationOperationBodyRequirementSource as Source,
+};
+use {
+    super::ApplicationOperationDecisionReadTarget, super::ApplicationSchema,
+    super::DecisionReadOutcome, super::WorthQueryApplicationOperationInvariantProjectionReader,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationFactKey,
 };
 use {
     crate::domain_computation::primary_graph::operation_body::field_value,

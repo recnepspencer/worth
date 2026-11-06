@@ -1,5 +1,5 @@
 //! Moved whole from `domain_computation::primary_graph::application_contribution::producer::denial_value`: the items below and every impl they own.
-use crate::domain_computation::primary_graph::vocabulary::application_invariant::refusal::canonical_wire_maximum;
+use crate::domain_computation::vocabulary::provider_session::invariant_refusal_codec::canonical_wire_maximum;
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_schema::ApplicationReadableScalarValueBinding;
 use worth_query_declaration::facade::application_schema::ApplicationValueDecodeDenial;

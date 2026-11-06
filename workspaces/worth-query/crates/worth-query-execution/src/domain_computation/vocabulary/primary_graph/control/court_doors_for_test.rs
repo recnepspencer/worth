@@ -1,4 +1,4 @@
-//! Moved whole from `domain_computation::primary_graph::application_query::managed_index::control`: the items below and every impl they own.
+//! Sealed test doors over this module's private members.
 use crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl;
 use crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop;
 

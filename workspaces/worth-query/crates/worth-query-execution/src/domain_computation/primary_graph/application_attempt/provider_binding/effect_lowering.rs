@@ -10,9 +10,13 @@ use worth_relational::facade::transactions::{
     RelationSpec, UpdateEntityFieldsIntent,
 };
 
-use {super::progression_denial, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationEmission, super::WorthQueryApplicationRealizedEffect};
 use crate::domain_computation::{
     WorthQueryProvisionalEffectAction, WorthQueryProvisionalEffectStep,
+};
+use {
+    super::progression_denial, super::WorthQueryApplicationEmission,
+    super::WorthQueryApplicationRealizedEffect,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
 };
 
 mod aspect_removal;

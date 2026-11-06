@@ -1,14 +1,21 @@
 use super::commit_resolution::{finish_authorized_compare, WorthQueryAuthorizedCompareContext};
 use crate::domain_computation::primary_graph as graph;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as ExecutionDenialStage;
 use graph::application_attempt::provider_compare_denial::provider_session_execution_denied;
 use graph::application_attempt::provider_execution::aftermath_resolution::resolve_exact_committed_aftermath;
 use graph::application_attempt::provider_execution::outcome::{
     progression_denied, progression_from_authorization_denial, WorthQueryProviderProgressionOutcome,
 };
-use {graph::application_attempt::provider_recomparison::recover_equivalent_commit_evidence, graph::application_attempt::WorthQueryApplicationCommitAuthorityBinding, graph::application_attempt::WorthQueryApplicationCommitDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as DenialStage, graph::application_attempt::WorthQueryApplicationCommitReceipt, graph::application_attempt::WorthQueryCommittedReceiptProjection};
 use graph::provider::WorthQueryProviderIdempotencyResolution;
 use graph::provider::WorthQueryProviderIdempotencyResolutionDenial as IdempotencyDenial;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as ExecutionDenialStage;
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as DenialStage,
+    graph::application_attempt::provider_recomparison::recover_equivalent_commit_evidence,
+    graph::application_attempt::WorthQueryApplicationCommitAuthorityBinding,
+    graph::application_attempt::WorthQueryApplicationCommitDenial,
+    graph::application_attempt::WorthQueryApplicationCommitReceipt,
+    graph::application_attempt::WorthQueryCommittedReceiptProjection,
+};
 
 pub(in crate::domain_computation::primary_graph::application_attempt) struct WorthQueryManagedEquivalentCommitReceiptPermit
 {

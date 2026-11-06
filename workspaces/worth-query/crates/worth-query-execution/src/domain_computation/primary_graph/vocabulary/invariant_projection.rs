@@ -129,3 +129,5 @@ impl<Schema, Entity> ChargedBytes for WorthQueryInvariantEntityIdentity<Schema, 
 impl ApplicationComputationPartition for WorthQueryInvariantEntityIdentity<(), ()> {
     const IDENTITY: &'static str = "projection-identity-encoding-test";
 }
+
+mod court_doors_for_test;

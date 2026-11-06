@@ -8,11 +8,11 @@ use worth_relational::facade::identity::{EntityId, PartitionId, RelationId};
 use super::ObservedWorkflowAssessmentEvidence;
 use super::{adjacency_with_kind, denial, exact, exact_u64, text};
 use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
-use crate::domain_computation::primary_graph::application_attempt::workflow::instance::SettledWorkflowTransition;
-use crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionLocator;
 use crate::domain_computation::primary_graph::application_attempt::workflow::instance::decode_transition_outcome;
 use crate::domain_computation::primary_graph::application_attempt::workflow::instance::encode_transition_outcome;
+use crate::domain_computation::primary_graph::application_attempt::workflow::instance::SettledWorkflowTransition;
+use crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionLocator;
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
 
 mod approval;

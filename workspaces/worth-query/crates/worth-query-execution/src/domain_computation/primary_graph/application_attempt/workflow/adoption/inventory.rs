@@ -12,13 +12,13 @@ use worth_relational::facade::runtime::VisibilityProjectionView;
 
 use super::super::definition::{read_definition_dependencies, WorkflowDefinitionDependencies};
 use super::super::instance::read_live_instances;
-use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
 use super::{
     WorkflowAdoptionReadDenial, WorkflowAdoptionTruth, WorkflowVocabularyCoverageRegistry,
     WorthQueryWorkflowAdoptionInventory, WorthQueryWorkflowCompatibility,
     WorthQueryWorkflowDefinitionOccurrence, WorthQueryWorkflowIncompatibility,
     WorthQueryWorkflowInstanceCustody, WorthQueryWorkflowInstanceOccurrence,
 };
+use crate::domain_computation::graph_layout::workflow::WorthQueryWorkflowLayout;
 
 const DIGEST_DOMAIN: &[u8] = b"worth-query/workflow-adoption-inventory/1\0";
 

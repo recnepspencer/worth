@@ -1,7 +1,11 @@
 //! Domain write refusals preserve the owner cause or original execution cause.
 use crate::domain_computation::vocabulary::primary_graph::value_decode::WorthQueryValueDecodeDenial as Admission;
 use worth_query_installation::facade::ApplicationValueDecodeDenial;
-use {super::denial_cause::DenialCause as Cause, super::WorthQueryApplicationCommitDenial as Denial, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as Stage, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as Kind};
+use {
+    super::denial_cause::DenialCause as Cause, super::WorthQueryApplicationCommitDenial as Denial,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as Kind,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as Stage,
+};
 impl Denial {
     pub(in crate::domain_computation::primary_graph) fn domain_value_rejected(
         cause: ApplicationValueDecodeDenial,

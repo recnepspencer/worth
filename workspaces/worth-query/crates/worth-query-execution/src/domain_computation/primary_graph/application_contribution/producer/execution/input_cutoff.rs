@@ -3,8 +3,8 @@
 mod refusal;
 mod stable_apply;
 use super::*;
-use crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition;
 use crate::domain_computation::primary_graph::application_query::PreparedObservedSourceExpectation;
+use crate::domain_computation::primary_graph::computation_retention::producer_edition::InstalledProducerEdition;
 use crate::domain_computation::primary_graph::fact_verification_observation::input_cutoff as observation;
 use crate::domain_computation::primary_graph::fact_verification_observation::input_cutoff::Gate;
 use crate::domain_computation::primary_graph::fact_verification_observation::input_cutoff::Outcome;
