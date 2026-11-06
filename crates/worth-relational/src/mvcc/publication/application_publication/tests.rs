@@ -60,7 +60,14 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
     let entity = origin.outputs[0];
     let mut copied = performed.canonical_commit().clone();
     copied.commit.commit_id.0 += 1;
-    let copied_refusal = copied.validate_output_membership_header();
+    let copied_refusal = execution
+        .run_native_with_checkpoint(|context| {
+            copied
+                .validate_output_origins(context)
+                .and_then(|view| view.validate_output_membership_header())
+        })
+        .unwrap()
+        .0;
     assert!(
         copied_refusal.is_err(),
         "copied descriptive producer origin must not authenticate another native commit"

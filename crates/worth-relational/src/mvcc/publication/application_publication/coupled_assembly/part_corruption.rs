@@ -95,7 +95,10 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             let origin = execution
                 .run_native_with_checkpoint(|context| {
                     envelope
-                        .output_origin_for_route(&predecessor.origin.meaning, context)
+                        .validate_output_origins(context)
+                        .and_then(|origins| {
+                            origins.output_origin_for_route(&predecessor.origin.meaning, context)
+                        })
                         .map(Arc::clone)
                         .map_err(|stop| match stop {
                             crate::history::data::CodecRetirementClosureStop::Request(cause) => {

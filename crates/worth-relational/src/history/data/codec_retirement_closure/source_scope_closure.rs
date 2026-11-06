@@ -36,6 +36,12 @@ pub(crate) fn historical_positions(
         if envelope.coupled_authored_publication.is_some() || !coupled_ancestry.is_empty() {
             coupled_ancestry.push(Arc::clone(&envelope));
         }
+        let validated = envelope
+            .validate_output_origins(context)
+            .map_err(|stop| match envelope.output_origins().next() {
+                Some(origin) => Failure::at_source(origin.meaning.source_scope, stop),
+                None => Failure::from(stop),
+            })?;
         for (ordinal, origin) in envelope.output_origins().enumerate() {
             charge(context, latest.len() + 1)?;
             let work = latest.iter().fold(origin.members.len(), |sum, prior| {
@@ -43,7 +49,7 @@ pub(crate) fn historical_positions(
                     .saturating_add(prior.origin.meaning.family.len() + 64)
             });
             charge(context, work)?;
-            envelope
+            validated
                 .output_origin_for_route(&origin.meaning, context)
                 .map_err(|stop| Failure::at_source(origin.meaning.source_scope, stop))?;
             if !latest

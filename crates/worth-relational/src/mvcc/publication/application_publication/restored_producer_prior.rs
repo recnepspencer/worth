@@ -90,7 +90,8 @@ impl RelationalRuntime {
                         .canonical_envelope(predecessor)
                         .ok_or_else(corrupted)?;
                     origin = current
-                        .output_origin_for_route(&original, context)
+                        .validate_output_origins(context)
+                        .and_then(|origins| origins.output_origin_for_route(&original, context))
                         .map(Arc::clone)
                         .map_err(|stop| match stop {
                             crate::history::data::CodecRetirementClosureStop::Request(cause) => {

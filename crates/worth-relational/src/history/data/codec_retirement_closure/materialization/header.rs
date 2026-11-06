@@ -1,5 +1,8 @@
 //! Canonical maintenance is an exact source/suspension/restoration transition.
 use super::*;
+use crate::history::data::canonical_commit_envelope::{
+    OutputOriginHistory, OwnedValidatedOutputOrigins,
+};
 use crate::publication::patch::data::RecordStructuralChange as Change;
 use crate::transactions::data::{MaterializationMutationIntent as Materialization, MutationIntent};
 
@@ -9,15 +12,25 @@ pub(in super::super) fn validate(
     maximum: usize,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), Stop> {
-    validate_local(restored, lookup, maximum, context)?;
+    let mut validated_history = OutputOriginHistory::default();
+    validate_local(restored, lookup, maximum, &mut validated_history, context)?;
     let event = restored
         .required_output_materialization
         .as_ref()
         .ok_or("maintenance absent")?;
     let source = lookup(event.source_commit).ok_or("maintenance source absent")?;
     for publication in &event.producer_publications {
-        let original = lookup(*publication).ok_or("maintenance producer absent")?;
-        source_gap(&source, &original, lookup, maximum, context)?;
+        let original = validated_history
+            .by_commit(*publication, lookup, context)?
+            .ok_or("maintenance producer absent")?;
+        source_gap(
+            &source,
+            &original,
+            lookup,
+            maximum,
+            &mut validated_history,
+            context,
+        )?;
     }
     Ok(())
 }
@@ -26,6 +39,7 @@ fn validate_local(
     restored: &CanonicalCommitEnvelope,
     lookup: &mut impl FnMut(CommitId) -> Option<Arc<CanonicalCommitEnvelope>>,
     maximum: usize,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), Stop> {
     let event = restored
@@ -124,7 +138,9 @@ fn validate_local(
         let mut associations = 0;
         for publication in &event.producer_publications {
             charge(context, 1)?;
-            let original = lookup(*publication).ok_or("maintenance producer history absent")?;
+            let original = validated_history
+                .by_commit(*publication, lookup, context)?
+                .ok_or("maintenance producer history absent")?;
             let origin = original.validate_output_membership_header()?;
             if original.branch_context != restored.branch_context {
                 return Err("maintenance producer belongs to another branch".into());
@@ -140,7 +156,9 @@ fn validate_local(
         }
     }
     for publication in &event.producer_publications {
-        let original = lookup(*publication).ok_or("maintenance producer absent")?;
+        let original = validated_history
+            .by_commit(*publication, lookup, context)?
+            .ok_or("maintenance producer absent")?;
         let origin = original.validate_output_membership_header()?;
         if !event
             .records
@@ -185,9 +203,10 @@ pub(super) fn record(intent: &MutationIntent, suspended: bool) -> Option<RecordR
 
 fn source_gap(
     source: &CanonicalCommitEnvelope,
-    original: &CanonicalCommitEnvelope,
+    original: &OwnedValidatedOutputOrigins,
     lookup: &mut impl FnMut(CommitId) -> Option<Arc<CanonicalCommitEnvelope>>,
     maximum: usize,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), Stop> {
     let origin = original.validate_output_membership_header()?;
@@ -241,7 +260,7 @@ fn source_gap(
             }
         }
         if envelope.required_output_materialization.is_some() {
-            validate_local(&envelope, lookup, maximum, context)?;
+            validate_local(&envelope, lookup, maximum, validated_history, context)?;
         }
         next = envelope
             .required_output_materialization

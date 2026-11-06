@@ -1,6 +1,7 @@
 //! Cold native readmission of the exact present derived payload retirement set.
 
 use crate::branch::AdmittedRelationalBranchBasis;
+use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::runtime::{CodecFieldLocus, RelationalRuntime};
@@ -206,6 +207,8 @@ fn derive_metered(
             }
         }
     }
+    let mut origin_frames = OutputOriginHistory::default();
+    let validated_history = &mut origin_frames;
     for &id in &affected {
         let partition = root
             .partition_state(id.partition_id)?
@@ -219,7 +222,7 @@ fn derive_metered(
             .authoritative_aspect_state
             .as_ref()
             .ok_or("affected output payload missing")?;
-        let selected = membership::latest(runtime, basis, id, context, lease)?;
+        let selected = membership::latest(runtime, basis, id, validated_history, context, lease)?;
         if selected.authored_cascade_restoration.is_some()
             || selected.authored_cascade_retirement.is_some()
             || selected.producer_cascade_retirement.is_some()
@@ -234,6 +237,7 @@ fn derive_metered(
             &selected,
             id,
             Some(payload),
+            validated_history,
             context,
             lease,
         )?;
@@ -255,6 +259,7 @@ fn derive_metered(
         root,
         &origins,
         relations::RelationClosurePurpose::CodecRetirement,
+        validated_history,
         context,
         lease,
     )?;

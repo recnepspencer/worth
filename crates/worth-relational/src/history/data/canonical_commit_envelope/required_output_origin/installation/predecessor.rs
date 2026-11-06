@@ -8,6 +8,7 @@ pub(super) fn validate<'a>(
     predecessor: &'a crate::mvcc::RelationalRequiredOutputPublication,
     meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<&'a CanonicalRequiredOutputOrigin, TransactionCommitError> {
     if predecessor.runtime_instance_id != runtime.runtime_instance_id() {
@@ -88,9 +89,13 @@ pub(super) fn validate<'a>(
             "carried origin differs from its canonical envelope",
         ));
     }
-    let canonical = runtime
-        .history
-        .canonical_envelope_for_version(origin.commit.version_id)
+    let canonical = validated_history
+        .by_version(
+            origin.commit.version_id,
+            &mut |version| runtime.history.canonical_envelope_for_version(version),
+            context,
+        )
+        .map_err(super::relation_stop)?
         .ok_or_else(|| {
             crate::mvcc::origin_denial("retained predecessor canonical position absent")
         })?;
@@ -102,11 +107,16 @@ pub(super) fn validate<'a>(
         &basis.inner.root,
         None,
         origin,
-        None,
+        Some(
+            crate::history::data::publication_relations::CurrentPublicationFrame::Complete(
+                canonical.as_view(),
+            ),
+        ),
         &mut |commit| runtime.history.canonical_envelope(commit),
         &mut |version| runtime.history.canonical_envelope_for_version(version),
         runtime.history.canonical_catalog_len(),
         lease,
+        validated_history,
         context,
     )
     .map_err(|stop| super::relation_context(stop, "predecessor", basis, candidate))?;

@@ -35,6 +35,8 @@ impl CanonicalCommitEnvelope {
             .in_scope(|lease| {
                 worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
                     .run_with_checkpoint(lease, None, |context| {
+                        let mut origin_frames = OutputOriginHistory::default();
+                        let validated_history = &mut origin_frames;
                         self.install_completion(
                             execution,
                             runtime,
@@ -45,6 +47,7 @@ impl CanonicalCommitEnvelope {
                             admission,
                             None,
                             lease,
+                            validated_history,
                             context,
                         )
                     })
@@ -68,6 +71,7 @@ impl CanonicalCommitEnvelope {
         admission: crate::mvcc::RequiredOutputPublicationAdmission,
         contribution_records: Option<&[crate::transactions::data::RecordRef]>,
         lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+        validated_history: &mut OutputOriginHistory,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<crate::history::data::RequiredOutputPublicationPositions, TransactionCommitError>
     {
@@ -105,6 +109,7 @@ impl CanonicalCommitEnvelope {
                 installed,
                 group,
                 lease,
+                validated_history,
                 context,
             );
         }
@@ -124,6 +129,7 @@ impl CanonicalCommitEnvelope {
                 Some(&admission),
                 &restoration,
                 lease,
+                validated_history,
                 context,
             );
         }
@@ -144,6 +150,7 @@ impl CanonicalCommitEnvelope {
                 &admission,
                 predecessor,
                 lease,
+                validated_history,
                 context,
             );
         }
@@ -184,6 +191,7 @@ impl CanonicalCommitEnvelope {
                     predecessor,
                     meaning,
                     lease,
+                    validated_history,
                     context,
                 )?;
                 (meaning, roles, Some(origin))
@@ -204,6 +212,7 @@ impl CanonicalCommitEnvelope {
                     predecessor,
                     meaning,
                     lease,
+                    validated_history,
                     context,
                 )?;
                 super::source_scope_ownership::require_cascade(
@@ -253,6 +262,7 @@ impl CanonicalCommitEnvelope {
                 },
                 closure,
                 lease,
+                validated_history,
                 context,
             );
         }
@@ -298,6 +308,7 @@ impl CanonicalCommitEnvelope {
                 completion,
             },
             lease,
+            validated_history,
             context,
         )
     }

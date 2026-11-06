@@ -1,5 +1,6 @@
 //! Exact native creation position and canonical allocations classify relation custody.
 use super::{charge, writes, CanonicalCommitEnvelope, CanonicalRequiredOutputOrigin, Stop};
+use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
 use crate::identity::data::{EntityId, KindId, RelationId, VersionId};
 use crate::publication::patch::data::RecordStructuralChange;
 use crate::storage::overlay::{current_relation_partition_source_for_slot, CurrentPartitionAccess};
@@ -12,11 +13,20 @@ pub(super) fn validate(
     state: &dyn CurrentPartitionAccess,
     id: RelationId,
     selected: &CanonicalRequiredOutputOrigin,
-    current: Option<&CanonicalCommitEnvelope>,
+    current: Option<super::CurrentPublicationFrame<'_>>,
     lookup: &mut impl FnMut(VersionId) -> Option<Arc<CanonicalCommitEnvelope>>,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), Stop> {
-    if ownership_at_creation(state, id, selected, current, lookup, context)? {
+    if ownership_at_creation(
+        state,
+        id,
+        selected,
+        current,
+        lookup,
+        validated_history,
+        context,
+    )? {
         return Err("producer-owned incident relation is omitted from selected succession".into());
     }
     Ok(())
@@ -28,9 +38,18 @@ pub(in super::super) fn validate_owned(
     id: RelationId,
     selected: &CanonicalRequiredOutputOrigin,
     lookup: &mut impl FnMut(VersionId) -> Option<Arc<CanonicalCommitEnvelope>>,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), Stop> {
-    if !ownership_at_creation(state, id, selected, None, lookup, context)? {
+    if !ownership_at_creation(
+        state,
+        id,
+        selected,
+        None,
+        lookup,
+        validated_history,
+        context,
+    )? {
         return Err("claimed relation was not producer-owned at birth".into());
     }
     Ok(())
@@ -40,8 +59,9 @@ fn ownership_at_creation(
     state: &dyn CurrentPartitionAccess,
     id: RelationId,
     selected: &CanonicalRequiredOutputOrigin,
-    current: Option<&CanonicalCommitEnvelope>,
+    current: Option<super::CurrentPublicationFrame<'_>>,
     lookup: &mut impl FnMut(VersionId) -> Option<Arc<CanonicalCommitEnvelope>>,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<bool, Stop> {
     charge(context, 3)?;
@@ -65,7 +85,10 @@ fn ownership_at_creation(
     if latest != version {
         let held;
         charge(context, 1)?;
-        let write = match current.filter(|e| e.commit.version_id == latest) {
+        let write = match current
+            .map(|view| view.envelope())
+            .filter(|e| e.commit.version_id == latest)
+        {
             Some(envelope) => envelope,
             None => {
                 held = lookup(latest).ok_or("relation latest canonical write absent")?;
@@ -85,15 +108,18 @@ fn ownership_at_creation(
             metadata.endpoints.source,
             metadata.endpoints.target,
         ));
-    let held;
     charge(context, 1)?;
-    let envelope = match current.filter(|e| e.commit.version_id == version) {
-        Some(envelope) => envelope,
+    let held;
+    let validated = match current.filter(|view| view.envelope().commit.version_id == version) {
+        Some(view) => view.origins(context)?,
         None => {
-            held = lookup(version).ok_or("relation exact canonical creation absent")?;
-            held.as_ref()
+            held = validated_history
+                .by_version(version, lookup, context)?
+                .ok_or("relation exact canonical creation absent")?;
+            held.as_view()
         }
     };
+    let envelope = validated.envelope();
     charge(
         context,
         envelope.record_allocations.len() + envelope.patch.authoritative_record_patches.len(),
@@ -125,18 +151,19 @@ fn ownership_at_creation(
     } else {
         birth
     };
-    classify(envelope, selected, id, birth, kind, context)
+    classify(&validated, selected, id, birth, kind, context)
 }
 
 #[allow(clippy::too_many_arguments)]
 fn classify(
-    envelope: &CanonicalCommitEnvelope,
+    validated: &crate::history::data::canonical_commit_envelope::ValidatedOutputOrigins<'_>,
     selected: &CanonicalRequiredOutputOrigin,
     id: RelationId,
     native_birth: Option<(KindId, EntityId, EntityId)>,
     kind: KindId,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<bool, Stop> {
+    let envelope = validated.envelope();
     let mut producer_owned = false;
     for origin in envelope.output_origins() {
         charge(
@@ -150,7 +177,7 @@ fn classify(
                 + selected.birth_producer.len()
                 + 2 * std::mem::size_of::<[u8; 32]>(),
         )?;
-        let origin = envelope.output_origin_for_route(&origin.meaning, context)?;
+        let origin = validated.output_origin_for_route(&origin.meaning, context)?;
         let entry = origin.relations.iter().find(|entry| entry.id == id);
         // Multi-publication restore names the unique owning route explicitly.
         // Another group's endpoint reference never transfers this edge's custody.

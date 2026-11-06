@@ -54,6 +54,7 @@ pub(crate) use required_output_origin::{
     CanonicalAuthoredRestoration, CanonicalAuthoredRetirement, CanonicalCoupledAuthoredPublication,
     CanonicalCoupledAuthoredSources, CanonicalOutputMember, CanonicalOutputPublication,
     CanonicalProducerRetirement, CanonicalRequiredOutputOrigin, CanonicalRequiredOutputRelation,
+    OutputOriginHistory, OwnedValidatedOutputOrigins, ValidatedOutputOrigins,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

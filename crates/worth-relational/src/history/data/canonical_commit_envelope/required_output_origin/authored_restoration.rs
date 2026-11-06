@@ -39,6 +39,7 @@ pub(super) fn install(
     admission: Option<&worth_proof::AdmittedAuthoredOutputRetirement>,
     restoration: &RelationalAuthoredRestoration,
     lease: Option<&ExecutionResourceLease<'_>>,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<RequiredOutputPublicationPositions, TransactionCommitError> {
     let old = restoration
@@ -159,9 +160,13 @@ pub(super) fn install(
         }
         let origin = &prior.origin;
         let predecessor = origin.publication.predecessor().ok_or_else(refuse)?;
-        let original = runtime
-            .history
-            .canonical_envelope(predecessor)
+        let original = validated_history
+            .by_commit(
+                predecessor,
+                &mut |commit| runtime.history.canonical_envelope(commit),
+                context,
+            )
+            .map_err(super::installation::relation_stop)?
             .ok_or_else(refuse)?;
         let live = original
             .output_origin_for_route(&origin.meaning, context)

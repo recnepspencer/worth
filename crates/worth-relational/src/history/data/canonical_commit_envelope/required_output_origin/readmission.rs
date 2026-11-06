@@ -82,23 +82,6 @@ impl CanonicalCommitEnvelope {
             && self.merge_base_commits.is_empty()
     }
 
-    pub(crate) fn validate_output_membership_header(
-        &self,
-    ) -> Result<&CanonicalRequiredOutputOrigin, Stop> {
-        let origin = self
-            .required_output_origin
-            .as_deref()
-            .ok_or("present output has no installed producer publication")?;
-        if matches!(
-            origin.publication,
-            CanonicalOutputPublication::ProducerRetirement { .. }
-        ) {
-            return Err("producer retirement cannot be a standalone publication".into());
-        }
-        self.validate_output_origin_header(origin)?;
-        Ok(origin)
-    }
-
     pub(super) fn validate_output_origin_header(
         &self,
         origin: &CanonicalRequiredOutputOrigin,
@@ -153,5 +136,24 @@ impl CanonicalCommitEnvelope {
             return Err("copied or incomplete native output publication membership".into());
         }
         Ok(())
+    }
+}
+
+impl<'a> ValidatedOutputOrigins<'a> {
+    pub(crate) fn validate_output_membership_header(
+        &self,
+    ) -> Result<&'a CanonicalRequiredOutputOrigin, Stop> {
+        let origin = self
+            .envelope()
+            .required_output_origin
+            .as_deref()
+            .ok_or("present output has no installed producer publication")?;
+        if matches!(
+            origin.publication,
+            CanonicalOutputPublication::ProducerRetirement { .. }
+        ) {
+            return Err("producer retirement cannot be a standalone publication".into());
+        }
+        Ok(origin)
     }
 }

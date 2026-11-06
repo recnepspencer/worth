@@ -347,9 +347,24 @@ fn run(
                         }
                     };
                     if owned {
-                        validate_owned(state, id, selected, &mut lookup, context)
+                        validate_owned(
+                            state,
+                            id,
+                            selected,
+                            &mut lookup,
+                            &mut OutputOriginHistory::default(),
+                            context,
+                        )
                     } else {
-                        validate(state, id, selected, None, &mut lookup, context)
+                        validate(
+                            state,
+                            id,
+                            selected,
+                            None,
+                            &mut lookup,
+                            &mut OutputOriginHistory::default(),
+                            context,
+                        )
                     }
                 },
             )

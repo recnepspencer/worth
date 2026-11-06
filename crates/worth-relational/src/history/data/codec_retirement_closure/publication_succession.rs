@@ -3,7 +3,8 @@ use super::membership::writes;
 use super::require_linear_history;
 use super::{charge, CodecRetirementClosureStop as Stop};
 use crate::history::data::canonical_commit_envelope::{
-    CanonicalOutputPublication, CanonicalRequiredOutputOrigin,
+    CanonicalOutputPublication, CanonicalRequiredOutputOrigin, OutputOriginHistory,
+    ValidatedOutputOrigins,
 };
 use crate::history::data::{CanonicalCommitEnvelope, CommitId};
 use crate::publication::patch::data::RecordStructuralChange;
@@ -13,22 +14,24 @@ use worth_execution::MapKernelContext;
 
 pub(super) fn validate_succession(
     runtime: &RelationalRuntime,
-    envelope: &CanonicalCommitEnvelope,
+    view: ValidatedOutputOrigins<'_>,
     prior: &CanonicalRequiredOutputOrigin,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
     schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
-    super::producer_retirement::validate(runtime, envelope, context, schema)?;
-    validate_route(runtime, envelope, prior, context)
+    super::producer_retirement::validate(runtime, view, validated_history, context, schema)?;
+    validate_route(runtime, view, prior, context)
 }
 
 pub(super) fn validate_route(
     runtime: &RelationalRuntime,
-    envelope: &CanonicalCommitEnvelope,
+    view: ValidatedOutputOrigins<'_>,
     prior: &CanonicalRequiredOutputOrigin,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), Stop> {
-    let current = envelope.output_origin_for_route(&prior.meaning, context)?;
+    let envelope = view.envelope();
+    let current = view.output_origin_for_route(&prior.meaning, context)?;
     charge(
         context,
         current.members.len().saturating_add(prior.members.len()),

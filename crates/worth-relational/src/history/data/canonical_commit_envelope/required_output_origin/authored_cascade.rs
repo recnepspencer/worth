@@ -42,6 +42,7 @@ pub(super) fn install(
     admission: &worth_proof::AdmittedAuthoredOutputRetirement,
     mut predecessor: RelationalAuthoredRetirement,
     lease: Option<&ExecutionResourceLease<'_>>,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<RequiredOutputPublicationPositions, TransactionCommitError> {
     use crate::{
@@ -184,6 +185,7 @@ pub(super) fn install(
                 },
                 None,
                 lease,
+                validated_history,
                 context,
             )
             .map_err(|failure| match failure {
