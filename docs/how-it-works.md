@@ -641,7 +641,7 @@ of digest material. Distinct aspect contracts are encoded once, with one
 reference per projection/touch; masks, field paths, bindings and structural
 scopes also count. An operation installation denial retains requested and
 maximum counts in `canonical_denial()`. See
-[installation limits](build-an-application.md#4-install-the-application-graph).
+[installation limits](build-an-application.md#4-install-or-reopen).
 
 <!-- illustrative -->
 ```rust,ignore

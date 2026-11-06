@@ -123,7 +123,7 @@ and 1 MiB. Distinct aspect contracts count once; references, projection masks,
 field paths, bindings and structural scopes also count. Application runtime
 resource profiles do not raise this ceiling. Operation installation denials
 retain requested and maximum counts in `canonical_denial()`. See
-[installation limits](build-an-application.md#4-install-the-application-graph).
+[installation limits](build-an-application.md#4-install-or-reopen).
 
 For mutations, prepare the typed decision through `DecisionReader`, then consume
 its values and native targets through `CandidateWriter`. Propagate preparation
@@ -809,7 +809,7 @@ limits and seed callback. To install a host-owned authorization clock in that sa
 bootstrap, use `in_memory_rostered_program_with_authorization_time_source_in_advancement`
 and supply the clock after the callback. Setup spends the supplied request; the installed World keeps
 its declared runtime request policy. Default installation entries still open setup
-from that policy. See [installation funding](build-an-application.md#4-install-the-application-graph).
+from that policy. See [installation funding](build-an-application.md#4-install-or-reopen).
 
 For ordinary checkpoint restoration under a separately funded opening request,
 pass that same bootstrap phase first to
