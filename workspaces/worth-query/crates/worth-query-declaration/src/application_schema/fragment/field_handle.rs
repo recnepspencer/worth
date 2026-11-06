@@ -85,6 +85,7 @@ impl<E, A, T> Clone for RecordField<E, A, T> {
 /// }
 /// let _: RecordField<_, _, u64> = record_field(Suite, Item, Unrelated, "value").unwrap();
 /// ```
+#[inline(always)]
 pub fn record_field<F: Fragment, E, A, T: 'static, EntityWitness, AspectWitness>(
     _: F,
     _: E,
@@ -92,23 +93,24 @@ pub fn record_field<F: Fragment, E, A, T: 'static, EntityWitness, AspectWitness>
     path: &str,
 ) -> Result<RecordField<E, A, T>, super::super::ApplicationSchemaDeclarationDenial>
 where
-    E: Entity + In<F::Members, EntityWitness, F>,
-    A: Aspect + In<E::Aspects, AspectWitness, E>,
+    E: Entity,
+    A: Aspect + In<F::Members, (EntityWitness, AspectWitness), (F, E)>,
     F::Bindings: Scalar<T> + Record<A::Row>,
 {
-    checked_record_field::<F, E, A, T>(path)
+    checked_record_field::<F::Bindings, E, A, T>(path, F::NAME)
 }
 
-pub(super) fn checked_record_field<F: Fragment, E: Entity, A: Aspect, T: 'static>(
+pub(super) fn checked_record_field<Set, E: Entity, A: Aspect, T: 'static>(
     path: &str,
+    fragment: &str,
 ) -> Result<RecordField<E, A, T>, super::super::ApplicationSchemaDeclarationDenial>
 where
-    F::Bindings: Scalar<T> + Record<A::Row>,
+    Set: Scalar<T> + Record<A::Row>,
 {
-    checked_field::<F::Bindings, E, A, T>(
+    checked_field::<Set, E, A, T>(
         path,
         ApplicationFieldBindingLocus::new(E::NAME, super::native_aspect_key::<E, A>(), path),
-        &format!("{}.{}.{}", F::NAME, E::NAME, A::NAME),
+        &format!("{fragment}.{}.{}", E::NAME, A::NAME),
     )
 }
 pub(super) fn checked_field<Set, E, A: Aspect, T: 'static>(

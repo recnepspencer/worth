@@ -11,7 +11,13 @@ pub(super) fn emit<S>(
     group_contract: Option<&[u8; 32]>,
     state: &mut Lowering,
 ) -> Result<Builder<S>, Denial> {
-    let identity = AspectIdentity(state.names.insert(definition.path())?);
+    let identity_path = definition
+        .path()
+        .rsplit_once('.')
+        .and_then(|(entity_path, _)| state.extension_identity_paths.get(entity_path))
+        .map(|owner| format!("{owner}.{}", definition.meaning()))
+        .unwrap_or_else(|| definition.path().to_owned());
+    let identity = AspectIdentity(state.names.insert(&identity_path)?);
     if definition
         .fields()
         .iter()

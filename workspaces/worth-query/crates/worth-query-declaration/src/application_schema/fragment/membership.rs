@@ -2,7 +2,7 @@
 
 use std::marker::PhantomData;
 
-#[diagnostic::on_unimplemented(message = "`{Self}` is not an aspect of `{Owner}`")]
+#[diagnostic::on_unimplemented(message = "`{Self}` is not an aspect of entity/fragment `{Owner}`")]
 pub trait In<Members, Witness, Owner>: private::Sealed<Members, Witness, Owner> {}
 impl<T, Members, Witness, Owner> In<Members, Witness, Owner> for T where
     T: private::Sealed<Members, Witness, Owner>
@@ -16,6 +16,29 @@ mod private {
 pub struct Position<const N: usize>(PhantomData<()>);
 #[doc(hidden)]
 pub struct NestedPosition<Outer, Inner>(PhantomData<(Outer, Inner)>);
+
+/// Keeps the declaring entity path and the aspect position in one sealed witness.
+#[doc(hidden)]
+pub struct OwnedAspectPosition<EntityPosition, AspectPosition>(
+    PhantomData<(EntityPosition, AspectPosition)>,
+);
+#[doc(hidden)]
+pub struct ExtensionPosition<P>(PhantomData<P>);
+
+impl<A, F: super::Fragment, E: super::Entity, EP, P, Kind>
+    private::Sealed<F::Members, (OwnedAspectPosition<EP, P>, Kind), (F, E)> for A
+where
+    E: In<F::Members, EP, F>,
+    A: In<E::Aspects, (P, Kind), E>,
+{
+}
+impl<A, F, E: super::Entity, Members, P, Kind>
+    private::Sealed<super::Extend<E, Members>, (ExtensionPosition<P>, Kind), (F, E)> for A
+where
+    Members: super::OptionalExtensionMembers<E>,
+    A: In<Members, (P, Kind), E>,
+{
+}
 
 macro_rules! tuple_positions {
     ($($member:ident:$position:literal),+) => {

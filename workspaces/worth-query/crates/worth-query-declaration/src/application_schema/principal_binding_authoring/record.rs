@@ -40,8 +40,7 @@ impl<S, E: Entity, T: 'static, B: ApplicationIdentityScalarValueBinding<Value = 
     ) -> Result<Self, Denial>
     where
         F::Bindings: Scalar<T, Binding = B>,
-        E: In<F::Members, EP, F>,
-        A: Aspect + In<E::Aspects, AP, E>,
+        A: Aspect + In<F::Members, (EP, AP), (F, E)>,
     {
         posture(&field, false, true)?;
         if field.recipe().binding_type() != TypeId::of::<B>() {

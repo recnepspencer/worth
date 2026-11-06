@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_schema::fragment::{
     Aspect, AspectDefinition, BindingSet, CaseRows, CaseWitness, Entity, FragmentDefinition,
-    GroupDefinition, GroupWitness, In, OneOf, OptionalCaseWitness, OptionalGroupWitness, Record,
+    GroupDefinition, GroupWitness, OneOf, OptionalCaseWitness, OptionalGroupWitness, Record,
 };
 
 type Selected<'a> = Option<(&'a AspectDefinition, BTreeMap<String, AspectValue>)>;
@@ -94,11 +94,11 @@ where
 
 macro_rules! group_read {
     ($witness:ident, $output:ty, $finish:expr) => {
-        impl<G, Set, Members, P, E> Readable<Set, Members, (P, $witness), E> for G
+        impl<G, Set, E> Readable<Set, $witness, E> for G
         where
             E: Entity,
             Set: BindingSet,
-            G: OneOf + In<Members, (P, $witness), E>,
+            G: OneOf,
             G::Cases: CaseRows<Set, G::Row>,
         {
             type Output = $output;
@@ -126,11 +126,11 @@ group_read!(OptionalGroupWitness, Option<G::Row>, Ok);
 
 macro_rules! case_read {
     ($witness:ident) => {
-        impl<A, Set, Members, P, Inner, E> Readable<Set, Members, (P, $witness<Inner>), E> for A
+        impl<A, Set, Inner, E> Readable<Set, $witness<Inner>, E> for A
         where
             E: Entity,
             Set: Record<A::Row>,
-            A: Aspect + In<Members, (P, $witness<Inner>), E>,
+            A: Aspect,
         {
             type Output = Option<A::Row>;
             fn read(

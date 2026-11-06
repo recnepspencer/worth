@@ -3,6 +3,22 @@ use std::{path::PathBuf, process::Command};
 
 #[test]
 fn native_field_instantiation_stays_within_the_shared_core_ceiling() {
+    let definitions = probe_symbols();
+    assert_ceiling(&definitions, "::Fact<", false);
+}
+
+#[test]
+fn extension_instantiation_stays_within_the_shared_core_ceiling() {
+    let definitions = probe_symbols();
+    assert_ceiling(&definitions, "::ExtensionFact<", true);
+}
+
+fn probe_symbols() -> Vec<String> {
+    std::hint::black_box(worth_query_testkit_instantiation::extension_views);
+    std::hint::black_box(worth_query_testkit_instantiation::extension_application_0);
+    std::hint::black_box(worth_query_testkit_instantiation::extension_application_1);
+    std::hint::black_box(worth_query_testkit_instantiation::extension_application_2);
+    std::hint::black_box(worth_query_testkit_instantiation::extension_application_3);
     std::hint::black_box(worth_query_testkit_instantiation::application_0);
     std::hint::black_box(worth_query_testkit_instantiation::application_1);
     std::hint::black_box(worth_query_testkit_instantiation::application_2);
@@ -57,13 +73,16 @@ fn native_field_instantiation_stays_within_the_shared_core_ceiling() {
         String::from_utf8_lossy(&result.stderr)
     );
     let text = String::from_utf8(result.stdout).unwrap();
-    let definitions: Vec<_> = text
-        .lines()
+    text.lines()
         .filter(|line| matches!(line.split_whitespace().nth(1), Some("t" | "T")))
-        .collect();
+        .map(str::to_owned)
+        .collect()
+}
+
+fn assert_ceiling(definitions: &[String], prefix: &str, extensions: bool) {
     let counts: Vec<_> = (0..40)
         .map(|aspect| {
-            let marker = format!("::Fact<{aspect}>");
+            let marker = format!("{prefix}{aspect}>");
             definitions
                 .iter()
                 .filter(|line| line.contains(&marker))
@@ -71,9 +90,16 @@ fn native_field_instantiation_stays_within_the_shared_core_ceiling() {
         })
         .collect();
     println!(
-        "probe text symbols={}, per-aspect={counts:?}",
+        "extensions={extensions}, probe text symbols={}, per-aspect={counts:?}",
         definitions.len()
     );
+    if extensions {
+        assert!(
+            !definitions.iter().any(|line| line.contains(prefix)
+                && (line.contains("ExtensionFirst") || line.contains("ExtensionSecond"))),
+            "extension field bodies must not be instantiated per fragment/aspect pair"
+        );
+    }
     // Headroom admits ordinary lawful changes while refusing the measured field-body multiplier.
     assert!(
         definitions.len() <= 2_500,
@@ -87,7 +113,7 @@ fn native_field_instantiation_stays_within_the_shared_core_ceiling() {
     assert!(
         !definitions
             .iter()
-            .any(|line| line.contains("Application<") && line.contains("Fact<")),
+            .any(|line| line.contains("Application<") && line.contains(prefix)),
         "field bodies must not be instantiated per application/member pair"
     );
 }

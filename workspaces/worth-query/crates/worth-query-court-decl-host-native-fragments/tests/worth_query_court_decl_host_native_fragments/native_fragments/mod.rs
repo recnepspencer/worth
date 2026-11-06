@@ -25,3 +25,5 @@ pub(crate) fn measured() -> Measurements {
         interval: Interval::checked(41, 53).unwrap(),
     }
 }
+
+mod extensions;

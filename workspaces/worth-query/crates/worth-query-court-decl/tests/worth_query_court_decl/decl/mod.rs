@@ -7,3 +7,7 @@ mod fragment_relation_records;
 mod fragment_shape_refusals;
 
 mod fragment_revisions;
+
+mod fragment_extensions;
+
+mod extension_compile_fail;

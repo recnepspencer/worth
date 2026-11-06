@@ -91,7 +91,7 @@ impl Scalar<u64> for Set {
     type Binding = U64ApplicationValueBinding;
 }
 impl OperationCreates<Edit> for Item {}
-const NAMES: [&str; 40] = [
+pub(super) const NAMES: [&str; 40] = [
     "fact0", "fact1", "fact2", "fact3", "fact4", "fact5", "fact6", "fact7", "fact8", "fact9",
     "fact10", "fact11", "fact12", "fact13", "fact14", "fact15", "fact16", "fact17", "fact18",
     "fact19", "fact20", "fact21", "fact22", "fact23", "fact24", "fact25", "fact26", "fact27",

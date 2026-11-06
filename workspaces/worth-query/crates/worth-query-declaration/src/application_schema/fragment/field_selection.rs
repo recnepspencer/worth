@@ -9,12 +9,13 @@ use crate::application_schema::{
 use std::{any::TypeId, marker::PhantomData};
 
 type Resolve<E, A, T> =
-    fn(&str) -> Result<RecordField<E, A, T>, ApplicationSchemaDeclarationDenial>;
+    fn(&str, &str) -> Result<RecordField<E, A, T>, ApplicationSchemaDeclarationDenial>;
 
 /// A declaration expression, carrying no installed authority.
 /// Its owning fragment supplies the binding, rather than a second field marker.
 pub struct FieldSelection<F, E, A, T> {
     path: &'static str,
+    fragment_name: &'static str,
     resolve: Resolve<E, A, T>,
     fragment: PhantomData<fn() -> F>,
 }
@@ -28,7 +29,7 @@ impl<F, E, A, T> FieldSelection<F, E, A, T> {
     /// Reuses the constructor's carried record requirement without imposing it on the caller.
     #[inline(always)]
     pub fn resolve(self) -> Result<RecordField<E, A, T>, ApplicationSchemaDeclarationDenial> {
-        (self.resolve)(self.path)
+        (self.resolve)(self.path, self.fragment_name)
     }
     pub const fn path(self) -> &'static str {
         self.path
@@ -75,13 +76,13 @@ where
     /// Selects a named column from this record, proving both memberships.
     pub const fn at<EP, AP>(path: &'static str) -> Self
     where
-        E: In<F::Members, EP, F>,
-        A: In<E::Aspects, AP, E>,
+        A: In<F::Members, (EP, AP), (F, E)>,
         F::Bindings: Record<A::Row>,
     {
         Self {
             path,
-            resolve: super::field_handle::checked_record_field::<F, E, A, T>,
+            fragment_name: F::NAME,
+            resolve: super::field_handle::checked_record_field::<F::Bindings, E, A, T>,
             fragment: PhantomData,
         }
     }
@@ -113,14 +114,15 @@ pub fn select_field<F, E, A, T, EP, AP>(
 ) -> FieldSelection<F, E, A, T>
 where
     F: Fragment,
-    E: Entity + In<F::Members, EP, F>,
-    A: Aspect + In<E::Aspects, AP, E>,
+    E: Entity,
+    A: Aspect + In<F::Members, (EP, AP), (F, E)>,
     T: 'static,
     F::Bindings: Scalar<T> + Record<A::Row>,
 {
     FieldSelection {
         path,
-        resolve: super::field_handle::checked_record_field::<F, E, A, T>,
+        fragment_name: F::NAME,
+        resolve: super::field_handle::checked_record_field::<F::Bindings, E, A, T>,
         fragment: PhantomData,
     }
 }

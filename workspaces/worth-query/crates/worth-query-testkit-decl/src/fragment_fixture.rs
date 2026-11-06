@@ -10,6 +10,10 @@ impl Fragment for Fixture {
     type Bindings = Bindings;
     type Members = (
         Item,
+        (
+            super::fragment_extension_fixture::Annotations,
+            super::fragment_extension_fixture::Classifications,
+        ),
         SetMetric,
         super::fragment_relation_fixture::Linked,
         (

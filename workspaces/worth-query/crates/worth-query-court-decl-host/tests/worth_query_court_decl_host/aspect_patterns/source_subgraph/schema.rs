@@ -41,7 +41,7 @@ pub struct Contribution;
 impl ApplicationSchemaContribution<Schema> for Contribution {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         ApplicationSchemaContributionIdentity::new("source-subgraph.contribution.v1");
-    type Members = (SourceModel, Contracts, correction::Restore);
+    type Members = (SourceModel, SourceFeature, Contracts, correction::Restore);
 }
 
 pub struct Contracts;

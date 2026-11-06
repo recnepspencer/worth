@@ -7,12 +7,12 @@ use worth_query_declaration::facade::application_schema::fragment::{
 };
 
 impl<F: Fragment> View<'_, F, Writing<'_>> {
-    pub fn target<E, Witness>(
+    pub fn target<E>(
         &self,
         target: &ObservedTarget<E>,
     ) -> Result<CandidateEntity<E>, FragmentDenial>
     where
-        E: Entity + In<F::Members, Witness, F>,
+        E: Entity,
     {
         Ok(CandidateEntity {
             erased: self.access.port.target(&target.erased)?,
@@ -51,8 +51,8 @@ impl<F: Fragment> View<'_, F, Writing<'_>> {
         _work: &mut <F::Bindings as BindingSet>::Work<'_>,
     ) -> Result<(), FragmentDenial>
     where
-        E: Entity + In<F::Members, EntityWitness, F>,
-        A: Aspect + In<E::Aspects, AspectWitness, E>,
+        E: Entity,
+        A: Aspect + In<F::Members, (EntityWitness, AspectWitness), (F, E)>,
         F::Bindings: Record<A::Row>,
     {
         let entity = crate::equality_type_id::EqualityTypeId::of::<E>().into_external();

@@ -229,6 +229,43 @@ impl WorthQueryApplicationContribution<TemporalHostSchema> for TemporalHostContr
 The schema and contribution APIs are covered in depth by the
 [`worth-query-host` README](../workspaces/worth-query/crates/worth-query-host/README.md)
 and the [`worth-query-decl` README](../workspaces/worth-query/crates/worth-query-decl/README.md).
+### Add optional aspects to a shared entity
+
+The model fragment declares `Feature` once. Independent features can extend it
+without making the model depend on those features:
+
+<!-- illustrative -->
+```rust,ignore
+use worth_query_decl::facade::application_schema::fragment::*;
+
+impl Entity for Feature {
+    const NAME: &'static str = "feature";
+    type Aspects = (Identity,);
+    type Relations = ();
+}
+impl Fragment for Naming {
+    const NAME: &'static str = "naming";
+    type Bindings = FeatureBindings;
+    type Members = (Extend<Feature, (Option<Label>,)>,);
+}
+impl Fragment for Coloring {
+    const NAME: &'static str = "coloring";
+    type Bindings = FeatureBindings;
+    type Members = (Extend<Feature, (Option<Color>,)>,);
+}
+// The root includes Model (whose Members contains Feature), Naming and Coloring.
+let label = aspect(Naming, Feature, Label);
+let color = aspect(Coloring, Feature, Color);
+```
+
+`Extend` accepts only `Option<A>` and `Option<Exclusive<G>>` (including nested
+tuples). The entity must be declared by another fragment in the same schema;
+member order does not matter. Duplicate aspect names are refused with both paths.
+Only the extending fragment, or its nested tuple path, can select its additions.
+Selections use the ordinary fields and `View` reads/writes; optional additions
+leave creation by the model complete. The executable counterpart is the
+[extension court](../workspaces/worth-query/crates/worth-query-court-decl-host-native-fragments/tests/worth_query_court_decl_host_native_fragments/native_fragments/extensions.rs).
+
 ### 2.1 Declare operation access once
 
 For a native handler on a concrete application schema, put its complete access set in

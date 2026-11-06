@@ -9,7 +9,7 @@ impl World {
     where
         O: ApplicationOperationMarkerIdentity<Fixture, InputBinding = UnitInput> + 'static,
     {
-        let (program, target, _) = self.candidate_observing(reference, false);
+        let (program, target, _) = self.candidate_observing(reference, false, false);
         (program, target)
     }
     pub(super) fn column_candidate(
@@ -18,7 +18,7 @@ impl World {
         world::Program<ChangeForm>,
         WorthQueryApplicationEffectEntity<Fixture, Item>,
     ) {
-        let (program, _, target) = self.candidate_observing(ChangeForm::reference(), true);
+        let (program, _, target) = self.candidate_observing(ChangeForm::reference(), true, false);
         let target = program.projected_entity(&target).unwrap();
         (program, target)
     }
@@ -26,6 +26,7 @@ impl World {
         &self,
         reference: ApplicationOperationRef<Fixture, O, ()>,
         observe_note: bool,
+        observe_extensions: bool,
     ) -> (
         world::Program<O>,
         ObservedTarget<Item>,
@@ -90,7 +91,26 @@ impl World {
                             if observe_note {
                                 work(|work| view.read(&observed, Note, work)).unwrap();
                             }
-                            (view.target(&observed).unwrap(), native_target)
+                            let target = view.target(&observed).unwrap();
+                            if observe_extensions {
+                                use worth_query_testkit_decl::fragment_extension_fixture::*;
+                                work(|work| {
+                                    reader
+                                        .fragment(Annotations)
+                                        .unwrap()
+                                        .read(&observed, Annotation, work)
+                                })
+                                .unwrap();
+                                work(|work| {
+                                    reader.fragment(Classifications).unwrap().read(
+                                        &observed,
+                                        Classification,
+                                        work,
+                                    )
+                                })
+                                .unwrap();
+                            }
+                            (target, native_target)
                         },
                         SystemAllocation,
                     )
