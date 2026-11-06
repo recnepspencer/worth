@@ -1,5 +1,5 @@
 //! Interpret one canonical occurrence through its actual installed Native coordinate.
-use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::*;
 use crate::domain_computation::primary_graph::schema_layout::InstalledFieldCoordinate;
 use worth_relational::facade::publication::PublishedAuthoritativeFieldEffect as Effect;
 

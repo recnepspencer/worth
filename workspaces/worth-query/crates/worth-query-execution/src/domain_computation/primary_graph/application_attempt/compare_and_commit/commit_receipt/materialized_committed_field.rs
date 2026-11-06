@@ -1,5 +1,5 @@
 //! An immutable original envelope and full-generation patch seal a Native value position.
-use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::*;
 use worth_execution::{MapKernelContext, MapKernelStop};
 use worth_relational::facade::publication::{
     PublishedAuthoritativeFieldEffect as Effect, PublishedAuthoritativeFieldValueLocation,

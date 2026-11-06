@@ -1,6 +1,6 @@
 //! Closed certification inspection of original immutable committed actor fields.
 //! These values never construct native selection evidence or capability access.
-use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::*;
 use worth_query_declaration::facade::application_capability::ApplicationWorkflowRecordedRole;
 
 impl WorthQueryApplicationCommittedChanges {
@@ -50,7 +50,7 @@ impl WorthQueryApplicationCommittedChanges {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
-        receipt: &super::super::WorthQueryApplicationCommitReceipt,
+        receipt: &crate::domain_computation::primary_graph::application_attempt::compare_and_commit::commit_receipt::WorthQueryApplicationCommitReceipt,
         approval: EntityId,
     ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>
     {

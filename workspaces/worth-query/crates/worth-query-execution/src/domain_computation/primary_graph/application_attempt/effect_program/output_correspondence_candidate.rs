@@ -14,11 +14,7 @@ use worth_relational::facade::transactions::{CommitResult, EntityReference};
 use contract::{ExpectedOutputBinding, ExpectedOutputFamily};
 
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity;
-use {
-    super::CommittedOutputBinding, super::WorthQueryApplicationOutputCorrespondence,
-    super::WorthQueryApplicationOutputPosture, super::WorthQueryApplicationOutputRoleNameDenial,
-    crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse,
-};
+use {crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::CommittedOutputBinding, crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence, crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputPosture, crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputRoleNameDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse};
 use {
     crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
     crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
@@ -97,7 +93,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
     /// Expect the roles and families `Contract` declares, as a binding with
     /// that output contract would. The contract stands in for the binding's
     /// own type, so the program's publication is recorded like any output.
-    pub(super) fn prepare_test_contract<Schema, Contract>(&mut self)
+    pub(in crate::domain_computation::primary_graph::application_attempt::effect_program) fn prepare_test_contract<Schema, Contract>(&mut self)
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
         Contract: worth_query_declaration::facade::application_operation::ApplicationMutationOutputContract<Schema>,
@@ -203,7 +199,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
         );
     }
 
-    pub(super) fn bind<Schema, Entity>(
+    pub(in crate::domain_computation::primary_graph::application_attempt::effect_program) fn bind<Schema, Entity>(
         &mut self,
         role: OutputRoleUse,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
@@ -221,7 +217,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
         self.seal_with(|created| commit.created_entity(created))
     }
 
-    pub(super) fn seal_with(
+    pub(in crate::domain_computation::primary_graph::application_attempt::effect_program) fn seal_with(
         self,
         resolve_created: impl Fn(
             &worth_relational::facade::transactions::CreatedEntityRef,
@@ -257,7 +253,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
         WorthQueryApplicationOutputCorrespondence {
             binding_type: self.binding_type,
             contract_type: self.contract_type,
-            storage: std::sync::Arc::new(super::CorrespondenceStorage::from_committed(
+            storage: std::sync::Arc::new(crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::CorrespondenceStorage::from_committed(
                 optional_roles,
                 roles,
             )),

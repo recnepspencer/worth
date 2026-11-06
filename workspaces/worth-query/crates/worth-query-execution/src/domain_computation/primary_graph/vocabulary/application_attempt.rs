@@ -38,3 +38,4 @@ pub(crate) mod workflow_instance_program_publication;
 pub(crate) mod workflow_transition_program_publication;
 pub(crate) mod idempotency;
 pub(crate) mod committed_publication;
+pub(crate) mod committed_changes;

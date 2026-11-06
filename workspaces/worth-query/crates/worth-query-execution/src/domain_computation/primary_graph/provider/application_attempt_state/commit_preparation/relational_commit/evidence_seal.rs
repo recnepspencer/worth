@@ -28,7 +28,7 @@ pub struct WorthQueryPrimaryGraphCommitEvidence {
         crate::domain_computation::primary_graph::WorthQueryApplicationCommitAuthorityBinding,
     >,
     committed_dispatch_outbox: WorthQueryCommittedDispatchOutboxResolution,
-    committed_changes: crate::domain_computation::primary_graph::WorthQueryApplicationCommittedChanges,
+    committed_changes: crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::WorthQueryApplicationCommittedChanges,
     output_correspondence: std::sync::Arc<
         crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
     >,
@@ -123,7 +123,7 @@ pub(super) fn seal(
         observed_source_facts,
         performed_input_facts,
         performed_output_fields,
-        committed_changes: crate::domain_computation::primary_graph::WorthQueryApplicationCommittedChanges::from_commit(committed.committed()),
+        committed_changes: crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::WorthQueryApplicationCommittedChanges::from_commit(committed.committed()),
     }
 }
 
@@ -216,7 +216,7 @@ impl WorthQueryPrimaryGraphCommitEvidence {
 
     pub(in crate::domain_computation::primary_graph) const fn committed_changes(
         &self,
-    ) -> &crate::domain_computation::primary_graph::WorthQueryApplicationCommittedChanges {
+    ) -> &crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::WorthQueryApplicationCommittedChanges {
         &self.committed_changes
     }
 

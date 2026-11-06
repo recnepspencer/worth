@@ -140,7 +140,7 @@ struct WorthQueryProviderAttemptPreparation {
     conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
     effect_posture: crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture,
-    output_correspondence: super::super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
+    output_correspondence: crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence_candidate::WorthQueryApplicationOutputCorrespondenceCandidate,
     retain_output_demand_observation: bool,
     retain_client_observation: bool,
     producer_required_invariants:

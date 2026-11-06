@@ -1,10 +1,9 @@
 //! Closed application commit receipt.
 
 mod advancement_observation;
-mod committed_changes;
 mod construction;
 mod description;
-pub use committed_changes::WorthQueryApplicationCommittedChanges;
+
 #[cfg(doctest)]
 mod disclosure_fences;
 mod input_observation;
@@ -35,6 +34,7 @@ use {
 pub(in crate::domain_computation::primary_graph) use pending::WorthQueryPendingApplicationCommitReceipt;
 pub(in crate::domain_computation::primary_graph) use projection::WorthQueryCommittedReceiptProjection;
 pub use publication_source::WorthQueryApplicationCommitPublicationSource;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::committed_changes::WorthQueryApplicationCommittedChanges;
 
 /// The record of one landed application commit: which branch and commit, what
 /// changed, which records were touched, what must be dispatched, and under what
@@ -384,6 +384,10 @@ impl WorthQueryApplicationCommitReceipt {
     }
 }
 
-pub(in crate::domain_computation::primary_graph) use committed_changes::MaterializedCommittedField;
+
 
 mod court_doors_for_test;
+pub(in crate::domain_computation::primary_graph::application_attempt::compare_and_commit::commit_receipt) mod committed_actor_observation;
+pub(in crate::domain_computation::primary_graph::application_attempt::compare_and_commit::commit_receipt) mod committed_field_effect;
+pub(crate) mod materialized_committed_field;
+pub(in crate::domain_computation::primary_graph::application_attempt::compare_and_commit::commit_receipt) mod committed_output_effect;

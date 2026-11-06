@@ -26,7 +26,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) use bindin
     guard as guard_succession, WorkflowSuccessionBindingProof,
 };
 pub use target::WorkflowSuccessionTarget;
-type SubjectSelector = fn(&super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate) -> Result<EntityId, WorthQueryApplicationAttemptDenial>;
+type SubjectSelector = fn(&crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence_candidate::WorthQueryApplicationOutputCorrespondenceCandidate) -> Result<EntityId, WorthQueryApplicationAttemptDenial>;
 
 /// Exact logical request and pin, backed by a shared one-shot native authority slot.
 #[derive(Clone)]

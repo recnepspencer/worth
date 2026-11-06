@@ -87,7 +87,7 @@ impl WorthQueryWorkflowBirthAdapter {
             instance_identity: instance_identity.clone(), capability,
             facts: read.facts.iter().cloned().collect(), compiled: compiled.clone(), carry,
             refusal: read.new_commit_refusal,
-            subject: super::super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate::birth_subject::<Schema, Binding, Role>,
+            subject: crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence_candidate::WorthQueryApplicationOutputCorrespondenceCandidate::birth_subject::<Schema, Binding, Role>,
         };
         Ok(RequiredWorkflowBirth {
             branch,

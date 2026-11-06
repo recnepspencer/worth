@@ -44,7 +44,7 @@ pub struct WorthQueryRegisteredProviderEffects {
     expected_steps: WorthQueryExpectedEffectSteps,
     batch: WorkerIntentBatch,
     emissions: WorthQueryAdmittedApplicationEmissionBatch,
-    output_correspondence: super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
+    output_correspondence: crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence_candidate::WorthQueryApplicationOutputCorrespondenceCandidate,
     mutation_partition: worth_relational::facade::identity::PartitionId,
 }
 
@@ -114,7 +114,7 @@ impl<'facts, 'layout, Facts: FactSequence + ?Sized>
 
     pub(super) fn finish(
         self,
-        output_correspondence: super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
+        output_correspondence: crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence_candidate::WorthQueryApplicationOutputCorrespondenceCandidate,
     ) -> Result<WorthQueryRegisteredProviderEffects, WorthQueryApplicationAttemptDenial> {
         let (intents, emissions, expected_steps) = materialize_commit_projections(self.lowered)?;
         let batch = intents.into_iter().fold(

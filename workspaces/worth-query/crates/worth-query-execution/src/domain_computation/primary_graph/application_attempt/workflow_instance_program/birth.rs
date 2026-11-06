@@ -77,7 +77,7 @@ pub struct WorkflowBirthAuthority {
     compiled: CompiledWorkflowDefinition,
     carry: WorkflowLineageCarry,
     refusal: Option<WorthQueryApplicationAttemptDenial>,
-    subject: fn(&super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate) -> Result<worth_relational::facade::transactions::CreatedEntityRef, WorthQueryApplicationAttemptDenial>,
+    subject: fn(&crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence_candidate::WorthQueryApplicationOutputCorrespondenceCandidate) -> Result<worth_relational::facade::transactions::CreatedEntityRef, WorthQueryApplicationAttemptDenial>,
 }
 
 impl std::fmt::Debug for WorkflowBirthAuthority {
