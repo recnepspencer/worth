@@ -139,7 +139,9 @@ def checked_test_roots(command, graph):
     incoming = {edge['index'] for row in graph['units'] for edge in row['dependencies']}
     groups = {}
     for index, row in enumerate(graph['units']):
-        if row['mode'] == 'check' and row['target']['kind'] in (['lib'], ['bin'], ['example']):
+        kinds = set(row['target']['kind'])
+        library = bool(kinds & {'lib', 'rlib', 'dylib', 'cdylib', 'staticlib', 'proc-macro'})
+        if row['mode'] == 'check' and (library or row['target']['kind'] in (['bin'], ['example'])):
             key = digest({key: value for key, value in row.items() if key != 'dependencies'})
             groups.setdefault(key, []).append(index)
     harnesses = []

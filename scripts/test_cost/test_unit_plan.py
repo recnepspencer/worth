@@ -9,6 +9,25 @@ from unit_plan import command_for, declare, verify
 
 
 class RequiredUnitPlanTests(unittest.TestCase):
+    def test_checked_mixed_library_keeps_ordinary_and_harness_obligations_separate(self):
+        library = unit('owner', dependencies=[2])
+        library['target'].update(kind=['cdylib', 'rlib'], crate_types=['cdylib', 'rlib'])
+        source = graph(library, library, unit('dependency'))
+        source['roots'] = [0, 1]
+        before = json.dumps(source, sort_keys=True)
+        with tempfile.TemporaryDirectory() as temporary:
+            for command in ('check', 'clippy'):
+                plan = declare(['cargo', command, '--all-targets'], temporary, {}, json.dumps(source))
+                ordinary = attribute(event(library), plan)
+                checked = event(library)
+                checked['profile']['test'] = True
+                harness = attribute(checked, plan)
+                self.assertNotEqual(ordinary['identity'], harness['identity'])
+                self.assertFalse(ordinary['test_harness'])
+                self.assertTrue(harness['test_harness'])
+                self.assertEqual(ordinary['dependency_units'], harness['dependency_units'])
+                self.assertEqual(json.dumps(source, sort_keys=True), before)
+
     def test_all_targets_checked_harness_cannot_be_charged_as_its_normal_library(self):
         library = unit('owner', dependencies=[3])
         source = graph(unit('court', kind='test', dependencies=[1]), library, library, unit('dependency'))
