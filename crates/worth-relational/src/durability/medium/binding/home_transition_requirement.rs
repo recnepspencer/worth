@@ -50,6 +50,16 @@ impl RelationalDurableMediumTransfer {
 }
 
 impl RelationalDurableMediumBinding {
+    pub(crate) fn requires_home_program_contracts(
+        &self,
+    ) -> Result<bool, RelationalHomeProgramWriteDenial> {
+        let phase = self.home_phase();
+        phase
+            .as_ref()
+            .ok_or(RelationalHomeProgramWriteDenial::MediumMoved)?;
+        Ok(self.transition.is_some())
+    }
+
     pub(crate) fn admit_home_program_write(
         &self,
         step: Option<&crate::runtime::AdmittedRelationalHomeProgramStep>,

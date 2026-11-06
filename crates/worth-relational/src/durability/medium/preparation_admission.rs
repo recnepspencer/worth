@@ -21,6 +21,18 @@ impl RelationalDurablePreparationAdmission {
         }
     }
 
+    pub(crate) fn requires_home_program_contracts(
+        &self,
+    ) -> Result<bool, super::RelationalHomeProgramWriteDenial> {
+        match &self.home {
+            None => Ok(false),
+            Some(home) => home
+                .upgrade()
+                .ok_or(super::RelationalHomeProgramWriteDenial::MediumMoved)?
+                .requires_home_program_contracts(),
+        }
+    }
+
     pub(crate) fn admit_home_program_write(
         &self,
         step: Option<&crate::runtime::AdmittedRelationalHomeProgramStep>,
