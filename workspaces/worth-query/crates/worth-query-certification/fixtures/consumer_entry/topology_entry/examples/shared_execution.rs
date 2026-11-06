@@ -1,4 +1,5 @@
 //! Two installed applications and a restored root share one process service.
+#![recursion_limit = "256"]
 use std::sync::{
     atomic::{AtomicBool, AtomicUsize, Ordering},
     Arc,
