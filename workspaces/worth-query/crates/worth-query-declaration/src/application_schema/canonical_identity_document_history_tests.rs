@@ -21,7 +21,6 @@ fn definition(model_domain: ApplicationHistoryModelDomain) -> ErasedApplicationH
                     scope_field: "Key".into(),
                     scope_value: portable("ModelKey"),
                     scope_resolution: ApplicationQueryScopeResolutionMode::InputField,
-                    scope_writable: false,
                     principal_binding: "Operator".into(),
                 },
             ),
