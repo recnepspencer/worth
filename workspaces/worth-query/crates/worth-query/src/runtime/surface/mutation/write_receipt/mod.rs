@@ -120,7 +120,7 @@ impl WorthQueryWriteReceipt {
         let causality_evidence = inner
             .bridge_authority
             .as_ref()
-            .map(WorthQueryMutationCausalityEvidence::from_bridge);
+            .map(WorthQueryMutationCausalityEvidence::from_bridge)?;
         let provenance_evidence = inner
             .bridge_authority
             .as_ref()
@@ -134,7 +134,7 @@ impl WorthQueryWriteReceipt {
                     .as_ref()
                     .and_then(|bundle| bundle.existing_truth_binding())
                     .map(WorthQueryExistingTruthBindingEvidence::from_bridge)
-            });
+            })?;
         let existing_truth_assertion_evidence = assertion_evidence(
             mutation_family,
             existing_truth_binding.as_ref(),
@@ -248,7 +248,7 @@ impl WorthQueryWriteReceipt {
         let causality_evidence = inner
             .bridge_authority
             .as_ref()
-            .map(WorthQueryMutationCausalityEvidence::from_bridge);
+            .map(WorthQueryMutationCausalityEvidence::from_bridge)?;
         let provenance_evidence = inner
             .bridge_authority
             .as_ref()
@@ -262,7 +262,7 @@ impl WorthQueryWriteReceipt {
                     .as_ref()
                     .and_then(|bundle| bundle.existing_truth_binding())
                     .map(WorthQueryExistingTruthBindingEvidence::from_bridge)
-            });
+            })?;
         let existing_truth_assertion_evidence = assertion_evidence(
             mutation_family,
             existing_truth_binding.as_ref(),
@@ -342,14 +342,14 @@ impl WorthQueryWriteReceipt {
 
 fn write_receipt_commit_evidence_identity(
     commit_identity: &WorthQueryCommitIdentity,
-) -> WorthQueryEvidenceIdentity {
-    commit_identity.evidence_identity()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(commit_identity.evidence_identity()?)
 }
 
 fn write_receipt_snapshot_evidence_identity(
     snapshot_identity: &WorthQuerySnapshotIdentity,
-) -> WorthQueryEvidenceIdentity {
-    snapshot_identity.evidence_identity()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(snapshot_identity.evidence_identity()?)
 }
 
 fn write_receipt_committed_truth_identity(
@@ -374,7 +374,7 @@ fn write_receipt_committed_truth_identity(
         )
         .field_evidence_identity(
             crate::evidence_identity::WorthQueryEvidenceTag::new("committed_write_identity"),
-            &receipt.commit_identity.evidence_identity(),
+            &receipt.commit_identity.evidence_identity()?,
         )
         .field_value_sequence(
             crate::evidence_identity::WorthQueryEvidenceTag::new("committed_delta_descriptor"),

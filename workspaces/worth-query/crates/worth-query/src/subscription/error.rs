@@ -62,7 +62,7 @@ impl QuerySubscriptionFamilySelectionError {
             diagnostic_stage,
             message.clone(),
             source_identity,
-            &counters.evidence_identity(),
+            &counters.evidence_identity()?,
         )?;
         Ok(Self {
             failure_class,

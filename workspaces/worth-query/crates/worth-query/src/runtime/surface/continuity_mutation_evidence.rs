@@ -66,7 +66,7 @@ impl WorthQueryContinuityMutationEvidence {
             WorthQueryMutationAuthorityIdentity::from_bridge_continuity_authority(
                 "continuity-prior",
                 bundle.prior_authoritative_identity_handle(),
-            );
+            )?;
         let successor_authoritative_identities = bundle
             .successor_authoritative_identities()
             .iter()
@@ -76,10 +76,10 @@ impl WorthQueryContinuityMutationEvidence {
                     value,
                 )
             })
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
         let basis_binding_digest = basis_binding_identity.map(|identity| {
             WorthQueryMutationEvidenceDigest::source_identity("continuity-basis-binding", identity)
-        });
+        })?;
         let resolved_target_entity_identity = bundle
             .resolved_target_entity_identity()
             .and_then(RelationalBridgeRecordIdentityParts::from_bridge_entity_identity)
@@ -90,16 +90,16 @@ impl WorthQueryContinuityMutationEvidence {
             .map(|collection| {
                 WorthQueryMutationTargetCollectionIdentity::new("continuity-target", collection)
             })
-            .or_else(|| target_collection.cloned());
+            .or_else(|| target_collection.cloned())?;
         let (lineage_digest, continuity_resolution_digest) =
             continuity_digests(ContinuityDigestInput {
                 family: family.as_str(),
                 outcome: outcome_class.as_str(),
                 prior: &prior_authoritative_identity,
                 successors: &successor_authoritative_identities,
-                basis_binding: basis_binding_digest.as_ref(),
+                basis_binding: basis_binding_digest.as_ref()?,
                 resolved_target: resolved_target_entity_identity.as_ref(),
-                target_collection: target_collection.as_ref(),
+                target_collection: target_collection.as_ref()?,
             })?;
         Ok(Self {
             family,
@@ -136,7 +136,7 @@ impl WorthQueryContinuityMutationEvidence {
             intent.successor_authoritative_identities().to_vec();
         let basis_binding_digest = basis_binding_identity.map(|identity| {
             WorthQueryMutationEvidenceDigest::source_identity("continuity-basis-binding", identity)
-        });
+        })?;
         let target_collection = target_collection.cloned();
         let (lineage_digest, continuity_resolution_digest) =
             continuity_digests(ContinuityDigestInput {
@@ -144,7 +144,7 @@ impl WorthQueryContinuityMutationEvidence {
                 outcome: intent.outcome_class().as_str(),
                 prior: &prior_authoritative_identity,
                 successors: &successor_authoritative_identities,
-                basis_binding: basis_binding_digest.as_ref(),
+                basis_binding: basis_binding_digest.as_ref()?,
                 resolved_target: resolved_target_entity_identity,
                 target_collection: target_collection.as_ref(),
             })?;

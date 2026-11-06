@@ -70,7 +70,7 @@ impl QuerySubscriptionDiagnosticBundleError {
         )
         .field_evidence_identity(
             crate::evidence_identity::WorthQueryEvidenceTag::new("counters"),
-            &counters.evidence_identity(),
+            &counters.evidence_identity()?,
         )
         .field_value_sequence(
             crate::evidence_identity::WorthQueryEvidenceTag::new("evidence"),
@@ -139,7 +139,7 @@ impl QuerySubscriptionDiagnosticFailure {
             *error.diagnostic().stage(),
             error.message(),
             error.diagnostic().source_identity().clone(),
-            error.counters().evidence_identity(),
+            error.counters().evidence_identity()?,
             error.failure_class().as_str(),
             error.diagnostic().evidence_identity(),
         )?)
@@ -152,7 +152,7 @@ impl QuerySubscriptionDiagnosticFailure {
             *error.diagnostic().stage(),
             error.message(),
             error.diagnostic().source_identity().clone(),
-            error.counters().evidence_identity(),
+            error.counters().evidence_identity()?,
             error.denial_kind().as_str(),
             error.diagnostic().evidence_identity(),
         )?)
@@ -165,7 +165,7 @@ impl QuerySubscriptionDiagnosticFailure {
             *error.diagnostic().stage(),
             error.message(),
             error.diagnostic().source_identity().clone(),
-            error.counters().evidence_identity(),
+            error.counters().evidence_identity()?,
             error.denial_kind().as_str(),
             error.diagnostic().evidence_identity(),
         )?)
@@ -178,7 +178,7 @@ impl QuerySubscriptionDiagnosticFailure {
             *error.pipeline_diagnostic().stage(),
             error.message(),
             error.pipeline_diagnostic().source_identity().clone(),
-            error.counters().evidence_identity(),
+            error.counters().evidence_identity()?,
             error.denial_kind().as_str(),
             error.pipeline_diagnostic().evidence_identity(),
         )?)

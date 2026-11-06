@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -69,11 +70,11 @@ impl<'a> WorthQueryPreviewSession<'a> {
                 )
                 .field_evidence_identity(
                     WorthQueryEvidenceTag::new("basis_snapshot_identity"),
-                    &self.basis_snapshot_identity.evidence_identity(),
+                    &self.basis_snapshot_identity.evidence_identity()?,
                 )
                 .field_evidence_identity(
                     WorthQueryEvidenceTag::new("promotion_snapshot_identity"),
-                    &promotion_snapshot_identity.evidence_identity(),
+                    &promotion_snapshot_identity.evidence_identity()?,
                 )
                 .field_usize(
                     WorthQueryEvidenceTag::new("crossed_authoritative_residue_count"),
@@ -156,7 +157,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
         })
     }
 
-    pub fn discard(mut self) -> Result<WorthQueryPreviewOutcome, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub fn discard(mut self) -> Result<WorthQueryPreviewOutcome, IdentityDerivationDenial> {
         self.discarded = true;
         let staged_preview_write_count = self.pending_commands.len();
         let residue_snapshot = self.residue_snapshot();
@@ -216,15 +217,15 @@ impl<'a> WorthQueryPreviewSession<'a> {
             self.effect_policy,
             &self.basis_admission,
             admission,
-        );
-        self.intent_receipts.push(receipt.clone());
+        )?;
+        self.intent_receipts.push(receipt.clone()?);
         self.execution_evidence
             .push(WorthQueryPreviewExecutionEvidence::for_intent_strategy(
                 &self.basis_admission,
                 declaration.name(),
                 receipt.receipt_identity(),
                 declaration.strategy_name(),
-            ));
+            )?);
         Ok(receipt)
     }
 

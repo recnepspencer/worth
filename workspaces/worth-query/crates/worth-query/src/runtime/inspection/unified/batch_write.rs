@@ -56,7 +56,7 @@ impl WorthQueryBatchWriteReceiptInspection {
         let graph_composition_breadth = receipt.graph_composition_breadth().clone();
         let graph_composition_lifecycle_outcomes = receipt.graph_composition_lifecycle_outcomes();
         let graph_composition_program = receipt.graph_composition_program().cloned();
-        let graph_composition_evidence = receipt.graph_composition_evidence();
+        let graph_composition_evidence = receipt.graph_composition_evidence()?;
         let graph_composition_resolution_map = receipt.graph_composition_resolution_map().clone();
         let touched_aspects = receipt.admitted_touched_aspects().to_vec();
         let affected_live_view_ids = receipt.terminal_affected_live_view_ids_projection();
@@ -69,7 +69,7 @@ impl WorthQueryBatchWriteReceiptInspection {
                 graph_composition_breadth: &graph_composition_breadth,
                 graph_composition_lifecycle_outcomes: graph_composition_lifecycle_outcomes.as_ref(),
                 graph_composition_program: graph_composition_program.as_ref(),
-                graph_composition_evidence: graph_composition_evidence.as_ref(),
+                graph_composition_evidence: graph_composition_evidence.as_ref()?,
                 batch_mutation_evidence: &batch_mutation_evidence,
                 commit_identities: &commit_identities,
                 journal_position_identities: &journal_position_identities,
@@ -97,7 +97,7 @@ impl WorthQueryBatchWriteReceiptInspection {
             affected_live_view_ids,
             affected_derived_view_ids,
             inspection_identity,
-        })
+        })?
     }
 
     pub fn authority_lane(&self) -> WorthQueryAuthorityLane {

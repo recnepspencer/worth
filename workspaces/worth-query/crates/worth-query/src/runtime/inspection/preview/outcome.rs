@@ -220,13 +220,13 @@ impl WorthQueryPreviewOutcomeInspection {
             WorthQueryEvidenceTag::new("preview_basis_snapshot_identity"),
             &closeout
                 .preview_basis_snapshot_identity()
-                .evidence_identity(),
+                .evidence_identity()?,
         )
         .field_evidence_identity(
             WorthQueryEvidenceTag::new("target_basis_snapshot_identity"),
             &closeout
                 .target_basis_snapshot_identity()
-                .evidence_identity(),
+                .evidence_identity()?,
         )
         .field_evidence_identity(
             WorthQueryEvidenceTag::new("closeout_identity"),

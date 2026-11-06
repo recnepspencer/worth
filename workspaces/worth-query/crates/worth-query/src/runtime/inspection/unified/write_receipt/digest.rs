@@ -34,8 +34,8 @@ pub(super) fn build_write_receipt_inspection_digest(
     mutation_metadata: &WorthQueryMutationMetadata,
     live_patch_artifacts: &[WorthQueryEvidenceIdentity],
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    let commit_identity = receipt.commit_identity().evidence_identity();
-    let snapshot_identity = receipt.snapshot_identity().evidence_identity();
+    let commit_identity = receipt.commit_identity().evidence_identity()?;
+    let snapshot_identity = receipt.snapshot_identity().evidence_identity()?;
     let declared_entity_identity = receipt
         .declared_entity_identity()
         .map(|identity| identity.evidence_identity());
@@ -83,7 +83,7 @@ pub(super) fn build_write_receipt_inspection_digest(
             )
             .optional_evidence_identity(
                 WorthQueryEvidenceTag::new("declared_entity_identity"),
-                declared_entity_identity.as_ref(),
+                declared_entity_identity.as_ref()?,
             )
             .optional_value(
                 WorthQueryEvidenceTag::new("target_collection"),
@@ -91,7 +91,7 @@ pub(super) fn build_write_receipt_inspection_digest(
             )
             .optional_evidence_identity(
                 WorthQueryEvidenceTag::new("target_entity_identity"),
-                target_entity_identity.as_ref(),
+                target_entity_identity.as_ref()?,
             )
             .field_shape(
                 WorthQueryEvidenceTag::new("target_declared_class"),
@@ -106,7 +106,7 @@ pub(super) fn build_write_receipt_inspection_digest(
             )
             .optional_evidence_identity(
                 WorthQueryEvidenceTag::new("target_declared_entity_identity"),
-                target_declared_entity_identity.as_ref(),
+                target_declared_entity_identity.as_ref()?,
             )
             .field_shape(
                 WorthQueryEvidenceTag::new("target_resolved_class"),
@@ -121,7 +121,7 @@ pub(super) fn build_write_receipt_inspection_digest(
             )
             .optional_evidence_identity(
                 WorthQueryEvidenceTag::new("target_resolved_entity_identity"),
-                target_resolved_entity_identity.as_ref(),
+                target_resolved_entity_identity.as_ref()?,
             )
             .optional_shape(
                 WorthQueryEvidenceTag::new("existing_assertion_mode"),

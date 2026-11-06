@@ -1,11 +1,12 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::runtime_writes::WorthQueryWriteAdmissionExecutionRecord;
 
 pub(super) fn batch_execution_provenance(
     shared_admission: Option<&WorthQueryWriteAdmissionExecutionRecord>,
     combined_receipt: &WorthQueryMutationReceipt,
-) -> Option<WorthQueryIntentExecutionProvenance> {
-    shared_admission.map(|record| {
+) -> Result<Option<WorthQueryIntentExecutionProvenance>, IdentityDerivationDenial> {
+    Ok(shared_admission.map(|record| {
         let commit_label = combined_receipt
             .commit_identity
             .evidence_identity()
@@ -22,7 +23,7 @@ pub(super) fn batch_execution_provenance(
             &commit_label,
             &snapshot_evidence_identity,
         )
-    })
+    })?)
 }
 
 pub(super) fn batch_decision_trace_envelope(

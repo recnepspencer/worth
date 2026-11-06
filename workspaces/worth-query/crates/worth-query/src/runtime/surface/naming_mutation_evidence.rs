@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQueryEntityIdentity;
 use crate::runtime::{
     WorthQueryMutationAuthorityIdentity, WorthQueryMutationTargetCollectionIdentity,
@@ -46,8 +47,8 @@ impl WorthQueryNamingMutationEvidence {
         bundle: &BridgeNamingMutationBundle,
         resolved_target_entity_identity: Option<&WorthQueryEntityIdentity>,
         target_collection: Option<&WorthQueryMutationTargetCollectionIdentity>,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             family: match bundle.family() {
                 BridgeNamingMutationFamily::AttachNewTarget => {
                     crate::runtime::WorthQueryNamingMutationFamily::AttachNewTarget
@@ -74,10 +75,11 @@ impl WorthQueryNamingMutationEvidence {
                 }
                 BridgeNamingMutationOutcome::Removed => WorthQueryNamingMutationOutcome::Removed,
             },
-            attachment_identity: WorthQueryMutationAuthorityIdentity::from_bridge_naming_attachment(
-                "naming-attachment",
-                bundle.attachment_identity_handle(),
-            ),
+            attachment_identity:
+                WorthQueryMutationAuthorityIdentity::from_bridge_naming_attachment(
+                    "naming-attachment",
+                    bundle.attachment_identity_handle(),
+                )?,
             prior_authoritative_identity: bundle.prior_authoritative_identity_handle().map(
                 |identity| {
                     WorthQueryMutationAuthorityIdentity::from_bridge_naming_authority(
@@ -85,7 +87,7 @@ impl WorthQueryNamingMutationEvidence {
                         identity,
                     )
                 },
-            ),
+            )?,
             target_authoritative_identity: bundle.target_authoritative_identity_handle().map(
                 |identity| {
                     WorthQueryMutationAuthorityIdentity::from_bridge_naming_authority(
@@ -93,7 +95,7 @@ impl WorthQueryNamingMutationEvidence {
                         identity,
                     )
                 },
-            ),
+            )?,
             resolved_target_entity_identity: bundle
                 .resolved_target_entity_identity_handle()
                 .map(|identity| {
@@ -107,8 +109,8 @@ impl WorthQueryNamingMutationEvidence {
                 .map(|collection| {
                     WorthQueryMutationTargetCollectionIdentity::new("naming-target", collection)
                 })
-                .or_else(|| target_collection.cloned()),
-        }
+                .or_else(|| target_collection.cloned())?,
+        })
     }
 
     pub(in crate::runtime) fn from_intent(

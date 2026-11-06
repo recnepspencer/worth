@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod batch_construction;
 
 pub use batch_construction::WorthQueryBatchMutationEvidence;
@@ -18,13 +19,16 @@ use crate::runtime::WorthQueryMutationEvidenceDigest;
 fn summarize_existing_truth_modes(
     mutation_families: &[crate::runtime::WorthQueryMutationFamily],
     existing_truth_assertions: &[Option<WorthQueryExistingTruthAssertionEvidence>],
-) -> (
-    usize,
-    usize,
-    usize,
-    usize,
-    Option<WorthQueryMutationEvidenceDigest>,
-) {
+) -> Result<
+    (
+        usize,
+        usize,
+        usize,
+        usize,
+        Option<WorthQueryMutationEvidenceDigest>,
+    ),
+    IdentityDerivationDenial,
+> {
     let mut retained_authoritative_assertion_count = 0;
     let mut backend_verified_assertion_count = 0;
     let mut backend_verified_update_count = 0;
@@ -98,14 +102,14 @@ fn summarize_existing_truth_modes(
         )
         .seal();
         WorthQueryMutationEvidenceDigest::aggregate("batch-existing-truth-mode", identity)
-    });
-    (
+    })?;
+    Ok((
         retained_authoritative_assertion_count,
         backend_verified_assertion_count,
         backend_verified_update_count,
         backend_verified_delete_count,
         digest,
-    )
+    ))
 }
 
 #[cfg(test)]

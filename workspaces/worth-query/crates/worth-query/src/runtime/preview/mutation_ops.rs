@@ -246,7 +246,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
                         reference,
                         resolved_target.entity_identity().clone(),
                         resolved_target.target_collection_identity().cloned(),
-                    )
+                    )?
                 }
                 WorthQueryWriteCommand::DeleteSymbolicAspects {
                     reference,
@@ -274,7 +274,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
                         reference,
                         resolved_target.entity_identity().clone(),
                         resolved_target.target_collection_identity().cloned(),
-                    )
+                    )?
                 }
                 _ => WorthQueryWriteReceipt::preview(
                     &self.label,

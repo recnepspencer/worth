@@ -60,7 +60,7 @@ impl WorthQueryRuntime {
             )
         })?;
         let handoff = WorthQueryAdmittedIntentExecutionHandoff::from(binding.handoff().clone());
-        let execution_provenance = authoritative_execution_provenance(&binding, &execution);
+        let execution_provenance = authoritative_execution_provenance(&binding, &execution)?;
         let decision_trace_envelope =
             WorthQueryIntentDecisionTraceEnvelope::for_admitted_execution(&handoff, &execution);
         let write_receipt = self.route_admitted_intent_execution(
@@ -75,7 +75,7 @@ impl WorthQueryRuntime {
             &declaration,
             execution,
             &write_receipt,
-        ))
+        )?)
     }
 
     pub(crate) fn execute_effect_intent_execution_binding(
@@ -116,7 +116,7 @@ impl WorthQueryRuntime {
                 Some(execution_provenance),
             )
         })?;
-        let execution_provenance = effect_execution_provenance(&binding, &execution);
+        let execution_provenance = effect_execution_provenance(&binding, &execution)?;
         let decision_trace_envelope =
             WorthQueryIntentDecisionTraceEnvelope::for_admitted_execution(&handoff, &execution);
         let write_receipt = self.route_admitted_intent_execution(
@@ -131,13 +131,13 @@ impl WorthQueryRuntime {
             &declaration,
             execution,
             &write_receipt,
-        );
+        )?;
         let effect_target = WorthQueryEffectTarget::from_name(pending_delivery.effect_name());
         self.remove_pending_effect_delivery(&effect_target, pending_index, &pending_delivery);
         Ok(WorthQueryEffectIntentReceipt::new(
             &pending_delivery,
             intent_receipt,
-        ))
+        )?)
     }
 
     fn pending_effect_write_delivery_for_binding(
@@ -188,7 +188,7 @@ impl WorthQueryRuntime {
                 decision_trace.clone(),
                 error,
             )
-        })
+        })?
     }
 }
 
@@ -199,7 +199,7 @@ fn authoritative_execution_provenance(
     let snapshot_identity = execution
         .mutation_receipt()
         .snapshot_identity
-        .evidence_identity();
+        .evidence_identity()?;
     Ok(
         WorthQueryIntentExecutionProvenance::for_shared_execution_typed_parts(
             binding.family(),
@@ -221,7 +221,7 @@ fn effect_execution_provenance(
     let snapshot_identity = execution
         .mutation_receipt()
         .snapshot_identity
-        .evidence_identity();
+        .evidence_identity()?;
     Ok(
         WorthQueryIntentExecutionProvenance::for_shared_execution_typed_parts(
             binding.family(),

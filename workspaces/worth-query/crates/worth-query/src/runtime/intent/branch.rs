@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -27,7 +28,7 @@ impl WorthQueryBranchIntentReceipt {
         basis_admission: &WorthQueryBranchBasisAdmission,
         basis_snapshot_identity: &WorthQuerySnapshotIdentity,
         admission: WorthQueryEffectAdmission,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let basis_evidence = basis_admission.evidence().to_vec();
         let canonical_input_digest = declaration.input_digest();
         let admission_identity =
@@ -74,7 +75,7 @@ impl WorthQueryBranchIntentReceipt {
                 )
                 .field_evidence_identity(
                     WorthQueryEvidenceTag::new("basis_snapshot_identity"),
-                    &basis_snapshot_identity.evidence_identity(),
+                    &basis_snapshot_identity.evidence_identity()?,
                 )
                 .seal()?;
         let receipt_identity =

@@ -40,16 +40,16 @@ pub(super) fn trace_from_stage_evidence(
     let stage_traces = stage_evidence
         .iter()
         .map(QuerySubscriptionDiagnosticStageTrace::from_evidence)
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     let counters = QuerySubscriptionDiagnosticCounters::trace_emitted(stage_traces.len() as u64);
-    let counter_snapshot = counters.counter_projection().label().to_string();
+    let counter_snapshot = counters.counter_projection()?.label().to_string();
     let stage_trace_refs: Vec<&WorthQueryEvidenceIdentity> = stage_traces
         .iter()
         .map(|trace| trace.stage_trace_identity())
         .collect();
     let trace_identity = diagnostic_trace_identity(
         terminal_stage.as_str(),
-        &counters.evidence_identity(),
+        &counters.evidence_identity()?,
         stage_trace_refs,
     )?;
     Ok(QuerySubscriptionDiagnosticTrace::from_parts(

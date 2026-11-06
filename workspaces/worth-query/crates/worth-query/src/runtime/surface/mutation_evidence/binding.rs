@@ -56,7 +56,7 @@ impl WorthQueryExistingTruthBindingEvidence {
             WorthQueryMutationAuthorityIdentity::from_bridge_existing_truth_authority(
                 "existing-truth-binding-authority",
                 binding.authoritative_identity_handle(),
-            );
+            )?;
         let resolved_entity_identity = WorthQueryEntityIdentity::from_relational_record(
             binding
                 .resolved_target_identity_handle()
@@ -64,7 +64,7 @@ impl WorthQueryExistingTruthBindingEvidence {
         );
         let target_collection = binding.target_collection().map(|collection| {
             WorthQueryMutationTargetCollectionIdentity::new("existing-truth-binding", collection)
-        });
+        })?;
         let binding_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
                 .field_shape(WorthQueryEvidenceTag::new("role"), "existing-truth-binding")
@@ -76,7 +76,7 @@ impl WorthQueryExistingTruthBindingEvidence {
                 )
                 .field_evidence_identity(
                     WorthQueryEvidenceTag::new("resolved"),
-                    &resolved_entity_identity.evidence_identity(),
+                    &resolved_entity_identity.evidence_identity()?,
                 )
                 .optional_evidence_identity(
                     WorthQueryEvidenceTag::new("collection"),
@@ -94,13 +94,13 @@ impl WorthQueryExistingTruthBindingEvidence {
             binding_digest: WorthQueryMutationEvidenceDigest::aggregate(
                 "existing-truth-binding",
                 binding_identity,
-            ),
+            )?,
         })
     }
 
     pub(in crate::runtime) fn from_binding(
         binding: &crate::runtime::WorthQueryExistingTruthTargetBinding,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let resolved_entity_identity = binding
             .resolved_target_identity()
             .relational_record_parts()

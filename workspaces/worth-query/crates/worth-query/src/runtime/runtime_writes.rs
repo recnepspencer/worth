@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::intent_admission::WorthQueryIntentEligibilityTraceEvidence;
 
 pub(crate) struct WorthQueryWriteAdmissionExecutionRecord {
@@ -18,7 +19,10 @@ impl WorthQueryRuntime {
         &self,
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         command: WorthQueryWriteCommand,
-    ) -> Result<crate::intent_admission::WorthQueryAuthoritativeMutationIntentSeed, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<
+        crate::intent_admission::WorthQueryAuthoritativeMutationIntentSeed,
+        IdentityDerivationDenial,
+    > {
         use crate::intent_admission::WorthQueryAuthoritativeMutationPreflight as Preflight;
 
         let (preflight, admitted_mutation) = match self.admit_backend_write_command(command.clone())
@@ -56,11 +60,13 @@ impl WorthQueryRuntime {
             }
         };
 
-        Ok(crate::intent_admission::WorthQueryAuthoritativeMutationIntentSeed::new(
-            command,
-            preflight,
-            admitted_mutation,
-        ))
+        Ok(
+            crate::intent_admission::WorthQueryAuthoritativeMutationIntentSeed::new(
+                command,
+                preflight,
+                admitted_mutation,
+            ),
+        )
     }
 
     fn scalar_mutation_post_binding_preflight(
@@ -323,8 +329,8 @@ impl WorthQueryRuntime {
         &self,
         shared_admission: Option<&WorthQueryWriteAdmissionExecutionRecord>,
         receipt: &WorthQueryMutationReceipt,
-    ) -> Option<WorthQueryIntentExecutionProvenance> {
-        shared_admission.map(|record| {
+    ) -> Result<Option<WorthQueryIntentExecutionProvenance>, IdentityDerivationDenial> {
+        Ok(shared_admission.map(|record| {
             let commit_label = receipt
                 .commit_identity
                 .evidence_identity()
@@ -341,7 +347,7 @@ impl WorthQueryRuntime {
                 &commit_label,
                 &snapshot_evidence_identity,
             )
-        })
+        })?)
     }
 
     fn shared_write_decision_trace_envelope(

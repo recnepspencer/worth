@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::{WorthQueryBridgeMutationArtifactIdentity, WorthQueryMutationEvidenceDigest};
 use worth_runtime_bridge::facade::{
     BridgeMutationAuthorityBundle, BridgeWritebackFailureClass, BridgeWritebackOutcomeClass,
@@ -21,50 +22,55 @@ pub struct WorthQueryMutationProvenanceEvidence {
 }
 
 impl WorthQueryMutationProvenanceEvidence {
-    pub(in crate::runtime) fn from_bridge(bundle: &BridgeMutationAuthorityBundle) -> Self {
+    pub(in crate::runtime) fn from_bridge(
+        bundle: &BridgeMutationAuthorityBundle,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let provenance = bundle.provenance();
-        Self {
-            contract_digest: imported_artifact("provenance-contract", provenance.contract_digest()),
+        Ok(Self {
+            contract_digest: imported_artifact(
+                "provenance-contract",
+                provenance.contract_digest(),
+            )?,
             writeback_effect_artifact_digest: imported_artifact(
                 "provenance-writeback-effect-artifact",
                 provenance.writeback_effect_artifact_digest(),
-            ),
+            )?,
             effect_intent_digest: imported_artifact(
                 "provenance-effect-intent",
                 provenance.effect_intent_digest(),
-            ),
+            )?,
             effect_intent_patch_canonical_basis: imported_artifact(
                 "provenance-effect-intent-patch-canonical-basis",
                 provenance.effect_intent_patch_canonical_basis(),
-            ),
+            )?,
             feedback_provenance_digest: imported_artifact(
                 "provenance-feedback",
                 provenance.feedback_provenance_digest(),
-            ),
+            )?,
             causality_digest: imported_artifact(
                 "provenance-causality",
                 provenance.causality_digest(),
-            ),
+            )?,
             strategy_descriptor_digest: imported_artifact(
                 "provenance-strategy-descriptor",
                 provenance.strategy_descriptor_digest(),
-            ),
+            )?,
             execution_record_digest: imported_artifact(
                 "provenance-execution-record",
                 provenance.execution_record_digest(),
-            ),
+            )?,
             outcome_class: provenance.outcome_class(),
             authoritative_artifact_digest: provenance
                 .authoritative_artifact_digest()
-                .map(|digest| imported_artifact("provenance-authoritative-artifact", digest)),
+                .map(|digest| imported_artifact("provenance-authoritative-artifact", digest))?,
             request_digest: provenance
                 .request_digest()
-                .map(|digest| imported_artifact("provenance-request", digest)),
+                .map(|digest| imported_artifact("provenance-request", digest))?,
             receipt_digest: provenance
                 .receipt_digest()
-                .map(|digest| imported_artifact("provenance-receipt", digest)),
+                .map(|digest| imported_artifact("provenance-receipt", digest))?,
             failure_class: provenance.failure_class(),
-        }
+        })
     }
 
     pub fn contract_digest(&self) -> &WorthQueryMutationEvidenceDigest {
@@ -120,7 +126,9 @@ impl WorthQueryMutationProvenanceEvidence {
     }
 
     #[cfg(test)]
-    pub(crate) fn test_only(execution_record_digest: impl Into<String>) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub(crate) fn test_only(
+        execution_record_digest: impl Into<String>,
+    ) -> Result<Self, IdentityDerivationDenial> {
         Ok(Self {
             contract_digest: imported_artifact("provenance-contract", "contract:test")?,
             writeback_effect_artifact_digest: imported_artifact(
@@ -157,7 +165,10 @@ impl WorthQueryMutationProvenanceEvidence {
 fn imported_artifact(
     role: &'static str,
     artifact: impl Into<String>,
-) -> Result<WorthQueryMutationEvidenceDigest, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+) -> Result<WorthQueryMutationEvidenceDigest, IdentityDerivationDenial> {
     let artifact = WorthQueryBridgeMutationArtifactIdentity::imported(role, artifact)?;
-    Ok(WorthQueryMutationEvidenceDigest::source_identity(role, artifact.evidence_identity())?)
+    Ok(WorthQueryMutationEvidenceDigest::source_identity(
+        role,
+        artifact.evidence_identity(),
+    )?)
 }

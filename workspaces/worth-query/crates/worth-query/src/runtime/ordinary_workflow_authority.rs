@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod merge_validation_denial;
 use super::{
     WorthQueryBackendMergeAuthority, WorthQueryEffectPolicy, WorthQueryInspection,
@@ -307,7 +308,7 @@ impl WorthQueryRuntime {
         session_label: Option<WorthQuerySessionLabel>,
         preview_basis: Option<WorthQueryPreviewBasisAdmission>,
         merge_authority: Option<WorthQueryBackendMergeAuthority>,
-    ) -> Result<WorthQueryOrdinaryAuthorityAdmission, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<WorthQueryOrdinaryAuthorityAdmission, IdentityDerivationDenial> {
         let snapshot_identity = merge_authority
             .as_ref()
             .map(|authority| authority.target_snapshot_identity().clone())
@@ -325,7 +326,7 @@ impl WorthQueryRuntime {
                 )
                 .field_evidence_identity(
                     WorthQueryEvidenceTag::new("snapshot"),
-                    &snapshot_identity.evidence_identity(),
+                    &snapshot_identity.evidence_identity()?,
                 );
         if let Some(label) = session_label.as_ref() {
             identity = identity.field_value(
@@ -357,9 +358,14 @@ impl WorthQueryRuntime {
     }
 }
 
-fn workflow_lower_identity(role: &'static str, digest: &str) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
-        .field_shape(WorthQueryEvidenceTag::new("role"), role)
-        .field_value(WorthQueryEvidenceTag::new("digest"), digest)
-        .seal()?)
+fn workflow_lower_identity(
+    role: &'static str,
+    digest: &str,
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
+            .field_shape(WorthQueryEvidenceTag::new("role"), role)
+            .field_value(WorthQueryEvidenceTag::new("digest"), digest)
+            .seal()?,
+    )
 }

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::sync::Arc;
 
 use crate::evidence_identity::{
@@ -112,7 +113,7 @@ fn bind_shared_read_artifact(
     bundle.bind_retained_artifact_identity(
         shared_read_bind_retained_artifact_label_identity(
             target.terminal_view_name_projection(),
-            &snapshot_identity.evidence_identity(),
+            &snapshot_identity.evidence_identity()?,
         )?,
         [target.clone()],
     )
@@ -123,7 +124,7 @@ fn async_result_state_for_shared_read_entry(
     view_name: &str,
     pending_patch_count: usize,
     pending_refresh_fallback_count: usize,
-) -> Result<Option<WorthQueryRuntimeAsyncResultState>, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+) -> Result<Option<WorthQueryRuntimeAsyncResultState>, IdentityDerivationDenial> {
     if pending_patch_count == 0 {
         return Ok(None);
     }
@@ -139,9 +140,9 @@ fn async_result_state_for_shared_read_entry(
         &runtime_async_causality_identity(&shared_read_republishing_causality_identity(
             view_name,
             kind,
-            &snapshot_identity.evidence_identity(),
+            &snapshot_identity.evidence_identity()?,
         )?)?,
-        &snapshot_identity.evidence_identity(),
+        &snapshot_identity.evidence_identity()?,
         &shared_read_generation_identity(snapshot_identity)?,
     )?))
 }
@@ -149,25 +150,27 @@ fn async_result_state_for_shared_read_entry(
 fn unpublished_async_result_state(
     snapshot_identity: &WorthQuerySnapshotIdentity,
     view_name: &str,
-) -> Result<WorthQueryRuntimeAsyncResultState, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+) -> Result<WorthQueryRuntimeAsyncResultState, IdentityDerivationDenial> {
     Ok(WorthQueryRuntimeAsyncResultState::new(
         WorthQueryRuntimeAsyncResultStateKind::Pending,
         &runtime_async_causality_identity(&shared_read_unpublished_causality_identity(
             view_name,
-            &snapshot_identity.evidence_identity(),
+            &snapshot_identity.evidence_identity()?,
         )?)?,
-        &snapshot_identity.evidence_identity(),
+        &snapshot_identity.evidence_identity()?,
         &shared_read_generation_identity(snapshot_identity)?,
     )?)
 }
 
 fn shared_read_generation_identity(
     snapshot_identity: &WorthQuerySnapshotIdentity,
-) -> Result<crate::evidence_identity::WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::SharedReadGeneration)
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("snapshot_identity"),
-            &snapshot_identity.evidence_identity(),
-        )
-        .seal()?)
+) -> Result<crate::evidence_identity::WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::SharedReadGeneration)
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("snapshot_identity"),
+                &snapshot_identity.evidence_identity()?,
+            )
+            .seal()?,
+    )
 }

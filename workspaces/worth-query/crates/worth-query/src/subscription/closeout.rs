@@ -225,7 +225,7 @@ impl SubscriptionLifecycleCloseout {
             lane_terminal,
             support_profile.profile_identity(),
             performance_receipt.performance_receipt_identity(),
-            &counters.evidence_identity(),
+            &counters.evidence_identity()?,
             &source_identity,
         )?;
         Ok(Self {

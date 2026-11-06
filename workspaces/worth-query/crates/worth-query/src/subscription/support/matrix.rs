@@ -67,7 +67,7 @@ impl QuerySubscriptionSupportMatrix {
         profile: Option<&QuerySubscriptionSupportProfile>,
         subject: &QuerySubscriptionSupportSubject,
     ) -> Result<Self, IdentityDerivationDenial> {
-        let capability_digest = SubscriptionFamilyCapabilityDigest::for_family(family);
+        let capability_digest = SubscriptionFamilyCapabilityDigest::for_family(family)?;
         let coverage = SupportCoverageStage::for_subject(subject);
         let rows = QuerySubscriptionSupportClass::all()
             .into_iter()
@@ -78,7 +78,7 @@ impl QuerySubscriptionSupportMatrix {
                     posture_for_class(support_class, coverage, profile),
                 )
             })
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
         let row_refs: Vec<&WorthQueryEvidenceIdentity> =
             rows.iter().map(|row| row.row_identity()).collect();
         let matrix_identity =

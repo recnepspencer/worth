@@ -52,7 +52,7 @@ impl QuerySubscriptionDeclarationDenial {
             diagnostic_stage,
             message.clone(),
             source_identity,
-            &counters.evidence_identity(),
+            &counters.evidence_identity()?,
         )?;
         Ok(Self {
             denial_kind,

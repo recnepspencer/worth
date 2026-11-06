@@ -1,6 +1,7 @@
 use crate::application::{
     WorthQueryMilestoneNineSevenDerivedClosure, WorthQuerySharedReadPinningCertification,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -38,7 +39,7 @@ impl WorthQueryRuntimePublicSupportMatrixRow {
         parallel_api_forbidden: bool,
         admission_fail_closed: bool,
         support_contract_digest: Option<impl Into<String>>,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let surface = surface.into();
         let owner_milestone = owner_milestone.into();
         let extension_rule = extension_rule.into();
@@ -150,7 +151,9 @@ pub struct WorthQueryRuntimePublicSupportMatrix {
 }
 
 impl WorthQueryRuntimePublicSupportMatrix {
-    pub fn from_public_api_contract(contract: &WorthQueryRuntimePublicApiContract) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub fn from_public_api_contract(
+        contract: &WorthQueryRuntimePublicApiContract,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let mut rows = contract
             .families()
             .iter()
@@ -169,7 +172,7 @@ impl WorthQueryRuntimePublicSupportMatrix {
                     Some(family.contract_digest().to_string()),
                 )
             })
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
 
         rows.push(WorthQueryRuntimePublicSupportMatrixRow::new(
             "authoritative-mutation-evidence-certification",
@@ -225,7 +228,7 @@ impl WorthQueryRuntimePublicSupportMatrix {
             Some(
                 WorthQueryRuntimeDownstreamDeliveryContract::from_backend_posture(
                     contract.backend_posture(),
-                )
+                )?
                 .contract_for_reporting()
                 .to_string(),
             ),
@@ -364,14 +367,18 @@ impl WorthQueryRuntimePublicSupportMatrix {
     }
 }
 
-fn shared_read_pinning_boundary_closure_contract_digest() -> Result<String, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+fn shared_read_pinning_boundary_closure_contract_digest() -> Result<String, IdentityDerivationDenial>
+{
     let certification = WorthQuerySharedReadPinningCertification::support_gate_required()?;
     debug_assert_ne!(certification.closure().posture().as_str(), "closed");
     Ok(certification.closure().closure_digest().to_string())
 }
 
-fn milestone_nine_seven_derived_closure_contract_digest() -> Result<String, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(WorthQueryMilestoneNineSevenDerivedClosure::support_profile_publication_contract()?
-        .closure_digest()
-        .to_string())
+fn milestone_nine_seven_derived_closure_contract_digest() -> Result<String, IdentityDerivationDenial>
+{
+    Ok(
+        WorthQueryMilestoneNineSevenDerivedClosure::support_profile_publication_contract()?
+            .closure_digest()
+            .to_string(),
+    )
 }

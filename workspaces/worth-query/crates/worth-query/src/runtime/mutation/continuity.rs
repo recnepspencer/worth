@@ -187,7 +187,7 @@ impl WorthQueryContinuityMutationDenial {
                 "continuity-basis-binding",
                 identity,
             )
-        });
+        })?;
         let denial_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
                 .field_shape(

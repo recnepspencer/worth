@@ -32,9 +32,9 @@ impl WorthQueryLiveSubscriptionTargetIndex {
         &mut self,
         target: WorthQueryLiveArtifactTarget,
         request: &DeclarativeLiveQueryRequest,
-    ) {
+    ) -> Result<(), IdentityDerivationDenial> {
         self.unregister(&target);
-        let collection = request.target_collection_identity().as_str().to_owned();
+        let collection = request.target_collection_identity()?.as_str().to_owned();
         let entry = self.collections.entry(collection.clone()).or_default();
         entry.all.insert(target.clone());
         let routes = request_routes(request);
@@ -60,6 +60,8 @@ impl WorthQueryLiveSubscriptionTargetIndex {
                 .insert(path, target.clone());
         }
         self.routes_by_target.insert(target, (collection, routes));
+
+        Ok(())
     }
 
     pub(super) fn unregister(&mut self, target: &WorthQueryLiveArtifactTarget) {

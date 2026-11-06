@@ -142,7 +142,7 @@ pub(super) fn branch_intent_receipt_inspection_basis_identity(
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("basis_snapshot_identity"),
-                &receipt.basis_snapshot_identity().evidence_identity(),
+                &receipt.basis_snapshot_identity().evidence_identity()?,
             )
             .field_value_sequence(
                 WorthQueryEvidenceTag::new("basis_evidence"),
@@ -189,7 +189,7 @@ pub(super) fn branch_intent_receipt_inspection_identity(
             .field_evidence_identity(WorthQueryEvidenceTag::new("basis_identity"), basis_identity)
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("basis_snapshot_identity"),
-                &receipt.basis_snapshot_identity().evidence_identity(),
+                &receipt.basis_snapshot_identity().evidence_identity()?,
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("admission_identity"),

@@ -79,10 +79,10 @@ pub(super) fn continuity_mutation_evidence(
     existing_truth_binding: Option<&crate::runtime::WorthQueryExistingTruthTargetBinding>,
     resolved_target_entity_identity: Option<&WorthQueryEntityIdentity>,
     target_collection: Option<&WorthQueryMutationTargetCollectionIdentity>,
-) -> Option<WorthQueryContinuityMutationEvidence> {
+) -> Result<Option<WorthQueryContinuityMutationEvidence>, IdentityDerivationDenial> {
     let basis_binding_identity =
         existing_truth_binding.map(|binding| binding.binding_evidence_identity());
-    bridge_continuity
+    Ok(bridge_continuity
         .map(|bundle| {
             WorthQueryContinuityMutationEvidence::from_bridge_with_query_context(
                 bundle,
@@ -100,7 +100,7 @@ pub(super) fn continuity_mutation_evidence(
                     target_collection,
                 )
             })
-        })
+        })?)
 }
 
 pub(super) fn assertion_evidence(
@@ -140,7 +140,7 @@ fn retained_assertion_verification_digest(
     )
     .field_evidence_identity(
         WorthQueryEvidenceTag::new("snapshot_identity"),
-        &snapshot_identity.evidence_identity(),
+        &snapshot_identity.evidence_identity()?,
     )
     .optional_evidence_identity(
         WorthQueryEvidenceTag::new("declared_aspect_value_digest"),

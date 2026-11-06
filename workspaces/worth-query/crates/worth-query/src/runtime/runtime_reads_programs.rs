@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQuerySnapshotIdentity;
 
 impl WorthQueryRuntime {
@@ -136,7 +137,7 @@ impl WorthQueryRuntime {
         self.effects
             .get(&effect_target)
             .map(WorthQueryEffectInspectionEvidence::from_runtime)
-            .ok_or_else(|| WorthQueryRuntimeError::MissingEffect(effect_name.to_string()))
+            .ok_or_else(|| WorthQueryRuntimeError::MissingEffect(effect_name.to_string()))?
     }
 
     pub(super) fn computed_candidate_live_views(
@@ -176,10 +177,11 @@ impl WorthQueryRuntime {
     pub(in crate::runtime) fn current_snapshot_identity_with_request(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> WorthQuerySnapshotIdentity {
-        self.backend
+    ) -> Result<WorthQuerySnapshotIdentity, IdentityDerivationDenial> {
+        Ok(self
+            .backend
             .current_snapshot_identity(execution)
-            .admit_runtime_backend_authority()
+            .admit_runtime_backend_authority()?)
     }
 
     pub fn install_program(

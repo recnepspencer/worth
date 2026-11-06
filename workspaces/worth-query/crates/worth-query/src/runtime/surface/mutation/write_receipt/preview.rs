@@ -32,7 +32,7 @@ impl WorthQueryWriteReceipt {
         let commit_evidence_identity =
             super::write_receipt_commit_evidence_identity(&commit_identity);
         let journal_position =
-            WorthQueryJournalPosition::preview(preview_identity.clone(), sequence as u64);
+            WorthQueryJournalPosition::preview(preview_identity.clone(), sequence as u64)?;
         let snapshot_evidence_identity =
             super::write_receipt_snapshot_evidence_identity(&snapshot_identity);
         let delta = preview_receipt_delta(command, &preview_identity)?;
@@ -45,19 +45,20 @@ impl WorthQueryWriteReceipt {
         let committed_truth_identity = super::write_receipt_committed_truth_identity(&inner)?;
         let target_entity_identity = preview_target_entity_identity(command, &delta);
         let declared_collection_identity = command.declared_collection_identity();
-        let target_collection_identity = declared_collection_identity.as_ref().map(|collection| {
-            WorthQueryMutationTargetCollectionIdentity::new(
-                "write-receipt-preview-target",
-                collection.as_str(),
-            )
-        });
+        let target_collection_identity =
+            declared_collection_identity.as_ref().map(|collection| {
+                WorthQueryMutationTargetCollectionIdentity::new(
+                    "write-receipt-preview-target",
+                    collection.as_str(),
+                )
+            })?;
         let naming_mutation_evidence = naming_mutation_evidence(
             None,
             command.naming_intent(),
             target_entity_identity
                 .as_ref()
                 .or(Some(&delta.entity_identity)),
-            target_collection_identity.as_ref(),
+            target_collection_identity.as_ref()?,
         );
         let continuity_mutation_evidence = continuity_mutation_evidence(
             None,
@@ -66,7 +67,7 @@ impl WorthQueryWriteReceipt {
             target_entity_identity
                 .as_ref()
                 .or(Some(&delta.entity_identity)),
-            target_collection_identity.as_ref(),
+            target_collection_identity.as_ref()?,
         );
         Ok(Self {
             inner,
@@ -81,13 +82,13 @@ impl WorthQueryWriteReceipt {
                 command.mutation_family(),
                 declared_collection_identity.clone(),
                 command.declared_entity_identity(),
-                target_collection_identity.clone(),
+                target_collection_identity.clone()?,
                 command.declared_entity_identity(),
             ),
             existing_truth_assertion_evidence: None,
             existing_truth_binding_evidence: command
                 .existing_truth_binding()
-                .map(WorthQueryExistingTruthBindingEvidence::from_binding),
+                .map(WorthQueryExistingTruthBindingEvidence::from_binding)?,
             symbolic_target_reference_evidence: symbolic_target_reference_evidence(
                 command.mutation_family(),
                 None,
@@ -120,7 +121,7 @@ impl WorthQueryWriteReceipt {
             refresh_fallback: false,
             decision_trace_envelope: None,
             execution_provenance: None,
-        })
+        })?
     }
 }
 

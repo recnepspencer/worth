@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::{BTreeMap, BTreeSet};
 
 mod target_index;
@@ -73,7 +74,7 @@ impl WorthQueryRuntime {
         &mut self,
         target: WorthQueryLiveArtifactTarget,
         closure: &crate::domain_installation::WorthQueryCompiledSemanticAspectDependencyClosure,
-    ) {
+    ) -> Result<(), IdentityDerivationDenial> {
         self.unregister_installed_live_route(&target);
         let impact_classifier =
             crate::domain_installation::WorthQueryInstalledLiveImpactClassifier::from_closure(
@@ -84,7 +85,7 @@ impl WorthQueryRuntime {
             .get(&target)
             .expect("installed live route retains its live subscription")
             .request
-            .target_collection_identity()
+            .target_collection_identity()?
             .as_str()
             .to_owned();
         self.installed_live_routes.target_index.register(
@@ -95,6 +96,8 @@ impl WorthQueryRuntime {
         self.installed_live_routes
             .routes
             .insert(target, WorthQueryInstalledLiveRoute { impact_classifier });
+
+        Ok(())
     }
 
     pub(crate) fn unregister_installed_live_route(

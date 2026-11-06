@@ -153,7 +153,7 @@ pub(crate) fn synthetic_runtime_workflow_binding_scoped_for_branch_snapshot_bind
     runtime_snapshot_identity: WorthQuerySnapshotIdentity,
     runtime_target_branch: BranchId,
 ) -> Result<WorkflowContextBinding, IdentityDerivationDenial> {
-    let runtime_snapshot_evidence = runtime_snapshot_identity.evidence_identity();
+    let runtime_snapshot_evidence = runtime_snapshot_identity.evidence_identity()?;
     let source_identity = synthetic_runtime_workflow_source_identity(
         source_label,
         binding_scope,

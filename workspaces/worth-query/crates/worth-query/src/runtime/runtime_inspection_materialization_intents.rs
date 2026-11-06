@@ -112,9 +112,10 @@ impl WorthQueryWorkspace {
     pub(crate) fn into_runtime_derived_materialization_binding(
         &self,
         handoff: WorthQueryDerivedMaterializationExecutionHandoff,
-    ) -> WorthQueryDerivedMaterializationExecutionBinding {
-        self.runtime
-            .prepare_derived_materialization_execution_binding(handoff)
+    ) -> Result<WorthQueryDerivedMaterializationExecutionBinding, IdentityDerivationDenial> {
+        Ok(self
+            .runtime
+            .prepare_derived_materialization_execution_binding(handoff)?)
     }
 
     pub(crate) fn execute_bound_derived_materialization(
@@ -151,9 +152,10 @@ impl WorthQueryWorkspace {
     pub(crate) fn into_runtime_derived_inspection_binding(
         &self,
         handoff: WorthQueryDerivedInspectionExecutionHandoff,
-    ) -> WorthQueryDerivedInspectionExecutionBinding {
-        self.runtime
-            .prepare_derived_inspection_execution_binding(handoff)
+    ) -> Result<WorthQueryDerivedInspectionExecutionBinding, IdentityDerivationDenial> {
+        Ok(self
+            .runtime
+            .prepare_derived_inspection_execution_binding(handoff)?)
     }
 
     pub(crate) fn execute_bound_derived_inspection(
@@ -306,7 +308,7 @@ impl WorthQueryRuntime {
                 result.receipt().result_digest(),
                 "derived-view-materialization",
             );
-        let snapshot_evidence_identity = snapshot_identity.evidence_identity();
+        let snapshot_evidence_identity = snapshot_identity.evidence_identity()?;
         let execution_provenance =
             WorthQueryIntentExecutionProvenance::for_shared_execution_typed_parts(
                 binding.family(),
@@ -346,7 +348,7 @@ impl WorthQueryRuntime {
                 result.receipt().result_digest(),
                 "derived-view-inspection",
             );
-        let snapshot_evidence_identity = snapshot_identity.evidence_identity();
+        let snapshot_evidence_identity = snapshot_identity.evidence_identity()?;
         let execution_provenance =
             WorthQueryIntentExecutionProvenance::for_shared_execution_typed_parts(
                 binding.family(),
@@ -388,6 +390,6 @@ impl WorthQueryRuntime {
         self.derived_views
             .get(&WorthQueryDerivedMaterializationTarget::new(view_name))
             .map(WorthQueryComputedInspectionEvidence::from_runtime)
-            .ok_or_else(|| WorthQueryRuntimeError::MissingDerivedView(view_name.to_string()))
+            .ok_or_else(|| WorthQueryRuntimeError::MissingDerivedView(view_name.to_string()))?
     }
 }

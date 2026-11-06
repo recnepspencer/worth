@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::sync::Arc;
 
 use crate::authorized_projection::AuthorizedProjectionArtifact;
@@ -105,17 +106,19 @@ impl WorthQueryPublishedDerivedArtifactHandle {
         self.async_result_state.as_ref()
     }
 
-    pub fn inspect_projection_consumption(&self) -> WorthQueryPublishedProjectionInspection {
-        WorthQueryPublishedProjectionInspection {
+    pub fn inspect_projection_consumption(
+        &self,
+    ) -> Result<WorthQueryPublishedProjectionInspection, IdentityDerivationDenial> {
+        Ok(WorthQueryPublishedProjectionInspection {
             published: self.published_binding.is_some(),
             artifact_binding_identity: self
                 .published_binding
                 .as_ref()
                 .map(|binding| binding.binding_identity().clone()),
             snapshot_identity: self.snapshot_identity().clone(),
-            snapshot_evidence_identity: self.snapshot_identity().evidence_identity(),
+            snapshot_evidence_identity: self.snapshot_identity().evidence_identity()?,
             async_result_state: self.async_result_state.clone(),
-        }
+        })
     }
 
     pub fn consume_projection_authority(
@@ -150,13 +153,15 @@ pub struct WorthQuerySharedReadBasisInspection {
 }
 
 impl WorthQuerySharedReadBasisInspection {
-    pub(in crate::runtime) fn from_lease(lease: &WorthQuerySharedReadGenerationLease) -> Self {
+    pub(in crate::runtime) fn from_lease(
+        lease: &WorthQuerySharedReadGenerationLease,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let generation = lease.generation();
-        Self {
+        Ok(Self {
             generation_ordinal: generation.ordinal(),
             snapshot_identity: generation.snapshot_identity().clone(),
-            snapshot_evidence_identity: generation.snapshot_identity().evidence_identity(),
-        }
+            snapshot_evidence_identity: generation.snapshot_identity().evidence_identity()?,
+        })
     }
 
     pub fn generation_ordinal(&self) -> u64 {

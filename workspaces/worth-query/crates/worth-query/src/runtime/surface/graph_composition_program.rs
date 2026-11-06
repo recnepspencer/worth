@@ -119,7 +119,7 @@ impl WorthQueryGraphCompositionProgram {
     pub(crate) fn new(
         steps: Vec<WorthQueryGraphCompositionProgramStep>,
         breadth: &WorthQueryGraphCompositionBreadth,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let step_digests = steps
             .iter()
             .map(|step| {
@@ -166,11 +166,11 @@ impl WorthQueryGraphCompositionProgram {
                     WorthQueryEvidenceTag::new("step"),
                     step_digests.iter(),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             steps,
             program_digest,
-        }
+        })
     }
 
     pub(crate) fn empty() -> Result<Self, IdentityDerivationDenial> {

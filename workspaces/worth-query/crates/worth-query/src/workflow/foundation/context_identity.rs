@@ -28,7 +28,7 @@ pub(super) fn workflow_context_binding_identity(
     if let Some(runtime_snapshot_identity) = runtime_snapshot_identity {
         identity = identity.field_evidence_identity(
             WorthQueryEvidenceTag::new("runtime_snapshot"),
-            &runtime_snapshot_identity.evidence_identity(),
+            &runtime_snapshot_identity.evidence_identity()?,
         );
     }
     if let Some(binding_scope) = binding_scope {

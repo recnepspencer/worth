@@ -93,7 +93,7 @@ fn continuity_resolution_digest(
                 input
                     .resolved_target
                     .map(WorthQueryEntityIdentity::evidence_identity)
-                    .as_ref(),
+                    .as_ref()?,
             )
             .optional_evidence_identity(
                 WorthQueryEvidenceTag::new("collection"),

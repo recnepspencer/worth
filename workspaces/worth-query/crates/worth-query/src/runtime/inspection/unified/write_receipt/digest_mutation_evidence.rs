@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{WorthQueryEvidenceIdentityEncoder, WorthQueryEvidenceTag};
 use crate::runtime::{
     WorthQueryContinuityMutationEvidence, WorthQueryContinuityOutcomeClass,
@@ -14,7 +15,7 @@ pub(super) fn append_mutation_evidence_fields(
     continuity_mutation_evidence: Option<&WorthQueryContinuityMutationEvidence>,
     causality_evidence: Option<&WorthQueryMutationCausalityEvidence>,
     provenance_evidence: Option<&WorthQueryMutationProvenanceEvidence>,
-) -> WorthQueryEvidenceIdentityEncoder {
+) -> Result<WorthQueryEvidenceIdentityEncoder, IdentityDerivationDenial> {
     let symbolic_target_resolved_entity_identity = symbolic_target_reference_evidence
         .map(WorthQuerySymbolicTargetReferenceEvidence::resolved_entity_identity)
         .map(|identity| identity.evidence_identity());
@@ -35,7 +36,7 @@ pub(super) fn append_mutation_evidence_fields(
     let provenance_failure_class = provenance_evidence
         .and_then(|evidence| evidence.failure_class().map(|value| format!("{value:?}")));
 
-    encoder
+    Ok(encoder
         .optional_shape(
             WorthQueryEvidenceTag::new("existing_truth_family"),
             existing_truth_binding_evidence.map(|evidence| evidence.family().as_str()),
@@ -48,7 +49,7 @@ pub(super) fn append_mutation_evidence_fields(
         )
         .optional_evidence_identity(
             WorthQueryEvidenceTag::new("existing_truth_resolved_entity_identity"),
-            existing_truth_resolved_entity_identity.as_ref(),
+            existing_truth_resolved_entity_identity.as_ref()?,
         )
         .optional_evidence_identity(
             WorthQueryEvidenceTag::new("existing_truth_target_collection"),
@@ -70,7 +71,7 @@ pub(super) fn append_mutation_evidence_fields(
         )
         .optional_evidence_identity(
             WorthQueryEvidenceTag::new("symbolic_target_resolved_entity_identity"),
-            symbolic_target_resolved_entity_identity.as_ref(),
+            symbolic_target_resolved_entity_identity.as_ref()?,
         )
         .optional_evidence_identity(
             WorthQueryEvidenceTag::new("symbolic_target_collection"),
@@ -102,7 +103,7 @@ pub(super) fn append_mutation_evidence_fields(
         )
         .optional_evidence_identity(
             WorthQueryEvidenceTag::new("naming_resolved_target_entity_identity"),
-            naming_resolved_target_entity_identity.as_ref(),
+            naming_resolved_target_entity_identity.as_ref()?,
         )
         .optional_evidence_identity(
             WorthQueryEvidenceTag::new("naming_target_collection"),
@@ -142,7 +143,7 @@ pub(super) fn append_mutation_evidence_fields(
         )
         .optional_evidence_identity(
             WorthQueryEvidenceTag::new("continuity_resolved_target_entity_identity"),
-            continuity_resolved_target_entity_identity.as_ref(),
+            continuity_resolved_target_entity_identity.as_ref()?,
         )
         .optional_evidence_identity(
             WorthQueryEvidenceTag::new("continuity_target_collection"),
@@ -265,7 +266,7 @@ pub(super) fn append_mutation_evidence_fields(
         .optional_shape(
             WorthQueryEvidenceTag::new("provenance_failure_class"),
             provenance_failure_class.as_deref(),
-        )
+        ))
 }
 
 fn continuity_outcome_label(evidence: &WorthQueryContinuityMutationEvidence) -> &'static str {

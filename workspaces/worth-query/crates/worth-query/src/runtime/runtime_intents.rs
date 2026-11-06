@@ -146,7 +146,7 @@ impl WorthQueryRuntime {
             |violation| {
                 self.intent_violation_error(&declaration_for_error, violation, None, None, None)
             },
-        )
+        )?
     }
 
     fn effect_runtime_intent_request(
@@ -169,7 +169,7 @@ impl WorthQueryRuntime {
             |violation| {
                 self.intent_violation_error(&declaration_for_error, violation, None, None, None)
             },
-        )
+        )?
     }
 
     pub(crate) fn intent_violation_error(

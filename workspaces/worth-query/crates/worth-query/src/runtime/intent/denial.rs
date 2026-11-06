@@ -1,5 +1,6 @@
 use super::admission::WorthQueryIntentAdmissionDenial;
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -35,8 +36,14 @@ impl WorthQueryIntentDenialEvidence {
         declaration: &WorthQueryIntentDeclaration,
         denial: &WorthQueryIntentAdmissionDenial,
         execution: Option<&WorthQueryIntentExecution>,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-        Ok(Self::new_with_trace(declaration, denial, execution, None, None)?)
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new_with_trace(
+            declaration,
+            denial,
+            execution,
+            None,
+            None,
+        )?)
     }
 
     pub(in crate::runtime) fn new_with_trace(
@@ -45,7 +52,7 @@ impl WorthQueryIntentDenialEvidence {
         execution: Option<&WorthQueryIntentExecution>,
         execution_provenance: Option<WorthQueryIntentExecutionProvenance>,
         decision_trace_envelope: Option<WorthQueryIntentDecisionTraceEnvelope>,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let execution_kind = execution.map(WorthQueryIntentExecution::execution_kind);
         let returned_strategy_identity =
             execution.map(|execution| execution.strategy_identity.clone());
@@ -116,7 +123,7 @@ impl WorthQueryIntentDenialEvidence {
                 )
                 .optional_evidence_identity(
                     WorthQueryEvidenceTag::new("snapshot_identity"),
-                    snapshot_evidence_identity.as_ref(),
+                    snapshot_evidence_identity.as_ref()?,
                 )
                 .optional_value(
                     WorthQueryEvidenceTag::new("execution_provenance"),
@@ -213,10 +220,13 @@ impl WorthQueryIntentDenialEvidence {
         self.snapshot_identity.as_ref()
     }
 
-    pub fn snapshot_evidence_identity(&self) -> Option<WorthQueryEvidenceIdentity> {
-        self.snapshot_identity
+    pub fn snapshot_evidence_identity(
+        &self,
+    ) -> Result<Option<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
+        Ok(self
+            .snapshot_identity
             .as_ref()
-            .map(WorthQuerySnapshotIdentity::evidence_identity)
+            .map(WorthQuerySnapshotIdentity::evidence_identity)?)
     }
 
     pub fn execution_provenance(&self) -> Option<&WorthQueryIntentExecutionProvenance> {

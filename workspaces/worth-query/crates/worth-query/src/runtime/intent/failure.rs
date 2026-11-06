@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -37,9 +38,9 @@ impl WorthQueryIntentExecutionFailureEvidence {
         execution: &WorthQueryIntentExecution,
         execution_provenance: WorthQueryIntentExecutionProvenance,
         decision_trace_envelope: WorthQueryIntentDecisionTraceEnvelope,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let snapshot_identity = execution.mutation_receipt().snapshot_identity.clone();
-        let snapshot_evidence_identity = snapshot_identity.evidence_identity();
+        let snapshot_evidence_identity = snapshot_identity.evidence_identity()?;
         let invariant_evidence = execution.invariant_evidence().to_vec();
         let failure_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::IntentExecutionFailureEvidence)
@@ -188,8 +189,10 @@ impl WorthQueryIntentExecutionFailureEvidence {
         &self.snapshot_identity
     }
 
-    pub fn snapshot_evidence_identity(&self) -> WorthQueryEvidenceIdentity {
-        self.snapshot_identity.evidence_identity()
+    pub fn snapshot_evidence_identity(
+        &self,
+    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(self.snapshot_identity.evidence_identity()?)
     }
 
     pub fn execution_provenance(&self) -> &WorthQueryIntentExecutionProvenance {

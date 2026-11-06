@@ -115,7 +115,7 @@ impl WorthQueryExistingTruthAssertionDenial {
                 )
                 .field_evidence_identity(
                     WorthQueryEvidenceTag::new("resolved"),
-                    &binding.resolved_target_identity().evidence_identity(),
+                    &binding.resolved_target_identity().evidence_identity()?,
                 )
                 .optional_value(
                     WorthQueryEvidenceTag::new("collection"),
@@ -231,7 +231,7 @@ impl WorthQueryVerifiedExistingTruthAssertion {
         let verified_assumption_set = crate::runtime::WorthQueryVerifiedAssumptionSet::new(
             binding.binding_evidence_identity().clone(),
             asserted_aspects,
-            aspect_evidence_rows.clone(),
+            aspect_evidence_rows.clone()?,
             cleared_assertion_count,
             snapshot_identity,
         )?;

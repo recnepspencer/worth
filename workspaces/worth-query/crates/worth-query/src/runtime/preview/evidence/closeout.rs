@@ -1,4 +1,5 @@
 use super::super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -109,7 +110,7 @@ impl WorthQueryPreviewCloseoutEvidence {
         pending_write_intent_residue_count: usize,
         authoritative_residue_count: usize,
         rebinding_identity: Option<WorthQueryEvidenceIdentity>,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let basis_evidence_rows = basis_admission.evidence_rows();
         let mut closeout_builder =
             worth_query_evidence_identity(WorthQueryEvidenceScope::PreviewCloseoutEvidence)
@@ -138,11 +139,11 @@ impl WorthQueryPreviewCloseoutEvidence {
                 )
                 .field_evidence_identity(
                     WorthQueryEvidenceTag::new("preview_basis_snapshot_identity"),
-                    &preview_basis_snapshot_identity.evidence_identity(),
+                    &preview_basis_snapshot_identity.evidence_identity()?,
                 )
                 .field_evidence_identity(
                     WorthQueryEvidenceTag::new("target_basis_snapshot_identity"),
-                    &target_basis_snapshot_identity.evidence_identity(),
+                    &target_basis_snapshot_identity.evidence_identity()?,
                 )
                 .field_usize(
                     WorthQueryEvidenceTag::new("preview_binding_count"),

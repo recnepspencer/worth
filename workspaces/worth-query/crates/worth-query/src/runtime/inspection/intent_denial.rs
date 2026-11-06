@@ -187,10 +187,13 @@ impl WorthQueryIntentDenialInspection {
         self.snapshot_identity.as_ref()
     }
 
-    pub fn snapshot_evidence_identity(&self) -> Option<WorthQueryEvidenceIdentity> {
-        self.snapshot_identity
+    pub fn snapshot_evidence_identity(
+        &self,
+    ) -> Result<Option<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
+        Ok(self
+            .snapshot_identity
             .as_ref()
-            .map(WorthQuerySnapshotIdentity::evidence_identity)
+            .map(WorthQuerySnapshotIdentity::evidence_identity)?)
     }
 
     pub fn denial_digest(&self) -> &str {

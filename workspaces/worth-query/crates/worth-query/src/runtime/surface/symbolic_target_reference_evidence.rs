@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQueryEntityIdentity;
 use crate::runtime::{
     WorthQueryMutationSymbolIdentity, WorthQueryMutationTargetCollectionIdentity,
@@ -26,8 +27,8 @@ impl WorthQuerySymbolicTargetReferenceEvidence {
         reference: &BridgeSymbolicTargetReferenceBundle,
         _resolved_entity_identity: Option<&WorthQueryEntityIdentity>,
         target_collection: Option<&str>,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             family: match reference.family() {
                 BridgeSymbolicTargetReferenceFamily::SameBatchDeclaredTarget => {
                     crate::runtime::WorthQuerySymbolicTargetReferenceFamily::SameBatchDeclaredTarget
@@ -41,7 +42,7 @@ impl WorthQuerySymbolicTargetReferenceEvidence {
             symbol: WorthQueryMutationSymbolIdentity::from_bridge_symbolic_target(
                 "symbolic-target-reference",
                 reference.symbol_handle(),
-            ),
+            )?,
             resolved_entity_identity: WorthQueryEntityIdentity::from_relational_record(
                 reference
                     .resolved_entity_identity_handle()
@@ -51,14 +52,14 @@ impl WorthQuerySymbolicTargetReferenceEvidence {
                 |collection| {
                     WorthQueryMutationTargetCollectionIdentity::new("symbolic-target", collection)
                 },
-            ),
-        }
+            )?,
+        })
     }
 
     pub(in crate::runtime) fn from_reference(
         reference: &crate::runtime::WorthQuerySymbolicTargetReference,
         resolved_entity_identity: &WorthQueryEntityIdentity,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         Ok(Self {
             family: reference.family(),
             outcome: WorthQuerySymbolicTargetReferenceOutcome::SameBatchSymbolicTarget,

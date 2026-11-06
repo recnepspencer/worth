@@ -34,7 +34,7 @@ impl QueryObservationReceipt {
                 CausalEvidenceFamily::QueryInspection,
                 read_observation_result_reference_digest(receipt, &snapshot_evidence_identity),
             )],
-        }))
+        })?)
     }
 
     pub(crate) fn certification_historical_replay_fixture(
@@ -79,6 +79,6 @@ impl QueryObservationReceipt {
                     &fixture_component_identity(label, "evidence_reference", "query_inspection"),
                 ),
             )],
-        }))
+        })?)
     }
 }

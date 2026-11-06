@@ -55,7 +55,7 @@ pub(super) fn batch_existing_truth_assertion_digest(
         .iter()
         .flatten()
         .map(existing_truth_assertion_identity)
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     if assertions.is_empty() {
         return Ok(None);
     }
@@ -67,25 +67,25 @@ pub(super) fn batch_existing_truth_assertion_digest(
 
 pub(super) fn batch_symbolic_target_reference_digest(
     references: &[Option<WorthQuerySymbolicTargetReferenceEvidence>],
-) -> Option<WorthQueryMutationEvidenceDigest> {
+) -> Result<Option<WorthQueryMutationEvidenceDigest>, IdentityDerivationDenial> {
     let references = references
         .iter()
         .flatten()
         .map(|reference| symbolic_target_reference_identity("symbolic-target-reference", reference))
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     if references.is_empty() {
-        return None;
+        return Ok(None);
     }
-    Some(aggregate_sequence_identity(
+    Ok(Some(aggregate_sequence_identity(
         "batch-symbolic-target-reference",
         references,
-    ))
+    )?))
 }
 
 pub(super) fn batch_symbolic_resolution_digest(
     target_references: &[Option<WorthQuerySymbolicTargetReferenceEvidence>],
     aspect_resolutions: &[Vec<WorthQuerySymbolicAspectResolutionEvidence>],
-) -> Option<WorthQueryMutationEvidenceDigest> {
+) -> Result<Option<WorthQueryMutationEvidenceDigest>, IdentityDerivationDenial> {
     let rows = target_references
         .iter()
         .flatten()
@@ -98,14 +98,14 @@ pub(super) fn batch_symbolic_resolution_digest(
                 .flatten()
                 .map(symbolic_aspect_resolution_identity),
         )
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     if rows.is_empty() {
-        return None;
+        return Ok(None);
     }
-    Some(aggregate_sequence_identity(
+    Ok(Some(aggregate_sequence_identity(
         "batch-symbolic-resolution",
         rows,
-    ))
+    )?))
 }
 
 pub(super) fn batch_continuity_mutation_digest(
@@ -115,7 +115,7 @@ pub(super) fn batch_continuity_mutation_digest(
         .iter()
         .flatten()
         .map(continuity_mutation_identity)
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     if continuities.is_empty() {
         return Ok(None);
     }
@@ -132,7 +132,7 @@ pub(super) fn batch_naming_mutation_digest(
         .iter()
         .flatten()
         .map(naming_mutation_identity)
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     if namings.is_empty() {
         return Ok(None);
     }
@@ -192,7 +192,7 @@ fn symbolic_target_reference_identity(
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("resolved_entity"),
-                &reference.resolved_entity_identity().evidence_identity(),
+                &reference.resolved_entity_identity().evidence_identity()?,
             );
     if let Some(collection) = reference.target_collection() {
         identity = identity.field_evidence_identity(
@@ -226,7 +226,7 @@ fn symbolic_aspect_resolution_identity(
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("resolved_entity"),
-                &resolution.resolved_entity_identity().evidence_identity(),
+                &resolution.resolved_entity_identity().evidence_identity()?,
             );
     if let Some(collection) = resolution.target_collection() {
         identity = identity.field_evidence_identity(
@@ -283,7 +283,7 @@ fn continuity_mutation_identity(
     if let Some(resolved) = continuity.resolved_target_entity_identity() {
         identity = identity.field_evidence_identity(
             WorthQueryEvidenceTag::new("resolved_entity"),
-            &resolved.evidence_identity(),
+            &resolved.evidence_identity()?,
         );
     }
     if let Some(collection) = continuity.target_collection() {
@@ -328,7 +328,7 @@ fn naming_mutation_identity(
     if let Some(resolved) = naming.resolved_target_entity_identity() {
         identity = identity.field_evidence_identity(
             WorthQueryEvidenceTag::new("resolved_entity"),
-            &resolved.evidence_identity(),
+            &resolved.evidence_identity()?,
         );
     }
     if let Some(collection) = naming.target_collection() {
@@ -363,7 +363,7 @@ fn target_component_identity(
     if let Some(entity) = component.declared().entity_identity() {
         identity = identity.field_evidence_identity(
             WorthQueryEvidenceTag::new("declared_entity"),
-            &entity.evidence_identity(),
+            &entity.evidence_identity()?,
         );
     }
     if let Some(collection) = component.resolved().collection() {
@@ -375,7 +375,7 @@ fn target_component_identity(
     if let Some(entity) = component.resolved().entity_identity() {
         identity = identity.field_evidence_identity(
             WorthQueryEvidenceTag::new("resolved_entity"),
-            &entity.evidence_identity(),
+            &entity.evidence_identity()?,
         );
     }
     Ok(identity.seal()?)

@@ -185,7 +185,7 @@ impl WorthQueryRuntime {
             })?,
             None => self.current_snapshot_identity_with_request(execution),
         };
-        let snapshot_evidence_identity = snapshot_identity.evidence_identity();
+        let snapshot_evidence_identity = snapshot_identity.evidence_identity()?;
         let materialized_fact_posture = self.materialized_fact_posture_for_live_read(
             binding.installation().view_name(),
             &snapshot_evidence_identity,

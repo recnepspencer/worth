@@ -100,7 +100,7 @@ impl WorthQueryVerifiedAssumptionSet {
         cleared_assertion_count: usize,
         snapshot_identity: WorthQuerySnapshotIdentity,
     ) -> Result<Self, IdentityDerivationDenial> {
-        let assumption_snapshot_evidence_identity = snapshot_identity.evidence_identity();
+        let assumption_snapshot_evidence_identity = snapshot_identity.evidence_identity()?;
         let verification_read_set_breadth = WorthQueryVerificationReadSetBreadth::new(
             1,
             asserted_aspects.len(),

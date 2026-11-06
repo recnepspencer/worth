@@ -91,7 +91,7 @@ pub(crate) fn command_declared_aspect_value_digest(
 
 pub(crate) fn command_declared_aspect_value_identity(
     command: &WorthQueryWriteCommand,
-) -> Option<WorthQueryEvidenceIdentity> {
+) -> Result<Option<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
     let aspects = match command {
         WorthQueryWriteCommand::InsertAspects {
             aspects,
@@ -112,8 +112,8 @@ pub(crate) fn command_declared_aspect_value_identity(
                     .chain(symbolic_aspect_references.iter().map(|reference| {
                         symbolic_aspect_reference_digest_row("symbolic", reference)
                     }))
-                    .collect::<Vec<_>>();
-            return Some(declared_aspect_value_identity(rows));
+                    .collect::<Result<Vec<_>, _>>()?;
+            return Ok(Some(declared_aspect_value_identity(rows)?));
         }
         WorthQueryWriteCommand::UpdateAspects { aspects, .. }
         | WorthQueryWriteCommand::UpdateExistingAspects { aspects, .. }
@@ -147,8 +147,8 @@ pub(crate) fn command_declared_aspect_value_identity(
                 .chain(symbolic_aspect_references.iter().map(|reference| {
                     symbolic_aspect_reference_digest_row("update-symbolic", reference)
                 }))
-                .collect::<Vec<_>>();
-            return Some(declared_aspect_value_identity(rows));
+                .collect::<Result<Vec<_>, _>>()?;
+            return Ok(Some(declared_aspect_value_identity(rows)?));
         }
         WorthQueryWriteCommand::VerifyThenDeleteExistingAspects {
             asserted_aspects,
@@ -170,25 +170,25 @@ pub(crate) fn command_declared_aspect_value_identity(
                         .iter()
                         .map(|touch| touched_aspect_digest_row("delete", touch)),
                 )
-                .collect::<Vec<_>>();
-            return Some(declared_aspect_value_identity(rows));
+                .collect::<Result<Vec<_>, _>>()?;
+            return Ok(Some(declared_aspect_value_identity(rows)?));
         }
         WorthQueryWriteCommand::UpdateAspect { aspect, .. } => {
-            return Some(declared_aspect_value_identity(vec![
+            return Ok(Some(declared_aspect_value_identity(vec![
                 declared_aspect_value_digest_row(
                     "declared",
                     aspect.aspect_touch(),
                     aspect.clears_existing_value(),
                     aspect.terminal_digest_material(),
                 ),
-            ]));
+            ])?));
         }
         WorthQueryWriteCommand::DeleteAspects { .. }
         | WorthQueryWriteCommand::DeleteExistingAspects { .. }
         | WorthQueryWriteCommand::DeleteSymbolicAspects { .. }
-        | WorthQueryWriteCommand::Delete { .. } => return None,
+        | WorthQueryWriteCommand::Delete { .. } => return Ok(None),
     };
-    Some(declared_aspect_value_identity(
+    Ok(Some(declared_aspect_value_identity(
         aspects
             .iter()
             .map(|aspect| {
@@ -199,8 +199,8 @@ pub(crate) fn command_declared_aspect_value_identity(
                     aspect.terminal_digest_material(),
                 )
             })
-            .collect::<Vec<_>>(),
-    ))
+            .collect::<Result<Vec<_>, _>>()?,
+    )?))
 }
 
 fn symbolic_aspect_reference_operation(

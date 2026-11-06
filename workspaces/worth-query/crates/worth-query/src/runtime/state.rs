@@ -115,7 +115,7 @@ pub(crate) fn snapshot_live_view_name(
         installation.authority_lane(),
         explanation,
     )?
-    .with_ordinary_runtime_posture(project_live_subscription_ordinary_runtime_posture(state)?);
+    .with_ordinary_runtime_posture(project_live_subscription_ordinary_runtime_posture(state)?)?;
     if let Some(async_result_state) = state.async_result_state.clone() {
         snapshot = snapshot.with_async_result_state(async_result_state);
     }

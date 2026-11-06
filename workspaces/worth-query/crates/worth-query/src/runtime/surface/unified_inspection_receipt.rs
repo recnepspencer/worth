@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::intent_admission::WorthQueryGenericInspectionRequestLabel;
 use crate::intent_admission::WorthQueryIntentDecisionTraceEnvelope;
 use crate::memory_workspace::WorthQuerySnapshotIdentity;
@@ -20,16 +21,16 @@ impl WorthQueryUnifiedInspectionReceipt {
         target_label: WorthQueryGenericInspectionRequestLabel,
         inspection: &WorthQueryInspection,
         snapshot_identity: WorthQuerySnapshotIdentity,
-    ) -> Self {
-        let snapshot_evidence_identity = snapshot_identity.evidence_identity();
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        let snapshot_evidence_identity = snapshot_identity.evidence_identity()?;
+        Ok(Self {
             target_label,
             result_digest: inspection_result_digest(inspection),
             snapshot_identity,
             snapshot_evidence_identity,
             decision_trace_envelope: None,
             execution_provenance: None,
-        }
+        })
     }
 
     pub fn target_label(&self) -> &str {

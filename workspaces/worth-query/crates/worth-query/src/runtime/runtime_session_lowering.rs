@@ -31,7 +31,7 @@ pub(super) fn lower_runtime_live_subscription_request(
         schema_view,
         backend
             .current_snapshot_identity(execution)
-            .admit_runtime_backend_authority(),
+            .admit_runtime_backend_authority()?,
         grouped_baseline_members_or_error(backend, view_name, request)?,
     )
     .map_err(|error| live_subscription_error(view_name, "live-lowering", error))?;
@@ -53,7 +53,7 @@ pub(super) fn lower_runtime_live_subscription_read_binding(
         read_graph.execution_plan().clone(),
         backend
             .current_snapshot_identity(execution)
-            .admit_runtime_backend_authority(),
+            .admit_runtime_backend_authority()?,
         grouped_baseline_members_or_error(backend, view_name, request)?,
     )
     .map_err(|error| live_subscription_error(view_name, "admitted-read-live-lowering", error))?;

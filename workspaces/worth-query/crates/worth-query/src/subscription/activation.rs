@@ -135,7 +135,7 @@ pub fn prepare_subscription_activation(
         &checkpoint_identity,
         admission.signal_strategy_identity(),
         admission.future_selection().projection_identity(),
-        &counters.evidence_identity(),
+        &counters.evidence_identity()?,
     )?;
     let scoped_activation_basis = activate_subscription_basis(admission.scoped_declaration_basis());
     Ok(SubscriptionActivationInput {

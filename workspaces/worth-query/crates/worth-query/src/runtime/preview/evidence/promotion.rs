@@ -1,4 +1,5 @@
 use super::super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -58,7 +59,7 @@ impl WorthQueryPreviewPromotionDenialEvidence {
         recovery_posture: String,
         rebinding_identity: Option<WorthQueryEvidenceIdentity>,
         reason: String,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let basis_evidence_rows = basis_admission.evidence_rows();
         let mut denial_builder =
             worth_query_evidence_identity(WorthQueryEvidenceScope::PreviewPromotionDenialEvidence)
@@ -77,11 +78,11 @@ impl WorthQueryPreviewPromotionDenialEvidence {
                 )
                 .field_evidence_identity(
                     WorthQueryEvidenceTag::new("basis_snapshot_identity"),
-                    &basis_snapshot_identity.evidence_identity(),
+                    &basis_snapshot_identity.evidence_identity()?,
                 )
                 .field_evidence_identity(
                     WorthQueryEvidenceTag::new("promotion_snapshot_identity"),
-                    &promotion_snapshot_identity.evidence_identity(),
+                    &promotion_snapshot_identity.evidence_identity()?,
                 )
                 .field_value_sequence(
                     WorthQueryEvidenceTag::new("basis_evidence_row"),
@@ -150,7 +151,7 @@ impl WorthQueryPreviewPromotionDenialEvidence {
         promotion_snapshot_identity: &WorthQuerySnapshotIdentity,
         staged_preview_write_count: usize,
         preview_binding_count: usize,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         Ok(Self::new(
             WorthQueryPreviewPromotionDenialKind::StaleBasis,
             effect_policy,
@@ -180,7 +181,7 @@ impl WorthQueryPreviewPromotionDenialEvidence {
         failed_write_sequence: usize,
         preview_binding_count: usize,
         reason: String,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         Ok(Self::new(
             WorthQueryPreviewPromotionDenialKind::WriteFailed,
             effect_policy,
@@ -205,7 +206,7 @@ impl WorthQueryPreviewPromotionDenialEvidence {
         promotion_snapshot_identity: &WorthQuerySnapshotIdentity,
         staged_preview_write_count: usize,
         preview_binding_count: usize,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         Ok(Self::new(
             WorthQueryPreviewPromotionDenialKind::AtomicBatchUnsupported,
             effect_policy,
@@ -234,7 +235,7 @@ impl WorthQueryPreviewPromotionDenialEvidence {
         preview_binding_count: usize,
         crossed_authoritative_residue_count: usize,
         rebinding_identity: WorthQueryEvidenceIdentity,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         Ok(Self::new(
             WorthQueryPreviewPromotionDenialKind::RebindingRequired,
             effect_policy,

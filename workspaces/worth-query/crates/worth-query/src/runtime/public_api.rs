@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -32,7 +33,9 @@ pub struct WorthQueryRuntimePublicApiFamilyContract {
 }
 
 impl WorthQueryRuntimePublicApiFamilyContract {
-    fn from_support_row(row: &super::WorthQueryRuntimeFamilySupport) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    fn from_support_row(
+        row: &super::WorthQueryRuntimeFamilySupport,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let family = row.family();
         let status = row.status();
         let teaching_posture = row.teaching_posture();
@@ -156,11 +159,13 @@ pub struct WorthQueryRuntimePublicApiContract {
 }
 
 impl WorthQueryRuntimePublicApiContract {
-    pub fn from_support_profile(profile: &WorthQueryRuntimeSupportProfile) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub fn from_support_profile(
+        profile: &WorthQueryRuntimeSupportProfile,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let families: Vec<_> = profile
             .rows()
             .map(WorthQueryRuntimePublicApiFamilyContract::from_support_row)
-            .collect();
+            .collect()?;
         let stable_family_count = families
             .iter()
             .filter(|family| family.status() == WorthQueryRuntimeFamilySupportStatus::Supported)
