@@ -22,7 +22,7 @@ pub(super) fn readmit<Schema: ApplicationSchemaComposition, Program: 'static>(
         Err(refused) => {
             let (query, cause) = refused.into_parts();
             Err(WorthQueryApplicationHomeOpenRefused::CustodyReadmission {
-                query,
+                query: super::super::UnadmittedHomeQueryService::retain(query),
                 home,
                 cause: HomeCustodyReadmissionDenial::Query(cause),
             })

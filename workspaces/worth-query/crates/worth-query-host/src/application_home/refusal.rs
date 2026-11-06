@@ -7,6 +7,9 @@ use worth_query_execution::facade::{
 };
 use worth_store_application::*;
 
+mod query_custody;
+pub use query_custody::{UnadmittedHomeQueryCustodyRefused, UnadmittedHomeQueryService};
+
 pub enum WorthQueryApplicationHomeOpenRefused<Schema: ApplicationSchemaComposition, Program> {
     Preparation(WorthQueryInMemoryApplicationDenial),
     Binding {
@@ -121,12 +124,12 @@ pub enum WorthQueryApplicationHomeOpenRefused<Schema: ApplicationSchemaCompositi
         home: DirectoryHome,
     },
     CustodyReadmission {
-        query: ReadmittedHomeQueryService<Schema, Program>,
+        query: UnadmittedHomeQueryService<Schema, Program>,
         home: DirectoryHome,
         cause: HomeCustodyReadmissionDenial,
     },
     OwnerAdmission {
-        query: ReadmittedHomeQueryService<Schema, Program>,
+        query: UnadmittedHomeQueryService<Schema, Program>,
         home: ApplicationHomeOwnerAdmissionRefused,
     },
 }

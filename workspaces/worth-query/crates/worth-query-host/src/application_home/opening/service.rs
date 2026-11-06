@@ -52,7 +52,10 @@ pub(super) fn finish_service<Schema: ApplicationSchemaComposition, Program: 'sta
                 query,
                 home,
             })),
-            Err(home) => Err(WorthQueryApplicationHomeOpenRefused::OwnerAdmission { query, home }),
+            Err(home) => Err(WorthQueryApplicationHomeOpenRefused::OwnerAdmission {
+                query: super::super::UnadmittedHomeQueryService::retain(query),
+                home,
+            }),
         }
     })?;
     let home = settled.consume(
