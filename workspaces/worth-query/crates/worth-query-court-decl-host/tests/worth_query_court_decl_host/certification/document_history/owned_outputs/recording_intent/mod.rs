@@ -116,3 +116,6 @@ fn a_drifted_recording_demand_cannot_publish_into_another_document() {
 fn worker_only_a_drifted_recording_demand_cannot_publish_into_another_document() {
     exercise(true);
 }
+
+mod non_leaf;
+mod non_leaf_program;

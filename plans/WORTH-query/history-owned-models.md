@@ -2026,3 +2026,63 @@ value: C denies at7, the candidate grants at5, and Model3/First30 remain healthy
 Assert zero producer/source contacts, zero discovery disclosure, a typed current
 permission refusal and no adoption. Keep the existing stale-parent public read
 and actual-contact court as the separate ordinary fallback proof.
+
+### D1248 stop: opaque non-leaf discovery input is not frozen by source intent
+
+At checkpoint82de9fa66c, the new verified recording path passes214history courts
+and61Native ownership courts; six compiled mutants fail and restore by SHA256.
+The next public counterexample exposes a separate input boundary at
+`application_installation/program/demand/history/{dependent,discovery,parent_query}`
+and the SDK `ProgramOutputContinuationFactory::start_verified`.
+
+The SDK retains an arbitrary Clone-only RootDemand. A source intent captures the
+root query's full-generation selector and complete canonical parameters, not all
+other fields of that demand. The legal generic court demand has an immutable
+source `a` and a separate shared discovery choice. Retain the A profile while the
+choice isA, then switch only discovery toB. Both fields of the complete root
+source query remain `a`. A's parent publication verifies correctly. The installed
+discovery then reads FirstB, discovers SecondB, runs its genuinely authorized
+producer once and A's recording adopts the private candidate: SecondB changes
+1099→1007 at its original ID. Both serial and worker courts are red with that
+actual adoption; no fake parent/settlement or permission is used. B's own source
+was already7 atC, so C authorization is real. This is the frozen graph-input and
+owned-history boundary, not evidence of forged permission.
+
+Checking the root source intent again is insufficient: that entire input never
+changed. A Clone bound cannot establish immutable discovery inputs. Reopening a
+healthy original source to reconstruct an original root violatesD1119/D1214.
+Do not silently add a domain rule for every discovery read: an installed read
+can legitimately follow an outgoing reference to authorized foreign material.
+Do not invent step-authenticated discovery evidence or claim the Native roster
+is the computed set. Stop for a representation ruling under the standing rule.
+
+Options sent to root:
+1. Freeze canonical discovery request recipes alongside the existing source
+   intent at configuration/child admission. This is immutable request data, not
+   authority or a dependent-set assertion. Execute real discovery atD and freshly
+   admit every C permission/request fact. Do not require a not-yet-live discovery
+   scope to exist at configurationC; its selector is data until actual admission.
+2. Give output demands a declared canonical immutable input binding. Capture the
+   complete demand value at retention and reconstruct it for the existing
+   installed discovery mapping. This changes the public demand contract; a
+   Clone-only opaque carrier cannot claim the posture.
+
+No option is implemented. The two red courts remain enabled and committed as
+an explicit incomplete checkpoint. Full root/Query comparison of immutable
+82de9fa66c against clean masterdb554ad361 continues independently; it excludes
+these later counterexample courts and cannot certify the unresolved boundary.
+
+Ruling-question clarification: the case does not demonstrate unauthorized work,
+false ownership or a change to B's authored fields. The source-scope producer
+forB has real current permission and retains B's custody. It may be legitimate
+incidental derived maintenance under the existing live-input contract. The
+unresolved question is whether retention promises to freeze all graph input
+fields beyond the expressly captured source intent. Do not impose that extra
+contract or a blanket ban on authorized foreign reads/producer work by inference.
+The amended root question therefore includes keeping live discovery inputs and
+authorized derived work, as well as the two freezing representations above.
+The enabled negative courts characterize the proposed freeze/refusal contract;
+their expected refusal is provisional pending that ruling. If live inputs are
+intended, correct those oracles to the observed authorized maintenance and keep
+production behavior. No unsupported security or data-loss conclusion follows
+from their present reds.
