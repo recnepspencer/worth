@@ -3,10 +3,12 @@ use std::sync::Arc;
 use worth_query_installation::facade::WorthQueryConvergenceIncumbentPosture;
 
 use super::WorthQueryPreparedConvergenceReportCommit;
-use crate::domain_computation::{
-    WorthQueryBoundConvergenceReport, WorthQueryConvergenceDomainDecision,
-    WorthQueryConvergenceFeasibility, WorthQueryConvergenceIncumbentUpdate,
-    WorthQueryRetainedConvergenceCandidateEvidence,
+use {
+    crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceDomainDecision,
+    crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceFeasibility,
+    crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceIncumbentUpdate,
+    crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryRetainedConvergenceCandidateEvidence,
+    crate::domain_computation::WorthQueryBoundConvergenceReport,
 };
 
 pub(super) fn prepare_incumbent_transition(

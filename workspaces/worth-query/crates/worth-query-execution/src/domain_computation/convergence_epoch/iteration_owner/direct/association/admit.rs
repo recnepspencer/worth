@@ -14,9 +14,11 @@ use super::super::super::core::{
 use super::super::WorthQueryAdmittedDirectConvergenceEpoch;
 use super::DirectAdmittedEpochAssociation;
 use crate::domain_computation::provider_session::graph_provider::bounded_step::provider_anchor::WorthQueryGraphProviderAnchor;
-use crate::domain_computation::{
-    WorthQueryAdmittedDirectRun, WorthQueryConvergenceDomainProvider,
-    WorthQueryExecutionBoundOperationAuthority, WorthQueryExecutionRuntime,
+use {
+    crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceDomainProvider,
+    crate::domain_computation::WorthQueryAdmittedDirectRun,
+    crate::domain_computation::WorthQueryExecutionBoundOperationAuthority,
+    crate::domain_computation::WorthQueryExecutionRuntime,
 };
 
 pub(in crate::domain_computation::convergence_epoch) fn admit_epoch(

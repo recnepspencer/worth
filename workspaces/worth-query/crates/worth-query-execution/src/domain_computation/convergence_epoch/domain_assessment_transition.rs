@@ -3,14 +3,18 @@ use std::panic::{catch_unwind, AssertUnwindSafe};
 use crate::domain_computation::WorthQueryBoundGraphExecutionReceipt;
 
 use super::core::WorthQueryConvergenceEpochCore;
-use super::domain_work::WorthQueryConvergenceDomainAssessmentOutcome;
-use super::{
-    WorthQueryConvergenceAssessment, WorthQueryConvergenceComparison,
-    WorthQueryConvergenceDomainFailure, WorthQueryConvergenceDomainInvocationFailure,
-    WorthQueryConvergenceDomainInvocationFailureKind as FailureKind,
-    WorthQueryConvergenceDomainPhase as Phase, WorthQueryConvergenceDomainProvider,
-    WorthQueryConvergenceDomainWorkEvidence, WorthQueryConvergenceProgress,
-    WorthQueryConvergenceRepeatedState,
+use crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceDomainAssessmentOutcome;
+use {
+    super::WorthQueryConvergenceDomainInvocationFailure,
+    super::WorthQueryConvergenceDomainInvocationFailureKind as FailureKind,
+    super::WorthQueryConvergenceDomainPhase as Phase,
+    crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceAssessment,
+    crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceComparison,
+    crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceDomainFailure,
+    crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceDomainProvider,
+    crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceDomainWorkEvidence,
+    crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceProgress,
+    crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceRepeatedState,
 };
 
 pub(super) fn assess_domain_report(

@@ -1,8 +1,10 @@
 use std::sync::Arc;
 
-use super::{
-    WorthQueryConvergenceComparison, WorthQueryConvergenceDomainDecision,
-    WorthQueryConvergenceProgress, WorthQueryConvergenceRepeatedState,
+use {
+    super::comparison::WorthQueryConvergenceComparison,
+    super::domain_decision::WorthQueryConvergenceDomainDecision,
+    super::domain_decision::WorthQueryConvergenceProgress,
+    super::domain_decision::WorthQueryConvergenceRepeatedState,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -13,7 +15,7 @@ pub struct WorthQueryConvergenceDomainWorkEvidence {
 }
 
 impl WorthQueryConvergenceDomainWorkEvidence {
-    pub(super) const fn empty() -> Self {
+    pub(in crate::domain_computation) const fn empty() -> Self {
         Self {
             comparator_call_count: 0,
             progress_check_count: 0,
@@ -21,15 +23,15 @@ impl WorthQueryConvergenceDomainWorkEvidence {
         }
     }
 
-    pub(super) fn called_comparator(&mut self) {
+    pub(in crate::domain_computation) fn called_comparator(&mut self) {
         self.comparator_call_count += 1;
     }
 
-    pub(super) fn checked_progress(&mut self) {
+    pub(in crate::domain_computation) fn checked_progress(&mut self) {
         self.progress_check_count += 1;
     }
 
-    pub(super) fn probed_repeated_state(&mut self) {
+    pub(in crate::domain_computation) fn probed_repeated_state(&mut self) {
         self.repeated_state_probe_count += 1;
     }
 
@@ -46,13 +48,13 @@ impl WorthQueryConvergenceDomainWorkEvidence {
     }
 }
 
-pub(super) struct WorthQueryConvergenceDomainAssessmentOutcome {
+pub(in crate::domain_computation) struct WorthQueryConvergenceDomainAssessmentOutcome {
     decision: WorthQueryConvergenceDomainDecision,
     work: WorthQueryConvergenceDomainWorkEvidence,
 }
 
 impl WorthQueryConvergenceDomainAssessmentOutcome {
-    pub(super) fn new(
+    pub(in crate::domain_computation) fn new(
         comparison: WorthQueryConvergenceComparison,
         progress: WorthQueryConvergenceProgress,
         repeated_state: WorthQueryConvergenceRepeatedState,
@@ -68,11 +70,11 @@ impl WorthQueryConvergenceDomainAssessmentOutcome {
         }
     }
 
-    pub(super) fn decision(&self) -> &WorthQueryConvergenceDomainDecision {
+    pub(in crate::domain_computation) fn decision(&self) -> &WorthQueryConvergenceDomainDecision {
         &self.decision
     }
 
-    pub(super) fn into_parts(
+    pub(in crate::domain_computation) fn into_parts(
         self,
     ) -> (
         WorthQueryConvergenceDomainDecision,

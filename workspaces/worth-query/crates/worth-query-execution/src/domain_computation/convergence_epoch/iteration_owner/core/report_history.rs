@@ -4,8 +4,9 @@ mod admission;
 mod incumbent_transition;
 mod prepared_commit;
 
-use super::super::super::{
-    WorthQueryBoundConvergenceReport, WorthQueryRetainedConvergenceCandidateEvidence,
+use {
+    super::super::super::WorthQueryBoundConvergenceReport,
+    crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryRetainedConvergenceCandidateEvidence,
 };
 
 pub(in crate::domain_computation::convergence_epoch::iteration_owner) use admission::{

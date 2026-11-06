@@ -120,8 +120,8 @@ pub struct WorthQueryConvergenceDomainDecision {
 }
 
 impl WorthQueryConvergenceDomainDecision {
-    pub(super) fn from_governed_assessment(
-        comparison: super::WorthQueryConvergenceComparison,
+    pub(in crate::domain_computation) fn from_governed_assessment(
+        comparison: super::comparison::WorthQueryConvergenceComparison,
         progress: WorthQueryConvergenceProgress,
         repeated_state: WorthQueryConvergenceRepeatedState,
     ) -> Self {

@@ -1,7 +1,8 @@
 use worth_query_admission::facade::domain_computation::WorthQueryAdmittedConvergenceContract;
 
-use crate::domain_computation::{
-    WorthQueryBoundGraphExecutionReceipt, WorthQueryRetainedConvergenceCandidateEvidence,
+use {
+    super::incumbent::WorthQueryRetainedConvergenceCandidateEvidence,
+    crate::domain_computation::WorthQueryBoundGraphExecutionReceipt,
 };
 
 pub struct WorthQueryConvergenceAssessment<'a> {
@@ -12,7 +13,7 @@ pub struct WorthQueryConvergenceAssessment<'a> {
 }
 
 impl<'a> WorthQueryConvergenceAssessment<'a> {
-    pub(crate) fn new(
+    pub(in crate::domain_computation) fn new(
         contract: &'a WorthQueryAdmittedConvergenceContract,
         receipt: &'a WorthQueryBoundGraphExecutionReceipt,
         iteration_ordinal: usize,

@@ -127,7 +127,7 @@ impl WorkflowIterationAssociation<WorthQueryPendingWorkflowGraphChunk> {
 fn admit_step(
     core: super::super::super::core::WorthQueryConvergenceEpochCore,
     graph: worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
-    provider: std::sync::Arc<dyn super::super::super::super::WorthQueryConvergenceDomainProvider>,
+    provider: std::sync::Arc<dyn crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceDomainProvider>,
     stage_identity: std::sync::Arc<str>,
     outcome: WorthQueryWorkflowGraphStepOutcome,
 ) -> WorkflowAssociatedStepOutcome {
@@ -193,7 +193,7 @@ fn admit_step(
 fn admit_terminal(
     core: super::super::super::core::WorthQueryConvergenceEpochCore,
     graph: worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
-    provider: std::sync::Arc<dyn super::super::super::super::WorthQueryConvergenceDomainProvider>,
+    provider: std::sync::Arc<dyn crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryConvergenceDomainProvider>,
     stage_identity: std::sync::Arc<str>,
     outcome: WorthQueryWorkflowGraphStepOutcome,
 ) -> super::super::WorthQueryWorkflowConvergenceIterationOutcome {

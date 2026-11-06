@@ -1,11 +1,12 @@
 //! Public direct convergence cleanup phases after a yielded iteration.
 
-use super::super::super::super::{
-    WorthQueryBoundConvergenceReport, WorthQueryConvergenceEpochCounters,
-    WorthQueryRetainedConvergenceCandidateEvidence,
-};
 use super::super::association::{
     DirectAssociatedYieldCleanupOutcome, DirectYieldCleanupReceiptAssociation,
+};
+use {
+    super::super::super::super::WorthQueryBoundConvergenceReport,
+    super::super::super::super::WorthQueryConvergenceEpochCounters,
+    crate::domain_computation::provider_session::graph_provider::convergence_port::WorthQueryRetainedConvergenceCandidateEvidence,
 };
 
 #[must_use = "convergence yield cleanup carries a closed release posture"]
