@@ -20,7 +20,7 @@ pub(in crate::projection_consumption::extraction) fn native_value_or_absence(
                 family.field_path().expect("field family carries a path"),
                 family.kind(),
             )
-        });
+        })?;
     };
     let Some(value) = value else {
         return match native_contract.absence() {
@@ -30,12 +30,12 @@ pub(in crate::projection_consumption::extraction) fn native_value_or_absence(
                     source_identity: compose_scoped_row_source_identity(
                         contract.source_identity(),
                         row_identity,
-                    ),
+                    )?,
                     field_path: native_contract.field_path().clone(),
                     contract_key: native_contract.contract().key().clone(),
                     contract_revision: native_contract.contract().revision(),
                     projection_authority: contract.contract_digest().to_string(),
-                })
+                })?
             }
             posture => Ok(ConsumedNativeValue::absent(posture)),
         };
@@ -51,7 +51,7 @@ pub(in crate::projection_consumption::extraction) fn native_value_or_absence(
                 source_identity: compose_scoped_row_source_identity(
                     contract.source_identity(),
                     row_identity,
-                ),
+                )?,
                 field_path: native_contract.field_path().clone(),
                 contract_key: native_contract.contract().key().clone(),
                 contract_revision: native_contract.contract().revision(),
@@ -59,7 +59,7 @@ pub(in crate::projection_consumption::extraction) fn native_value_or_absence(
                 actual,
                 projection_authority: contract.contract_digest().to_string(),
             },
-        );
+        )?;
     }
     Ok(value.clone())
 }

@@ -1,11 +1,9 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 pub(in crate::runtime) fn lower_runtime_support_row_identity(
     row: &WorthQueryLowerRuntimeSupportRow,
-) -> Result<
-    WorthQueryEvidenceIdentity,
-    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let mut identity =
         worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_shape(
@@ -63,14 +61,11 @@ pub(in crate::runtime) fn lower_runtime_support_row_identity(
 
 pub(in crate::runtime) fn lower_runtime_support_rows_aggregate_identity<'a>(
     rows: impl IntoIterator<Item = &'a WorthQueryLowerRuntimeSupportRow>,
-) -> Result<
-    WorthQueryEvidenceIdentity,
-    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let row_identities = rows
         .into_iter()
         .map(lower_runtime_support_row_identity)
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_shape(
@@ -88,10 +83,7 @@ pub(in crate::runtime) fn runtime_downstream_delivery_contract_identity(
     runtime_resume_support_identity: &WorthQueryEvidenceIdentity,
     durable_resume_support_status: WorthQueryLowerRuntimeSupportPosture,
     durable_resume_support_identity: &WorthQueryEvidenceIdentity,
-) -> Result<
-    WorthQueryEvidenceIdentity,
-    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_shape(

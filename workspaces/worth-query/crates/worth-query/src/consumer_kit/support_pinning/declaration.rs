@@ -38,7 +38,7 @@ impl WorthQuerySupportPinDeclaration {
             consumer_name: self.consumer_name,
             contract_schema_version: WorthQuerySupportPinContractSchemaVersion::current(),
             contract_schema_identity: WorthQuerySupportPinContractSchemaVersion::current()
-                .identity()
+                .identity()?
                 .terminal_projection_for_reporting()
                 .to_string(),
             pinned_vocabulary_identity: support_pin_vocabulary_identity()?

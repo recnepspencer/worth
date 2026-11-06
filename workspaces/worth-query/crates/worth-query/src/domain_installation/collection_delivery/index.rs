@@ -316,7 +316,7 @@ impl WorthQueryCollectionMaintenanceIndex {
             let Some(entity) = entity else { continue };
             let source_row_identity = old
                 .map(|row| row.source_row_identity.clone())
-                .unwrap_or_else(|| identity.terminal_projection_for_reporting());
+                .unwrap_or_else(|| identity.terminal_projection_for_reporting())?;
             let view_local_identity = old
                 .map(|row| row.view_local_identity.clone())
                 .unwrap_or_else(|| source_row_identity.clone());

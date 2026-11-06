@@ -166,7 +166,7 @@ pub(crate) fn normalized_parity_digest(
             )
             .seal()
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     Ok(
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_shape(WorthQueryEvidenceTag::new("parity_label"), label)

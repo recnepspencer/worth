@@ -209,7 +209,7 @@ fn matching_bridge_oracle_for_plan(
         outcome_class,
         bridge_observation_request_subject_identity(request_digest),
         bridge_observation_receipt_subject_identity(receipt_digest),
-    );
+    )?;
     Ok(match record.execution_receipt_digest() {
         Some(execution_receipt_digest) => oracle.with_execution_receipt_subject_identity(
             bridge_observation_execution_receipt_subject_identity(execution_receipt_digest),

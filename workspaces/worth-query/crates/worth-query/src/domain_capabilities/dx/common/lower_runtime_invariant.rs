@@ -17,7 +17,8 @@ use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as Iden
 use crate::runtime::WorthQueryGraphCompositionDomainInvariantDenial;
 
 use super::lower_runtime::WorthQueryLowerRuntimeDomainContributionSurface;
-use super::shared::{materialize_common_lane, qualify_semantic_code};
+use super::materialization::materialize_common_lane;
+use super::semantic_code::qualify_semantic_code;
 
 impl WorthQueryLowerRuntimeDomainContributionSurface {
     #[allow(clippy::too_many_arguments)]
@@ -79,7 +80,7 @@ impl WorthQueryLowerRuntimeGraphInvariantDenialContribution {
                 )
             },
             materialize_graph_composition_domain_invariant_denial,
-        )
+        )?
     }
 
     pub fn materialize(
@@ -88,6 +89,6 @@ impl WorthQueryLowerRuntimeGraphInvariantDenialContribution {
         WorthQueryGraphCompositionDomainInvariantDenial,
         WorthQueryDomainCapabilityMaterializationError,
     > {
-        self.try_materialize().into_result()
+        self.try_materialize()?.into_result()
     }
 }

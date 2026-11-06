@@ -19,7 +19,8 @@ use crate::workflow::QueryWorkflowDeclaration;
 use worth_runtime_bridge::facade::BridgePreviewSessionIdentity;
 
 use super::intent::WorthQueryIntentDomainContributionSurface;
-use super::shared::{materialize_common_lane, qualify_semantic_code};
+use super::materialization::materialize_common_lane;
+use super::semantic_code::qualify_semantic_code;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryIntentPreviewInspectionDraft {
@@ -89,7 +90,7 @@ impl WorthQueryIntentPreviewInspectionContribution {
             self.detail,
             self.preview_session_identity,
         )?
-        .bind_to_installed_target(self.target);
+        .bind_to_installed_target(self.target)?;
 
         Ok(materialize_common_lane(
             "workflow-preview",
@@ -104,15 +105,15 @@ impl WorthQueryIntentPreviewInspectionContribution {
                     admitted, target,
                 )
             },
-            materialize_query_preview_workflow_artifact,
-        ))
+            |ready| Ok(materialize_query_preview_workflow_artifact(ready)),
+        )?)
     }
 
     pub fn materialize(
         self,
     ) -> Result<PreviewWorkflowFoundationArtifact, WorthQueryDomainCapabilityMaterializationError>
     {
-        self.try_materialize().into_result()
+        self.try_materialize()?.into_result()
     }
 }
 
@@ -171,7 +172,7 @@ impl WorthQueryIntentPreviewMutationContribution {
                 self.detail,
                 self.preview_session_identity,
             )?
-            .bind_to_installed_target(self.target);
+            .bind_to_installed_target(self.target)?;
 
         Ok(materialize_common_lane(
             "workflow-preview",
@@ -191,13 +192,13 @@ impl WorthQueryIntentPreviewMutationContribution {
                     |declaration| WorthQueryIntentPreviewMutationPlan { inner: declaration },
                 )
             },
-        ))
+        )?)
     }
 
     pub fn materialize(
         self,
     ) -> Result<WorthQueryIntentPreviewMutationPlan, WorthQueryDomainCapabilityMaterializationError>
     {
-        self.try_materialize().into_result()
+        self.try_materialize()?.into_result()
     }
 }

@@ -23,8 +23,9 @@ use crate::projection_consumption::{
 };
 
 use super::admitted_plan::WorthQueryAdmittedPlanDomainContributionSurface;
+use super::materialization::materialize_common_lane;
 use super::projection_contract_request::WorthQueryProjectionContractRequest;
-use super::shared::{materialize_common_lane, qualify_semantic_code};
+use super::semantic_code::qualify_semantic_code;
 
 impl WorthQueryAdmittedPlanDomainContributionSurface {
     pub fn establishes_projection_contract(
@@ -208,7 +209,7 @@ impl WorthQueryAdmittedPlanAftermathContribution {
         self,
     ) -> Result<MaterializedProjectionContract, WorthQueryDomainCapabilityMaterializationError>
     {
-        self.try_materialize().into_result()
+        self.try_materialize()?.into_result()
     }
 
     fn into_requested(
@@ -278,7 +279,7 @@ impl WorthQueryAdmittedPlanAftermathContribution {
                     admitted, target,
                 )
             },
-            materialize,
-        ))
+            |ready| Ok(materialize(ready)),
+        )?)
     }
 }

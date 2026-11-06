@@ -35,7 +35,7 @@ pub fn report_query_subscription_support(
         1,
         support_matrix.rows().len().saturating_sub(1),
     )?;
-    let counter_snapshot_identity = counters.evidence_identity();
+    let counter_snapshot_identity = counters.evidence_identity()?;
     let report_identity = support_report_identity(
         subject.subject_identity(),
         support_row.posture().as_str(),

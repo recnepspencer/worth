@@ -47,7 +47,7 @@ impl RepresentativeOutputFixtures {
             admitted: certified_admitted_intent_fixture(execution)?,
             advisory: certified_advisory_intent_fixture()?,
             violation: certified_violation_intent_fixture()?,
-            failure: certified_failure_intent_fixture(execution),
+            failure: certified_failure_intent_fixture(execution)?,
             read: certified_read_intent_fixture(execution),
             routing: certified_routing_intent_fixture(execution),
         })

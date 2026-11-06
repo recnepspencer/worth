@@ -51,7 +51,7 @@ pub(crate) fn compose_slope_digest(
             }
             seal(encoder)
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     Ok(compose_certification_sequence_digest(
         "projection_consumption_slope_v1",
         "scale",

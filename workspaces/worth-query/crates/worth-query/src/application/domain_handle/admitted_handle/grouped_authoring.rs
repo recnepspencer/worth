@@ -88,13 +88,16 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     pub fn orchestrate_grouped_outcome<I>(
         &self,
         declaration: WorthQueryGroupedDeclarationArtifact<D, I>,
-    ) -> WorthQueryOrdinaryOutcome<WorthQueryGroupedOrchestration<D, I>>
+    ) -> Result<
+        WorthQueryOrdinaryOutcome<WorthQueryGroupedOrchestration<D, I>>,
+        IdentityDerivationDenial,
+    >
     where
         I: WorthQueryDeclarationInput<D> + Clone,
     {
-        ordinary_outcome_from_grouped_orchestration_checked(
-            self.orchestrate_grouped_checked(declaration),
-        )
+        Ok(ordinary_outcome_from_grouped_orchestration_checked(
+            self.orchestrate_grouped_checked(declaration)?,
+        ))
     }
 
     pub fn orchestrate_grouped_proof<I>(

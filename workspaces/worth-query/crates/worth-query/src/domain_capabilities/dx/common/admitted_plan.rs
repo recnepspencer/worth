@@ -22,7 +22,8 @@ use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as Iden
 use crate::intent_admission::WorthQueryIntentAdmissionDecision;
 use crate::runtime::WorthQueryContinuityMutationEvidence;
 
-use super::shared::{materialize_common_lane, qualify_semantic_code};
+use super::materialization::materialize_common_lane;
+use super::semantic_code::qualify_semantic_code;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryAdmittedPlanDomainContributionSurface {
@@ -110,7 +111,7 @@ impl WorthQueryAdmittedPlanAdmissionContribution {
         IdentityDerivationDenial,
     > {
         let target = self.target.clone();
-        let requested = match self.posture {
+        let requested = (match self.posture {
             WorthQueryAdmissionContributionPosture::Advisory => {
                 WorthQueryAdmissionContributionAuthoring::advisory(
                     qualify_semantic_code(self.target.authority(), &self.semantic_code),
@@ -126,7 +127,7 @@ impl WorthQueryAdmittedPlanAdmissionContribution {
                 .bind_to_installed_target(self.target)
             }
             WorthQueryAdmissionContributionPosture::SupportOnly => unreachable!(),
-        };
+        })?;
 
         Ok(materialize_common_lane(
             "admission",
@@ -140,15 +141,15 @@ impl WorthQueryAdmittedPlanAdmissionContribution {
                     admitted, target,
                 )
             },
-            materialize_runtime_admission_decision,
-        ))
+            |ready| Ok(materialize_runtime_admission_decision(ready)),
+        )?)
     }
 
     pub fn materialize(
         self,
     ) -> Result<WorthQueryIntentAdmissionDecision, WorthQueryDomainCapabilityMaterializationError>
     {
-        self.try_materialize().into_result()
+        self.try_materialize()?.into_result()
     }
 }
 
@@ -198,7 +199,7 @@ impl WorthQueryAdmittedPlanContinuityContribution {
             qualify_semantic_code(self.target.authority(), &self.semantic_code),
             self.detail,
         )?
-        .bind_to_installed_target(self.target);
+        .bind_to_installed_target(self.target)?;
 
         Ok(materialize_common_lane(
             "continuity-lineage",
@@ -213,13 +214,13 @@ impl WorthQueryAdmittedPlanContinuityContribution {
                 )
             },
             materialize_runtime_continuity_evidence,
-        ))
+        )?)
     }
 
     pub fn materialize(
         self,
     ) -> Result<WorthQueryContinuityMutationEvidence, WorthQueryDomainCapabilityMaterializationError>
     {
-        self.try_materialize().into_result()
+        self.try_materialize()?.into_result()
     }
 }

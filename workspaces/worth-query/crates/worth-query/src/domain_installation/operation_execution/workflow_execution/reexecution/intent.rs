@@ -71,7 +71,7 @@ impl WorthQueryWorkflowIntentValue {
             }
             _ => self
                 .runtime_value()
-                .is_some_and(|runtime| runtime.semantic_value() == *value),
+                .is_some_and(|runtime| runtime.semantic_value() == *value)?,
         })
     }
 }

@@ -77,7 +77,7 @@ pub(super) fn validate_lifecycle_sources(
                 validation_role_evidence_identity(
                     "lane_activation",
                     active_admission.activation_identity(),
-                ),
+                )?,
                 validation_role_evidence_identity("activation", activation.evidence_identity()),
                 validation_role_evidence_identity(
                     "lane_admission",
@@ -99,7 +99,7 @@ pub(super) fn validate_lifecycle_sources(
                 validation_role_evidence_identity(
                     "attachment_lane",
                     attachment.lane_digest().evidence_identity(),
-                ),
+                )?,
                 validation_role_evidence_identity(
                     "handle_lane",
                     active_lane_handle.lane_digest().evidence_identity(),
@@ -122,7 +122,7 @@ pub(super) fn validate_lifecycle_sources(
                 validation_role_evidence_identity(
                     "delta_lane",
                     maintenance_delta.active_lane_digest().evidence_identity(),
-                ),
+                )?,
                 validation_role_evidence_identity(
                     "handle_lane",
                     active_lane_handle.lane_digest().evidence_identity(),
@@ -156,7 +156,7 @@ pub(super) fn validate_lifecycle_sources(
                 validation_role_evidence_identity(
                     "packet_lane",
                     work_packet.active_lane_digest().evidence_identity(),
-                ),
+                )?,
                 validation_role_evidence_identity(
                     "handle_lane",
                     active_lane_handle.lane_digest().evidence_identity(),
@@ -209,7 +209,7 @@ pub(super) fn validate_lifecycle_sources(
                 validation_role_evidence_identity(
                     "batch_window",
                     delivery_batch.delivery_window_identity(),
-                ),
+                )?,
                 validation_role_evidence_identity("window", delivery_window_identity),
                 validation_role_evidence_identity(
                     "batch_attachment",
@@ -245,7 +245,7 @@ pub(super) fn validate_lifecycle_sources(
                     acknowledged_attachment
                         .attachment_digest()
                         .evidence_identity(),
-                ),
+                )?,
                 validation_role_evidence_identity(
                     "attachment",
                     attachment.attachment_digest().evidence_identity(),
@@ -267,7 +267,7 @@ pub(super) fn validate_lifecycle_sources(
                 validation_role_evidence_identity(
                     "continuation_lane",
                     report.active_lane_digest().evidence_identity(),
-                ),
+                )?,
                 validation_role_evidence_identity(
                     "handle_lane",
                     active_lane_handle.lane_digest().evidence_identity(),
@@ -297,7 +297,7 @@ pub(super) fn validate_lifecycle_sources(
                 validation_role_evidence_identity(
                     "closeout_lane",
                     lifecycle_closeout.active_lane_digest().evidence_identity(),
-                ),
+                )?,
                 validation_role_evidence_identity(
                     "handle_lane",
                     active_lane_handle.lane_digest().evidence_identity(),

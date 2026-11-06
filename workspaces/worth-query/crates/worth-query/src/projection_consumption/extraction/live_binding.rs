@@ -48,7 +48,7 @@ pub(super) fn extract_live_binding_facts(
             },
         );
     }
-    Ok(extracted.into_fact_set(contract, source_references))
+    Ok(extracted.into_fact_set(contract, source_references)?)
 }
 
 struct ExtractedLiveBindingFacts {

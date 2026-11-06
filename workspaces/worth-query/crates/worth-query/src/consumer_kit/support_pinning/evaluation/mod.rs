@@ -92,7 +92,7 @@ pub(crate) fn evaluate_support_pin_contract(
     let finding_identities = findings
         .iter()
         .map(derive_support_pin_finding_identity)
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     let report_digest = derive_support_pin_report_identity(
         contract.consumer_name(),
         contract.contract_digest(),

@@ -34,7 +34,7 @@ pub(super) fn extract_write_receipt_facts(
             },
         );
     }
-    Ok(facts.into_fact_set(contract))
+    Ok(facts.into_fact_set(contract)?)
 }
 
 #[derive(Default)]
@@ -103,7 +103,7 @@ impl ExtractedWriteReceiptFacts {
                 continuity.outcome_class(),
                 ConsumedContinuityAuthorityIdentity::new(
                     continuity.prior_authoritative_identity().as_str(),
-                ),
+                )?,
                 continuity
                     .successor_authoritative_identities()
                     .iter()

@@ -73,15 +73,18 @@ where
     pub fn execute(
         self,
         workspace: &mut crate::runtime::WorthQueryWorkspace,
-    ) -> super::super::WorthQueryBoundExecutionOutcome<D, O, F, L, O::Output> {
+    ) -> Result<
+        super::super::WorthQueryBoundExecutionOutcome<D, O, F, L, O::Output>,
+        IdentityDerivationDenial,
+    > {
         let owner = workspace.advancement_owner();
-        owner
+        Ok(owner
             .with_advancement(|phase| self.execute_in_advancement(&phase, workspace))
             .unwrap_or_else(|cause| {
                 TransitionOutcome::Denied(WorthQueryBoundExecutionDenial::from_advancement_denial(
                     cause,
                 ))
-            })
+            })?)
     }
 
     /// Executes inside the caller's installed phase, opening no host request.

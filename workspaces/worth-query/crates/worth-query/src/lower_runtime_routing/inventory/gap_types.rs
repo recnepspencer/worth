@@ -81,7 +81,7 @@ impl WorthQueryLowerRuntimeGapRegistry {
             .rows
             .iter()
             .map(WorthQueryLowerRuntimeGapRegistryRow::row_identity)
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
         Ok(WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
         )
@@ -109,7 +109,7 @@ impl WorthQueryLowerRuntimeGapRegistry {
                 )
                 .seal()
             })
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
         Ok(WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
         )

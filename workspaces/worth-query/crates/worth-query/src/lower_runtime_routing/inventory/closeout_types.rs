@@ -148,7 +148,7 @@ impl WorthQueryLowerRuntimeCloseoutRegistry {
             .rows
             .iter()
             .map(WorthQueryLowerRuntimeCloseoutRow::row_identity)
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
         Ok(WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
         )
@@ -176,7 +176,7 @@ impl WorthQueryLowerRuntimeCloseoutRegistry {
                 )
                 .seal()
             })
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
         Ok(WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
         )

@@ -47,5 +47,5 @@ pub(super) fn certification_intent_mutation_receipt(
             vec![touch],
         )],
         bridge_authority,
-    ))
+    )?)
 }

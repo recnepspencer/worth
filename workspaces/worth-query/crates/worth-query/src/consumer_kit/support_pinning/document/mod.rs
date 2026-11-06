@@ -179,7 +179,7 @@ impl WorthQuerySupportPinContractDocument {
             ));
         }
         let expected_identity = expected_schema_version
-            .identity()
+            .identity()?
             .terminal_projection_for_reporting()
             .to_string();
         if self.schema_identity != expected_identity {

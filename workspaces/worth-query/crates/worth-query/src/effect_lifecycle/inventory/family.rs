@@ -42,7 +42,7 @@ impl EffectLifecycleFamilyInventoryRow {
                     .field_shape(WorthQueryEvidenceTag::new("basis"), basis.as_str())
                     .seal()
             })
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
         let row_identity = WorthQueryEvidenceIdentity::compose(EFFECT_LIFECYCLE_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),

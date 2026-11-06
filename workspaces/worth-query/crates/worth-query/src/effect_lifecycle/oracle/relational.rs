@@ -109,7 +109,7 @@ impl RelationalExecutionOracle {
             observed.commit_id.0,
             observed.version_id.0,
             observed.parents.iter().map(|parent| parent.0).collect(),
-        ))
+        )?)
     }
 
     pub fn branch_identity(&self) -> &str {

@@ -52,7 +52,7 @@ impl CausalInspectionRepresentativeEvidence {
             WorthQueryEvidenceTag::new("row_digest_set"),
             row_digest_set.row_digest(),
         )
-        .seal()
+        .seal()?
         .as_str()
         .to_string();
         Ok(Self {

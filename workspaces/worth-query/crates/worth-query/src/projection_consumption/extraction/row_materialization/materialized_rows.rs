@@ -46,7 +46,7 @@ where
             row_identity_mode,
         )?;
     }
-    Ok(facts.into_fact_set(contract, rows.len(), shape))
+    Ok(facts.into_fact_set(contract, rows.len(), shape)?)
 }
 
 #[derive(Clone, Copy)]
@@ -266,7 +266,7 @@ where
     if matches!(mode, RowIdentityExtractionMode::RowIdentityAsEntityIdentity) {
         return Ok(typed_identity.clone().unwrap_or_else(|| {
             crate::memory_workspace::admit_authored_entity_label(row_identity)
-        }));
+        })?);
     }
     let path = identity_field_path();
     let value = lookup(
@@ -299,5 +299,5 @@ where
                 expected_shape: "string",
             },
         )?;
-    Ok(crate::memory_workspace::admit_authored_entity_label(label))
+    Ok(crate::memory_workspace::admit_authored_entity_label(label)?)
 }

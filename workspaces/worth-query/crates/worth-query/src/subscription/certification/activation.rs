@@ -159,8 +159,8 @@ pub fn certify_query_subscription_activation(
         ));
     }
 
-    let admission_counter_identity = admission.counters().evidence_identity();
-    let activation_counter_identity = activation.counters().evidence_identity();
+    let admission_counter_identity = admission.counters().evidence_identity()?;
+    let activation_counter_identity = activation.counters().evidence_identity()?;
     let diagnostics_identity = admission.diagnostics().diagnostics_identity().clone();
     let support_profile_identity = admission.support_profile().profile_identity().clone();
     let scale_slope_identity = scale_report.evidence_identity_ref().clone();

@@ -27,7 +27,8 @@ use crate::runtime::QueryCausalInspectionArtifact;
 use super::lower_runtime_explanation_request::{
     WorthQueryLowerRuntimeExplanationRequest, WorthQueryLowerRuntimeExplanationRequestKind,
 };
-use super::shared::{materialize_common_lane, qualify_semantic_code};
+use super::materialization::materialize_common_lane;
+use super::semantic_code::qualify_semantic_code;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryLowerRuntimeDomainContributionSurface {
@@ -104,7 +105,7 @@ impl WorthQueryLowerRuntimeSupportContribution {
             qualify_semantic_code(self.target.authority(), &self.semantic_code),
             self.detail,
         )
-        .bind_to_installed_target(self.target);
+        .bind_to_installed_target(self.target)?;
 
         materialize_common_lane(
             "support-traceability",
@@ -119,7 +120,7 @@ impl WorthQueryLowerRuntimeSupportContribution {
                 )
             },
             materialize_lower_runtime_support_traceability_artifact,
-        )
+        )?
     }
 
     pub fn materialize(
@@ -128,7 +129,7 @@ impl WorthQueryLowerRuntimeSupportContribution {
         WorthQueryLowerRuntimeBoundarySupportTraceabilityArtifact,
         WorthQueryDomainCapabilityMaterializationError,
     > {
-        self.try_materialize().into_result()
+        self.try_materialize()?.into_result()
     }
 }
 
@@ -197,7 +198,7 @@ impl WorthQueryLowerRuntimeExplanationContribution {
                 )
             },
             materialize_query_causal_inspection_review,
-        ))
+        )?)
     }
 
     pub fn review(
@@ -230,7 +231,7 @@ impl WorthQueryLowerRuntimeExplanationContribution {
                 )
             },
             materialize_query_causal_inspection_artifact,
-        ))
+        )?)
     }
 
     pub fn materialize_artifact(

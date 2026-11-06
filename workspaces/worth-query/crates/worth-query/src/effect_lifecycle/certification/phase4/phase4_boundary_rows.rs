@@ -60,7 +60,7 @@ pub(super) fn batch_lane_denial_row(
                 WorkflowAuthorityTargetFamily::BridgeWriteback,
             ),
             input: WritebackLoweringInput::projected_state_diff(),
-        })?
+        })
         .admit()
         .expect_err("mixed authority batch should deny");
     Ok(EffectLifecyclePhase4CertificationRow::new(

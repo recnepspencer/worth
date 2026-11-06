@@ -17,7 +17,8 @@ use crate::domain_capabilities::{
 use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::intent::WorthQueryIntentDomainContributionSurface;
-use super::shared::{materialize_common_lane, qualify_semantic_code};
+use super::materialization::materialize_common_lane;
+use super::semantic_code::qualify_semantic_code;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryIntentAdmissionDraft {
@@ -89,7 +90,7 @@ impl WorthQueryIntentAdmissionContribution {
     > {
         let semantic_code = qualify_semantic_code(self.target.authority(), &self.semantic_code);
         let target = self.target.clone();
-        let requested = match self.posture {
+        let requested = (match self.posture {
             WorthQueryAdmissionContributionPosture::Advisory => {
                 WorthQueryAdmissionContributionAuthoring::advisory(semantic_code, self.detail)?
                     .bind_to_installed_target(self.target)
@@ -99,7 +100,7 @@ impl WorthQueryIntentAdmissionContribution {
                     .bind_to_installed_target(self.target)
             }
             WorthQueryAdmissionContributionPosture::SupportOnly => unreachable!(),
-        };
+        })?;
 
         Ok(materialize_common_lane(
             "admission",
@@ -118,7 +119,7 @@ impl WorthQueryIntentAdmissionContribution {
                     ready,
                 ))
             },
-        ))
+        )?)
     }
 
     pub fn materialize(
@@ -127,6 +128,6 @@ impl WorthQueryIntentAdmissionContribution {
         WorthQueryCanonicalAdmissionArtifact<WorthQueryInstalledDeclarationContributionTarget>,
         WorthQueryDomainCapabilityMaterializationError,
     > {
-        self.try_materialize().into_result()
+        self.try_materialize()?.into_result()
     }
 }

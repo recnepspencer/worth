@@ -132,7 +132,7 @@ pub(super) fn admitted_crossing_cardinality_digest(
             )
             .seal()
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     Ok(
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("rows"), &row_identities)

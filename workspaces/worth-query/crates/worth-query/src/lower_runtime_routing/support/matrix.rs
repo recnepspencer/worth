@@ -45,7 +45,7 @@ impl WorthQueryLowerRuntimeSupportMatrix {
                 .field_value(WorthQueryEvidenceTag::new("support_row"), row.row_digest())
                 .seal()
             })
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
         Ok(WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
         )

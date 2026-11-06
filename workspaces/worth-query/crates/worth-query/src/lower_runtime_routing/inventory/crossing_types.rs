@@ -318,7 +318,7 @@ impl WorthQueryLowerRuntimeCrossingInventory {
             .rows
             .iter()
             .map(WorthQueryLowerRuntimeCrossingRow::row_identity)
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
         Ok(WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
         )
@@ -347,7 +347,7 @@ impl WorthQueryLowerRuntimeCrossingInventory {
                 )
                 .seal()
             })
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
         Ok(WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
         )

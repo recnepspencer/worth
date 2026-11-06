@@ -254,7 +254,7 @@ pub fn certify_query_subscription_scale_slope(
             QuerySubscriptionCertificationDenialKind::ScaleSlopeDrift,
             "subscription structural counters must remain stable across row-count-only fixture scale",
             &[
-                validation_role_evidence_identity("small", small.snapshot_identity()),
+                validation_role_evidence_identity("small", small.snapshot_identity())?,
                 validation_role_evidence_identity("medium", medium.snapshot_identity()),
                 validation_role_evidence_identity("large", large.snapshot_identity()),
                 validation_u64_role_evidence_identity("small_row_count", small.fixture_row_count()),
@@ -292,7 +292,7 @@ pub fn certify_query_subscription_scale_slope(
         medium.fixture_row_count,
         large.fixture_row_count,
         &structural_counter_identity,
-    );
+    )?;
 
     Ok(QuerySubscriptionScaleSlopeReport {
         report_identity,
