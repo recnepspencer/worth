@@ -179,7 +179,7 @@ impl WorthQueryRuntime {
         execution: Option<&WorthQueryIntentExecution>,
         decision_trace_envelope: Option<WorthQueryIntentDecisionTraceEnvelope>,
         execution_provenance: Option<WorthQueryIntentExecutionProvenance>,
-    ) -> Result<WorthQueryRuntimeError, IdentityDerivationDenial> {
+    ) -> WorthQueryRuntimeError {
         let denial =
             intent::WorthQueryIntentAdmissionDenial::new(violation.stage(), violation.message());
         let evidence = WorthQueryIntentDenialEvidence::new_with_trace(
@@ -188,13 +188,13 @@ impl WorthQueryRuntime {
             execution,
             execution_provenance,
             decision_trace_envelope,
-        )?;
-        Ok(WorthQueryRuntimeError::IntentCommitDenied {
+        );
+        WorthQueryRuntimeError::IntentCommitDenied {
             intent_name: declaration.name().to_string(),
             stage: violation.stage(),
             message: violation.message().to_string(),
             evidence,
-        })
+        }
     }
 
     pub(crate) fn intent_execution_routing_error(
@@ -229,7 +229,7 @@ impl WorthQueryRuntime {
         handoff: &WorthQueryAdmittedIntentExecutionHandoff,
         stage: &'static str,
         message: impl Into<String>,
-    ) -> Result<WorthQueryRuntimeError, IdentityDerivationDenial> {
+    ) -> WorthQueryRuntimeError {
         let violation = WorthQueryIntentViolationDecision::new(
             handoff.family(),
             handoff.entrypoint(),
@@ -240,13 +240,13 @@ impl WorthQueryRuntime {
         );
         let decision_trace_envelope =
             WorthQueryIntentDecisionTraceEnvelope::for_handoff_violation(handoff, &violation);
-        Ok(self.intent_violation_error(
+        self.intent_violation_error(
             handoff.declaration(),
             violation,
             None,
             Some(decision_trace_envelope),
             None,
-        )?)
+        )
     }
 
     pub(in crate::runtime) fn pending_effect_write_delivery(

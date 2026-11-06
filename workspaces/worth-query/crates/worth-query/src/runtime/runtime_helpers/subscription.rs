@@ -78,36 +78,50 @@ pub(in crate::runtime) fn runtime_consumer_attachment_budget(
     )
 }
 
-pub(in crate::runtime) fn runtime_subscription_budget_policy(
-) -> Result<WorthQueryRuntimeLiveSubscriptionBudgetPolicyIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(WorthQueryRuntimeLiveSubscriptionBudgetPolicyIdentity::subscription_policy(
-        [
-            RUNTIME_SUBSCRIPTION_FAMILY_BUDGET_POLICY,
-            RUNTIME_SUBSCRIPTION_SLICE_BUDGET_POLICY,
-            RUNTIME_SUBSCRIPTION_BRIDGE_BUDGET_POLICY,
-            RUNTIME_SUBSCRIPTION_ADMISSION_BUDGET_POLICY,
-        ]
-        .join(" / "),
-    )?)
+pub(in crate::runtime) fn runtime_subscription_budget_policy() -> Result<
+    WorthQueryRuntimeLiveSubscriptionBudgetPolicyIdentity,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+> {
+    Ok(
+        WorthQueryRuntimeLiveSubscriptionBudgetPolicyIdentity::subscription_policy(
+            [
+                RUNTIME_SUBSCRIPTION_FAMILY_BUDGET_POLICY,
+                RUNTIME_SUBSCRIPTION_SLICE_BUDGET_POLICY,
+                RUNTIME_SUBSCRIPTION_BRIDGE_BUDGET_POLICY,
+                RUNTIME_SUBSCRIPTION_ADMISSION_BUDGET_POLICY,
+            ]
+            .join(" / "),
+        )?,
+    )
 }
 
-pub(in crate::runtime) fn runtime_active_lifecycle_budget_policy(
-) -> Result<WorthQueryRuntimeLiveSubscriptionBudgetPolicyIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(WorthQueryRuntimeLiveSubscriptionBudgetPolicyIdentity::active_lifecycle_policy(
-        RUNTIME_ACTIVE_LIFECYCLE_BUDGET_POLICY,
-    )?)
+pub(in crate::runtime) fn runtime_active_lifecycle_budget_policy() -> Result<
+    WorthQueryRuntimeLiveSubscriptionBudgetPolicyIdentity,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+> {
+    Ok(
+        WorthQueryRuntimeLiveSubscriptionBudgetPolicyIdentity::active_lifecycle_policy(
+            RUNTIME_ACTIVE_LIFECYCLE_BUDGET_POLICY,
+        )?,
+    )
 }
 
-pub(in crate::runtime) fn runtime_consumer_attachment_budget_policy(
-) -> Result<WorthQueryRuntimeLiveSubscriptionBudgetPolicyIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(WorthQueryRuntimeLiveSubscriptionBudgetPolicyIdentity::consumer_attachment_policy(
-        RUNTIME_CONSUMER_ATTACHMENT_BUDGET_POLICY,
-    )?)
+pub(in crate::runtime) fn runtime_consumer_attachment_budget_policy() -> Result<
+    WorthQueryRuntimeLiveSubscriptionBudgetPolicyIdentity,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+> {
+    Ok(
+        WorthQueryRuntimeLiveSubscriptionBudgetPolicyIdentity::consumer_attachment_policy(
+            RUNTIME_CONSUMER_ATTACHMENT_BUDGET_POLICY,
+        )?,
+    )
 }
 
 #[cfg(test)]
-pub(in crate::runtime) fn runtime_subscription_budget_digest() -> Result<crate::WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial>
-{
+pub(in crate::runtime) fn runtime_subscription_budget_digest() -> Result<
+    crate::WorthQueryEvidenceIdentity,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+> {
     Ok(crate::WorthQueryEvidenceIdentity::compose(
         crate::evidence_identity::WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
     )

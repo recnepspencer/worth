@@ -85,7 +85,8 @@ pub struct WorthQueryRuntimePublicApiNamingContract {
 }
 
 impl WorthQueryRuntimePublicApiNamingContract {
-    pub fn standard() -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub fn standard(
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let rows = vec![
             WorthQueryRuntimePublicApiNamingRow::new(
                 "workspace",

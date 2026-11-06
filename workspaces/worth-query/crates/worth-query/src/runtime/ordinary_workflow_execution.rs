@@ -335,20 +335,25 @@ fn preview_request_identity(
     family: &'static str,
     label: &WorthQuerySessionLabel,
     declaration_identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
-        .field_shape(
-            WorthQueryEvidenceTag::new("role"),
-            "ordinary-preview-request",
-        )
-        .field_shape(WorthQueryEvidenceTag::new("family"), family)
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("session_label"),
-            label.identity_digest(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("declaration"),
-            declaration_identity,
-        )
-        .seal()?)
+) -> Result<
+    WorthQueryEvidenceIdentity,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
+            .field_shape(
+                WorthQueryEvidenceTag::new("role"),
+                "ordinary-preview-request",
+            )
+            .field_shape(WorthQueryEvidenceTag::new("family"), family)
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("session_label"),
+                label.identity_digest(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("declaration"),
+                declaration_identity,
+            )
+            .seal()?,
+    )
 }

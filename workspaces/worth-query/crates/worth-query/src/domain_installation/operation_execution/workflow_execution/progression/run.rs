@@ -99,9 +99,9 @@ where
     pub fn start_workflow(
         self,
         workspace: &mut crate::runtime::WorthQueryWorkspace,
-    ) -> WorthQueryWorkflowStartOutcome<D, O, F, L> {
+    ) -> Result<WorthQueryWorkflowStartOutcome<D, O, F, L>, IdentityDerivationDenial> {
         let owner = workspace.advancement_owner();
-        owner
+        Ok(owner
             .with_advancement(|phase| {
                 let execution = phase.checked_execution_request_for(&owner)?;
 
@@ -113,7 +113,7 @@ where
                     WorthQueryWorkflowStartDenialKind::ExecutionRequest(cause),
                     Default::default(),
                 ))
-            })
+            })?)
     }
 
     pub(super) fn start_workflow_attempt(
@@ -310,10 +310,10 @@ where
     pub fn retry(
         self,
         workspace: &mut crate::runtime::WorthQueryWorkspace,
-    ) -> WorthQueryWorkflowStartOutcome<D, O, F, L> {
+    ) -> Result<WorthQueryWorkflowStartOutcome<D, O, F, L>, IdentityDerivationDenial> {
         let owner = workspace.advancement_owner();
         let counters = self.counters;
-        owner
+        Ok(owner
             .with_advancement(|phase| {
                 let execution = phase.checked_execution_request_for(&owner)?;
 
@@ -327,6 +327,6 @@ where
                     WorthQueryWorkflowStartDenialKind::ExecutionRequest(cause),
                     counters,
                 ))
-            })
+            })?)
     }
 }

@@ -297,13 +297,15 @@ fn continuation_input<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationIn
     >,
     progression: WorthQueryAdmittedDeclarationProgression<D, I>,
     bridge_request: WorthQueryDeclarationBridgeContinuationRequest,
-) -> WorthQuerySignalCompatibilityOrchestrationInput<D, I> {
-    WorthQuerySignalCompatibilityOrchestrationInput::new(signal_subject_from_progressed(
-        handle,
-        progression,
-    ))
-    .with_required_aspect_contract(I::Family::aspect_contract())
-    .with_bridge_request(bridge_request)
+) -> Result<WorthQuerySignalCompatibilityOrchestrationInput<D, I>, IdentityDerivationDenial> {
+    Ok(
+        WorthQuerySignalCompatibilityOrchestrationInput::new(signal_subject_from_progressed(
+            handle,
+            progression,
+        )?)
+        .with_required_aspect_contract(I::Family::aspect_contract())
+        .with_bridge_request(bridge_request),
+    )
 }
 
 fn signal_subject_from_progressed<

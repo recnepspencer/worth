@@ -120,7 +120,7 @@ pub struct WorthQuerySymbolicTargetReferenceDenial {
     reference: WorthQuerySymbolicTargetReference,
     kind: WorthQuerySymbolicTargetReferenceDenialKind,
     message: String,
-    denial_digest: String,
+    denial_digest: Result<String, IdentityDerivationDenial>,
 }
 
 impl WorthQuerySymbolicTargetReferenceDenial {
@@ -128,39 +128,42 @@ impl WorthQuerySymbolicTargetReferenceDenial {
         reference: &WorthQuerySymbolicTargetReference,
         kind: WorthQuerySymbolicTargetReferenceDenialKind,
         message: impl Into<String>,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let message = message.into();
-        let denial_digest =
-            worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
-                .field_shape(
-                    WorthQueryEvidenceTag::new("role"),
-                    "symbolic-target-reference-denial",
-                )
-                .field_shape(
-                    WorthQueryEvidenceTag::new("family"),
-                    reference.family().as_str(),
-                )
-                .field_evidence_identity(
-                    WorthQueryEvidenceTag::new("symbol"),
-                    reference.symbol_identity().evidence_identity(),
-                )
-                .optional_evidence_identity(
-                    WorthQueryEvidenceTag::new("collection"),
-                    reference
-                        .target_collection_identity()
-                        .map(WorthQueryMutationTargetCollectionIdentity::evidence_identity),
-                )
-                .field_shape(WorthQueryEvidenceTag::new("kind"), kind.as_str())
-                .field_value(WorthQueryEvidenceTag::new("message"), &message)
-                .seal()?
-                .as_str()
-                .to_string();
-        Ok(Self {
+        let denial_digest = (|| {
+            Ok(worth_query_evidence_identity(
+                WorthQueryEvidenceScope::MutationEvidenceAggregateDigest,
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("role"),
+                "symbolic-target-reference-denial",
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("family"),
+                reference.family().as_str(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("symbol"),
+                reference.symbol_identity().evidence_identity(),
+            )
+            .optional_evidence_identity(
+                WorthQueryEvidenceTag::new("collection"),
+                reference
+                    .target_collection_identity()
+                    .map(WorthQueryMutationTargetCollectionIdentity::evidence_identity),
+            )
+            .field_shape(WorthQueryEvidenceTag::new("kind"), kind.as_str())
+            .field_value(WorthQueryEvidenceTag::new("message"), &message)
+            .seal()?
+            .as_str()
+            .to_string())
+        })();
+        Self {
             reference: reference.clone(),
             kind,
             message,
             denial_digest,
-        })
+        }
     }
 
     pub fn reference(&self) -> &WorthQuerySymbolicTargetReference {
@@ -175,8 +178,8 @@ impl WorthQuerySymbolicTargetReferenceDenial {
         &self.message
     }
 
-    pub fn denial_digest(&self) -> &str {
-        &self.denial_digest
+    pub fn denial_digest(&self) -> Result<&str, IdentityDerivationDenial> {
+        Ok(self.denial_digest.as_ref().map_err(|cause| *cause)?)
     }
 }
 

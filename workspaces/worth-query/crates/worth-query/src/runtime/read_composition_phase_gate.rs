@@ -190,7 +190,10 @@ impl WorthQueryReadCompositionPhaseGate {
 impl WorthQueryRuntime {
     pub fn public_read_composition_phase_gate_for_support_profile(
         support_profile: &WorthQueryRuntimeSupportProfile,
-    ) -> Result<WorthQueryReadCompositionPhaseGate, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<
+        WorthQueryReadCompositionPhaseGate,
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         let public_api_contract =
             super::WorthQueryRuntimePublicApiContract::from_support_profile(support_profile)?;
         let support_matrix =
@@ -207,9 +210,16 @@ impl WorthQueryRuntime {
         ))
     }
 
-    pub fn public_read_composition_phase_gate(&self) -> Result<WorthQueryReadCompositionPhaseGate, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-        Ok(Self::public_read_composition_phase_gate_for_support_profile(
-            &self.backend.support_profile(),
-        )?)
+    pub fn public_read_composition_phase_gate(
+        &self,
+    ) -> Result<
+        WorthQueryReadCompositionPhaseGate,
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    > {
+        Ok(
+            Self::public_read_composition_phase_gate_for_support_profile(
+                &self.backend.support_profile(),
+            )?,
+        )
     }
 }

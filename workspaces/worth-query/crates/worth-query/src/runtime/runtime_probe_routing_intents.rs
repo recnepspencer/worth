@@ -43,19 +43,19 @@ impl WorthQueryRuntime {
             ) => Ok(WorthQueryExistingTruthProbeExecutionHandoff::from_plan(
                 plan,
             )),
-            _ => Err(self.existing_truth_probe_non_admitted_error(&review)?),
+            _ => Err(self.existing_truth_probe_non_admitted_error(&review)),
         }
     }
 
     pub(crate) fn existing_truth_probe_non_admitted_error(
         &self,
         review: &WorthQueryRuntimeIntentAdmissionReviewData,
-    ) -> Result<WorthQueryRuntimeError, IdentityDerivationDenial> {
+    ) -> WorthQueryRuntimeError {
         let seed = review
             .request()
             .existing_truth_probe_seed()
             .expect("probe routing review must preserve probe routing seed");
-        Ok(match seed.preflight() {
+        match seed.preflight() {
             WorthQueryExistingTruthProbeRoutingPreflight::BindingDenied(denial) => {
                 WorthQueryRuntimeError::MutationBindingDenied(denial.clone())
             }
@@ -70,10 +70,10 @@ impl WorthQueryRuntime {
                         WorthQueryExistingTruthProbeDenialKind::BackendProbeUnsupported,
                         None,
                         violation.message(),
-                    )?,
+                    ),
                 )
             }
-        })
+        }
     }
 
     pub(crate) fn prepare_existing_truth_probe_execution_binding(
@@ -182,6 +182,6 @@ impl WorthQueryRuntime {
             row.denial_class_when_primary_unsupported().unwrap_or(
                 "this runtime backend does not admit backend-verified existing-truth probes yet",
             ),
-        )?))
+        )))
     }
 }

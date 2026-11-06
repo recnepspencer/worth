@@ -224,7 +224,7 @@ pub(super) fn resolve_same_batch_symbolic_target(
                     "same-batch symbolic target `{}` was not declared earlier in this mutation batch",
                     reference.symbol()
                 ),
-            )?,
+            ),
         ));
     };
     if let Some(expected_collection) = reference.target_collection_identity()
@@ -246,7 +246,7 @@ pub(super) fn resolve_same_batch_symbolic_target(
                             .unwrap_or("unknown"),
                         expected_collection = expected_collection.as_str(),
                     ),
-                )?,
+                ),
             ));
     }
     Ok(resolved_target.clone())
@@ -272,7 +272,7 @@ pub(super) fn resolve_symbolic_aspect_references(
                     reference.reference(),
                     WorthQuerySymbolicTargetReferenceDenialKind::NonEntityReferenceTarget,
                     "symbolic aspect references require a concrete relational entity identity",
-                )?,
+                ),
             ));
         };
         let native_entity = worth_foundational::facade::EntityId::new(

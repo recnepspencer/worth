@@ -25,14 +25,14 @@ fn admission_runtime_materializer_builds_query_decisions() -> Result<(), Identit
             "spatial.arbitration.requires_clarification",
             "multiple candidates remain admissible",
         )?,
-    )?)?);
+    )?));
     let violation = success(materialize_runtime_admission_decision(ready_admission(
         WorthQueryAdmissionContributionAuthoring::violation_at_stage(
             "spatial_arbitration",
             "spatial.arbitration.invalid_target",
             "requested target violates spatial law",
         )?,
-    )?)?);
+    )?));
 
     match advisory {
         crate::intent_admission::WorthQueryIntentAdmissionDecision::Advisory(advisory) => {
@@ -69,13 +69,13 @@ fn admission_support_only_runtime_materializer_builds_support_traceability(
             "spatial.arbitration.support_only",
             "declaration remains support-scoped only",
         )?)?,
-    )?);
+    ));
     let report = success(materialize_runtime_admission_support_traceability_report(
         ready_admission(WorthQueryAdmissionContributionAuthoring::support_only(
             "spatial.arbitration.support_only",
             "declaration remains support-scoped only",
         )?)?,
-    )?);
+    ));
 
     assert_eq!(row.family(), "authoritative-user-intent");
     assert_eq!(row.entrypoint(), "WorthQueryRuntime::execute_intent");
@@ -98,13 +98,13 @@ fn admission_support_traceability_materializer_denies_non_support_postures(
             "spatial.arbitration.requires_clarification",
             "multiple candidates remain admissible",
         )?,
-    )?)?;
+    )?);
     let violation = materialize_runtime_admission_support_traceability_report(ready_admission(
         WorthQueryAdmissionContributionAuthoring::violation(
             "spatial.arbitration.invalid_target",
             "requested target violates spatial law",
         )?,
-    )?)?;
+    )?);
 
     assert!(matches!(
         advisory,
@@ -130,7 +130,7 @@ fn admission_local_support_and_support_traceability_rows_stay_distinct(
             "spatial.shared.support",
             "same support detail through shared runtime family",
         )?)?,
-    )?);
+    ));
     let support_row = success(materialize_intent_admission_support_traceability_row(
         ready_support(WorthQuerySupportContributionAuthoring::declaration_support(
             "spatial.shared.support",

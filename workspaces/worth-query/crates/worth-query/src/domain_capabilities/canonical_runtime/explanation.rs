@@ -94,7 +94,7 @@ where
                 return Ok(TransitionOutcome::Denied(missing_bridge_envelope_denial(
                     &domain_contribution_semantic_code,
                     request_identity.clone(),
-                )?));
+                )));
             };
             match materialize_admitted_causal_inspection(
                 inspection,
@@ -114,7 +114,7 @@ where
                             domain_contribution_semantic_code,
                             error.kind().as_str(),
                         ),
-                    )?,
+                    ),
                 ),
             }
         }
@@ -123,7 +123,7 @@ where
                 return Ok(TransitionOutcome::Denied(missing_bridge_envelope_denial(
                     &domain_contribution_semantic_code,
                     request_identity.clone(),
-                )?));
+                )));
             };
             match materialize_advisory_causal_inspection(
                 inspection,
@@ -143,7 +143,7 @@ where
                             domain_contribution_semantic_code,
                             error.kind().as_str(),
                         ),
-                    )?,
+                    ),
                 ),
             }
         }
@@ -173,7 +173,7 @@ where
         return Ok(TransitionOutcome::Denied(missing_runtime_semantics_denial(
             payload.semantic_code(),
             domain_contribution.request_identity().clone(),
-        )?));
+        )));
     };
 
     let request = match request_causal_inspection(
@@ -196,7 +196,7 @@ where
                     error.kind().as_str(),
                     error.message(),
                 ),
-            )?));
+            )));
         }
     };
 
@@ -219,8 +219,8 @@ where
 fn missing_runtime_semantics_denial(
     semantic_code: &str,
     request_identity: WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryDomainCapabilityProgressionDenial, IdentityDerivationDenial> {
-    Ok(WorthQueryDomainCapabilityProgressionDenial::new(
+) -> WorthQueryDomainCapabilityProgressionDenial {
+    WorthQueryDomainCapabilityProgressionDenial::new(
         WorthQueryDomainCapabilityProgressionDenialKind::MissingCanonicalMaterializationSemantics,
         "explanation-inspection",
         crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind::LowerRuntimeBoundaryEnvelope,
@@ -228,14 +228,14 @@ fn missing_runtime_semantics_denial(
         format!(
             "causal inspection materialization requires runtime explanation semantics for `{semantic_code}`"
         ),
-    )?)
+    )
 }
 
 fn missing_bridge_envelope_denial(
     semantic_code: &str,
     request_identity: WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryDomainCapabilityProgressionDenial, IdentityDerivationDenial> {
-    Ok(WorthQueryDomainCapabilityProgressionDenial::new(
+) -> WorthQueryDomainCapabilityProgressionDenial {
+    WorthQueryDomainCapabilityProgressionDenial::new(
         WorthQueryDomainCapabilityProgressionDenialKind::MissingCanonicalMaterializationSemantics,
         "explanation-inspection",
         crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind::LowerRuntimeBoundaryEnvelope,
@@ -243,5 +243,5 @@ fn missing_bridge_envelope_denial(
         format!(
             "bridge-backed causal inspection materialization requires a bridge envelope for `{semantic_code}`"
         ),
-    )?)
+    )
 }

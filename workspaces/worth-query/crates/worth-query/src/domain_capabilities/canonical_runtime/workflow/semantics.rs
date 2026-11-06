@@ -74,8 +74,8 @@ pub(super) fn missing_workflow_runtime_semantics_denial(
     payload: &WorthQueryWorkflowContributionPayload,
     target_kind: crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind,
     request_identity: WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryDomainCapabilityProgressionDenial, IdentityDerivationDenial> {
-    Ok(WorthQueryDomainCapabilityProgressionDenial::new(
+) -> WorthQueryDomainCapabilityProgressionDenial {
+    WorthQueryDomainCapabilityProgressionDenial::new(
         WorthQueryDomainCapabilityProgressionDenialKind::MissingCanonicalMaterializationSemantics,
         "workflow-preview",
         target_kind,
@@ -84,7 +84,7 @@ pub(super) fn missing_workflow_runtime_semantics_denial(
             "{operation_label} requires runtime workflow semantics for `{}`",
             payload.semantic_code()
         ),
-    )?)
+    )
 }
 
 #[cfg(test)]
@@ -93,8 +93,8 @@ pub(super) fn missing_workflow_lowering_semantics_denial(
     payload: &WorthQueryWorkflowContributionPayload,
     target_kind: crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind,
     request_identity: WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryDomainCapabilityProgressionDenial, IdentityDerivationDenial> {
-    Ok(WorthQueryDomainCapabilityProgressionDenial::new(
+) -> WorthQueryDomainCapabilityProgressionDenial {
+    WorthQueryDomainCapabilityProgressionDenial::new(
         WorthQueryDomainCapabilityProgressionDenialKind::MissingCanonicalMaterializationSemantics,
         "workflow-preview",
         target_kind,
@@ -103,7 +103,7 @@ pub(super) fn missing_workflow_lowering_semantics_denial(
             "{operation_label} requires workflow lowering semantics for `{}`",
             payload.semantic_code()
         ),
-    )?)
+    )
 }
 
 pub(super) fn inconsistent_workflow_runtime_semantics_denial(
@@ -112,8 +112,8 @@ pub(super) fn inconsistent_workflow_runtime_semantics_denial(
     runtime_semantics: &WorthQueryWorkflowRuntimeSemantics,
     target_kind: crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind,
     request_identity: WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryDomainCapabilityProgressionDenial, IdentityDerivationDenial> {
-    Ok(WorthQueryDomainCapabilityProgressionDenial::new(
+) -> WorthQueryDomainCapabilityProgressionDenial {
+    WorthQueryDomainCapabilityProgressionDenial::new(
         WorthQueryDomainCapabilityProgressionDenialKind::InconsistentCanonicalMaterializationSemantics,
         "workflow-preview",
         target_kind,
@@ -124,7 +124,7 @@ pub(super) fn inconsistent_workflow_runtime_semantics_denial(
             runtime_semantics.authority_target_family().as_str(),
             payload.posture().as_str()
         ),
-    )?)
+    )
 }
 
 #[cfg(test)]
@@ -133,8 +133,8 @@ pub(super) fn inconsistent_workflow_lowering_semantics_denial(
     payload: &WorthQueryWorkflowContributionPayload,
     target_kind: crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind,
     request_identity: WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryDomainCapabilityProgressionDenial, IdentityDerivationDenial> {
-    Ok(WorthQueryDomainCapabilityProgressionDenial::new(
+) -> WorthQueryDomainCapabilityProgressionDenial {
+    WorthQueryDomainCapabilityProgressionDenial::new(
         WorthQueryDomainCapabilityProgressionDenialKind::InconsistentCanonicalMaterializationSemantics,
         "workflow-preview",
         target_kind,
@@ -143,7 +143,7 @@ pub(super) fn inconsistent_workflow_lowering_semantics_denial(
             "{operation_label} got workflow lowering semantics that do not match `{}` workflow runtime semantics",
             payload.posture().as_str()
         ),
-    )?)
+    )
 }
 
 #[cfg(test)]

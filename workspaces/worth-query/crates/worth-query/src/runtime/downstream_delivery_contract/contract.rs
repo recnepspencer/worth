@@ -47,11 +47,15 @@ pub struct WorthQueryRuntimeDownstreamDeliveryContract {
 }
 
 impl WorthQueryRuntimeDownstreamDeliveryContract {
-    pub fn from_support_profile(profile: &WorthQueryRuntimeSupportProfile) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub fn from_support_profile(
+        profile: &WorthQueryRuntimeSupportProfile,
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         Ok(Self::from_backend_posture(profile.posture())?)
     }
 
-    pub fn from_backend_posture(backend_posture: WorthQueryRuntimeBackendPosture) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub fn from_backend_posture(
+        backend_posture: WorthQueryRuntimeBackendPosture,
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let support = worth_query_lower_runtime_support_matrix();
         let runtime_resume = support
             .support_for(WorthQueryLowerRuntimeSeamKey::BasisReadmissionFromSubscriptionEvidence)

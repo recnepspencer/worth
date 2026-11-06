@@ -103,18 +103,18 @@ pub(super) fn plan(
     state: &mut WorthQueryCollectionConsumerWindow,
     admitted: &WorthQueryAdmittedConsumerInvalidation<'_>,
     workspace: &crate::runtime::WorthQueryWorkspace,
-) -> WorthQueryCollectionDeliveryOutcome {
+) -> Result<WorthQueryCollectionDeliveryOutcome, IdentityDerivationDenial> {
     let mut counters = WorthQueryCollectionDeliveryCounters::default();
     let delta = match validate_plan(state, admitted, workspace, &mut counters) {
         Ok(delta) => delta,
-        Err(kind) => return no_delivery(kind, counters),
+        Err(kind) => return Ok(no_delivery(kind, counters)),
     };
     if state
         .pending_maintenance_ordinal
         .is_some_and(|pending| pending != delta.maintenance_ordinal())
     {
         counters.operations_materialized = 1;
-        return reset_patch(
+        return Ok(reset_patch(
             state,
             delta,
             ResetPatchSpec {
@@ -128,12 +128,12 @@ pub(super) fn plan(
                 },
                 counters,
             },
-        );
+        )?);
     }
     let impact = delta.impact().class();
     if let Some(reset) = reset_for(impact, state.window.rows().len()) {
         counters.operations_materialized = 1;
-        return reset_patch(
+        return Ok(reset_patch(
             state,
             delta,
             ResetPatchSpec {
@@ -141,9 +141,9 @@ pub(super) fn plan(
                 operation: reset,
                 counters,
             },
-        );
+        ));
     }
-    plan_incremental(
+    Ok(plan_incremental(
         execution,
         state,
         IncrementalPlan {
@@ -152,7 +152,7 @@ pub(super) fn plan(
             impact,
             counters,
         },
-    )
+    )?)
 }
 
 struct IncrementalPlan<'a> {

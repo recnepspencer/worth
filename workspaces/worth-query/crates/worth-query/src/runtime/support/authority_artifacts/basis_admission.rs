@@ -13,7 +13,10 @@ pub struct WorthQueryBasisAdmissionEvidenceRow {
 }
 
 impl WorthQueryBasisAdmissionEvidenceRow {
-    pub fn tagged(kind: &'static str, value: impl Into<String>) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub fn tagged(
+        kind: &'static str,
+        value: impl Into<String>,
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let value = value.into();
         let row_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::BasisAdmissionEvidenceRow)
@@ -27,7 +30,9 @@ impl WorthQueryBasisAdmissionEvidenceRow {
         })
     }
 
-    pub fn support_profile_token(token: impl Into<String>) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub fn support_profile_token(
+        token: impl Into<String>,
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         Ok(Self::tagged("support-profile-evidence", token)?)
     }
 
@@ -205,7 +210,10 @@ fn basis_admission_identity(
     effect_policy: WorthQueryEffectPolicy,
     authority_lane: WorthQueryAuthorityLane,
     evidence_rows: &[WorthQueryBasisAdmissionEvidenceRow],
-) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+) -> Result<
+    WorthQueryEvidenceIdentity,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+> {
     Ok(worth_query_evidence_identity(scope)
         .field_value(
             WorthQueryEvidenceTag::new("session_label_identity"),

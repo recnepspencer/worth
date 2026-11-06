@@ -183,7 +183,7 @@ pub(crate) fn worth_query_domain_capability_representative_report_in(
 
     let admission_decision = success(materialize_runtime_admission_decision(admitted_ready(
         admission_requested(admitted_plan_target.clone())?,
-    )?)?);
+    )?));
     let admission_common = domain
         .for_admitted_plan_target(admitted_plan_target.clone())
         .expect("installed plan target should belong to the certification domain")
@@ -274,7 +274,7 @@ pub(crate) fn worth_query_domain_capability_representative_report_in(
 
     let capability_row = success(materialize_graph_composition_capability_support_row(
         admitted_ready(capability_requested(lower_runtime_target.clone())?)?,
-    )?);
+    ));
     let invariant_denial = success(materialize_graph_composition_domain_invariant_denial(
         admitted_ready(invariant_denial_requested(lower_runtime_target.clone())?)?,
     )?);

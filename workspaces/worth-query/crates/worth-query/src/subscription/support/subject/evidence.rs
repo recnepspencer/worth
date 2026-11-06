@@ -13,7 +13,8 @@ pub struct QuerySubscriptionSupportEvidence {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct QuerySubscriptionSupportEvidenceError {
     message: &'static str,
-    pub(in crate::subscription::support) failure_identity: WorthQueryEvidenceIdentity,
+    pub(in crate::subscription::support) failure_identity:
+        Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>,
 }
 
 impl QuerySubscriptionSupportEvidenceError {
@@ -21,39 +22,43 @@ impl QuerySubscriptionSupportEvidenceError {
         message: &'static str,
         declaration_identity: &WorthQueryEvidenceIdentity,
         admission_declaration_identity: &WorthQueryEvidenceIdentity,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        let failure_identity = WorthQueryEvidenceIdentity::compose(
-            crate::evidence_identity::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
-        )
-        .field_shape(
-            crate::evidence_identity::WorthQueryEvidenceTag::new("identity_family"),
-            "query_subscription_support_evidence_error_v1",
-        )
-        .field_shape(
-            crate::evidence_identity::WorthQueryEvidenceTag::new("message"),
-            message,
-        )
-        .field_evidence_identity(
-            crate::evidence_identity::WorthQueryEvidenceTag::new("declaration"),
-            declaration_identity,
-        )
-        .field_evidence_identity(
-            crate::evidence_identity::WorthQueryEvidenceTag::new("admission_declaration"),
-            admission_declaration_identity,
-        )
-        .seal()?;
-        Ok(Self {
+    ) -> Self {
+        let failure_identity = (|| {
+            Ok(WorthQueryEvidenceIdentity::compose(
+                crate::evidence_identity::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
+            )
+            .field_shape(
+                crate::evidence_identity::WorthQueryEvidenceTag::new("identity_family"),
+                "query_subscription_support_evidence_error_v1",
+            )
+            .field_shape(
+                crate::evidence_identity::WorthQueryEvidenceTag::new("message"),
+                message,
+            )
+            .field_evidence_identity(
+                crate::evidence_identity::WorthQueryEvidenceTag::new("declaration"),
+                declaration_identity,
+            )
+            .field_evidence_identity(
+                crate::evidence_identity::WorthQueryEvidenceTag::new("admission_declaration"),
+                admission_declaration_identity,
+            )
+            .seal()?)
+        })();
+        Self {
             message,
             failure_identity,
-        })
+        }
     }
 
     pub fn message(&self) -> &str {
         self.message
     }
 
-    pub fn failure_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.failure_identity
+    pub fn failure_identity(
+        &self,
+    ) -> Result<&WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(self.failure_identity.as_ref().map_err(|cause| *cause)?)
     }
 }
 

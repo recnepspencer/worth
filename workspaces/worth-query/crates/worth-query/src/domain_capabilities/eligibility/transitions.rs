@@ -44,7 +44,7 @@ where
             requested.payload(),
             WorthQueryDomainCapabilityProgressionDenialKind::ContributionCategoryNotInstalled,
             "the installed domain package does not admit this contribution category",
-        )?));
+        )));
     }
     if requested
         .payload()
@@ -57,14 +57,14 @@ where
             requested.payload(),
             WorthQueryDomainCapabilityProgressionDenialKind::EmptySemanticCode,
             "domain capability contributions require a non-empty semantic code",
-        )?));
+        )));
     }
     if requested.payload().payload().detail().trim().is_empty() {
         return Ok(TransitionOutcome::Denied(denial_for(
             requested.payload(),
             WorthQueryDomainCapabilityProgressionDenialKind::EmptyDetail,
             "domain capability contributions require non-empty detail text",
-        )?));
+        )));
     }
     let basis = contribution_basis(&requested.0);
     let payload = requested.into_inner().into_parts().into_parts().0;
@@ -172,16 +172,16 @@ fn denial_for<P, T>(
     contribution: &WorthQueryDomainCapabilityContribution<P, T>,
     kind: WorthQueryDomainCapabilityProgressionDenialKind,
     message: &str,
-) -> Result<WorthQueryDomainCapabilityProgressionDenial, IdentityDerivationDenial>
+) -> WorthQueryDomainCapabilityProgressionDenial
 where
     P: WorthQueryDomainCapabilityPayload,
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    Ok(WorthQueryDomainCapabilityProgressionDenial::new(
+    WorthQueryDomainCapabilityProgressionDenial::new(
         kind,
         contribution.category().as_str(),
         contribution.target().kind(),
         contribution.request_identity().clone(),
         message,
-    )?)
+    )
 }

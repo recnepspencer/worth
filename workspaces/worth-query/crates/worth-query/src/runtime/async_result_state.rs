@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_runtime_bridge::facade::{
     BridgeAsyncCompletionClass, BridgeAsyncCompletionDenialClass, BridgeAsyncCompletionState,
     BridgeAsyncCompletionSupersessionClass, BridgeAsyncForwardCausalityClass,
@@ -165,7 +166,7 @@ impl WorthQueryRuntimeAsyncResultProjection {
 
     pub(super) fn from_bridge_transition(
         transition: &BridgeMixedCauseAsyncResultTransition,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let causality_identity = runtime_async_causality_from_bridge(
             transition.source_identity(),
             transition.source_digest(),
@@ -187,11 +188,11 @@ impl WorthQueryRuntimeAsyncResultProjection {
                 causality_identity,
             },
         })
-}
+    }
 
     pub(super) fn stale_before_bridge_revalidation(
         transition: &BridgeMixedCauseAsyncResultTransition,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let class = match transition.cause() {
             BridgeMixedCauseAsyncResultCause::Revalidation(
                 BridgeAsyncForwardCausalityClass::RevalidationAfterTruthBasisDrift,
@@ -214,7 +215,7 @@ impl WorthQueryRuntimeAsyncResultProjection {
             )?,
         })
     }
-    pub(crate) fn pending(causality_label: &str) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub(crate) fn pending(causality_label: &str) -> Result<Self, IdentityDerivationDenial> {
         Ok(Self::Pending {
             causality_identity: runtime_async_causality_identity(
                 &runtime_async_causality_label_identity(causality_label)?,
@@ -226,7 +227,7 @@ impl WorthQueryRuntimeAsyncResultProjection {
     pub(crate) fn completion_state(
         state: BridgeAsyncCompletionState,
         causality_label: &str,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         Ok(Self::CompletionState {
             state,
             causality_identity: runtime_async_causality_identity(
@@ -239,7 +240,7 @@ impl WorthQueryRuntimeAsyncResultProjection {
     pub(crate) fn forward_causality(
         class: BridgeAsyncForwardCausalityClass,
         causality_label: &str,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         Ok(Self::ForwardCausality {
             class,
             causality_identity: runtime_async_causality_identity(
@@ -249,7 +250,7 @@ impl WorthQueryRuntimeAsyncResultProjection {
     }
 
     #[cfg(test)]
-    pub(crate) fn supersession(causality_label: &str) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub(crate) fn supersession(causality_label: &str) -> Result<Self, IdentityDerivationDenial> {
         Ok(Self::ClassifiedSupersession {
             class: BridgeAsyncCompletionSupersessionClass::SignalGenerationSuperseded,
             causality_identity: runtime_async_causality_identity(
@@ -274,7 +275,7 @@ impl WorthQueryRuntimeAsyncResultState {
         causality_identity: &WorthQueryEvidenceIdentity,
         basis_identity: &WorthQueryEvidenceIdentity,
         checkpoint_identity: &WorthQueryEvidenceIdentity,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let causality_identity = causality_identity.clone();
         let basis_identity = basis_identity.clone();
         let checkpoint_identity = checkpoint_identity.clone();
@@ -335,7 +336,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn effects_indeterminate_completion_maps_only_to_unresolved() -> Result<(), crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    fn effects_indeterminate_completion_maps_only_to_unresolved(
+    ) -> Result<(), IdentityDerivationDenial> {
         let projection = WorthQueryRuntimeAsyncResultProjection::completion_state(
             BridgeAsyncCompletionState::Admitted(BridgeAsyncCompletionClass::EffectsIndeterminate),
             "owner-effects-indeterminate",
@@ -346,7 +348,7 @@ mod tests {
             WorthQueryRuntimeAsyncResultStateKind::Unresolved
         );
         assert!(projection.kind().permits_basis_or_generation_drift());
-    
-Ok(())
-}
+
+        Ok(())
+    }
 }

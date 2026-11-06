@@ -134,13 +134,13 @@ impl WorthQueryComparisonContext {
 pub fn current_and_retained(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &WorthQueryWorkspace,
-) -> WorthQueryComparisonContext {
-    WorthQueryComparisonContext {
+) -> Result<WorthQueryComparisonContext, IdentityDerivationDenial> {
+    Ok(WorthQueryComparisonContext {
         authority: WorthQueryComparisonPairAuthority::CurrentAndRetained {
-            current: WorthQueryCapturedComparisonBasis::capture(execution, workspace),
-            retained: at(execution, workspace),
+            current: WorthQueryCapturedComparisonBasis::capture(execution, workspace)?,
+            retained: at(execution, workspace)?,
         },
-    }
+    })
 }
 
 /// Structurally bind two independently owned workspace/branch bases.

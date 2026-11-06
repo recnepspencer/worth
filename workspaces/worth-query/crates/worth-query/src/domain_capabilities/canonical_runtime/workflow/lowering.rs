@@ -255,7 +255,7 @@ fn lowering_error_outcome<S>(
                 target_kind,
                 &target_identity,
                 error,
-            )?)
+            ))
         }
     })
 }
@@ -267,8 +267,8 @@ fn lowering_error_denial(
     target_kind: crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind,
     target_identity: &WorthQueryEvidenceIdentity,
     error: WorkflowLoweringError,
-) -> Result<WorthQueryDomainCapabilityProgressionDenial, IdentityDerivationDenial> {
-    Ok(WorthQueryDomainCapabilityProgressionDenial::new(
+) -> WorthQueryDomainCapabilityProgressionDenial {
+    WorthQueryDomainCapabilityProgressionDenial::new(
         WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture,
         category,
         target_kind,
@@ -280,7 +280,7 @@ fn lowering_error_denial(
             error.staleness_class(),
             error.message()
         ),
-    )?)
+    )
 }
 
 #[cfg(test)]

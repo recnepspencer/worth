@@ -3,6 +3,7 @@ use crate::application::{
     WorthQueryDeclarationInput, WorthQueryDomainEntryMarker, WorthQueryDomainOperatingContext,
     WorthQueryInstalledDomainDeclarationContext,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::hash_parts;
 
 use super::artifact::{
@@ -283,8 +284,8 @@ pub(crate) fn worth_query_grouped_orchestration_checked_on_handle<
 >(
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     declaration: WorthQueryGroupedDeclarationArtifact<D, I>,
-) -> WorthQueryGroupedOrchestrationChecked<D, I> {
-    lower_grouped_members_on_handle(handle, declaration, false).checked()
+) -> Result<WorthQueryGroupedOrchestrationChecked<D, I>, IdentityDerivationDenial> {
+    Ok(lower_grouped_members_on_handle(handle, declaration, false)?.checked())
 }
 
 pub(crate) fn worth_query_grouped_orchestration_proof_on_handle<
@@ -294,8 +295,12 @@ pub(crate) fn worth_query_grouped_orchestration_proof_on_handle<
 >(
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     declaration: WorthQueryGroupedDeclarationArtifact<D, I>,
-) -> WorthQueryGroupedOrchestrationTranscript<D, I> {
+) -> Result<WorthQueryGroupedOrchestrationTranscript<D, I>, IdentityDerivationDenial> {
     let (checked, member_transcripts) =
-        lower_grouped_members_on_handle(handle, declaration.clone(), true).into_parts();
-    WorthQueryGroupedOrchestrationProof::new(declaration, member_transcripts, checked)
+        lower_grouped_members_on_handle(handle, declaration.clone(), true)?.into_parts();
+    Ok(WorthQueryGroupedOrchestrationProof::new(
+        declaration,
+        member_transcripts,
+        checked,
+    ))
 }

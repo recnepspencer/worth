@@ -155,7 +155,10 @@ pub(in crate::runtime) fn route_effect_deliveries(
     receipt: &WorthQueryMutationReceipt,
     affected_live_view_targets: &[WorthQueryLiveArtifactTarget],
     affected_derived_view_targets: &[WorthQueryDerivedMaterializationTarget],
-) -> Result<WorthQueryEffectRouteResult, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+) -> Result<
+    WorthQueryEffectRouteResult,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+> {
     let mut candidates: BTreeSet<WorthQueryEffectTarget> = BTreeSet::new();
     candidates.extend(effect_index.live_candidates(affected_live_view_targets.iter()));
     candidates.extend(effect_index.computed_candidates(affected_derived_view_targets.iter()));

@@ -149,7 +149,8 @@ impl WorthQueryRuntimeRemaskPosture {
         let tenant_schema_digest = tenant_schema_digest.into();
         let relationship_proof_digest = relationship_proof_digest.into();
         let schema_context_digest = schema_context_digest.into();
-        let policy_identity = remask_drift_label_identity("remask_policy_label_v1", &policy_digest)?;
+        let policy_identity =
+            remask_drift_label_identity("remask_policy_label_v1", &policy_digest)?;
         let tenant_truth_identity =
             remask_drift_label_identity("remask_tenant_truth_label_v1", &tenant_truth_digest)?;
         let tenant_schema_identity =
@@ -276,12 +277,20 @@ impl WorthQueryRuntimeRemaskPosture {
     }
 }
 
-fn remask_drift_label_identity(identity_family: &str, digest: &str) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            identity_family,
-        )
-        .field_shape(WorthQueryEvidenceTag::new("digest"), digest)
-        .seal()?)
+fn remask_drift_label_identity(
+    identity_family: &str,
+    digest: &str,
+) -> Result<
+    WorthQueryEvidenceIdentity,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                identity_family,
+            )
+            .field_shape(WorthQueryEvidenceTag::new("digest"), digest)
+            .seal()?,
+    )
 }

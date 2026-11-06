@@ -45,7 +45,7 @@ impl QuerySubscriptionFamilySelectionFailureClass {
 pub struct QuerySubscriptionFamilySelectionError {
     failure_class: QuerySubscriptionFamilySelectionFailureClass,
     message: String,
-    diagnostic: QuerySubscriptionDiagnosticEvidence,
+    diagnostic: Result<QuerySubscriptionDiagnosticEvidence, IdentityDerivationDenial>,
     counters: QuerySubscriptionDeclarationCounters,
 }
 
@@ -56,20 +56,22 @@ impl QuerySubscriptionFamilySelectionError {
         diagnostic_stage: QuerySubscriptionDiagnosticStage,
         source_identity: &WorthQueryEvidenceIdentity,
         counters: QuerySubscriptionDeclarationCounters,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let message = message.into();
-        let diagnostic = QuerySubscriptionDiagnosticEvidence::denied(
-            diagnostic_stage,
-            message.clone(),
-            source_identity,
-            &counters.evidence_identity()?,
-        )?;
-        Ok(Self {
+        let diagnostic = (|| {
+            Ok(QuerySubscriptionDiagnosticEvidence::denied(
+                diagnostic_stage,
+                message.clone(),
+                source_identity,
+                &counters.evidence_identity()?,
+            )?)
+        })();
+        Self {
             failure_class,
             message,
             diagnostic,
             counters,
-        })
+        }
     }
 
     pub fn failure_class(&self) -> &QuerySubscriptionFamilySelectionFailureClass {
@@ -80,8 +82,10 @@ impl QuerySubscriptionFamilySelectionError {
         &self.message
     }
 
-    pub fn diagnostic(&self) -> &QuerySubscriptionDiagnosticEvidence {
-        &self.diagnostic
+    pub fn diagnostic(
+        &self,
+    ) -> Result<&QuerySubscriptionDiagnosticEvidence, IdentityDerivationDenial> {
+        Ok(self.diagnostic.as_ref().map_err(|cause| *cause)?)
     }
 
     pub fn counters(&self) -> &QuerySubscriptionDeclarationCounters {

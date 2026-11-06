@@ -112,16 +112,21 @@ impl WorthQueryPreviewIntentReceipt {
 fn preview_intent_basis_evidence_identity(
     intent_name: &str,
     basis_admission: &WorthQueryPreviewBasisAdmission,
-) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::PreviewIntentBasisEvidence)
-        .field_shape(WorthQueryEvidenceTag::new("intent_name"), intent_name)
-        .field_usize(
-            WorthQueryEvidenceTag::new("basis_evidence_count"),
-            basis_admission.evidence_rows().len(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("basis_admission_identity"),
-            basis_admission.admission_identity(),
-        )
-        .seal()?)
+) -> Result<
+    WorthQueryEvidenceIdentity,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::PreviewIntentBasisEvidence)
+            .field_shape(WorthQueryEvidenceTag::new("intent_name"), intent_name)
+            .field_usize(
+                WorthQueryEvidenceTag::new("basis_evidence_count"),
+                basis_admission.evidence_rows().len(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("basis_admission_identity"),
+                basis_admission.admission_identity(),
+            )
+            .seal()?,
+    )
 }

@@ -63,7 +63,7 @@ pub struct WorthQueryExistingTruthAssertionDenial {
     expected_terminal_value_digest: Option<String>,
     found_terminal_value_digest: Option<String>,
     message: String,
-    denial_digest: String,
+    denial_digest: Result<String, IdentityDerivationDenial>,
 }
 
 impl WorthQueryExistingTruthAssertionDenial {
@@ -74,17 +74,17 @@ impl WorthQueryExistingTruthAssertionDenial {
         expected_terminal_value_digest: Option<String>,
         found_terminal_value_digest: Option<String>,
         message: impl Into<String>,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let asserted_aspect_touch =
             asserted_aspect_touch.map(WorthQueryDeniedAspectTouch::Admitted);
-        Ok(Self::from_denied_aspect_touch(
+        Self::from_denied_aspect_touch(
             binding,
             kind,
             asserted_aspect_touch,
             expected_terminal_value_digest,
             found_terminal_value_digest,
             message,
-        )?)
+        )
     }
 
     fn from_denied_aspect_touch(
@@ -94,51 +94,54 @@ impl WorthQueryExistingTruthAssertionDenial {
         expected_terminal_value_digest: Option<String>,
         found_terminal_value_digest: Option<String>,
         message: impl Into<String>,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let message = message.into();
         let asserted_aspect_touch_digest = asserted_aspect_touch
             .as_ref()
             .map(WorthQueryDeniedAspectTouch::admitted_touch_digest_part);
-        let denial_digest =
-            worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
-                .field_shape(
-                    WorthQueryEvidenceTag::new("role"),
-                    "existing-truth-assertion-denial",
-                )
-                .field_shape(
-                    WorthQueryEvidenceTag::new("family"),
-                    binding.family().as_str(),
-                )
-                .field_evidence_identity(
-                    WorthQueryEvidenceTag::new("authoritative"),
-                    binding.authoritative_identity().evidence_identity(),
-                )
-                .field_evidence_identity(
-                    WorthQueryEvidenceTag::new("resolved"),
-                    &binding.resolved_target_identity().evidence_identity()?,
-                )
-                .optional_value(
-                    WorthQueryEvidenceTag::new("collection"),
-                    binding.terminal_target_collection_projection(),
-                )
-                .field_shape(WorthQueryEvidenceTag::new("kind"), kind.as_str())
-                .optional_value(
-                    WorthQueryEvidenceTag::new("aspect_touch"),
-                    asserted_aspect_touch_digest.as_deref(),
-                )
-                .optional_value(
-                    WorthQueryEvidenceTag::new("expected_terminal_value"),
-                    expected_terminal_value_digest.as_deref(),
-                )
-                .optional_value(
-                    WorthQueryEvidenceTag::new("found_terminal_value"),
-                    found_terminal_value_digest.as_deref(),
-                )
-                .field_value(WorthQueryEvidenceTag::new("message"), &message)
-                .seal()?
-                .as_str()
-                .to_string();
-        Ok(Self {
+        let denial_digest = (|| {
+            Ok(worth_query_evidence_identity(
+                WorthQueryEvidenceScope::MutationEvidenceAggregateDigest,
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("role"),
+                "existing-truth-assertion-denial",
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("family"),
+                binding.family().as_str(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("authoritative"),
+                binding.authoritative_identity().evidence_identity(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("resolved"),
+                &binding.resolved_target_identity().evidence_identity()?,
+            )
+            .optional_value(
+                WorthQueryEvidenceTag::new("collection"),
+                binding.terminal_target_collection_projection(),
+            )
+            .field_shape(WorthQueryEvidenceTag::new("kind"), kind.as_str())
+            .optional_value(
+                WorthQueryEvidenceTag::new("aspect_touch"),
+                asserted_aspect_touch_digest.as_deref(),
+            )
+            .optional_value(
+                WorthQueryEvidenceTag::new("expected_terminal_value"),
+                expected_terminal_value_digest.as_deref(),
+            )
+            .optional_value(
+                WorthQueryEvidenceTag::new("found_terminal_value"),
+                found_terminal_value_digest.as_deref(),
+            )
+            .field_value(WorthQueryEvidenceTag::new("message"), &message)
+            .seal()?
+            .as_str()
+            .to_string())
+        })();
+        Self {
             binding: binding.clone(),
             kind,
             asserted_aspect_touch,
@@ -146,7 +149,7 @@ impl WorthQueryExistingTruthAssertionDenial {
             found_terminal_value_digest,
             message,
             denial_digest,
-        })
+        }
     }
 
     pub fn binding(&self) -> &crate::runtime::WorthQueryExistingTruthTargetBinding {
@@ -175,8 +178,8 @@ impl WorthQueryExistingTruthAssertionDenial {
         &self.message
     }
 
-    pub fn denial_digest(&self) -> &str {
-        &self.denial_digest
+    pub fn denial_digest(&self) -> Result<&str, IdentityDerivationDenial> {
+        Ok(self.denial_digest.as_ref().map_err(|cause| *cause)?)
     }
 }
 

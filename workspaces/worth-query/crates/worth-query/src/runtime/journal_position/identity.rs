@@ -74,7 +74,9 @@ impl WorthQueryJournalPosition {
         ))
     }
 
-    fn committed(commit_id: u64) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    fn committed(
+        commit_id: u64,
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         Ok(Self::new(
             WorthQueryJournalPositionAuthority::Committed,
             commit_id,
@@ -82,7 +84,8 @@ impl WorthQueryJournalPosition {
         ))
     }
 
-    fn absent() -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    fn absent() -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial>
+    {
         Ok(Self::new(
             WorthQueryJournalPositionAuthority::Absent,
             0,
@@ -119,45 +122,62 @@ impl WorthQueryJournalPosition {
     }
 }
 
-fn committed_journal_position_identity(commit_id: u64) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::JournalPositionIdentity)
-        .field_shape(
-            WorthQueryEvidenceTag::new("journal_position_authority"),
-            WorthQueryJournalPositionAuthority::Committed.as_str(),
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("journal_position_ordinal"),
-            commit_id.to_string(),
-        )
-        .seal()?)
+fn committed_journal_position_identity(
+    commit_id: u64,
+) -> Result<
+    WorthQueryEvidenceIdentity,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::JournalPositionIdentity)
+            .field_shape(
+                WorthQueryEvidenceTag::new("journal_position_authority"),
+                WorthQueryJournalPositionAuthority::Committed.as_str(),
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("journal_position_ordinal"),
+                commit_id.to_string(),
+            )
+            .seal()?,
+    )
 }
 
 fn preview_journal_position_identity(
     preview_identity: &WorthQueryEvidenceIdentity,
     sequence: u64,
-) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::JournalPositionIdentity)
-        .field_shape(
-            WorthQueryEvidenceTag::new("journal_position_authority"),
-            WorthQueryJournalPositionAuthority::Preview.as_str(),
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("preview_write_receipt_identity"),
-            preview_identity.as_str(),
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("journal_position_ordinal"),
-            sequence.to_string(),
-        )
-        .seal()?)
+) -> Result<
+    WorthQueryEvidenceIdentity,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::JournalPositionIdentity)
+            .field_shape(
+                WorthQueryEvidenceTag::new("journal_position_authority"),
+                WorthQueryJournalPositionAuthority::Preview.as_str(),
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("preview_write_receipt_identity"),
+                preview_identity.as_str(),
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("journal_position_ordinal"),
+                sequence.to_string(),
+            )
+            .seal()?,
+    )
 }
 
-fn absent_journal_position_identity() -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::JournalPositionIdentity)
-        .field_shape(
-            WorthQueryEvidenceTag::new("journal_position_authority"),
-            WorthQueryJournalPositionAuthority::Absent.as_str(),
-        )
-        .field_value(WorthQueryEvidenceTag::new("journal_position_ordinal"), "0")
-        .seal()?)
+fn absent_journal_position_identity() -> Result<
+    WorthQueryEvidenceIdentity,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::JournalPositionIdentity)
+            .field_shape(
+                WorthQueryEvidenceTag::new("journal_position_authority"),
+                WorthQueryJournalPositionAuthority::Absent.as_str(),
+            )
+            .field_value(WorthQueryEvidenceTag::new("journal_position_ordinal"), "0")
+            .seal()?,
+    )
 }

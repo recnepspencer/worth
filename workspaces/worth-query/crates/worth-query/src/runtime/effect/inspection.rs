@@ -47,7 +47,9 @@ pub struct WorthQueryEffectInspectionEvidence {
 }
 
 impl WorthQueryEffectInspectionEvidence {
-    pub(in crate::runtime) fn from_runtime(effect: &WorthQueryEffectRuntime) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub(in crate::runtime) fn from_runtime(
+        effect: &WorthQueryEffectRuntime,
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let (condition_descriptor, condition_inputs, condition_outputs) =
             match effect.declaration.condition() {
                 WorthQueryEffectCondition::Always => ("always".to_string(), Vec::new(), Vec::new()),

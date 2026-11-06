@@ -24,7 +24,7 @@ fn graph_capability_runtime_materializer_preserves_capability_semantics(
                 "topology substrate is unavailable",
             )?,
         )?,
-    )?);
+    ));
 
     assert_eq!(row.capability_family(), "graph.face_inner_loop_insertion");
     assert_eq!(
@@ -38,13 +38,12 @@ fn graph_capability_runtime_materializer_preserves_capability_semantics(
 #[test]
 fn graph_capability_runtime_materializer_denies_missing_or_unsupported_semantics(
 ) -> Result<(), IdentityDerivationDenial> {
-    let missing =
-        materialize_graph_composition_capability_support_row(ready_invariant_capability(
-            WorthQueryInvariantCapabilityContributionAuthoring::capability_gap(
-                "graph.face_inner_loop_insertion",
-                "topology substrate is unavailable",
-            )?,
-        )?)?;
+    let missing = materialize_graph_composition_capability_support_row(ready_invariant_capability(
+        WorthQueryInvariantCapabilityContributionAuthoring::capability_gap(
+            "graph.face_inner_loop_insertion",
+            "topology substrate is unavailable",
+        )?,
+    )?);
     let unsupported =
         materialize_graph_composition_capability_support_row(ready_invariant_payload(
             WorthQueryInvariantCapabilityContributionPayload::with_graph_capability(
@@ -56,7 +55,7 @@ fn graph_capability_runtime_materializer_denies_missing_or_unsupported_semantics
                     WorthQueryGraphCompositionCapabilityClass::TargetCombination,
                 )),
             )?,
-        )?)?;
+        )?);
 
     assert!(matches!(
         missing,

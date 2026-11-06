@@ -23,7 +23,10 @@ impl WorthQueryDeleteMutationBuilder {
         Self::default()
     }
 
-    pub fn target_collection(mut self, collection: impl Into<String>) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub fn target_collection(
+        mut self,
+        collection: impl Into<String>,
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         if self.error.is_some() {
             return Ok(self);
         }

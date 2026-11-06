@@ -17,7 +17,10 @@ impl WorthQueryRuntime {
 
     pub fn public_authoritative_mutation_evidence_closeout_for_support_profile(
         support_profile: &WorthQueryRuntimeSupportProfile,
-    ) -> Result<WorthQueryAuthoritativeMutationEvidenceCloseout, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<
+        WorthQueryAuthoritativeMutationEvidenceCloseout,
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         let public_api_contract =
             WorthQueryRuntimePublicApiContract::from_support_profile(support_profile)?;
         let support_matrix =
@@ -60,31 +63,67 @@ impl WorthQueryRuntime {
         WorthQueryWorkspace::new(name, self)
     }
 
-    pub fn public_api_naming_contract() -> Result<WorthQueryRuntimePublicApiNamingContract, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub fn public_api_naming_contract() -> Result<
+        WorthQueryRuntimePublicApiNamingContract,
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         Ok(WorthQueryRuntimePublicApiNamingContract::standard()?)
     }
 
-    pub fn public_api_contract(&self) -> Result<WorthQueryRuntimePublicApiContract, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-        Ok(WorthQueryRuntimePublicApiContract::from_support_profile(&self.backend.support_profile())?)
-    }
-
-    pub fn public_handle_contract(&self) -> Result<WorthQueryHandleContract, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-        Ok(WorthQueryHandleContract::from_public_api_contract(&self.public_api_contract()?))
-    }
-
-    pub fn public_downstream_delivery_contract(
+    pub fn public_api_contract(
         &self,
-    ) -> Result<WorthQueryRuntimeDownstreamDeliveryContract, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-        Ok(WorthQueryRuntimeDownstreamDeliveryContract::from_support_profile(
+    ) -> Result<
+        WorthQueryRuntimePublicApiContract,
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    > {
+        Ok(WorthQueryRuntimePublicApiContract::from_support_profile(
             &self.backend.support_profile(),
         )?)
     }
 
-    pub fn public_support_matrix(&self) -> Result<WorthQueryRuntimePublicSupportMatrix, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-        Ok(WorthQueryRuntimePublicSupportMatrix::from_public_api_contract(&self.public_api_contract()?)?)
+    pub fn public_handle_contract(
+        &self,
+    ) -> Result<
+        WorthQueryHandleContract,
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    > {
+        Ok(WorthQueryHandleContract::from_public_api_contract(
+            &self.public_api_contract()?,
+        ))
     }
 
-    pub fn public_mutation_surface_report(&self) -> Result<WorthQueryMutationSurfaceReport, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub fn public_downstream_delivery_contract(
+        &self,
+    ) -> Result<
+        WorthQueryRuntimeDownstreamDeliveryContract,
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    > {
+        Ok(
+            WorthQueryRuntimeDownstreamDeliveryContract::from_support_profile(
+                &self.backend.support_profile(),
+            )?,
+        )
+    }
+
+    pub fn public_support_matrix(
+        &self,
+    ) -> Result<
+        WorthQueryRuntimePublicSupportMatrix,
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    > {
+        Ok(
+            WorthQueryRuntimePublicSupportMatrix::from_public_api_contract(
+                &self.public_api_contract()?,
+            )?,
+        )
+    }
+
+    pub fn public_mutation_surface_report(
+        &self,
+    ) -> Result<
+        WorthQueryMutationSurfaceReport,
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         Ok(WorthQueryMutationSurfaceReport::derive(
             self.public_api_contract()?.backend_posture(),
             &self.public_support_matrix()?,
@@ -102,7 +141,10 @@ impl WorthQueryRuntime {
 
     pub fn public_aspect_api_finalization_closeout(
         &self,
-    ) -> Result<WorthQueryAspectApiFinalizationCloseout, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<
+        WorthQueryAspectApiFinalizationCloseout,
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         Ok(WorthQueryAspectApiFinalizationCloseout::derive(
             self.public_api_contract()?.backend_posture(),
             &self.public_support_matrix()?,
@@ -113,10 +155,15 @@ impl WorthQueryRuntime {
 
     pub fn public_authoritative_mutation_evidence_closeout(
         &self,
-    ) -> Result<WorthQueryAuthoritativeMutationEvidenceCloseout, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-        Ok(Self::public_authoritative_mutation_evidence_closeout_for_support_profile(
-            &self.backend.support_profile(),
-        )?)
+    ) -> Result<
+        WorthQueryAuthoritativeMutationEvidenceCloseout,
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    > {
+        Ok(
+            Self::public_authoritative_mutation_evidence_closeout_for_support_profile(
+                &self.backend.support_profile(),
+            )?,
+        )
     }
 
     pub fn downstream_delivery<T>(

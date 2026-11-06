@@ -42,7 +42,7 @@ impl QuerySubscriptionDiagnosticBundleErrorKind {
 pub struct QuerySubscriptionDiagnosticBundleError {
     error_kind: QuerySubscriptionDiagnosticBundleErrorKind,
     message: &'static str,
-    failure_identity: WorthQueryEvidenceIdentity,
+    failure_identity: Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>,
     counters: QuerySubscriptionDiagnosticCounters,
 }
 
@@ -51,38 +51,40 @@ impl QuerySubscriptionDiagnosticBundleError {
         error_kind: QuerySubscriptionDiagnosticBundleErrorKind,
         message: &'static str,
         evidence_parts: &[String],
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let counters = QuerySubscriptionDiagnosticCounters::missing_stage_denied();
-        let failure_identity = WorthQueryEvidenceIdentity::compose(
-            crate::evidence_identity::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
-        )
-        .field_shape(
-            crate::evidence_identity::WorthQueryEvidenceTag::new("identity_family"),
-            "query_subscription_diagnostic_bundle_error_v1",
-        )
-        .field_shape(
-            crate::evidence_identity::WorthQueryEvidenceTag::new("error_kind"),
-            error_kind.as_str(),
-        )
-        .field_shape(
-            crate::evidence_identity::WorthQueryEvidenceTag::new("message"),
-            message,
-        )
-        .field_evidence_identity(
-            crate::evidence_identity::WorthQueryEvidenceTag::new("counters"),
-            &counters.evidence_identity()?,
-        )
-        .field_value_sequence(
-            crate::evidence_identity::WorthQueryEvidenceTag::new("evidence"),
-            evidence_parts.iter().map(String::as_str),
-        )
-        .seal()?;
-        Ok(Self {
+        let failure_identity = (|| {
+            Ok(WorthQueryEvidenceIdentity::compose(
+                crate::evidence_identity::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
+            )
+            .field_shape(
+                crate::evidence_identity::WorthQueryEvidenceTag::new("identity_family"),
+                "query_subscription_diagnostic_bundle_error_v1",
+            )
+            .field_shape(
+                crate::evidence_identity::WorthQueryEvidenceTag::new("error_kind"),
+                error_kind.as_str(),
+            )
+            .field_shape(
+                crate::evidence_identity::WorthQueryEvidenceTag::new("message"),
+                message,
+            )
+            .field_evidence_identity(
+                crate::evidence_identity::WorthQueryEvidenceTag::new("counters"),
+                &counters.evidence_identity()?,
+            )
+            .field_value_sequence(
+                crate::evidence_identity::WorthQueryEvidenceTag::new("evidence"),
+                evidence_parts.iter().map(String::as_str),
+            )
+            .seal()?)
+        })();
+        Self {
             error_kind,
             message,
             failure_identity,
             counters,
-        })
+        }
     }
 
     pub fn error_kind(&self) -> &QuerySubscriptionDiagnosticBundleErrorKind {
@@ -93,8 +95,10 @@ impl QuerySubscriptionDiagnosticBundleError {
         self.message
     }
 
-    pub fn failure_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.failure_identity
+    pub fn failure_identity(
+        &self,
+    ) -> Result<&WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(self.failure_identity.as_ref().map_err(|cause| *cause)?)
     }
 
     pub fn counters(&self) -> &QuerySubscriptionDiagnosticCounters {

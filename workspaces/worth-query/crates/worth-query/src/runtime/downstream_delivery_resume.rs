@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::lower_runtime_routing::WorthQueryLowerRuntimeSupportPosture;
 
 use super::evidence_identities::runtime_downstream_resume_posture_identity;
@@ -41,7 +42,7 @@ impl WorthQueryRuntimeDownstreamResumePosture {
         required_basis_identity: Option<WorthQueryEvidenceIdentity>,
         support_posture: WorthQueryLowerRuntimeSupportPosture,
         support_identity: WorthQueryEvidenceIdentity,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let posture_identity = runtime_downstream_resume_posture_identity(
             kind,
             required_basis_identity.as_ref(),
@@ -166,7 +167,7 @@ mod tests {
     }
 
     #[test]
-    fn resume_posture_carries_typed_support_identity() -> Result<(), crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    fn resume_posture_carries_typed_support_identity() -> Result<(), IdentityDerivationDenial> {
         let matrix = worth_query_lower_runtime_support_matrix();
         let support = matrix
             .support_for(WorthQueryLowerRuntimeSeamKey::BasisReadmissionFromSubscriptionEvidence)
@@ -179,7 +180,7 @@ mod tests {
             support_identity,
         )?;
         assert_eq!(posture.support_identity(), posture.support_identity());
-    
-Ok(())
-}
+
+        Ok(())
+    }
 }

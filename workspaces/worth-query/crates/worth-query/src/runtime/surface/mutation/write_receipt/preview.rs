@@ -45,13 +45,15 @@ impl WorthQueryWriteReceipt {
         let committed_truth_identity = super::write_receipt_committed_truth_identity(&inner)?;
         let target_entity_identity = preview_target_entity_identity(command, &delta);
         let declared_collection_identity = command.declared_collection_identity();
-        let target_collection_identity =
-            declared_collection_identity.as_ref().map(|collection| {
+        let target_collection_identity = declared_collection_identity
+            .as_ref()
+            .map(|collection| {
                 WorthQueryMutationTargetCollectionIdentity::new(
                     "write-receipt-preview-target",
                     collection.as_str(),
                 )
-            })?;
+            })
+            .transpose()?;
         let naming_mutation_evidence = naming_mutation_evidence(
             None,
             command.naming_intent(),
@@ -88,7 +90,8 @@ impl WorthQueryWriteReceipt {
             existing_truth_assertion_evidence: None,
             existing_truth_binding_evidence: command
                 .existing_truth_binding()
-                .map(WorthQueryExistingTruthBindingEvidence::from_binding)?,
+                .map(WorthQueryExistingTruthBindingEvidence::from_binding)
+                .transpose()?,
             symbolic_target_reference_evidence: symbolic_target_reference_evidence(
                 command.mutation_family(),
                 None,

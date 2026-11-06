@@ -43,7 +43,7 @@ pub struct WorthQueryDomainCapabilityProgressionDenial {
     target_kind: WorthQueryDomainCapabilityTargetKind,
     request_identity: WorthQueryEvidenceIdentity,
     message: String,
-    failure_identity: WorthQueryEvidenceIdentity,
+    failure_identity: Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>,
 }
 
 impl WorthQueryDomainCapabilityProgressionDenial {
@@ -53,22 +53,24 @@ impl WorthQueryDomainCapabilityProgressionDenial {
         target_kind: WorthQueryDomainCapabilityTargetKind,
         request_identity: WorthQueryEvidenceIdentity,
         message: impl Into<String>,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let message = message.into();
-        let failure_identity = compose_progression_denial_failure_identity(
-            kind,
-            category,
-            target_kind,
-            &request_identity,
-        )?;
-        Ok(Self {
+        let failure_identity = (|| {
+            Ok(compose_progression_denial_failure_identity(
+                kind,
+                category,
+                target_kind,
+                &request_identity,
+            )?)
+        })();
+        Self {
             kind,
             category,
             target_kind,
             request_identity,
             message,
             failure_identity,
-        })
+        }
     }
 
     pub fn kind(&self) -> WorthQueryDomainCapabilityProgressionDenialKind {
@@ -95,12 +97,18 @@ impl WorthQueryDomainCapabilityProgressionDenial {
         &self.message
     }
 
-    pub fn failure_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.failure_identity
+    pub fn failure_identity(
+        &self,
+    ) -> Result<&WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(self.failure_identity.as_ref().map_err(|cause| *cause)?)
     }
 
-    pub fn failure_for_reporting(&self) -> &str {
-        self.failure_identity.as_str()
+    pub fn failure_for_reporting(&self) -> Result<&str, IdentityDerivationDenial> {
+        Ok(self
+            .failure_identity
+            .as_ref()
+            .map_err(|cause| *cause)?
+            .as_str())
     }
 }
 

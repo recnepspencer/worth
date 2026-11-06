@@ -142,7 +142,8 @@ impl QuerySubscriptionRuntimeCertificationCounters {
 pub struct QuerySubscriptionRuntimeCertificationError {
     error_kind: QuerySubscriptionRuntimeCertificationErrorKind,
     message: &'static str,
-    pub(in crate::subscription) failure_identity: WorthQueryEvidenceIdentity,
+    pub(in crate::subscription) failure_identity:
+        Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>,
     counters: QuerySubscriptionRuntimeCertificationCounters,
 }
 
@@ -152,24 +153,29 @@ impl QuerySubscriptionRuntimeCertificationError {
         message: &'static str,
         evidence: &[WorthQueryEvidenceIdentity],
         counters: QuerySubscriptionRuntimeCertificationCounters,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        let failure_identity = WorthQueryEvidenceIdentity::compose(
-            WorthQueryEvidenceScope::SubscriptionActivationReceipt,
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            "query_subscription_runtime_certification_error_v1",
-        )
-        .field_shape(WorthQueryEvidenceTag::new("kind"), error_kind.as_str())
-        .field_value(WorthQueryEvidenceTag::new("message"), message)
-        .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("evidence"), evidence.iter())
-        .seal()?;
-        Ok(Self {
+    ) -> Self {
+        let failure_identity = (|| {
+            Ok(WorthQueryEvidenceIdentity::compose(
+                WorthQueryEvidenceScope::SubscriptionActivationReceipt,
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                "query_subscription_runtime_certification_error_v1",
+            )
+            .field_shape(WorthQueryEvidenceTag::new("kind"), error_kind.as_str())
+            .field_value(WorthQueryEvidenceTag::new("message"), message)
+            .field_evidence_identity_sequence(
+                WorthQueryEvidenceTag::new("evidence"),
+                evidence.iter(),
+            )
+            .seal()?)
+        })();
+        Self {
             error_kind,
             message,
             failure_identity,
             counters,
-        })
+        }
     }
 
     pub fn error_kind(&self) -> &QuerySubscriptionRuntimeCertificationErrorKind {

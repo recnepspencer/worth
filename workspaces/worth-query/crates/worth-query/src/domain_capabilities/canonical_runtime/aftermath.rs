@@ -131,7 +131,7 @@ where
         return Ok(TransitionOutcome::Denied(missing_runtime_semantics_denial(
             payload.semantic_code(),
             domain_contribution.request_identity().clone(),
-        )?));
+        )));
     };
 
     let declaration = match declare_projection_consumption(
@@ -151,7 +151,7 @@ where
                     payload.semantic_code(),
                     declaration_error_label(&error),
                 ),
-            )?));
+            )));
         }
     };
 
@@ -198,7 +198,7 @@ where
                         review.semantic_code(),
                         denial_reason_label(denied.reason()),
                     ),
-                )?)
+                ))
             }
             ProjectionConsumptionEligibility::Deferred(deferred) => {
                 TransitionOutcome::Denied(WorthQueryDomainCapabilityProgressionDenial::new(
@@ -211,7 +211,7 @@ where
                         review.semantic_code(),
                         deferred_reason_label(deferred.reason()),
                     ),
-                )?)
+                ))
             }
             ProjectionConsumptionEligibility::SourceMismatch(mismatch) => {
                 TransitionOutcome::Denied(WorthQueryDomainCapabilityProgressionDenial::new(
@@ -225,7 +225,7 @@ where
                         mismatch.source_family().as_str(),
                         mismatch.requested_fact_kind().as_str(),
                     ),
-                )?)
+                ))
             }
         },
         TransitionOutcome::Denied(denial) => TransitionOutcome::Denied(denial),
@@ -274,8 +274,8 @@ impl WorthQueryAftermathProjectionTarget
 fn missing_runtime_semantics_denial(
     semantic_code: &str,
     request_identity: WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryDomainCapabilityProgressionDenial, IdentityDerivationDenial> {
-    Ok(WorthQueryDomainCapabilityProgressionDenial::new(
+) -> WorthQueryDomainCapabilityProgressionDenial {
+    WorthQueryDomainCapabilityProgressionDenial::new(
         WorthQueryDomainCapabilityProgressionDenialKind::MissingCanonicalMaterializationSemantics,
         "consequence-aftermath",
         crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind::AdmittedIntentPlan,
@@ -283,7 +283,7 @@ fn missing_runtime_semantics_denial(
         format!(
             "projection consumption materialization requires runtime aftermath semantics for `{semantic_code}`"
         ),
-    )?)
+    )
 }
 
 fn declaration_error_label(error: &ProjectionConsumptionDeclarationError) -> &'static str {

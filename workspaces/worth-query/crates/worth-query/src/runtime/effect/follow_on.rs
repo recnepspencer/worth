@@ -37,7 +37,9 @@ pub struct WorthQueryEffectWriteAdjacentTrigger {
 }
 
 impl WorthQueryEffectWriteAdjacentTrigger {
-    pub fn ordinary(effect_name: &str) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub fn ordinary(
+        effect_name: &str,
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let origin_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceiptPhase)
                 .field_shape(

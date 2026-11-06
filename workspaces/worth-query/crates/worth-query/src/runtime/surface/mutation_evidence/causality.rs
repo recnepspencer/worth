@@ -11,7 +11,9 @@ pub struct WorthQueryMutationCausalityEvidence {
 }
 
 impl WorthQueryMutationCausalityEvidence {
-    pub(in crate::runtime) fn from_bridge(bundle: &BridgeMutationAuthorityBundle) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub(in crate::runtime) fn from_bridge(
+        bundle: &BridgeMutationAuthorityBundle,
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let causality = bundle.causality();
         Ok(Self {
             causality_digest: imported_artifact("causality-root", causality.causality_digest())?,
@@ -55,7 +57,13 @@ impl WorthQueryMutationCausalityEvidence {
 fn imported_artifact(
     role: &'static str,
     artifact: impl Into<String>,
-) -> Result<WorthQueryMutationEvidenceDigest, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+) -> Result<
+    WorthQueryMutationEvidenceDigest,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+> {
     let artifact = WorthQueryBridgeMutationArtifactIdentity::imported(role, artifact)?;
-    Ok(WorthQueryMutationEvidenceDigest::source_identity(role, artifact.evidence_identity())?)
+    Ok(WorthQueryMutationEvidenceDigest::source_identity(
+        role,
+        artifact.evidence_identity(),
+    )?)
 }

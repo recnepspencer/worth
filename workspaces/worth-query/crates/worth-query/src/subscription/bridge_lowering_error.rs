@@ -29,7 +29,7 @@ impl QuerySubscriptionBridgeLoweringDenialKind {
 pub struct QuerySubscriptionBridgeLoweringError {
     denial_kind: QuerySubscriptionBridgeLoweringDenialKind,
     message: String,
-    diagnostic: QuerySubscriptionDiagnosticEvidence,
+    diagnostic: Result<QuerySubscriptionDiagnosticEvidence, IdentityDerivationDenial>,
     counters: QuerySubscriptionDeclarationCounters,
 }
 
@@ -40,20 +40,22 @@ impl QuerySubscriptionBridgeLoweringError {
         diagnostic_stage: QuerySubscriptionDiagnosticStage,
         source_identity: &WorthQueryEvidenceIdentity,
         counters: QuerySubscriptionDeclarationCounters,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let message = message.into();
-        let diagnostic = QuerySubscriptionDiagnosticEvidence::denied(
-            diagnostic_stage,
-            message.clone(),
-            source_identity,
-            &counters.evidence_identity()?,
-        )?;
-        Ok(Self {
+        let diagnostic = (|| {
+            Ok(QuerySubscriptionDiagnosticEvidence::denied(
+                diagnostic_stage,
+                message.clone(),
+                source_identity,
+                &counters.evidence_identity()?,
+            )?)
+        })();
+        Self {
             denial_kind,
             message,
             diagnostic,
             counters,
-        })
+        }
     }
 
     pub fn denial_kind(&self) -> &QuerySubscriptionBridgeLoweringDenialKind {
@@ -64,8 +66,10 @@ impl QuerySubscriptionBridgeLoweringError {
         &self.message
     }
 
-    pub fn diagnostic(&self) -> &QuerySubscriptionDiagnosticEvidence {
-        &self.diagnostic
+    pub fn diagnostic(
+        &self,
+    ) -> Result<&QuerySubscriptionDiagnosticEvidence, IdentityDerivationDenial> {
+        Ok(self.diagnostic.as_ref().map_err(|cause| *cause)?)
     }
 
     pub fn counters(&self) -> &QuerySubscriptionDeclarationCounters {

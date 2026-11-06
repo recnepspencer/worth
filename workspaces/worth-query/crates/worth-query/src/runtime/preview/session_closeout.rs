@@ -58,7 +58,10 @@ impl<'a> WorthQueryPreviewSession<'a> {
         residue_snapshot: PreviewLifecycleResidueSnapshot,
         target_basis_snapshot_identity: &WorthQuerySnapshotIdentity,
         rebinding_identity: Option<crate::WorthQueryEvidenceIdentity>,
-    ) -> Result<WorthQueryPreviewCloseoutEvidence, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<
+        WorthQueryPreviewCloseoutEvidence,
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         Ok(WorthQueryPreviewCloseoutEvidence::new(
             kind,
             self.effect_policy,

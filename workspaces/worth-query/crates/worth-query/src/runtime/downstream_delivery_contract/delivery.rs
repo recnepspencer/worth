@@ -165,7 +165,10 @@ impl WorthQueryRuntimeDownstreamDelivery {
     pub fn negotiate_runtime_resume(
         &self,
         basis_identity: Option<&WorthQueryEvidenceIdentity>,
-    ) -> Result<WorthQueryRuntimeDownstreamResumePosture, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<
+        WorthQueryRuntimeDownstreamResumePosture,
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         let support_posture = self.runtime_resume_support_posture;
         if support_posture != WorthQueryLowerRuntimeSupportPosture::Admitted {
             return Ok(WorthQueryRuntimeDownstreamResumePosture::new(
@@ -197,9 +200,14 @@ impl WorthQueryRuntimeDownstreamDelivery {
                 self.runtime_resume_support_identity.clone(),
             )?,
         })
-}
+    }
 
-    pub fn durable_resume_posture(&self) -> Result<WorthQueryRuntimeDownstreamResumePosture, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub fn durable_resume_posture(
+        &self,
+    ) -> Result<
+        WorthQueryRuntimeDownstreamResumePosture,
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         let support_posture = self.durable_resume_support_posture;
         let kind = match support_posture {
             WorthQueryLowerRuntimeSupportPosture::Deferred => {

@@ -24,7 +24,7 @@ impl WorthQueryRuntime {
         command: WorthQueryWriteCommand,
     ) -> Result<WorthQueryRuntimeIntentAdmissionReviewData, WorthQueryRuntimeError> {
         self.admit_facade_family(WorthQueryRuntimeFacadeFamily::Write)?;
-        let seed = self.build_authoritative_mutation_intent_seed(request_execution, command)?;
+        let seed = self.build_authoritative_mutation_intent_seed(request_execution, command);
         let request = crate::intent_admission::WorthQueryRawIntentAdmissionRequest::authoritative_write_entrypoint(seed)
             .map_err(|violation| {
                 WorthQueryRuntimeError::Workspace(WorthQueryWorkspaceError::new(violation.message()))

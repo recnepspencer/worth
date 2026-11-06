@@ -139,7 +139,10 @@ pub(super) struct WorthQueryRuntimeAsyncSourceBinding {
 }
 
 impl WorthQueryRuntimeAsyncSourceBinding {
-    pub(super) fn admit(view_name: &str, request: &AdmittedBridgeAsyncRequestIdentity) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub(super) fn admit(
+        view_name: &str,
+        request: &AdmittedBridgeAsyncRequestIdentity,
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let declaration_identity = request.lowered().declaration_identity();
         let current_request_identity = request.request_identity();
         let binding_identity =
@@ -191,14 +194,24 @@ impl WorthQueryRuntimeAsyncSourceBinding {
         &self.current_request_identity
     }
 
-    pub(super) fn current_basis_identity(&self) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub(super) fn current_basis_identity(
+        &self,
+    ) -> Result<
+        WorthQueryEvidenceIdentity,
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         Ok(async_source_basis_identity(
             self.declaration_identity_reporting.as_ref(),
             self.truth_view_basis_digest.as_ref(),
         )?)
     }
 
-    pub(super) fn current_generation_identity(&self) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub(super) fn current_generation_identity(
+        &self,
+    ) -> Result<
+        WorthQueryEvidenceIdentity,
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         Ok(async_source_generation_identity(
             self.declaration_identity_reporting.as_ref(),
             self.request_generation,
@@ -267,7 +280,10 @@ fn permits_retired_request_observation(transition: &BridgeMixedCauseAsyncResultT
 
 pub(super) fn transition_basis_identity(
     transition: &BridgeMixedCauseAsyncResultTransition,
-) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+) -> Result<
+    WorthQueryEvidenceIdentity,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+> {
     Ok(async_source_basis_identity(
         transition.declaration_identity(),
         transition.truth_view_basis_digest(),
@@ -276,7 +292,10 @@ pub(super) fn transition_basis_identity(
 
 pub(super) fn transition_generation_identity(
     transition: &BridgeMixedCauseAsyncResultTransition,
-) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+) -> Result<
+    WorthQueryEvidenceIdentity,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+> {
     Ok(async_source_generation_identity(
         transition.declaration_identity(),
         transition.request_generation(),
@@ -286,41 +305,51 @@ pub(super) fn transition_generation_identity(
 fn async_source_basis_identity(
     declaration: &str,
     truth_view_basis_digest: &str,
-) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::RuntimeStateSnapshot)
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            "worth_query_bridge_async_basis_v1",
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("bridge_declaration"),
-            declaration,
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("truth_view_basis"),
-            truth_view_basis_digest,
-        )
-        .seal()?)
+) -> Result<
+    WorthQueryEvidenceIdentity,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::RuntimeStateSnapshot)
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                "worth_query_bridge_async_basis_v1",
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("bridge_declaration"),
+                declaration,
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("truth_view_basis"),
+                truth_view_basis_digest,
+            )
+            .seal()?,
+    )
 }
 
 fn async_source_generation_identity(
     declaration: &str,
     request_generation: u64,
-) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::RuntimeStateSnapshot)
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            "worth_query_bridge_async_generation_v1",
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("bridge_declaration"),
-            declaration,
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("request_generation"),
-            request_generation.to_string(),
-        )
-        .seal()?)
+) -> Result<
+    WorthQueryEvidenceIdentity,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::RuntimeStateSnapshot)
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                "worth_query_bridge_async_generation_v1",
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("bridge_declaration"),
+                declaration,
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("request_generation"),
+                request_generation.to_string(),
+            )
+            .seal()?,
+    )
 }
 
 fn binding_error(

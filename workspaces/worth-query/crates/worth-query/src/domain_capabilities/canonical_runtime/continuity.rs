@@ -47,7 +47,7 @@ where
         return Ok(TransitionOutcome::Denied(missing_runtime_semantics_denial(
             payload,
             domain_contribution.request_identity().clone(),
-        )?));
+        )));
     };
     if !runtime_semantics_match_posture(runtime_semantics, payload.posture()) {
         return Ok(TransitionOutcome::Denied(
@@ -55,14 +55,14 @@ where
                 payload,
                 runtime_semantics,
                 domain_contribution.request_identity().clone(),
-            )?,
+            ),
         ));
     }
     let Some(intent) = continuity_intent_from_runtime_semantics(runtime_semantics, payload) else {
         return Ok(TransitionOutcome::Denied(unsupported_posture_denial(
             payload,
             domain_contribution.request_identity().clone(),
-        )?));
+        )));
     };
 
     Ok(TransitionOutcome::Success(
@@ -186,8 +186,8 @@ fn continuity_intent_from_runtime_semantics(
 fn missing_runtime_semantics_denial(
     payload: &WorthQueryContinuityContributionPayload,
     request_identity: WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryDomainCapabilityProgressionDenial, IdentityDerivationDenial> {
-    Ok(WorthQueryDomainCapabilityProgressionDenial::new(
+) -> WorthQueryDomainCapabilityProgressionDenial {
+    WorthQueryDomainCapabilityProgressionDenial::new(
         WorthQueryDomainCapabilityProgressionDenialKind::MissingCanonicalMaterializationSemantics,
         "continuity-lineage",
         crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind::AdmittedIntentPlan,
@@ -196,14 +196,14 @@ fn missing_runtime_semantics_denial(
             "continuity runtime materialization requires continuity intent semantics for `{}`",
             payload.semantic_code()
         ),
-    )?)
+    )
 }
 
 fn unsupported_posture_denial(
     payload: &WorthQueryContinuityContributionPayload,
     request_identity: WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryDomainCapabilityProgressionDenial, IdentityDerivationDenial> {
-    Ok(WorthQueryDomainCapabilityProgressionDenial::new(
+) -> WorthQueryDomainCapabilityProgressionDenial {
+    WorthQueryDomainCapabilityProgressionDenial::new(
         WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture,
         "continuity-lineage",
         crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind::AdmittedIntentPlan,
@@ -212,15 +212,15 @@ fn unsupported_posture_denial(
             "continuity runtime materialization does not support `{}` posture",
             payload.posture().as_str()
         ),
-    )?)
+    )
 }
 
 fn inconsistent_runtime_semantics_denial(
     payload: &WorthQueryContinuityContributionPayload,
     runtime_semantics: &WorthQueryContinuityRuntimeSemantics,
     request_identity: WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryDomainCapabilityProgressionDenial, IdentityDerivationDenial> {
-    Ok(WorthQueryDomainCapabilityProgressionDenial::new(
+) -> WorthQueryDomainCapabilityProgressionDenial {
+    WorthQueryDomainCapabilityProgressionDenial::new(
         WorthQueryDomainCapabilityProgressionDenialKind::InconsistentCanonicalMaterializationSemantics,
         "continuity-lineage",
         crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind::AdmittedIntentPlan,
@@ -231,5 +231,5 @@ fn inconsistent_runtime_semantics_denial(
             runtime_semantics.outcome_class().as_str(),
             payload.posture().as_str()
         ),
-    )?)
+    )
 }

@@ -19,10 +19,7 @@ impl WorthQueryRuntime {
         &self,
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         command: WorthQueryWriteCommand,
-    ) -> Result<
-        crate::intent_admission::WorthQueryAuthoritativeMutationIntentSeed,
-        IdentityDerivationDenial,
-    > {
+    ) -> crate::intent_admission::WorthQueryAuthoritativeMutationIntentSeed {
         use crate::intent_admission::WorthQueryAuthoritativeMutationPreflight as Preflight;
 
         let (preflight, admitted_mutation) = match self.admit_backend_write_command(command.clone())
@@ -37,13 +34,13 @@ impl WorthQueryRuntime {
                         reference,
                         WorthQuerySymbolicTargetReferenceDenialKind::RequiresBatchContext,
                         "same-batch symbolic target references require batch execution",
-                    )?)
+                    ))
                 } else if let Some(reference) = command.symbolic_aspect_references().first() {
                     Preflight::TargetReferenceDenied(WorthQuerySymbolicTargetReferenceDenial::new(
                         reference.reference(),
                         WorthQuerySymbolicTargetReferenceDenialKind::RequiresBatchContext,
                         "same-batch symbolic aspect references require batch execution",
-                    )?)
+                    ))
                 } else if let Some(binding) = command.existing_truth_binding() {
                     match self.backend.admit_existing_truth_binding(binding) {
                         Err(denial) => Preflight::BindingDenied(denial),
@@ -60,12 +57,10 @@ impl WorthQueryRuntime {
             }
         };
 
-        Ok(
-            crate::intent_admission::WorthQueryAuthoritativeMutationIntentSeed::new(
-                command,
-                preflight,
-                admitted_mutation,
-            ),
+        crate::intent_admission::WorthQueryAuthoritativeMutationIntentSeed::new(
+            command,
+            preflight,
+            admitted_mutation,
         )
     }
 

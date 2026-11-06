@@ -94,7 +94,8 @@ pub(super) fn plan_async_result_transitions(
                 generation_identity: generation_identity.clone(),
             });
         }
-        let projection = WorthQueryRuntimeAsyncResultProjection::from_bridge_transition(transition)?;
+        let projection =
+            WorthQueryRuntimeAsyncResultProjection::from_bridge_transition(transition)?;
         let next_kind = projection.kind();
         if !legal_result_transition(prior_kind, next_kind) {
             return Err(WorthQueryAsyncSourceBindingError::new(

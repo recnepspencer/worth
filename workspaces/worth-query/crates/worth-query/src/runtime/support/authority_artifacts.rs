@@ -64,7 +64,10 @@ mutation_authority_label_type!(WorthQueryContinuityPriorAuthorityLabel);
 mutation_authority_label_type!(WorthQueryContinuitySuccessorAuthorityLabel);
 
 impl WorthQueryMutationAuthorityIdentity {
-    pub(crate) fn new(role: &'static str, label: impl Into<String>) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub(crate) fn new(
+        role: &'static str,
+        label: impl Into<String>,
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let label = label.into();
         let identity = mutation_label_identity(
             WorthQueryEvidenceScope::MutationEvidenceAuthorityIdentity,
@@ -164,7 +167,10 @@ impl PartialOrd for WorthQueryMutationTargetCollectionIdentity {
 }
 
 impl WorthQueryMutationTargetCollectionIdentity {
-    pub(crate) fn new(role: &'static str, label: impl Into<String>) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub(crate) fn new(
+        role: &'static str,
+        label: impl Into<String>,
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let label = label.into();
         let identity = mutation_label_identity(
             WorthQueryEvidenceScope::MutationEvidenceTargetCollectionIdentity,
@@ -194,7 +200,10 @@ pub struct WorthQueryMutationSymbolIdentity {
 }
 
 impl WorthQueryMutationSymbolIdentity {
-    pub(crate) fn new(role: &'static str, label: impl Into<String>) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub(crate) fn new(
+        role: &'static str,
+        label: impl Into<String>,
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let label = label.into();
         let identity = mutation_label_identity(
             WorthQueryEvidenceScope::MutationEvidenceSymbolIdentity,
@@ -232,7 +241,10 @@ pub struct WorthQueryMutationEvidenceDigest {
 }
 
 impl WorthQueryMutationEvidenceDigest {
-    pub(crate) fn source_identity(role: &'static str, digest: &WorthQueryEvidenceIdentity) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub(crate) fn source_identity(
+        role: &'static str,
+        digest: &WorthQueryEvidenceIdentity,
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         Ok(Self {
             digest: digest.as_str().to_string(),
             identity: worth_query_evidence_identity(
@@ -244,7 +256,10 @@ impl WorthQueryMutationEvidenceDigest {
         })
     }
 
-    pub(crate) fn aggregate(role: &'static str, digest: WorthQueryEvidenceIdentity) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub(crate) fn aggregate(
+        role: &'static str,
+        digest: WorthQueryEvidenceIdentity,
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         Ok(Self {
             digest: digest.as_str().to_string(),
             identity: mutation_digest_identity(
@@ -276,7 +291,10 @@ fn mutation_label_identity(
     scope: WorthQueryEvidenceScope,
     role: &'static str,
     label: &str,
-) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+) -> Result<
+    WorthQueryEvidenceIdentity,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+> {
     Ok(worth_query_evidence_identity(scope)
         .field_shape(WorthQueryEvidenceTag::new("role"), role)
         .field_value(WorthQueryEvidenceTag::new("label"), label)
@@ -287,7 +305,10 @@ fn mutation_digest_identity(
     scope: WorthQueryEvidenceScope,
     role: &'static str,
     digest: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+) -> Result<
+    WorthQueryEvidenceIdentity,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+> {
     Ok(worth_query_evidence_identity(scope)
         .field_shape(WorthQueryEvidenceTag::new("role"), role)
         .field_evidence_identity(WorthQueryEvidenceTag::new("digest"), digest)

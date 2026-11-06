@@ -314,7 +314,7 @@ impl WorthQueryLowerRuntimeExplanationContribution {
                 redaction_policy,
                 materialization_policy,
             )?
-            .bind_to_installed_target(self.target),
+            .bind_to_installed_target(self.target)?,
         })
     }
 }

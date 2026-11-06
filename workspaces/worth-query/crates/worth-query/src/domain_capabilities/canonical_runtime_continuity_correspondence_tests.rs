@@ -25,7 +25,7 @@ fn continuity_correspondence_materializer_builds_lineage_continuity(
                 "lineage evidence supplies the authoritative counterpart",
             )?,
         )?,
-    )?);
+    ));
 
     assert_eq!(resolved.outcome().family_name(), "lineage_continuity");
     let lineage = resolved
@@ -52,7 +52,7 @@ fn continuity_correspondence_materializer_builds_structural_ambiguity(
                 "structural evidence yields two bounded candidates",
             )?,
         )?,
-    )?);
+    ));
 
     assert_eq!(
         resolved.outcome().family_name(),
@@ -91,7 +91,7 @@ fn continuity_correspondence_materializer_builds_mixed_disagreement(
                 "structural evidence disagrees with lineage continuity",
             )?,
         )?,
-    )?);
+    ));
 
     assert_eq!(
         resolved.outcome().family_name(),
@@ -116,7 +116,7 @@ fn continuity_correspondence_materializer_denies_missing_semantics(
             "continuity.correspondence.missing",
             "correspondence posture without correspondence evidence",
         )?,
-    )?)?;
+    )?);
 
     assert!(matches!(
         outcome,
@@ -138,7 +138,7 @@ fn continuity_correspondence_materializer_denies_mutation_posture(
             "continuity.identity.preserved",
             "authoritative continuity evidence should stay on the mutation lane",
         )?,
-    )?)?;
+    )?);
 
     assert!(matches!(
         outcome,

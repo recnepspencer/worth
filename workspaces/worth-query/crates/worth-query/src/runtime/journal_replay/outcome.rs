@@ -141,19 +141,24 @@ pub(crate) fn journal_replay_truth_reconstruction_identity(
     committed_truth_identities: &[WorthQueryEvidenceIdentity],
     expected_journal_position_count: usize,
     journal_gap_count: usize,
-) -> Result<WorthQueryEvidenceIdentity, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::JournalReplayOutcome)
-        .field_evidence_identity_sequence(
-            WorthQueryEvidenceTag::new("committed_truth_identity"),
-            committed_truth_identities.iter(),
-        )
-        .field_usize(
-            WorthQueryEvidenceTag::new("expected_journal_position_count"),
-            expected_journal_position_count,
-        )
-        .field_usize(
-            WorthQueryEvidenceTag::new("journal_gap_count"),
-            journal_gap_count,
-        )
-        .seal()?)
+) -> Result<
+    WorthQueryEvidenceIdentity,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::JournalReplayOutcome)
+            .field_evidence_identity_sequence(
+                WorthQueryEvidenceTag::new("committed_truth_identity"),
+                committed_truth_identities.iter(),
+            )
+            .field_usize(
+                WorthQueryEvidenceTag::new("expected_journal_position_count"),
+                expected_journal_position_count,
+            )
+            .field_usize(
+                WorthQueryEvidenceTag::new("journal_gap_count"),
+                journal_gap_count,
+            )
+            .seal()?,
+    )
 }

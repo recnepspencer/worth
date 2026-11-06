@@ -133,7 +133,7 @@ where
             domain_contribution.request_identity().clone(),
             domain_contribution.target().kind(),
             "invariant registration",
-        )?));
+        )));
     };
 
     if payload.posture() != WorthQueryInvariantCapabilityContributionPosture::InvariantRegistration
@@ -144,7 +144,7 @@ where
             domain_contribution.target().kind(),
             "invariant registration",
             "invariant-registration",
-        )?));
+        )));
     }
 
     let Some((name, strategy_name, strategy_version, input_contract, source_lane, target_lane)) =
@@ -217,25 +217,22 @@ where
 
 pub fn materialize_graph_composition_capability_support_row<T>(
     contribution: WorthQueryMaterializationReadyInvariantCapabilityContribution<T>,
-) -> Result<
-    WorthQueryDomainCapabilityTransitionOutcome<WorthQueryGraphCompositionCapabilitySupportRow>,
-    IdentityDerivationDenial,
->
+) -> WorthQueryDomainCapabilityTransitionOutcome<WorthQueryGraphCompositionCapabilitySupportRow>
 where
     T: crate::domain_capabilities::WorthQueryLowerRuntimeContributionTargetBinding,
 {
     let domain_contribution = contribution.payload();
     let payload = domain_contribution.payload();
     let Some(graph_capability) = payload.graph_capability() else {
-        return Ok(TransitionOutcome::Denied(missing_runtime_semantics_denial(
+        return TransitionOutcome::Denied(missing_runtime_semantics_denial(
             payload,
             domain_contribution.request_identity().clone(),
             domain_contribution.target().kind(),
             "graph capability",
-        )?));
+        ));
     };
 
-    Ok(match payload.posture() {
+    match payload.posture() {
         WorthQueryInvariantCapabilityContributionPosture::CapabilityGap
         | WorthQueryInvariantCapabilityContributionPosture::SupportSummary => {
             TransitionOutcome::Success(WorthQueryGraphCompositionCapabilitySupportRow::new(
@@ -251,9 +248,9 @@ where
                 domain_contribution.target().kind(),
                 "graph capability",
                 "capability-gap and support-summary",
-            )?)
+            ))
         }
-    })
+    }
 }
 
 pub(crate) fn materialize_graph_composition_domain_invariant_denial<T>(
@@ -273,7 +270,7 @@ where
             domain_contribution.request_identity().clone(),
             domain_contribution.target().kind(),
             "graph invariant denial",
-        )?));
+        )));
     };
 
     Ok(match payload.posture() {
@@ -295,7 +292,7 @@ where
                 domain_contribution.target().kind(),
                 "graph invariant denial",
                 "invariant-denial",
-            )?)
+            ))
         }
     })
 }
@@ -321,8 +318,8 @@ fn missing_runtime_semantics_denial(
     request_identity: WorthQueryEvidenceIdentity,
     target_kind: crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind,
     runtime_family: &str,
-) -> Result<WorthQueryDomainCapabilityProgressionDenial, IdentityDerivationDenial> {
-    Ok(WorthQueryDomainCapabilityProgressionDenial::new(
+) -> WorthQueryDomainCapabilityProgressionDenial {
+    WorthQueryDomainCapabilityProgressionDenial::new(
         WorthQueryDomainCapabilityProgressionDenialKind::MissingCanonicalMaterializationSemantics,
         "invariant-capability",
         target_kind,
@@ -331,7 +328,7 @@ fn missing_runtime_semantics_denial(
             "{runtime_family} runtime materialization requires matching runtime semantics for `{}`",
             payload.semantic_code()
         ),
-    )?)
+    )
 }
 
 fn unsupported_posture_denial(
@@ -340,8 +337,8 @@ fn unsupported_posture_denial(
     target_kind: crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind,
     runtime_family: &str,
     supported_postures: &str,
-) -> Result<WorthQueryDomainCapabilityProgressionDenial, IdentityDerivationDenial> {
-    Ok(WorthQueryDomainCapabilityProgressionDenial::new(
+) -> WorthQueryDomainCapabilityProgressionDenial {
+    WorthQueryDomainCapabilityProgressionDenial::new(
         WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture,
         "invariant-capability",
         target_kind,
@@ -350,5 +347,5 @@ fn unsupported_posture_denial(
             "{runtime_family} runtime materialization only supports {supported_postures} postures; got `{}`",
             payload.posture().as_str()
         ),
-    )?)
+    )
 }

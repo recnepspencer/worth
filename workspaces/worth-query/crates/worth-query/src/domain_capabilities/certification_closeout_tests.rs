@@ -127,7 +127,7 @@ fn certification_bundle_matches_admission_continuity_and_aftermath_outputs(
             "runtime routing still needs clarification",
         )?
         .bind_to_installed_target(admitted_plan_target.clone()),
-    )?)?);
+    )?));
     assert_eq!(admission, admission_proof);
     assert_eq!(
         bundle.output_digest("admission_artifact_digest"),

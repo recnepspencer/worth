@@ -52,7 +52,7 @@ where
                 payload,
                 target.kind(),
                 domain_contribution.request_identity().clone(),
-            )?,
+            ),
         ));
     };
     if !workflow_runtime_semantics_match_posture(payload.posture(), runtime_semantics) {
@@ -63,7 +63,7 @@ where
                 runtime_semantics,
                 target.kind(),
                 domain_contribution.request_identity().clone(),
-            )?,
+            ),
         ));
     }
 
@@ -98,7 +98,7 @@ where
                                 error.failure_class(),
                                 error.message()
                             ),
-                        )?,
+                        ),
                     ))
                 }
             },
@@ -124,7 +124,7 @@ where
                                 error.failure_class(),
                                 error.message()
                             ),
-                        )?,
+                        ),
                     ))
                 }
             }
@@ -150,7 +150,7 @@ where
                 error.failure_class(),
                 error.message()
             ),
-        )?),
+        )),
     })
 }
 

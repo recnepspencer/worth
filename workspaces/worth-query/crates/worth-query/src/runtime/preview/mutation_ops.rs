@@ -37,7 +37,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
                     reference,
                     WorthQuerySymbolicTargetReferenceDenialKind::RequiresBatchContext,
                     "same-batch symbolic target references require batch execution",
-                )?,
+                ),
             ));
         }
         deny_preview_assertion(&command)?;
