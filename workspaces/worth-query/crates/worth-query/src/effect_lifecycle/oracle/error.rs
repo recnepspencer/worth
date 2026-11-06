@@ -46,7 +46,7 @@ pub struct EffectExecutionOracleError {
     message: String,
     execution_subject_identity: WorthQueryEvidenceIdentity,
     oracle_identity: Option<WorthQueryEvidenceIdentity>,
-    error_identity: WorthQueryEvidenceIdentity,
+    error_identity: Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>,
 }
 
 impl EffectExecutionOracleError {
@@ -55,7 +55,7 @@ impl EffectExecutionOracleError {
         message: impl Into<String>,
         execution_subject_identity: &WorthQueryEvidenceIdentity,
         oracle_identity: Option<&WorthQueryEvidenceIdentity>,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let message = message.into();
         let error_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
@@ -70,14 +70,14 @@ impl EffectExecutionOracleError {
                 )
                 .optional_evidence_identity(WorthQueryEvidenceTag::new("oracle"), oracle_identity)
                 .field_shape(WorthQueryEvidenceTag::new("message"), message.as_str())
-                .seal()?;
-        Ok(Self {
+                .seal();
+        Self {
             kind,
             message,
             execution_subject_identity: execution_subject_identity.clone(),
             oracle_identity: oracle_identity.cloned(),
             error_identity,
-        })
+        }
     }
 
     pub fn kind(&self) -> EffectExecutionOracleErrorKind {
@@ -106,24 +106,22 @@ impl EffectExecutionOracleError {
             .map(WorthQueryEvidenceIdentity::as_str)
     }
 
-    pub fn error_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.error_identity
+    pub fn error_identity(&self) -> Result<&WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        self.error_identity.as_ref().map_err(|cause| *cause)
     }
 
-    pub fn error_for_reporting(&self) -> &str {
-        self.error_identity.as_str()
+    pub fn error_for_reporting(&self) -> Result<&str, IdentityDerivationDenial> {
+        Ok(self.error_identity()?.as_str())
     }
 }
 
-pub(crate) fn bridge_oracle_observation_subject(
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "bridge_oracle_observation_subject_v1",
-            )
-            .field_shape(WorthQueryEvidenceTag::new("kind"), "last_writeback")
-            .seal()?,
-    )
+pub(crate) fn bridge_oracle_observation_subject() -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "bridge_oracle_observation_subject_v1",
+        )
+        .field_shape(WorthQueryEvidenceTag::new("kind"), "last_writeback")
+        .seal()
+        .expect("private bridge observation descriptor contains two fixed literal entries")
 }

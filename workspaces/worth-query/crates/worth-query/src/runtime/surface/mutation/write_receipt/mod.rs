@@ -120,11 +120,13 @@ impl WorthQueryWriteReceipt {
         let causality_evidence = inner
             .bridge_authority
             .as_ref()
-            .map(WorthQueryMutationCausalityEvidence::from_bridge)?;
+            .map(WorthQueryMutationCausalityEvidence::from_bridge)
+            .transpose()?;
         let provenance_evidence = inner
             .bridge_authority
             .as_ref()
-            .map(WorthQueryMutationProvenanceEvidence::from_bridge)?;
+            .map(WorthQueryMutationProvenanceEvidence::from_bridge)
+            .transpose()?;
         let existing_truth_binding_evidence = existing_truth_binding
             .as_ref()
             .map(WorthQueryExistingTruthBindingEvidence::from_binding)
@@ -248,11 +250,13 @@ impl WorthQueryWriteReceipt {
         let causality_evidence = inner
             .bridge_authority
             .as_ref()
-            .map(WorthQueryMutationCausalityEvidence::from_bridge)?;
+            .map(WorthQueryMutationCausalityEvidence::from_bridge)
+            .transpose()?;
         let provenance_evidence = inner
             .bridge_authority
             .as_ref()
-            .map(WorthQueryMutationProvenanceEvidence::from_bridge)?;
+            .map(WorthQueryMutationProvenanceEvidence::from_bridge)
+            .transpose()?;
         let existing_truth_binding_evidence = existing_truth_binding
             .as_ref()
             .map(WorthQueryExistingTruthBindingEvidence::from_binding)

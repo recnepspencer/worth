@@ -229,15 +229,15 @@ fn ensure_context_matches_read_graph(
 fn context_allows_runtime_materialization(
     runtime_snapshot_identity: &WorthQuerySnapshotIdentity,
     context: &ScopedQueryBasisContext,
-) -> bool {
-    match context.family() {
+) -> Result<bool, IdentityDerivationDenial> {
+    Ok(match context.family() {
         QueryContextFamily::CurrentBranchHead => true,
         QueryContextFamily::HistoricalSnapshot => {
-            context.admits_runtime_snapshot(runtime_snapshot_identity)
+            context.admits_runtime_snapshot(runtime_snapshot_identity)?
         }
         QueryContextFamily::BranchHead
         | QueryContextFamily::HistoricalCommit
         | QueryContextFamily::PreviewDerivedHistorical
         | QueryContextFamily::DiffComparison => false,
-    }
+    })
 }

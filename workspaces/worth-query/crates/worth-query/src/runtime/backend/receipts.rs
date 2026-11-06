@@ -192,13 +192,15 @@ impl SubscriptionActivationReceipt {
         let signal_strategy_identity = activation.signal_strategy_identity().clone();
         let support_identity =
             subscription_activation_receipt_source_identity("support", &support_evidence_identity)?;
-        let remask_posture = remask_projection.map(|projection| {
-            WorthQueryRuntimeRemaskPosture::from_activation_projection(
-                &projection,
-                &support_identity,
-                &basis_binding_identity,
-            )
-        })?;
+        let remask_posture = remask_projection
+            .map(|projection| {
+                WorthQueryRuntimeRemaskPosture::from_activation_projection(
+                    &projection,
+                    &support_identity,
+                    &basis_binding_identity,
+                )
+            })
+            .transpose()?;
         let receipt_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::SubscriptionActivationReceipt,
         )

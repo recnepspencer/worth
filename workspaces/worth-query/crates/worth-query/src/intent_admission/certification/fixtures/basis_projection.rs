@@ -82,7 +82,7 @@ pub(in crate::intent_admission::certification) fn certified_projection_consumpti
     let contract = review
         .admit()
         .expect("projection should admit")
-        .bind_contract();
+        .bind_contract()?;
     Ok(CertifiedProjectionConsumptionAdmittedFixture {
         request,
         eligibility,
@@ -108,7 +108,7 @@ pub(in crate::intent_admission::certification) fn certified_projection_consumpti
     let contract = review
         .admit()
         .expect("warning-bearing projection should admit")
-        .bind_contract();
+        .bind_contract()?;
     Ok(CertifiedProjectionConsumptionWarningFixture {
         request,
         eligibility,

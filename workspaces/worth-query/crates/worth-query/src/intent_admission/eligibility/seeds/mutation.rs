@@ -159,7 +159,7 @@ impl WorthQueryAuthoritativeMutationBatchIntentSeed {
             .commands
             .iter()
             .map(authoritative_mutation_input_identity)
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
         Ok(worth_query_evidence_identity(
             WorthQueryEvidenceScope::AuthoritativeMutationBatchIntentSeed,
         )
@@ -215,12 +215,12 @@ pub(crate) fn authoritative_mutation_input_identity(
         .symbolic_aspect_references()
         .iter()
         .map(symbolic_aspect_reference_identity)
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     let operation_identities = command
         .declared_aspect_operations()
         .into_iter()
         .map(declared_aspect_operation_identity)
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     let metadata_identities = metadata_identities(command);
     let naming_identity = naming_identity(command)?;
     let continuity_identity = continuity_identity(command)?;

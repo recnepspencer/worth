@@ -256,7 +256,7 @@ fn batch_handoff_fingerprint(
     let command_fingerprints = commands
         .iter()
         .map(command_handoff_fingerprint)
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     Ok(worth_query_evidence_identity(
         WorthQueryEvidenceScope::AuthoritativeMutationExecutionHandoff,
     )

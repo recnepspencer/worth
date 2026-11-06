@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQuerySnapshotIdentity;
 use crate::ordinary::history::{at, WorthQueryHistoricalContext};
 use crate::runtime::{
@@ -57,12 +58,12 @@ impl WorthQueryCapturedBranchComparisonBasis {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         workspace: &WorthQueryWorkspace,
-    ) -> bool {
-        self.workspace_name == workspace.name()
+    ) -> Result<bool, IdentityDerivationDenial> {
+        Ok(self.workspace_name == workspace.name()
             && self
                 .runtime_basis
                 .snapshot()
-                .is_same_current_identity_as(&workspace.snapshot_identity_with_request(execution))
+                .is_same_current_identity_as(&workspace.snapshot_identity_with_request(execution)?))
     }
 }
 
@@ -70,11 +71,11 @@ impl WorthQueryCapturedComparisonBasis {
     fn capture(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         workspace: &WorthQueryWorkspace,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             workspace_name: workspace.name().to_string(),
-            snapshot: workspace.snapshot_identity_with_request(execution),
-        }
+            snapshot: workspace.snapshot_identity_with_request(execution)?,
+        })
     }
 
     pub(crate) fn workspace_name(&self) -> &str {
@@ -89,11 +90,11 @@ impl WorthQueryCapturedComparisonBasis {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         workspace: &WorthQueryWorkspace,
-    ) -> bool {
-        self.workspace_name == workspace.name()
+    ) -> Result<bool, IdentityDerivationDenial> {
+        Ok(self.workspace_name == workspace.name()
             && self
                 .snapshot
-                .is_same_current_identity_as(&workspace.snapshot_identity_with_request(execution))
+                .is_same_current_identity_as(&workspace.snapshot_identity_with_request(execution)?))
     }
 }
 

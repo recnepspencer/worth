@@ -150,7 +150,7 @@ impl WorthQueryGraphCompositionLineageSummary {
         let entry_digests = entries
             .iter()
             .map(graph_composition_lineage_entry_digest)
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
         let aggregate_entry_digest = aggregate_digest(
             "worth_query_graph_composition_lineage_entry_digest_v1",
             entry_digests.iter(),

@@ -157,7 +157,7 @@ fn compose_composition_identity(
     let mut intent_identities = intent_results
         .iter()
         .map(compose_intent_result_identity)
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     intent_identities.sort_by_key(|identity| identity.as_str().to_owned());
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)

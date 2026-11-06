@@ -109,7 +109,7 @@ impl WorthQueryBridgeBackedRuntimeBackend {
         let receipts = write_executions
             .iter()
             .map(|execution| execution.mutation_receipt().clone())
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
         let routed = self.signal_sink.route_write_batch(&receipts)?;
         if routed.len() != receipts.len() {
             return Err(WorthQueryWorkspaceError::new(format!(

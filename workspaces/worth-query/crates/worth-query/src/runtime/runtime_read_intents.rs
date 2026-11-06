@@ -240,7 +240,7 @@ impl WorthQueryRuntime {
         self.admit_facade_family(WorthQueryRuntimeFacadeFamily::Read)?;
         let snapshot_identity = self
             .current_snapshot_identity_with_request(execution)?
-            .evidence_identity();
+            .evidence_identity()?;
         let mut executed_read = execute(self, execution, &binding)?;
 
         attach_graph_read_access_receipt(&mut executed_read, &binding);

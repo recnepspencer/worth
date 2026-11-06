@@ -57,7 +57,7 @@ pub(crate) fn request_identity<D: WorthQueryDomainEntryMarker, I: WorthQueryDecl
                 .field_shape(WorthQueryEvidenceTag::new("intent"), format!("{value:?}"))
                 .seal()
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
             .field_shape(

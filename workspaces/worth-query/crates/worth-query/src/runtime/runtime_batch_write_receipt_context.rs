@@ -6,24 +6,26 @@ pub(super) fn batch_execution_provenance(
     shared_admission: Option<&WorthQueryWriteAdmissionExecutionRecord>,
     combined_receipt: &WorthQueryMutationReceipt,
 ) -> Result<Option<WorthQueryIntentExecutionProvenance>, IdentityDerivationDenial> {
-    Ok(shared_admission.map(|record| {
-        let commit_label = combined_receipt
-            .commit_identity
-            .evidence_identity()
-            .reporting_projection()
-            .to_string();
-        let snapshot_evidence_identity = combined_receipt.snapshot_identity.evidence_identity();
-        WorthQueryIntentExecutionProvenance::for_shared_execution_typed_parts(
-            record.family,
-            record.entrypoint,
-            record.execution_seam,
-            &record.decision_digest,
-            &record.handoff_digest,
-            &record.binding_digest,
-            &commit_label,
-            &snapshot_evidence_identity,
-        )
-    })?)
+    Ok(shared_admission
+        .map(|record| {
+            let commit_label = combined_receipt
+                .commit_identity
+                .evidence_identity()
+                .reporting_projection()
+                .to_string();
+            let snapshot_evidence_identity = combined_receipt.snapshot_identity.evidence_identity();
+            WorthQueryIntentExecutionProvenance::for_shared_execution_typed_parts(
+                record.family,
+                record.entrypoint,
+                record.execution_seam,
+                &record.decision_digest,
+                &record.handoff_digest,
+                &record.binding_digest,
+                &commit_label,
+                &snapshot_evidence_identity,
+            )
+        })
+        .transpose()?)
 }
 
 pub(super) fn batch_decision_trace_envelope(

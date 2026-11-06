@@ -315,9 +315,9 @@ fn signal_subject_from_progressed<
         impl WorthQueryDomainOperatingContext<D>,
     >,
     progression: WorthQueryAdmittedDeclarationProgression<D, I>,
-) -> WorthQueryDeclarationSignalCompatibilityInput<D, I> {
-    let envelope_checked = handle.orchestrate_envelope_from_progressed_checked(progression);
-    WorthQueryDeclarationSignalCompatibilityInput::envelope_checked(envelope_checked)
+) -> Result<WorthQueryDeclarationSignalCompatibilityInput<D, I>, IdentityDerivationDenial> {
+    let envelope_checked = handle.orchestrate_envelope_from_progressed_checked(progression)?;
+    Ok(WorthQueryDeclarationSignalCompatibilityInput::envelope_checked(envelope_checked))
 }
 
 fn preview_session_request() -> WorthQueryDeclarationBridgeContinuationRequest {

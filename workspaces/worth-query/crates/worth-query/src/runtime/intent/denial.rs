@@ -226,7 +226,8 @@ impl WorthQueryIntentDenialEvidence {
         Ok(self
             .snapshot_identity
             .as_ref()
-            .map(WorthQuerySnapshotIdentity::evidence_identity)?)
+            .map(WorthQuerySnapshotIdentity::evidence_identity)
+            .transpose()?)
     }
 
     pub fn execution_provenance(&self) -> Option<&WorthQueryIntentExecutionProvenance> {

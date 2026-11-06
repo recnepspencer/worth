@@ -125,9 +125,16 @@ pub struct WorthQuerySupportReport {
 impl WorthQuerySupportReport {
     pub fn from_config(config: WorthQueryConfig) -> Result<Self, ConfigurationAdmissionError> {
         let validated = config.validate()?;
-        let registry = WorthQueryCapabilityRegistry::from_validated_config(&validated);
-        let matrix = WorthQuerySupportMatrix::new(registry);
-        Ok(Self::from_validated_config_and_matrix(&validated, matrix))
+        let registry =
+            WorthQueryCapabilityRegistry::from_validated_config(&validated).map_err(|cause| {
+                ConfigurationAdmissionError::identity_denied(cause, validated.counters().clone())
+            })?;
+        let matrix = WorthQuerySupportMatrix::new(registry).map_err(|cause| {
+            ConfigurationAdmissionError::identity_denied(cause, validated.counters().clone())
+        })?;
+        Self::from_validated_config_and_matrix(&validated, matrix).map_err(|cause| {
+            ConfigurationAdmissionError::identity_denied(cause, validated.counters().clone())
+        })
     }
 
     pub fn runtime_backed_default() -> Self {
@@ -179,19 +186,24 @@ impl WorthQuerySupportReport {
             WorthQuerySupportSectionPosture::from_resolution(
                 config.resolve_section(WorthQueryConfigSectionFamily::Store),
             ),
-        ];
+        ]
+        .into_iter()
+        .collect::<Result<Vec<_>, _>>()?;
         let query_composition_support_profile = support_matrix
             .descriptor(WorthQueryCapabilityFamily::QueryComposition)
             .filter(|descriptor| descriptor.status() == WorthQueryCapabilityStatus::Admitted)
-            .map(|_| runtime_backed_query_composition_support_profile());
+            .map(|_| runtime_backed_query_composition_support_profile())
+            .transpose()?;
         let query_context_support_profile = support_matrix
             .descriptor(WorthQueryCapabilityFamily::QueryContext)
             .filter(|descriptor| descriptor.status() == WorthQueryCapabilityStatus::Admitted)
-            .map(|_| runtime_backed_narrow_query_context_support_profile())?;
+            .map(|_| runtime_backed_narrow_query_context_support_profile())
+            .transpose()?;
         let identity_evolution_support_profile = support_matrix
             .descriptor(WorthQueryCapabilityFamily::IdentityEvolution)
             .filter(|descriptor| descriptor.status() == WorthQueryCapabilityStatus::Admitted)
-            .map(|_| runtime_backed_direct_identity_evolution_support_profile());
+            .map(|_| runtime_backed_direct_identity_evolution_support_profile())
+            .transpose()?;
         let validated_config_digest = config.validated_digest().to_string();
         let counters = WorthQuerySupportReportCounters::generated_once();
         let report_identity =

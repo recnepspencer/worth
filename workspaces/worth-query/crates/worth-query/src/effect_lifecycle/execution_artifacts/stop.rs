@@ -10,7 +10,7 @@ pub struct EffectExecutionDeferred {
     kind: super::super::EffectExecutionDeferredKind,
     message: String,
     lowered_effect_execution_plan_identity: WorthQueryEvidenceIdentity,
-    outcome_identity: WorthQueryEvidenceIdentity,
+    outcome_identity: Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>,
     counters: EffectLifecycleCounters,
 }
 
@@ -19,7 +19,7 @@ impl EffectExecutionDeferred {
         lowered: &LoweredEffectExecutionPlan,
         kind: super::super::EffectExecutionDeferredKind,
         message: impl Into<String>,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let message = message.into();
         let plan_identity = lowered.lowered_effect_execution_plan_identity().clone();
         let outcome_identity =
@@ -30,8 +30,8 @@ impl EffectExecutionDeferred {
                 )
                 .field_evidence_identity(WorthQueryEvidenceTag::new("plan"), &plan_identity)
                 .field_shape(WorthQueryEvidenceTag::new("message"), message.as_str())
-                .seal()?;
-        Ok(Self {
+                .seal();
+        Self {
             kind,
             message,
             lowered_effect_execution_plan_identity: plan_identity,
@@ -39,7 +39,7 @@ impl EffectExecutionDeferred {
             counters: EffectLifecycleCounters::deferred(
                 lowered.counters().effect_support_row_count(),
             ),
-        })
+        }
     }
 
     pub fn kind(&self) -> super::super::EffectExecutionDeferredKind {
@@ -54,8 +54,10 @@ impl EffectExecutionDeferred {
         &self.lowered_effect_execution_plan_identity
     }
 
-    pub fn outcome_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.outcome_identity
+    pub fn outcome_identity(
+        &self,
+    ) -> Result<&WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        self.outcome_identity.as_ref().map_err(|cause| *cause)
     }
 
     pub fn counters(&self) -> &EffectLifecycleCounters {
@@ -67,7 +69,7 @@ impl EffectExecutionDeferred {
 pub struct EffectExecutionDurabilityUnresolved {
     message: String,
     lowered_effect_execution_plan_identity: WorthQueryEvidenceIdentity,
-    outcome_identity: WorthQueryEvidenceIdentity,
+    outcome_identity: Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>,
     counters: EffectLifecycleCounters,
     unresolved: worth_relational::facade::durability::RelationalDurabilityUnresolved,
 }
@@ -77,7 +79,7 @@ impl EffectExecutionDurabilityUnresolved {
         lowered: &LoweredEffectExecutionPlan,
         message: impl Into<String>,
         unresolved: worth_relational::facade::durability::RelationalDurabilityUnresolved,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let message = message.into();
         let plan_identity = lowered.lowered_effect_execution_plan_identity().clone();
         let outcome_identity =
@@ -92,8 +94,8 @@ impl EffectExecutionDurabilityUnresolved {
                 .field_evidence_identity(WorthQueryEvidenceTag::new("plan"), &plan_identity),
                 &unresolved,
             )
-            .seal()?;
-        Ok(Self {
+            .seal();
+        Self {
             message,
             lowered_effect_execution_plan_identity: plan_identity,
             outcome_identity,
@@ -104,7 +106,7 @@ impl EffectExecutionDurabilityUnresolved {
                 1,
             ),
             unresolved,
-        })
+        }
     }
 
     pub fn message(&self) -> &str {
@@ -115,8 +117,10 @@ impl EffectExecutionDurabilityUnresolved {
         &self.lowered_effect_execution_plan_identity
     }
 
-    pub fn outcome_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.outcome_identity
+    pub fn outcome_identity(
+        &self,
+    ) -> Result<&WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        self.outcome_identity.as_ref().map_err(|cause| *cause)
     }
 
     pub fn counters(&self) -> &EffectLifecycleCounters {

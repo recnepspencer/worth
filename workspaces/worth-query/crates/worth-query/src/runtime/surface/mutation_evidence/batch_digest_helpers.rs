@@ -21,7 +21,7 @@ pub(super) fn batch_target_digest(
                 components
                     .iter()
                     .map(target_component_identity)
-                    .collect::<Vec<_>>()
+                    .collect::<Result<Vec<_>, _>>()?
                     .iter(),
             )
             .seal()?;

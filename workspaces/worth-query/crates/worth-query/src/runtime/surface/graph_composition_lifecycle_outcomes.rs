@@ -218,7 +218,7 @@ impl WorthQueryGraphCompositionLifecycleOutcomes {
                 )
                 .seal()
             })
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
         let lifecycle_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
                 .field_shape(

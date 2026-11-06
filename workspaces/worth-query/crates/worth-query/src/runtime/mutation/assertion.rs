@@ -227,7 +227,7 @@ impl WorthQueryVerifiedExistingTruthAssertion {
         let aspect_evidence_rows = aspects
             .iter()
             .map(existing_truth_assertion_aspect_evidence)
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
         let verified_assumption_set = crate::runtime::WorthQueryVerifiedAssumptionSet::new(
             binding.binding_evidence_identity().clone(),
             asserted_aspects,

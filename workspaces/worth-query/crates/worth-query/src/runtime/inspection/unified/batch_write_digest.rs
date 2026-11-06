@@ -45,7 +45,7 @@ pub(super) fn build_batch_write_receipt_inspection_digest(
         .commit_identities
         .iter()
         .map(|identity| identity.evidence_identity())
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
 
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::BatchWriteReceiptInspectionArtifact)

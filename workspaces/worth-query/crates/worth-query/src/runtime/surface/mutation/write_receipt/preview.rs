@@ -59,7 +59,7 @@ impl WorthQueryWriteReceipt {
                 .as_ref()
                 .or(Some(&delta.entity_identity)),
             target_collection_identity.as_ref()?,
-        );
+        )?;
         let continuity_mutation_evidence = continuity_mutation_evidence(
             None,
             command.continuity_intent(),
@@ -94,7 +94,7 @@ impl WorthQueryWriteReceipt {
                 None,
                 command.symbolic_target_reference(),
                 Some(&delta.entity_identity),
-            ),
+            )?,
             symbolic_aspect_resolution_evidence: Vec::new(),
             naming_mutation_evidence,
             continuity_mutation_evidence,

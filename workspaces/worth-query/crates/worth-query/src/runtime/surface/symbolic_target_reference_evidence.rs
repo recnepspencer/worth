@@ -48,11 +48,13 @@ impl WorthQuerySymbolicTargetReferenceEvidence {
                     .resolved_entity_identity_handle()
                     .relational_record_parts(),
             ),
-            target_collection: reference.target_collection().or(target_collection).map(
-                |collection| {
+            target_collection: reference
+                .target_collection()
+                .or(target_collection)
+                .map(|collection| {
                     WorthQueryMutationTargetCollectionIdentity::new("symbolic-target", collection)
-                },
-            )?,
+                })
+                .transpose()?,
         })
     }
 

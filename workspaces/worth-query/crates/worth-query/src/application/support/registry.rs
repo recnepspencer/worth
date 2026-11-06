@@ -283,7 +283,7 @@ impl WorthQueryCapabilityRegistry {
         let descriptor_identities = descriptors
             .iter()
             .map(capability_descriptor_identity)
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
         let registry_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::ApplicationSupportReport)
                 .field_shape(WorthQueryEvidenceTag::new("role"), "capability-registry")

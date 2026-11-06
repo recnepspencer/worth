@@ -54,27 +54,24 @@ pub struct EffectLoweringDenial {
     message: &'static str,
     staleness_class: WorkflowStalenessClass,
     authority_scoped_plan_identity: WorthQueryEvidenceIdentity,
-    denial_identity: WorthQueryEvidenceIdentity,
+    denial_identity: Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>,
     counters: EffectLifecycleCounters,
 }
 
 impl EffectLoweringDenial {
-    fn from_workflow_error(
-        plan: &AuthorityScopedEffectPlan,
-        error: WorkflowLoweringError,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::from_workflow_error_for_batch(
+    fn from_workflow_error(plan: &AuthorityScopedEffectPlan, error: WorkflowLoweringError) -> Self {
+        Self::from_workflow_error_for_batch(
             plan.plan_identity(),
             plan.counters().effect_support_row_count(),
             error,
-        )?)
+        )
     }
 
     pub(crate) fn from_workflow_error_for_batch(
         execution_subject_identity: &WorthQueryEvidenceIdentity,
         effect_support_row_count: usize,
         error: WorkflowLoweringError,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let denial_kind = lowering_denial_kind(error.failure_class());
         let denial_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
@@ -92,8 +89,8 @@ impl EffectLoweringDenial {
                     error.staleness_class().as_str(),
                 )
                 .field_shape(WorthQueryEvidenceTag::new("message"), error.message())
-                .seal()?;
-        Ok(Self {
+                .seal();
+        Self {
             denial_kind,
             message: error.message(),
             staleness_class: error.staleness_class().clone(),
@@ -103,7 +100,7 @@ impl EffectLoweringDenial {
                 effect_support_row_count,
                 error.counters().workflow_lowering_width(),
             ),
-        })
+        }
     }
 
     pub fn denial_kind(&self) -> EffectLoweringDenialKind {
@@ -126,12 +123,12 @@ impl EffectLoweringDenial {
         self.authority_scoped_plan_identity.as_str()
     }
 
-    pub fn denial_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.denial_identity
+    pub fn denial_identity(&self) -> Result<&WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        self.denial_identity.as_ref().map_err(|cause| *cause)
     }
 
-    pub fn denial_for_reporting(&self) -> &str {
-        self.denial_identity.as_str()
+    pub fn denial_for_reporting(&self) -> Result<&str, IdentityDerivationDenial> {
+        Ok(self.denial_identity()?.as_str())
     }
 
     pub fn counters(&self) -> &EffectLifecycleCounters {

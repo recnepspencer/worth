@@ -9,7 +9,7 @@ pub struct EffectExecutionControlStopped {
     kind: super::super::EffectExecutionControlStopKind,
     message: String,
     lowered_effect_execution_plan_identity: WorthQueryEvidenceIdentity,
-    outcome_identity: WorthQueryEvidenceIdentity,
+    outcome_identity: Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>,
     counters: EffectLifecycleCounters,
 }
 
@@ -18,7 +18,7 @@ impl EffectExecutionControlStopped {
         lowered: &LoweredEffectExecutionPlan,
         kind: super::super::EffectExecutionControlStopKind,
         message: impl Into<String>,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let message = message.into();
         let plan_identity = lowered.lowered_effect_execution_plan_identity().clone();
         let outcome_identity =
@@ -29,8 +29,8 @@ impl EffectExecutionControlStopped {
                 )
                 .field_evidence_identity(WorthQueryEvidenceTag::new("plan"), &plan_identity)
                 .field_shape(WorthQueryEvidenceTag::new("kind"), format!("{kind:?}"))
-                .seal()?;
-        Ok(Self {
+                .seal();
+        Self {
             kind,
             message,
             lowered_effect_execution_plan_identity: plan_identity,
@@ -40,7 +40,7 @@ impl EffectExecutionControlStopped {
                 lowered.counters().effect_lowering_width(),
                 lowered.counters().effect_executor_rediscovery_count(),
             ),
-        })
+        }
     }
 
     pub const fn kind(&self) -> super::super::EffectExecutionControlStopKind {
@@ -55,8 +55,10 @@ impl EffectExecutionControlStopped {
         &self.lowered_effect_execution_plan_identity
     }
 
-    pub fn outcome_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.outcome_identity
+    pub fn outcome_identity(
+        &self,
+    ) -> Result<&WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        self.outcome_identity.as_ref().map_err(|cause| *cause)
     }
 
     pub const fn counters(&self) -> &EffectLifecycleCounters {

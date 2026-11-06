@@ -131,7 +131,8 @@ impl EffectAuthoringBasis {
     ) -> Result<Option<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
         Ok(self
             .expected_lower_runtime_binding_digest()
-            .map(expected_lower_runtime_binding_identity)?)
+            .map(expected_lower_runtime_binding_identity)
+            .transpose()?)
     }
 
     pub(crate) fn requires_preview_workflow_binding(&self) -> bool {

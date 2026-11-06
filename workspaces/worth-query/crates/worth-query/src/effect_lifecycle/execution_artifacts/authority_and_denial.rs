@@ -220,7 +220,7 @@ pub struct EffectExecutionDenial {
     denial_kind: EffectExecutionDenialKind,
     message: String,
     lowered_effect_execution_plan_identity: WorthQueryEvidenceIdentity,
-    denial_identity: WorthQueryEvidenceIdentity,
+    denial_identity: Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>,
     counters: EffectLifecycleCounters,
 }
 
@@ -229,7 +229,7 @@ impl EffectExecutionDenial {
         lowered: &LoweredEffectExecutionPlan,
         denial_kind: EffectExecutionDenialKind,
         message: impl Into<String>,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let message = message.into();
         let plan_identity = lowered.lowered_effect_execution_plan_identity().clone();
         let denial_identity =
@@ -241,8 +241,8 @@ impl EffectExecutionDenial {
                 .field_evidence_identity(WorthQueryEvidenceTag::new("plan"), &plan_identity)
                 .field_shape(WorthQueryEvidenceTag::new("kind"), denial_kind.as_str())
                 .field_shape(WorthQueryEvidenceTag::new("message"), message.as_str())
-                .seal()?;
-        Ok(Self {
+                .seal();
+        Self {
             denial_kind,
             message,
             lowered_effect_execution_plan_identity: plan_identity,
@@ -252,7 +252,7 @@ impl EffectExecutionDenial {
                 lowered.counters().effect_lowering_width(),
                 lowered.counters().effect_executor_rediscovery_count(),
             ),
-        })
+        }
     }
 
     pub fn denial_kind(&self) -> EffectExecutionDenialKind {
@@ -267,11 +267,11 @@ impl EffectExecutionDenial {
     pub fn lowered_effect_execution_plan_for_reporting(&self) -> &str {
         self.lowered_effect_execution_plan_identity.as_str()
     }
-    pub fn denial_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.denial_identity
+    pub fn denial_identity(&self) -> Result<&WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        self.denial_identity.as_ref().map_err(|cause| *cause)
     }
-    pub fn denial_for_reporting(&self) -> &str {
-        self.denial_identity.as_str()
+    pub fn denial_for_reporting(&self) -> Result<&str, IdentityDerivationDenial> {
+        Ok(self.denial_identity()?.as_str())
     }
     pub fn counters(&self) -> &EffectLifecycleCounters {
         &self.counters

@@ -47,7 +47,7 @@ impl WorthQueryRuntime {
             self,
             options,
             basis_admission,
-        ))
+        )?)
     }
 
     pub(crate) fn capture_branch_comparison_basis(

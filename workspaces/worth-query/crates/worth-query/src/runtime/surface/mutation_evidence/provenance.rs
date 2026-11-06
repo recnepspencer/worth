@@ -62,13 +62,16 @@ impl WorthQueryMutationProvenanceEvidence {
             outcome_class: provenance.outcome_class(),
             authoritative_artifact_digest: provenance
                 .authoritative_artifact_digest()
-                .map(|digest| imported_artifact("provenance-authoritative-artifact", digest))?,
+                .map(|digest| imported_artifact("provenance-authoritative-artifact", digest))
+                .transpose()?,
             request_digest: provenance
                 .request_digest()
-                .map(|digest| imported_artifact("provenance-request", digest))?,
+                .map(|digest| imported_artifact("provenance-request", digest))
+                .transpose()?,
             receipt_digest: provenance
                 .receipt_digest()
-                .map(|digest| imported_artifact("provenance-receipt", digest))?,
+                .map(|digest| imported_artifact("provenance-receipt", digest))
+                .transpose()?,
             failure_class: provenance.failure_class(),
         })
     }

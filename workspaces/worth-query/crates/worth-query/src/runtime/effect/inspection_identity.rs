@@ -238,7 +238,7 @@ fn pending_delivery_inspection_identity(
         .deliveries
         .iter()
         .map(pending_delivery_row_identity)
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
 
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::EffectIntentReceiptPhase)

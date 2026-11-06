@@ -62,9 +62,15 @@ impl WorthQueryExistingTruthBindingEvidence {
                 .resolved_target_identity_handle()
                 .relational_record_parts(),
         );
-        let target_collection = binding.target_collection().map(|collection| {
-            WorthQueryMutationTargetCollectionIdentity::new("existing-truth-binding", collection)
-        })?;
+        let target_collection = binding
+            .target_collection()
+            .map(|collection| {
+                WorthQueryMutationTargetCollectionIdentity::new(
+                    "existing-truth-binding",
+                    collection,
+                )
+            })
+            .transpose()?;
         let binding_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
                 .field_shape(WorthQueryEvidenceTag::new("role"), "existing-truth-binding")

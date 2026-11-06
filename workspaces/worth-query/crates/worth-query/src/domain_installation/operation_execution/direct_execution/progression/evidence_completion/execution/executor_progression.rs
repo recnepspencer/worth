@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 impl<D: 'static, O, F: 'static, L: BasisOperationLane>
     WorthQueryGraphCompletedDirectExecution<D, O, F, L>
@@ -95,7 +96,10 @@ where
 {
     pub(super) fn validate_terminal(
         mut self,
-    ) -> super::super::super::WorthQueryBoundExecutionOutcome<D, O, F, L, Output> {
+    ) -> Result<
+        super::super::super::WorthQueryBoundExecutionOutcome<D, O, F, L, Output>,
+        IdentityDerivationDenial,
+    > {
         self.counters.terminal_posture_checks += 1;
         if !self
             .bound
@@ -106,7 +110,7 @@ where
             .contains(&self.result_state)
         {
             let cleanup = self.running.abandon().cleanup();
-            return TransitionOutcome::Denied(
+            return Ok(TransitionOutcome::Denied(
                 WorthQueryBoundExecutionDenial::new(
                     WorthQueryBoundExecutionDenialKind::UndeclaredResultState,
                     "executor returned a result state absent from the installed terminal contract",
@@ -114,9 +118,9 @@ where
                 )
                 .with_graph_receipts(self.graph_receipts)
                 .with_managed_cleanup(cleanup),
-            );
+            ));
         }
-        WorthQueryValidatedDirectEvidenceCompletion {
+        Ok(WorthQueryValidatedDirectEvidenceCompletion {
             bound: self.bound,
             phase_proof: self.phase_proof,
             running: Some(self.running),
@@ -131,6 +135,6 @@ where
             resource_evidence: self.resource_evidence,
             counters: self.counters,
         }
-        .finish()
+        .finish()?)
     }
 }

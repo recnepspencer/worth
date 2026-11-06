@@ -87,7 +87,7 @@ fn summarize_existing_truth_modes(
                 .seal(),
             )
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     let digest = (!mode_parts.is_empty()).then(|| {
         let identity = crate::evidence_identity::worth_query_evidence_identity(
             crate::evidence_identity::WorthQueryEvidenceScope::MutationEvidenceAggregateDigest,

@@ -82,22 +82,24 @@ impl WorthQueryNamingMutationEvidence {
                     "naming-attachment",
                     bundle.attachment_identity_handle(),
                 )?,
-            prior_authoritative_identity: bundle.prior_authoritative_identity_handle().map(
-                |identity| {
+            prior_authoritative_identity: bundle
+                .prior_authoritative_identity_handle()
+                .map(|identity| {
                     WorthQueryMutationAuthorityIdentity::from_bridge_naming_authority(
                         "naming-prior",
                         identity,
                     )
-                },
-            )?,
-            target_authoritative_identity: bundle.target_authoritative_identity_handle().map(
-                |identity| {
+                })
+                .transpose()?,
+            target_authoritative_identity: bundle
+                .target_authoritative_identity_handle()
+                .map(|identity| {
                     WorthQueryMutationAuthorityIdentity::from_bridge_naming_authority(
                         "naming-target",
                         identity,
                     )
-                },
-            )?,
+                })
+                .transpose()?,
             resolved_target_entity_identity: bundle
                 .resolved_target_entity_identity_handle()
                 .map(|identity| {

@@ -43,7 +43,7 @@ impl WorthQueryRuntime {
         let execution = self
             .backend
             .execute_intent(request_execution, &declaration)?
-            .admit_runtime_authority();
+            .admit_runtime_authority()?;
         admit_authoritative_execution(binding.handoff(), &execution).map_err(|violation| {
             let handoff = WorthQueryAdmittedIntentExecutionHandoff::from(binding.handoff().clone());
             let decision_trace_envelope =
@@ -101,7 +101,7 @@ impl WorthQueryRuntime {
         let execution = self
             .backend
             .execute_intent(request_execution, &declaration)?
-            .admit_runtime_authority();
+            .admit_runtime_authority()?;
         admit_effect_execution(binding.handoff(), &execution).map_err(|violation| {
             let decision_trace_envelope =
                 WorthQueryIntentDecisionTraceEnvelope::for_execution_violation(

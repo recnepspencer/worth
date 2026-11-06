@@ -54,7 +54,8 @@ impl WorthQueryBatchWriteReceiptInspection {
             .collect::<Vec<_>>();
         let batch_mutation_evidence = receipt.batch_mutation_evidence().clone();
         let graph_composition_breadth = receipt.graph_composition_breadth().clone();
-        let graph_composition_lifecycle_outcomes = receipt.graph_composition_lifecycle_outcomes();
+        let graph_composition_lifecycle_outcomes =
+            receipt.graph_composition_lifecycle_outcomes()?;
         let graph_composition_program = receipt.graph_composition_program().cloned();
         let graph_composition_evidence = receipt.graph_composition_evidence()?;
         let graph_composition_resolution_map = receipt.graph_composition_resolution_map().clone();
@@ -67,7 +68,8 @@ impl WorthQueryBatchWriteReceiptInspection {
                 basis_lane: receipt.basis_lane().as_str(),
                 batch_digest: receipt.batch_identity(),
                 graph_composition_breadth: &graph_composition_breadth,
-                graph_composition_lifecycle_outcomes: graph_composition_lifecycle_outcomes.as_ref(),
+                graph_composition_lifecycle_outcomes: graph_composition_lifecycle_outcomes
+                    .as_ref()?,
                 graph_composition_program: graph_composition_program.as_ref(),
                 graph_composition_evidence: graph_composition_evidence.as_ref()?,
                 batch_mutation_evidence: &batch_mutation_evidence,

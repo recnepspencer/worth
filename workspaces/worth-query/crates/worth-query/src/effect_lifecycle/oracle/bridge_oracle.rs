@@ -291,7 +291,7 @@ fn incomplete_bridge_record_error(
         format!(
             "independent bridge oracle inspection found writeback record `{record_digest}` without `{missing_field}`"
         ),
-        &bridge_oracle_observation_subject()?,
+        &bridge_oracle_observation_subject(),
         Some(&bridge_observation_execution_record_subject_identity(record_digest)?),
-    )?)
+    ))
 }

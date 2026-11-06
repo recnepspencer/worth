@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
@@ -121,16 +122,18 @@ where
 
         workspace: &mut crate::runtime::WorthQueryWorkspace,
         attempt: u64,
-    ) -> WorthQueryWorkflowStartOutcome<D, O, F, L> {
+    ) -> Result<WorthQueryWorkflowStartOutcome<D, O, F, L>, IdentityDerivationDenial> {
         let mut counters = WorthQueryWorkflowRunCounters::default();
         let operation_resource_evidence = self.resource_attempt.evidence().clone();
-        let snapshot = workspace.snapshot_identity_with_request(&execution);
+        let snapshot = workspace.snapshot_identity_with_request(&execution)?;
         let artifact_authority = match self.resource_attempt.begin_managed_workflow_artifacts() {
             Ok(authority) => authority,
             Err(denial) => {
-                return TransitionOutcome::Denied(WorthQueryWorkflowStartDenial::new(
-                    WorthQueryWorkflowStartDenialKind::ArtifactAuthority(denial),
-                    counters,
+                return Ok(TransitionOutcome::Denied(
+                    WorthQueryWorkflowStartDenial::new(
+                        WorthQueryWorkflowStartDenialKind::ArtifactAuthority(denial),
+                        counters,
+                    ),
                 ));
             }
         };
@@ -152,7 +155,7 @@ where
                 Ok(conditional) => conditional,
                 Err(super::workflow_conditional_start_evaluation::ConditionalWorkflowStartStop::Deferred(conditional)) => {
                     artifact_authority.registry().close_cancelled();
-                    return TransitionOutcome::Deferred(
+                    return Ok(TransitionOutcome::Deferred(
                         crate::domain_installation::WorthQueryDeferredWorkflowStart {
                             admitted: self,
                             conditional,
@@ -160,7 +163,7 @@ where
                             run_identity: identity,
                             attempt,
                         },
-                    );
+                    ));
                 }
                 Err(super::workflow_conditional_start_evaluation::ConditionalWorkflowStartStop::Denied(kind)) => {
                     artifact_authority.registry().close_cancelled();
@@ -169,11 +172,11 @@ where
                         WorthQueryWorkflowStartDenialKind::ConditionalExecution(_)
                     );
                     let denial = WorthQueryWorkflowStartDenial::new(kind, counters);
-                    return if failed {
+                    return Ok(if failed {
                         TransitionOutcome::Failed(denial)
                     } else {
                         TransitionOutcome::Denied(denial)
-                    };
+                    });
                 }
             };
         let proof = mint_operation_phase_proof(
@@ -205,9 +208,11 @@ where
                 let detail = failure.detail().to_owned();
                 artifact_authority.registry().close_cancelled();
                 let _ = failure.release();
-                return TransitionOutcome::Denied(WorthQueryWorkflowStartDenial::new(
-                    WorthQueryWorkflowStartDenialKind::ManagedRun(detail),
-                    counters,
+                return Ok(TransitionOutcome::Denied(
+                    WorthQueryWorkflowStartDenial::new(
+                        WorthQueryWorkflowStartDenialKind::ManagedRun(detail),
+                        counters,
+                    ),
                 ));
             }
         };
@@ -216,9 +221,11 @@ where
             Err(rejection) => {
                 let detail = rejection.denial().detail().to_owned();
                 let _ = rejection.release();
-                return TransitionOutcome::Denied(WorthQueryWorkflowStartDenial::new(
-                    WorthQueryWorkflowStartDenialKind::ManagedRun(detail),
-                    counters,
+                return Ok(TransitionOutcome::Denied(
+                    WorthQueryWorkflowStartDenial::new(
+                        WorthQueryWorkflowStartDenialKind::ManagedRun(detail),
+                        counters,
+                    ),
                 ));
             }
         };
@@ -226,7 +233,7 @@ where
         let artifact_registry = managed.artifacts().registry();
         let artifact_registry_guard =
             WorthQueryWorkflowArtifactRegistryGuard(Arc::clone(&artifact_registry));
-        TransitionOutcome::Success(WorthQueryWorkflowRun {
+        Ok(TransitionOutcome::Success(WorthQueryWorkflowRun {
             bound,
             graph,
             executor,
@@ -246,7 +253,7 @@ where
             managed_cleanup: None,
             resources,
             operation_resource_evidence,
-        })
+        }))
     }
 }
 

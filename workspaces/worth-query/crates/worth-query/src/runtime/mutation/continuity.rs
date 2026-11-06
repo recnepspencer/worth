@@ -182,12 +182,14 @@ impl WorthQueryContinuityMutationDenial {
         let reason = reason.into();
         let basis_binding_identity =
             existing_truth_binding.map(|binding| binding.binding_evidence_identity());
-        let basis_binding_digest = basis_binding_identity.map(|identity| {
-            crate::runtime::WorthQueryMutationEvidenceDigest::source_identity(
-                "continuity-basis-binding",
-                identity,
-            )
-        })?;
+        let basis_binding_digest = basis_binding_identity
+            .map(|identity| {
+                crate::runtime::WorthQueryMutationEvidenceDigest::source_identity(
+                    "continuity-basis-binding",
+                    identity,
+                )
+            })
+            .transpose()?;
         let denial_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
                 .field_shape(

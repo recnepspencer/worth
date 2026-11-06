@@ -351,36 +351,42 @@ impl<'a, D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     pub fn orchestrate_material_attachment_for_active_face_selection_outcome<I>(
         &self,
         input: WorthQueryGeometryMaterialAttachmentInput<D, I>,
-    ) -> WorthQueryOrdinaryOutcome<WorthQueryContributionComposedOrchestration<D, I>>
+    ) -> Result<
+        WorthQueryOrdinaryOutcome<WorthQueryContributionComposedOrchestration<D, I>>,
+        IdentityDerivationDenial,
+    >
     where
         I: WorthQueryDeclarationInput<D>,
         I::Family: WorthQueryGeometryMaterialAttachmentHelperFamily<D>,
     {
-        self.handle
-            .orchestrate_declaration_with_contributions_outcome(input.into_composed_input())
+        Ok(self
+            .handle
+            .orchestrate_declaration_with_contributions_outcome(input.into_composed_input())?)
     }
 
     pub fn orchestrate_material_attachment_for_active_face_selection_checked<I>(
         &self,
         input: WorthQueryGeometryMaterialAttachmentInput<D, I>,
-    ) -> WorthQueryContributionComposedOrchestrationChecked<D, I>
+    ) -> Result<WorthQueryContributionComposedOrchestrationChecked<D, I>, IdentityDerivationDenial>
     where
         I: WorthQueryDeclarationInput<D>,
         I::Family: WorthQueryGeometryMaterialAttachmentHelperFamily<D>,
     {
-        self.handle
-            .orchestrate_declaration_with_contributions_checked(input.into_composed_input())
+        Ok(self
+            .handle
+            .orchestrate_declaration_with_contributions_checked(input.into_composed_input())?)
     }
 
     pub fn orchestrate_material_attachment_for_active_face_selection_proof<I>(
         &self,
         input: WorthQueryGeometryMaterialAttachmentInput<D, I>,
-    ) -> WorthQueryContributionComposedOrchestrationTranscript<D, I>
+    ) -> Result<WorthQueryContributionComposedOrchestrationTranscript<D, I>, IdentityDerivationDenial>
     where
         I: WorthQueryDeclarationInput<D>,
         I::Family: WorthQueryGeometryMaterialAttachmentHelperFamily<D>,
     {
-        self.handle
-            .orchestrate_declaration_with_contributions_proof(input.into_composed_input())
+        Ok(self
+            .handle
+            .orchestrate_declaration_with_contributions_proof(input.into_composed_input())?)
     }
 }

@@ -183,12 +183,14 @@ impl WorthQueryBackendAdmissibleMutationShape {
                 naming_intent,
             } => Self::DeleteDirect {
                 entity_identity,
-                declared_collection: declared_collection.map(|collection| {
-                    WorthQueryMutationTargetCollectionIdentity::new(
-                        "backend-admissible-declared",
-                        collection.as_str(),
-                    )
-                })?,
+                declared_collection: declared_collection
+                    .map(|collection| {
+                        WorthQueryMutationTargetCollectionIdentity::new(
+                            "backend-admissible-declared",
+                            collection.as_str(),
+                        )
+                    })
+                    .transpose()?,
                 touched_aspects,
                 metadata,
                 naming_intent,
