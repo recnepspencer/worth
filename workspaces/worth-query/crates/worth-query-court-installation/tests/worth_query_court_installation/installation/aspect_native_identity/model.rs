@@ -1,4 +1,5 @@
 //! Generic source/realization/output records; no product or geometry vocabulary.
+pub(crate) mod authorization;
 use worth_query_declaration::facade::application_schema::*;
 use worth_query_installation::facade::*;
 
@@ -9,7 +10,7 @@ pub struct Facts<const I: usize>;
 pub struct Scalar<const F: usize>;
 pub struct Owner<const I: usize>;
 
-const RECORD_NAMES: [&str; 18] = [
+const RECORD_NAMES: [&str; 40] = [
     "Source",
     "Realization",
     "OutputA",
@@ -28,8 +29,30 @@ const RECORD_NAMES: [&str; 18] = [
     "OutputN",
     "OutputO",
     "OutputP",
+    "Output18",
+    "Output19",
+    "Output20",
+    "Output21",
+    "Output22",
+    "Output23",
+    "Output24",
+    "Output25",
+    "Output26",
+    "Output27",
+    "Output28",
+    "Output29",
+    "Output30",
+    "Output31",
+    "Output32",
+    "Output33",
+    "Output34",
+    "Output35",
+    "Output36",
+    "Output37",
+    "Output38",
+    "Output39",
 ];
-const RELATION_NAMES: [&str; 18] = [
+const RELATION_NAMES: [&str; 40] = [
     "SourceOwner",
     "RealizationOwner",
     "OwnerA",
@@ -48,6 +71,28 @@ const RELATION_NAMES: [&str; 18] = [
     "OwnerN",
     "OwnerO",
     "OwnerP",
+    "Owner18",
+    "Owner19",
+    "Owner20",
+    "Owner21",
+    "Owner22",
+    "Owner23",
+    "Owner24",
+    "Owner25",
+    "Owner26",
+    "Owner27",
+    "Owner28",
+    "Owner29",
+    "Owner30",
+    "Owner31",
+    "Owner32",
+    "Owner33",
+    "Owner34",
+    "Owner35",
+    "Owner36",
+    "Owner37",
+    "Owner38",
+    "Owner39",
 ];
 const FIELD_NAMES: [&str; 16] = [
     "Identity",
@@ -165,22 +210,38 @@ pub fn declaration<const RECORDS: usize, const FIELDS: usize>(
     reverse: bool,
 ) -> Result<ApplicationSchemaDeclaration<Model<RECORDS, FIELDS>>, ApplicationSchemaDeclarationDenial>
 {
-    assert!((2..=18).contains(&RECORDS));
+    declaration_for::<Model<RECORDS, FIELDS>, RECORDS, FIELDS>(reverse, Vec::new())
+}
+
+pub(super) fn declaration_for<S: ApplicationSchema, const RECORDS: usize, const FIELDS: usize>(
+    reverse: bool,
+    paths: Vec<ApplicationAuthorizationPath>,
+) -> Result<ApplicationSchemaDeclaration<S>, ApplicationSchemaDeclarationDenial> {
+    assert!((2..=40).contains(&RECORDS));
     assert!((1..=16).contains(&FIELDS));
     let mut schema = ApplicationSchemaDeclarationBuilder::for_schema().operation(
-        operation::<Model<RECORDS, FIELDS>>()
+        operation::<S>()
             .definition()
             .no_external_effect()
             .no_aftermath()
             .finish(),
     );
     macro_rules! records { ($($i:literal),*) => { $(
-            if RECORDS > $i { schema = record::<Model<RECORDS, FIELDS>, $i, FIELDS>(schema, reverse); }
+            if RECORDS > $i { schema = record::<S, $i, FIELDS>(schema, reverse); }
         )* }; }
     if reverse {
-        records!(17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+        records!(
+            39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18,
+            17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0
+        );
     } else {
-        records!(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17);
+        records!(
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+            24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39
+        );
+    }
+    if !paths.is_empty() {
+        schema = authorization::declare(schema, paths);
     }
     schema.build()
 }
@@ -197,17 +258,26 @@ pub fn install<const R: usize, const F: usize>() -> Result<
     schema.installed_operation(operation())
 }
 
-pub fn index<const R: usize, const F: usize>(
-    declaration: &ApplicationSchemaDeclaration<Model<R, F>>,
+pub fn index<S: ApplicationSchema>(
+    declaration: &ApplicationSchemaDeclaration<S>,
 ) -> WorthQueryInstalledPackageIndex {
-    let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
-        Model::<R, F>::OWNER,
-        1,
-        0,
-    ))
-    .application_schema(declaration.clone())
-    .validate()
-    .expect("valid portable package");
+    index_from(
+        package(declaration)
+            .validate()
+            .expect("valid portable package"),
+    )
+}
+
+pub fn package<S: ApplicationSchema>(
+    declaration: &ApplicationSchemaDeclaration<S>,
+) -> WorthQueryPortableDomainPackage {
+    WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(S::OWNER, 1, 0))
+        .application_schema(declaration.clone())
+}
+
+pub fn index_from(
+    package: WorthQueryValidatedPortableDomainPackage,
+) -> WorthQueryInstalledPackageIndex {
     let admitted = WorthQueryInstallationAdmissionProfile::new("support", "configuration")
         .admit(package)
         .expect("admitted package");

@@ -18,16 +18,7 @@ use worth_foundational::facade::{
 };
 
 const DOMAIN: CanonicalBasisDomain = CanonicalBasisDomain::Future("worth-query.installed-index");
-const RULE_VERSION: &str = "worth-query-installed-index-v3";
-// Across all installed packages, this identity retains compact installed names
-// and slot-level semantics. It does not embed application-schema meaning, so it
-// has its own smaller bound.
-const INDEX_BUDGET: CanonicalDigestWorkBudget =
-    match CanonicalDigestWorkBudget::new(32_768, 4 * 1_024 * 1_024) {
-        Some(budget) => budget,
-        None => panic!("fixed installed-index canonical-work budget is valid"),
-    };
-
+const RULE_VERSION: &str = "worth-query-installed-index-v4";
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryInstalledPackageIndexIdentity(CanonicalDigestId);
 
@@ -94,15 +85,6 @@ pub(super) fn index_identity(
         ),
     ];
     append_records(&mut entries, input.records);
-    append_definitions(&mut entries, input.definitions);
-    append_domain_operations(&mut entries, input.domain_operations);
-    append_artifact_contracts(&mut entries, input.artifact_contracts);
-    append_application_schemas(&mut entries, input.application_schemas);
-    append_conditional_application_operations(
-        &mut entries,
-        input.conditional_application_operations,
-    );
-
     let version = CanonicalizationRuleVersion::new(RULE_VERSION)
         .expect("the installed-index identity rule is valid");
     let basis = prepare_canonical_basis_sequence(version, DOMAIN, entries)
@@ -110,42 +92,17 @@ pub(super) fn index_identity(
         .expect("installed-index identity loci are unique and typed");
     let ready = canonicalization()
         .digest()
-        .for_sequence_with_budget(basis, CanonicalDigestAlgorithmId::sha256(), INDEX_BUDGET)
+        .for_sequence_with_budget(
+            basis,
+            CanonicalDigestAlgorithmId::sha256(),
+            index_budget(input.records),
+        )
         .into_result()?;
     let derived = canonicalization().digest().derive(ready);
     Ok((
         WorthQueryInstalledPackageIndexIdentity(CanonicalDigestId::new(*derived.value().bytes())),
         WorthQueryCanonicalWorkEvidence::one_digest(derived.metadata().work()),
     ))
-}
-
-fn append_conditional_application_operations(
-    entries: &mut Vec<CanonicalBasisEntry>,
-    bindings: &BTreeMap<
-        (String, String, String),
-        WorthQueryPortableApplicationConditionalOperationBinding,
-    >,
-) {
-    for (index, ((owner, schema, application_operation), binding)) in bindings.iter().enumerate() {
-        let prefix = format!("conditional-application-operation[{index}]");
-        entries.extend([
-            text(format!("{prefix}.owner"), owner),
-            text(format!("{prefix}.schema"), schema),
-            text(
-                format!("{prefix}.application-operation"),
-                application_operation,
-            ),
-            text(format!("{prefix}.input-type"), binding.input_type()),
-            text(
-                format!("{prefix}.domain-operation-slot"),
-                binding.domain_operation_slot(),
-            ),
-            text(
-                format!("{prefix}.domain-operation-identity"),
-                binding.domain_operation_canonical_identity(),
-            ),
-        ]);
-    }
 }
 
 fn append_records(
@@ -168,70 +125,27 @@ fn append_records(
     }
 }
 
-fn append_definitions(
-    entries: &mut Vec<CanonicalBasisEntry>,
-    definitions: &BTreeMap<
-        (WorthQueryPortableDefinitionKind, String, String),
-        WorthQueryPortableDefinition,
-    >,
-) {
-    for (index, ((kind, owner, slot), definition)) in definitions.iter().enumerate() {
-        let prefix = format!("definition[{index}]");
-        entries.extend([
-            text(format!("{prefix}.kind"), kind.as_str()),
-            text(format!("{prefix}.owner"), owner),
-            text(format!("{prefix}.slot"), slot),
-            text(format!("{prefix}.semantics"), definition.semantics()),
-        ]);
-    }
-}
-
-fn append_domain_operations(
-    entries: &mut Vec<CanonicalBasisEntry>,
-    operations: &BTreeMap<(String, String), WorthQueryValidatedDomainOperation>,
-) {
-    for (index, ((owner, slot), operation)) in operations.iter().enumerate() {
-        let prefix = format!("domain-operation[{index}]");
-        entries.extend([
-            text(format!("{prefix}.owner"), owner),
-            text(format!("{prefix}.slot"), slot),
-            text(
-                format!("{prefix}.identity"),
-                operation.definition().canonical_identity(),
-            ),
-        ]);
-    }
-}
-
-fn append_artifact_contracts(
-    entries: &mut Vec<CanonicalBasisEntry>,
-    contracts: &BTreeMap<(String, String, u32, u32), WorthQueryPortableArtifactContract>,
-) {
-    for (index, ((owner, family, schema, protocol), contract)) in contracts.iter().enumerate() {
-        let prefix = format!("artifact-contract[{index}]");
-        entries.extend([
-            text(format!("{prefix}.owner"), owner),
-            text(format!("{prefix}.family"), family),
-            unsigned32(format!("{prefix}.schema"), *schema),
-            unsigned32(format!("{prefix}.protocol"), *protocol),
-            text(format!("{prefix}.identity"), contract.identity().as_str()),
-        ]);
-    }
-}
-
-fn append_application_schemas(
-    entries: &mut Vec<CanonicalBasisEntry>,
-    schemas: &BTreeMap<(String, String), WorthQueryInstalledApplicationSchemaRecord>,
-) {
-    for (index, ((owner, name), record)) in schemas.iter().enumerate() {
-        let schema = record.declaration();
-        let prefix = format!("application-schema[{index}]");
-        entries.extend([
-            text(format!("{prefix}.owner"), owner),
-            text(format!("{prefix}.name"), name),
-            text(format!("{prefix}.declared-owner"), schema.owner()),
-        ]);
-    }
+// Catalogs are deterministic projections of the validated packages. Their
+// identities already commit every definition, schema and operation exactly.
+// Re-embedding semantics here both duplicates truth and can amplify long owners
+// once per definition. The v4 index commits the source package/admission table.
+fn index_budget(
+    records: &BTreeMap<String, WorthQueryInstalledPackageRecord>,
+) -> CanonicalDigestWorkBudget {
+    let (entries, bytes) = records
+        .values()
+        .fold((0u32, 0usize), |(entries, bytes), record| {
+            let budget = crate::derived_identity_budget::derived_identity_budget(
+                record.package.package().canonical_work(),
+            );
+            (
+                entries.saturating_add(budget.maximum_entry_count()),
+                bytes.saturating_add(budget.maximum_encoded_bytes()),
+            )
+        });
+    // An empty installed index has only its eight fixed framing entries.
+    CanonicalDigestWorkBudget::new(entries.max(8), bytes.max(4096))
+        .expect("index framing is nonempty")
 }
 
 fn text(locus: impl Into<String>, value: &str) -> CanonicalBasisEntry {
@@ -253,16 +167,6 @@ fn unsigned(locus: impl Into<String>, value: u64) -> CanonicalBasisEntry {
         locus,
         CanonicalBasisValue::UnsignedInteger {
             width: CanonicalIntegerWidth::Bits64,
-            value: value.into(),
-        },
-    )
-}
-
-fn unsigned32(locus: impl Into<String>, value: u32) -> CanonicalBasisEntry {
-    entry(
-        locus,
-        CanonicalBasisValue::UnsignedInteger {
-            width: CanonicalIntegerWidth::Bits32,
             value: value.into(),
         },
     )
