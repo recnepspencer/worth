@@ -205,3 +205,4 @@ fn ownership_observation_refuses_a_basis_from_another_runtime() {
 mod historical_progressed_source;
 
 mod current_publications;
+mod current_successor;

@@ -1,6 +1,6 @@
 //! A new build executes its actual discovery rather than trusting the old child's roster.
 use super::*;
-fn exercise(worker: bool) {
+fn exercise(worker: bool, model_edit: bool) {
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();
     let (checkpoint, original, revision) = fixture::checkpoint();
     let host = world::restore_program_checkpoint::<program::Program>(checkpoint, worker, true);
@@ -65,33 +65,61 @@ fn exercise(worker: bool) {
                 .unwrap_or_else(|(_, cause)| panic!("{cause:?}"))
         })
         .unwrap();
-    let before = document.current_step(&request).unwrap().id();
-    let mut edit = document
-        .edit(member_edit::Intent {
-            key: "m".into(),
-            value: 6,
-        })
-        .idempotency_owned(&request, "changed-discovery-meaning-future".into())
-        .unwrap()
-        .retain_in_program::<program::Program, super::super::super::program::MemberEditAction>(
-            &host,
-        )
-        .unwrap_or_else(|(_, cause)| panic!("{cause:?}"));
-    for count in 0..512 {
-        assert!(count < 511, "qualified recording must finish");
-        edit = match edit.advance(&request) {
-            WorthQueryHistoryEditAdvance::Progress(next) => next,
-            WorthQueryHistoryEditAdvance::Ready(done) => {
-                edit = done;
-                break;
-            }
-            WorthQueryHistoryEditAdvance::Refused { denial, .. } => panic!("{denial:?}"),
-        };
+    let record_contacts = host.producer_contacts_on_this_thread_for_test();
+    let (document, before) = if model_edit {
+        fixture::record(&host, &request, document)
+    } else {
+        let before = document.current_step(&request).unwrap().id();
+        let mut edit = document
+            .edit(member_edit::Intent {
+                key: "m".into(),
+                value: 6,
+            })
+            .idempotency_owned(&request, "changed-discovery-meaning-future".into())
+            .unwrap()
+            .retain_in_program::<program::Program, super::super::super::program::MemberEditAction>(
+                &host,
+            )
+            .unwrap_or_else(|(_, cause)| panic!("{cause:?}"));
+        for count in 0..512 {
+            assert!(count < 511, "qualified recording must finish");
+            edit = match edit.advance(&request) {
+                WorthQueryHistoryEditAdvance::Progress(next) => next,
+                WorthQueryHistoryEditAdvance::Ready(done) => {
+                    edit = done;
+                    break;
+                }
+                WorthQueryHistoryEditAdvance::Refused { denial, .. } => panic!("{denial:?}"),
+            };
+        }
+        let document = edit
+            .finish(&request)
+            .unwrap_or_else(|(_, cause)| panic!("{cause:?}"))
+            .document;
+        (document, before)
+    };
+    if model_edit {
+        let selected = document.selection(&request).unwrap();
+        let at = host
+            .request(&principal, &scope)
+            .on_branch(selected.physical_endpoint().product_branch());
+        let first = at
+            .query(query::first_output::Read("first:a".into()))
+            .execute()
+            .unwrap();
+        let second = at
+            .query(query::second_output::Read("second:a".into()))
+            .execute()
+            .unwrap();
+        assert_eq!(first.rows()[0].native_id, original.0.native_id);
+        assert_eq!(second.rows()[0].native_id, original.1.native_id);
+        assert_eq!((first.rows()[0].value, second.rows()[0].value), (50, 2005));
+        assert_eq!(
+            host.producer_contacts_on_this_thread_for_test(),
+            record_contacts + 3,
+            "first, its discovered child, and the independently owned second family"
+        );
     }
-    let document = edit
-        .finish(&request)
-        .unwrap_or_else(|(_, cause)| panic!("{cause:?}"))
-        .document;
     let current = document.selection(&request).unwrap();
     let contacts = host.producer_contacts_on_this_thread_for_test();
     let selected =
@@ -133,9 +161,18 @@ fn exercise(worker: bool) {
 }
 #[test]
 fn changed_discovery_build_runs_real_parent_fallback_and_discovers_its_new_child() {
-    exercise(false);
+    exercise(false, false);
 }
 #[test]
 fn worker_only_changed_discovery_build_runs_real_parent_fallback_and_discovers_its_new_child() {
-    exercise(true);
+    exercise(true, false);
+}
+
+#[test]
+fn a_cold_two_family_model_edit_succeeds_the_current_owned_publications() {
+    exercise(false, true);
+}
+#[test]
+fn worker_only_a_cold_two_family_model_edit_succeeds_the_current_owned_publications() {
+    exercise(true, true);
 }

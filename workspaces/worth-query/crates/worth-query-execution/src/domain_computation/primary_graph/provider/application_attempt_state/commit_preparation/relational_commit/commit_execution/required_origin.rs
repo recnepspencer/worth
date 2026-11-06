@@ -109,6 +109,23 @@ pub(super) fn bind(
         })
         .map_err(transaction_commit_stop)?;
     let warm = retired.or_else(|| head.as_ref().and_then(|head| head.warm_publication()));
+    // A cold Query memo may predate a later Native-owned publication. Native's
+    // current roster owns succession; old checkpoint correspondence does not.
+    let warm = match warm {
+        Some(publication) => Some(publication),
+        None => provider
+            .graph
+            .with_runtime(execution, |runtime| {
+                runtime.readmit_current_owned_output_successor(
+                    execution,
+                    &publisher.native,
+                    native_basis,
+                    producer,
+                    &meaning,
+                )
+            })
+            .map_err(transaction_commit_stop)?,
+    };
     // An owned selection can explicitly remove this route while Query still
     // retains the future's warm lineage. Only Native's exact absence custody
     // can authorize Birth at this image; that warm row cannot select succession.

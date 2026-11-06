@@ -2164,3 +2164,62 @@ permanent annotation. Exclusion releases them together; a pending navigation's
 preview carries its original set back through fill_navigation_source. RecordNode
 keeps its original annotation-only shape. These lifecycle/resource corrections
 require pristine and mutation requalification before the checkpoint is certified.
+
+### D1255 grouped recording integration refinement
+
+The existing grouped-recording boundary/plan above still applies. Freeze requests
+for the group's one final recorded endpoint, not each intermediate member as a
+separate history step. Actual member source/fixed completions remain ordinary.
+The group owner validates their completed chain and last source before minting
+the same recording origin; it never lends the group reservation as a single
+operation reservation. The final configured forest records discovery requests
+through its existing real/verified-parent traversal, seals them with its complete
+endpoint, and the group owner binds that endpoint plus its recipe set to the one
+reserved node. Single-operation intent gates remain separate from group gates;
+current metadata/operation control and authority construction remain one owner.
+
+The SDK group has an explicit final-qualification posture. The output-mode
+receiver retains the real mutable forest and cleanup (as isolated edits do),
+so NoOutputs group auto-traits and ordinary transitions stay unchanged. After
+all members are captured, final qualification may progress genuine producers
+and discovery on the original private candidate. It requalifies the last fixed
+completion at the resulting endpoint. Adoption consumes only the group's sealed
+final binding, after cleanup drains. Aborting drains forest custody before the
+private candidate and reserved edge can close. No per-member synthetic settlement,
+parallel ownership reader, roster-derived child set or live recipe backfill.
+
+A separate cold two-family Model3→5 predecessor refusal exposed by fixture
+migration is being diagnosed before this integration. It is not accepted debt
+and must not be hidden by the member-only discovery-meaning court.
+
+### Cold two-family recording: verified predecessor boundary
+
+The header probe proves the numeric subject is Modela(slot4,generation1), not
+SecondOutput(slot12,generation1). Native's current roster has second.preserve
+from the new implementation at source3, while Query supplies the original
+checkpoint's second.initial from the old implementation at the same source3.
+Runtime, exact current basis and roster/basis checks all pass. Native correctly
+refuses the stale producer/dependency/implementation correspondence; that check
+must remain exact. No retained-canonical-members mismatch was found.
+
+The authority gap is producer succession from Native's current owned publication
+after Query's selected memo predecessor is older. Current owned publication
+records, not a Query memo's survival or historical association, own the actual
+predecessor. Add a route-selected current predecessor entrance at the existing
+Native custody/current owner, reusing its current roster reader and issuer. It
+is only for a running producer installed with source-scope ownership, requires
+registered storage and exact current basis, and checks both installed source
+kinds and liveness before issuing original Native custody. An absent owned route
+returns no predecessor; corrupt current material never falls back. Unowned
+producer succession retains its existing Query/Native-transition path. Query's
+required-origin binder consumes this Native predecessor when its existing Native
+transition and warm predecessor are absent, before reading cold correspondence.
+The ordinary warm path and exact caller-correspondence readmission are unchanged.
+
+Implement shared current-owner validation and proof issuance at that same owner,
+without a parallel ownership reader or canonical-history scan. Preserve request
+checkpoints for worker-only requests. Public cold serial/worker model-source-edit
+courts must assert both families' actual identities/results and navigation, and
+the original discovery-meaning member-edit courts remain. Mutate away the Native
+current predecessor selection: the model-edit courts must fail compiled; restore
+by SHA256. Run Native current-custody and history courts before grouped recording.
