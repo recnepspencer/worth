@@ -108,7 +108,7 @@ fn two_first_candidates_cannot_orphan_the_performed_publications_cell() {
         .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
-    let owner = Arc::clone(&(*(*handle.source_owner_for_test()).invalidation_owner_for_test()));
+    let owner = Arc::clone((*handle.source_owner_for_test()).invalidation_owner_for_test());
     let reference = AccountStatus::reference();
     let status = graph
         .layout_for_test()

@@ -106,7 +106,7 @@ pub fn context_effects(
     ]);
     // The actor is genuine; these rows deliberately claim no instance,
     // occurrence allowance or performed-command proof.
-    actor.append_fields_for_test(&(*layout.transition_for_test()).advancer, &mut fields);
+    actor.append_fields_for_test(&layout.transition_for_test().advancer, &mut fields);
     let mut effects = vec![
         Effect::CreateEntity {
             kind: account_kind,

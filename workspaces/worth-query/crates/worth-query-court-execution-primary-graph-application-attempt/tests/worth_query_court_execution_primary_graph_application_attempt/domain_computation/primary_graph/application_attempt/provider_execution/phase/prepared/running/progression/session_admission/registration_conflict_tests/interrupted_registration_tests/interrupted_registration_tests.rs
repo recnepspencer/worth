@@ -59,7 +59,7 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
                 provider_attempt,
                 attempt_basis,
                 WorthQueryProviderAttemptRegistrationContext::new_for_test(
-                    &(*(*world.application.runtime_for_test()).primary_provider_for_test()),
+                    (*world.application.runtime_for_test()).primary_provider_for_test(),
                     &admission,
                     idempotency,
                     outcome_identity,

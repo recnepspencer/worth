@@ -29,7 +29,7 @@ fn sealing_keeps_the_one_original_issued_body_and_requires_explicit_relation_fac
         let original=std::sync::Arc::clone(expected.structural_walk_for_test(key,(*attempt.admission_for_test()).admission_identity(),
             &(*attempt.admission_for_test()).retain_graph_contract(),(*attempt.lease_for_test()).snapshot_for_test()).unwrap());
         let (other,_)=authorize(&world,&phase,&execution,&request,0,InspectWalk::reference(),None);
-        let denial=worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::structural_walk::observe(&execution,&other,&(*attempt.lease_for_test()),&(*attempt.read_scope_for_test()),expected,key,None).err().unwrap();
+        let denial=worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::structural_walk::observe(&execution,&other,attempt.lease_for_test(),attempt.read_scope_for_test(),expected,key,None).err().unwrap();
         assert_eq!(denial.kind(),WorthQueryApplicationAttemptDenialKind::ProjectionAdmissionMismatch,
             "even identical graph truth and contracts cannot relabel the actual value to another admission");
         let completed=attempt.complete_projected_dependencies(&phase,Allocation::SystemAllocation).unwrap();
@@ -41,7 +41,7 @@ fn sealing_keeps_the_one_original_issued_body_and_requires_explicit_relation_fac
         assert_eq!(original.native_for_test().visits().len(),4);
         assert_eq!(original.native_for_test().relations().len(),3);
         assert!(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::encoding::encode_funded(
-            &(*completed.facts_for_test()),worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(Allocation::SystemAllocation,Some(&request))).is_err(),
+            completed.facts_for_test(),worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(Allocation::SystemAllocation,Some(&request))).is_err(),
             "live walk facts deliberately have no checkpoint reconstruction door");
         let selected=world.application.select_product_branch_for_test(&execution,world.application.product_runtime().default_branch_for_test()).unwrap();
         let target=selected.resolve_entity(&phase,NodeKey::reference(),1,&request,WorthQueryPrincipalResolutionMode::Ordinary).unwrap();
@@ -138,9 +138,9 @@ fn a_descriptor_without_this_projections_issued_value_cannot_be_completed() {
                 .unwrap();
             let denial = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::structural_walk::observe(
                 &execution,
-                &(*raw.admission_for_test()),
-                &(*raw.lease_for_test()),
-                &(*raw.read_scope_for_test()),
+                raw.admission_for_test(),
+                raw.lease_for_test(),
+                raw.read_scope_for_test(),
                 (*raw.expected_facts_for_test()).as_ref().unwrap(),
                 &descriptor,
                 None,
@@ -159,7 +159,7 @@ fn a_descriptor_without_this_projections_issued_value_cannot_be_completed() {
                         &execution,
                         runtime,
                         (*raw.lease_for_test()).snapshot_for_test(),
-                        &(*(*raw.lease_for_test()).layout_for_test()),
+                        (*raw.lease_for_test()).layout_for_test(),
                         &WorthQueryApplicationFactKey::StructuralWalk(descriptor),
                     )
                 })

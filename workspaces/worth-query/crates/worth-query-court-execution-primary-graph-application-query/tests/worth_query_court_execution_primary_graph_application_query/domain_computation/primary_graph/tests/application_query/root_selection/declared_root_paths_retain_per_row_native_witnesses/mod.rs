@@ -101,14 +101,14 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
     assert_eq!(first.adjacencies.len(), 1);
     assert_eq!(second.adjacencies.len(), 1);
     assert!(!(*first.entities_for_test()).contains(
-        &(*result.observed_sources()[1]
+        result.observed_sources()[1]
             .footprint_for_test()
-            .root_for_test())
+            .root_for_test()
     ));
     assert!(!(*second.entities_for_test()).contains(
-        &(*result.observed_sources()[0]
+        result.observed_sources()[0]
             .footprint_for_test()
-            .root_for_test())
+            .root_for_test()
     ));
     assert_eq!(
         (*first.adjacencies[0].relation_kind_for_test()),
@@ -131,7 +131,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
             let serial_retained = dependencies.assert_storage_custody_for_test(
                 phase
                     .checked_execution_request_for(
-                        &(*(*world.application.runtime_for_test()).product_runtime_for_test()),
+                        (*world.application.runtime_for_test()).product_runtime_for_test(),
                     )
                     .unwrap(),
             );
@@ -175,20 +175,20 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
         .primary_graph_for_test()
         .unwrap();
     let observed_source = &result.observed_sources()[0];
-    let worth_query_execution::facade::domain_computation::WorthQueryApplicationBasisSelectionIdentity::Product(product) = &(*observed_source.selection_for_test()) else {
+    let worth_query_execution::facade::domain_computation::WorthQueryApplicationBasisSelectionIdentity::Product(product) = observed_source.selection_for_test() else {
         panic!("the product query must retain its selected branch identity");
     };
     let source_facts = observed_source
         .clone()
         .validate_and_into_facts_for_test(
             *observed_source.runtime_authority_for_test(),
-            &(*observed_source.schema_binding_for_test()),
-            &(*observed_source.branch_for_test()),
+            observed_source.schema_binding_for_test(),
+            observed_source.branch_for_test(),
             *observed_source.model_root_for_test(),
             product,
-            &(*observed_source.query_identifier_for_test()),
-            &(*observed_source.query_identity_for_test()),
-            &(*graph.layout_for_test()),
+            observed_source.query_identifier_for_test(),
+            observed_source.query_identity_for_test(),
+            graph.layout_for_test(),
             None,
             request_execution,
         )

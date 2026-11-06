@@ -53,7 +53,7 @@ pub(super) fn apply(
                 std::panic::panic_any(ContinuedBoundaryReached)
             });
         let interrupted = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| loop {
-            match recovery.continue_original_in_request(&execution).unwrap() {
+            match recovery.continue_original_in_request(execution).unwrap() {
                 Continuation::Pending(custody) => drop(custody),
                 other => {
                     panic!("the disposition observer must interrupt before occurrence: {other:?}")
@@ -68,7 +68,7 @@ pub(super) fn apply(
         );
         drop(observation);
         drop(recovery);
-        home.close(&execution).unwrap_or_else(|refused| {
+        home.close(execution).unwrap_or_else(|refused| {
             panic!("prepared continuation must retire through actual close: {refused:?}")
         });
         home = super::original::reopen(context, execution);
@@ -91,7 +91,7 @@ pub(super) fn apply(
     }
     if continue_original {
         loop {
-            match recovery.continue_original_in_request(&execution).unwrap() {
+            match recovery.continue_original_in_request(execution).unwrap() {
                 Continuation::Pending(custody) => drop(custody),
                 Continuation::Published { .. } => break,
                 other => panic!("actual original continuation: {other:?}"),
@@ -107,7 +107,7 @@ pub(super) fn apply(
                     if failure.denial() == worth_query_host::facade::primary_graph::WorthQueryProductUnpublishedRecoveryReleaseDenial::RecoveredPending => {
                     let next = failure.into_recovery();
                     // A pending original Released cannot be replaced by Continued.
-                    match next.continue_original_in_request(&execution).unwrap() {
+                    match next.continue_original_in_request(execution).unwrap() {
                         Continuation::Refused { cause: worth_query_host::facade::primary_graph::WorldRecoveredContinuationDenial::Admission(worth_query_host::facade::primary_graph::RuntimeWorldRecoveryDenial::ReleaseAlreadyStarted), custody } => drop(custody),
                         other => panic!("pending release must retain its single chosen disposition: {other:?}"),
                     }

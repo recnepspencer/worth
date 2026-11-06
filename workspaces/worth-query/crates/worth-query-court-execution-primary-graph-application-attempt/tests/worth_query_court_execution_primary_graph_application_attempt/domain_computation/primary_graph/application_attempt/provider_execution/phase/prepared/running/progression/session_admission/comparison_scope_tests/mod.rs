@@ -115,7 +115,7 @@ fn primary_comparison_scope_preserves_registration_cancellation_cleanup_and_retr
                         provider_attempt,
                         attempt_basis,
                         WorthQueryProviderAttemptRegistrationContext::new_for_test(
-                            &(*(*world.application.runtime_for_test()).primary_provider_for_test()),
+                            (*world.application.runtime_for_test()).primary_provider_for_test(),
                             &admission,
                             retained_idempotency,
                             outcome_identity,

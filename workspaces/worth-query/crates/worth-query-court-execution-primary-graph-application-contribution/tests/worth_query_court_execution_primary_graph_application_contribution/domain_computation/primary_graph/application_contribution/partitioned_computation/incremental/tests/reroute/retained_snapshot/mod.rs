@@ -47,7 +47,7 @@ pub fn retained(sealed: &SealedComputationRun) -> Retained {
         partitions: (*typed.partitions_for_test())
             .iter_for_test()
             .map(|(identity, partition)| {
-                let key = (*partition.key_for_test()).0;
+                let key = partition.key_for_test().0;
                 (
                     *identity,
                     key,

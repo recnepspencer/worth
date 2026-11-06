@@ -46,7 +46,7 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
         .unwrap();
     let layout = graph.layout_for_test();
     let handle = graph.integration_handle_for_test();
-    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+    let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
     let status_ref = AccountStatus::reference();
     let label_ref = AccountLabel::reference();
     let status = layout

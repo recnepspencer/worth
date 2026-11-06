@@ -215,23 +215,23 @@ fn explicit_merge(
     EffectExecutionReceipt,
     Option<EffectDiagnosticsMaterialization>,
 ) {
-    let mut runtime = relational_runtime_with_intent_strategy();
+    let runtime = relational_runtime_with_intent_strategy();
     create_entity(
         request_execution,
-        &mut runtime,
+        &runtime,
         "main",
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
         request_execution,
-        &mut runtime,
+        &runtime,
         BranchId("candidate".to_string()),
         &BranchId("main".to_string()),
     )
     .expect("candidate branch should be created");
     create_entity(
         request_execution,
-        &mut runtime,
+        &runtime,
         "candidate-only",
         BranchId("candidate".to_string()),
     );
@@ -274,7 +274,7 @@ fn explicit_merge(
     let receipt = lowered
         .execute_with(
             request_execution,
-            EffectExecutionAuthority::crate_relational_without_application_schema(&mut runtime),
+            EffectExecutionAuthority::crate_relational_without_application_schema(&runtime),
         )
         .expect("explicit merge should execute")
         .receipt();

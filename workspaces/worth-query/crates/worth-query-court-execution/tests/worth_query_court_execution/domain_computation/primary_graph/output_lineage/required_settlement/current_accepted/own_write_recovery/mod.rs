@@ -14,9 +14,9 @@ fn accepted_current_cannot_bypass_original_own_write_evidence() {
     worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::output_lineage::own_write_fixture::with_committed_own_write(|world, receipt, cell, _| {
     let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
     let handle = graph.integration_handle_for_test();
-    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+    let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
     let retained_product = world.application.with_host_advancement(|phase| { let phase_custody = &phase.test_host_request_for_test();    world.selected_product(phase_custody, ) }).expect("the fixture read owns its installed host call");
-    let retained_snapshot = world.application.with_host_advancement(|phase| {   let borrowed_execution = phase.execution_request_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test())).expect("fixture borrows its runtime request"); let execution = &borrowed_execution; handle.with_runtime(execution, |runtime| {
+    let retained_snapshot = world.application.with_host_advancement(|phase| {   let borrowed_execution = phase.execution_request_for_for_test((*world.application.runtime_for_test()).product_runtime_for_test()).expect("fixture borrows its runtime request"); let execution = &borrowed_execution; handle.with_runtime(execution, |runtime| {
         let basis = runtime.admit_branch_basis(&runtime.main_branch_identity()).unwrap();
         runtime.snapshots().snapshot_for_observation(&basis.observation()).unwrap()
     }) }).expect("the fixture read owns its installed host call");
@@ -27,7 +27,7 @@ fn accepted_current_cannot_bypass_original_own_write_evidence() {
     let ready = ReadyCompletion::for_test(WorthQueryCompletedOutputDemand::new_for_test(WorthQueryAcceptedOutputAuthority::Committed(receipt), WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test()));
     let candidate = AcceptedCurrentCandidate::new_for_test(selected, ready);
     let (_, product, _) = retained_product.into_parts_for_test();
-    world.application.with_host_advancement(|phase| {   let borrowed_execution = phase.execution_request_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test())).expect("fixture borrows its runtime request"); let execution = &borrowed_execution; handle.with_runtime(execution, |runtime| {
+    world.application.with_host_advancement(|phase| {   let borrowed_execution = phase.execution_request_for_for_test((*world.application.runtime_for_test()).product_runtime_for_test()).expect("fixture borrows its runtime request"); let execution = &borrowed_execution; handle.with_runtime(execution, |runtime| {
         let snapshot = retained_snapshot;
         let selected = runtime.read_truth().positioned_snapshot(&snapshot).unwrap();
         assert!(candidate

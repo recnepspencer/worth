@@ -82,7 +82,7 @@ fn world_recovery_metadata_carries_the_original_computation_and_absence() {
         replacement.retain_recovery_metadata_for_test(metadata);
         assert_eq!(
             matches!(
-                &(*replacement.computation_for_test()),
+                replacement.computation_for_test(),
                 PreparedComputationCustody::Assigned(SealedComputationRetention::Produced(_))
             ),
             produced

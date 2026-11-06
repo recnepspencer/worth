@@ -59,7 +59,7 @@ pub fn cutoff_journey(
             .primary_graph_for_test()
             .unwrap();
         let handle = graph.integration_handle_for_test();
-        let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+        let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
         let record = performed.get().unwrap();
         let entity = world
             .application
@@ -302,7 +302,7 @@ pub fn candidate(
                 performed.native_output_witness_cell_for_test().unwrap(),
             )),
             identity,
-            Arc::clone(&(*performed.correspondence_for_test())),
+            Arc::clone(performed.correspondence_for_test()),
             (*performed.source_identity_for_test()),
             (*performed.source_partition_identity_for_test()),
             (*performed.producer_dependency_identity_for_test()),

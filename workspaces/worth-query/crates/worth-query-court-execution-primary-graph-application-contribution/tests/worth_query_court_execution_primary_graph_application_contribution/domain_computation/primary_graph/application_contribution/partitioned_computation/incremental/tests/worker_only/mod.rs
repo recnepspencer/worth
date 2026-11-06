@@ -102,7 +102,7 @@ pub fn native_attempt<Owned: TestOwner>(
             let phase_custody = phase.test_host_request_for_test();
             let admission = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::projected_attempt::admit(world, &request, &phase);
             let execution = phase
-                .execution_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test()))
+                .execution_for_for_test((*world.application.runtime_for_test()).product_runtime_for_test())
                 .unwrap();
             assert!(!execution.has_accounting_for_test());
             let allocation = execution.allocation_policy_for_test().unwrap();
@@ -228,7 +228,7 @@ fn worker_only_partition_run_retains_facts_reuses_and_observes_a_real_source_edi
     );
     let base = installed(StatusRead::Gather(1), sum);
     let installed = NativeInstalled::new(
-        PollOnly(Arc::clone(&(*base.owner_for_test()))),
+        PollOnly(Arc::clone(base.owner_for_test())),
         ComputationRetention::ProducerOperation,
     );
     let first = native_attempt(
@@ -250,12 +250,12 @@ fn worker_only_partition_run_retains_facts_reuses_and_observes_a_real_source_edi
         first.trees.as_slice(),
         [TreeRun::Full(Cause::FirstRun, _)]
     ));
-    let calls = *(*base.owner_for_test()).calls.lock().unwrap();
+    let calls = *base.owner_for_test().calls.lock().unwrap();
     let unchanged = native_attempt(&world, &installed, retained_prior(first.sealed));
     assert_eq!(unchanged.value, first.value);
     assert!(unchanged.gathered.is_empty());
     assert_eq!(
-        *(*base.owner_for_test()).calls.lock().unwrap(),
+        *base.owner_for_test().calls.lock().unwrap(),
         calls,
         "all actual owner calls carry"
     );
@@ -286,7 +286,7 @@ fn worker_only_partition_run_retains_facts_reuses_and_observes_a_real_source_edi
         .application
         .with_application_advancement(&request, |phase| {
             let execution = phase
-                .execution_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test()))
+                .execution_for_for_test((*world.application.runtime_for_test()).product_runtime_for_test())
                 .unwrap();
             assert!(!execution.has_accounting_for_test());
             let execution = execution.execution_request().unwrap();

@@ -81,7 +81,7 @@ pub fn demand_expected<Schema: BirthSchema>(
     runtime
         .with_application_advancement(&scope, |phase| {
             let execution = phase
-                .execution_request_for_for_test(&(*(*runtime.runtime_for_test()).product_runtime_for_test()))
+                .execution_request_for_for_test((*runtime.runtime_for_test()).product_runtime_for_test())
                 .unwrap();
             let branch = runtime.current_world();
             let principal_binding = runtime

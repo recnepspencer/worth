@@ -42,16 +42,16 @@ fn durable_field_dependency_roundtrips_presence_and_denies_partial_revision() {
             AspectValue::String(InternedString::Raw(value)) => value.clone(),
             _ => panic!("string evidence field"),
         };
-        let version = match encoded.get(&(*layout.native_revision_for_test())).unwrap() {
+        let version = match encoded.get(layout.native_revision_for_test()).unwrap() {
             AspectValue::UInt64(value) => *value,
             _ => panic!("revision evidence field"),
         };
         let decoded = decode_field_revision_fact(
             entity,
-            Some(string(&(*layout.aspect_for_test()))),
-            Some(string(&(*layout.field_for_test()))),
+            Some(string(layout.aspect_for_test())),
+            Some(string(layout.field_for_test())),
             Some(version),
-            Some(string(&(*layout.field_presence_for_test()))),
+            Some(string(layout.field_presence_for_test())),
         )
         .unwrap();
         assert_eq!(decoded, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact::SourceFieldRevision {
@@ -59,8 +59,8 @@ fn durable_field_dependency_roundtrips_presence_and_denies_partial_revision() {
             });
         assert!(decode_field_revision_fact(
             entity,
-            Some(string(&(*layout.aspect_for_test()))),
-            Some(string(&(*layout.field_for_test()))),
+            Some(string(layout.aspect_for_test())),
+            Some(string(layout.field_for_test())),
             Some(version),
             None
         )
@@ -68,6 +68,6 @@ fn durable_field_dependency_roundtrips_presence_and_denies_partial_revision() {
     }
     let mut unavailable = BTreeMap::new();
     append_field_revision_fields(layout, &locator, None, &mut unavailable);
-    assert!(!unavailable.contains_key(&(*layout.native_revision_for_test())));
-    assert!(!unavailable.contains_key(&(*layout.field_presence_for_test())));
+    assert!(!unavailable.contains_key(layout.native_revision_for_test()));
+    assert!(!unavailable.contains_key(layout.field_presence_for_test()));
 }

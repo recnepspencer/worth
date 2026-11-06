@@ -77,7 +77,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                 lease.product(),
                 phase
                     .execution_request_for_for_test(
-                        &(*(*world.application.runtime_for_test()).product_runtime_for_test())
+                        (*world.application.runtime_for_test()).product_runtime_for_test()
                     )
                     .expect("fixture issuer")
                     .allocation_policy()
@@ -87,11 +87,11 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
             let substitute_lease = WorthQueryApplicationSnapshotLease::acquire_for_test(
                 &phase
                     .execution_request_for_for_test(
-                        &(*(*world.application.runtime_for_test()).product_runtime_for_test()),
+                        (*world.application.runtime_for_test()).product_runtime_for_test(),
                     )
                     .expect("fixture issuer"),
                 lease.handle_for_test().clone(),
-                std::sync::Arc::clone(&(*lease.layout_for_test())),
+                std::sync::Arc::clone(lease.layout_for_test()),
                 lease.product().retained_clone_for_test(),
             )
             .expect("the real branch must issue a second exact snapshot handle");
@@ -106,7 +106,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                 substitute_lease.product(),
                 phase
                     .execution_request_for_for_test(
-                        &(*(*world.application.runtime_for_test()).product_runtime_for_test()),
+                        (*world.application.runtime_for_test()).product_runtime_for_test(),
                     )
                     .expect("fixture issuer")
                     .allocation_policy(),
@@ -120,7 +120,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
             let foreign_branch_snapshot = lease.handle_for_test().with_runtime_for_test(
                 &phase
                     .execution_request_for_for_test(
-                        &(*(*world.application.runtime_for_test()).product_runtime_for_test()),
+                        (*world.application.runtime_for_test()).product_runtime_for_test(),
                     )
                     .expect("fixture issuer"),
                 |runtime| {
@@ -134,8 +134,8 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                         .fork_branch(
                             &phase
                                 .execution_request_for_for_test(
-                                    &(*(*world.application.runtime_for_test())
-                                        .product_runtime_for_test()),
+                                    (*world.application.runtime_for_test())
+                                        .product_runtime_for_test(),
                                 )
                                 .expect("fixture issuer"),
                             foreign.clone(),
@@ -157,7 +157,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                 lease.product(),
                 phase
                     .execution_request_for_for_test(
-                        &(*(*world.application.runtime_for_test()).product_runtime_for_test())
+                        (*world.application.runtime_for_test()).product_runtime_for_test()
                     )
                     .expect("fixture issuer")
                     .allocation_policy()
@@ -166,7 +166,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
             assert!(lease.handle_for_test().with_runtime_for_test(
                 &phase
                     .execution_request_for_for_test(
-                        &(*(*world.application.runtime_for_test()).product_runtime_for_test())
+                        (*world.application.runtime_for_test()).product_runtime_for_test()
                     )
                     .expect("fixture issuer"),
                 |runtime| {
@@ -323,7 +323,11 @@ pub fn real_terminal_session<'run>(
         .bind_application_product_for_test(product)
         .expect("the exact selected product must bind its provider plan")
         .admit_session(execution)
-        .and_then(|(grant, receiver)| world.application.prepare_provider_session_grant(execution, grant, || Ok(receiver)))
+        .and_then(|(grant, receiver)| {
+            world
+                .application
+                .prepare_provider_session_grant(execution, grant, || Ok(receiver))
+        })
         .expect("the real provider must prepare its exact session")
         .bind_reads_and_effects()
 }

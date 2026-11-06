@@ -71,7 +71,7 @@ fn newer_successor_supersedes_only_its_older_occurrence() {
         .expect("a newer revision supersedes its predecessor");
 
     assert!(matches!(
-        &(*(*state.records_for_test())[&older].state_for_test()),
+        (*state.records_for_test())[&older].state_for_test(),
         DemandState::Failed(denial)
             if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded
     ));
@@ -111,7 +111,7 @@ fn scheduling_failure_is_terminal_and_last_interest_releases_the_record() {
     registry.finish_scheduling_for_test(&demand_interest, None, &mut Err(denial));
 
     assert!(matches!(
-        &(*(*(*registry.state_for_test()).lock().unwrap().records_for_test())[&demand_key].state_for_test()),
+        (*(*registry.state_for_test()).lock().unwrap().records_for_test())[&demand_key].state_for_test(),
         DemandState::Failed(failure)
             if failure.kind() == WorthQueryOutputDemandDenialKind::ProducerUnavailable
     ));
@@ -178,22 +178,22 @@ fn deferred_scheduling_returns_to_admitted_while_no_effect_is_terminal() {
         &registry,
         deferred_key.clone(),
         Arc::clone(
-            &(*(*(*registry.state_for_test())
+            (*(*registry.state_for_test())
                 .lock()
                 .unwrap()
                 .records_for_test())[&deferred_key]
-                .wake_for_test()),
+                .wake_for_test(),
         ),
     );
     let terminal = interest(
         &registry,
         terminal_key.clone(),
         Arc::clone(
-            &(*(*(*registry.state_for_test())
+            (*(*registry.state_for_test())
                 .lock()
                 .unwrap()
                 .records_for_test())[&terminal_key]
-                .wake_for_test()),
+                .wake_for_test(),
         ),
     );
     let no_effect_denial = WorthQueryOutputDemandDenial::new_for_test(
@@ -218,7 +218,7 @@ fn deferred_scheduling_returns_to_admitted_while_no_effect_is_terminal() {
         DemandState::Admitted
     ));
     assert!(matches!(
-        &(*(*state.records_for_test())[&terminal_key].state_for_test()),
+        (*state.records_for_test())[&terminal_key].state_for_test(),
         DemandState::Failed(denial) if denial.kind() == WorthQueryOutputDemandDenialKind::NoEffect
     ));
 }

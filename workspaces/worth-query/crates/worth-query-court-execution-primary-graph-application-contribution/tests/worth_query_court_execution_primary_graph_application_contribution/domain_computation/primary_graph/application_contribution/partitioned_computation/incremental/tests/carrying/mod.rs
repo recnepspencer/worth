@@ -18,7 +18,7 @@ fn unchanged_facts_carry_every_partition_to_the_same_outcome() {
         first.work.field_reads() > 0,
         "the original owner read its inputs"
     );
-    *(*installed.owner_for_test()).calls.lock().unwrap() = [0; 4];
+    *installed.owner_for_test().calls.lock().unwrap() = [0; 4];
 
     let next = attempt(&world, &installed, Some(prior_of(first, false)));
     assert_eq!(
@@ -29,7 +29,7 @@ fn unchanged_facts_carry_every_partition_to_the_same_outcome() {
     assert!(matches!(next.runs.as_slice(), [(Run::Incremental, None)]));
     assert!(next.gathered.is_empty(), "no partition is gathered again");
     assert_eq!(
-        *(*installed.owner_for_test()).calls.lock().unwrap(),
+        *installed.owner_for_test().calls.lock().unwrap(),
         [0; 4],
         "the second retained attempt invokes neither membership, key, gather nor kernel owners"
     );
@@ -48,7 +48,7 @@ fn a_moved_gather_fact_gathers_only_its_partition_again() {
         let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let installed = installed(StatusRead::Gather(1), reducer);
         let first = first_run(&world, &installed);
-        *(*installed.owner_for_test()).bump.lock().unwrap() = 10;
+        *installed.owner_for_test().bump.lock().unwrap() = 10;
 
         let next = attempt(&world, &installed, Some(prior_of(first, true)));
         assert!(matches!(next.runs.as_slice(), [(Run::Incremental, None)]));
@@ -139,7 +139,7 @@ fn growing_past_the_ceiling_is_denied_as_a_full_run_is_denied() {
         let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let installed = installed(StatusRead::Gather(status), sum);
 
-        *(*installed.owner_for_test()).work.lock().unwrap() = [KERNEL_WORK, KERNEL_WORK];
+        *installed.owner_for_test().work.lock().unwrap() = [KERNEL_WORK, KERNEL_WORK];
         let (declared, full_tree_work) = declared_cost(&world);
         let first = first_run(&world, &installed);
         assert_eq!(
@@ -165,7 +165,7 @@ fn growing_past_the_ceiling_is_denied_as_a_full_run_is_denied() {
         // putting the stop inside a kernel in either identity ordering.
         let grown = WORK_CEILING + KERNEL_WORK + usize::try_from(full_tree_work).unwrap() + 1
             - usize::try_from(declared).unwrap();
-        (*installed.owner_for_test()).work.lock().unwrap()[usize::from(status == 0)] = grown;
+        installed.owner_for_test().work.lock().unwrap()[usize::from(status == 0)] = grown;
         let preparation = declared - 2 * KERNEL_WORK as u64 - full_tree_work;
         let compute_ceiling = WORK_CEILING as u64 - preparation;
         let request = live_scope();

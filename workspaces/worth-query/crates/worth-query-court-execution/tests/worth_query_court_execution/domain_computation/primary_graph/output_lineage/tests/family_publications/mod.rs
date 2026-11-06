@@ -178,7 +178,7 @@ impl Court {
             .resolve_current_family_for_test(
                 &worth_execution::ExecutionRequest::serial(&self.request),
                 *self.source.runtime_authority_for_test(),
-                &(*self.source.schema_for_test()),
+                self.source.schema_for_test(),
                 self.source.scope,
                 "family",
                 *self.coordinate.occurrence_for_test(),
@@ -193,7 +193,7 @@ impl Court {
         origin_generation: u64,
     ) {
         let base_source = self.source.clone();
-        let bindings = &(*self.lineage.binding_identities_for_test());
+        let bindings = self.lineage.binding_identities_for_test();
         // The update's field value first, then its base, as the literal evaluated them.
         let source = |binding| {
             let output_binding = bindings.identity_for_test(binding).unwrap();
@@ -202,7 +202,7 @@ impl Court {
             source
         };
         let origin = (*(*self.lineage.by_source_for_test())
-            [&source(TypeId::of_for_test::<Origin>())][&(*self.coordinate.occurrence_for_test())]
+            [&source(TypeId::of_for_test::<Origin>())][self.coordinate.occurrence_for_test()]
             [&origin_generation][0]
             .get()
             .unwrap()
@@ -213,7 +213,7 @@ impl Court {
         let cell = &mut (*self.lineage.by_source_mut_for_test())
             .get_mut(&target_source)
             .unwrap()
-            .get_mut(&(*self.coordinate.occurrence_for_test()))
+            .get_mut(self.coordinate.occurrence_for_test())
             .unwrap()
             .get_mut(&generation)
             .unwrap()[0];
@@ -222,6 +222,12 @@ impl Court {
             .get_mut()
             .unwrap()
             .settlement_identity_mut_for_test()) = origin;
+    }
+}
+
+impl Default for Court {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

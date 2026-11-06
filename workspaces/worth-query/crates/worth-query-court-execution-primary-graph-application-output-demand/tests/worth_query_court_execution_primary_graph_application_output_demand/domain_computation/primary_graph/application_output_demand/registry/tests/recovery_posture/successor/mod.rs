@@ -130,7 +130,7 @@ fn stopped_ready_record_rejects_successor_without_reviving_custody() {
     let record = &(*state.records_for_test())[&demand_key];
     assert_eq!((*record.interests_for_test()), 1);
     assert!(matches!(
-        &(*record.state_for_test()),
+        record.state_for_test(),
         DemandState::Output(output)
             if matches!(output.advancement_for_test(), WorthQueryOutputAdvancement::Stopped { .. })
                 && matches!( *output.checkpoint_for_test(), Some(WorthQueryOutputCheckpoint::Ready(_)))
@@ -173,7 +173,7 @@ fn failed_successor_admission_preserves_ready_custody() {
     let record = &(*state.records_for_test())[&ready_key];
     assert_eq!((*record.interests_for_test()), 1);
     assert!(matches!(
-        &(*record.state_for_test()),
+        record.state_for_test(),
         DemandState::Output(output)
             if matches!( *output.checkpoint_for_test(), Some(WorthQueryOutputCheckpoint::Ready(_)))
     ));

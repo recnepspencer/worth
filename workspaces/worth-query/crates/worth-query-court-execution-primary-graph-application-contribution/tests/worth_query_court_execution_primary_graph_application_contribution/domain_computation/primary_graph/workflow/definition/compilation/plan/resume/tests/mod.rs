@@ -133,7 +133,7 @@ pub fn definition(definition_slot: u64) -> CompiledWorkflowDefinition {
                 entity(definition_slot + ordinal as u64 + 1),
                 nodes[*semantic.source_for_test()].entity_for_test(),
                 nodes[*semantic.target_for_test()].entity_for_test(),
-                Arc::clone(&(*semantic.kind_for_test())),
+                Arc::clone(semantic.kind_for_test()),
             )
         })
         .collect::<Vec<_>>();

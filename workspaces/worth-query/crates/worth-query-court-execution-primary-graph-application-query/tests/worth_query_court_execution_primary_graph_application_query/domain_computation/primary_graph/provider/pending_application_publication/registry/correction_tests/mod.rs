@@ -32,7 +32,7 @@ fn reserved_command_is_visible_across_branches_and_released_with_its_slot() {
         .unwrap()
         .correction_slot_for_test(&key)
         .expect("Reserved already owns the command key");
-    assert!(Arc::ptr_eq(&slot, &(*reservation.slot_for_test())));
+    assert!(Arc::ptr_eq(&slot, reservation.slot_for_test()));
     assert!(
         matches!(slot.inspect_idempotency_for_test(), Some(WorthQueryPendingApplicationIdempotency::Pending(recorded)) if recorded == binding)
     );
@@ -63,7 +63,7 @@ fn reserved_command_is_visible_across_branches_and_released_with_its_slot() {
             .unwrap()
             .correction_slot_for_test(&key)
             .unwrap(),
-        &(*reservation.slot_for_test())
+        reservation.slot_for_test()
     ));
     drop(reservation);
     let registry = registry.lock().unwrap();

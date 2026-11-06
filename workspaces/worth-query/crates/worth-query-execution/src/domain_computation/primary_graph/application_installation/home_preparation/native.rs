@@ -64,7 +64,10 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Sche
             invariants,
             initialization,
         ) {
-            Ok(schema) => Ok(PreparedHomeNativeMeaning { state, schema }),
+            Ok(schema) => Ok(PreparedHomeNativeMeaning {
+                state,
+                schema: schema.bind_sources(&native.main_branch_identity()),
+            }),
             Err(cause) => Err(QueryHomeNativeInstallationRefused {
                 _state: state,
                 cause,
@@ -88,7 +91,10 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Sche
             native,
             invariants,
         ) {
-            Ok(schema) => Ok(PreparedHomeNativeMeaning { state, schema }),
+            Ok(schema) => Ok(PreparedHomeNativeMeaning {
+                state,
+                schema: schema.bind_sources(&native.main_branch_identity()),
+            }),
             Err(cause) => Err(QueryHomeNativeInstallationRefused {
                 _state: state,
                 cause,

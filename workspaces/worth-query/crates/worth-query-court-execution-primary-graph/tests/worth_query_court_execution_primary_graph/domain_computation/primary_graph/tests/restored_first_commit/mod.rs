@@ -61,7 +61,7 @@ pub fn raw_commits_first_after_restore(with_retired_index: bool) {
         .with_host_advancement(|phase| {
             let borrowed_execution = phase
                 .execution_request_for_for_test(
-                    &(*(*restored.application.runtime_for_test()).product_runtime_for_test()),
+                    (*restored.application.runtime_for_test()).product_runtime_for_test(),
                 )
                 .expect("fixture borrows its runtime request");
             let execution = &borrowed_execution;
@@ -74,7 +74,7 @@ pub fn raw_commits_first_after_restore(with_retired_index: bool) {
         .with_host_advancement(|phase| {
             let borrowed_execution = phase
                 .execution_request_for_for_test(
-                    &(*(*restored.application.runtime_for_test()).product_runtime_for_test()),
+                    (*restored.application.runtime_for_test()).product_runtime_for_test(),
                 )
                 .expect("fixture borrows its runtime request");
             let execution = &borrowed_execution;
@@ -87,7 +87,7 @@ pub fn raw_commits_first_after_restore(with_retired_index: bool) {
         .with_host_advancement(|phase| {
             let borrowed_execution = phase
                 .execution_request_for_for_test(
-                    &(*(*restored.application.runtime_for_test()).product_runtime_for_test()),
+                    (*restored.application.runtime_for_test()).product_runtime_for_test(),
                 )
                 .expect("fixture borrows its runtime request");
             let execution = &borrowed_execution;
@@ -100,7 +100,7 @@ pub fn raw_commits_first_after_restore(with_retired_index: bool) {
         .with_host_advancement(|phase| {
             let borrowed_execution = phase
                 .execution_request_for_for_test(
-                    &(*(*restored.application.runtime_for_test()).product_runtime_for_test()),
+                    (*restored.application.runtime_for_test()).product_runtime_for_test(),
                 )
                 .expect("fixture borrows its runtime request");
             let execution = &borrowed_execution;
@@ -127,7 +127,7 @@ pub fn world_publication_first_after_restore(with_retired_index: bool) {
         .with_host_advancement(|phase| {
             let borrowed_execution = phase
                 .execution_request_for_for_test(
-                    &(*(*restored.application.runtime_for_test()).product_runtime_for_test()),
+                    (*restored.application.runtime_for_test()).product_runtime_for_test(),
                 )
                 .expect("fixture borrows its runtime request");
             let execution = &borrowed_execution;
@@ -148,7 +148,7 @@ pub fn world_publication_first_after_restore(with_retired_index: bool) {
         .with_host_advancement(|phase| {
             let borrowed_execution = phase
                 .execution_request_for_for_test(
-                    &(*(*restored.application.runtime_for_test()).product_runtime_for_test()),
+                    (*restored.application.runtime_for_test()).product_runtime_for_test(),
                 )
                 .expect("fixture borrows its runtime request");
             let execution = &borrowed_execution;
@@ -161,7 +161,7 @@ pub fn world_publication_first_after_restore(with_retired_index: bool) {
         .with_host_advancement(|phase| {
             let borrowed_execution = phase
                 .execution_request_for_for_test(
-                    &(*(*restored.application.runtime_for_test()).product_runtime_for_test()),
+                    (*restored.application.runtime_for_test()).product_runtime_for_test(),
                 )
                 .expect("fixture borrows its runtime request");
             let execution = &borrowed_execution;
@@ -188,7 +188,7 @@ pub fn captured_and_restored(with_retired_index: bool) -> (IdentityWorld, Option
         .with_host_advancement(|phase| {
             let borrowed_execution = phase
                 .execution_request_for_for_test(
-                    &(*(*world.application.runtime_for_test()).product_runtime_for_test()),
+                    (*world.application.runtime_for_test()).product_runtime_for_test(),
                 )
                 .expect("fixture borrows its runtime request");
             let execution = &borrowed_execution;
@@ -201,7 +201,7 @@ pub fn captured_and_restored(with_retired_index: bool) -> (IdentityWorld, Option
         .with_host_advancement(|phase| {
             let borrowed_execution = phase
                 .execution_request_for_for_test(
-                    &(*(*world.application.runtime_for_test()).product_runtime_for_test()),
+                    (*world.application.runtime_for_test()).product_runtime_for_test(),
                 )
                 .expect("fixture borrows its runtime request");
             let execution = &borrowed_execution;
@@ -214,7 +214,7 @@ pub fn captured_and_restored(with_retired_index: bool) -> (IdentityWorld, Option
         .with_host_advancement(|phase| {
             let borrowed_execution = phase
                 .execution_request_for_for_test(
-                    &(*(*world.application.runtime_for_test()).product_runtime_for_test()),
+                    (*world.application.runtime_for_test()).product_runtime_for_test(),
                 )
                 .expect("fixture borrows its runtime request");
             let execution = &borrowed_execution;
@@ -240,7 +240,7 @@ pub fn captured_and_restored(with_retired_index: bool) -> (IdentityWorld, Option
         .with_host_advancement(|phase| {
             let borrowed_execution = phase
                 .execution_request_for_for_test(
-                    &(*(*restored.application.runtime_for_test()).product_runtime_for_test()),
+                    (*restored.application.runtime_for_test()).product_runtime_for_test(),
                 )
                 .expect("fixture borrows its runtime request");
             let execution = &borrowed_execution;
@@ -258,7 +258,7 @@ pub fn captured_and_restored(with_retired_index: bool) -> (IdentityWorld, Option
             .with_host_advancement(|phase| {
                 let borrowed_execution = phase
                     .execution_request_for_for_test(
-                        &(*(*restored.application.runtime_for_test()).product_runtime_for_test()),
+                        (*restored.application.runtime_for_test()).product_runtime_for_test(),
                     )
                     .expect("fixture borrows its runtime request");
                 let execution = &borrowed_execution;

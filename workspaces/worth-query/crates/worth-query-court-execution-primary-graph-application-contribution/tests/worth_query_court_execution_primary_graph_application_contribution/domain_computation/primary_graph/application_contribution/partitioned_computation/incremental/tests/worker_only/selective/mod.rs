@@ -119,7 +119,7 @@ fn native_value_key_and_membership_edits_carry_unaffected_partitions() {
         .clone();
         let request = live_scope();
         world.application.with_application_advancement(&request, |phase| {
-            let active = phase.execution_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test())).unwrap();
+            let active = phase.execution_for_for_test((*world.application.runtime_for_test()).product_runtime_for_test()).unwrap();
             let execution = active.execution_request().unwrap();
             worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation(
                 &execution, &world, WorkerIntentBatch::new("native-membership-edit").push(

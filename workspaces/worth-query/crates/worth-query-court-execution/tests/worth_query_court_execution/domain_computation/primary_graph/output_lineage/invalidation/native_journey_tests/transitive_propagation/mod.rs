@@ -24,7 +24,7 @@ fn native_invalidation_marks_the_second_and_third_downstream_levels() {
     let coordinate = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get());
     let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
     let handle = graph.integration_handle_for_test();
-    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+    let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
     let status_ref = AccountStatus::reference();
     let status = graph
         .layout_for_test()

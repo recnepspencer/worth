@@ -11,7 +11,7 @@ fn retained_registration_consumes_the_equal_successor_at_the_live_image() {
             .primary_graph_for_test()
             .unwrap();
         let handle = graph.integration_handle_for_test();
-        let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+        let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
         let record = performed.get().unwrap();
         let entity = world
             .application

@@ -90,7 +90,7 @@ fn pending_correction_cutover_never_looks_unseen_on_another_branch() {
         ),
         "the held real post-commit boundary must leave pending custody: {outcome:?}"
     );
-    let provider = &(*(*world.application.runtime_for_test()).primary_provider_for_test());
+    let provider = (*world.application.runtime_for_test()).primary_provider_for_test();
     let Observed::Pending(Some(admitted_binding)) =
         provider.observe_correction_key_for_test(&sibling_observation, binding.key_identity())
     else {

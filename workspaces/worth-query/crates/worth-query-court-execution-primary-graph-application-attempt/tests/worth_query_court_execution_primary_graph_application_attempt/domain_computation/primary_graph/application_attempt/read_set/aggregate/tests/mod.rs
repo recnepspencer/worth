@@ -27,7 +27,7 @@ fn aggregate_sealing_keeps_original_bodies_without_granting_relation_write_facts
         let original=std::sync::Arc::clone(expected.aggregate_for_test(key,(*attempt.admission_for_test()).admission_identity(),
             &(*attempt.admission_for_test()).retain_graph_contract(),(*attempt.lease_for_test()).snapshot_for_test()).unwrap());
         let (other,_)=authorize(&world,&phase,&execution,&request,0,ReplaceNext::reference());
-        let denial=worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::aggregate::observe(&execution,&other,&(*attempt.lease_for_test()),&(*attempt.read_scope_for_test()),expected,key,None).err().unwrap();
+        let denial=worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::aggregate::observe(&execution,&other,attempt.lease_for_test(),attempt.read_scope_for_test(),expected,key,None).err().unwrap();
         assert_eq!(denial.kind(),WorthQueryApplicationAttemptDenialKind::ProjectionAdmissionMismatch,
             "even identical graph truth and contracts cannot relabel the actual value to another admission");
         let completed=attempt.complete_projected_dependencies(&phase,Allocation::SystemAllocation).unwrap();
@@ -132,9 +132,9 @@ fn aggregate_descriptors_without_issued_values_cannot_complete() {
                 .unwrap();
             let denial = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::aggregate::observe(
                 &execution,
-                &(*raw.admission_for_test()),
-                &(*raw.lease_for_test()),
-                &(*raw.read_scope_for_test()),
+                raw.admission_for_test(),
+                raw.lease_for_test(),
+                raw.read_scope_for_test(),
                 (*raw.expected_facts_for_test()).as_ref().unwrap(),
                 &descriptor,
                 None,
@@ -153,7 +153,7 @@ fn aggregate_descriptors_without_issued_values_cannot_complete() {
                         &execution,
                         runtime,
                         (*raw.lease_for_test()).snapshot_for_test(),
-                        &(*(*raw.lease_for_test()).layout_for_test()),
+                        (*raw.lease_for_test()).layout_for_test(),
                         &WorthQueryApplicationFactKey::Aggregate(descriptor),
                     )
                 })

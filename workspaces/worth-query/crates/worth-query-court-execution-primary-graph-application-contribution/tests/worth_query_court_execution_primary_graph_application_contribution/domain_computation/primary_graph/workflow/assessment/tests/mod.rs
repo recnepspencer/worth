@@ -150,21 +150,21 @@ fn performed_entity_kind_dependency_uses_a_distinct_durable_shape() {
         entity_id: dependent,
     });
     assert_eq!(
-        legacy.get(&(*layout.evidence_dependency.fact_kind_for_test())),
+        legacy.get(layout.evidence_dependency.fact_kind_for_test()),
         Some(&text("entity"))
     );
-    assert!(!legacy.contains_key(&(*layout.evidence_dependency.native_entity_kind_for_test())));
+    assert!(!legacy.contains_key(layout.evidence_dependency.native_entity_kind_for_test()));
 
     let exact = projected(Fact::Entity {
         entity_id: dependent,
         kind,
     });
     assert_eq!(
-        exact.get(&(*layout.evidence_dependency.fact_kind_for_test())),
+        exact.get(layout.evidence_dependency.fact_kind_for_test()),
         Some(&text("entity-kind"))
     );
     assert_eq!(
-        exact.get(&(*layout.evidence_dependency.native_entity_kind_for_test())),
+        exact.get(layout.evidence_dependency.native_entity_kind_for_test()),
         Some(&AspectValue::UInt64(u64::from(kind.as_u32())))
     );
 }

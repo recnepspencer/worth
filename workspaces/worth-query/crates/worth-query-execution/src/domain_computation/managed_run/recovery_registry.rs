@@ -248,14 +248,21 @@ impl WorthQueryRecoveryHandleRegistry {
     /// into a cross-holder one, so it is fixture-only; no production path needs
     /// to ask the question, and clippy confirms it (the method is dead code in
     /// a build without this gate).
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "The closed diagnostic snapshot sorts issued slot identities before exposure; ordinary registry operations remain point lookups"
+    )]
     pub(crate) fn enumerate_live(&self) -> Vec<WorthQueryRecoveryRegistrySlot> {
-        self.state
+        let mut slots: Vec<_> = self
+            .state
             .lock()
             .expect("recovery registry lock")
             .live
             .keys()
             .copied()
-            .collect()
+            .collect();
+        slots.sort_unstable_by_key(|slot| slot.0);
+        slots
     }
 
     /// Retire a slot and record why.

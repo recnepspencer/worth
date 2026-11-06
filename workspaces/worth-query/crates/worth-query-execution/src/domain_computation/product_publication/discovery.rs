@@ -207,16 +207,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 ))
             }
         };
-        if let (Some(reservation), Some(binding)) = (&provider_release, &original_binding) {
-            if reservation
+        if let (Some(reservation), Some(binding)) = (&provider_release, &original_binding)
+            && reservation
                 .validate_original(binding, effects.expected_head())
                 .is_err()
-            {
-                return Err(recovery_failure(
-                    recovery,
-                    WorthQueryProductUnpublishedRecoveryReleaseDenial::OriginalBindingMismatch,
-                ));
-            }
+        {
+            return Err(recovery_failure(
+                recovery,
+                WorthQueryProductUnpublishedRecoveryReleaseDenial::OriginalBindingMismatch,
+            ));
         }
         let reservation = if effects.destination_branch().is_some() {
             self.runtime

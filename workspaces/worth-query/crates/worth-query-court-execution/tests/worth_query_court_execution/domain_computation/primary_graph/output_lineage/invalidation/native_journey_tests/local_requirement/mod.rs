@@ -46,7 +46,7 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
         .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
-    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+    let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
     let status_ref = AccountStatus::reference();
     let status = graph
         .layout_for_test()
@@ -101,7 +101,7 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
         None,
     );
     let identity = Arc::clone(
-        &(*(*lineage
+        (*lineage
             .resolve_current_family_for_test(
                 request_execution,
                 runtime_authority,
@@ -115,7 +115,7 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
             .candidates_mut_for_test())
         .pop()
         .expect("the lineage owner selects its retained output")
-        .settlement_identity_for_test()),
+        .settlement_identity_for_test(),
     );
     // The old actor row has no posting for this source field. A failed
     // post-effect registration leaves it Clean while lineage retains the
@@ -166,11 +166,11 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
             handle.with_runtime(request_execution, |runtime| {
                 ConsumedOutputEvidence::verify_candidate_with_admission_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    &(*candidate.settlement_identity_for_test()),
+                    candidate.settlement_identity_for_test(),
                     &(*candidate.observed_source_facts_for_test())
                         .for_comparison()
                         .unwrap(),
-                    &(*candidate.consumed_outputs_for_test()),
+                    candidate.consumed_outputs_for_test(),
                     *candidate.verification_requirement_for_test(),
                     &before,
                     owner,

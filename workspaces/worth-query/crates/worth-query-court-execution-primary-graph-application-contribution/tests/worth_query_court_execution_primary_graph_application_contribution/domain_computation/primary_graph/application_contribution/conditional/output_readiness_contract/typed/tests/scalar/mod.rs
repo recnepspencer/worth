@@ -94,7 +94,7 @@ fn scalar_readiness_uses_exact_declared_and_installed_binding() {
         .unwrap();
     assert_eq!(
         node.dependencies()[ordinal].binding(),
-        &(*field.native_binding_for_test())
+        field.native_binding_for_test()
     );
     assert_eq!(
         node.dependencies()[ordinal].projection_mask(),

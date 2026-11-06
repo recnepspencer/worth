@@ -197,7 +197,7 @@ fn settlement_releases_only_the_ready_authority_it_accepted() {
             .composite_commit()
             .clone(), (*output.source_for_test()).clone())];
 
-    let wake = Arc::clone(&(*retained.wake_for_test()));
+    let wake = Arc::clone(retained.wake_for_test());
     let registry = WorthQueryOutputDemandRegistry::default();
     {
         let mut state = (*registry.state_for_test()).lock().unwrap();

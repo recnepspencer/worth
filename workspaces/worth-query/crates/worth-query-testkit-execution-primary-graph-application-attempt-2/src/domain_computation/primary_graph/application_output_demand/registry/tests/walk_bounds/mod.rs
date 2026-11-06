@@ -31,17 +31,14 @@ pub fn check(search: usize) {
         let before = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited();
         match search {
             0 => assert_eq!(
-                occurrence_rows(&(*state.records_for_test()), &selected).count(),
+                occurrence_rows(state.records_for_test(), &selected).count(),
                 3
             ),
             1 => assert_eq!(
-                newest_of_occurrence(&(*state.records_for_test()), &selected),
+                newest_of_occurrence(state.records_for_test(), &selected),
                 Some(key("own", 3, 1))
             ),
-            2 => assert!(!awaited_by_stale_owner(
-                &(*state.records_for_test()),
-                &selected
-            )),
+            2 => assert!(!awaited_by_stale_owner(state.records_for_test(), &selected)),
             _ => panic!("unknown occurrence search"),
         }
         contacts.push(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited() - before);
@@ -105,7 +102,7 @@ pub fn add_custody_with_completion(
             (*row.source_scope_mut_for_test()) = Some(scope);
             (*state.records_mut_for_test()).insert_for_test(
                 key(
-                    &(*selected.producer_for_test()),
+                    selected.producer_for_test(),
                     generation,
                     u8::try_from(i).unwrap() + 100,
                 ),

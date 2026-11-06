@@ -169,7 +169,7 @@ fn delivered_and_ready_roots_keep_their_consumption_on_removal() {
         drop(state.remove_record(&row_key).unwrap());
         assert_eq!(
             (*state.source_custody[&commit].consumed_sources_for_test()).as_slice(),
-            std::slice::from_ref(&(*row_key.source_for_test())),
+            std::slice::from_ref(row_key.source_for_test()),
             "ready={ready}: delivered work cannot be admitted again"
         );
     }
@@ -214,7 +214,7 @@ fn an_abandoned_join_returns_the_requested_source_it_consumed() {
     let mut state = (*registry.state_for_test()).lock().unwrap();
     assert_eq!(
         (*state.source_custody[&commit].consumed_sources_for_test()).as_slice(),
-        std::slice::from_ref(&(*requested.source_for_test()))
+        std::slice::from_ref(requested.source_for_test())
     );
     let backing = PreparedReadyBacking::new_for_test();
     let mut row = (*state.records_mut_for_test()).get_mut(&older).unwrap();

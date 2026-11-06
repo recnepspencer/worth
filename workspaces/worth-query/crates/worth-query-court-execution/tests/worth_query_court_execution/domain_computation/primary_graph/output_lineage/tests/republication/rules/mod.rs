@@ -55,7 +55,7 @@ fn a_republication_continues_the_suspended_performed_record() {
         let suspended = suspended.get().unwrap();
         assert!(Arc::ptr_eq(
             &continued.predecessor,
-            &(*suspended.settlement_identity_for_test())
+            suspended.settlement_identity_for_test()
         ));
         assert!(continued
             .facts
@@ -68,13 +68,10 @@ fn a_republication_continues_the_suspended_performed_record() {
 
         let restored = stage.restored();
         assert!(Arc::ptr_eq(
-            &(*restored.settlement_identity_for_test()),
+            restored.settlement_identity_for_test(),
             &continued.identity
         ));
-        assert!(Arc::ptr_eq(
-            &(*restored.consumed_outputs_for_test()),
-            &consumed
-        ));
+        assert!(Arc::ptr_eq(restored.consumed_outputs_for_test(), &consumed));
         assert!(restored
             .observed_source_facts_for_test()
             .unwrap()
@@ -125,7 +122,7 @@ fn a_restored_row_without_performed_proof_stays_fresh_until_verified() {
             .republish(suspended_generation, &facts, &restored_witness)
             .is_none());
         stage.lineage.record_restoration_for_test(
-            stage.lineage.binding_type_for_test(&(*stage.source.output_binding_for_test())),
+            stage.lineage.binding_type_for_test(stage.source.output_binding_for_test()),
             *stage.source.runtime_authority_for_test(),
             (*stage.source.schema_for_test()).clone(),
             stage.source.scope,
@@ -273,13 +270,13 @@ fn a_stable_alias_is_compared_by_the_witness_of_its_origin() {
             .lineage
             .retained_output_candidates_metered_for_test(
                 *stage.source.runtime_authority_for_test(),
-                &(*stage.source.schema_for_test()),
+                stage.source.schema_for_test(),
                 stage.source.scope,
                 stage.observation.lifecycle_incarnation(),
                 alias_generation,
                 &[stage
                     .lineage
-                    .binding_type_for_test(&(*stage.source.output_binding_for_test()))],
+                    .binding_type_for_test(stage.source.output_binding_for_test())],
                 PARTITION,
                 request_execution,
             )

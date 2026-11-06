@@ -102,17 +102,17 @@ pub fn custody_wait(superseded: bool, token: bool) {
     {
         let state = (*registry.state_for_test()).lock().unwrap();
         assert_eq!(state.source_custody.len(), 1);
-        assert!((*state.source_custody[&commit].cleanup_for_test()).queued);
+        assert!(state.source_custody[&commit].cleanup_for_test().queued);
     }
     if token {
         registry.release_prepared_token_for_test(&commit);
     } else {
         let notifications = Arc::clone(
-            &(*(*(*registry.state_for_test())
+            (*(*registry.state_for_test())
                 .lock()
                 .unwrap()
                 .records_for_test())[&selected]
-                .wake_for_test()),
+                .wake_for_test(),
         );
         drop(interest(&registry, selected.clone(), notifications));
     }

@@ -122,7 +122,7 @@ impl WorthQueryOperationCleanup {
             O::CleanupRequired(required) if self.managed.is_none() => {
                 let (outcome, cleanup) = required.into_parts();
                 self.absorb_managed(runtime, cleanup);
-                outcome.into()
+                outcome
             }
             other => other,
         }

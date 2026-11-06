@@ -87,7 +87,7 @@ fn cancelled_after_consuming_completion_cannot_publish_and_keeps_original_payer(
                             &installed,
                             None,
                             &external,
-                            &(*original.source_for_test()),
+                            original.source_for_test(),
                             &selected,
                             &request,
                             |_, principal, scope| {

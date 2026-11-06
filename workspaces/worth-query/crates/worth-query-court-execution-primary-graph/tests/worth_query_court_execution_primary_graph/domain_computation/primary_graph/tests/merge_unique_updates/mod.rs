@@ -311,6 +311,12 @@ impl UpdateWorld {
     }
 }
 
+impl Default for UpdateWorld {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub fn registry() -> RelationalSchemaRegistry {
     let name = aspect_key("name");
     RelationalSchemaRegistry::new()

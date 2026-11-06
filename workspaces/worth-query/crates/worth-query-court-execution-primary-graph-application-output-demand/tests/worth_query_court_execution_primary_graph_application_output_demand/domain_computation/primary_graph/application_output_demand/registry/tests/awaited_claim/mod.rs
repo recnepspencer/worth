@@ -49,13 +49,13 @@ pub fn last_claim_closes(held_successor: bool) {
             assert!(registry
                 .hold_required_successor_for_test(Box::new(newest), |held| held
                     .downcast_ref::<WorthQueryOutputDemandInterest>()
-                    .map(|interest| &(*interest.key_for_test())))
+                    .map(|interest| interest.key_for_test()))
                 .is_none());
         } else {
             drop(newest);
         }
         assert!(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::awaited_by_stale_owner(
-            &(*(*registry.state_for_test()).lock().unwrap().records_for_test()),
+            (*registry.state_for_test()).lock().unwrap().records_for_test(),
             &newest_key
         ));
         drop(dependent);
@@ -78,7 +78,7 @@ pub fn last_claim_closes(held_successor: bool) {
                 "the superseded row is retired too"
             );
             assert!((*state.records_for_test()).iter_for_test().all(|(key, record)| key == &unrelated ||
-                !matches!(&(*record.state_for_test()), DemandState::Output(output) if matches!( *output.checkpoint_for_test(),
+                !matches!(record.state_for_test(), DemandState::Output(output) if matches!( *output.checkpoint_for_test(),
                     Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Published { .. })))));
         }
 

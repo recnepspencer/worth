@@ -127,10 +127,20 @@ fn genuinely_interleaved_equivalent_sessions_validate_retry_cleanup_separately()
                     &world,
                     "genuinely-interleaved-equivalent",
                 );
+                // The owner reports the two original admission pins before
+                // running preparation adds its separate temporary snapshots.
+                let admitted_snapshots = world.invariant.active_snapshot_count_for_test(
+                    &active_phase.borrowed_request_for_test());
+                let admitted_pair = admitted_snapshots - snapshot_baseline;
+                assert!(admitted_pair > 0 && admitted_pair.is_multiple_of(2));
                 let binding = idempotency(139, 140);
                 let left = start(phase, &world.application, left, binding);
                 let right = start(phase, &world.application, right, binding);
                 let both_attempts = world.invariant.active_snapshot_count_for_test(&active_phase.borrowed_request_for_test());
+                assert!(both_attempts >= admitted_snapshots);
+                let running_pair = both_attempts - snapshot_baseline;
+                assert!(running_pair.is_multiple_of(2));
+                let one_unprogressed = running_pair / 2;
                 let left = progress_application_commit(
                     &phase.borrowed_request_for_test(),
                     phase,
@@ -139,6 +149,12 @@ fn genuinely_interleaved_equivalent_sessions_validate_retry_cleanup_separately()
                     None,
                     ExecutionAllocationPolicy::SystemAllocation,
                 );
+                // Measure one progressed owner while its equivalent peer still
+                // owns its original admission custody. Do not count scratch
+                // that progression has already retired as retained custody.
+                let one_progressed = world.invariant.active_snapshot_count_for_test(
+                    &active_phase.borrowed_request_for_test()) - snapshot_baseline - one_unprogressed;
+                assert!(one_progressed > 0);
                 let right = progress_application_commit(
                     &phase.borrowed_request_for_test(),
                     phase,
@@ -147,10 +163,11 @@ fn genuinely_interleaved_equivalent_sessions_validate_retry_cleanup_separately()
                     None,
                     ExecutionAllocationPolicy::SystemAllocation,
                 );
+                let progressed_pair = snapshot_baseline + 2 * one_progressed;
                 assert_eq!(
                     world.invariant.active_snapshot_count_for_test(&active_phase.borrowed_request_for_test()),
-                    both_attempts,
-                    "both progressed completions retain their actual admitted snapshot custody"
+                    progressed_pair,
+                    "both progressed completions retain their actual progressed snapshot custody"
                 );
                 let left = finish_application_commit(
                     &phase.borrowed_request_for_test(),
@@ -158,7 +175,7 @@ fn genuinely_interleaved_equivalent_sessions_validate_retry_cleanup_separately()
                     &world.application,
                     left,
                 );
-                assert_only_peer_remains(&active_phase.borrowed_request_for_test(), &world, snapshot_baseline, both_attempts);
+                assert_only_peer_remains(&active_phase.borrowed_request_for_test(), &world, snapshot_baseline, progressed_pair);
                 let right = finish_application_commit(
                     &phase.borrowed_request_for_test(),
                     phase,

@@ -188,7 +188,7 @@ fn ordinary_native_writer_marks_only_matched_fields_and_actual_downstream_edges(
         .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
-    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+    let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
     let status_ref = AccountStatus::reference();
     let label_ref = AccountLabel::reference();
     let status = graph

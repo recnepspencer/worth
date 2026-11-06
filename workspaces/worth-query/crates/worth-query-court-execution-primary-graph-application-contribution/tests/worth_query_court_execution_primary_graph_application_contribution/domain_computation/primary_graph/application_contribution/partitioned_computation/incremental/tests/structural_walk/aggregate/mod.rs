@@ -49,9 +49,7 @@ fn actual_aggregate_inputs_force_fresh_computation_before_reuse_in_both_postures
             Cause::AggregateRead,
         );
         assert_eq!(
-            (*installed.owner_for_test())
-                .gathers
-                .load(Ordering::Relaxed),
+            installed.owner_for_test().gathers.load(Ordering::Relaxed),
             2
         );
         let current = body(&next);

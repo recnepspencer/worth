@@ -127,10 +127,10 @@ fn directory_pre_effect_pending_retains_key_through_handoff_and_reopen_requireme
         1,
         "a live original key cannot replay the supplier"
     );
-    let duplicate = duplicate
-        .try_into_recovery()
-        .err()
-        .expect("the observation cannot steal the original checked-out owner");
+    let duplicate = match duplicate.try_into_recovery() {
+        Ok(_) => panic!("the observation cannot steal the original checked-out owner"),
+        Err(duplicate) => duplicate,
+    };
     assert_eq!(
         balance(runtime, &live),
         7,

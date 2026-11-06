@@ -13,22 +13,22 @@ pub fn eligible(state: &DemandRegistryState, commit: &CompositeCommitIdentity) -
     if (*entry.retired_for_test()).is_some() {
         return true;
     }
-    let Some(bound) = &(*entry.bound_sources_for_test()) else {
+    let Some(bound) = entry.bound_sources_for_test() else {
         return false;
     };
     let replaced = !bound.is_empty()
         && bound.iter().all(|s| {
             entry
-                .source_denial_for_test(&(*s.identity_for_test()))
+                .source_denial_for_test(s.identity_for_test())
                 .is_some()
         });
     if !(*entry.completed_for_test()) && !replaced {
         return false;
     }
     if !bound.iter().all(|s| {
-        (*entry.consumed_sources_for_test()).contains(&(*s.identity_for_test()))
+        (*entry.consumed_sources_for_test()).contains(s.identity_for_test())
             || entry
-                .source_denial_for_test(&(*s.identity_for_test()))
+                .source_denial_for_test(s.identity_for_test())
                 .is_some()
     }) {
         return false;
@@ -72,7 +72,7 @@ pub fn assert_noted(registry: &WorthQueryOutputDemandRegistry, step: &str, seed:
     let state = (*registry.state_for_test()).lock().unwrap();
     for (commit, entry) in &state.source_custody {
         assert!(
-            !eligible(&state, commit) || (*entry.cleanup_for_test()).queued,
+            !eligible(&state, commit) || entry.cleanup_for_test().queued,
             "seed {seed}, {step}: prunable custody lost its note"
         );
     }
@@ -111,7 +111,7 @@ pub fn value(
                 row.has_cached_ready_for_test(),
                 (*row.settlements_for_test()).clone(),
                 (
-                    match &(*row.state_for_test()) {
+                    match row.state_for_test() {
                         DemandState::Admitted => "admitted",
                         DemandState::Scheduling => "scheduling",
                         DemandState::Scheduled => "scheduled",
@@ -119,7 +119,7 @@ pub fn value(
                         DemandState::Output(_) => "output",
                         DemandState::Failed(_) => "failed",
                     },
-                    match &(*row.state_for_test()) {
+                    match row.state_for_test() {
                         DemandState::Failed(d) => Some(d.kind()),
                         _ => None,
                     },
@@ -238,14 +238,14 @@ fn registry_custody_note_full_entry_oracle_covers_held_unhold_steps() {
                 for (reg, dependent) in [(&registry, &dependent), (&reference, &eager_dependent)] {
                     let mut state = (*reg.state_for_test()).lock().unwrap();
                     (*(*state.records_mut_for_test())
-                        .get_mut(&(*dependent.key_for_test()))
+                        .get_mut(dependent.key_for_test())
                         .unwrap()
                         .state_mut_for_test()) =
                         DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
                             WorthQueryOutputDemandDenialKind::NoEffect,
                             "done",
                         ));
-                    state.release_record_prerequisites_for_test(&(*dependent.key_for_test()));
+                    state.release_record_prerequisites_for_test(dependent.key_for_test());
                 }
                 drop(dependent);
                 drop(eager_dependent);
@@ -285,11 +285,11 @@ fn registry_custody_note_full_entry_oracle_covers_held_unhold_steps() {
         }
         registry.drain_closed_cleanup_admitted().unwrap();
         assert_noted(&registry, "paid claim transfer", seed);
-        let remaining = (*(*registry.state_for_test())
+        let remaining = (*registry.state_for_test())
             .lock()
             .unwrap()
-            .custody_cleanup_for_test())
-        .len;
+            .custody_cleanup_for_test()
+            .len;
         for _ in 0..remaining {
             (*registry.state_for_test())
                 .lock()

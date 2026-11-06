@@ -1,3 +1,5 @@
+#![recursion_limit = "256"]
+// The Native index catalog requires this depth for its auto-trait obligations.
 //! Neutral owning workflow: capture, condition, distinct approval and real archival ingress.
 //!
 //! `cargo run -p worth-query-certification --example observable_workflow` writes

@@ -23,7 +23,7 @@ fn bootstrap_seeds_exact_workflow_transition_lookup_before_any_settlement() {
         .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
-    let transition = &(*(*graph.layout_for_test()).workflow().transition_for_test());
+    let transition = (*graph.layout_for_test()).workflow().transition_for_test();
     let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host_request);
     handle.with_runtime_for_test(&execution, |runtime| {

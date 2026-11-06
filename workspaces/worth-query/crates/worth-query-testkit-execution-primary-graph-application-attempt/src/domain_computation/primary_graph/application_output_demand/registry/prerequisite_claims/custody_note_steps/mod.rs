@@ -20,7 +20,7 @@ pub fn unhold(
         .lock()
         .unwrap()
         .records_mut_for_test())
-    .get_mut(&(*interest.key_for_test()))
+    .get_mut(interest.key_for_test())
     .unwrap()
     .state_mut_for_test()) = DemandState::Running;
 
@@ -37,16 +37,16 @@ pub fn unhold(
             .lock()
             .unwrap();
         (*claims.claim_batch_mut_for_test()) = (*(*state.records_mut_for_test())
-            .get_mut(&(*interest.key_for_test()))
+            .get_mut(interest.key_for_test())
             .unwrap()
             .claim_batch_mut_for_test())
         .take();
-        if let Some(batch) = &(*claims.claim_batch_for_test()) {
+        if let Some(batch) = claims.claim_batch_for_test() {
             batch.deactivate_for_test();
         }
         (*claims.predecessors_mut_for_test()) = std::mem::take(
             &mut (*(*state.records_mut_for_test())
-                .get_mut(&(*interest.key_for_test()))
+                .get_mut(interest.key_for_test())
                 .unwrap()
                 .prerequisites_mut_for_test()),
         );

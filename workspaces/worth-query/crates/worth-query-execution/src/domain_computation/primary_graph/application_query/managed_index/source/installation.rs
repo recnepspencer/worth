@@ -39,10 +39,6 @@ impl ManagedSourceInstallation {
         ),
         Denial,
     > {
-        #[expect(
-            clippy::mutable_key_type,
-            reason = "Programs compare only their immutable owner-minted order; audience custody cannot affect ordering"
-        )]
         let mut required = BTreeMap::new();
         for source in layout.required_managed_sources() {
             let provider = providers

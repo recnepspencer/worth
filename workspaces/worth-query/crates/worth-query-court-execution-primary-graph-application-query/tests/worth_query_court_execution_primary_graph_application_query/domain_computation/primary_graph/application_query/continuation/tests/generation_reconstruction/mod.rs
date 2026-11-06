@@ -50,8 +50,8 @@ fn discarded_ordered_generation_rebuilds_without_reviving_old_query_cursors() {
     let basis = (*old_cursor.product_for_test())
         .relational_basis_for_test()
         .clone();
-    let graph = &(*(*(*context.world.application.runtime_for_test()).primary_provider_for_test())
-        .graph_for_test());
+    let graph = (*(*context.world.application.runtime_for_test()).primary_provider_for_test())
+        .graph_for_test();
     let child_kind = (*(*context.world.application.runtime_for_test())
         .primary_graph_for_test()
         .unwrap()

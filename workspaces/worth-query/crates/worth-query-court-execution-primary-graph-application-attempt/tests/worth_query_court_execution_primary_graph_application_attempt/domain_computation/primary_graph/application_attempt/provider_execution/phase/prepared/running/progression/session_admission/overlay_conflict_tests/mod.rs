@@ -75,7 +75,7 @@ fn second_real_overlay_is_rejected_without_orphaning_the_first_overlay() {
                     provider_attempt,
                     attempt_basis,
                     WorthQueryProviderAttemptRegistrationContext::new_for_test(
-                        &(*(*world.application.runtime_for_test()).primary_provider_for_test()),
+                        (*world.application.runtime_for_test()).primary_provider_for_test(),
                         &admission,
                         idempotency,
                         outcome_identity,

@@ -244,7 +244,7 @@ pub fn routed(
                     &admission,
                     |reader, root| {
                         let execution = phase
-                            .execution_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test()))
+                            .execution_for_for_test(world.application.runtime_for_test().product_runtime_for_test())
                             .expect("the installed fixture lends its computation execution");
                         for _ in 0..runs {
                             if installed.prepare_through_for_test(reader, execution, root).is_err() {
@@ -275,7 +275,7 @@ pub fn routed(
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .unwrap();
-            let mut gathered = (*installed.owner_for_test()).gathered.lock().unwrap().clone();
+            let mut gathered = installed.owner_for_test().gathered.lock().unwrap().clone();
             gathered.sort_unstable();
             gathered.dedup();
             (

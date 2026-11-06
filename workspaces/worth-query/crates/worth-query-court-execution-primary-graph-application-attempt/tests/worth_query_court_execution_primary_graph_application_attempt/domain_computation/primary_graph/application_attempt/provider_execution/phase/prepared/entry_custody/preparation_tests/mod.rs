@@ -50,7 +50,7 @@ fn entry_custody_preparation_refreshes_lapse_before_program_fact_work() {
     (*(*program.read_set_mut_for_test()).effect_routes_mut_for_test()) =
         donor.read_set_into_for_test().effect_routes_into_for_test();
     assert!(!(*(*program.read_set_for_test()).effect_routes_for_test())
-        .matches_body_for_test(&(*(*program.read_set_for_test()).facts_for_test())));
+        .matches_body_for_test((*program.read_set_for_test()).facts_for_test()));
     world
         .application
         .with_host_advancement(|phase| {

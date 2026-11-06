@@ -159,6 +159,12 @@ impl MergeWorld {
             .expect("the fixture mutation is infallible")
     }
 }
+
+impl Default for MergeWorld {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 pub fn prepared_merge(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,

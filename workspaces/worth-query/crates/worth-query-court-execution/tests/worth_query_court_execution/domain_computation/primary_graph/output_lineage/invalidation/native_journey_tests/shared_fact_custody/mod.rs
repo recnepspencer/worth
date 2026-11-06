@@ -21,7 +21,7 @@ fn shared_original_facts_survive_restored_prerequisite_custody() {
         let coordinate = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get());
         let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
         let handle = graph.integration_handle_for_test();
-        let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+        let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
         let status = AccountStatus::reference();
         let status = graph.layout_for_test().field_locator_for_test(status.entity(), status.aspect(), status.field())
             .unwrap().clone();
@@ -49,7 +49,7 @@ fn shared_original_facts_survive_restored_prerequisite_custody() {
 
             (snapshot_handle, basis, identity, facts, first, second)
         });
-        first.establish_restored_before_commit_for_test(&execution, &(*handle.source_owner_for_test())).unwrap();
+        first.establish_restored_before_commit_for_test(&execution, handle.source_owner_for_test()).unwrap();
             assert!(matches!(owner.currentness_for_test(&basis, &identity).unwrap(),
                 SourceSettlementCurrentness::Clean));
             assert!(first.claim_verified_checkpoint_root_for_test(owner).unwrap(),

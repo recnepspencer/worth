@@ -188,6 +188,29 @@ fn bridge(cause: worth_runtime_bridge::facade::RuntimeWorldBaselineRefusal) -> D
     }
 }
 
+fn content(cause: worth_relational::facade::content::RelationalContentDenial) -> Denial {
+    use worth_relational::facade::content::RelationalContentDenial as Content;
+    match cause {
+        Content::Execution(cause) => idempotency_read_stop(cause),
+        Content::MissingContent
+        | Content::BackingUnavailable { .. }
+        | Content::FormatBindingMissing
+        | Content::FormatMismatch
+        | Content::UnsupportedVersion
+        | Content::InvalidFormat
+        | Content::NonCanonicalContent
+        | Content::IntegrityMismatch
+        | Content::ContentIdentityConflict
+        | Content::EncodingInconsistency
+        | Content::InputTypeMismatch
+        | Content::DuplicateContentFormat
+        | Content::SizeLimit { .. }
+        | Content::ArithmeticOverflow
+        | Content::HistoryNotResident
+        | Content::UnreferencedAttachment { .. } => Denial::Unavailable,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -221,28 +244,5 @@ mod tests {
         assert_eq!(source(WorldDurableMediumDenial::BridgeDescription(
             worth_runtime_bridge::facade::RuntimeWorldBaselineRefusal::Request(WorkCeilingDenial::Stopped(KernelStop::WorkCeiling)))),
             idempotency_read_stop(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted));
-    }
-}
-
-fn content(cause: worth_relational::facade::content::RelationalContentDenial) -> Denial {
-    use worth_relational::facade::content::RelationalContentDenial as Content;
-    match cause {
-        Content::Execution(cause) => idempotency_read_stop(cause),
-        Content::MissingContent
-        | Content::BackingUnavailable { .. }
-        | Content::FormatBindingMissing
-        | Content::FormatMismatch
-        | Content::UnsupportedVersion
-        | Content::InvalidFormat
-        | Content::NonCanonicalContent
-        | Content::IntegrityMismatch
-        | Content::ContentIdentityConflict
-        | Content::EncodingInconsistency
-        | Content::InputTypeMismatch
-        | Content::DuplicateContentFormat
-        | Content::SizeLimit { .. }
-        | Content::ArithmeticOverflow
-        | Content::HistoryNotResident
-        | Content::UnreferencedAttachment { .. } => Denial::Unavailable,
     }
 }

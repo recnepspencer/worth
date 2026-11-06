@@ -6,7 +6,8 @@ use worth_query_host::facade::application_installation::{
 };
 use worth_query_testkit_document_retention::facade::document_retention_model::{
     actor_generation::validated_actor_program, host::host_limits,
-    retention_entry::assessment_counts, schema::DocumentRetentionSchema,
+    model_lifecycle::validated_model_lifecycle_program, retention_entry::assessment_counts,
+    schema::DocumentRetentionSchema,
 };
 
 #[test]
@@ -61,7 +62,8 @@ fn changed_build_preserves_recorded_output_and_reproduces_stale_output_only_on_d
         validated_program(),
         WorthQueryApplicationProgramRoster::new()
             .support(validated_second_program())
-            .support(validated_actor_program()),
+            .support(validated_actor_program())
+            .support(validated_model_lifecycle_program()),
         DocumentRetentionSchema::declaration().unwrap(),
         ((),),
         ApplicationBuildIdentity::parse("22222222-2222-4222-8222-222222222222").unwrap(),

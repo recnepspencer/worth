@@ -38,7 +38,7 @@ pub fn claim_on_superseded(
         *base.prerequisites_mut_for_test() = vec![Arc::new(old.clone())];
         base
     };
-    let wake = Arc::clone(&(*dependent_record.wake_for_test()));
+    let wake = Arc::clone(dependent_record.wake_for_test());
     {
         let mut state = (*registry.state_for_test()).lock().unwrap();
         (*state.records_mut_for_test()).insert_for_test(old.clone(), {

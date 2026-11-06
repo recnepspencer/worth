@@ -60,7 +60,7 @@ fn stopped_head_is_released_by_every_finish_route() {
             }
             let state = (*registry.state_for_test()).lock().unwrap();
             let count = (*state.records_for_test()).publication_count_for_test();
-            let DemandState::Output(output) = &(*(*state.records_for_test())[&row].state_for_test()) else {
+            let DemandState::Output(output) = (*state.records_for_test())[&row].state_for_test() else {
                 panic!("checkpoint retained")
             };
             assert!(matches!(

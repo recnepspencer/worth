@@ -26,7 +26,7 @@ fn newer_preserve_publication_supersedes_initial_even_without_initial_facts() {
             "the obsolete binding must not supply a retry packet"
         );
         assert!(Arc::ptr_eq(
-            &(*(*selected.candidates_for_test())[0].correspondence_for_test()),
+            (*selected.candidates_for_test())[0].correspondence_for_test(),
             &preserve
         ));
         assert!(!(*selected.ambiguous_publication_for_test()));

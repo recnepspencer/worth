@@ -56,9 +56,7 @@ fn actual_retained_walk_runs_fresh_before_incremental_shortcuts_in_both_postures
             Cause::StructuralWalkRead,
         );
         assert_eq!(
-            (*installed.owner_for_test())
-                .gathers
-                .load(Ordering::Relaxed),
+            installed.owner_for_test().gathers.load(Ordering::Relaxed),
             2,
             "the real gather ran again"
         );

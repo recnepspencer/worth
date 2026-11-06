@@ -42,6 +42,6 @@ pub(super) fn verify(
     }
     assert_eq!(context.contacts.load(Ordering::SeqCst), 2);
     assert_eq!(context.initialized.load(Ordering::SeqCst), 1);
-    home.close(&execution)
+    home.close(execution)
         .unwrap_or_else(|refused| panic!("readmitted disposition close: {refused:?}"));
 }

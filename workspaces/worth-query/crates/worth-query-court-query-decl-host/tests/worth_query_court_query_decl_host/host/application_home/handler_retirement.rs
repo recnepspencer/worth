@@ -53,7 +53,7 @@ fn resume_original_query_after_alias_refusal(
     .unwrap_or_else(|refused| panic!("genuine Directory opening: {refused:?}"));
     let retained = home.runtime().clone();
     let refused = home
-        .close(&execution)
+        .close(execution)
         .err()
         .expect("the original backing is shared");
     assert!(matches!(

@@ -133,6 +133,8 @@ pub(super) fn denial(subject: impl Into<String>) -> WorthQueryApplicationDisclos
     }
 }
 
+pub use diagnostic::DiagnosticContractDenial;
+
 #[cfg(test)]
 mod cause_tests {
     #[test]
@@ -140,5 +142,3 @@ mod cause_tests {
         super::denial("declared diagnostic field contract").assert_inspection_contract_cause();
     }
 }
-
-pub use diagnostic::DiagnosticContractDenial;

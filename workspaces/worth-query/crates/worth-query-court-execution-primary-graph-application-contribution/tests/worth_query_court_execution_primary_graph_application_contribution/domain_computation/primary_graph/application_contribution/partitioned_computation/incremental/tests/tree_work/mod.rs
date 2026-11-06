@@ -109,18 +109,18 @@ pub fn retained(source: &SealedComputationRun, keys: &[Id]) -> Retained {
     };
     let partitions = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::partition_metadata::PartitionMetadata::from_recorded_for_test(
         keys.iter()
-            .map(|id| (*id, (Arc::clone(&(*partition.key_for_test())), (*partition.gather_for_test()).clone())))
+            .map(|id| (*id, (Arc::clone(partition.key_for_test()), (*partition.gather_for_test()).clone())))
             .collect(),
         execution.allocation_policy_for_test().unwrap(),
     )
     .unwrap();
     Retained::new_for_test(
-        Arc::clone(&(*template.items_for_test())),
+        Arc::clone(template.items_for_test()),
         (*template.digests_for_test()).clone(),
         (*template.membership_for_test()).clone(),
-        Arc::clone(&(*template.item_keys_for_test())),
-        Arc::clone(&(*template.call_sequence_for_test())),
-        Arc::clone(&(*template.routing_for_test())),
+        Arc::clone(template.item_keys_for_test()),
+        Arc::clone(template.call_sequence_for_test()),
+        Arc::clone(template.routing_for_test()),
         partitions,
         native_run,
         tree,
@@ -293,7 +293,7 @@ fn public_incremental_observation_reports_actual_work_apart_from_charge() {
     let installed = installed(StatusRead::Gather(1), counted);
     let first = first_run(&world, &installed);
     let charge = first.outcome.as_ref().unwrap().1;
-    *(*installed.owner_for_test()).bump.lock().unwrap() = 10;
+    *installed.owner_for_test().bump.lock().unwrap() = 10;
     reset_counts();
     let next = attempt(&world, &installed, Some(prior_of(first, true)));
     assert_eq!(next.runs, [(Run::Incremental, None)]);

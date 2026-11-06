@@ -47,7 +47,7 @@ pub fn colliding(
             let digest = if item == kept {
                 foreign
             } else {
-                digest_of(&(*partition.key_for_test()))
+                digest_of(partition.key_for_test())
             };
             routing
                 .route_for_test(item, digest, |_| Ok(()))
@@ -78,7 +78,7 @@ fn a_collision_met_routing_again_makes_the_run_in_full() {
             None,
         ))
     };
-    *(*installed.owner_for_test()).entries.lock().unwrap() =
+    *installed.owner_for_test().entries.lock().unwrap() =
         BTreeMap::from([(1, (0, 10)), (2, (1, 20))]);
     let first = attempt(&world, &installed, fresh())
         .sealed
@@ -86,7 +86,7 @@ fn a_collision_met_routing_again_makes_the_run_in_full() {
         .unwrap();
     // Item 1 moves to key 2, where the prior holds item 2 under a foreign
     // digest; item 2 keeps its route.
-    *(*installed.owner_for_test()).entries.lock().unwrap() =
+    *installed.owner_for_test().entries.lock().unwrap() =
         BTreeMap::from([(1, (2, 10)), (2, (1, 20))]);
     let prior = colliding(first, PartitionItemId(2), &Parity(2));
     let next = attempt(&world, &installed, Some(prior));
@@ -119,8 +119,8 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
         Rerouted::default(),
         ComputationRetention::ProducerOperation,
     );
-    *(*installed.owner_for_test()).key_only.lock().unwrap() = true;
-    *(*installed.owner_for_test()).entries.lock().unwrap() = BTreeMap::from([(1, (0, 10))]);
+    *installed.owner_for_test().key_only.lock().unwrap() = true;
+    *installed.owner_for_test().entries.lock().unwrap() = BTreeMap::from([(1, (0, 10))]);
     let fresh = || {
         Some(ComputationPrior::new_for_test(
             edition(),
@@ -216,7 +216,7 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
             .unwrap()
             .partitions_for_test())
         .values_for_test()
-        .map(|partition| (*partition.key_for_test()).0)
+        .map(|partition| partition.key_for_test().0)
         .collect::<Vec<_>>()
     };
     assert_eq!(keys(&next), keys(&full), "retained typed keys agree");

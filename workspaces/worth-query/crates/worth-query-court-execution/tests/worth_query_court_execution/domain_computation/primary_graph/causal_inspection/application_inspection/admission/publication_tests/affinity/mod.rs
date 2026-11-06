@@ -7,7 +7,7 @@ pub fn assert_subject_affinity<Schema, Scope>(
     execution: &ExecutionRequest<'_, '_>,
     other_subject: EntityId,
 ) {
-    let target = &(*read.target_for_test());
+    let target = read.target_for_test();
     let subject = (*read.scope_for_test()).entity_id_for_test();
     assert_ne!(
         subject, other_subject,
@@ -16,7 +16,7 @@ pub fn assert_subject_affinity<Schema, Scope>(
     let public = WorthQueryApplicationQueryGovernance::Public;
     let matches = |target: &Arc<WorthQueryApplicationInspectionTarget>, subject| {
         public.inspection_matches_for_test(
-            &(*read.session_for_test()),
+            read.session_for_test(),
             target,
             &target.parameters_for_test(),
             *read.principal_for_test(),
@@ -25,7 +25,7 @@ pub fn assert_subject_affinity<Schema, Scope>(
     };
     let binding = |target: &Arc<WorthQueryApplicationInspectionTarget>, subject| {
         WorthQueryApplicationGovernanceBinding::from_inspection_session_for_test(
-            &(*read.session_for_test()),
+            read.session_for_test(),
             target,
             target.parameters_for_test(),
             *read.principal_for_test(),

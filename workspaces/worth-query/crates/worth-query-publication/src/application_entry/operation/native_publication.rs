@@ -94,13 +94,13 @@ impl<Outcome, Completion, AdmissionDenial>
         &mut self,
         receipt: WorthQueryRecoveredApplicationCommitReceipt,
     ) -> Result<NativeRecoveredPublication, WorthQueryOperationCloseDenial> {
-        if let Self::Performed(performed) = self {
-            if !performed.matches_original_receipt(
+        if let Self::Performed(performed) = self
+            && !performed.matches_original_receipt(
                 &worth_query_execution::publication_boundary::program_publication_access(),
                 &receipt,
-            ) {
-                return Err(WorthQueryOperationCloseDenial::NativeObligationRetained);
-            }
+            )
+        {
+            return Err(WorthQueryOperationCloseDenial::NativeObligationRetained);
         }
         let prior = std::mem::replace(self, Self::Initial);
         let (publication, initial_posture, initial_advancement_failure) = match prior {
@@ -128,10 +128,10 @@ impl<Outcome, Completion, AdmissionDenial>
     ) -> Result<NativeKeyedProgress, WorthQueryOperationCloseDenial> {
         let binding = read.binding();
         let resolution = read.into_resolution();
-        if let Resolution::RecoveredCommitted(receipt) = &resolution {
-            if receipt.idempotency_key_identity() != binding.key_identity() {
-                return Err(WorthQueryOperationCloseDenial::NativeObligationRetained);
-            }
+        if let Resolution::RecoveredCommitted(receipt) = &resolution
+            && receipt.idempotency_key_identity() != binding.key_identity()
+        {
+            return Err(WorthQueryOperationCloseDenial::NativeObligationRetained);
         }
         match resolution {
             Resolution::RecoveredCommitted(receipt) => self

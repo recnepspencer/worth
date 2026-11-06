@@ -41,7 +41,7 @@ impl ComparisonTestsWorthQueryRegisteredProviderAttemptForTest
                 &(*self.staged_for_test()).read_authority(),
                 request,
                 cancellation,
-                &(*(*foreign.application.runtime_for_test()).primary_provider_for_test()),
+                (*foreign.application.runtime_for_test()).primary_provider_for_test(),
             );
         let _ = self.staged_into_for_test().abort();
         assert_eq!(

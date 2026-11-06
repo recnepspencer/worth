@@ -274,7 +274,7 @@ impl World {
             .settle_performed_publication(performed)
             .unwrap();
         worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
-            &mut self.native,
+            &self.native,
             &self.retained_commit.snapshot,
         );
         self.retained_commit = committed;
@@ -344,7 +344,7 @@ impl World {
 impl Drop for World {
     fn drop(&mut self) {
         worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
-            &mut self.native,
+            &self.native,
             &self.retained_commit.snapshot,
         );
     }

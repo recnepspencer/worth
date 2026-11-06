@@ -204,7 +204,7 @@ fn closed_occurrence_stops_a_claim_without_losing_published_identity() {
         .expect_err("branch close must win over the claimed completion");
     assert_eq!(cause.kind(), WorthQueryOutputDemandDenialKind::Closed);
     let state = (*registry.state_for_test()).lock().unwrap();
-    let DemandState::Output(output) = &(*(*state.records_for_test())[&demand_key].state_for_test())
+    let DemandState::Output(output) = (*state.records_for_test())[&demand_key].state_for_test()
     else {
         panic!("published identity must survive the terminal denial while interest remains")
     };

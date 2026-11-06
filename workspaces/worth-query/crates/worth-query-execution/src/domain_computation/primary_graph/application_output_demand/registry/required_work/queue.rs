@@ -99,6 +99,12 @@ impl RequiredWorkQueue {
     }
 }
 
+impl Default for RequiredWorkQueue {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Drop for RequiredWorkQueue {
     fn drop(&mut self) {
         let (mut head, tail) = {

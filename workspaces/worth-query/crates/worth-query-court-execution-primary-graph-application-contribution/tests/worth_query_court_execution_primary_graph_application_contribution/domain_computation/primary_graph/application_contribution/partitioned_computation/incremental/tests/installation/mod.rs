@@ -103,7 +103,7 @@ fn another_owner_with_the_same_types_runs_in_full() {
         "its own total"
     );
     assert_eq!(
-        *(*doubling.owner_for_test()).0.calls.lock().unwrap(),
+        *doubling.owner_for_test().0.calls.lock().unwrap(),
         full_call_law()
     );
 }
@@ -127,7 +127,7 @@ fn a_reinstalled_owner_runs_in_full() {
     assert_eq!(next.gathered, [0, 1], "every partition is gathered");
     assert_eq!(next.outcome.unwrap().0, (1..=4).sum::<u64>());
     assert_eq!(
-        *(*reinstalled.owner_for_test()).calls.lock().unwrap(),
+        *reinstalled.owner_for_test().calls.lock().unwrap(),
         full_call_law()
     );
 }
@@ -143,11 +143,11 @@ fn a_clone_of_the_installation_reuses_its_state() {
     let installed = installed(StatusRead::Gather(1), sum);
     let first = first_run(&world, &installed);
 
-    *(*installed.owner_for_test()).calls.lock().unwrap() = [0; 4];
+    *installed.owner_for_test().calls.lock().unwrap() = [0; 4];
     let next = attempt(&world, &installed.clone(), Some(prior_of(first, false)));
     assert!(matches!(next.runs.as_slice(), [(Run::Incremental, None)]));
     assert!(next.gathered.is_empty(), "nothing is gathered again");
-    assert_eq!(*(*installed.owner_for_test()).calls.lock().unwrap(), [0; 4]);
+    assert_eq!(*installed.owner_for_test().calls.lock().unwrap(), [0; 4]);
 }
 
 #[test]
@@ -185,12 +185,12 @@ fn retained_reads_require_the_actual_installed_value_catalogue() {
         (*state.basis_mut_for_test()) =
             (*state.basis_for_test()).with_value_bindings_for_test(catalogue);
         let prior = ComputationPrior::new_for_test(edition(), Ok(std::sync::Arc::new(state)), None);
-        *(*installed.owner_for_test()).calls.lock().unwrap() = [0; 4];
+        *installed.owner_for_test().calls.lock().unwrap() = [0; 4];
         let next = attempt(&world, &installed, Some(prior));
         if same {
             assert!(matches!(next.runs.as_slice(), [(Run::Incremental, None)]));
             assert!(next.gathered.is_empty());
-            assert_eq!(*(*installed.owner_for_test()).calls.lock().unwrap(), [0; 4]);
+            assert_eq!(*installed.owner_for_test().calls.lock().unwrap(), [0; 4]);
         } else {
             assert!(matches!(
                 next.runs.as_slice(),
@@ -198,7 +198,7 @@ fn retained_reads_require_the_actual_installed_value_catalogue() {
             ));
             assert_eq!(next.gathered, [0, 1]);
             assert_eq!(
-                *(*installed.owner_for_test()).calls.lock().unwrap(),
+                *installed.owner_for_test().calls.lock().unwrap(),
                 full_call_law()
             );
         }
@@ -228,7 +228,7 @@ fn a_reinstalled_reducer_runs_in_full_with_its_own_reduction() {
     assert_eq!(next.gathered, [0, 1]);
     assert_eq!(next.outcome.unwrap().0, expected);
     assert_eq!(
-        *(*reinstalled.owner_for_test()).calls.lock().unwrap(),
+        *reinstalled.owner_for_test().calls.lock().unwrap(),
         full_call_law()
     );
 }

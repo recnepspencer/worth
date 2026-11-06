@@ -66,7 +66,7 @@ pub struct WorthQueryApplicationPreviewSession {
     _runtime: Box<dyn PreviewRuntimeDestructionCustody>,
     runtime_authority: u64,
     source_commit: CompositeCommitIdentity,
-    discard_fault: std::rc::Rc<std::cell::Cell<bool>>,
+    discard_fault: std::sync::Arc<std::sync::atomic::AtomicBool>,
 }
 
 impl std::fmt::Debug for WorthQueryApplicationPreviewSession {
@@ -136,7 +136,7 @@ impl WorthQueryApplicationPreviewSession {
     ) -> Result<(), (Self, worth_runtime_bridge::facade::BridgeSpeculationError)> {
         let residue = vec![BridgePreviewResidueClass::TemporaryDiagnosticsResidue];
         // Armed only by a court through `reject_discard_for_test`.
-        let residue = if self.discard_fault.get() {
+        let residue = if self.discard_fault.load(std::sync::atomic::Ordering::SeqCst) {
             vec![BridgePreviewResidueClass::AuthoritativeDiagnosticsResidue]
         } else {
             residue

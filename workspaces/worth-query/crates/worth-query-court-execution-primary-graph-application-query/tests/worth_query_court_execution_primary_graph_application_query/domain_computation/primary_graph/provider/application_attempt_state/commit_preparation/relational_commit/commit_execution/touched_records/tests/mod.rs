@@ -249,7 +249,7 @@ pub fn native_prepared_records_are_admitted_before_effects_and_shared_until_last
             ExecutionAllocationPolicy::Execution(&child),
         )
         .unwrap_or_else(|_| panic!("exact layout fits"));
-        let retained = Arc::clone(&(*prepared.records_for_test()));
+        let retained = Arc::clone(prepared.records_for_test());
         assert_eq!(retained.charged_payload_bytes(), Some(quote));
         drop(child);
         assert!(matches!(

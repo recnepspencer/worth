@@ -76,9 +76,6 @@ where
         admission
             .refuse_stale_home_authority(self.runtime.product_runtime.owner.owner_identity())
             .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
-        admission
-            .validate_current_authority()
-            .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
         if !admission.belongs_to(
             self.runtime.authority_identity(),
             &self.installed_schema.binding_identity(),
@@ -91,6 +88,9 @@ where
                 &self.installed_schema.binding_identity(),
                 &self.runtime.installed_operations,
             )
+            .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
+        admission
+            .validate_current_authority()
             .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
         if !binding.matches_guarded_workflow_effect(transition_identity) {
             return Err(WorthQueryApplicationIdempotencyResolutionDenial::foreign_admission());
@@ -258,9 +258,6 @@ where
         admission
             .refuse_stale_home_authority(self.runtime.product_runtime.owner.owner_identity())
             .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
-        admission
-            .validate_current_authority()
-            .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
         if !admission.belongs_to(
             self.runtime.authority_identity(),
             &self.installed_schema.binding_identity(),
@@ -273,6 +270,9 @@ where
                 &self.installed_schema.binding_identity(),
                 &self.runtime.installed_operations,
             )
+            .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
+        admission
+            .validate_current_authority()
             .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
         let bindings = bindings
             .into_iter()

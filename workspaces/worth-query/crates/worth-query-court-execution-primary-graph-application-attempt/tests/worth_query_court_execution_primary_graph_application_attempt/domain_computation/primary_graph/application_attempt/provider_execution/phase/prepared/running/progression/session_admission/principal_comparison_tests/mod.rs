@@ -93,7 +93,7 @@ fn principal_staleness_and_request_stop_keep_their_distinct_answers() {
                         provider_attempt,
                         attempt_basis,
                         WorthQueryProviderAttemptRegistrationContext::new_for_test(
-                            &(*(*world.application.runtime_for_test()).primary_provider_for_test()),
+                            (*world.application.runtime_for_test()).primary_provider_for_test(),
                             &admission,
                             retained_idempotency,
                             outcome_identity,

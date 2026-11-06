@@ -40,7 +40,7 @@ fn pinned_same_position_replacements_preserve_unchanged_history() {
         .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
-    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+    let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
     let status_ref = AccountStatus::reference();
     let status = graph
         .layout_for_test()

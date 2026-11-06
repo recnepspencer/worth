@@ -51,6 +51,12 @@ impl Context {
         }
     }
 }
+
+impl Default for Context {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 pub struct World<'a> {
     pub context: &'a Context,
     pub registry: WorthQueryOutputDemandRegistry,
@@ -220,7 +226,7 @@ impl<'a> World<'a> {
             if row.source {
                 (*record.source_commits_mut_for_test()).push(context.commit(1));
             }
-            let wake = Arc::clone(&(*record.wake_for_test()));
+            let wake = Arc::clone(record.wake_for_test());
             (*state.records_mut_for_test()).insert_for_test(keys[id].clone(), record);
             let member = state.prepare_required_member_for_test(&keys[id]).unwrap();
             state.install_required_member_for_test(member);
@@ -338,7 +344,7 @@ impl<'a> World<'a> {
             .lock()
             .unwrap()
             .records_mut_for_test())
-        .get_mut(&(*interest.key_for_test()))
+        .get_mut(interest.key_for_test())
         .unwrap()
         .state_mut_for_test()) = DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
             WorthQueryOutputDemandDenialKind::NoEffect,
@@ -366,7 +372,7 @@ pub fn copy_ready(ready: &DemandState) -> DemandState {
         panic!("Ready fixture")
     };
     let Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Ready(completion)) =
-        &(*output.checkpoint_for_test())
+        output.checkpoint_for_test()
     else {
         panic!("Ready fixture")
     };

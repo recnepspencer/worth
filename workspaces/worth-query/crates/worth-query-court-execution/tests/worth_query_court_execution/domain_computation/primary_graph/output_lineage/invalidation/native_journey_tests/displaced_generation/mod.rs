@@ -39,7 +39,7 @@ pub fn with_unmanaged_publications(
         .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
-    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+    let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
     let partition = [7; 32];
     let publish = |status: &str, replacement: &str, key: u8| {
         let program = world

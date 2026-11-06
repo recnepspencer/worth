@@ -19,14 +19,14 @@ pub fn admit_genuine_all_create(runtime: &Application) {
     runtime
         .with_application_advancement(&scope, |phase| {
             let execution = phase
-                .execution_request_for_for_test(&(*(*runtime.runtime_for_test()).product_runtime_for_test()))
+                .execution_request_for_for_test((*runtime.runtime_for_test()).product_runtime_for_test())
                 .unwrap();
             let (_, product, _application_basis) = runtime
                 .on_branch(runtime.current_world())
                 .select(&phase)
                 .unwrap()
                 .into_parts_for_test();
-            let graph = &(*(*(*runtime.runtime_for_test()).primary_provider_for_test()).graph_for_test());
+            let graph = (*(*runtime.runtime_for_test()).primary_provider_for_test()).graph_for_test();
             let publisher = graph.application_publication.as_ref().unwrap();
             let target = CreatedEntityRef {
                 partition_id: PartitionId::main(),

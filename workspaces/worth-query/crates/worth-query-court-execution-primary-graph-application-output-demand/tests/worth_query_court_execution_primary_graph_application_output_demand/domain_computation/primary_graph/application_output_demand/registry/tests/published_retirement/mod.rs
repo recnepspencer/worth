@@ -114,7 +114,7 @@ fn one_remaining_interest_keeps_the_undelivered_publication() {
             assert_eq!((*(*state.records_for_test())[&upstream_key].framework_required_count_for_test()), 1);
 
             assert!(
-                matches!(&(*(*state.records_for_test())[&output_key].state_for_test()), DemandState::Output(output)
+                matches!((*state.records_for_test())[&output_key].state_for_test(), DemandState::Output(output)
                 if matches!( *output.checkpoint_for_test(), Some(WorthQueryOutputCheckpoint::Published { .. })))
             );
         }

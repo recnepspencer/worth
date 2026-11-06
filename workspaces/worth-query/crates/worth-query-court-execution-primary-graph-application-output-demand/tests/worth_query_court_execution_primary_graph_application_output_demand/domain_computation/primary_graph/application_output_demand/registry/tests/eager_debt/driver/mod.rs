@@ -107,7 +107,7 @@ pub fn run(
                 panic!("Ready")
             };
             let Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Ready(ready)) =
-                &(*output.checkpoint_for_test())
+                output.checkpoint_for_test()
             else {
                 panic!("Ready")
             };

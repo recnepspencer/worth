@@ -88,7 +88,7 @@ pub fn reject_occupied_registration(
         &admission,
         lease.snapshot_for_test(),
         lease.product(),
-    phase.execution_request_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test())).expect("fixture issuer").allocation_policy())
+    phase.execution_request_for_for_test((*world.application.runtime_for_test()).product_runtime_for_test()).expect("fixture issuer").allocation_policy())
     .expect("the real running attempt must recapture its own exact basis");
     let admitted_session = admit_provider_session(
         execution,
@@ -123,7 +123,7 @@ pub fn reject_occupied_registration(
         provider_attempt,
         attempt_basis,
         WorthQueryProviderAttemptRegistrationContext::new_for_test(
-            &(*(*world.application.runtime_for_test()).primary_provider_for_test()),
+            (*world.application.runtime_for_test()).primary_provider_for_test(),
             &admission,
             idempotency,
             outcome_identity,
@@ -186,7 +186,7 @@ pub fn while_peer_is_registered(
             provider_attempt,
             attempt_basis,
             WorthQueryProviderAttemptRegistrationContext::new_for_test(
-                &(*(*world.application.runtime_for_test()).primary_provider_for_test()),
+                (*world.application.runtime_for_test()).primary_provider_for_test(),
                 &admission,
                 idempotency,
                 outcome_identity,
@@ -225,7 +225,7 @@ pub fn while_peer_is_registered(
         .primary_provider_for_test())
         .application_branch_commit_lane_for_test(product.observation_for_test());
     let coordination = commit_lane.enter_for_test();
-    let authority = WorthQueryApplicationCommitProgressionAuthority::new_for_test(&world.application, &(*(*world.application.runtime_for_test()).primary_provider_for_test()), &admission, authorization, idempotency, &coordination, &product, &original_completion, aftermath_causality, None);
+    let authority = WorthQueryApplicationCommitProgressionAuthority::new_for_test(&world.application, (*world.application.runtime_for_test()).primary_provider_for_test(), &admission, authorization, idempotency, &coordination, &product, &original_completion, aftermath_causality, None);
     let peer = finish_application_commit(
         &phase.borrowed_request_for_test(),
         phase,

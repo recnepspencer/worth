@@ -37,7 +37,7 @@ fn released_query_backing_preserves_historical_truth_and_marks_only_live_readers
                 .entity_id_for_test();
             let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
             let handle = graph.integration_handle_for_test();
-            let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+            let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
             let label_ref = AccountLabel::reference();
             let label = graph
                 .layout_for_test()
@@ -72,7 +72,7 @@ fn released_query_backing_preserves_historical_truth_and_marks_only_live_readers
                 let live = capture(&facts[..1]);
                 let id = (*abandoned.slot_for_test()).lock().unwrap().unwrap();
                 let live_id = (*live.slot_for_test()).lock().unwrap().unwrap();
-                let projection = Arc::downgrade(&(*abandoned.projection_for_test()));
+                let projection = Arc::downgrade(abandoned.projection_for_test());
                 let key = FactPostingKey::FieldRevision {
                     entity,
                     aspect: label.aspect().aspect_key().clone(),
@@ -81,7 +81,7 @@ fn released_query_backing_preserves_historical_truth_and_marks_only_live_readers
                 let cell = owner.cell_for_read_for_test(&basis).unwrap().unwrap();
                 let image = cell.read_image();
                 let historical = Arc::clone(image.payload());
-                let original_keys = (*query_binding(&(*historical.current_for_test()), id)
+                let original_keys = (*query_binding(historical.current_for_test(), id)
                     .projection_for_test())
                     .keys_for_test()
                     .len();
@@ -136,7 +136,7 @@ fn released_query_backing_preserves_historical_truth_and_marks_only_live_readers
                 // Ordinary native publication still marks the live original read.
                 write_field(&execution, runtime, entity, label, "changed");
                 let (after_handle, after) = snapshot(runtime);
-                assert!((*query_binding(&(*cell.read_image().payload().current_for_test()), live_id)
+                assert!((*query_binding(cell.read_image().payload().current_for_test(), live_id)
                     .dirty_for_test())
                     .is_some());
                 assert!(owner
@@ -145,7 +145,7 @@ fn released_query_backing_preserves_historical_truth_and_marks_only_live_readers
                     .flatten()
                     .is_none());
                 assert_eq!(
-                    (*query_binding(&(*historical.current_for_test()), id)
+                    (*query_binding(historical.current_for_test(), id)
                         .projection_for_test())
                         .keys_for_test()
                         .len(),

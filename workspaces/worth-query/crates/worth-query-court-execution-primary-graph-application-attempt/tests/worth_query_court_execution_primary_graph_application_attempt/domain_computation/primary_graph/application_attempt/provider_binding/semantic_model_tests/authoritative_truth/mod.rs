@@ -36,8 +36,8 @@ pub fn compile_committed_observations(
     alpha: &AspectFieldLocator,
     beta: &AspectFieldLocator,
 ) -> CommittedObservationWorld {
-    let mut runtime = crate::domain_computation::primary_graph::application_attempt::provider_binding::semantic_model_tests::authoritative_truth::schema::fixture_runtime();
-    let entities = commit_entities(execution, &mut runtime, alpha, beta);
+    let runtime = crate::domain_computation::primary_graph::application_attempt::provider_binding::semantic_model_tests::authoritative_truth::schema::fixture_runtime();
+    let entities = commit_entities(execution, &runtime, alpha, beta);
     let decoy_relation = commit_relation(
         execution,
         &runtime,
@@ -80,11 +80,11 @@ pub fn compile_committed_observations(
         locators,
     );
     worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
-        &mut runtime,
+        &runtime,
         &relation_commit.snapshot,
     );
     worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
-        &mut runtime,
+        &runtime,
         &decoy_relation.snapshot,
     );
     CommittedObservationWorld {

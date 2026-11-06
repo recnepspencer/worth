@@ -4,12 +4,10 @@ use worth_query_installation::facade::WorthQueryInstalledAftermathContract;
 use worth_query_execution::facade::domain_computation::WorthQueryOperationScopeBinding;
 use worth_query_execution::facade::domain_computation::WorthQueryRecoveryHandleBinding;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::commit_authority_binding::WorthQueryRetainedGovernedInput;
-#[cfg(all())]
 pub struct WorthQueryRecoveryHandleBindingAxisProbe {
     pub binding: WorthQueryRecoveryHandleBinding,
 }
 
-#[cfg(all())]
 impl WorthQueryRecoveryHandleBindingAxisProbe {
     pub fn real() -> Self {
         static BASELINE: std::sync::OnceLock<WorthQueryRecoveryHandleBinding> =
@@ -40,7 +38,7 @@ impl WorthQueryRecoveryHandleBindingAxisProbe {
     }
 
     pub fn branch(mut self, value: BranchId) -> Self {
-        (*self.binding.commit_mut_for_test()).branch_id = value;
+        self.binding.commit_mut_for_test().branch_id = value;
         self
     }
 

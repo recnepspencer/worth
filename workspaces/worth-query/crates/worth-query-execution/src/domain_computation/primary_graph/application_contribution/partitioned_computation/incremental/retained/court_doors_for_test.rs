@@ -249,6 +249,10 @@ impl<Key, Item, Reduced> RetainedPartitions<Key, Item, Reduced> {
 
 impl<Key, Item, Reduced> RetainedPartitions<Key, Item, Reduced> {
     #[doc(hidden)]
+    #[expect(
+        clippy::type_complexity,
+        reason = "The closed retained-partition court consumes every original owner field without a parallel representation"
+    )]
     pub fn into_parts_for_test(
         self,
     ) -> (

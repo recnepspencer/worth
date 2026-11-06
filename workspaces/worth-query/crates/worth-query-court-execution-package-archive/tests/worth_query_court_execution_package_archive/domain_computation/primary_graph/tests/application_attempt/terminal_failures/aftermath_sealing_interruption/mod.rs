@@ -176,5 +176,5 @@ pub fn discharge_actual_cleanup(
         .unwrap()
         .unwrap();
     assert!(receipt.inspection().resources_released());
-    outcome.into()
+    outcome
 }

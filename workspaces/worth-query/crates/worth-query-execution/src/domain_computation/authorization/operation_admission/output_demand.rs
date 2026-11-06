@@ -60,7 +60,7 @@ impl WorthQueryAdmittedOperation {
             .required_output_demand
             .as_ref()
             .and_then(RequiredOutputDemandContext::computation_prior);
-        let prior = prior.or_else(ComputationPrior::handed_in_test);
-        prior
+
+        prior.or_else(ComputationPrior::handed_in_test)
     }
 }

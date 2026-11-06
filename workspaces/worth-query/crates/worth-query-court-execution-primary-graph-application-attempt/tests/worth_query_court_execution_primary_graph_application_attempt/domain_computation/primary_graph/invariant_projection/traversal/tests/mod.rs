@@ -137,7 +137,7 @@ fn acquired_endpoint_metadata_counts_even_when_its_kind_is_rejected() {
                         let before = (*reader.work_for_test()).endpoint_records_read();
                         reader
                             .endpoint_for_test::<Principal>(
-                                *reader.execution_for_test(),
+                                reader.execution_for_test(),
                                 principal.entity_id(),
                                 principal_kind,
                                 "Principal",
@@ -146,7 +146,7 @@ fn acquired_endpoint_metadata_counts_even_when_its_kind_is_rejected() {
                         let first = (*reader.work_for_test()).endpoint_records_read();
                         let rejected = reader
                             .endpoint_for_test::<Principal>(
-                                *reader.execution_for_test(),
+                                reader.execution_for_test(),
                                 principal.entity_id(),
                                 account_kind,
                                 "Principal",
@@ -213,7 +213,7 @@ fn cancellation_before_endpoint_acquisition_records_no_endpoint_read() {
             cancellation.cancel();
             let error = reader
                 .endpoint_for_test::<Principal>(
-                    *reader.execution_for_test(),
+                    reader.execution_for_test(),
                     principal.entity_id(),
                     kind,
                     "Principal",

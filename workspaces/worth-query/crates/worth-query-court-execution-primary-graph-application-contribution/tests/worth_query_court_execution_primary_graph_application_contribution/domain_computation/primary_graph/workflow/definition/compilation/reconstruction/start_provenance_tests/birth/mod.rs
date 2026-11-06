@@ -191,7 +191,7 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
         &world,
         update(
             instance,
-            &(*(*layout.instance_for_test()).subject_slot_for_test()),
+            (*layout.instance_for_test()).subject_slot_for_test(),
             AspectValue::UInt64(subject.local_slot_value()),
         ),
     );

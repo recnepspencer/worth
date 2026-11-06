@@ -66,7 +66,7 @@ fn retired_original_incarnation_rebuilds_from_world_and_canonical_relational_pat
         .admit_product_occurrence_for_test(branch.occurrence_for_test())
         .is_err());
 
-    let provider = &(*(*world.application.runtime_for_test()).primary_provider_for_test());
+    let provider = (*world.application.runtime_for_test()).primary_provider_for_test();
     provider.destroy_completed_inbound_index_for_test();
     assert!(provider
         .lookup_completed_inbound_for_test(&correlation)

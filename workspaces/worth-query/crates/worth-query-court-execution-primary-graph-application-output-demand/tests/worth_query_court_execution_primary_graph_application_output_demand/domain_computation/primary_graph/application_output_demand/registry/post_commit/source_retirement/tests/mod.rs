@@ -22,11 +22,11 @@ fn source_retirement_closes_all_producers_and_preserves_custody() {
             &mut state,
             occurrence,
             scope,
-            &(*key("unused", 2, 1).source_for_test()),
+            key("unused", 2, 1).source_for_test(),
         );
         let selected = key("unused", 2, 1);
         let selected_rows = (*state.records_for_test())
-            .source_occurrence_rows_for_test(&(*selected.source_for_test()))
+            .source_occurrence_rows_for_test(selected.source_for_test())
             .collect::<Vec<_>>();
         assert_eq!(selected_rows.len(), producers);
         assert!(selected_rows.iter().all(|(_, row)| row.terminal_for_test()));

@@ -43,7 +43,7 @@ pub fn run_population(population: usize) -> WorthQueryNativeMarkingWork {
     let coordinate = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get());
     let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
     let handle = graph.integration_handle_for_test();
-    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+    let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
     let kind = graph
         .layout_for_test()
         .entity_kind_for_test(Account::reference().name())

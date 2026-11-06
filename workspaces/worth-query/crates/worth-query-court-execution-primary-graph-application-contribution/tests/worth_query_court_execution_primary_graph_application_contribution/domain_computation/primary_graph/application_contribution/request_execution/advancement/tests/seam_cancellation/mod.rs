@@ -115,7 +115,7 @@ fn cancellation_during_bridge_read_remains_cancellation_in_the_advancement() {
         .clone();
         let (_, basis) = source
             .observe_branch_basis(
-                &(*(*world.application.runtime_for_test()).relational_branch_identity_for_test()),
+                (*world.application.runtime_for_test()).relational_branch_identity_for_test(),
             )
             .unwrap();
         let retained = source.retain_branch_basis_for_bridge(&basis).unwrap();
@@ -150,7 +150,7 @@ fn cancellation_during_bridge_read_remains_cancellation_in_the_advancement() {
             .with_application_advancement(&scope, |phase| {
                 let request = phase
                     .execution_request_for_for_test(
-                        &(*(*world.application.runtime_for_test()).product_runtime_for_test()),
+                        (*world.application.runtime_for_test()).product_runtime_for_test(),
                     )
                     .unwrap();
                 let planned = bridge
@@ -175,8 +175,7 @@ fn cancellation_during_bridge_read_remains_cancellation_in_the_advancement() {
                     observation.read_planned_packet(
                         phase
                             .execution_request_for_for_test(
-                                &(*(*world.application.runtime_for_test())
-                                    .product_runtime_for_test()),
+                                (*world.application.runtime_for_test()).product_runtime_for_test(),
                             )
                             .unwrap(),
                     )
@@ -259,8 +258,7 @@ fn cancellation_during_signal_evaluation_remains_cancellation_in_the_advancement
                         },
                         phase
                             .execution_request_for_for_test(
-                                &(*(*world.application.runtime_for_test())
-                                    .product_runtime_for_test()),
+                                (*world.application.runtime_for_test()).product_runtime_for_test(),
                             )
                             .unwrap(),
                     )

@@ -104,7 +104,7 @@ fn foreign_installed_seal_is_stale_at_workflow_definition_before_work() {
         }
         world.application.with_host_advancement(|phase| {
             let selected=world.selected_product(&phase.test_host_request_for_test());
-            let execution=phase.execution_request_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test())).unwrap();
+            let execution=phase.execution_request_for_for_test((*world.application.runtime_for_test()).product_runtime_for_test()).unwrap();
             let _observation=worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
             fact_work();
             let before=reads();

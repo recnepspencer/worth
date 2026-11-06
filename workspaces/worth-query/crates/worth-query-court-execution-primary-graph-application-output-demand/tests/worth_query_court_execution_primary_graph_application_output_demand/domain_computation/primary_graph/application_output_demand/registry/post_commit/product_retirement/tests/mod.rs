@@ -35,7 +35,7 @@ fn registry_product_retirement_prunes_rows_and_their_notes_together() {
             state.install_required_member_for_test(member);
             state.note_closed_row_for_test(&key);
         }
-        Arc::clone(&(*(*state.records_for_test())[&held].wake_for_test()))
+        Arc::clone((*state.records_for_test())[&held].wake_for_test())
     };
     let before = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::post_commit::retirement_observation::sweep_contacts();
     registry.release_product_occurrence_for_test(receipt.product_branch().occurrence_for_test());

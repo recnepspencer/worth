@@ -125,7 +125,7 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary,
             None,
             Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::refresh_predecessor::OutputRefreshPredecessor::of_for_test(
-                &(*completion.authority_for_test()),
+                completion.authority_for_test(),
                 &reopened,
             )),
         )

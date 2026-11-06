@@ -96,11 +96,11 @@ pub fn with_cleanup(
         .begin_product_branch_close_for_test(branch, WorthQueryProductBranchCloseScope::Workspace)
         .unwrap();
     let (_, cleanup) = pending.into_cleanup();
-    *probe.entry.lock().unwrap() =
-        (*lock(&(*(*runtime.owner_cleanup_for_test()).state_for_test())).entries_for_test())
-            .values()
-            .next()
-            .cloned();
+    *probe.entry.lock().unwrap() = (*lock((*runtime.owner_cleanup_for_test()).state_for_test())
+        .entries_for_test())
+    .values()
+    .next()
+    .cloned();
     body(runtime, cleanup, probe);
 }
 

@@ -164,8 +164,8 @@ pub fn check(case: usize) {
                 );
                 return;
             }
-            let graph = &(*(*(*world.application.runtime_for_test()).primary_provider_for_test())
-                .graph_for_test());
+            let graph = (*(*world.application.runtime_for_test()).primary_provider_for_test())
+                .graph_for_test();
             let label = AccountLabel::reference();
             let locator = (*graph.layout_for_test())
                 .field_locator_for_test(label.entity(), label.aspect(), label.field())

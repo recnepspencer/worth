@@ -170,6 +170,12 @@ impl RequiredFrontier {
     }
 }
 
+impl Default for RequiredFrontier {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<Ready> RequiredFrontier<Ready> {
     pub fn wait_for_declaration(&mut self, member: usize, upstream: usize) -> bool {
         if !self.wait_for(member, upstream) {

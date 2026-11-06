@@ -98,9 +98,7 @@ fn committed_ready<'a>(
     let Some(WorthQueryOutputCheckpoint::Ready(completion)) = &output.checkpoint else {
         return None;
     };
-    let Some(receipt) = completion.authority.publication_view() else {
-        return None;
-    };
+    let receipt = completion.authority.publication_view()?;
     (receipt.idempotency_binding().key_identity() == idempotency_key
         && std::ptr::eq(receipt.output_correspondence(), correspondence))
     .then_some(completion)

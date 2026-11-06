@@ -51,16 +51,16 @@ fn active_chunk_orders_full_keys_and_resolves_boundary_and_interior_duplicates()
             (*record.key_for_test()).predicate_material(),
             Some((b"predicate".as_slice(), limit))
         );
-        assert_eq!((*record.value_for_test()).scalar, limit as u64);
+        assert_eq!(record.value_for_test().scalar, limit as u64);
         assert_eq!(
-            (*record.value_for_test()).roles,
+            record.value_for_test().roles,
             if [0, 5, 12].contains(&limit) { 3 } else { 1 }
         );
     }
     let restored = restore_authored_order(canonical, policy).unwrap();
     for (ordinal, (record, limit)) in restored.iter().zip(authored).enumerate() {
         assert_eq!((*record.ordinal_for_test()), ordinal);
-        assert_eq!((*record.value_for_test()).scalar, limit as u64);
+        assert_eq!(record.value_for_test().scalar, limit as u64);
     }
     for limit in [0, 5, 12] {
         let mut conflict = populate();

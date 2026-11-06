@@ -38,7 +38,7 @@ fn owner_read_denies_missing_foreign_and_every_commit_affinity_substitution() {
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    let provider = &(*(*world.application.runtime_for_test()).primary_provider_for_test());
+    let provider = (*world.application.runtime_for_test()).primary_provider_for_test();
     let (binding, commit, runtime_id) = commit_record(execution, provider, 1);
     let record = binding.record_for_test().clone();
     assert_eq!(
@@ -144,7 +144,7 @@ fn fresh_later_head_still_reports_the_rows_exact_creation_commit() {
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    let provider = &(*(*world.application.runtime_for_test()).primary_provider_for_test());
+    let provider = (*world.application.runtime_for_test()).primary_provider_for_test();
     let (first_binding, first_commit, runtime_id) = commit_record(execution, provider, 3);
     let first = first_binding.record_for_test().clone();
     let (_, later_commit, _) = commit_record(execution, provider, 4);
@@ -172,7 +172,7 @@ fn every_later_valid_field_substitution_leaves_exact_commit_truth_unchanged() {
 
     for (field, replacement) in valid_later_field_substitutions() {
         let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
-        let provider = &(*(*world.application.runtime_for_test()).primary_provider_for_test());
+        let provider = (*world.application.runtime_for_test()).primary_provider_for_test();
         let (binding, commit, runtime_id) = commit_record(execution, provider, 31);
         let record = binding.record_for_test().clone();
         let observed = provider
@@ -233,7 +233,7 @@ fn later_deletion_cannot_erase_exact_commit_truth() {
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    let provider = &(*(*world.application.runtime_for_test()).primary_provider_for_test());
+    let provider = (*world.application.runtime_for_test()).primary_provider_for_test();
     let (binding, commit, runtime_id) = commit_record(execution, provider, 32);
     let record = binding.record_for_test().clone();
     let observed = provider

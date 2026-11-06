@@ -120,8 +120,8 @@ let partitions = plans.iter_mut().zip(&roots).enumerate().map(|(index, (pair, ro
             MapOutcome::Complete { values: results, .. } => {
                 assert_eq!(results.len(), 2);
                 for (result, root) in results.iter().zip(&roots) {
-                    assert_eq!((*(*(*result.first_for_test()).raw.raw_for_test()).rows_for_test()).raw_rows()[0].entity_id(), root.entity_id_for_test());
-                    assert_eq!((*(*(*result.second_for_test()).raw.raw_for_test()).rows_for_test()).raw_rows()[0].entity_id(), root.entity_id_for_test());
+                    assert_eq!((*(*result.first_for_test().raw.raw_for_test()).rows_for_test()).raw_rows()[0].entity_id(), root.entity_id_for_test());
+                    assert_eq!((*(*result.second_for_test().raw.raw_for_test()).rows_for_test()).raw_rows()[0].entity_id(), root.entity_id_for_test());
                 }
             }
             MapOutcome::Stopped { reason, .. } => panic!("the declared complete read was stopped: {reason:?}"),

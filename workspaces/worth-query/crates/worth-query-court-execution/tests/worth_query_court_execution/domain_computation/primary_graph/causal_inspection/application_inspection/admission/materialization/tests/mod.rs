@@ -72,7 +72,7 @@ fn real_report_refusal_preserves_original_payer_until_owned_denial_closes() {
                 &installed,
                 None,
                 &external,
-                &(*original.source_for_test()),
+                original.source_for_test(),
                 &selected,
                 &request,
                 |_, principal, scope| {

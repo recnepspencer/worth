@@ -143,7 +143,7 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
             let observation = product.observation_for_test();
             let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
             let handle = graph.integration_handle_for_test();
-            let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+            let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
             let status_ref = AccountStatus::reference();
             let status = graph
                 .layout_for_test()

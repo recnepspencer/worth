@@ -33,7 +33,7 @@ fn a_demand_records_the_row_it_genuinely_verified() {
         .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
-    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+    let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
     let selected = world
         .application
         .with_host_advancement(|phase| {
@@ -91,7 +91,7 @@ fn a_verification_records_the_row_it_compared() {
         .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
-    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+    let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
     let selected = world
         .application
         .with_host_advancement(|phase| {
@@ -155,7 +155,7 @@ fn a_restored_output_registers_before_commit() {
     assert_eq!(
         restored.establish_restored_before_commit_for_test(
             request_execution,
-            &(*handle.source_owner_for_test())
+            handle.source_owner_for_test()
         ),
         Ok(())
     );

@@ -105,11 +105,11 @@ impl WalkBoundsDemandRegistryStateForTest for DemandRegistryState {
                     state.follow_newest_for_test(&dependent, &old);
                 }
                 2 => {
-                    assert!(newest_ready(&(*state.records_for_test()), &old));
+                    assert!(newest_ready(state.records_for_test(), &old));
                 }
                 3 => {
                     assert!(held(
-                        &(*state.records_for_test()),
+                        state.records_for_test(),
                         &newest,
                         &(*state.records_for_test())[&newest]
                     ));

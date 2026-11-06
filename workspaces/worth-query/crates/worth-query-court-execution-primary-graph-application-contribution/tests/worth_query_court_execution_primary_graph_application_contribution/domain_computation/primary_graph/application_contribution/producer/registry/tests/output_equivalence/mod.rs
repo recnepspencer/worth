@@ -77,8 +77,8 @@ pub fn declaration<S: Fixture>() -> DeclaredProducerBinding {
     (*declaration.output_equivalence_mut_for_test()) = Some(field.clone());
     (*declaration.installed_output_equivalence_mut_for_test()) = Some(
         seal(
-            &(*declaration.identity_for_test()),
-            &(*declaration.output_role_for_test()),
+            declaration.identity_for_test(),
+            declaration.output_role_for_test(),
             &field,
             &installed::<S>(),
         )
