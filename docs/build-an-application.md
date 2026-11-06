@@ -2235,7 +2235,9 @@ against the selected sources and current Native custody. A changed build falls
 back only for the affected family. Query role metadata that disagrees with the
 selected Native publication refuses as `OutputPublicationCorrespondence`; its
 `WorthQueryHistoryPublicationCorrespondenceMismatch` names producer, family and
-source. Non-leaf discovery evidence and multi-tree edit recording remain under
+source, plus the original publication coordinate. The refusal holds diagnostic
+data without retaining Native publication or historical-basis custody. Non-leaf
+discovery evidence and multi-tree edit recording remain under
 qualification. See the
 [owned-model plan](../plans/WORTH-query/history-owned-models.md).
 

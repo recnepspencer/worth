@@ -1275,3 +1275,40 @@ The long constructor is one role/aspect-coverage operation; phase/transport
 orchestration retains its existing scope. No independent reviewer was assigned.
 Remaining #57 non-leaf discovery, owner-visible fallback causes, multi-tree edit
 recording, nested later sources and codec-retired selection remain unqualified.
+
+
+### Refusal subjects must not retain Native custody
+
+Primary review verified that RelationalRequiredOutputPublication.readmitted_at
+retains an admitted basis, whose inner owns its Native root and observation
+obligation. The new mismatch diagnostic needs only names and a full-generation
+source ID. Retaining that publication merely to borrow its strings incorrectly
+couples diagnostic lifetime to graph custody.
+
+Cut over the mismatch subject to an immutable, funded data snapshot at its own
+owner: producer, family and source only. Clone shares that snapshot and its
+reservation. Copy work uses the original request's charge-or-poll stage. Native
+custody does not cross this diagnostic boundary. Keep the same public accessors
+and precise refusal. A read-only, owned capture observer watches a weak Native
+basis through its publication owner; it never retains the basis or changes
+admission. Use a genuine cold corrupted-role navigation and tear down its host
+while retaining diagnostic clones. Its basis must be gone, with valid diagnostic
+names, on serial and worker-only requests. A retain-publication mutant must keep
+the weak basis alive and fail that court, then restore SHA256 exactly.
+
+No parent/discovery option is assumed. This is an independent correction to the
+already implemented refusal subject. Re-run focused/public history and static
+checks, then qualify the changed lane against the unchanged master comparison.
+
+
+Refusal-lifetime checkpoint evidence: 154 public history courts, both checkpoint
+witness-owner courts, master root-retirement and boundary/context/caps pass.
+The final retain-publication mutant fails both actual host-teardown liveness
+courts and restores denial.rs SHA256 c86a2a4ca953eb99acf700b7d8c17d7bc434d070833a667a3afffae2070ba229.
+The final four cold courts pass after restoration. Native's read-only weak probe
+now lives in its custody test-door module; its native library check and final
+boundary/context/caps pass after this extraction. The published commit/ordinal
+is copied from the existing Proof descriptor and carries no issuer custody.
+The capture observer is owned, thread-affine and clears on unwind. No framework,
+format or producer path is added. A new complete lane run follows; the prior
+complete workspace results belong to38adee58d5. No issue READY is implied.

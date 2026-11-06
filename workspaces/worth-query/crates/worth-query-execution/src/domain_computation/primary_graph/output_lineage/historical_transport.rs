@@ -108,7 +108,9 @@ impl WorthQueryApplicationOutputLineage {
                         .matches_native_publication(execution, route)?
                     {
                         return Err(HistoricalTransportDenial::PublicationCorrespondence(
-                            WorthQueryHistoryPublicationCorrespondenceMismatch::new(route.clone()),
+                            WorthQueryHistoryPublicationCorrespondenceMismatch::new(
+                                execution, route,
+                            )?,
                         ));
                     }
                     if found.is_some() {

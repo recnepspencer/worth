@@ -37,9 +37,7 @@ fn worker_only_cold_same_build_selection_retains_both_families_without_contacts(
 /// Change one actual recorded Query role ID while retaining the native frame,
 /// producer, source, implementation and installed declaration. The public import
 /// accepts descriptive metadata, but selection must bind it to Native's roles.
-#[test]
-fn cold_role_outside_the_selected_publication_refuses_without_effect() {
-    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+fn corrupted_subject(worker: bool) -> WorthQueryHistoryPublicationCorrespondenceMismatch {
     let (checkpoint, original) = build_change::old_checkpoint();
     let checkpoint = checkpoint.rewrite_authenticated_checkpoint_body_for_test(|body| {
         fn skip_text(body: &[u8], at: &mut usize) {
@@ -60,7 +58,7 @@ fn cold_role_outside_the_selected_publication_refuses_without_effect() {
                                   // but this record was never owned by the selected publication.
         body[at + 12..at + 16].copy_from_slice(&u32::MAX.to_be_bytes());
     });
-    let host = world::restore_same_build(checkpoint, false);
+    let host = world::restore_same_build(checkpoint, worker);
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
@@ -93,4 +91,35 @@ fn cold_role_outside_the_selected_publication_refuses_without_effect() {
     assert_eq!(host.producer_contacts_on_this_thread_for_test(), contacts);
     host.with_host_advancement(|phase| document.close(&phase).unwrap())
         .unwrap();
+    publication
+}
+
+fn refused_subject_survives_host_without_custody(worker: bool) {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let capture = WorthQueryHistoryPublicationCorrespondenceMismatch::observe_capture_for_test();
+    let subject = corrupted_subject(worker);
+    let twin = subject.clone();
+    assert!(
+        capture.captured_for_test(),
+        "the actual cold Native basis was observed"
+    );
+    assert!(
+        !capture.basis_alive_for_test(),
+        "retaining a refusal must not retain its Native basis after host teardown"
+    );
+    assert_eq!(twin.producer(), "owned-outputs.first.initial");
+    assert_eq!(twin.family(), "first");
+    assert_eq!(twin.source(), subject.source());
+    assert_eq!(
+        twin.publication_coordinate(),
+        subject.publication_coordinate()
+    );
+}
+#[test]
+fn cold_role_outside_the_selected_publication_refuses_without_effect() {
+    refused_subject_survives_host_without_custody(false);
+}
+#[test]
+fn worker_only_cold_refusal_keeps_data_without_native_custody() {
+    refused_subject_survives_host_without_custody(true);
 }
