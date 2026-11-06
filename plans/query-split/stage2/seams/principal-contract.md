@@ -122,16 +122,23 @@ kind it receives. The principal re-validation keeps its `principal_currentness` 
   resolution (`WorthQueryEntityResolutionTruth`) and holds the resolved values by value. That is
   the resolver seam, which belongs to a later contract, not to this value contract.
 
-## Expected effect
+## Measured effect
 
-| | before | after |
+The done-check simulation and `module_coupling.py report` were run on snapshots of `e200ba0e00`
+and of the implementation.
+
+| measure | before | after |
 |---|---|---|
-| authorization → primary_graph | 198 refs in 67 items | 186 refs expected (measured after implementation) |
-| `WorthQueryAuthenticatedPrincipal` | 11 | 2 |
-| `WorthQueryApplicationEntityIdentity` | 9 | 1 |
-| `validate_freshness_at_snapshot` | 2 | 0 |
-| `WorthQueryDurablePrincipalCurrentness`, `WorthQueryResolvedEntity`, `WorthQueryPrincipalFreshnessEvidence` | 2, 2, 1 | unchanged |
+| authorization → primary_graph (host-order seam) | 198 refs in 67 items | 179 refs in 66 items |
+| `WorthQueryAuthenticatedPrincipal` | 11 | 2 (`principal_currentness.rs`, `capability_admission/mod.rs`) |
+| `WorthQueryApplicationEntityIdentity` | 9 | 1 (`request_resolution.rs`) |
+| `freshness::validate_freshness_at_snapshot` | 2 | 0 |
+| `WorthQueryDurablePrincipalCurrentness`, `WorthQueryResolvedEntity`, `WorthQueryPrincipalFreshnessEvidence` | 2, 2, 1 | 2, 2, 1 (kept, see above) |
+| primary_graph → authorization | 556 refs in 105 items | 560 refs in 107 items (downward: the two impl files) |
+| domain level, upward references against a fresh layering | 396 | 377 |
+| domain level, against host order after the vocabulary simulation | 455 | 438 |
+| domain level, upward edges | 14 | 14 (same set; only authorization → primary_graph shrinks) |
+| primary-graph level, upward edges and references | 126, 1,141 | 126, 1,141 (same set) |
 
-The primary graph gains two downward references to authorization, through the two impl files. No
-module is added to either level's layering except `authorization::admission_subject`, which lives
-inside authorization.
+Neither level gains an upward edge. The new module `authorization::admission_subject` lives inside
+authorization, so the domain layering gains no module.

@@ -7,10 +7,7 @@ use {
 
 pub(in crate::domain_computation::authorization) fn retain_original_scope<Schema, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    scope: &crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity<
-        Schema,
-        Scope,
-    >,
+    scope: &dyn crate::domain_computation::authorization::WorthQueryAdmissionScope<Schema, Scope>,
     contracts: &worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
 ) -> Result<
     Option<

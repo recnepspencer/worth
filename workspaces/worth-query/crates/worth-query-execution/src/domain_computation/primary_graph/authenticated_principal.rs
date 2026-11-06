@@ -13,6 +13,7 @@ use worth_relational::facade::identity::{EntityId, RelationId};
 use super::freshness::WorthQueryPrincipalFreshnessEvidence;
 use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
 
+mod admission_subject;
 mod command_pin;
 pub use command_pin::WorthQueryCommandPrincipalPin;
 

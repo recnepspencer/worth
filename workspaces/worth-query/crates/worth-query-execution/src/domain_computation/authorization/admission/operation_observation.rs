@@ -5,6 +5,9 @@ use super::{
     WorthQueryObservedConventionalOperation,
 };
 use crate::domain_computation::authorization::admission::requirement_observation::RequirementObservationParentOps;
+use crate::domain_computation::authorization::{
+    WorthQueryAdmissionPrincipal, WorthQueryAdmissionScope,
+};
 use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentityBinding;
 use worth_query_installation::facade::{
@@ -13,15 +16,8 @@ use worth_query_installation::facade::{
 };
 use {
     crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
-    crate::domain_computation::authorization::WorthQueryPrincipalCurrentnessDependency,
     crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts,
     crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
-};
-use {
-    crate::domain_computation::primary_graph::validate_freshness_at_snapshot,
-    crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity,
-    crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal,
-    crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode,
 };
 
 pub(in crate::domain_computation::authorization) trait OperationObservationScopedOps<Schema>:
@@ -32,8 +28,8 @@ where
     fn observe_operation_authorization<Principal, PrincipalIdentity, Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
-        scope_identity: &WorthQueryApplicationEntityIdentity<Schema, Scope>,
+        principal: &dyn WorthQueryAdmissionPrincipal<Schema, Principal, PrincipalIdentity>,
+        scope_identity: &dyn WorthQueryAdmissionScope<Schema, Scope>,
         operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
         graph_work: &crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     ) -> Result<WorthQueryRetainedAuthorizationDecisionFacts, WorthQueryOperationAuthorizationDenial>
@@ -60,8 +56,8 @@ where
     fn observe_current_operation<Principal, PrincipalIdentity, Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
-        scope_identity: &WorthQueryApplicationEntityIdentity<Schema, Scope>,
+        principal: &dyn WorthQueryAdmissionPrincipal<Schema, Principal, PrincipalIdentity>,
+        scope_identity: &dyn WorthQueryAdmissionScope<Schema, Scope>,
         operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
         graph_work: &crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     ) -> Result<WorthQueryObservedConventionalOperation, WorthQueryOperationAuthorizationDenial>
@@ -87,11 +83,8 @@ where
                     principal.binding(),
                 )
             })?;
-        let principal_currentness = WorthQueryPrincipalCurrentnessDependency::capture(
-            session_identity,
-            principal,
-            &principal_layout,
-        );
+        let principal_currentness =
+            principal.capture_currentness(session_identity, &principal_layout);
         let snapshot = graph_work
             .mutation_snapshot()
             .expect("a mutation session owns its admitted snapshot")
@@ -100,7 +93,6 @@ where
             .mutation_handle()
             .expect("a mutation session owns its graph handle")
             .clone();
-        let entity_resolution = graph.retain_entity_resolution_context();
         let expected_external_identity =
             WorthQueryExternalPrincipalIdentityBinding::encode(principal.external_identity())
                 .map_err(|_| {
@@ -112,26 +104,26 @@ where
                     )
                 })?;
         let decision_facts = handle.with_runtime_mut(execution, |relational| {
-            validate_freshness_at_snapshot(
-                execution,
-                relational,
-                &snapshot,
-                principal,
-                &principal_layout,
-                &expected_external_identity,
-            )
-            .map_err(|cause| {
-                denial(super::super::denial::principal_currentness(cause), principal.binding())
-            })?;
-            entity_resolution
-                .at_snapshot(
+            principal
+                .validate_freshness_at_snapshot(
+                    execution,
                     relational,
                     &snapshot,
-                    WorthQueryPrincipalResolutionMode::Ordinary,
+                    &principal_layout,
+                    &expected_external_identity,
                 )
-                .and_then(|truth| truth.validate_entity_freshness(execution, scope_identity))
                 .map_err(|cause| {
-                    match cause.kind() {
+                    denial(super::super::denial::principal_currentness(cause), principal.binding())
+                })?;
+            scope_identity
+                .validate_freshness_at_snapshot(
+                    execution,
+                    self.authorization_host(),
+                    relational,
+                    &snapshot,
+                )
+                .map_err(|kind| {
+                    match kind {
                         crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind::Stopped(cause) => {
                             super::super::denial::relational_read_denial(
                                 cause,

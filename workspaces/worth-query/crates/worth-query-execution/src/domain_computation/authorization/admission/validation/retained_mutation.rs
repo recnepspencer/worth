@@ -6,8 +6,9 @@ use worth_query_declaration::facade::application_operation::ApplicationMutationB
 use worth_query_installation::facade::ApplicationSchema;
 use worth_query_installation::facade::WorthQueryCurrentRetainedMutationBinding;
 
-use crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity;
-use crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal;
+use crate::domain_computation::authorization::{
+    WorthQueryAdmissionPrincipal, WorthQueryAdmissionScope,
+};
 
 use super::denial;
 use super::validate_static_authority_prefix;
@@ -26,8 +27,8 @@ pub(in crate::domain_computation::authorization) fn validate_static_authority_re
     Scope,
 >(
     runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
-    principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
-    scope: &WorthQueryApplicationEntityIdentity<Schema, Scope>,
+    principal: &dyn WorthQueryAdmissionPrincipal<Schema, Principal, PrincipalIdentity>,
+    scope: &dyn WorthQueryAdmissionScope<Schema, Scope>,
     current: &WorthQueryCurrentRetainedMutationBinding<'_, Schema, Binding>,
 ) -> Result<(), WorthQueryRetainedMutationStaticStop>
 where

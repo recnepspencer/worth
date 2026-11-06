@@ -6,8 +6,8 @@ use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationOperation,
 };
 
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationEntityIdentity, WorthQueryAuthenticatedPrincipal,
+use crate::domain_computation::authorization::{
+    WorthQueryAdmissionPrincipal, WorthQueryAdmissionScope,
 };
 use {
     super::super::WorthQueryOperationAuthorizationDenial,
@@ -29,8 +29,8 @@ pub(in crate::domain_computation::authorization) fn operation_scope_binding<
     Scope,
 >(
     runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
-    principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
-    scope: &WorthQueryApplicationEntityIdentity<Schema, Scope>,
+    principal: &dyn WorthQueryAdmissionPrincipal<Schema, Principal, PrincipalIdentity>,
+    scope: &dyn WorthQueryAdmissionScope<Schema, Scope>,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
 ) -> WorthQueryOperationScopeBinding {
     WorthQueryOperationScopeBinding::mint(
@@ -51,8 +51,8 @@ pub(in crate::domain_computation::authorization) fn validate_static_authority<
     Scope,
 >(
     runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
-    principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
-    scope: &WorthQueryApplicationEntityIdentity<Schema, Scope>,
+    principal: &dyn WorthQueryAdmissionPrincipal<Schema, Principal, PrincipalIdentity>,
+    scope: &dyn WorthQueryAdmissionScope<Schema, Scope>,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
 ) -> Result<(), WorthQueryOperationAuthorizationDenial>
 where
@@ -74,8 +74,8 @@ where
 
 fn validate_static_authority_prefix<Schema, Principal, PrincipalIdentity, Operation, Input, Scope>(
     runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
-    principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
-    scope: &WorthQueryApplicationEntityIdentity<Schema, Scope>,
+    principal: &dyn WorthQueryAdmissionPrincipal<Schema, Principal, PrincipalIdentity>,
+    scope: &dyn WorthQueryAdmissionScope<Schema, Scope>,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
 ) -> Result<(), WorthQueryOperationAuthorizationDenial>
 where

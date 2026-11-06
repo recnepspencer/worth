@@ -10,10 +10,10 @@ use worth_query_installation::facade::{
 };
 
 use super::brand_tag::BrandTag;
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationEntityIdentity, WorthQueryAuthenticatedPrincipal,
-    WorthQueryBoundMutationPreconditions,
+use crate::domain_computation::authorization::{
+    WorthQueryAdmissionPrincipal, WorthQueryAdmissionScope,
 };
+use crate::domain_computation::primary_graph::WorthQueryBoundMutationPreconditions;
 use crate::domain_computation::provider_session::{
     WorthQueryGraphWorkAccessContextAffinity, WorthQueryManagedGraphWorkSession,
 };
@@ -38,8 +38,8 @@ struct ConventionalAdmissionPreparation<
     Scope,
 > {
     runtime: &'a dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
-    principal: &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
-    scope: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
+    principal: &'a dyn WorthQueryAdmissionPrincipal<Schema, Principal, PrincipalIdentity>,
+    scope: &'a dyn WorthQueryAdmissionScope<Schema, Scope>,
     operation: &'a WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
     request: &'a worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     preconditions: WorthQueryBoundMutationPreconditions,
