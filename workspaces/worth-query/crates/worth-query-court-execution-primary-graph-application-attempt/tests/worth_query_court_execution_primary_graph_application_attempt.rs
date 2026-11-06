@@ -8,3 +8,6 @@ static TEST_ALLOCATOR: &stats_alloc::StatsAlloc<std::alloc::System> =
 pub mod domain_computation;
 #[path = "worth_query_court_execution_primary_graph_application_attempt/process/mod.rs"]
 pub mod process;
+
+#[path = "worth_query_court_execution_primary_graph_application_attempt/cost/mod.rs"]
+mod cost;

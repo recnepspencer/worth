@@ -1730,3 +1730,8 @@ crates/worth-relational/ crates/worth-court-relational-certification/tests/worth
 # Header corruption courts arm only their owning runtime's recorded history.
 crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/restoration_header/mod.rs
 crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/restoration_header/scope.rs
+
+# Schema-authority projection regression: passive synchronous recorder only.
+crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/schema_projection.rs
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/cost/schema_projection.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/cost/schema_projection.rs
