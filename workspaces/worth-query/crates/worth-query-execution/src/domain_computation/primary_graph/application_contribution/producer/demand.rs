@@ -13,7 +13,6 @@ type FamilySourceQuery<Schema, Family> =
     <FamilySource<Schema, Family> as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query;
 
 pub(in crate::domain_computation::primary_graph) use progression::CurrentProof;
-pub(crate) mod bridge_denial;
 pub(crate) mod checkpoint_delivery;
 pub(super) mod disclosure;
 mod fulfillment;
@@ -230,7 +229,6 @@ where
     }
 }
 
-mod bridge_execution_denial;
 
 mod own_effect_assertions;
 mod own_effect_observation;

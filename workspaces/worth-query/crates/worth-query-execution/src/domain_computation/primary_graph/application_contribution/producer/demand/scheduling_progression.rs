@@ -1,7 +1,7 @@
 use super::super::schedule_output_producer;
 use super::super::schedule_output_producer_on_selected;
 use super::super::WorthQuerySelectedApplicationProducer;
-use super::bridge_denial::bridge_denial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::bridge_conditional::bridge_denial;
 use super::progression::denial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::bridge_deferral::is_temporarily_deferred;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;

@@ -1,6 +1,4 @@
 //! Doors under `domain_computation::primary_graph::application_contribution::producer::demand`.
-#[path = "bridge_denial/mod.rs"]
-pub mod bridge_denial;
 #[path = "checkpoint_delivery/mod.rs"]
 pub mod checkpoint_delivery;
 #[path = "progression/mod.rs"]
