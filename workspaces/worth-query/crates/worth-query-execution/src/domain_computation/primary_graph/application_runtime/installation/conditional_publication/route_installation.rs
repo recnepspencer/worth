@@ -8,10 +8,12 @@ pub(super) fn install<S: ApplicationSchema + 'static>(
     output_readiness: Vec<Box<dyn crate::domain_computation::primary_graph::application_contribution::PendingOutputReadiness<S>>>,
     producers: &crate::domain_computation::primary_graph::application_contribution::WorthQueryInstalledApplicationProducerRegistry<S>,
 ) -> Result<
-    BootstrapPublicationStorage<PreparedConditionalAssembly<S>>,
+    BootstrapPublicationStorage<ConfiguredConditionalGraph<S>>,
     WorthQueryConditionalRuntimeInstallationDenial,
 > {
     let storage = BootstrapPublicationReservation::prepare(&phase.execution_request())
+        .map_err(publication_denial)?;
+    let graph_storage = BootstrapPublicationReservation::prepare(&phase.execution_request())
         .map_err(publication_denial)?;
     let PublishedConditionalGraph {
         graph,
@@ -76,11 +78,8 @@ pub(super) fn install<S: ApplicationSchema + 'static>(
         .map_err(
             crate::domain_computation::primary_graph::conditional_operation::publication_denial,
         )?;
-    let graph = seal_application_graph(graph).map_err(
-        crate::domain_computation::primary_graph::conditional_operation::publication_denial,
-    )?;
-    Ok(storage.fill(PreparedConditionalAssembly {
-        graph,
+    Ok(storage.fill(ConfiguredConditionalGraph {
+        graph: graph_storage.fill(graph),
         installed_schema,
         authorization,
         authorization_clock,

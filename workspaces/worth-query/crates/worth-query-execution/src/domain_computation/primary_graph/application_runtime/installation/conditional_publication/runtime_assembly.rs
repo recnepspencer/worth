@@ -25,7 +25,7 @@ pub(super) fn assemble<S: ApplicationSchema>(
     } = prepared.consume();
     let mut application = assemble_application_runtime(
         phase,
-        graph,
+        graph.consume(),
         installed_schema,
         authorization,
         authorization_clock,

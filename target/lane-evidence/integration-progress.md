@@ -1357,3 +1357,21 @@ Final phase tools are deliberately held at a source-ready sentinel until the rem
 - Next: finish the reached-owner check batch, commit its coherent source, then
   one normal-role build for the four real entries and focused Bank/Candidate runs.
   No second stack verification round has started.
+
+## Round 1 source 97f0fc97d2, complete family evidence
+- Commits: 8745bcbb1b returning Native/Query publication phases; 60f851e1e2
+  complete durable semantic receipt comparison and both D9 retry fixtures;
+  97f0fc97d2 genuine shared fixture factory for distinct Candidate/Complete schemas.
+- Green: Root Native check, Query owner strict, consumer/topology all-target
+  strict; real consumer-root 1/0/0, Bank exact parents 2/0/0, provider courts
+  12/0/0. All runtime evidence is clean HEAD97f0, RUST_MIN_STACK unset.
+- Compile corrections: E0425 wrong recovered-type facade corrected to the
+  existing durability facade; E0603 shared fixture module visibility corrected
+  at its owner, with pure default schema vocabulary at the same fixture scope.
+  No caller permission, baseline, fixture byte grant or assertion relaxation.
+- Red: all three examples still overflow. Complete new compiler frame censuses
+  and failed PDB line lookup retained. Native preparation no longer overflows;
+  all paths now reach Signal owner sealing under Query's inline lifecycle slots.
+- Round 2 risk: eliminate simultaneous serving/retiring/retired storage and retire
+  route configuration before sealing. main-entry-round2-design.md lists every
+  remaining oversized frame and preserves each lifecycle field drop order.

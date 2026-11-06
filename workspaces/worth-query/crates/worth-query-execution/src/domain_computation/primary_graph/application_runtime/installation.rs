@@ -27,6 +27,7 @@ use worth_query_installation::facade::{
 mod clock_publication;
 mod conditional_publication;
 mod graph_publication;
+mod graph_sealing;
 mod publication_preparation;
 pub(super) fn publish_application_runtime_with_clock<Schema>(
     phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
@@ -131,28 +132,21 @@ where
         conditional_evaluation_budget,
     )
 }
+#[inline(never)]
 fn seal_application_graph(
-    graph: PublishedApplicationGraph<
-        super::super::managed_bridge::WorthQueryApplicationBridgeInstallation,
+    phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
+    graph: crate::domain_computation::primary_graph::bootstrap::BootstrapPublicationStorage<
+        PublishedApplicationGraph<
+            super::super::managed_bridge::WorthQueryApplicationBridgeInstallation,
+        >,
     >,
 ) -> Result<
-    PublishedApplicationGraph<super::super::managed_bridge::WorthQueryInstalledApplicationBridge>,
+    crate::domain_computation::primary_graph::bootstrap::BootstrapPublicationStorage<
+        PublishedApplicationGraph<
+            super::super::managed_bridge::WorthQueryInstalledApplicationBridge,
+        >,
+    >,
     WorthQueryPrimaryGraphInstallationDenial,
 > {
-    Ok(PublishedApplicationGraph {
-        runtime: graph.runtime,
-        publication: graph.publication,
-        relational_branch_identity: graph.relational_branch_identity,
-        bridge: graph.bridge.seal().map_err(|denial| {
-            WorthQueryPrimaryGraphInstallationDenial::new(
-                WorthQueryPrimaryGraphInstallationDenialKind::RuntimeBridgeRejected,
-                format!("{denial:?}"),
-            )
-        })?,
-        primary_provider: graph.primary_provider,
-        primary_graph_authority: graph.primary_graph_authority,
-        product_world_resources: graph.product_world_resources,
-        recovered_relational_authority: graph.recovered_relational_authority,
-        checkpoint_restore_work: graph.checkpoint_restore_work,
-    })
+    graph_sealing::seal(phase, graph)
 }

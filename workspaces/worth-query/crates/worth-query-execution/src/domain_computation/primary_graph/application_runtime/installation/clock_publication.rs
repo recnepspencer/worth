@@ -41,16 +41,17 @@ where
         fault_port,
         conditional_evaluation_budget,
     )?;
+    let graph_storage = crate::domain_computation::primary_graph::bootstrap::BootstrapPublicationReservation::prepare(&phase.execution_request())?;
     let mut graph = graph.consume();
     let resources = resources.install(
         &phase.execution_request(),
         Some(graph.bridge.conditional_builder()),
         graph.primary_provider.application_resource_support_ref(),
     )?;
-    let graph = seal_application_graph(graph)?;
+    let graph = seal_application_graph(phase, graph_storage.fill(graph))?;
     let mut application = assemble_application_runtime(
         phase,
-        graph,
+        graph.consume(),
         installed_schema,
         authorization,
         authorization_clock,

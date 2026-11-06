@@ -19,6 +19,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationInvariantProjectionAuthority,
 };
 mod graph_publication;
+mod graph_sealing;
 mod reconciliation;
 mod route_installation;
 mod runtime_assembly;
@@ -34,8 +35,25 @@ struct PublishedConditionalGraph<S: ApplicationSchema> {
     managed_indexes: ManagedIndexProviderCatalog<S>,
     resources: PendingResourceRegistry<S>,
 }
+struct ConfiguredConditionalGraph<S: ApplicationSchema> {
+    graph: BootstrapPublicationStorage<
+        PublishedApplicationGraph<WorthQueryApplicationBridgeInstallation>,
+    >,
+    installed_schema: WorthQueryInstalledApplicationSchema<S>,
+    authorization: WorthQueryInstalledAuthorizationRegistry,
+    authorization_clock: WorthQueryRuntimeClock,
+    mutation_handlers: InstalledMutationHandlerRegistry<S>,
+    mutation_projection: WorthQueryApplicationInvariantProjectionAuthority<S>,
+    managed_indexes: ManagedIndexProviderCatalog<S>,
+    resources: InstalledResourceRegistry<S>,
+    output_producer_routes: WorthQueryInstalledOutputProducerRoutes,
+    output_readiness_routes: WorthQueryInstalledOutputReadinessRoutes,
+    conditional_operations: WorthQueryConditionalOperationRegistry<S>,
+}
 struct PreparedConditionalAssembly<S: ApplicationSchema> {
-    graph: PublishedApplicationGraph<WorthQueryInstalledApplicationBridge>,
+    graph: BootstrapPublicationStorage<
+        PublishedApplicationGraph<WorthQueryInstalledApplicationBridge>,
+    >,
     installed_schema: WorthQueryInstalledApplicationSchema<S>,
     authorization: WorthQueryInstalledAuthorizationRegistry,
     authorization_clock: WorthQueryRuntimeClock,
@@ -77,8 +95,9 @@ where
     Schema: ApplicationSchema + 'static,
 {
     let graph = graph_publication::publish(phase, authorized)?;
-    let assembly =
+    let configured =
         route_installation::install(phase, graph, bindings, output_readiness, producers)?;
+    let assembly = graph_sealing::seal(phase, configured)?;
     let runtime = runtime_assembly::assemble(phase, assembly)?;
     reconciliation::complete(runtime)
 }
