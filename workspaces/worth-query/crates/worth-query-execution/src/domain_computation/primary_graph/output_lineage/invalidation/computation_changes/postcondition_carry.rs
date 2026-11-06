@@ -1,7 +1,7 @@
 //! Original/postcondition association issued by the exact retained record and mark image.
 use super::*;
-use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
-use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial;
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
 use worth_execution::ChargedBytes;
 use worth_execution::ExecutionArray;

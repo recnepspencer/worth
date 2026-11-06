@@ -15,13 +15,7 @@ use super::super::effect_program::WorthQueryApplicationRealizedEffect;
 use super::super::effect_validation::denial;
 use super::super::fact::{observe_indexed_entity_selection, WorthQueryIndexedSelectionRefusal};
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFieldIndex;
-use {
-    super::super::WorthQueryApplicationAttemptDenial,
-    super::super::WorthQueryApplicationObservedFact,
-    super::super::WorthQueryCompleteApplicationReadSet,
-    super::super::WorthQueryProjectedApplicationMutation,
-    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::super::WorthQueryApplicationObservedFact, super::super::WorthQueryCompleteApplicationReadSet, super::super::WorthQueryProjectedApplicationMutation, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 
 /// Two candidates tell a free value from a taken one, and a held value from
 /// a duplicated one.

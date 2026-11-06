@@ -7,9 +7,7 @@ use worth_relational::facade::identity::{EntityId, PartitionId, RelationId};
 
 use super::ObservedWorkflowAssessmentEvidence;
 use super::{adjacency_with_kind, denial, exact, exact_u64, text};
-use crate::domain_computation::primary_graph::application_attempt::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact};
 use {
     crate::domain_computation::primary_graph::application_attempt::workflow::instance::decode_transition_outcome,
     crate::domain_computation::primary_graph::application_attempt::workflow::instance::encode_transition_outcome,

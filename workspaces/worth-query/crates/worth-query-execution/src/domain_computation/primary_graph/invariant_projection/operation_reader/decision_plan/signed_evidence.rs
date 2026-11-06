@@ -10,15 +10,7 @@ use {
     super::ApplicationSchema, super::WorthQueryApplicationOperationInvariantProjectionReader,
     crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity,
 };
-use {
-    crate::domain_computation::primary_graph::vocabulary::operation_body::value::PreparedRequirementOperand,
-    crate::domain_computation::primary_graph::HandlerExecutionDenial,
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
-    crate::domain_computation::request_execution::advancement_denial,
-    crate::domain_computation::request_execution::QueryRequestExecution,
-    crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
-    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
-};
+use {crate::domain_computation::primary_graph::vocabulary::operation_body::value::PreparedRequirementOperand, crate::domain_computation::primary_graph::HandlerExecutionDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::request_execution::advancement_denial, crate::domain_computation::request_execution::QueryRequestExecution, crate::domain_computation::request_execution::WorthQueryAdvancementDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 
 impl<Schema: ApplicationSchema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>

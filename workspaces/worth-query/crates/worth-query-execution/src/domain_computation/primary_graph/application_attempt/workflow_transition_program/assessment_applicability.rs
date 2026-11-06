@@ -9,13 +9,7 @@ use worth_relational::facade::runtime::{
 use worth_relational::facade::storage::RecordLifecycleState;
 
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
-use {
-    crate::domain_computation::primary_graph::application_attempt::fact::observe_adjacency_checked,
-    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial,
-    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact,
-    crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection,
-    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
-};
+use {crate::domain_computation::primary_graph::application_attempt::fact::observe_adjacency_checked, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 use {
     crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowAssessmentApplicability,
     crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNode,
@@ -170,7 +164,7 @@ pub(super) fn observe(
                         direction: RelationalAdjacencyDirection::Outgoing,
                         native_revision,
                         comparison_work_limit: 1,
-                        endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::empty(),
+                        endpoints: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints::empty(),
                     },
                 ],
             })

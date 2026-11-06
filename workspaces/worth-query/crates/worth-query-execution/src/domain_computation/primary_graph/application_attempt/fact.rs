@@ -142,7 +142,7 @@ pub enum WorthQueryApplicationObservedFact {
         direction: worth_relational::facade::runtime::RelationalAdjacencyDirection,
         native_revision: Option<worth_relational::facade::identity::VersionId>,
         comparison_work_limit: usize,
-        endpoints: super::WorthQueryApplicationSourceAdjacencyEndpoints,
+        endpoints: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints,
     },
     Entity {
         entity_id: EntityId,

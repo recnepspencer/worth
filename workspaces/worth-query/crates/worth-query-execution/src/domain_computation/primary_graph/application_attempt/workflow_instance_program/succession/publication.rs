@@ -3,10 +3,7 @@ use super::super::super::{
     WorthQueryApplicationCommitReceipt, WorthQueryApplicationIdempotencyBinding,
 };
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef;
-use super::{
-    mismatch, RequiredWorkflowSuccession, WorthQueryApplicationAttemptDenial,
-    WorthQueryWorkflowSuccessionAdapter,
-};
+use {super::mismatch, super::RequiredWorkflowSuccession, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryWorkflowSuccessionAdapter};
 impl RequiredWorkflowSuccession {
     pub fn instance_in(
         &self,

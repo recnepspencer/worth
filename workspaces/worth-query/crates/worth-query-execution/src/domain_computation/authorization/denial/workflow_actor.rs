@@ -2,10 +2,7 @@
 use super::*;
 use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind;
 use std::sync::Arc;
-use {
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as NativeDenial,
-    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as NativeKind,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial as NativeDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as NativeKind};
 #[derive(Clone, Debug)]
 pub(super) struct WorkflowActorNativeDenial(Arc<NativeDenial>);
 impl PartialEq for WorkflowActorNativeDenial {

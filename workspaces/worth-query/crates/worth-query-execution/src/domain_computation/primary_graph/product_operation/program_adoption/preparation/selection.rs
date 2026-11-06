@@ -65,7 +65,7 @@ pub(super) fn select(
             .bounded_entities_of_kind(execution, kind, remaining)
             .map_err(|cause| {
                 WorthQueryBranchAdoptionPreparationDenial::ReadExecution(
-                    crate::facade::primary_graph::relational_execution_kind(cause, None),
+                    crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause, None),
                 )
             })?
             .map_err(|denial| {

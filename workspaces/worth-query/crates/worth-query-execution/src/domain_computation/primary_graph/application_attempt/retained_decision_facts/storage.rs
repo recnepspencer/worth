@@ -1,7 +1,4 @@
-use super::{
-    directory::RunDirectory, run::Run, AdmittedFactKey, RetainedFact, Slot, StoreDenial,
-    AUTHOR_CHUNK,
-};
+use {super::directory::RunDirectory, super::run::Run, super::AdmittedFactKey, super::RetainedFact, super::Slot, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial, super::AUTHOR_CHUNK};
 use worth_execution::{ExecutionArray, ExecutionArrayBuilder};
 
 pub struct RetainedFactStore<T> {
@@ -12,7 +9,7 @@ pub struct RetainedFactStore<T> {
     failure: Option<StoreDenial>,
 }
 impl<T> RetainedFactStore<T> {
-    pub fn new(policy: super::StorageControl<'_, '_>) -> Result<Self, StoreDenial> {
+    pub fn new(policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>) -> Result<Self, StoreDenial> {
         policy.check_live()?;
         Ok(Self::vacant())
     }
@@ -29,7 +26,7 @@ impl<T> RetainedFactStore<T> {
     /// The old owning iterator and its charge coexist with the admitted slots.
     pub(in crate::domain_computation::primary_graph) fn from_sorted_records(
         records: ExecutionArray<RetainedFact<T>>,
-        policy: super::StorageControl<'_, '_>,
+        policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
     ) -> Result<Self, StoreDenial> {
         let mut store = Self::new(policy)?;
         let count = records.len();
@@ -56,7 +53,7 @@ impl<T> RetainedFactStore<T> {
         &mut self,
         key: AdmittedFactKey,
         value: T,
-        policy: super::StorageControl<'_, '_>,
+        policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
         duplicate: impl FnOnce(&mut T, T) -> Result<(), StoreDenial>,
     ) -> Result<(), StoreDenial> {
         if let Some(denial) = &self.failure {
@@ -73,7 +70,7 @@ impl<T> RetainedFactStore<T> {
         &mut self,
         key: AdmittedFactKey,
         value: T,
-        policy: super::StorageControl<'_, '_>,
+        policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
         duplicate: impl FnOnce(&mut T, T) -> Result<(), StoreDenial>,
     ) -> Result<Option<T>, StoreDenial> {
         if let Some(denial) = &self.failure {
@@ -92,7 +89,7 @@ impl<T> RetainedFactStore<T> {
         &mut self,
         key: AdmittedFactKey,
         value: T,
-        policy: super::StorageControl<'_, '_>,
+        policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
         duplicate: impl FnOnce(&mut T, T) -> Result<(), StoreDenial>,
     ) -> Result<(), StoreDenial> {
         policy.check_live()?;
@@ -139,7 +136,7 @@ impl<T> RetainedFactStore<T> {
         key: &AdmittedFactKey,
         value: T,
         duplicate: impl FnOnce(&mut T, T) -> Result<(), StoreDenial>,
-        policy: super::StorageControl<'_, '_>,
+        policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
     ) -> Result<Option<(T, usize)>, StoreDenial> {
         let mut value = Some(value);
         let mut duplicate = Some(duplicate);
@@ -185,7 +182,7 @@ impl<T> RetainedFactStore<T> {
     fn author_position(
         &self,
         key: &AdmittedFactKey,
-        policy: super::StorageControl<'_, '_>,
+        policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
     ) -> Result<Result<usize, usize>, StoreDenial> {
         policy.check_live()?;
         let Some(chunk) = &self.chunk else {
@@ -218,7 +215,7 @@ impl<T> RetainedFactStore<T> {
         let record = record.as_mut().unwrap();
         duplicate(&mut record.value, value)
     }
-    fn flush(&mut self, policy: super::StorageControl<'_, '_>) -> Result<(), StoreDenial> {
+    fn flush(&mut self, policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>) -> Result<(), StoreDenial> {
         let next = Run::empty(AUTHOR_CHUNK, policy)?;
         let mut carry = self.chunk.replace(next).unwrap();
         let mut level = 0;
@@ -241,7 +238,7 @@ impl<T> RetainedFactStore<T> {
     }
     pub(in crate::domain_computation::primary_graph) fn finish(
         self,
-        policy: super::StorageControl<'_, '_>,
+        policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
     ) -> Result<ExecutionArray<RetainedFact<T>>, StoreDenial> {
         if let Some(denial) = &self.failure {
             return Err(denial.clone());
@@ -297,7 +294,7 @@ impl<T> RetainedFactStore<T> {
         &self,
         first: Head,
         second: Head,
-        policy: super::StorageControl<'_, '_>,
+        policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
     ) -> Result<bool, StoreDenial> {
         self.with_run(first, |first| {
             self.with_run(second, |second| {

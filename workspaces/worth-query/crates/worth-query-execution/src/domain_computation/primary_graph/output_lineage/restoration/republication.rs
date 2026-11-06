@@ -108,7 +108,7 @@ impl WorthQueryApplicationOutputLineage {
         suspended_facts: &super::super::RetainedSourceFacts,
         witness: Arc<OnceLock<SealedNativeOutputWitness>>,
 
-        control: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl<'_, '_>,
+        control: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
     ) -> Option<RepublishedOutput> {
         let source = SemanticSource {
             runtime_authority,

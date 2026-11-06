@@ -1,5 +1,5 @@
 pub(crate) mod field_text;
-use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
 use crate::domain_computation::vocabulary::primary_graph::encoding::FundedActorText;
 pub(in crate::domain_computation::primary_graph) use field_text::WorkflowApprovalFieldText;
 use std::collections::BTreeMap;

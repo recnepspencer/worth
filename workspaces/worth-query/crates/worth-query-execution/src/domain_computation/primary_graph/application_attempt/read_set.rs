@@ -14,10 +14,7 @@ use super::read_phase::{
 };
 use super::read_scope::WorthQueryApplicationReadScope;
 use super::snapshot_lease::WorthQueryApplicationSnapshotLease;
-use {
-    super::WorthQueryApplicationAttemptDenial,
-    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 use {
     crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation,
     crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity,
@@ -27,7 +24,7 @@ use {
 mod fact_routes;
 pub(in crate::domain_computation::primary_graph) use fact_routes::FactRoutes;
 pub(crate) mod application_projection;
-pub(in crate::domain_computation) use application_projection::CompletedFactProjection;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::application_projection::CompletedFactProjection;
 pub(crate) mod original_read;
 pub(in crate::domain_computation) use original_read::CompletedOriginalRead;
 pub(crate) mod admitted_arrays;
@@ -254,7 +251,7 @@ where
     > {
         let phase_request = match phase.execution_request_for(self.product_runtime()) {
             Ok(request) => request,
-            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "application-read-phase")),
+            Err(_) => return Err(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "application-read-phase")),
         };
         let execution = &phase_request;
         self.begin_projected_application_read_attempt_with_request(
@@ -343,7 +340,7 @@ where
             admitted_source_facts,
             dependent_source_facts,
             admission.operation(),
-            super::retained_decision_facts::StorageControl::new(
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(
                 allocation_policy,
                 Some(admission.publication_request()),
             )

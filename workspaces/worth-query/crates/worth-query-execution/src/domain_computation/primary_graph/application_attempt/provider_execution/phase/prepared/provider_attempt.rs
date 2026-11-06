@@ -1,9 +1,6 @@
 //! Preserve the effect-lowering refusal when binding an application proposal.
 use super::WorthQueryProviderAttemptPreparation;
-use crate::domain_computation::primary_graph::application_attempt::{
-    provider_binding::{prepare_provider_attempt, WorthQueryPreparedApplicationProviderAttempt},
-    WorthQueryApplicationAttemptDenial,
-};
+use {crate::domain_computation::primary_graph::application_attempt::provider_binding::prepare_provider_attempt, crate::domain_computation::primary_graph::application_attempt::provider_binding::WorthQueryPreparedApplicationProviderAttempt, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial};
 
 pub(super) fn prepare_application_provider_attempt(
     lease: &super::WorthQueryApplicationSnapshotLease,

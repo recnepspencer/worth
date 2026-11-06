@@ -3,13 +3,9 @@ use super::complete_read_set_core::{
     CompleteReadSetCore, CompletedReadFacts, PreparedReadCompletion,
 };
 use super::mutation_read_attempt_core::MutationReadAttemptCore;
+use super::application_projection::CompletedFactProjectionRouting;
 use worth_execution::ExecutionAllocationPolicy;
-use {
-    super::denial, super::observation_admission, super::SealedComputationFacts,
-    super::WorthQueryApplicationAttemptDenial, super::WorthQueryCompleteApplicationReadSet,
-    crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary,
-    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
-};
+use {super::denial, super::observation_admission, super::SealedComputationFacts, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryCompleteApplicationReadSet, crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 
 impl MutationReadAttemptCore<'_, '_, '_> {
     pub(super) fn complete_full(
@@ -111,7 +107,7 @@ impl MutationReadAttemptCore<'_, '_, '_> {
                     // The tag/key cannot grant Query authority. Consume only
                     // the exact native read retained by this original reader.
                     return read
-                        .admits_observation(self.admission.admission_identity(), observation)
+                        .admits_address(self.admission.admission_identity(), &observation.address())
                         && self
                             .expected_facts
                             .as_ref()
@@ -218,7 +214,7 @@ impl MutationReadAttemptCore<'_, '_, '_> {
             .len()
             .checked_add(self.source_facts.len())
             .ok_or_else(|| {
-                super::super::retained_decision_facts::StoreDenial::Representability
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial::Representability
                     .into_attempt_denial(operation)
             })?;
         let check_authority = || {
@@ -248,15 +244,15 @@ impl MutationReadAttemptCore<'_, '_, '_> {
             self.admission.retain_graph_contract(),
             installed_read_scopes,
         );
-        let control = super::super::retained_decision_facts::StorageControl::new(
+        let control = crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(
             allocation_policy,
             Some(self.admission.publication_request()),
         );
         let application_projection =
-            super::CompletedFactProjection::build(&facts, installed_read_scopes.clone(), control)
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::application_projection::CompletedFactProjection::build(&facts, installed_read_scopes.clone(), control)
                 .map_err(|cause| cause.into_attempt_denial(operation))?;
         let content = if computation_facts.is_some() {
-            let control = super::super::retained_decision_facts::StorageControl::new(
+            let control = crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(
                 allocation_policy,
                 Some(self.admission.publication_request()),
             );
@@ -297,7 +293,7 @@ impl MutationReadAttemptCore<'_, '_, '_> {
             Some(routes) => routes,
             None => super::super::CompletedFactRoutes::from_facts(
                 facts.clone(),
-                super::super::retained_decision_facts::StorageControl::new(
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(
                     allocation_policy,
                     Some(self.admission.publication_request()),
                 ),

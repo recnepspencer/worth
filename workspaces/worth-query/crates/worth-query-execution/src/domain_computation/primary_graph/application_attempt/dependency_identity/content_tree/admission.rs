@@ -2,6 +2,7 @@
 use super::super::super::WorthQueryApplicationObservedFact as Fact;
 use super::*;
 use worth_execution::{ReductionRunFailure, ReductionRunStop};
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial;
 
 pub(super) fn admit_tree(
     count: usize,

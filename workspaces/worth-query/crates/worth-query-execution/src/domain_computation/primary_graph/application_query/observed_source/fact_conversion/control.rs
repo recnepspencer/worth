@@ -2,11 +2,7 @@
 use super::*;
 use worth_execution::{ExecutionRequest, WorkCeilingDenial};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
-use {
-    crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl,
-    crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial,
-    crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial, crate::domain_computation::request_execution::WorthQueryAdvancementPhase};
 use crate::domain_computation::primary_graph::vocabulary::application_query::observed_source_denial::WorthQuerySourceExpectationDenialKind;
 
 #[derive(Clone, Copy)]

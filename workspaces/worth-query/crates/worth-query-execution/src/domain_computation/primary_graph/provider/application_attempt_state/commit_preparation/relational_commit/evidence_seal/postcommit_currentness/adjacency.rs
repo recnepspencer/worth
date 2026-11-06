@@ -13,7 +13,7 @@ pub fn rebase_decision_adjacency(
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     fact: Fact,
 ) -> Fact {
-    let endpoints = prepare_endpoints(&fact, crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap();
+    let endpoints = prepare_endpoints(&fact, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap();
     prepare_decision_adjacency(execution, runtime, snapshot, &fact, endpoints)
         .expect("fixture request remains live")
         .unwrap_or(fact)
@@ -25,7 +25,7 @@ pub(super) fn prepare_decision_adjacency(
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     fact: &Fact,
     prepared_endpoints: Option<
-        crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints,
     >,
 ) -> Result<Option<Fact>, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
     let (relation_kind, anchor, direction, limit) = match fact {
@@ -96,9 +96,9 @@ pub(super) fn prepare_decision_adjacency(
 /// fact. The later selected native revision changes no endpoint payload.
 pub(super) fn prepare_endpoints(
     fact: &Fact,
-    control: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl<'_, '_>,
-) -> Result<Option<crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints>, crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial>{
-    use crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints as Endpoints;
+    control: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
+) -> Result<Option<crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints>, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial>{
+    use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints as Endpoints;
     let endpoints = match fact {
         Fact::Relation { to, .. } => {
             Endpoints::from_exact_iterator(1, std::iter::once(*to), control)?

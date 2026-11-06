@@ -1,7 +1,7 @@
 use super::{
     provider_failure, WorthQueryProviderSessionFailure, WorthQueryProviderSessionProtocolStage,
 };
-use crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_stop;
+use crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_stop;
 
 pub(super) fn failure(detail: &'static str) -> WorthQueryProviderSessionFailure {
     provider_failure(WorthQueryProviderSessionProtocolStage::Commit, detail)
@@ -215,7 +215,7 @@ pub(super) fn source_rebase_preparation_stop(
     cause: super::super::PreparedRebaseDenial,
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
     use super::super::PreparedRebaseDenial as Denial;
-    use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial;
+    use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial;
     use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Interrupted;
     use {
         crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Kind,

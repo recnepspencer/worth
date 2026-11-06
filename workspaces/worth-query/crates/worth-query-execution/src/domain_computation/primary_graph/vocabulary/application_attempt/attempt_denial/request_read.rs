@@ -87,7 +87,7 @@ impl WorthQueryApplicationAttemptDenial {
         use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
         use WorthQueryApplicationAttemptDenialKind as Kind;
         let kind =
-            match crate::domain_computation::primary_graph::provider::relational_execution_denial::query_read_execution_kind(
+            match crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::query_read_execution_kind(
                 &stop,
             ) {
                 Ok(Some(kind)) => Kind::ExecutionRequest(kind),
@@ -115,7 +115,7 @@ pub(super) fn relational_read_kind(
         return WorthQueryApplicationAttemptDenialKind::ContentInconsistency;
     }
     use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
-    match crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(cause, None) {
+    match crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause, None) {
         Ok(kind) => WorthQueryApplicationAttemptDenialKind::ExecutionRequest(kind),
         Err(Control::Cancelled) => WorthQueryApplicationAttemptDenialKind::Cancelled,
         Err(Control::TimedOut) => WorthQueryApplicationAttemptDenialKind::DeadlineExceeded,

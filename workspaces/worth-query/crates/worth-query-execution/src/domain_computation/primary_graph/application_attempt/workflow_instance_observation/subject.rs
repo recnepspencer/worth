@@ -1,10 +1,5 @@
 //! Read subject correspondence according to the persisted instance protocol.
-use {
-    super::adjacency, super::denial, super::exact, super::observe_field_value, super::AspectValue,
-    super::EntityId, super::WorthQueryApplicationAttemptDenial,
-    super::WorthQueryApplicationObservedFact,
-    crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
-};
+use {super::adjacency, super::denial, super::exact, super::observe_field_value, super::AspectValue, super::EntityId, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationObservedFact, crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout};
 
 pub fn observe_subject(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

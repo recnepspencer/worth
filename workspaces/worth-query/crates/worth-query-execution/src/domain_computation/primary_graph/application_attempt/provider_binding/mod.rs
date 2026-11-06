@@ -18,11 +18,7 @@ use worth_query_installation::facade::{
 use self::effect_accumulator::WorthQueryProviderEffectAccumulator;
 use super::effect_program::WorthQueryApplicationRealizedEffect;
 use super::fact::WorthQueryApplicationObservedFact;
-use {
-    super::WorthQueryAdmittedApplicationEmissionBatch, super::WorthQueryApplicationAttemptDenial,
-    super::WorthQueryApplicationEmission,
-    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
-};
+use {super::WorthQueryAdmittedApplicationEmissionBatch, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationEmission, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 
 pub struct WorthQueryPreparedApplicationProviderAttempt {
     workflow_origin: Option<crate::domain_computation::primary_graph::application_attempt::workflow::operation_output::WorkflowOperationOrigin>,
@@ -30,7 +26,7 @@ pub struct WorthQueryPreparedApplicationProviderAttempt {
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
     installed_read_scopes: crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes,
     facts: FactPayload,
-    application_projection: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::CompletedFactProjection>>,
+    application_projection: Option<std::sync::Arc<crate::domain_computation::primary_graph::vocabulary::application_attempt::application_projection::CompletedFactProjection>>,
     original_read: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::CompletedOriginalRead>>,
     consumed_outputs: Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
     effects: effect_accumulator::WorthQueryRegisteredProviderEffects,
@@ -138,7 +134,7 @@ pub fn prepare_provider_attempt<'layout>(
     completed_facts: super::CompletedFactRoutes,
     application_projection: Option<
         std::sync::Arc<
-            crate::domain_computation::primary_graph::application_attempt::CompletedFactProjection,
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::application_projection::CompletedFactProjection,
         >,
     >,
     original_read: Option<

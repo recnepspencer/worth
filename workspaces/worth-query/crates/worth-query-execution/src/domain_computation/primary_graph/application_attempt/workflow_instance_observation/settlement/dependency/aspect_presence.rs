@@ -1,8 +1,6 @@
 //! Reconstruct the exact aspect predicate, never a field-presence default.
 use super::denial;
-use crate::domain_computation::primary_graph::application_attempt::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact};
 use worth_foundational::facade::AspectKey;
 use worth_relational::facade::identity::{EntityId, KindId};
 

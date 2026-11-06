@@ -34,7 +34,7 @@ pub enum WorthQueryInvariantProjectionDenialKind {
 pub struct WorthQueryInvariantProjectionDenial {
     kind: Box<WorthQueryInvariantProjectionDenialKind>,
     projection_work: Option<super::WorthQueryInvariantProjectionWork>,
-    retention_denial: Option<Box<crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial>>,
+    retention_denial: Option<Box<crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial>>,
 }
 
 const PROJECTION_DENIAL_STACK_BOUND: usize = std::mem::size_of::<
@@ -104,7 +104,7 @@ impl WorthQueryInvariantProjectionDenial {
 
     pub fn allocation_denial(&self) -> Option<&worth_execution::ExecutionAllocationDenial> {
         match self.retention_denial.as_deref() {
-            Some(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::Allocation(denial)) => Some(denial),
+            Some(crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial::Allocation(denial)) => Some(denial),
             _ => None,
         }
     }
@@ -112,10 +112,10 @@ impl WorthQueryInvariantProjectionDenial {
         &self,
     ) -> Option<worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption>
     {
-        match self.retention_denial.as_deref() { Some(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::RequestInterruption(stop)) => Some(*stop), _ => None }
+        match self.retention_denial.as_deref() { Some(crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial::RequestInterruption(stop)) => Some(*stop), _ => None }
     }
     pub(super) fn source_retention_denied(
-        denial: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial,
+        denial: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial,
         work: super::WorthQueryInvariantProjectionWork,
     ) -> Self {
         Self {
@@ -126,7 +126,7 @@ impl WorthQueryInvariantProjectionDenial {
     }
     pub(super) fn with_retention_denial(
         mut self,
-        denial: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial,
+        denial: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial,
     ) -> Self {
         self.retention_denial = Some(Box::new(denial));
         self

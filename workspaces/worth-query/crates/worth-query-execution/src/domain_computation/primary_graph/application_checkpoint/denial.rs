@@ -31,7 +31,7 @@ impl From<RelationalNativeCheckpointCaptureDenial> for WorthQueryCheckpointCaptu
             RelationalNativeCheckpointCaptureDenial::Allocation(error) => Self::Allocation(error),
             RelationalNativeCheckpointCaptureDenial::Request(cause) => {
                 use super::super::WorthQueryPrimaryGraphInstallationDenialKind as Kind;
-                let kind = match super::super::provider::relational_execution_denial::relational_execution_kind(cause, None) {
+                let kind = match crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause, None) {
                     Ok(kind) => Kind::ExecutionDenied { kind },
                     Err(kind) => Kind::ExecutionControlStopped { kind },
                 };

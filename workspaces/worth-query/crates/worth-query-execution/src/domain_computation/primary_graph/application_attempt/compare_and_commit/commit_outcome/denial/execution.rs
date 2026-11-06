@@ -90,7 +90,7 @@ impl Denial {
             },
             Some(Cause::ProviderSession(failure)) => {
                 use crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Session;
-                let kind = match crate::domain_computation::primary_graph::provider::relational_execution_denial::native_preparation_kind(failure) {
+                let kind = match crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::native_preparation_kind(failure) {
                     Ok(kind) => kind.unwrap_or(failure.kind()),
                     Err(stop) => return Some(Err(stop)),
                 };

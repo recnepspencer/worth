@@ -1,5 +1,5 @@
-use super::super::retained_decision_facts::StoreDenial;
-use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
 pub(in crate::domain_computation::primary_graph) fn check_request_live(

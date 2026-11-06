@@ -45,7 +45,7 @@ impl<Schema, Operation, Input, Scope>
             to,
         )?;
         original.consult().map_err(|cause| {
-            crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause.into(),relation.name())
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause.into(),relation.name())
         })?;
         Ok(WorthQueryApplicationCreatedRelation {
             relation,

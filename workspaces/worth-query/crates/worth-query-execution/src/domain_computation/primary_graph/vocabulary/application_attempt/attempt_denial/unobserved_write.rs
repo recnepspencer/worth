@@ -8,7 +8,7 @@ use {
 };
 
 impl WorthQueryApplicationAttemptDenial {
-    pub(in crate::domain_computation::primary_graph::application_attempt) fn unobserved_field_write(
+    pub(in crate::domain_computation::primary_graph) fn unobserved_field_write(
         entity_id: EntityId,
         locator: &AspectFieldLocator,
     ) -> Self {

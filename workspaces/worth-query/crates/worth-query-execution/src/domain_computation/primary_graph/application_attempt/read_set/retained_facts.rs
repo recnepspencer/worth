@@ -1,11 +1,5 @@
-use super::{
-    admit_completed_facts, WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact,
-    WorthQueryCompleteApplicationReadSet,
-};
-use crate::domain_computation::primary_graph::{
-    application_attempt::check_request_live,
-    application_attempt::retained_decision_facts::StorageControl,
-};
+use {super::admit_completed_facts, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationObservedFact, super::WorthQueryCompleteApplicationReadSet};
+use {crate::domain_computation::primary_graph::application_attempt::check_request_live, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl};
 use worth_execution::ExecutionAllocationPolicy;
 
 impl<Schema, Operation, Input, Scope, Phase>

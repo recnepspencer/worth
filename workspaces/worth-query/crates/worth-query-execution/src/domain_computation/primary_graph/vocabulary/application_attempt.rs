@@ -36,3 +36,6 @@ pub(crate) mod unobserved_write;
 pub(crate) mod version;
 pub(crate) mod workflow_instance_program_publication;
 pub(crate) mod workflow_transition_program_publication;
+pub(crate) mod attempt_denial;
+pub(crate) mod retained_decision_facts;
+pub(crate) mod application_projection;

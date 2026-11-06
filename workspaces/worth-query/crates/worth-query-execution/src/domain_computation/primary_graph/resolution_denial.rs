@@ -60,7 +60,7 @@ pub(super) fn principal_index_currency_denial(
 ) -> WorthQueryPrincipalResolutionDenial {
     let kind = match denial {
         crate::domain_computation::primary_graph::vocabulary::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(stop) => {
-            let stop = crate::facade::primary_graph::relational_execution_kind(stop, None);
+            let stop = crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(stop, None);
             let kind = match stop {
                 Ok(kind) => WorthQueryPrincipalResolutionDenialKind::Stopped(Ok(kind)),
                 Err(
@@ -115,7 +115,7 @@ pub fn query_read_resolution_denial(
 ) -> WorthQueryPrincipalResolutionDenial {
     use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
     use WorthQueryPrincipalResolutionDenialKind as Kind;
-    let kind = match super::provider::relational_execution_denial::query_read_execution_kind(&stop)
+    let kind = match crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::query_read_execution_kind(&stop)
     {
         Ok(Some(kind)) => Kind::Stopped(Ok(kind)),
         Ok(None) => Kind::Refused(PrincipalRefusal::StalePrincipalProof),
@@ -138,7 +138,7 @@ pub(super) fn relational_read_denial(
     binding: &str,
 ) -> WorthQueryPrincipalResolutionDenial {
     use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
-    let kind = match super::provider::relational_execution_denial::relational_execution_kind(
+    let kind = match crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(
         cause, None,
     ) {
         Ok(kind) => WorthQueryPrincipalResolutionDenialKind::Stopped(Ok(kind)),

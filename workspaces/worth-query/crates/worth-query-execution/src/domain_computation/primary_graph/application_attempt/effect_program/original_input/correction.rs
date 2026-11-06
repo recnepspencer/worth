@@ -13,11 +13,7 @@ use worth_query_declaration::facade::{
     application_schema::ApplicationSchema,
 };
 use worth_query_installation::facade::InstalledCorrectionBinding;
-use {
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial,
-    crate::domain_computation::vocabulary::application_aftermath::original::OriginalCorrectionDisclosure,
-    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial as Denial, crate::domain_computation::vocabulary::application_aftermath::original::OriginalCorrectionDisclosure, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind};
 
 #[expect(
     clippy::disallowed_methods,

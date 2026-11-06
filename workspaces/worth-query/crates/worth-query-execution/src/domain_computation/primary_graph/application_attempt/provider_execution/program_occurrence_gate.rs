@@ -146,7 +146,7 @@ fn resolve_at_lease<'support, Schema>(
         .map_err(|cause| {
             WorthQueryApplicationCommitDenial::provider_execution_denied(
                 super::super::WorthQueryApplicationCommitDenialStage::ProviderPlan,
-                crate::facade::primary_graph::relational_execution_kind(cause, None),
+                crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause, None),
                 "program activation field read stopped",
             )
         })?

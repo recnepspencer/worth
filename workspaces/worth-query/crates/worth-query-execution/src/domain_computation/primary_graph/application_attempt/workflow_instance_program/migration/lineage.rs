@@ -18,7 +18,7 @@ pub fn successor_identity(
     snapshot: &SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
     source: EntityId,
-) -> Result<Option<String>, super::super::super::WorthQueryApplicationAttemptDenial> {
+) -> Result<Option<String>, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial> {
     let successors = observe_adjacency(
         runtime,
         execution,

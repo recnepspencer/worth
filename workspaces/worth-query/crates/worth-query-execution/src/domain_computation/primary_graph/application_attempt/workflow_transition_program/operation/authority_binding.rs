@@ -30,7 +30,7 @@ impl<Schema, Operation, Input, Scope>
     ) -> Result<Self, WorthQueryApplicationAttemptDenial> {
         let phase_request = match phase.request_for_source(self.read_set.lease.handle().relational_runtime_instance_id()) {
             Ok(request) => request,
-            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "application-read-phase")),
+            Err(_) => return Err(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "application-read-phase")),
         };
         let execution = &phase_request;
 

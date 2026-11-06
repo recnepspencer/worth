@@ -317,7 +317,7 @@ fn grant_lookup_denial_kind(
     use WorthQueryOperationAuthorizationDenialKind as Denial;
     match refusal {
         Kind::Execution(cause) => Denial::Stopped(
-            crate::facade::primary_graph::relational_execution_kind(cause, None),
+            crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause, None),
         ),
         Kind::InvalidCandidateLimit
         | Kind::SnapshotUnavailable

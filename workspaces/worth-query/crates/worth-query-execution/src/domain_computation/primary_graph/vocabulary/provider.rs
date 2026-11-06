@@ -3,3 +3,4 @@ pub(crate) mod application_attempt_work;
 pub(crate) mod diagnostic;
 pub(crate) mod failure;
 pub(crate) mod preflight;
+pub(crate) mod relational_execution_denial;

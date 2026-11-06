@@ -309,7 +309,7 @@ pub fn rebase_result_at_current(
         .unwrap()
         .integration_handle_for_test()
         .with_runtime(execution, |runtime| {
-            rebase(execution, runtime, selected.application_basis_for_test().snapshot_handle(), PreparedSourceFactRebase::admit_for_test(facts, [].into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), &BTreeSet::new(), true)
+            rebase(execution, runtime, selected.application_basis_for_test().snapshot_handle(), PreparedSourceFactRebase::admit_for_test(facts, [].into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), &BTreeSet::new(), true)
         })
 }
 

@@ -239,7 +239,7 @@ pub fn projection_budget(
     match kind {
         Projection::InvariantAdmission(Invariant::ExecutionRequest(cause)) => {
             use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
-            Some(match crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(cause, None) {
+            Some(match crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause, None) {
                 Ok(cause) => request_execution::kind(cause),
                 Err(Control::Cancelled) => WorthQueryOutputDemandDenialKind::Cancelled,
                 Err(Control::TimedOut) => WorthQueryOutputDemandDenialKind::TimedOut,
@@ -276,7 +276,7 @@ pub(super) fn handler_execution_failed(
             denial
         }
         Err(error) => {
-            if let Some(attempt) = std::error::Error::source(&error).and_then(|source| source.downcast_ref::<crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>())
+            if let Some(attempt) = std::error::Error::source(&error).and_then(|source| source.downcast_ref::<crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial>())
                 && let Some(cause) = attempt.unobserved_write()
             {
                 return denial(WorthQueryOutputDemandDenialKind::UnobservedWrite(cause.clone()), subject.to_owned());

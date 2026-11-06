@@ -193,7 +193,7 @@ where
             }, |read_authority, fresh| {
                 authority.provider().recompare_application_read_set(execution,
                     read_authority, fresh,
-                    crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(
+                    crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(
                         control.policy(), Some(authority.admission().publication_request()),
                     ),
                 )

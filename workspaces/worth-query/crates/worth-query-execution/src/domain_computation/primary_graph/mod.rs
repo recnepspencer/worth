@@ -130,7 +130,7 @@ pub use product_operation::WorthQueryHistoryRootOutputRead;
 pub(crate) mod program_occurrence;
 pub(in crate::domain_computation) use program_occurrence::OriginalProgramMeaning;
 pub(crate) mod provider;
-pub(in crate::domain_computation) use application_attempt::retained_decision_facts::StorageControl;
+pub(in crate::domain_computation) use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl;
 pub(in crate::domain_computation::primary_graph) use provider::OutstandingDispatchInFlightLease;
 pub(in crate::domain_computation) use provider::PrimaryDecisionReadSetComparison;
 pub(in crate::domain_computation) use provider::RegisteredPrimaryRead;

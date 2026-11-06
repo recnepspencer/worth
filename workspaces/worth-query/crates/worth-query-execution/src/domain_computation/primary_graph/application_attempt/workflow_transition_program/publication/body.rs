@@ -32,7 +32,7 @@ pub enum WorkflowApprovalBodyPreparation<Prepared> {
 pub enum WorkflowApprovalBodyDenial {
     Body(WorthQueryOperationBodyDenial),
     Handler(MutationHandlerExecutionDenial),
-    Attempt(super::super::super::WorthQueryApplicationAttemptDenial),
+    Attempt(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial),
     Signing(super::super::super::signed_creation::WorthQuerySignedCreationPreparationDenial),
     Idempotency(
         crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial,

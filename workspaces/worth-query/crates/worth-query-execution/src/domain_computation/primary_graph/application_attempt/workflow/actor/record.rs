@@ -79,7 +79,7 @@ impl WorkflowActorFields {
         >,
     ) -> Result<
         Option<EntityId>,
-        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
     > {
         use crate::domain_computation::primary_graph::application_attempt::observe_field_value;
         use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact as Fact;
@@ -151,7 +151,7 @@ pub(in crate::domain_computation) fn validate_actor_applicability(
     required: bool,
 ) -> Result<
     Option<EntityId>,
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
 > {
     if actor.is_some() == required {
         Ok(actor)
@@ -162,11 +162,8 @@ pub(in crate::domain_computation) fn validate_actor_applicability(
 
 /// Current native actor corruption is distinct from foreign occurrence affinity.
 pub(in crate::domain_computation) fn actor_record_corruption(
-) -> crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial {
-    use {
-        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial,
-        crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind,
-    };
+) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial {
+    use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial as Denial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind};
     Denial::new(
         Kind::InvalidAuthoritativeValue,
         "current workflow actor record is malformed",

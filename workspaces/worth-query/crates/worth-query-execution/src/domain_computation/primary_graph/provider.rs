@@ -1,5 +1,4 @@
 pub(crate) mod aftermath_causality;
-pub(crate) mod relational_execution_denial;
 pub use aftermath_causality::WorthQueryAftermathCausalityReadDenial;
 pub(in crate::domain_computation::primary_graph) use aftermath_causality::{
     WorthQueryActiveReversalProgress, WorthQueryCanonicalCorrectionFact,

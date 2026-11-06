@@ -2,7 +2,7 @@
 use super::*;
 pub(super) fn decode(
     cursor: &mut CheckpointCursor<'_>,
-    control: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl<'_, '_>,
+    control: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
 ) -> Result<Fact, FactDecodeDenial> {
     Ok(match cursor.next_byte()? {
         11 => aspect_presence::decode(cursor)?,
@@ -78,7 +78,7 @@ pub(super) fn decode(
                     direction,
                     native_revision,
                     comparison_work_limit,
-                    endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::preserve(
+                    endpoints: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints::preserve(
                         &endpoints,
                         control,
                     ).map_err(fact_decode_denial::FactDecodeDenial::Retention)?,

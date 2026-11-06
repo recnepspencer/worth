@@ -1,7 +1,7 @@
 //! Selected native revision resolution against a distinct normalized body.
 use super::*;
-use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
-use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial;
 use crate::domain_computation::primary_graph::application_checkpoint::facts::NativeFactPatchBuilder;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::PostconditionCarry;
 use crate::domain_computation::primary_graph::vocabulary::provider::diagnostic::RebaseVerificationReason;
@@ -14,7 +14,7 @@ use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
 type Endpoints =
-    crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints;
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints;
 pub struct SelectedRebase {
     facts: FactPayload,
     posting_basis: Option<

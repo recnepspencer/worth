@@ -249,7 +249,7 @@ fn pending_publication_denial(
     failure: crate::domain_computation::WorthQueryProviderSessionFailure,
 ) -> WorthQueryProviderIdempotencyResolutionDenial {
     use crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Kind;
-    match super::relational_execution_denial::native_preparation_kind(&failure) {
+    match crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::native_preparation_kind(&failure) {
         Ok(Some(kind)) => {
             return WorthQueryProviderIdempotencyResolutionDenial::ExecutionDenied(Ok(kind))
         }
@@ -311,7 +311,7 @@ fn idempotency_index_currency_denial(
     denial: crate::domain_computation::primary_graph::vocabulary::index_currency::WorthQueryPrimaryIndexCurrencyDenial,
 ) -> WorthQueryProviderIdempotencyResolutionDenial {
     match denial {
-        crate::domain_computation::primary_graph::vocabulary::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(stop) => WorthQueryProviderIdempotencyResolutionDenial::ExecutionDenied(crate::facade::primary_graph::relational_execution_kind(stop, None)),
+        crate::domain_computation::primary_graph::vocabulary::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(stop) => WorthQueryProviderIdempotencyResolutionDenial::ExecutionDenied(crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(stop, None)),
 
         crate::domain_computation::primary_graph::vocabulary::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Basis(
             crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial::RetentionCapacityExhausted,

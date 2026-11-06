@@ -131,7 +131,7 @@ pub fn remains_equal(
     value: &AspectValue,
     candidate_limit: usize,
     expected: &[EntityId],
-) -> Result<bool, super::super::WorthQueryApplicationAttemptDenial> {
+) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial> {
     match bounded_entity_field_selection(
         runtime,
         execution,
@@ -147,7 +147,7 @@ pub fn remains_equal(
         Err(IndexedSelectionReobserveDenial::Lookup(
             BoundedEntityFieldLookupDenialKind::Execution(cause),
         )) => Err(
-            super::super::WorthQueryApplicationAttemptDenial::relational_read_stopped(
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::relational_read_stopped(
                 cause,
                 "indexed selection comparison",
             ),

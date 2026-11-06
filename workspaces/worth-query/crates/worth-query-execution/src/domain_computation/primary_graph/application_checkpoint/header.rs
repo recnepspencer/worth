@@ -26,7 +26,7 @@ impl CheckpointDecodeDenial {
         message: String,
     ) -> Self {
         let kind =
-            match super::super::provider::relational_execution_denial::relational_execution_kind(
+            match crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(
                 native, None,
             ) {
                 Ok(kind) => Kind::ExecutionDenied { kind },
@@ -49,7 +49,7 @@ impl CheckpointDecodeDenial {
         ))
     }
     pub(in crate::domain_computation::primary_graph) fn from_fact(cause: FactDecodeDenial) -> Self {
-        use super::super::application_attempt::retained_decision_facts::StoreDenial;
+        use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial;
         use worth_execution::{ExecutionAllocationDenialClass, MapKernelStop, WorkCeilingDenial};
         match cause {
             FactDecodeDenial::Format(message) => message.into(),

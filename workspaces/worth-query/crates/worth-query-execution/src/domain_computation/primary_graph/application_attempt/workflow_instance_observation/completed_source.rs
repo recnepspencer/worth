@@ -4,12 +4,7 @@ use crate::domain_computation::primary_graph::application_attempt::workflow::sch
 use worth_relational::facade::{
     identity::EntityId, runtime::RelationalRuntime, snapshots::SnapshotHandle,
 };
-use {
-    super::denial, super::instance_binding, super::ObservedWorkflowInstance,
-    super::WorkflowInstanceObservationPurpose, super::WorthQueryApplicationAttemptDenial,
-    super::WorthQueryApplicationObservedFact,
-    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
-};
+use {super::denial, super::instance_binding, super::ObservedWorkflowInstance, super::WorkflowInstanceObservationPurpose, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationObservedFact, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 mod output_match;
 
 /// Has no progression basis, replay collection or step-allowance method.

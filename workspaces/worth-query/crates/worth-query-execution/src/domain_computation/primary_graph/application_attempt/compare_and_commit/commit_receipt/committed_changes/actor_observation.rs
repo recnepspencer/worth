@@ -12,7 +12,7 @@ impl WorthQueryApplicationCommittedChanges {
         role: ApplicationWorkflowRecordedRole,
     ) -> Result<
         Option<EntityId>,
-        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
     > {
         let invalid = crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::actor_record_corruption;
         use ApplicationWorkflowRecordedRole::*;
@@ -52,15 +52,12 @@ impl WorthQueryApplicationCommittedChanges {
         runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         receipt: &super::super::WorthQueryApplicationCommitReceipt,
         approval: EntityId,
-    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>
+    ) -> Result<(), crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial>
     {
         use crate::domain_computation::authorization::{
             WorkflowApprovalRequestDecodingDenial as Decode, WorthQueryRetainedCapabilityRequest,
         };
-        use {
-            crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial,
-            crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind,
-        };
+        use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial as Denial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind};
         let invalid = |subject: &str| Denial::new(Kind::InvalidAuthoritativeValue, subject);
         let locator =
             crate::domain_computation::primary_graph::schema_layout::planned_field_locator(
@@ -158,7 +155,7 @@ impl WorthQueryApplicationCommittedChanges {
         omit_all: bool,
     ) -> Result<
         Option<EntityId>,
-        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
     > {
         let invalid = crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::actor_record_corruption;
         let original = self

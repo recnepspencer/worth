@@ -90,7 +90,7 @@ impl PartialOrd for StructuralWalkKey {
 }
 
 #[cfg(test)]
-#[path = "key_ordering_tests.rs"]
+#[path = "key/key_ordering_tests.rs"]
 mod key_ordering_tests;
 
 mod court_doors_for_test;

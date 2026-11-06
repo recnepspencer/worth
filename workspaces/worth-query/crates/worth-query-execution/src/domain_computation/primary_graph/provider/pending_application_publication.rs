@@ -168,7 +168,7 @@ fn publish_with_snapshot(
     // read stop once; recovery keeps the evidence and can verify its source.
     if let Some(cause) = pending.source_read_stop.take() {
         return Err(WorthQueryProviderSessionFailure::checked_read_stopped(
-            super::relational_execution_denial::relational_execution_kind(cause, None),
+            crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause, None),
             WorthQueryProviderSessionProtocolStage::Commit,
             "postcommit source read stopped",
         )

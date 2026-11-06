@@ -1,6 +1,6 @@
 //! Pre-effect immutable field evidence, excluding Native publication/read custody.
-use super::{Fact, FactPayload, FactSequence, StorageControl};
-use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial;
+use {super::Fact, super::FactPayload, super::FactSequence, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl};
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial;
 
 impl FactPayload {
     /// O(facts + copied field bodies + balanced join paths). Copies only the

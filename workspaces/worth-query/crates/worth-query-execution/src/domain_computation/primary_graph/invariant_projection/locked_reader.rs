@@ -81,7 +81,7 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
     pub(super) dependent_source_facts:
         super::super::application_attempt::retained_decision_facts::AuthoringSourceFacts,
     pub(super) retention_control:
-        super::super::application_attempt::retained_decision_facts::StorageControl<
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<
             'runtime,
             'runtime,
         >,
@@ -138,7 +138,7 @@ where
             WorthQueryInvariantProjectionWorkBudget::unbounded(),
             basis,
             projection,
-            super::super::application_attempt::retained_decision_facts::StorageControl::new(
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(
                 allocation_policy,
                 None,
             ),
@@ -169,7 +169,7 @@ where
             ),
             basis,
             projection,
-            super::super::application_attempt::retained_decision_facts::StorageControl::new(
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(
                 allocation_policy,
                 request,
             ),
@@ -184,7 +184,7 @@ where
         projection: impl FnOnce(
             &mut WorthQueryApplicationInvariantProjectionReader<'_, Schema>,
         ) -> Output,
-        retention_control: super::super::application_attempt::retained_decision_facts::StorageControl<'_, '_>,
+        retention_control: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
     ) -> Result<
         WorthQueryCompletedInvariantProjection<Schema, Output>,
         WorthQueryInvariantProjectionDenial,

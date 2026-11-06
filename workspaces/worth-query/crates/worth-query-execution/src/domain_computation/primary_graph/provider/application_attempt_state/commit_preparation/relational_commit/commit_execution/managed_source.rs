@@ -47,7 +47,7 @@ fn comparison_stop(
         Stop::ManagedIndex(cause) => crate::domain_computation::WorthQueryProviderSessionCommitStop::PreEffectDenied(
             provider_failure(WorthQueryProviderSessionProtocolStage::Commit, "managed Source consistency refused")
                 .with_managed_index_denial(cause)),
-        Stop::Execution(cause) => crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_stop(cause, None),
+        Stop::Execution(cause) => crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_stop(cause, None),
         Stop::OutputObservation(cause) => super::consumed_output::verification_stop(cause),
         Stop::WorkBudgetExceeded => super::consumed_output::verification_stop(
             crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop::WorkExhausted),

@@ -3,11 +3,7 @@ mod reference_input;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse;
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus;
-use {
-    super::ApplicationMutationBinding, super::ApplicationSchema, super::CandidateWriter,
-    super::WorthQueryApplicationAttemptDenial,
-    crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity,
-};
+use {super::ApplicationMutationBinding, super::ApplicationSchema, super::CandidateWriter, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity};
 
 impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     CandidateWriter<'_, Schema, Binding>

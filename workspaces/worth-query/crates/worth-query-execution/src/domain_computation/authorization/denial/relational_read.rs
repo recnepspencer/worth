@@ -9,7 +9,7 @@ pub(in crate::domain_computation::authorization) fn denial(
     subject: &str,
 ) -> WorthQueryOperationAuthorizationDenial {
     use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
-    let kind = match crate::facade::primary_graph::relational_execution_kind(cause, None) {
+    let kind = match crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause, None) {
         Ok(kind) => Kind::Stopped(Ok(kind)),
         Err(Control::Cancelled) => Kind::Stopped(Err(
             crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled,

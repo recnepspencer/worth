@@ -1,7 +1,4 @@
-use super::{
-    denial, observed_optional_text, observed_u64, EntityId, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationObservedFact, WorthQueryWorkflowLayout,
-};
+use {super::denial, super::observed_optional_text, super::observed_u64, super::EntityId, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationObservedFact, super::WorthQueryWorkflowLayout};
 
 pub(super) fn read_global_actions(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

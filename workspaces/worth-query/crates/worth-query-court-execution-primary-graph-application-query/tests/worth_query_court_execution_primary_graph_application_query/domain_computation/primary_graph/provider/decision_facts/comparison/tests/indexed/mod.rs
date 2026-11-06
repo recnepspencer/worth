@@ -1,5 +1,5 @@
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::decision_facts::comparison::indexed::PreparedSelections;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl;
 use crate::domain_computation::primary_graph::provider::decision_facts::comparison::tests;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::indexed_entity_selection::observe_indexed_entity_selection;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;

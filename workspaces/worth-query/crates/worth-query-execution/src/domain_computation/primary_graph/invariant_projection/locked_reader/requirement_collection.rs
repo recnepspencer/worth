@@ -8,16 +8,7 @@ use {
     super::ApplicationSchema, super::WorthQueryApplicationInvariantProjectionReader,
     crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity,
 };
-use {
-    crate::domain_computation::primary_graph::HandlerExecutionDenial,
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
-    crate::domain_computation::request_execution::advancement_denial,
-    crate::domain_computation::request_execution::QueryMemoryReservation,
-    crate::domain_computation::request_execution::QueryRequestExecution,
-    crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
-    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
-    crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
-};
+use {crate::domain_computation::primary_graph::HandlerExecutionDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::request_execution::advancement_denial, crate::domain_computation::request_execution::QueryMemoryReservation, crate::domain_computation::request_execution::QueryRequestExecution, crate::domain_computation::request_execution::WorthQueryAdvancementDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial};
 
 pub(in crate::domain_computation::primary_graph::invariant_projection) struct ObservedRequirementItems
 {

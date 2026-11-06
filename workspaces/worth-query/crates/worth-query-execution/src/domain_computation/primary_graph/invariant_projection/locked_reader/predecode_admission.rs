@@ -83,7 +83,7 @@ where
             Err(cause) => {
                 self.native_read_stop.get_or_insert(cause);
                 Err(HandlerExecutionDenial::new(
-                    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::from(cause),
+                    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::from(cause),
                 ))
             }
         }

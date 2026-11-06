@@ -4,12 +4,7 @@ use worth_query_declaration::facade::application_program::ApplicationWorkflowSub
 use worth_relational::facade::identity::{EntityId, PartitionId};
 
 use super::{decode_identity, denial, optional_identity, required_text, required_u64};
-use {
-    crate::domain_computation::primary_graph::application_attempt::observe_adjacency,
-    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial,
-    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact,
-    crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection,
-};
+use {crate::domain_computation::primary_graph::application_attempt::observe_adjacency, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection};
 use {
     crate::domain_computation::primary_graph::application_attempt::workflow::proposal::identity::WorkflowProposalCoverageScope,
     crate::domain_computation::primary_graph::application_attempt::workflow::proposal::WorkflowProposalCoverageMeaning,
@@ -133,7 +128,7 @@ pub(super) fn observe_coverages(
     let direction = WorthQueryApplicationAdjacencyDirection::Outgoing;
     check_request_live(observation_request, "workflow proposal coverage")?;
     let maximum_work_units = count.checked_add(1).and_then(|count| count.checked_mul(2))
-        .ok_or_else(|| crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::Representability.into_attempt_denial("workflow proposal coverage"))?;
+        .ok_or_else(|| crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial::Representability.into_attempt_denial("workflow proposal coverage"))?;
     let relations = observe_adjacency(
         runtime,
         execution,

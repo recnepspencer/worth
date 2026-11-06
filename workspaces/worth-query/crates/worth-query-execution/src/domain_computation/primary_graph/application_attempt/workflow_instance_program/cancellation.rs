@@ -18,7 +18,7 @@ use worth_query_installation::facade::{
 };
 
 use super::super::workflow_instance_observation::instance_binding::deny_ended;
-use {super::super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::super::WorthQueryApplicationEffectProgram, super::super::WorthQueryCompleteApplicationReadSet, super::super::WorthQueryProjectedApplicationMutation};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::super::WorthQueryApplicationEffectProgram, super::super::WorthQueryCompleteApplicationReadSet, super::super::WorthQueryProjectedApplicationMutation};
 use {super::intent_identity, crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef};
 use close::ClosedWorkflowInstance;
 pub use publication::{

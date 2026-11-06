@@ -2,17 +2,7 @@ use worth_query_declaration::facade::application_program::ApplicationWorkflowCon
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{PreparedWorkflowAdvance, PreparedWorkflowCondition};
-use {
-    crate::domain_computation::primary_graph::application_attempt::workflow::instance::visit_workflow_transition_facts,
-    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceState,
-    crate::domain_computation::primary_graph::expression::evaluate_condition,
-    crate::domain_computation::primary_graph::expression::supplies,
-    crate::domain_computation::primary_graph::expression::supporting_identity,
-    crate::domain_computation::primary_graph::expression::WorthQueryWorkflowConditionSources,
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
-    crate::domain_computation::primary_graph::WorthQueryApplicationEffectProgram,
-    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::instance::visit_workflow_transition_facts, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceState, crate::domain_computation::primary_graph::expression::evaluate_condition, crate::domain_computation::primary_graph::expression::supplies, crate::domain_computation::primary_graph::expression::supporting_identity, crate::domain_computation::primary_graph::expression::WorthQueryWorkflowConditionSources, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::WorthQueryApplicationEffectProgram, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 
 impl<Schema, Operation, Input, Scope> PreparedWorkflowCondition<Schema, Operation, Input, Scope>
 where
@@ -124,7 +114,7 @@ where
         )?;
         let currentness_facts = super::super::OutputCurrentnessFacts::admit_owned_program_facts(
             currentness_facts,
-            super::super::retained_decision_facts::StorageControl::new(
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(
                 execution.allocation_policy(),
                 Some(read_set.admission.publication_request()),
             ),

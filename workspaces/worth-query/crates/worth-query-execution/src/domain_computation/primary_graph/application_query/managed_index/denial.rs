@@ -121,7 +121,7 @@ mod tests {
 
     #[test]
     fn source_verification_preserves_request_causes_and_intrinsic_mismatch() {
-        use {crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind as Authorization, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as Refusal, crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop as Stop, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Attempt};
+        use {crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind as Authorization, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as Refusal, crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop as Stop, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial as Attempt};
         let authorization = Authorization::Refused(Refusal::CapabilityGrantMissing);
         for (stop, kind, posture) in [
             (

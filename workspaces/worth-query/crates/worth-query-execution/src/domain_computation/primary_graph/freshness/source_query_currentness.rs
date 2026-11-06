@@ -35,7 +35,7 @@ impl WorthQueryPrincipalFreshnessEvidence {
                 relation_kind: self.target.relation_kind, anchor: self.mapping.entity_id,
                 direction: worth_relational::facade::runtime::RelationalAdjacencyDirection::Outgoing,
                 native_revision: self.target.adjacency_revision, comparison_work_limit: 1,
-                endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::empty(),
+                endpoints: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints::empty(),
             },
         ])
     }

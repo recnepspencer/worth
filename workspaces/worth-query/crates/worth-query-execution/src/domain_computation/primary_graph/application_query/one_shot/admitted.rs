@@ -122,7 +122,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn map_selec
 
         SelectedAuthorizedReadStop::Currentness(SelectedAuthorizationCurrentnessStop::Execution(cause)) => {
 use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
-            match crate::facade::primary_graph::relational_execution_kind(cause, None) {
+            match crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause, None) {
                 Ok(kind) => WorthQueryApplicationOneShotDenialKind::ExecutionRequest(kind),
                 Err(Control::Cancelled) => WorthQueryApplicationOneShotDenialKind::Cancelled,
                 Err(Control::TimedOut) => WorthQueryApplicationOneShotDenialKind::DeadlineExceeded,

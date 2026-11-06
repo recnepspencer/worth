@@ -44,7 +44,7 @@ fn sealing_keeps_the_one_original_issued_body_and_requires_explicit_relation_fac
         assert_eq!(original.native_for_test().visits().len(),4);
         assert_eq!(original.native_for_test().relations().len(),3);
         assert!(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::encoding::encode_funded(
-            &(*completed.facts_for_test()),worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(Allocation::SystemAllocation,Some(&request))).is_err(),
+            &(*completed.facts_for_test()),worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(Allocation::SystemAllocation,Some(&request))).is_err(),
             "live walk facts deliberately have no checkpoint reconstruction door");
         let selected=world.application.select_product_branch_for_test(&execution,world.application.product_runtime().default_branch_for_test()).unwrap();
         let target=selected.resolve_entity(&phase,NodeKey::reference(),1,&request,WorthQueryPrincipalResolutionMode::Ordinary).unwrap();

@@ -1,5 +1,5 @@
 //! Attribution of an actual source-query observation to its original attempt.
-use {crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity, crate::domain_computation::primary_graph::vocabulary::application_contribution::source_qualification::OutputSourceAddress, crate::domain_computation::primary_graph::output_lineage::invalidation::ObservedSourcePublication};
+use {crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity, crate::domain_computation::primary_graph::vocabulary::application_contribution::source_qualification::OutputSourceAddress};
 use std::{cmp::Ordering, sync::Arc};
 
 #[derive(Clone, Debug)]
@@ -8,21 +8,20 @@ pub(in crate::domain_computation::primary_graph) struct SourcePublicationRead {
     address: Arc<OutputSourceAddress>,
 }
 impl SourcePublicationRead {
+    /// The address is the observed source publication's own (`ObservedSourcePublication::address`).
     pub(in crate::domain_computation::primary_graph) fn new(
         admission: WorthQueryOperationAdmissionIdentity,
-        observation: Arc<ObservedSourcePublication>,
+        address: Arc<OutputSourceAddress>,
     ) -> Self {
-        Self {
-            admission,
-            address: observation.address(),
-        }
+        Self { admission, address }
     }
-    pub(in crate::domain_computation::primary_graph) fn admits_observation(
+    /// The same admission read the same publication address (`Arc` identity, not equality).
+    pub(in crate::domain_computation::primary_graph) fn admits_address(
         &self,
         admission: WorthQueryOperationAdmissionIdentity,
-        observation: &ObservedSourcePublication,
+        address: &Arc<OutputSourceAddress>,
     ) -> bool {
-        self.admits(admission) && Arc::ptr_eq(&self.address, &observation.address())
+        self.admits(admission) && Arc::ptr_eq(&self.address, address)
     }
     pub(in crate::domain_computation::primary_graph) fn admits(
         &self,

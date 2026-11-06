@@ -278,7 +278,7 @@ pub fn patch_read_denial(
         class
     {
         refusal.kind = Box::new(WorthQueryPrimaryGraphIndexRefreshDenialKind::Execution(
-            super::provider::relational_execution_denial::relational_execution_kind(cause, None),
+            crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause, None),
         ));
     }
     refusal
@@ -325,7 +325,7 @@ fn maintenance_denial(
     match denial.kind {
         Native::Execution(cause) => {
             refusal.kind = Box::new(WorthQueryPrimaryGraphIndexRefreshDenialKind::Execution(
-                super::provider::relational_execution_denial::relational_execution_kind(
+                crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(
                     cause, None,
                 ),
             ))

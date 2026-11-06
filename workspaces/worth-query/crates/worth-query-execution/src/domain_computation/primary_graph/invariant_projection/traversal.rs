@@ -160,7 +160,7 @@ where
             .map_err(|cause| {
                 WorthQueryInvariantProjectionTraversalDenial::new(
                     WorthQueryInvariantProjectionTraversalDenialKind::ReadExecution(
-                        crate::facade::primary_graph::relational_execution_kind(cause, None),
+                        crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause, None),
                     ),
                     entity,
                 )

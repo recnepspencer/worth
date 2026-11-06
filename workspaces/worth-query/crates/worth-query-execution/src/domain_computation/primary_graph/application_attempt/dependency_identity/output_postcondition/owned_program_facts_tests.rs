@@ -1,12 +1,6 @@
 //! Storage construction and carry meaning; no graph-currentness authority is minted here.
 use super::OutputCurrentnessFacts;
-use crate::domain_computation::primary_graph::{
-    application_attempt::{
-        retained_decision_facts::{StorageControl, StoreDenial},
-        WorthQueryApplicationObservedFact as Fact,
-    },
-    application_checkpoint::facts::{self, FactPayload},
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact, crate::domain_computation::primary_graph::application_checkpoint::facts, crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload};
 use std::sync::Arc;
 use worth_execution::ExecutionAllocationPolicy;
 use worth_relational::facade::identity::{EntityId, PartitionId};

@@ -1,5 +1,4 @@
 //! Owned application-attempt refusals and their original causes.
-mod kind;
 use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 
 /// A typed refusal of an application attempt before commit, with the subject it
@@ -36,7 +35,7 @@ enum AttemptDenialCause {
     OutputObservation(Box<crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop>),
     None,
     NativeQueryRead(Box<worth_relational::facade::runtime::QueryReadExecutionStop>),
-    RetainedSource(Box<super::retained_decision_facts::StoreDenial>),
+    RetainedSource(Box<crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial>),
     Expression(Box<worth_foundational::expression_api::ExpressionDenial>),
     Allocation(Box<worth_execution::ExecutionAllocationDenial>),
     RequestAuthority(
@@ -115,7 +114,7 @@ impl WorthQueryApplicationAttemptDenial {
     pub(in crate::domain_computation::primary_graph) fn retained_source_denied(
         kind: WorthQueryApplicationAttemptDenialKind,
         subject: &str,
-        denial: super::retained_decision_facts::StoreDenial,
+        denial: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial,
     ) -> Self {
         Self::from_cause(
             kind,
@@ -129,7 +128,7 @@ impl WorthQueryApplicationAttemptDenial {
     {
         match self.cause() {
             Some(AttemptDenialCause::RetainedSource(denial)) => match denial.as_ref() {
-                super::retained_decision_facts::StoreDenial::RequestInterruption(interruption) => {
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial::RequestInterruption(interruption) => {
                     Some(*interruption)
                 }
                 _ => None,
@@ -141,7 +140,7 @@ impl WorthQueryApplicationAttemptDenial {
         match self.cause() {
             Some(AttemptDenialCause::Allocation(denial)) => Some(denial.as_ref()),
             Some(AttemptDenialCause::RetainedSource(denial)) => match denial.as_ref() {
-                super::retained_decision_facts::StoreDenial::Allocation(denial) => Some(denial),
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial::Allocation(denial) => Some(denial),
                 _ => None,
             },
             _ => None,

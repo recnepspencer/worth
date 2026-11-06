@@ -3,7 +3,7 @@ use worth_relational::facade::runtime::{
     AdjacencyStructuralRevisionDenial, RelationalAdjacencyDirection,
 };
 
-use {super::denial, super::ObservedWorkflowTransition, crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef, super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::WorthQueryApplicationObservedFact};
+use {super::denial, super::ObservedWorkflowTransition, crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::WorthQueryApplicationObservedFact};
 use crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition;
 use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle;
@@ -123,7 +123,7 @@ pub(super) fn observe_progress(
         direction: RelationalAdjacencyDirection::Outgoing,
         native_revision: revision,
         comparison_work_limit: COMPARISON_WORK_LIMIT,
-        endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::empty(),
+        endpoints: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints::empty(),
     });
     let key = WorkflowInstanceProgressKey::new(
         instance.branch().occurrence_ordinal(),

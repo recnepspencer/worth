@@ -67,7 +67,7 @@ impl AggregateScanReader<'_, '_> {
             .map_err(|cause| {
                 denial(
                     WorthQueryInvariantAggregateDenialKind::ReadExecution(
-                        crate::facade::primary_graph::relational_execution_kind(cause, None),
+                        crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause, None),
                     ),
                     self.plan.relation_member(),
                 )
@@ -107,7 +107,7 @@ impl AggregateScanReader<'_, '_> {
             .map_err(|cause| {
                 denial(
                     WorthQueryInvariantAggregateDenialKind::ReadExecution(
-                        crate::facade::primary_graph::relational_execution_kind(cause, None),
+                        crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause, None),
                     ),
                     self.plan.relation_member(),
                 )
@@ -140,7 +140,7 @@ impl AggregateScanReader<'_, '_> {
         .map_err(|cause| {
             denial(
                 WorthQueryInvariantAggregateDenialKind::ReadExecution(
-                    crate::facade::primary_graph::relational_execution_kind(cause, None),
+                    crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause, None),
                 ),
                 self.plan.field_member(),
             )

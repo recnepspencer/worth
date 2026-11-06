@@ -154,7 +154,7 @@ pub(super) fn begin<Key, Item, Reduced, Schema, Operation>(
     input_digest: [u8; 32],
 ) -> Result<
     Begun<Key, Item, Reduced>,
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
 >
 where
     Key: Send + Sync + 'static,

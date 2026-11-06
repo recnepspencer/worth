@@ -19,7 +19,7 @@ use {
 /// A native body assessment preserves phase, projection and observation refusal.
 #[derive(Debug)]
 pub enum WorthQueryOperationBodyAssessmentDenial {
-    Source(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial),
+    Source(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial),
     Phase(WorthQueryForeignAdvancementPhase),
     Projection(WorthQueryOperationProjectionDenial),
     Observation(HandlerExecutionDenial),

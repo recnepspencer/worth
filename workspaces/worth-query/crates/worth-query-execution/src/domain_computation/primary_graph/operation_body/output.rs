@@ -97,12 +97,12 @@ pub(super) fn install_outputs<
 pub(super) fn require_related_outputs<Schema>(
     outputs: &[InstalledBodyOutput],
     selections: &crate::domain_computation::primary_graph::vocabulary::operation_body::selection::PreparedBodySelections<Schema>,
-) -> Result<(), super::super::WorthQueryApplicationAttemptDenial> {
+) -> Result<(), crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial> {
     for output in outputs {
         if let ApplicationOperationBodyOutputTarget::Related { relation, from, to } = &output.target
             && selections.selected(relation, from, to).is_none()
         {
-            return Err(super::super::WorthQueryApplicationAttemptDenial::new(
+            return Err(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::new(
                 crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
                 relation,
             ));

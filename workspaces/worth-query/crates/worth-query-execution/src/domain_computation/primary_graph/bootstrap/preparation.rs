@@ -255,7 +255,7 @@ pub(super) fn map_checkpoint_recovery_stop(
         ),
         RelationalRecoveryStop::Request(cause) => {
             let translated =
-                super::super::provider::relational_execution_denial::relational_execution_kind(
+                crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(
                     cause, None,
                 );
             let kind = match translated {

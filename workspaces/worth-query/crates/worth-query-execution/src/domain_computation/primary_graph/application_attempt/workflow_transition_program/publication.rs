@@ -118,7 +118,7 @@ pub enum PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
         approval: Option<PreparedWorkflowApprovalProjection>,
         approval_identity: Option<[u8; 32]>,
         replays: PreparedWorkflowTransitionReplays,
-        denial: super::super::WorthQueryApplicationAttemptDenial,
+        denial: crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
     },
 }
 
@@ -329,7 +329,7 @@ pub enum WorkflowProgressOutcome {
         receipt: super::super::WorthQueryApplicationCommitReceipt,
         cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
     },
-    PreparationDenied(super::super::WorthQueryApplicationAttemptDenial),
+    PreparationDenied(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial),
     AuthenticationDenied(
         worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventDenial,
     ),

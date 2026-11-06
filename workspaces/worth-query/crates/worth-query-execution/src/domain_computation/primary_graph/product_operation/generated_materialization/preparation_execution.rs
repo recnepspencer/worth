@@ -1,5 +1,5 @@
 //! One materialization preparation execution projection preserves the Native cause.
-use crate::domain_computation::primary_graph::provider::relational_execution_denial;
+use crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial;
 use worth_relational::facade::{
     branch::RelationalMaterializationError,
     transactions::{CommitExecutionDenialKind, TransactionCommitError},
@@ -24,7 +24,7 @@ pub(super) fn project(
         }
         _ => return None,
     };
-    Some(relational_execution_denial::relational_execution_kind(
+    Some(crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(
         cause, partition,
     ))
 }

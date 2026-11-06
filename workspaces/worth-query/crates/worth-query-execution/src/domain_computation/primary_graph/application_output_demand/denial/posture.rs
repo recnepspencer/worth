@@ -142,7 +142,7 @@ impl WorthQueryOutputDemandDenialKind {
     ) -> Self {
         use crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind as Kind;
         match kind {
-            Kind::Stopped(cause) => Self::SourceQueryExecution(crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(match crate::facade::primary_graph::relational_execution_kind(cause, None) { Ok(kind) => kind, Err(crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled) => return Self::Cancelled, Err(crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::TimedOut) => return Self::TimedOut })),
+            Kind::Stopped(cause) => Self::SourceQueryExecution(crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(match crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause, None) { Ok(kind) => kind, Err(crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::Cancelled) => return Self::Cancelled, Err(crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind::TimedOut) => return Self::TimedOut })),
             Kind::Refused(refusal) => Self::SourceScope(refusal),
         }
     }

@@ -41,8 +41,8 @@ impl Fact {
     pub(in crate::domain_computation::primary_graph) fn merge_same_source_fact(
         &mut self,
         duplicate: Self,
-        control: super::super::retained_decision_facts::StorageControl<'_, '_>,
-    ) -> Result<bool, super::super::retained_decision_facts::StoreDenial> {
+        control: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
+    ) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial> {
         if self.dependency_key() != duplicate.dependency_key() {
             return Ok(false);
         }
@@ -53,8 +53,8 @@ impl Fact {
     pub(in crate::domain_computation::primary_graph) fn merge_after_equal_source_key(
         &mut self,
         duplicate: Self,
-        control: super::super::retained_decision_facts::StorageControl<'_, '_>,
-    ) -> Result<bool, super::super::retained_decision_facts::StoreDenial> {
+        control: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
+    ) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial> {
         match (self, duplicate) {
             (
                 Fact::SourceReadAuthorization { observation: first },
@@ -71,7 +71,7 @@ impl Fact {
                 };
                 let equal = first.same_truth(&second, &mut |units| {
                     crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation::request_work(&execution, units)
-                        .map_err(super::super::retained_decision_facts::StoreDenial::ExecutionRequest)
+                        .map_err(crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial::ExecutionRequest)
                 })?;
                 control.check_live()?;
                 Ok(equal)
@@ -91,11 +91,11 @@ impl Fact {
                 };
                 let equal = first.same_truth(&second, &mut |units| {
                     crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation::request_work(&execution, units)
-                        .map_err(super::super::retained_decision_facts::StoreDenial::ExecutionRequest)
+                        .map_err(crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial::ExecutionRequest)
                 }, &mut |bytes| execution.reserve_retained_memory(bytes)
-                    .map_err(super::super::retained_decision_facts::StoreDenial::ExecutionRequest),
+                    .map_err(crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial::ExecutionRequest),
                     &mut comparison_fault,
-                    &mut |left, right| left.same_content(&execution, right).map_err(super::super::retained_decision_facts::StoreDenial::Content))?;
+                    &mut |left, right| left.same_content(&execution, right).map_err(crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial::Content))?;
                 control.check_live()?;
                 Ok(equal)
             }
@@ -199,7 +199,7 @@ mod tests {
             direction: RelationalAdjacencyDirection::Outgoing,
             native_revision: Some(VersionId(revision)),
             comparison_work_limit: work,
-            endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::from_observed(&endpoints, worth_execution::ExecutionAllocationPolicy::SystemAllocation, None).unwrap(),
+            endpoints: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints::from_observed(&endpoints, worth_execution::ExecutionAllocationPolicy::SystemAllocation, None).unwrap(),
         }
     }
 
@@ -213,7 +213,7 @@ mod tests {
         assert!(forward
             .merge_same_source_fact(
                 second.clone(),
-                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
             )
             .unwrap());
         assert_eq!(forward, expected);
@@ -222,14 +222,14 @@ mod tests {
         assert!(reverse
             .merge_same_source_fact(
                 first,
-                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
             )
             .unwrap());
         assert_eq!(reverse, expected);
         assert!(forward
             .merge_same_source_fact(
                 expected.clone(),
-                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
             )
             .unwrap());
         assert_eq!(forward, expected);
@@ -242,7 +242,7 @@ mod tests {
         assert!(!observed
             .merge_same_source_fact(
                 adjacency(5, 7, vec![endpoint(3)]),
-                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
             )
             .unwrap());
         assert_eq!(observed, original);
@@ -253,7 +253,7 @@ mod tests {
         assert!(!observed
             .merge_same_source_fact(
                 foreign,
-                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
             )
             .unwrap());
         assert_eq!(observed, original);
@@ -263,7 +263,7 @@ mod tests {
         assert!(entity
             .merge_same_source_fact(
                 entity.clone(),
-                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
             )
             .unwrap());
         assert!(!entity
@@ -271,7 +271,7 @@ mod tests {
                 Fact::SourceEntity {
                     entity_id: endpoint(2)
                 },
-                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
             )
             .unwrap());
         assert_eq!(
@@ -285,8 +285,8 @@ mod tests {
 
 fn comparison_fault(
     cause: crate::domain_computation::primary_graph::vocabulary::application_query::content_comparison::ProjectionContentComparisonFault,
-) -> super::super::retained_decision_facts::StoreDenial {
-    use super::super::retained_decision_facts::StoreDenial;
+) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial {
+    use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial;
     use crate::domain_computation::primary_graph::vocabulary::application_query::content_comparison::ProjectionContentComparisonFault as Fault;
     match cause {
         Fault::ContentInconsistency => StoreDenial::ContentInconsistency,

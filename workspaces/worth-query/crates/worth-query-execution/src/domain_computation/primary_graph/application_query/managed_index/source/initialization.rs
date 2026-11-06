@@ -107,7 +107,7 @@ pub(in crate::domain_computation::primary_graph) fn initialization_execution_den
         WorthQueryPrimaryGraphInstallationDenial as Denial,
         WorthQueryPrimaryGraphInstallationDenialKind as Kind,
     };
-    let kind = match crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(cause, None) {
+    let kind = match crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause, None) {
         Ok(kind) => Kind::ExecutionDenied { kind },
         Err(kind) => Kind::ExecutionControlStopped { kind },
     };

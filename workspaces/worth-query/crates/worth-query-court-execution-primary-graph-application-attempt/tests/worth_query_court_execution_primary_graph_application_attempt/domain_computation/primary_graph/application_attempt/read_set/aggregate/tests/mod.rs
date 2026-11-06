@@ -42,7 +42,7 @@ fn aggregate_sealing_keeps_original_bodies_without_granting_relation_write_facts
         assert_eq!(original.native().len(),3);
 
         assert!(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::encoding::encode_funded(
-            &[Fact::Aggregate { observation: original.clone() }],worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(Allocation::SystemAllocation,Some(&request))).is_err(),
+            &[Fact::Aggregate { observation: original.clone() }],worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(Allocation::SystemAllocation,Some(&request))).is_err(),
             "live aggregate facts deliberately have no checkpoint reconstruction door");
         let selected=world.application.select_product_branch_for_test(&execution,world.application.product_runtime().default_branch_for_test()).unwrap();
         let target=selected.resolve_entity(&phase,NodeKey::reference(),1,&request,WorthQueryPrincipalResolutionMode::Ordinary).unwrap();

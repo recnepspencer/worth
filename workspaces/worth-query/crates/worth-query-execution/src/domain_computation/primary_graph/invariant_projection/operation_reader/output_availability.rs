@@ -215,7 +215,7 @@ impl<Schema: ApplicationSchema + 'static, Operation>
                     .observe_source_publication(&covered, &selected, candidate)
                     .map_err(Cause::Registration)?;
                 let observation = std::sync::Arc::new(observed);
-                self.decision_facts.record_source_publication(SourcePublicationRead::new(admission_identity,observation.clone()), observation)
+                self.decision_facts.record_source_publication(SourcePublicationRead::new(admission_identity,observation.address()), observation)
                     .map_err(|stop|Cause::Registration(crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop::Admission(stop)))?;
                 Ok((posture, entity))
             })();

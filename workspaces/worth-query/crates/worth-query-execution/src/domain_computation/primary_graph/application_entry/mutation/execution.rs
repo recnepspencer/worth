@@ -16,10 +16,7 @@ use super::{
     HandlerExecutionDenial, HandlerResult, WorthQueryCompletedMutationCandidate,
     WorthQueryMutationHandlerExecutionReport, WorthQueryMutationHandlerWork,
 };
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdmittedApplicationOperation, WorthQueryApplicationAttemptDenial,
-    WorthQueryOperationProjectionDenial, WorthQueryPrimaryGraphApplicationRuntime,
-};
+use {crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::WorthQueryOperationProjectionDenial, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime};
 
 /// Refusal to run a mutation handler for an admitted operation.
 ///

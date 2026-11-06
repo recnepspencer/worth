@@ -5,11 +5,7 @@ use worth_query_installation::facade::{
 
 use super::super::fact::WorthQueryApplicationFactKey;
 use super::WorthQueryApplicationReadAttempt;
-use {
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
-    crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity,
-    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 
 impl<Schema, Operation, Input, Scope, Phase>
     WorthQueryApplicationReadAttempt<'_, '_, Schema, Operation, Input, Scope, Phase>

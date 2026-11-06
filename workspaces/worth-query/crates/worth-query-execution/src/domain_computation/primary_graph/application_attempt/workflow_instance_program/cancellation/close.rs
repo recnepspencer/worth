@@ -16,7 +16,7 @@ use super::super::super::workflow_instance_observation::{
     instance_binding::fence_owner_custody, observe_workflow_instance,
     WorkflowInstanceObservationPurpose,
 };
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef, super::super::super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::super::super::WorthQueryApplicationObservedFact, super::super::super::WorthQueryApplicationRealizedEffect, super::super::super::WorthQueryCompleteApplicationReadSet, super::super::super::WorthQueryProjectedApplicationMutation};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::super::super::WorthQueryApplicationObservedFact, super::super::super::WorthQueryApplicationRealizedEffect, super::super::super::WorthQueryCompleteApplicationReadSet, super::super::super::WorthQueryProjectedApplicationMutation};
 use {super::super::performed, crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef};
 use super::HISTORY;
 use {

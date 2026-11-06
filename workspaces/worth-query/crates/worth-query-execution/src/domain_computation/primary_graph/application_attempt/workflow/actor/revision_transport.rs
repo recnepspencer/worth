@@ -5,13 +5,7 @@ use worth_relational::facade::{
     runtime::{RelationalAdjacencyDirection, RelationalRuntime},
     snapshots::SnapshotHandle,
 };
-use {
-    crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection as Direction,
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial,
-    crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact as Fact,
-    crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints,
-    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection as Direction, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial as Denial, crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact as Fact, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints as WorthQueryApplicationSourceAdjacencyEndpoints, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind};
 
 pub(super) fn capture(
     execution: &ExecutionRequest<'_, '_>,

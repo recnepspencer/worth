@@ -1,9 +1,6 @@
 //! Fresh witness projection funds its actual new aspect heaps before cloning.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_attempt::retained_decision_facts::{StorageControl, StoreDenial},
-    application_checkpoint::facts::FactPayload,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial, crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload};
 use worth_execution::ExecutionArrayBuilder;
 
 impl PreparedNativeOutputFacts<'_> {

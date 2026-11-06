@@ -1,10 +1,6 @@
 //! The published operation contract is data, never a reconstructed binding or permit.
 use super::super::observed_optional_text;
-use super::{
-    invalid_connection, CompiledWorkflowConnectionKind, EntityId,
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact,
-    WorthQueryWorkflowLayout,
-};
+use {super::invalid_connection, super::CompiledWorkflowConnectionKind, super::EntityId, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationObservedFact, super::WorthQueryWorkflowLayout};
 pub(super) fn observe(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,

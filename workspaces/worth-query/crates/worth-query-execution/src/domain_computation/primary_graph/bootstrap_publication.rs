@@ -302,7 +302,7 @@ pub fn identity_indexes_built(
     if let Some(denial) = build.execution_denial {
         let translated = match denial.kind {
             worth_relational::facade::indexes::DerivedIndexExecutionDenialKind::Cause(cause) => {
-                super::provider::relational_execution_denial::relational_execution_kind(
+                crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(
                     cause,
                     denial.partition_identity,
                 )

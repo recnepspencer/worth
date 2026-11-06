@@ -1,7 +1,5 @@
 //! Exact selected symbol meaning, borrowed while the native pin retains custody.
-use super::{
-    denial, WorthQueryApplicationAttemptDenial as Denial, WorthQueryApplicationObservedFact,
-};
+use {super::denial, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial as Denial, super::WorthQueryApplicationObservedFact};
 use worth_foundational::facade::{AspectFieldLocator, AspectValue, InternedString};
 use worth_relational::facade::{
     identity::{EntityId, KindId},

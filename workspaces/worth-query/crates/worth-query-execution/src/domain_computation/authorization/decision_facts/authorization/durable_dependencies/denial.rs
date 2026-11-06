@@ -3,7 +3,7 @@ use crate::domain_computation::authorization::{
     WorkflowApprovalRequestDecodingDenial as Decode,
     WorthQueryOperationAuthorizationDenial as Admission,
 };
-use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Attempt;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial as Attempt;
 use worth_relational::facade::authorization::RelationalAuthorizationDependencyDenial as Native;
 
 pub(super) fn decode(cause: Native) -> Decode {

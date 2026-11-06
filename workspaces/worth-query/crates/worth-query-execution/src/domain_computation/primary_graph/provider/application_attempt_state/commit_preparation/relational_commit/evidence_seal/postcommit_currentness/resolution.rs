@@ -66,7 +66,7 @@ impl PreparedFactRebase {
         producer_output: bool,
 
         prepared_endpoints: Option<
-            crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints,
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints,
         >,
     ) -> Result<Result<Self, RebaseVerificationFailure>, CompanionPreflightStop> {
         let unavailable = RebaseVerificationFailure::native_unavailable();
@@ -145,7 +145,7 @@ impl PreparedFactRebase {
         producer_output: bool,
 
         prepared_endpoints: Option<
-            crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints,
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints,
         >,
     ) -> Result<Self, RebaseVerificationFailure> {
         let unavailable = RebaseVerificationFailure::native_unavailable();

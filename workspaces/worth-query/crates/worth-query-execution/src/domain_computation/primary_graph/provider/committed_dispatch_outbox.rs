@@ -227,7 +227,7 @@ fn map_retained_snapshot_denial(
             Denial::CommitMismatch
         }
         Kind::Execution(cause) => Denial::ReadExecution(
-            crate::facade::primary_graph::relational_execution_kind(cause, None),
+            crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause, None),
         ),
         Kind::EntityKindMismatch => Denial::WrongRecordKind,
     }

@@ -247,6 +247,6 @@ pub fn idempotency_read_stop(
     cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
 ) -> WorthQueryProviderIdempotencyResolutionDenial {
     WorthQueryProviderIdempotencyResolutionDenial::ExecutionDenied(
-        super::super::relational_execution_denial::relational_execution_kind(cause, None),
+        crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause, None),
     )
 }

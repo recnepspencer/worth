@@ -106,7 +106,7 @@ impl WorthQueryAuthorizationDecisionFact {
                 probe.consults() >= k,
                 "the activation read reached consult {k}"
             );
-            assert_eq!(answer, Err(crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Stopped(crate::facade::primary_graph::relational_execution_kind(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted, None))));
+            assert_eq!(answer, Err(crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Stopped(crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted, None))));
         }
 
         source.cancel();

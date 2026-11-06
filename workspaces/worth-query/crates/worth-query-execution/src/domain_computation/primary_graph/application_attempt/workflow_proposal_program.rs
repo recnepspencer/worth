@@ -7,12 +7,7 @@ use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationWorkflowSpec,
 };
 
-use {
-    super::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationEffectProgram,
-    super::WorthQueryApplicationObservedFact, super::WorthQueryCompleteApplicationReadSet,
-    super::WorthQueryProjectedApplicationMutation,
-    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationEffectProgram, super::WorthQueryApplicationObservedFact, super::WorthQueryCompleteApplicationReadSet, super::WorthQueryProjectedApplicationMutation, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 use {
     crate::domain_computation::primary_graph::application_attempt::workflow::definition::reconstruct_compiled_definition,
     crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorkflowDefinitionCompilationPosture,

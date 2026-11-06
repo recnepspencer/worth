@@ -1,6 +1,6 @@
 //! Native source custody, shared settlement installation, retirement and races.
 use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::*;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts;
 
 #[test]

@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 use worth_query_declaration::facade::application_program::ApplicationWorkflowDataFlow;
 
-use {crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, crate::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::plan::CompiledWorkflowConnection, crate::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::plan::CompiledWorkflowConnectionKind, crate::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::plan::CompiledWorkflowNode, crate::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::plan::CompiledWorkflowNodeKind};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, crate::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::plan::CompiledWorkflowConnection, crate::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::plan::CompiledWorkflowConnectionKind, crate::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::plan::CompiledWorkflowNode, crate::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::plan::CompiledWorkflowNodeKind};
 
 /// O(nodes + connections) cold work; never re-proved by warm dispatch.
 pub(super) fn admit(

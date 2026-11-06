@@ -34,7 +34,7 @@ where
         .and_then(|()| program.validate_current_authority())
         .map_err(|denial| {
             WorthQueryProgramMigrationPreparationDenial::Candidate(
-                super::WorthQueryApplicationAttemptDenial::request_authority_lost(denial),
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::request_authority_lost(denial),
             )
         })?;
     // Adoption lowers effects without ordinary signing publication. A signed

@@ -19,10 +19,7 @@ use {
     super::WorthQueryApplicationOutputPosture, super::WorthQueryApplicationOutputRoleNameDenial,
     crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse,
 };
-use {
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
-    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct CandidateOutputBinding {
     posture: WorthQueryApplicationOutputPosture,

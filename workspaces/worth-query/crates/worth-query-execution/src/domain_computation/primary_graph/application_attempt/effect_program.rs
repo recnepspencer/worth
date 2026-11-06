@@ -58,10 +58,7 @@ use super::read_set::WorthQueryCompleteApplicationReadSet;
 use crate::domain_computation::primary_graph::WorthQueryApplicationEntityKey;
 pub(in crate::domain_computation::primary_graph) use output_correspondence::WorthQueryApplicationOutputCorrespondence;
 use target_admission::installed_contract_admits_program_target;
-use {
-    super::WorthQueryApplicationAttemptDenial, super::WorthQueryProjectedApplicationMutation,
-    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryProjectedApplicationMutation, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 pub use {
     output_correspondence::WorthQueryApplicationOutputEntity,
     output_correspondence::WorthQueryApplicationOutputFamilyEntry,

@@ -43,7 +43,7 @@ fn cancelled_native_preparation_is_a_control_stop_not_no_kind() {
         Default::default(),
     )
     .with_native_preparation_error_for_test(error);
-    assert_eq!(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::relational_execution_denial::native_preparation_kind(&failure), Err(Control::Cancelled));
+    assert_eq!(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::native_preparation_kind(&failure), Err(Control::Cancelled));
     let denial = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied(failure);
     assert_eq!(
         denial.execution_denial_cause(),

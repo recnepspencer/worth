@@ -5,12 +5,7 @@ use super::super::fact::{observe_adjacency, observe_indexed_entity_selection};
 use super::WorkflowDefinitionExpectedPredecessor;
 use crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorkflowLineagePublicationTarget;
 use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
-use {
-    super::super::WorthQueryApplicationAttemptDenial,
-    super::super::WorthQueryApplicationObservedFact,
-    crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection,
-    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::super::WorthQueryApplicationObservedFact, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 
 const LINEAGE_LOOKUP_LIMIT: usize = 2;
 pub(super) const CURRENT_DEFINITION_WORK_LIMIT: usize = 2;

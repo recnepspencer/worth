@@ -1,5 +1,6 @@
 //! Sealed test doors over this module's private members.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial;
 
 impl<T> Run<T> {
     #[doc(hidden)]
@@ -20,7 +21,7 @@ impl<T> Run<T> {
     pub fn locate_for_test(
         &self,
         key: &AdmittedFactKey,
-        policy: super::super::StorageControl<'_, '_>,
+        policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
     ) -> Result<Option<&Slot<T>>, StoreDenial> {
         Self::locate(self, key, policy)
     }
@@ -31,7 +32,7 @@ impl<T> Run<T> {
     pub fn merge_for_test(
         left: Self,
         right: Self,
-        policy: super::super::StorageControl<'_, '_>,
+        policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
     ) -> Result<Self, StoreDenial> {
         Self::merge(left, right, policy)
     }

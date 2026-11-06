@@ -1,4 +1,4 @@
-use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum FactDecodeDenial {
     Format(String),

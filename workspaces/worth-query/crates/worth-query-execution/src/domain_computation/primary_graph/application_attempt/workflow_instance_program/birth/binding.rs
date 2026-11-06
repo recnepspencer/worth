@@ -2,7 +2,7 @@ use super::super::super::{
     WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
     WorthQueryApplicationRealizedEffect,
 };
-use super::{mismatch, WorkflowBirthAuthority, WorthQueryApplicationAttemptDenial};
+use {super::mismatch, super::WorkflowBirthAuthority, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial};
 use crate::domain_computation::primary_graph::application_attempt::effect_program::WorthQueryApplicationCreationPartition;
 use {
     crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial,

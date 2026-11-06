@@ -1,5 +1,5 @@
 //! Replace actual fresh-call reader sets without changing the original key universe.
-use super::super::super::retained_decision_facts::{StorageControl, StoreDenial};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial};
 use super::*;
 use std::sync::Arc;
 use worth_execution::{ChargedBytes, ExecutionOrderedMapDenial};

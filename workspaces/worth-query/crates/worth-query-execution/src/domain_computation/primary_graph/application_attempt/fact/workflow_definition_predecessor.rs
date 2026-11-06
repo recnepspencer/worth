@@ -13,7 +13,7 @@ pub(super) fn remains_equal(
     lineage: Option<EntityId>,
     expected_definition: Option<EntityId>,
     maximum_work_units: usize,
-) -> Result<bool, super::super::WorthQueryApplicationAttemptDenial> {
+) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial> {
     let Some(lineage) = lineage else {
         return Ok(false);
     };

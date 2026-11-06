@@ -1,6 +1,6 @@
 //! Targeted preimage views retain their transient projection allocation.
 use super::*;
-use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial;
 use worth_execution::{ExecutionAllocationPolicy, ExecutionMemoryReservation};
 
 pub(in crate::domain_computation::primary_graph) struct ProjectedPreImageCandidates {

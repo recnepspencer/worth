@@ -74,7 +74,7 @@ pub(in crate::domain_computation) struct CompletedApplicationFacts {
     binding_bytes: Option<u64>,
     projection: Option<
         std::sync::Arc<
-            crate::domain_computation::primary_graph::application_attempt::CompletedFactProjection,
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::application_projection::CompletedFactProjection,
         >,
     >,
     original_read: Option<
@@ -100,7 +100,7 @@ impl CompletedApplicationFacts {
 
     pub(in crate::domain_computation::primary_graph) fn with_completed_projection(
         mut self,
-        projection: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::CompletedFactProjection>>,
+        projection: Option<std::sync::Arc<crate::domain_computation::primary_graph::vocabulary::application_attempt::application_projection::CompletedFactProjection>>,
         original_read: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::CompletedOriginalRead>>,
     ) -> Self {
         self.projection = projection;
@@ -109,7 +109,7 @@ impl CompletedApplicationFacts {
     }
     pub(in crate::domain_computation::primary_graph) fn admit_binding(
         mut self,
-        control: crate::domain_computation::primary_graph::StorageControl<'_, '_>,
+        control: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
         authorization_count: usize,
     ) -> Result<Self, crate::domain_computation::WorthQueryDecisionReadSetFailure> {
         use crate::domain_computation::{

@@ -1,8 +1,6 @@
 //! Content admission keeps actual request controls out of producer failure.
 use super::*;
-use crate::domain_computation::primary_graph::application_attempt::{
-    retained_decision_facts::StoreDenial, WorthQueryProducerIdentityDenial as Identity,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial, crate::domain_computation::primary_graph::application_attempt::WorthQueryProducerIdentityDenial as Identity};
 use worth_execution::ExecutionAllocationDenialClass;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
 use {

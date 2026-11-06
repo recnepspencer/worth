@@ -67,7 +67,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::signing_li
             Effect::DeleteRelation {relation_id} => Some(lease.handle().with_runtime(request, |runtime| {
                 runtime.read_truth().project_snapshot(lease.snapshot()).ok_or_else(unavailable)?
                     .relation_record_with_projection_scope(request, *relation_id, worth_relational::facade::runtime::ProjectionAspectScope::empty(), |record| Some((record.kind_id(), Some(record.source()), Some(record.target()))))
-                    .map_err(|cause| attempt(super::super::super::super::WorthQueryApplicationAttemptDenial::from(cause)))?.ok_or_else(unavailable)
+                    .map_err(|cause| attempt(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::from(cause)))?.ok_or_else(unavailable)
             })?),
             _ => None,
         };
@@ -122,7 +122,7 @@ fn entity_kind(
                 |record| Some(record.kind_id()),
             )
             .map_err(|cause| {
-                attempt(super::super::super::super::WorthQueryApplicationAttemptDenial::from(cause))
+                attempt(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::from(cause))
             })?
             .ok_or_else(unavailable)
     })

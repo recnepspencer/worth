@@ -6,7 +6,7 @@ use super::super::{
 pub(super) fn read(
     cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
 ) -> Denial {
-    let kind = match super::super::provider::relational_execution_denial::relational_execution_kind(
+    let kind = match crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(
         cause, None,
     ) {
         Ok(kind) => Kind::ExecutionDenied { kind },

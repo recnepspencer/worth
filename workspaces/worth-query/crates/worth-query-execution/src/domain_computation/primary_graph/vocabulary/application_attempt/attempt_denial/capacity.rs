@@ -31,7 +31,7 @@ impl ChargedBytes for AttemptDenialCause {
                 worth_relational::facade::runtime::QueryReadExecutionStop,
             >() as u64,
             AttemptDenialCause::RetainedSource(_) => {
-                std::mem::size_of::<super::super::retained_decision_facts::StoreDenial>() as u64
+                std::mem::size_of::<crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial>() as u64
             }
             AttemptDenialCause::Allocation(_) => {
                 std::mem::size_of::<worth_execution::ExecutionAllocationDenial>() as u64

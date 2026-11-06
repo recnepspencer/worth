@@ -85,9 +85,9 @@ pub(super) fn snapshot_read_set_failure(
 }
 
 pub(in crate::domain_computation::primary_graph) fn storage_read_set_failure(
-    failure: super::super::application_attempt::retained_decision_facts::StoreDenial,
+    failure: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial,
 ) -> WorthQueryDecisionReadSetFailure {
-    use super::super::application_attempt::retained_decision_facts::StoreDenial as Store;
+    use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial as Store;
     use crate::domain_computation::WorthQueryDecisionReadSetDenialKind as Kind;
     match failure {
         Store::ExecutionRequest(stop) => {
@@ -95,7 +95,7 @@ pub(in crate::domain_computation::primary_graph) fn storage_read_set_failure(
             use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Interruption;
             let cause = stop.into();
             let kind =
-                match super::relational_execution_denial::relational_execution_kind(cause, None) {
+                match crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause, None) {
                     Ok(kind) => Kind::ExecutionRequest(kind),
                     Err(Control::Cancelled) => Kind::RequestInterrupted(Interruption::Cancelled),
                     Err(Control::TimedOut) => {
@@ -127,7 +127,7 @@ fn provider_rejected() -> WorthQueryDecisionReadSetFailure {
 }
 
 pub fn fact_read_set_failure(
-    denial: crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+    denial: crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
 ) -> WorthQueryDecisionReadSetFailure {
     denial.into_decision_read_set_failure()
 }

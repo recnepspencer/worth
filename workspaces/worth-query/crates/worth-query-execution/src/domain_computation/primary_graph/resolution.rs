@@ -120,7 +120,7 @@ fn principal_admission_denial(
 ) -> WorthQueryPrincipalResolutionDenial {
     let kind = match crate::domain_computation::primary_graph::vocabulary::provider::preflight::preflight_execution_cause(stop) {
         Ok(cause) => WorthQueryPrincipalResolutionDenialKind::Stopped(
-            super::provider::relational_execution_denial::relational_execution_kind(cause, None),
+            crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause, None),
         ),
         Err(_) => WorthQueryPrincipalResolutionDenialKind::Refused(
             PrincipalRefusal::IdentityIndexUnavailable,

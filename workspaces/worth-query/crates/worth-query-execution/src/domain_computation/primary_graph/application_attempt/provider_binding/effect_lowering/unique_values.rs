@@ -16,10 +16,7 @@ use super::ObservedFactIndex;
 use crate::domain_computation::primary_graph::schema_layout::{
     WorthQueryUniqueFieldIndex, WorthQueryUniqueFields,
 };
-use {
-    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial,
-    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_binding) struct UniqueValueWrites<
     'layout,

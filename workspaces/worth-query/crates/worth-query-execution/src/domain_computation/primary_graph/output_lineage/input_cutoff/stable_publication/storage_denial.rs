@@ -2,11 +2,7 @@
 use worth_execution::{
     ExecutionAllocationDenialClass as Class, MapKernelStop as Stop, WorkCeilingDenial as Request,
 };
-use {
-    crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial,
-    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial as Denial,
-    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind,
-};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial as Denial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind};
 
 pub(super) fn storage_denial(cause: StoreDenial) -> Denial {
     let kind = match &cause {

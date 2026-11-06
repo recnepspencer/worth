@@ -14,7 +14,7 @@ pub fn remains_equal(
     direction: WorthQueryApplicationAdjacencyDirection,
     maximum_work_units: usize,
     expected: &[WorthQueryApplicationObservedRelation],
-) -> Result<bool, super::super::WorthQueryApplicationAttemptDenial> {
+) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial> {
     Ok(observe_adjacency(
         runtime,
         execution,
@@ -37,7 +37,7 @@ pub fn observe_adjacency(
     maximum_work_units: usize,
 ) -> Result<
     Option<Vec<WorthQueryApplicationObservedRelation>>,
-    super::super::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
 > {
     let observed = observe_adjacency_checked(
         runtime,
@@ -61,7 +61,7 @@ pub fn observe_audit_outgoing_adjacency(
     maximum_work_units: usize,
 ) -> Result<
     Option<Vec<WorthQueryApplicationObservedRelation>>,
-    super::super::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
 > {
     resolve_observation(
         observe_with_posture(
@@ -82,18 +82,18 @@ fn resolve_observation(
     observed: Result<Vec<WorthQueryApplicationObservedRelation>, AdjacencyObservationDenial>,
 ) -> Result<
     Option<Vec<WorthQueryApplicationObservedRelation>>,
-    super::super::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial,
 > {
     match observed {
         Ok(relations) => Ok(Some(relations)),
         Err(AdjacencyObservationDenial::Execution(cause)) => Err(
-            super::super::WorthQueryApplicationAttemptDenial::relational_read_stopped(
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::relational_read_stopped(
                 cause,
                 "adjacency observation",
             ),
         ),
         Err(AdjacencyObservationDenial::Interrupted(event)) => {
-            Err(super::super::WorthQueryApplicationAttemptDenial::new(
+            Err(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::new(
                 match event.interruption() {
                     worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled => {
                         crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::Cancelled

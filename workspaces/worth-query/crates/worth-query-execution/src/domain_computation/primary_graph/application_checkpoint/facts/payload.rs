@@ -2,7 +2,7 @@
 //! Clones preserve the allocation; custody never certifies source currentness.
 
 use super::*;
-use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl;
 use worth_execution::ExecutionAllocationPolicy;
 use worth_execution::ExecutionMemoryReservation;
 use worth_execution::MemoryLimitLevel;
@@ -33,7 +33,7 @@ impl CodecPayloadReservation {
     ) -> Result<Arc<Self>, FactDecodeDenial> {
         control.check_live().map_err(FactDecodeDenial::Retention)?;
         let quote = u64::try_from(bytes).map_err(|_| FactDecodeDenial::Retention(
-            crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::Representability))?;
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial::Representability))?;
         let held = match control.policy() {
             ExecutionAllocationPolicy::SystemAllocation => None,
             ExecutionAllocationPolicy::Execution(lease) => Some(lease.reserve_memory(quote).map_err(|cause| {

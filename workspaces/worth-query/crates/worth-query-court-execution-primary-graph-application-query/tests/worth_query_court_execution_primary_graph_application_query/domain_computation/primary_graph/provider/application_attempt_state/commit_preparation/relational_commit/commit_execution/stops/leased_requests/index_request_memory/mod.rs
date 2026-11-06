@@ -120,7 +120,7 @@ fn index_request_memory_refusal_reaches_application_caller() {
                 .execution_denial
                 .expect("index request memory refused");
             let DerivedIndexExecutionDenialKind::Cause(cause) = denial.kind;
-            let stop = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_stop(cause, denial.partition_identity);
+            let stop = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_stop(cause, denial.partition_identity);
             let Stop::PreEffectDenied(failure) = stop else {
                 panic!("request memory must reach pre-effect refusal");
             };

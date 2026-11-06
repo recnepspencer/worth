@@ -25,7 +25,7 @@ impl Denial {
     pub(super) fn from_native_stop(
         cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
     ) -> Self {
-        Self::from_read_stop(crate::facade::primary_graph::relational_execution_kind(
+        Self::from_read_stop(crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(
             cause, None,
         ))
     }

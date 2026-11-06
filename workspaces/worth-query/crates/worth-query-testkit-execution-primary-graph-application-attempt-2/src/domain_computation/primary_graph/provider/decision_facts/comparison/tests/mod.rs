@@ -1,5 +1,5 @@
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::decision_facts::comparison::PrimaryDecisionReadSetComparison;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl;
 use worth_query_execution::facade::domain_computation::WorthQueryDecisionReadSetFreshnessOutcome;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_decision_fact::WorthQueryPrimaryGraphApplicationDecisionFact;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;

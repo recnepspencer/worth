@@ -7,4 +7,4 @@ pub enum OutputFieldCaptureFailure {
     },
     Retention(StoreDenial),
 }
-pub use super::retained_decision_facts::StoreDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial;

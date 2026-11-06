@@ -9,7 +9,7 @@ pub(super) struct FullSourceFactRebase {
     pub(super) moved_by_own_effect: Arc<[usize]>,
     pub(super) endpoints: worth_execution::ExecutionArray<(
         usize,
-        crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints,
     )>,
     pub(super) actions: Vec<resolution::PreparedFactRebase>,
     pub(super) rebased: NativeFactPayloadBuilder,
@@ -20,14 +20,14 @@ impl FullSourceFactRebase {
     pub(in crate::domain_computation::primary_graph) fn admit(
         facts: Vec<WorthQueryApplicationObservedFact>,
         moved_by_own_effect: Arc<[usize]>,
-        control: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl<'_, '_>,
+        control: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
     ) -> Result<Self, PreparedRebaseDenial> {
         control.check_live()?;
         let endpoint_count = facts.iter().try_fold(0usize, |count, fact| {
             fact_verification_observation::rebase_preparation();
             control.check_live()?;
             if matches!(fact, WorthQueryApplicationObservedFact::Relation { .. } | WorthQueryApplicationObservedFact::Adjacency { .. }) {
-                count.checked_add(1).ok_or(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::Representability)
+                count.checked_add(1).ok_or(crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial::Representability)
             } else { Ok(count) }
         })?;
         let mut endpoints =

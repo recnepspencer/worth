@@ -212,7 +212,7 @@ pub fn rebase_output(
     changed_records: &[worth_relational::facade::transactions::RecordRef],
     producer_output: bool,
 
-    control: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl<'_, '_>,
+    control: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
 ) -> RebasedSourceFacts {
     let changed_entities = changed_records
         .iter()
@@ -245,7 +245,7 @@ pub fn rebase(
     retired: &BTreeSet<EntityId>,
     producer: bool,
 ) -> RebasedSourceFacts {
-    preparation::rebase(execution, runtime, snapshot, prepared, retired, producer, crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(execution.allocation_policy(), None))
+    preparation::rebase(execution, runtime, snapshot, prepared, retired, producer, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl::new(execution.allocation_policy(), None))
 }
 mod rebase_walk;
 
@@ -253,11 +253,11 @@ mod rebase_walk;
 #[derive(Debug)]
 pub enum PreparedRebaseDenial {
     Admission(CompanionPreflightStop),
-    Retention(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial),
+    Retention(crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial),
     Temporary(std::collections::TryReserveError),
 }
-impl From<crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial> for PreparedRebaseDenial {
-    fn from(denial: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial) -> Self { Self::Retention(denial) }
+impl From<crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial> for PreparedRebaseDenial {
+    fn from(denial: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial) -> Self { Self::Retention(denial) }
 }
 impl From<worth_execution::ExecutionAllocationDenial> for PreparedRebaseDenial {
     fn from(denial: worth_execution::ExecutionAllocationDenial) -> Self {

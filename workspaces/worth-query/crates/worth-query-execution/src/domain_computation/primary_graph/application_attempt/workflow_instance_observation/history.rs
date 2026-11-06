@@ -1,11 +1,7 @@
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_installation::facade::WorthQueryWorkflowHistoryReconstructionBudget;
 use worth_relational::facade::identity::EntityId;
-use {
-    super::denial, super::observe_adjacency, super::settlement, super::ObservedWorkflowTransition,
-    super::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationObservedFact,
-    crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection,
-};
+use {super::denial, super::observe_adjacency, super::settlement, super::ObservedWorkflowTransition, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationObservedFact, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection};
 use {
     crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
     crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowPerformedEffect,
@@ -129,7 +125,7 @@ pub(super) fn observe(
         }
         AdjacencyObservationDenial::WorkBudgetExceeded => budget::inventory_exhausted(),
         AdjacencyObservationDenial::Interrupted(event) => {
-            super::super::WorthQueryApplicationAttemptDenial::new(
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::new(
                 match event.interruption() {
                     worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled => {
                         crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::Cancelled

@@ -75,7 +75,7 @@ pub(in crate::domain_computation::primary_graph) fn inspect_selected_program<
                     })
                     .map_err(|cause| {
                         WorthQuerySelectedProgramInspectionDenial::ReadExecution(
-                            crate::facade::primary_graph::relational_execution_kind(cause, None),
+                            crate::domain_computation::primary_graph::vocabulary::provider::relational_execution_denial::relational_execution_kind(cause, None),
                         )
                     })
             })?

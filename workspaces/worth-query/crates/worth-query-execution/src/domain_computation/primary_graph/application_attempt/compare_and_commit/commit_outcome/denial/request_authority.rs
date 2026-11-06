@@ -102,7 +102,7 @@ impl WorthQueryApplicationCommitDenial {
             Some(DenialCause::ProviderSession(failure)) => failure.allocation_denial(),
             Some(DenialCause::InvariantExecution(failure)) => failure.allocation_denial(),
             Some(DenialCause::DecisionReadSet(failure)) => failure.allocation_denial(),
-            Some(DenialCause::SourceRebase(crate::domain_computation::primary_graph::provider::PreparedRebaseDenial::Retention(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::Allocation(denial)))) => Some(denial),
+            Some(DenialCause::SourceRebase(crate::domain_computation::primary_graph::provider::PreparedRebaseDenial::Retention(crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial::Allocation(denial)))) => Some(denial),
             _ => None,
         }
     }
@@ -110,7 +110,7 @@ impl WorthQueryApplicationCommitDenial {
         &self,
     ) -> Option<worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption>
     {
-        match self.cause.as_deref() { Some(DenialCause::SourceRebase(crate::domain_computation::primary_graph::provider::PreparedRebaseDenial::Retention(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::RequestInterruption(stop)))) => Some(*stop), _ => None }
+        match self.cause.as_deref() { Some(DenialCause::SourceRebase(crate::domain_computation::primary_graph::provider::PreparedRebaseDenial::Retention(crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial::RequestInterruption(stop)))) => Some(*stop), _ => None }
     }
     pub fn source_rebase_temporary_reservation_error(
         &self,

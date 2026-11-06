@@ -40,7 +40,7 @@ pub(super) fn adjacency(
         )
         .map_err(|cause| match cause {
             AdjacencyStructuralRevisionDenial::Execution(cause) => attempt(
-                super::super::WorthQueryApplicationAttemptDenial::from(cause),
+                crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::from(cause),
             ),
             _ => unavailable(),
         })?
@@ -56,7 +56,7 @@ pub(super) fn adjacency(
     )
     .map_err(|cause| match cause {
         AdjacencyObservationDenial::Execution(cause) => attempt(
-            super::super::WorthQueryApplicationAttemptDenial::from(cause),
+            crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::from(cause),
         ),
         AdjacencyObservationDenial::WorkBudgetExceeded => {
             refused(Kind::SigningLifecycleEvidenceCapacity {
@@ -64,7 +64,7 @@ pub(super) fn adjacency(
             })
         }
         AdjacencyObservationDenial::Interrupted(event) => {
-            attempt(super::super::WorthQueryApplicationAttemptDenial::new(
+            attempt(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::new(
                 match event.interruption() {
                     worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled => {
                         crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::Cancelled
@@ -85,7 +85,7 @@ pub(super) fn adjacency(
     }
     facts.push(Fact::SourceAdjacencyRevision { relation_kind: relation, anchor, direction: NativeDirection::Outgoing,
         native_revision, comparison_work_limit: 1,
-        endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::empty() });
+        endpoints: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints::empty() });
     Ok(edges)
 }
 
@@ -121,7 +121,7 @@ pub(super) fn footprint(
         },
     )
     .map_err(|cause| {
-        attempt(super::super::WorthQueryApplicationAttemptDenial::from(
+        attempt(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::from(
             cause,
         ))
     })?
@@ -137,7 +137,7 @@ pub(super) fn footprint(
         .ok_or_else(unavailable)?
         .entity_field_revision(request, evidence, &locator)
         .map_err(|cause| {
-            attempt(super::super::WorthQueryApplicationAttemptDenial::from(
+            attempt(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::from(
                 cause,
             ))
         })?;

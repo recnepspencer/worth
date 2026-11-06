@@ -94,7 +94,7 @@ fn native_denial(cause: worth_execution::ExecutionAllocationDenial) -> Denial {
 
 pub(in crate::domain_computation) fn check_live(
     execution: &ExecutionRequest<'_, '_>,
-) -> Result<(), crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial> {
+) -> Result<(), crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial> {
     execution.check_live().map_err(|stop| {
             use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
             let cause = match stop {
@@ -105,7 +105,7 @@ pub(in crate::domain_computation) fn check_live(
                 worth_execution::MapKernelStop::AccountingUnavailable => Cause::AccountingUnavailable,
                 worth_execution::MapKernelStop::NestedStopped => Cause::NestedStopped,
             };
-        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, "workflow actor JSON payload")
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, "workflow actor JSON payload")
     })
 }
 

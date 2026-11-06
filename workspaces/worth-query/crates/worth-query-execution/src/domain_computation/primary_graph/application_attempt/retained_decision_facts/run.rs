@@ -1,4 +1,4 @@
-use super::{AdmittedFactKey, RetainedFact, Slot, Slots, StoreDenial};
+use {super::AdmittedFactKey, super::RetainedFact, super::Slot, super::Slots, crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial};
 use std::cell::{Cell, RefCell};
 use worth_execution::ExecutionArrayBuilder;
 
@@ -9,7 +9,7 @@ pub struct Run<T> {
 }
 
 impl<T> Run<T> {
-    pub fn empty(count: usize, policy: super::StorageControl<'_, '_>) -> Result<Self, StoreDenial> {
+    pub fn empty(count: usize, policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>) -> Result<Self, StoreDenial> {
         policy.check_live()?;
         let mut slots = ExecutionArrayBuilder::allocate(count, policy.policy())?;
         for _ in 0..count {
@@ -25,7 +25,7 @@ impl<T> Run<T> {
     pub(in crate::domain_computation::primary_graph) fn locate(
         &self,
         key: &AdmittedFactKey,
-        policy: super::StorageControl<'_, '_>,
+        policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
     ) -> Result<Option<&Slot<T>>, StoreDenial> {
         policy.check_live()?;
         if self.used == 0 {
@@ -77,7 +77,7 @@ impl<T> Run<T> {
     pub(in crate::domain_computation::primary_graph) fn merge(
         left: Self,
         right: Self,
-        policy: super::StorageControl<'_, '_>,
+        policy: crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
     ) -> Result<Self, StoreDenial> {
         let count = left
             .used

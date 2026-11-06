@@ -1,7 +1,7 @@
 //! Pre-effect selection from genuine native candidate touches, with explicit full reconstruction.
 use super::*;
-use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
-use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::control::StorageControl;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retained_decision_facts::StoreDenial;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::PostconditionCarry;
 use worth_relational::facade::mvcc::PreparedRelationalCommitCandidate;
 pub(super) enum Preparation {

@@ -11,7 +11,7 @@ use worth_query_installation::facade::{
 };
 
 use super::{PreparedWorkflowProposal, WorkflowProposalOutcome};
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef, crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial, crate::domain_computation::primary_graph::WorthQueryOperationProjectionDenial, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation};
+use {crate::domain_computation::primary_graph::vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef, crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation, crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial, crate::domain_computation::primary_graph::WorthQueryOperationProjectionDenial, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation};
 
 /// Why a workflow proposal could not bind to the branch's program: the installed spec
 /// belongs to another schema, the adopted program could not be inspected, the branch runs
@@ -243,7 +243,7 @@ impl WorthQueryWorkflowProposalAdapter {
     {
         let phase_request = match phase.execution_request_for(selected.application().product_runtime()) {
             Ok(request) => request,
-            Err(_) => return Err(WorkflowProposalPreparationDenial::Attempt(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "workflow-phase"))),
+            Err(_) => return Err(WorkflowProposalPreparationDenial::Attempt(crate::domain_computation::primary_graph::vocabulary::application_attempt::attempt_denial::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "workflow-phase"))),
         };
         let execution = &phase_request;
 
