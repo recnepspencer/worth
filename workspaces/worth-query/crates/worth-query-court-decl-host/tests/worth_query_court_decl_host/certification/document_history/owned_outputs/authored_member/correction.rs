@@ -6,7 +6,7 @@ impl ApplicationAuthoredCorrectionFamily<Schema> for Family {
     const IDENTITY: &'static str = "owned-outputs.authored-member-family.v1";
     type Entity = Member;
     fn logical_key() -> ApplicationAuthoredLogicalKey<Schema, Member> {
-        ApplicationAuthoredLogicalKey::from_field(MemberKey::reference())
+        ApplicationAuthoredLogicalKey::from_field(MemberKey::at("MemberKey")).unwrap()
     }
 }
 pub struct UndoRetire;
@@ -46,8 +46,8 @@ impl ApplicationCorrectionBinding<Schema> for UndoRetire {
         DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
             DeclaredPreImageDemand::new(
                 vec![
-                    DeclaredPreImageLocus::from_field(MemberKey::reference()),
-                    DeclaredPreImageLocus::from_field(MemberValue::reference()),
+                    DeclaredPreImageLocus::from_field(MemberKey::at("MemberKey")).unwrap(),
+                    DeclaredPreImageLocus::from_field(MemberValue::at("MemberValue")).unwrap(),
                 ],
                 4096,
             )
@@ -70,13 +70,13 @@ impl ApplicationCorrectionBinding<Schema> for UndoRetire {
         };
         let key = StringApplicationValueBinding::decode(
             fields
-                .field(&DeclaredPreImageLocus::from_field(MemberKey::reference()))
+                .field(&DeclaredPreImageLocus::from_field(MemberKey::at("MemberKey")).unwrap())
                 .ok_or(MissingPreImage)?,
         )
         .map_err(|_| InvalidPreImage)?;
         let value = U64ApplicationValueBinding::decode(
             fields
-                .field(&DeclaredPreImageLocus::from_field(MemberValue::reference()))
+                .field(&DeclaredPreImageLocus::from_field(MemberValue::at("MemberValue")).unwrap())
                 .ok_or(MissingPreImage)?,
         )
         .map_err(|_| InvalidPreImage)?;

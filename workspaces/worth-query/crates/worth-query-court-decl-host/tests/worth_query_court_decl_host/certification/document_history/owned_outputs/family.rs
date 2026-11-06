@@ -22,15 +22,13 @@ macro_rules! family {
                 $source_key as SourceKey, $source_value as SourceValue,
             };
             use super::*;
-            type Scope = ApplicationMutationFieldScope<
-                Schema,
-                SourceEntity,
-                SourceFacts,
-                SourceKey,
-                String,
-                ReadOnly,
-                NoApplicationUnit,
-            >;
+            type Scope = ApplicationMutationFieldScope<SourceKey>;
+            fn source_key() -> SourceKey {
+                SourceKey::at(stringify!($source_key))
+            }
+            fn source_value() -> SourceValue {
+                SourceValue::at(stringify!($source_value))
+            }
             const PROFILE: &str = $profile;
             pub fn output_key(row: &query::Row) -> String {
                 format!("{}:{}", PROFILE, row.key)

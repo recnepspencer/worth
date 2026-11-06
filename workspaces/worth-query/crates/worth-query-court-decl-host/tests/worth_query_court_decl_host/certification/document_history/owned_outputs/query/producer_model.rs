@@ -12,33 +12,11 @@ worth_query_portable_type!(ValueSlot => "owned-outputs.value-slot.v1");
 fn expected() -> ApplicationQueryParameterRef<Query, Expected, StringApplicationValueBinding> {
     ApplicationQueryParameterRef::from_query_identifier("expected")
 }
-fn key() -> ApplicationQueryResultFieldRef<
-    Query,
-    KeySlot,
-    Schema,
-    Model,
-    ModelFacts,
-    ModelKey,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("key", ModelKey::reference())
+fn key() -> ApplicationQueryResultFieldRef<Query, KeySlot, Schema, ModelKey> {
+    ApplicationQueryResultFieldRef::new("key", ModelKey::at("ModelKey"))
 }
-fn value() -> ApplicationQueryResultFieldRef<
-    Query,
-    ValueSlot,
-    Schema,
-    Model,
-    ModelFacts,
-    ModelValue,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("value", ModelValue::reference())
+fn value() -> ApplicationQueryResultFieldRef<Query, ValueSlot, Schema, ModelValue> {
+    ApplicationQueryResultFieldRef::new("value", ModelValue::at("ModelValue"))
 }
 #[derive(Clone, Debug, WorthValue)]
 #[worth_value(crate = "worth_query_decl::facade::application_schema")]
@@ -56,15 +34,7 @@ impl From<String> for Read {
 }
 worth_query_structured_value_binding!(pub ReadInput for Read { identity: "owned-outputs.producer-model-input.v1" });
 pub struct Binding;
-type Scope = ApplicationQueryFieldScope<
-    Schema,
-    Model,
-    ModelFacts,
-    ModelKey,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+type Scope = ApplicationQueryFieldScope<ModelKey>;
 impl ApplicationQueryBinding<Schema> for Binding {
     type Input = Read;
     type InputBinding = ReadInput;
@@ -79,17 +49,8 @@ impl ApplicationQueryBinding<Schema> for Binding {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "owned-outputs.producer-model-binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Model,
-        ModelFacts,
-        ModelKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        ModelKey::reference()
+    fn scope_field() -> ModelKey {
+        ModelKey::at("ModelKey")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Schema,
@@ -110,7 +71,7 @@ impl ApplicationQueryIntent<Schema> for Read {
             .unwrap()
     }
     fn into_scope(self) -> Scope {
-        Scope::new(ModelKey::reference(), self.key)
+        Scope::new(ModelKey::at("ModelKey"), self.key)
     }
 }
 impl WorthQueryApplicationProjection<Schema, Query> for Row {
@@ -144,7 +105,7 @@ pub fn declare(
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
         .parameter(expected())
-        .where_equal(ModelKey::reference(), expected())
+        .where_equal(ModelKey::at("ModelKey"), expected())
         .build()
         .unwrap();
     schema

@@ -1,7 +1,7 @@
 //! A genuine NAV grant selects the complete installed graph through Native.
 use super::*;
 use worth_query_decl::facade::application_capability::*;
-mod grant;
+pub(super) mod grant;
 mod transfer;
 worth_query_capability!(pub Navigate in Schema);
 worth_query_capability_context!(pub Context in Schema);
@@ -30,7 +30,11 @@ impl ApplicationCapabilityRequest<Schema, Navigate> for query::model::Read {
         ApplicationCapabilityRequestProjectionDenial,
     > {
         Ok(ApplicationCapabilityRequestProjection::new(
-            ApplicationCapabilityEntitySelector::new(ModelKey::reference(), grant::text(&self.0)),
+            ApplicationCapabilityEntitySelector::new(
+                ModelKey::at("ModelKey"),
+                grant::text(&self.0),
+            )
+            .unwrap(),
             grant::text("navigate"),
             grant::text("history"),
             ApplicationCapabilityRequestContext::new(Context::reference()),
@@ -50,7 +54,7 @@ pub fn declare(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_read_field(SelectSnapshot::reference(), ModelKey::reference())
+        .operation_read_field(SelectSnapshot::reference(), ModelKey::at("ModelKey"))
         .capability(grant::contract())
 }
 pub fn seed(

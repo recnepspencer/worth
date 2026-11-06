@@ -16,7 +16,7 @@ pub enum Denial {
 worth_query_structured_value_binding!(pub ResultBinding for Edited { identity: "owned-outputs.member-edit-result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "owned-outputs.member-edit-denial.v1" });
 worth_query_structured_value_binding!(pub Input for Intent { identity: "owned-outputs.edit-member.v1" });
-worth_query_operation!(pub PatchMember for Schema, input Input; access { read_fields: [MemberKey, MemberValue]; writes: [MemberValue]; });
+worth_query_operation!(pub PatchMember for Schema, input Input; access { read_fields: [MemberKey::at("MemberKey"), MemberValue::at("MemberValue")]; writes: [MemberValue::at("MemberValue")]; });
 fn scope(input: &Intent) -> String {
     input.key.clone()
 }
@@ -25,7 +25,7 @@ worth_query_mutation_binding!(pub Binding for Intent, schema Schema,
     idempotency String, identity "owned-outputs.edit-member.v1", decision WorthQueryInvariantMutationTarget<Schema, Member>, denial DenialBinding,
     handler identity "owned-outputs.edit-member.v1", program required, outputs NoApplicationMutationOutputs,
     principal Actor, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Member, MemberFacts, MemberKey, String, ReadOnly, NoApplicationUnit, field MemberKey::reference(), value scope,
+    scope MemberKey, field MemberKey::at("MemberKey"), value scope,
 );
 pub struct Handler;
 impl OperationHandler<Schema, Binding> for Handler {
@@ -38,8 +38,8 @@ impl OperationHandler<Schema, Binding> for Handler {
             return HandlerResult::DomainDenied(Denial::ValueOutOfRange);
         }
         let result = (|| {
-            let entity = reader.resolve_entity(MemberKey::reference(), input.key.clone())?;
-            reader.field(&entity, MemberValue::reference())?;
+            let entity = reader.resolve_entity(MemberKey::at("MemberKey"), input.key.clone())?;
+            reader.field(&entity, MemberValue::at("MemberValue"))?;
             reader.mutation_target(&entity)
         })();
         match result {
@@ -53,9 +53,9 @@ impl OperationHandler<Schema, Binding> for Handler {
         target: WorthQueryInvariantMutationTarget<Schema, Member>,
         writer: &mut CandidateWriter<'_, Schema, Binding>,
     ) -> HandlerResult<Edited, Denial> {
-        let result = writer
-            .projected_entity(&target)
-            .and_then(|entity| writer.write_field(&entity, MemberValue::reference(), input.value));
+        let result = writer.projected_entity(&target).and_then(|entity| {
+            writer.write_field(&entity, MemberValue::at("MemberValue"), input.value)
+        });
         match result {
             Ok(()) => HandlerResult::Completed(Edited),
             Err(error) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error)),

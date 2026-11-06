@@ -7,8 +7,8 @@ pub struct Input {
 }
 worth_query_structured_value_binding!(pub InputBinding for Input {identity:"owned-model.recreate-input.v1"});
 worth_query_operation!(pub RecreateMember for Schema,input InputBinding;access {
-    read_entities:[Model,Member];read_fields:[ModelKey,MemberKey,MemberValue];
-    writes:[MemberKey,MemberValue];creates:[Member];deletes:[Member];
+    read_entities:[Model,Member];read_fields:[ModelKey::at("ModelKey"),MemberKey::at("MemberKey"),MemberValue::at("MemberValue")];
+    writes:[MemberKey::at("MemberKey"),MemberValue::at("MemberValue")];creates:[Member];deletes:[Member];
 });
 pub struct Decision {
     model: WorthQueryInvariantMutationTarget<Schema, Model>,
@@ -22,7 +22,7 @@ worth_query_mutation_binding!(pub Binding for Input,schema Schema,
     idempotency String,identity "owned-model.recreate-key.v1",decision Decision,denial edit::DenialBinding,
     handler identity "owned-model.recreate-handler.v1",program required,outputs NoApplicationMutationOutputs,
     principal Actor,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
-    scope Model,ModelFacts,ModelKey,String,ReadOnly,NoApplicationUnit,field ModelKey::reference(),value scope,
+    scope ModelKey,field ModelKey::at("ModelKey"),value scope,
 );
 pub struct Handler;
 impl OperationHandler<Schema, Binding> for Handler {
@@ -32,9 +32,9 @@ impl OperationHandler<Schema, Binding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<Decision, edit::Denial> {
         let result = (|| {
-            let model = reader.resolve_entity(ModelKey::reference(), "a".to_owned())?;
+            let model = reader.resolve_entity(ModelKey::at("ModelKey"), "a".to_owned())?;
             let current =
-                reader.resolve_optional_entity(MemberKey::reference(), "direct".to_owned())?;
+                reader.resolve_optional_entity(MemberKey::at("MemberKey"), "direct".to_owned())?;
             if let Some(current) = &current {
                 reader
                     .reader()
@@ -74,8 +74,12 @@ impl OperationHandler<Schema, Binding> for Handler {
                     Member::reference(),
                     WorthQueryApplicationEntityKey::new("recreated-member").unwrap(),
                 )?;
-                writer.initialize_field(&created, MemberKey::reference(), "direct".to_owned())?;
-                writer.initialize_field(&created, MemberValue::reference(), 11)?;
+                writer.initialize_field(
+                    &created,
+                    MemberKey::at("MemberKey"),
+                    "direct".to_owned(),
+                )?;
+                writer.initialize_field(&created, MemberValue::at("MemberValue"), 11)?;
             }
             Ok::<_, WorthQueryApplicationAttemptDenial>(())
         })();

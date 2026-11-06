@@ -25,33 +25,11 @@ pub struct KeySlot;
 pub struct ValueSlot;
 worth_query_portable_type!(KeySlot => "owned-outputs.key-slot.v1");
 worth_query_portable_type!(ValueSlot => "owned-outputs.value-slot.v1");
-fn key() -> ApplicationQueryResultFieldRef<
-    Query,
-    KeySlot,
-    Schema,
-    Member,
-    MemberFacts,
-    MemberKey,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("key", MemberKey::reference())
+fn key() -> ApplicationQueryResultFieldRef<Query, KeySlot, Schema, MemberKey> {
+    ApplicationQueryResultFieldRef::new("key", MemberKey::at("MemberKey"))
 }
-fn value() -> ApplicationQueryResultFieldRef<
-    Query,
-    ValueSlot,
-    Schema,
-    Member,
-    MemberFacts,
-    MemberValue,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("value", MemberValue::reference())
+fn value() -> ApplicationQueryResultFieldRef<Query, ValueSlot, Schema, MemberValue> {
+    ApplicationQueryResultFieldRef::new("value", MemberValue::at("MemberValue"))
 }
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
@@ -104,15 +82,7 @@ impl WorthQueryApplicationProjection<Schema, Query> for Members {
 pub struct Read(pub String);
 worth_query_structured_value_binding!(pub ReadInput for Read { identity: "owned-outputs.members-input.v1" });
 pub struct Binding;
-type Scope = ApplicationQueryFieldScope<
-    Schema,
-    Model,
-    ModelFacts,
-    ModelKey,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+type Scope = ApplicationQueryFieldScope<ModelKey>;
 impl ApplicationQueryBinding<Schema> for Binding {
     type Input = Read;
     type InputBinding = ReadInput;
@@ -127,17 +97,8 @@ impl ApplicationQueryBinding<Schema> for Binding {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "owned-outputs.members-binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Model,
-        ModelFacts,
-        ModelKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        ModelKey::reference()
+    fn scope_field() -> ModelKey {
+        ModelKey::at("ModelKey")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Schema,
@@ -156,6 +117,6 @@ impl ApplicationQueryIntent<Schema> for Read {
         ApplicationQueryParameterSet::new()
     }
     fn into_scope(self) -> Scope {
-        Scope::new(ModelKey::reference(), self.0)
+        Scope::new(ModelKey::at("ModelKey"), self.0)
     }
 }

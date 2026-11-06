@@ -138,16 +138,16 @@ where
                     Model::reference(),
                     WorthQueryApplicationEntityKey::new("a").unwrap(),
                 )
-                .field(ModelKey::reference(), "a".to_owned())
-                .field(ModelValue::reference(), initial_value),
+                .field(ModelKey::at("ModelKey"), "a".to_owned())
+                .field(ModelValue::at("ModelValue"), initial_value),
             )?;
             graph.bind_entity(
                 WorthQueryApplicationEntitySeed::new(
                     Member::reference(),
                     WorthQueryApplicationEntityKey::new("m").unwrap(),
                 )
-                .field(MemberKey::reference(), "m".to_owned())
-                .field(MemberValue::reference(), 5),
+                .field(MemberKey::at("MemberKey"), "m".to_owned())
+                .field(MemberValue::at("MemberValue"), 5),
             )?;
             graph.bind_relation(WorthQueryApplicationRelationSeed::new(
                 ModelMember::reference(),
@@ -161,8 +161,8 @@ where
                         Model::reference(),
                         WorthQueryApplicationEntityKey::new("b").unwrap(),
                     )
-                    .field(ModelKey::reference(), "b".to_owned())
-                    .field(ModelValue::reference(), value),
+                    .field(ModelKey::at("ModelKey"), "b".to_owned())
+                    .field(ModelValue::at("ModelValue"), value),
                 )?;
             }
             navigation::seed(graph)

@@ -1945,3 +1945,51 @@ choosing the owner cutover. Preserve exact posting, occurrence and authority
 checks. If the inherited historical row cannot be accepted atD, the real
 current-read/parent owner must carry that acceptance; no fake settlement,
 parallel ownership reader or roster-derived dependent set is acceptable.
+
+### D1248 master cutover prerequisite
+
+Masterdb554ad361 replaces parallel entity/aspect/field declarations with native
+Fragment/Entity/Aspect/Record membership and FieldSelection. Merge54b9a10124
+keeps installed history ownership and the borrowed selector resolution, with
+scalar validation from master. The remaining borrowed issued-scope method must
+consume RecordSelection, not removed ApplicationFieldRef. Branch-only public
+owned-model/output fixtures must declare their actual row shapes and fragment
+members and use the canonical selectors in scope/query/access bindings. Preserve
+semantic names, grants, declared ownership edges, operation output roles and all
+existing test oracles; do not add old macro wrappers or a second schema lane.
+Compile the focused parent court and existing history suite on that substrate
+before addressing its known historical posting collision. This merge prerequisite
+is causal; no unrelated native schema redesign belongs to this lane.
+
+### D1248 recording-parent integration plan
+
+The public non-leaf court exposes a reused historicalC posting being reserved
+again for a newD demand. Fixing the posting alone would still open the healthy
+root source. The existing verified-parent continuation is the right cutover.
+
+At the existing output-control owner, add an explicit recording posture issued
+only after fresh current documentREAD and the actual recording operation's
+admission/reservation are checked. It retainsC control, the private recordingD
+and revocable callback/selection lifetimes. It is not a navigation admission;
+NAV is not invented or required for recording. Source identity/domain atD uses
+the same installed Native model ownership reader; all authority remainsC.
+The existing verified-parent issuer supports that actual recording posture by
+checking the currentD publication route/lineage/witness/installed meaning through
+the canonical currentness owner. Navigation keeps its selected-version evidence.
+
+Share actual discovery and child traversal through the existing verified parent
+and ProgramOutputContinuation owners. Retain the distinct verified-tree evidence;
+never convert it into an original root settlement. Derive finalE from the action
+origin and all genuine child/publication movements, then requalify every current
+parent, discovery dependency and complete child set atE. Native's independent
+current obligations are still checked. Stale parents take their real original
+producer path under that same current control, preserving source and disposal.
+
+Implement in order: explicit recording control/context at output_authority;
+canonical current-route verification entry shared by parent and child issuer;
+verified continuation in recording tree owner and final recording collection
+qualification. Extend public court with stale parent, discovery changes and
+current-permission refusal as needed; mutations skip discovery, parent facts,
+Cpermission and final basis must fail. Keep existing navigation courts unchanged
+and all single-record paths byte-for-byte behavior. No changes to settlement
+address admission or posting ownership are authorized by this plan.

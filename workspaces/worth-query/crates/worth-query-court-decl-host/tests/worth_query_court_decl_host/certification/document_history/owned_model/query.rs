@@ -17,33 +17,11 @@ pub struct KeySlot;
 pub struct ValueSlot;
 worth_query_portable_type!(KeySlot => "owned-model.key-slot.v1");
 worth_query_portable_type!(ValueSlot => "owned-model.value-slot.v1");
-fn key() -> ApplicationQueryResultFieldRef<
-    Query,
-    KeySlot,
-    Schema,
-    Entity,
-    Facts,
-    Key,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("key", Key::reference())
+fn key() -> ApplicationQueryResultFieldRef<Query, KeySlot, Schema, Key> {
+    ApplicationQueryResultFieldRef::new("key", Key::at(stringify!($key)))
 }
-fn value() -> ApplicationQueryResultFieldRef<
-    Query,
-    ValueSlot,
-    Schema,
-    Entity,
-    Facts,
-    Value,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("value", Value::reference())
+fn value() -> ApplicationQueryResultFieldRef<Query, ValueSlot, Schema, Value> {
+    ApplicationQueryResultFieldRef::new("value", Value::at(stringify!($value)))
 }
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
@@ -92,7 +70,7 @@ pub struct Read(pub String);
 worth_query_structured_value_binding!(pub ReadInput for Read { identity: "owned-model.read-input.v1" });
 pub struct Binding;
 type Scope =
-    ApplicationQueryFieldScope<Schema, Entity, Facts, Key, String, ReadOnly, NoApplicationUnit>;
+    ApplicationQueryFieldScope<Key>;
 impl ApplicationQueryBinding<Schema> for Binding {
     type Input = Read;
     type InputBinding = ReadInput;
@@ -107,17 +85,8 @@ impl ApplicationQueryBinding<Schema> for Binding {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = BINDING_ID;
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Entity,
-        Facts,
-        Key,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        Key::reference()
+    fn scope_field() -> Key {
+        Key::at(stringify!($key))
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Schema,
@@ -136,7 +105,7 @@ impl ApplicationQueryIntent<Schema> for Read {
         ApplicationQueryParameterSet::new()
     }
     fn into_scope(self) -> Scope {
-        Scope::new(Key::reference(), self.0)
+        Scope::new(Key::at(stringify!($key)), self.0)
     }
 }
 

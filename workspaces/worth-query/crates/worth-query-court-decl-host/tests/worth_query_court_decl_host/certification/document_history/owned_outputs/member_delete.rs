@@ -5,7 +5,7 @@ use super::*;
 pub struct Intent;
 worth_query_structured_value_binding!(pub Input for Intent { identity: "owned-outputs.delete-member.v1" });
 worth_query_operation!(pub DeleteMember for Schema, input Input; access {
-    read_entities: [Model, Member]; read_fields: [ModelKey, MemberKey]; deletes: [Member];
+    read_entities: [Model, Member]; read_fields: [ModelKey::at("ModelKey"), MemberKey::at("MemberKey")]; deletes: [Member];
 });
 fn scope(_: &Intent) -> String {
     "a".into()
@@ -15,7 +15,7 @@ worth_query_mutation_binding!(pub Binding for Intent, schema Schema,
     idempotency String, identity "owned-outputs.delete-member.v1", decision WorthQueryInvariantMutationTarget<Schema, Member>, denial member_edit::DenialBinding,
     handler identity "owned-outputs.delete-member.v1", program required, outputs NoApplicationMutationOutputs,
     principal Actor, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Model, ModelFacts, ModelKey, String, ReadOnly, NoApplicationUnit, field ModelKey::reference(), value scope,
+    scope ModelKey, field ModelKey::at("ModelKey"), value scope,
 );
 pub struct Handler;
 impl OperationHandler<Schema, Binding> for Handler {
@@ -25,7 +25,7 @@ impl OperationHandler<Schema, Binding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<Schema, Member>, member_edit::Denial> {
         let result = reader
-            .resolve_entity(MemberKey::reference(), "m".to_owned())
+            .resolve_entity(MemberKey::at("MemberKey"), "m".to_owned())
             .and_then(|member| {
                 reader.entity(&member, Member::reference())?;
                 reader.mutation_target(&member)

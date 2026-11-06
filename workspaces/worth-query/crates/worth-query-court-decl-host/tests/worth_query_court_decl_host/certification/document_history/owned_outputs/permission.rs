@@ -10,9 +10,10 @@ pub fn declare(
     let allow = ApplicationAuthorizationPathBuilder::from_principal(Principal::reference())
         .forward(navigation::grant::Owner::reference())
         .where_equal(
-            ModelValue::reference(),
+            ModelValue::at("ModelValue"),
             ApplicationEncodedScalarValue::try_new(1u64).unwrap(),
         )
+        .unwrap()
         .forward(ModelMember::reference())
         .allow(Member::reference());
     schema
@@ -36,9 +37,10 @@ fn first_path(value: u64) -> ApplicationAuthorizationPath {
     ApplicationAuthorizationPathBuilder::from_principal(Principal::reference())
         .forward(navigation::grant::Owner::reference())
         .where_equal(
-            ModelValue::reference(),
+            ModelValue::at("ModelValue"),
             ApplicationEncodedScalarValue::try_new(value).unwrap(),
         )
+        .unwrap()
         .reverse(FirstOf::reference())
         .allow(FirstOutput::reference())
 }

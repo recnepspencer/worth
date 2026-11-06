@@ -5,7 +5,7 @@ use super::super::*;
 pub struct Intent;
 worth_query_structured_value_binding!(pub Input for Intent { identity: "owned-outputs.authored-member-retire.v1" });
 worth_query_operation!(pub RetireMember for Schema, input Input; access {
-    read_entities: [Model, Member, ChildOutput]; read_fields: [ModelKey, MemberKey, MemberValue]; read_relations: [ModelMember, ChildOf]; deletes: [Member, ChildOutput]; unlinks: [ModelMember, ChildOf];
+    read_entities: [Model, Member, ChildOutput]; read_fields: [ModelKey::at("ModelKey"), MemberKey::at("MemberKey"), MemberValue::at("MemberValue")]; read_relations: [ModelMember, ChildOf]; deletes: [Member, ChildOutput]; unlinks: [ModelMember, ChildOf];
 });
 fn scope(_: &Intent) -> String {
     "a".into()
@@ -15,7 +15,7 @@ worth_query_mutation_binding!(pub Binding for Intent, schema Schema,
     idempotency String, identity "owned-outputs.authored-member-retire.v1", decision Targets, denial member_edit::DenialBinding,
     handler identity "owned-outputs.authored-member-retire.v1", program required, outputs Outputs,
     principal Actor, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Model, ModelFacts, ModelKey, String, ReadOnly, NoApplicationUnit, field ModelKey::reference(), value scope,
+    scope ModelKey, field ModelKey::at("ModelKey"), value scope,
 );
 pub struct Outputs;
 pub struct Retired;
@@ -55,10 +55,10 @@ impl OperationHandler<Schema, Binding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<Targets, member_edit::Denial> {
         let result = (|| {
-            let member = reader.resolve_entity(MemberKey::reference(), String::from("m"))?;
+            let member = reader.resolve_entity(MemberKey::at("MemberKey"), String::from("m"))?;
             reader.entity(&member, Member::reference())?;
-            reader.field(&member, MemberKey::reference())?;
-            reader.field(&member, MemberValue::reference())?;
+            reader.field(&member, MemberKey::at("MemberKey"))?;
+            reader.field(&member, MemberValue::at("MemberValue"))?;
             let mut owners = Vec::new();
             for edge in reader
                 .relations_to(ModelMember::reference(), &member)

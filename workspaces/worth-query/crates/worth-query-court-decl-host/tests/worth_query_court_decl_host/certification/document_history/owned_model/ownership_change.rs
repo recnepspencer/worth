@@ -10,7 +10,7 @@ pub struct Change {
 }
 worth_query_structured_value_binding!(pub Input for Change { identity: "owned-model.ownership-change.v1" });
 worth_query_operation!(pub ChangeOwnership for Schema, input Input; access {
-    read_fields: [ModelKey, MemberKey]; read_relations: [ModelMember]; links: [ModelMember]; unlinks: [ModelMember];
+    read_fields: [ModelKey::at("ModelKey"), MemberKey::at("MemberKey")]; read_relations: [ModelMember]; links: [ModelMember]; unlinks: [ModelMember];
 });
 pub struct Decision {
     from: WorthQueryInvariantMutationTarget<Schema, Model>,
@@ -25,7 +25,7 @@ worth_query_mutation_binding!(pub Binding for Change, schema Schema,
     idempotency String, identity "owned-model.ownership-change-key.v1", decision Decision, denial edit::DenialBinding,
     handler identity "owned-model.ownership-change-handler.v1", program required, outputs NoApplicationMutationOutputs,
     principal Actor, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Model, ModelFacts, ModelKey, String, ReadOnly, NoApplicationUnit, field ModelKey::reference(), value scope,
+    scope ModelKey, field ModelKey::at("ModelKey"), value scope,
 );
 pub struct Handler;
 impl OperationHandler<Schema, Binding> for Handler {
@@ -35,9 +35,9 @@ impl OperationHandler<Schema, Binding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<Decision, edit::Denial> {
         let result = (|| {
-            let from = reader.resolve_entity(ModelKey::reference(), input.from.clone())?;
-            let to = reader.resolve_entity(ModelKey::reference(), input.to.clone())?;
-            let member = reader.resolve_entity(MemberKey::reference(), input.member.clone())?;
+            let from = reader.resolve_entity(ModelKey::at("ModelKey"), input.from.clone())?;
+            let to = reader.resolve_entity(ModelKey::at("ModelKey"), input.to.clone())?;
+            let member = reader.resolve_entity(MemberKey::at("MemberKey"), input.member.clone())?;
             reader
                 .relations_from(ModelMember::reference(), &from)
                 .map_err(HandlerExecutionDenial::new)?;

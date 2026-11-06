@@ -19,8 +19,8 @@ macro_rules! phase {
             #[derive(Clone, serde::Serialize)] pub struct Input(pub query::Row);
             worth_query_structured_value_binding!(pub InputBinding for Input { identity: $identity });
             worth_query_operation!(pub $operation for Schema, input InputBinding; access {
-                read_entities: [SourceEntity, $entity]; read_fields: [SourceKey, SourceValue, $key, $value];
-                read_relations: [$of]; writes: [$key, $value]; creates: [$entity]; links: [$of];
+                read_entities: [SourceEntity, $entity]; read_fields: [source_key(), source_value(), $key::at(stringify!($key)), $value::at(stringify!($value))];
+                read_relations: [$of]; writes: [$key::at(stringify!($key)), $value::at(stringify!($value))]; creates: [$entity]; links: [$of];
             });
             pub type Operation = $operation;
             pub struct Outputs;
@@ -44,13 +44,13 @@ macro_rules! phase {
                 type SourceExpectation = ApplicationQueryMutationSource<query::$source_query::Query>;
                 const IDENTITY: &'static str = $identity; const HANDLER_IDENTITY: &'static str = $identity; const IDEMPOTENCY_IDENTITY: &'static str = $identity;
                 fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements { ApplicationWorkflowExecutionRequirements::not_applicable() }
-                fn scope_field() -> ApplicationFieldRef<Schema, SourceEntity, SourceFacts, SourceKey, String, ReadOnly, EqualityPredicate, NoApplicationUnit> { SourceKey::reference() }
+                fn scope_field() -> SourceKey { source_key() }
                 fn principal_binding() -> ApplicationPrincipalBindingRef<Schema, Actor, Mapping, Principal, u64, U64ApplicationValueBinding> { Actor::reference() }
             }
             impl ApplicationMutationIntent<Schema> for Input {
                 type Binding = Binding;
                 fn input(&self) -> &Self { self }
-                fn scope_binding(&self) -> Scope { Scope::new(SourceKey::reference(), self.0.key.clone()) }
+                fn scope_binding(&self) -> Scope { Scope::new(source_key(), self.0.key.clone()) }
             }
             pub struct Producer;
             pub struct Provider;
@@ -79,12 +79,12 @@ macro_rules! phase {
             pub struct Readiness;
             type Contract = WorthQueryOutputReadinessContract<ReadyDomain, ReadyOperation, ReadyFamily>;
             fn readiness_contract(declaration: &ErasedApplicationSchemaDeclaration) -> Result<Contract, WorthQueryOutputReadinessContractDenial> {
-                WorthQueryOutputReadinessContractBuilder::for_field(declaration, $value::reference(),
+                WorthQueryOutputReadinessContractBuilder::for_field(declaration, $value::at(stringify!($value)),
                     domain::WorthQueryDomainOperationIdentity::new($identity, 1), $identity,
                     readiness_query(stringify!($entity), stringify!($facts), stringify!($value)),
                     domain::WorthQueryOperationProjectionRole::new("derived").unwrap(),
                     domain::WorthQueryExecutionStrategyName::new($identity).unwrap(), $identity)?
-                    .field_dependency(declaration, $value::reference(), WorthQueryReadinessFieldUse::DeliveryAndEligibility)?.build_typed()
+                    .field_dependency(declaration, $value::at(stringify!($value)), WorthQueryReadinessFieldUse::DeliveryAndEligibility)?.build_typed()
             }
             fn conditional_binding(contract: &Contract) -> domain::WorthQueryApplicationConditionalOperationBinding<Schema, Operation, Input, ReadyDomain, ReadyOperation, ReadyFamily> {
                 domain::WorthQueryApplicationConditionalOperationBinding::declare(Operation::reference(), contract.definition().reference())
@@ -103,7 +103,7 @@ macro_rules! phase {
                     let binding = conditional_binding(&contract);
                     let operation = installation.installed_schema().installed_operation(Operation::reference()).unwrap();
                     let node = installation.installed_packages().bind_conditional_application_operation(operation, &binding).unwrap().bind_node(ReadyNode::reference()).unwrap();
-                    let ordinal = contract.delivery_ordinal(installation.installed_schema(), node.declaration(), $value::reference()).unwrap();
+                    let ordinal = contract.delivery_ordinal(installation.installed_schema(), node.declaration(), $value::at(stringify!($value))).unwrap();
                     installation.bind_output_readiness::<Producer, _, _, _, _, _, _>(node, ordinal)
                 }
             }
@@ -111,14 +111,14 @@ macro_rules! phase {
             impl OperationHandler<Schema, Binding> for Handler {
                 fn decide(&self, input: &Input, reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>) -> HandlerResult<Decision, Denial> {
                     let result = (|| {
-                        let source = reader.resolve_entity(SourceKey::reference(), input.0.key.clone())?;
-                        reader.field(&source, SourceValue::reference())?;
+                        let source = reader.resolve_entity(source_key(), input.0.key.clone())?;
+                        reader.field(&source, source_value())?;
                         let prior = if $preserve { Some(reader.prior_output_preserved_or_created::<preserve::Binding, preserve::Output, initial::Binding, initial::Output>()?) }
-                            else { reader.resolve_optional_entity($key::reference(), output_key(&input.0))? };
+                            else { reader.resolve_optional_entity($key::at(stringify!($key)), output_key(&input.0))? };
                         if !$preserve && prior.is_some() { return Ok(Err(Denial::InitialHasPriorOutput)); }
                         if $preserve && prior.is_none() { return Ok(Err(Denial::PreserveMissingOutput)); }
                         let output = match prior {
-                            Some(prior) => { reader.field(&prior, $value::reference())?; Some(reader.mutation_target(&prior)?) }
+                            Some(prior) => { reader.field(&prior, $value::at(stringify!($value)))?; Some(reader.mutation_target(&prior)?) }
                             None => None,
                         };
                         Ok(Ok(Decision { source: reader.mutation_target(&source)?, output }))
@@ -130,12 +130,12 @@ macro_rules! phase {
                         let source = writer.projected_entity(&decision.source)?;
                         let value = (self.derive)(input.0.value);
                         let output = match &decision.output {
-                            Some(prior) => { let output = writer.projected_entity(prior)?; writer.write_field(&output, $value::reference(), value)?; output }
+                            Some(prior) => { let output = writer.projected_entity(prior)?; writer.write_field(&output, $value::at(stringify!($value)), value)?; output }
                             None => {
                                 let key = output_key(&input.0);
                                 let output = writer.create_entity_in_context(&source, $entity::reference(), WorthQueryApplicationEntityKey::new(key.clone()).unwrap())?;
-                                writer.initialize_field(&output, $key::reference(), key.clone())?;
-                                writer.initialize_field(&output, $value::reference(), value)?;
+                                writer.initialize_field(&output, $key::at(stringify!($key)), key.clone())?;
+                                writer.initialize_field(&output, $value::at(stringify!($value)), value)?;
                                 publication_link!($direction, writer, $of::reference(), format!("of:{key}"), &source, &output)?;
                                 output
                             }

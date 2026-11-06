@@ -1,65 +1,102 @@
 use super::*;
-worth_query_application!(pub Schema { owner: "owned-model", version: (1, 0), contributions: [Contribution], });
-worth_query_application_contribution! { pub contribution Contribution in Schema {
-    identity: "owned-model.contribution.v1", members: |schema| { declare(schema) }
-} }
-worth_query_entity!(pub Mapping for Schema);
-worth_query_entity!(pub Principal for Schema);
-worth_query_entity!(pub Model for Schema);
-worth_query_entity!(pub Member for Schema);
-worth_query_aspect!(pub MappingFacts for Schema, Mapping; identity = AspectIdentity(0x91820301), revision = AspectContractRevision(1));
-worth_query_aspect!(pub PrincipalFacts for Schema, Principal; identity = AspectIdentity(0x91820302), revision = AspectContractRevision(1));
-worth_query_aspect!(pub ModelFacts for Schema, Model; identity = AspectIdentity(0x91820303), revision = AspectContractRevision(1));
-worth_query_aspect!(pub MemberFacts for Schema, Member; identity = AspectIdentity(0x91820304), revision = AspectContractRevision(1));
-worth_query_field!(pub ExternalId for Schema, Mapping, MappingFacts: WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
-worth_query_field!(pub Status for Schema, Mapping, MappingFacts: WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality);
-worth_query_field!(pub PrincipalId for Schema, Principal, PrincipalFacts: u64 => U64ApplicationValueBinding, read_only, equality);
-worth_query_field!(pub ModelKey for Schema, Model, ModelFacts: String => StringApplicationValueBinding, read_only, equality);
-worth_query_field!(pub ModelValue for Schema, Model, ModelFacts: u64 => U64ApplicationValueBinding, read_write, equality);
-worth_query_field!(pub MemberKey for Schema, Member, MemberFacts: String => StringApplicationValueBinding, read_only, equality);
-worth_query_field!(pub MemberValue for Schema, Member, MemberFacts: u64 => U64ApplicationValueBinding, read_write, equality);
-worth_query_relation!(pub MappingTarget in Schema, Mapping => Principal; integrity = same_context_unbounded_retain_dangling);
-worth_query_relation!(pub ModelMember in Schema, Model => Member; integrity = same_context_unbounded_retain_dangling);
-worth_query_relation!(pub Child in Schema, Member => Member; integrity = same_context_unbounded_retain_dangling);
-worth_query_relation!(pub Reference in Schema, Model => Member; integrity = same_context_unbounded_retain_dangling);
-worth_query_principal_binding!(pub Actor in Schema, mapping Mapping { identity: ExternalId, status: Status, target: MappingTarget => Principal, principal_identity: PrincipalId });
-
+use worth_query_decl::facade::application_schema::fragment::*;
+mod records;
+pub use records::*;
+#[derive(Clone, Copy, Debug)]
+pub struct Schema;
+impl Fragment for Schema {
+    const NAME: &'static str = "Schema";
+    type Bindings = NoBindings;
+    type Members = (Contribution,);
+}
+impl ApplicationSchema for Schema {
+    const OWNER: &'static str = "owned-model";
+    const NAME: &'static str = <Self as Fragment>::NAME;
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
+    }
+    fn visit_correction<
+        V: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<Self>,
+    >(
+        source: std::any::TypeId,
+        visitor: V,
+    ) -> V::Output {
+        worth_query_decl::facade::application_schema::fragment::visit_correction(
+            Self, source, visitor,
+        )
+    }
+}
+impl ApplicationSchemaComposition for Schema {
+    type Contributions = (Contribution,);
+}
+pub struct Contribution;
+impl ApplicationSchemaContribution<Schema> for Contribution {
+    const IDENTITY: ApplicationSchemaContributionIdentity =
+        ApplicationSchemaContributionIdentity::new("owned-model.contribution.v1");
+    type Members = (
+        Storage,
+        navigation::grant::GrantStorage,
+        Actor,
+        Registrations,
+    );
+}
+impl Contribution {
+    pub fn reference() -> ApplicationSchemaContributionRef<Schema, Self> {
+        ApplicationSchemaContributionRef::from_contribution()
+    }
+}
+pub struct Registrations;
+impl Registration<Schema> for Registrations {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<Schema>,
+    ) -> Result<ApplicationSchemaDeclarationBuilder<Schema>, ApplicationSchemaDeclarationDenial>
+    {
+        Ok(declare(schema))
+    }
+}
+#[derive(Clone, Copy)]
+pub struct Actor;
+impl Actor {
+    pub fn reference() -> ApplicationPrincipalBindingRef<
+        Schema,
+        Self,
+        Mapping,
+        Principal,
+        u64,
+        U64ApplicationValueBinding,
+    > {
+        ApplicationPrincipalBindingRef::from_requirements(
+            "Actor",
+            ApplicationPrincipalBindingRequirements {
+                mapping_identity: ApplicationPrincipalMappingIdentityRequirement::from_field(
+                    ExternalId::at("ExternalId"),
+                ),
+                mapping_status: ApplicationPrincipalMappingStatusRequirement::from_field(
+                    Status::at("Status"),
+                ),
+                target: ApplicationPrincipalTargetRequirement::from_relation(
+                    MappingTarget::reference(),
+                ),
+                principal_identity: ApplicationPrincipalIdentityRequirement::from_field(
+                    PrincipalId::at("PrincipalId"),
+                ),
+            },
+        )
+    }
+}
+impl Registration<Schema> for Actor {
+    fn register(
+        builder: ApplicationSchemaDeclarationBuilder<Schema>,
+    ) -> Result<ApplicationSchemaDeclarationBuilder<Schema>, ApplicationSchemaDeclarationDenial>
+    {
+        Ok(builder.principal_binding(Self::reference()))
+    }
+}
 fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    let schema = schema
-        .entity(Mapping::reference())
-        .entity(Principal::reference())
-        .entity(Model::reference())
-        .entity(Member::reference())
-        .aspect(Mapping::reference(), MappingFacts::reference())
-        .aspect(Principal::reference(), PrincipalFacts::reference())
-        .aspect(Model::reference(), ModelFacts::reference())
-        .aspect(Member::reference(), MemberFacts::reference())
-        .field(Mapping::reference(), ExternalId::reference())
-        .field(Mapping::reference(), Status::reference())
-        .field(Principal::reference(), PrincipalId::reference())
-        .unique_field(Model::reference(), ModelKey::reference())
-        .field(Model::reference(), ModelValue::reference())
-        .unique_field(Member::reference(), MemberKey::reference())
-        .field(Member::reference(), MemberValue::reference())
-        .principal_binding(Actor::reference())
-        .relation(
-            MappingTarget::reference(),
-            Mapping::reference(),
-            Principal::reference(),
-        )
-        .relation(
-            ModelMember::reference(),
-            Model::reference(),
-            Member::reference(),
-        )
-        .relation(Child::reference(), Member::reference(), Member::reference())
-        .relation(
-            Reference::reference(),
-            Model::reference(),
-            Member::reference(),
-        );
+    let schema = schema;
     query::member::declare(query::model::declare(edit::declare(navigation::declare(
         schema,
     ))))

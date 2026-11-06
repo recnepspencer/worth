@@ -8,7 +8,7 @@ pub struct Intent {
 }
 worth_query_structured_value_binding!(pub Input for Intent { identity: "owned-outputs.authored-member-restore.v1" });
 worth_query_operation!(pub RestoreMember for Schema, input Input; access {
-    read_entities: [Model]; read_fields: [ModelKey]; creates: [Member]; writes: [MemberKey, MemberValue]; links: [ModelMember];
+    read_entities: [Model]; read_fields: [ModelKey::at("ModelKey")]; creates: [Member]; writes: [MemberKey::at("MemberKey"), MemberValue::at("MemberValue")]; links: [ModelMember];
 });
 fn scope(_: &Intent) -> String {
     "a".into()
@@ -18,7 +18,7 @@ worth_query_mutation_binding!(pub Binding for Intent, schema Schema,
     idempotency String, identity "owned-outputs.authored-member-restore.v1", decision WorthQueryInvariantMutationTarget<Schema, Model>, denial member_edit::DenialBinding,
     handler identity "owned-outputs.authored-member-restore.v1", program required, outputs Outputs,
     principal Actor, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Model, ModelFacts, ModelKey, String, ReadOnly, NoApplicationUnit, field ModelKey::reference(), value scope,
+    scope ModelKey, field ModelKey::at("ModelKey"), value scope,
 );
 pub struct Outputs;
 pub struct Restored;
@@ -42,7 +42,7 @@ impl OperationHandler<Schema, Binding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<Schema, Model>, member_edit::Denial> {
         match reader
-            .resolve_entity(ModelKey::reference(), "a".into())
+            .resolve_entity(ModelKey::at("ModelKey"), "a".into())
             .and_then(|model| reader.mutation_target(&model))
         {
             Ok(model) => HandlerResult::Completed(model),
@@ -59,8 +59,8 @@ impl OperationHandler<Schema, Binding> for Handler {
             let model = writer.projected_entity(&model)?;
             let key = WorthQueryApplicationEntityKey::new(input.key.clone()).unwrap();
             let member = writer.create_entity_in_context(&model, Member::reference(), key)?;
-            writer.initialize_field(&member, MemberKey::reference(), input.key.clone())?;
-            writer.initialize_field(&member, MemberValue::reference(), input.value)?;
+            writer.initialize_field(&member, MemberKey::at("MemberKey"), input.key.clone())?;
+            writer.initialize_field(&member, MemberValue::at("MemberValue"), input.value)?;
             writer.create_output::<Restored>(&member)?;
             writer.link(
                 ModelMember::reference(),

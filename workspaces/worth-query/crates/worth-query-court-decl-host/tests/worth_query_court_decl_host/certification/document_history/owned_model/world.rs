@@ -68,8 +68,8 @@ fn install_with_limits(shared: bool, limits: WorthQueryInMemoryApplicationLimits
                         Model::reference(),
                         WorthQueryApplicationEntityKey::new(key).unwrap(),
                     )
-                    .field(ModelKey::reference(), key.to_owned())
-                    .field(ModelValue::reference(), 1),
+                    .field(ModelKey::at("ModelKey"), key.to_owned())
+                    .field(ModelValue::at("ModelValue"), 1),
                 )?;
             }
             for (key, value) in [
@@ -84,8 +84,8 @@ fn install_with_limits(shared: bool, limits: WorthQueryInMemoryApplicationLimits
                         Member::reference(),
                         WorthQueryApplicationEntityKey::new(key).unwrap(),
                     )
-                    .field(MemberKey::reference(), key.to_owned())
-                    .field(MemberValue::reference(), value),
+                    .field(MemberKey::at("MemberKey"), key.to_owned())
+                    .field(MemberValue::at("MemberValue"), value),
                 )?;
             }
             for (model, member) in [("a", "direct"), ("b", "foreign")] {
@@ -188,7 +188,7 @@ pub fn member_identity(
         let id = selected
             .resolve_entity(
                 &phase,
-                MemberKey::reference(),
+                MemberKey::at("MemberKey"),
                 key.to_owned(),
                 &scope,
                 WorthQueryPrincipalResolutionMode::Certification,
@@ -212,7 +212,7 @@ pub fn model_identity(
         let id = selected
             .resolve_entity(
                 &phase,
-                ModelKey::reference(),
+                ModelKey::at("ModelKey"),
                 key.to_owned(),
                 &scope,
                 WorthQueryPrincipalResolutionMode::Certification,
