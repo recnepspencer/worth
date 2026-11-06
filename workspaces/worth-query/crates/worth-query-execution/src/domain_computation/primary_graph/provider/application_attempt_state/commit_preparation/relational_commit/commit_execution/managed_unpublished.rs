@@ -1,6 +1,6 @@
 use super::managed_views;
 use super::WorthQueryPreImageRetentionWork;
-use super::WorthQueryPrimaryGraphApplicationAttempt;
+use crate::domain_computation::primary_graph::provider::application_attempt_state::registration::registered_attempt::WorthQueryPrimaryGraphApplicationAttempt;
 use super::WorthQueryPrimaryMutationWorkCounters;
 
 /// All Query evidence whose owner effects crossed World's partial boundary.

@@ -40,7 +40,7 @@ pub(in crate::domain_computation::primary_graph) use observation::observe_field;
 pub(crate) mod precondition_binding;
 pub(crate) mod provider_binding;
 
-pub(in crate::domain_computation::primary_graph) use provider_binding::WorthQueryPrimaryGraphApplicationAttempt;
+
 pub(crate) mod provider_compare_denial;
 pub(crate) mod provider_execution;
 mod provider_recomparison;

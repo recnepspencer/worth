@@ -4,7 +4,7 @@ pub(crate) mod effect_accumulator;
 mod effect_lowering;
 mod registration;
 
-pub(in crate::domain_computation::primary_graph) use registration::WorthQueryPrimaryGraphApplicationAttempt;
+
 pub(in crate::domain_computation::primary_graph::application_attempt) use registration::WorthQueryProviderRegistrationInspectionPermit;
 pub(in crate::domain_computation::primary_graph::application_attempt) use registration::WorthQueryRegisteredProviderAttemptSeal;
 

@@ -5,9 +5,8 @@ use super::super::provider_execution::{
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialStage as DenialStage;
 use super::WorthQueryPreparedApplicationProviderAttempt;
 
-mod provider_registration;
-use provider_registration::ApplicationAttemptRegistrationStop as RegistrationStop;
-pub(in crate::domain_computation::primary_graph) use provider_registration::WorthQueryPrimaryGraphApplicationAttempt;
+use crate::domain_computation::primary_graph::provider::application_attempt_state::registration::registered_attempt::ApplicationAttemptRegistrationStop as RegistrationStop;
+
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAttemptRegistration<'a>
 {

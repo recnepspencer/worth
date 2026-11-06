@@ -4,7 +4,7 @@ use super::{
     WorthQueryApplicationAttemptEntry, WorthQueryApplicationAttemptLookupKey,
     WorthQueryApprovedApplicationCandidate, WorthQueryPrimaryGraphApplicationAttemptStore,
 };
-use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphApplicationAttempt;
+use crate::domain_computation::primary_graph::provider::application_attempt_state::registration::registered_attempt::WorthQueryPrimaryGraphApplicationAttempt;
 use std::sync::{Arc, Mutex};
 
 pub(super) struct WorthQueryPreparedProviderApplicationAttempt {

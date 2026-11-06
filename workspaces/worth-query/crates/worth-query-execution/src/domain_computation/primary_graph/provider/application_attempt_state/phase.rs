@@ -25,7 +25,7 @@ impl Drop for WorthQueryRetiredApplicationAttemptPhase {
 }
 
 pub(super) struct WorthQueryApplicationAttemptState {
-    attempt: super::super::WorthQueryPrimaryGraphApplicationAttempt,
+    attempt: crate::domain_computation::primary_graph::provider::application_attempt_state::registration::registered_attempt::WorthQueryPrimaryGraphApplicationAttempt,
     phase: WorthQueryApplicationAttemptPhase,
 }
 
@@ -154,7 +154,7 @@ impl WorthQueryApplicationAttemptPhase {
 
 impl WorthQueryApplicationAttemptState {
     pub(super) const fn registered(
-        attempt: super::super::WorthQueryPrimaryGraphApplicationAttempt,
+        attempt: crate::domain_computation::primary_graph::provider::application_attempt_state::registration::registered_attempt::WorthQueryPrimaryGraphApplicationAttempt,
     ) -> Self {
         Self {
             attempt,
@@ -162,7 +162,7 @@ impl WorthQueryApplicationAttemptState {
         }
     }
 
-    pub(super) const fn attempt(&self) -> &super::super::WorthQueryPrimaryGraphApplicationAttempt {
+    pub(super) const fn attempt(&self) -> &crate::domain_computation::primary_graph::provider::application_attempt_state::registration::registered_attempt::WorthQueryPrimaryGraphApplicationAttempt {
         &self.attempt
     }
 
@@ -211,7 +211,7 @@ impl WorthQueryApplicationAttemptState {
     pub(super) fn take_commit_parts(
         self,
     ) -> Option<(
-        super::super::WorthQueryPrimaryGraphApplicationAttempt,
+        crate::domain_computation::primary_graph::provider::application_attempt_state::registration::registered_attempt::WorthQueryPrimaryGraphApplicationAttempt,
         WorthQueryApprovedApplicationCandidate,
     )> {
         let approved = self.phase.take_commit_ready()?;

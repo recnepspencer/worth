@@ -4,7 +4,7 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
 use super::failure;
 use super::publication_request_stop;
 use super::world_no_effect;
-use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphApplicationAttempt;
+use crate::domain_computation::primary_graph::provider::application_attempt_state::registration::registered_attempt::WorthQueryPrimaryGraphApplicationAttempt;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
 
 pub(super) struct WorthQueryPerformedApplicationProductPublication {

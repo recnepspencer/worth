@@ -25,7 +25,7 @@ use crate::domain_computation::primary_graph::provider::mutation_work::WorthQuer
 use crate::domain_computation::primary_graph::provider::session_commit::provider_failure;
 use crate::domain_computation::primary_graph::provider::session_commit::snapshot_admission_failure;
 use crate::domain_computation::primary_graph::provider::session_commit::WorthQueryPreImageRetentionWork;
-use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphApplicationAttempt;
+use crate::domain_computation::primary_graph::provider::application_attempt_state::registration::registered_attempt::WorthQueryPrimaryGraphApplicationAttempt;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::WorthQueryProviderSessionFailure;
 use crate::domain_computation::WorthQueryProviderSessionProtocolStage;

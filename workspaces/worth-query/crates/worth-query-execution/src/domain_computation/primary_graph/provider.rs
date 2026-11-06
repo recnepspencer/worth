@@ -76,7 +76,7 @@ pub(crate) mod unpublished_idempotency;
 pub(in crate::domain_computation) use unpublished_idempotency::WorthQueryUnpublishedIdempotencyDisposition;
 pub(in crate::domain_computation::primary_graph) use unpublished_idempotency::WorthQueryUnpublishedIdempotencyReservation;
 
-pub(super) use super::application_attempt::WorthQueryPrimaryGraphApplicationAttempt;
+pub(super) use crate::domain_computation::primary_graph::provider::application_attempt_state::registration::registered_attempt::WorthQueryPrimaryGraphApplicationAttempt;
 use super::WorthQueryPrimaryGraphIntegrationHandle;
 use crate::domain_computation::primary_graph::vocabulary::provider::application_attempt_work::WorthQueryApplicationAttemptWorkSnapshot;
 pub(super) use application_attempt_state::WorthQueryPrimaryGraphCommittedApplication;

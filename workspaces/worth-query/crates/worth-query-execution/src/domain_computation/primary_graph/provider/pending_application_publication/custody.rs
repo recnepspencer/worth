@@ -1,5 +1,5 @@
 //! Exact pending publication custody survives every retry and terminal cutover.
-use super::{WorthQueryPrimaryGraphApplicationAttempt, WorthQueryPrimaryGraphCommittedApplication};
+use {crate::domain_computation::primary_graph::provider::application_attempt_state::registration::registered_attempt::WorthQueryPrimaryGraphApplicationAttempt, super::WorthQueryPrimaryGraphCommittedApplication};
 use crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner;
 use std::sync::Arc;
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPendingApplicationPublication {
