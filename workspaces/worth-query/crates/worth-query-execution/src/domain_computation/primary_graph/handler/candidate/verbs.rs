@@ -19,6 +19,7 @@ where
     Schema: worth_query_installation::facade::ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {
+    #[inline(always)]
     pub fn create_entity<Entity>(
         &mut self,
         entity: ApplicationEntityRef<Schema, Entity>,
@@ -30,6 +31,7 @@ where
         self.candidate.create_entity(entity, key)
     }
 
+    #[inline(always)]
     pub fn create_entity_in_context<Entity, ContextEntity>(
         &mut self,
         context: &WorthQueryApplicationEffectEntity<Schema, ContextEntity>,
@@ -43,6 +45,7 @@ where
             .create_entity_in_context(context, entity, key)
     }
 
+    #[inline(always)]
     pub fn initialize_field<Entity, Aspect, Field, Value>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
@@ -60,6 +63,7 @@ where
         self.candidate.initialize_field(target, field, value)
     }
 
+    #[inline(always)]
     pub fn write_field<Entity, Aspect, Field, Value>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
@@ -78,6 +82,7 @@ where
 
     /// Writes or clears one optional field using the same observed target and
     /// effect authority as every other handler-authored effect.
+    #[inline(always)]
     pub fn write_optional_field<Entity, Aspect, Field, Value>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
@@ -94,6 +99,7 @@ where
         self.candidate.write_optional_field(target, field, value)
     }
 
+    #[inline(always)]
     pub fn link<Relation, From, To>(
         &mut self,
         relation: ApplicationRelationRef<Schema, Relation, From, To>,

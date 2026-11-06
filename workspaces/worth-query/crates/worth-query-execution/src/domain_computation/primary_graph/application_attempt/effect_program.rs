@@ -3,6 +3,7 @@ mod body_external_emission;
 mod case_transition;
 mod conditional_definition;
 mod content;
+mod core;
 mod effect_growth;
 mod emission;
 mod entity_creation;
@@ -18,7 +19,6 @@ mod optional_field_authoring;
 mod ordinary_field_authoring;
 mod original_input;
 pub(crate) mod output_correspondence;
-mod record_presence;
 mod relation_effects;
 mod relation_initialization;
 mod target_admission;
@@ -34,8 +34,7 @@ use std::sync::Arc;
 
 use worth_foundational::facade::AspectFieldLocator;
 use worth_query_installation::facade::{
-    ApplicationEntityRef, ApplicationOperationProgramTarget, ApplicationScalarValueBinding,
-    OperationCreates, OperationDeletes,
+    ApplicationEntityRef, ApplicationOperationProgramTarget, OperationCreates, OperationDeletes,
 };
 use worth_relational::facade::transactions::EntityReference;
 use write_index::FieldWriteIndex;
@@ -131,6 +130,7 @@ impl<Schema, Operation, Input, Scope>
             .map_or(Ok(()), Err)
     }
 
+    #[inline(always)]
     pub fn initialize_field<Entity, Field>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
@@ -143,27 +143,12 @@ impl<Schema, Operation, Input, Scope>
             Entity = Entity,
         >,
     {
-        let column = self.layout.record_selection(field)?;
-        Field::Binding::validate(&value).map_err(|_| {
-            denial(
-                WorthQueryApplicationAttemptDenialKind::InvalidEffectValue,
-                column.path(),
-            )
-        })?;
-        let value = Field::Binding::encode(&value).map_err(|_| {
-            denial(
-                WorthQueryApplicationAttemptDenialKind::InvalidEffectValue,
-                column.path(),
-            )
-        })?;
-        self.initialize_encoded_field(
-            target,
-            &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus::new(
-                field.entity(),
-                field.aspect(),
-                field.field(),
-            ),
-            std::borrow::Cow::Owned(value),
+        self.native_effects().initialize_field(
+            target.borrowed(),
+            field.identity(),
+            &crate::domain_computation::primary_graph::value_decode::ScalarFieldEncoder::<
+                Field::Binding,
+            >::new(&value),
         )
     }
 
@@ -182,42 +167,8 @@ impl<Schema, Operation, Input, Scope>
         field: &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus,
         value: std::borrow::Cow<'_, worth_foundational::facade::AspectValue>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-        self.reserve_effects(0)?;
-        self.validate_target(target, field.entity())?;
-        self.admit_program_target(&ApplicationOperationProgramTarget::Write {
-            entity: field.entity().to_string(),
-            aspect: field.aspect().to_string(),
-            field: field.field().to_string(),
-        })?;
-        let locator = self.field_locator(field.entity(), field.aspect(), field.field())?;
-        let Some(created_effect) = target.created_effect else {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget,
-                field.entity(),
-            ));
-        };
-        let Some(WorthQueryApplicationRealizedEffect::CreateEntity { .. }) =
-            self.effects.get(created_effect)
-        else {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget,
-                field.entity(),
-            ));
-        };
-        let presence = self.layout.record_presence_locator(field).cloned();
-        let WorthQueryApplicationRealizedEffect::CreateEntity { fields, .. } =
-            &mut self.effects[created_effect]
-        else {
-            unreachable!("validated created effect changed before field retention");
-        };
-        fields.insert(locator, value.into_owned());
-        if let Some(presence) = presence {
-            fields.insert(
-                presence,
-                worth_foundational::facade::AspectValue::Bool(true),
-            );
-        }
-        Ok(())
+        self.native_effects()
+            .initialize_encoded_field(target.borrowed(), field, value)
     }
 
     pub fn delete_entity<Entity>(
@@ -283,29 +234,18 @@ impl<Schema, Operation, Input, Scope>
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
         entity: &str,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-        if Arc::ptr_eq(&target.program, &self.program) && target.entity == entity {
-            Ok(())
-        } else {
-            Err(denial(
-                WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget,
-                entity,
-            ))
-        }
+        core::validate_target(&self.program, target.borrowed(), entity)
     }
 
     fn admit_program_target(
         &self,
         target: &ApplicationOperationProgramTarget,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-        let contracts = self.read_set.admission.allowed_graph_contract();
-        if installed_contract_admits_program_target(contracts, target) {
-            Ok(())
-        } else {
-            Err(denial(
-                WorthQueryApplicationAttemptDenialKind::UndeclaredEffect,
-                self.read_set.admission.operation(),
-            ))
-        }
+        core::admit_target(
+            self.read_set.admission.allowed_graph_contract(),
+            self.read_set.admission.operation(),
+            target,
+        )
     }
 
     fn field_locator(
@@ -314,14 +254,6 @@ impl<Schema, Operation, Input, Scope>
         aspect: &str,
         field: &str,
     ) -> Result<AspectFieldLocator, WorthQueryApplicationAttemptDenial> {
-        self.layout
-            .field_locator(entity, aspect, field)
-            .cloned()
-            .ok_or_else(|| {
-                denial(
-                    WorthQueryApplicationAttemptDenialKind::UndeclaredEffect,
-                    field,
-                )
-            })
+        core::field_locator(&self.layout, entity, aspect, field)
     }
 }

@@ -69,44 +69,16 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         locator: &AspectFieldLocator,
         observe: impl FnOnce(Option<&AspectValue>) -> Result<Output, HandlerExecutionDenial>,
     ) -> Result<Output, HandlerExecutionDenial> {
-        if !self.work_budget.can_afford(1) {
-            return Err(HandlerExecutionDenial::new(
-                WorthQueryAdvancementDenial::Resource(
-                    WorthQueryManagedComputationResourceDenial::WorkExhausted,
-                ),
-            ));
-        }
-        assert!(
-            self.work_budget.consume(1),
-            "the same owner preflighted one work unit"
-        );
-        self.realized_scope.record(identity.entity_id);
-        let reads = &mut self.work;
-        match self.native.observe_field(
-            self.execution,
-            self.snapshot,
-            identity.entity_id,
-            identity.kind,
-            locator,
-            |raw| {
-                reads.record_fields(1);
-                observe(raw.value())
-            },
-        ) {
-            Ok(Some(value)) => value,
-            Ok(None) => Err(HandlerExecutionDenial::new(
-                WorthQueryApplicationAttemptDenial::new(
-                    WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
-                    "operation body field",
-                ),
-            )),
-            Err(cause) => {
-                self.native_read_stop.get_or_insert(cause);
-                Err(HandlerExecutionDenial::new(
-                    WorthQueryApplicationAttemptDenial::from(cause),
-                ))
-            }
-        }
+        let mut output = None;
+        let mut observe = Some(observe);
+        self.native_read()
+            .observe_field(identity.native_identity(), locator, &mut |raw| {
+                output = Some(observe.take().expect("one physical field observation")(
+                    raw,
+                )?);
+                Ok(())
+            })?;
+        Ok(output.expect("a completed physical read invoked its observer"))
     }
 
     pub(in crate::domain_computation::primary_graph::invariant_projection) fn body_scalar_capture<

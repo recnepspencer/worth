@@ -25,7 +25,8 @@ impl<F, E, A, T> Clone for FieldSelection<F, E, A, T> {
     }
 }
 impl<F, E, A, T> FieldSelection<F, E, A, T> {
-    /// Checks the path against the record during declaration construction.
+    /// Reuses the constructor's carried record requirement without imposing it on the caller.
+    #[inline(always)]
     pub fn resolve(self) -> Result<RecordField<E, A, T>, ApplicationSchemaDeclarationDenial> {
         (self.resolve)(self.path)
     }
@@ -55,6 +56,22 @@ where
     pub fn scalar_family(self) -> worth_foundational::facade::ScalarAspectType {
         <<F::Bindings as Scalar<T>>::Binding as crate::application_schema::ApplicationScalarValueBinding>::SCALAR_FAMILY
     }
+    #[inline(always)]
+    pub fn identity(self) -> super::ColumnIdentity {
+        super::ColumnIdentity {
+            fragment: TypeId::of::<F>(),
+            record: TypeId::of::<E>(),
+            aspect: TypeId::of::<A>(),
+            value: TypeId::of::<T>(),
+            binding: TypeId::of::<<F::Bindings as Scalar<T>>::Binding>(),
+            fragment_name: F::NAME,
+            record_name: E::NAME,
+            aspect_name: A::NAME,
+            native_aspect: super::native_aspect_key::<E, A>(),
+            field: self.path,
+            owner: crate::application_schema::ApplicationFieldBindingOwnerKind::Entity,
+        }
+    }
     /// Selects a named column from this record, proving both memberships.
     pub const fn at<EP, AP>(path: &'static str) -> Self
     where
@@ -83,35 +100,11 @@ where
         self,
         catalog: &FragmentCatalog,
     ) -> Result<&RecordFieldDefinition, ApplicationSchemaDeclarationDenial> {
-        catalog
-            .fragment_type::<F>()
-            .and_then(|fragment| fragment.aspect::<E, A>())
-            .and_then(|aspect| {
-                aspect.fields().iter().find(|field| {
-                    !field.internal_presence()
-                        && field.recipe().locus().field() == self.path
-                        && field.recipe().value_type() == TypeId::of::<T>()
-                        && field.recipe().binding_type()
-                            == TypeId::of::<<F::Bindings as Scalar<T>>::Binding>()
-                })
-            })
-            .or_else(|| {
-                // A name-derived field identity survives a Rust-only marker or
-                // policy-type change. A View still requires its actual fragment.
-                if catalog.fragment_type::<F>().is_some() {
-                    return None;
-                }
-                catalog.named_field::<F, E, A, T>(
-                    self.path,
-                    TypeId::of::<<F::Bindings as Scalar<T>>::Binding>(),
-                )
-            })
-            .ok_or_else(|| ApplicationSchemaDeclarationDenial::InvalidRecordField {
-                field: self.binding_recipe().locus().clone(),
-            })
+        self.identity().installed(catalog)
     }
 }
 
+#[inline(always)]
 pub fn select_field<F, E, A, T, EP, AP>(
     _: F,
     _: E,
@@ -152,6 +145,7 @@ pub trait RecordSelection: sealed::Sealed + Copy + Send + Sync + 'static {
         RecordField<Self::Entity, Self::Aspect, Self::Value>,
         ApplicationSchemaDeclarationDenial,
     >;
+    fn identity(self) -> super::ColumnIdentity;
     fn entity(self) -> &'static str;
     fn field(self) -> &'static str;
     fn aspect(self) -> &'static str;
@@ -166,10 +160,13 @@ pub trait RecordSelection: sealed::Sealed + Copy + Send + Sync + 'static {
         <Self::Binding as crate::application_schema::ApplicationScalarValueBinding>::SCALAR_FAMILY
     }
     fn expected_recipe(self) -> ApplicationFieldBindingRecipe;
+    #[inline(always)]
     fn installed(
         self,
         catalog: &FragmentCatalog,
-    ) -> Result<&RecordFieldDefinition, ApplicationSchemaDeclarationDenial>;
+    ) -> Result<&RecordFieldDefinition, ApplicationSchemaDeclarationDenial> {
+        self.identity().installed(catalog)
+    }
 }
 impl<F: Fragment, E: Entity, A: Aspect, T: 'static> RecordSelection for FieldSelection<F, E, A, T>
 where
@@ -194,10 +191,8 @@ where
     fn expected_recipe(self) -> ApplicationFieldBindingRecipe {
         self.binding_recipe()
     }
-    fn installed(
-        self,
-        catalog: &FragmentCatalog,
-    ) -> Result<&RecordFieldDefinition, ApplicationSchemaDeclarationDenial> {
-        self.installed(catalog)
+    #[inline(always)]
+    fn identity(self) -> super::ColumnIdentity {
+        FieldSelection::identity(self)
     }
 }

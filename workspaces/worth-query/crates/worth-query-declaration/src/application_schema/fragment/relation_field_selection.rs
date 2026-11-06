@@ -1,9 +1,6 @@
 //! Relation field handles come from the payload's record, with inferred membership.
 use super::field_selection::{sealed, RecordSelection};
-use super::{
-    Aspect, Entity, Fragment, In, PayloadMembers, Record, RecordField, RecordFieldDefinition,
-    Relation, Scalar,
-};
+use super::{Aspect, Entity, Fragment, In, PayloadMembers, Record, RecordField, Relation, Scalar};
 use crate::application_schema::{
     ApplicationFieldBindingLocus as Locus, ApplicationFieldBindingRecipe as Recipe,
     ApplicationSchemaDeclarationDenial as Denial,
@@ -71,23 +68,21 @@ where
             &format!("{}.{}.{}.{}", F::NAME, E::NAME, R::NAME, A::NAME),
         )
     }
-    fn installed(self, catalog: &super::FragmentCatalog) -> Result<&RecordFieldDefinition, Denial> {
-        catalog
-            .fragment_type::<F>()
-            .and_then(|f| f.relation_aspect::<R, A>())
-            .and_then(|a| {
-                a.fields().iter().find(|field| {
-                    !field.internal_presence()
-                        && field.recipe().locus().owner_kind()
-                            == crate::application_schema::ApplicationFieldBindingOwnerKind::Relation
-                        && field.recipe().locus().field() == self.path
-                        && field.recipe().value_type() == TypeId::of::<T>()
-                        && field.recipe().binding_type() == TypeId::of::<Self::Binding>()
-                })
-            })
-            .ok_or_else(|| Denial::InvalidRecordField {
-                field: self.expected_recipe().locus().clone(),
-            })
+    #[inline(always)]
+    fn identity(self) -> super::ColumnIdentity {
+        super::ColumnIdentity {
+            fragment: TypeId::of::<F>(),
+            record: TypeId::of::<R>(),
+            aspect: TypeId::of::<A>(),
+            value: TypeId::of::<T>(),
+            binding: TypeId::of::<Self::Binding>(),
+            fragment_name: F::NAME,
+            record_name: R::NAME,
+            aspect_name: A::NAME,
+            native_aspect: self.aspect(),
+            field: self.path,
+            owner: crate::application_schema::ApplicationFieldBindingOwnerKind::Relation,
+        }
     }
 }
 

@@ -7,29 +7,31 @@ use worth_query_declaration::facade::application_schema::fragment::{
     RecordFieldDefinition, RecordSelection,
 };
 impl WorthQueryPrimaryGraphLayout {
-    pub(in crate::domain_computation::primary_graph) fn aspect_selection<F, E, A>(
+    pub(in crate::domain_computation::primary_graph) fn aspect_selection(
         &self,
-        aspect: worth_query_declaration::facade::application_schema::fragment::AspectSelection<
-            F,
-            E,
-            A,
+        name: &str,
+        select: fn(
+            &worth_query_declaration::facade::application_schema::fragment::FragmentCatalog,
+        ) -> Option<
+            &worth_query_declaration::facade::application_schema::fragment::AspectDefinition,
         >,
     ) -> Result<
         &worth_query_declaration::facade::application_schema::fragment::AspectDefinition,
         Denial,
-    >
-    where
-        F: worth_query_declaration::facade::application_schema::fragment::Fragment,
-        E: worth_query_declaration::facade::application_schema::fragment::Entity,
-        A: worth_query_declaration::facade::application_schema::fragment::Aspect,
-    {
-        aspect
-            .installed(self.value_bindings.fragments())
-            .map_err(|_| Denial::new(Kind::UndeclaredEffect, aspect.name()))
+    > {
+        select(self.value_bindings.fragments())
+            .ok_or_else(|| Denial::new(Kind::UndeclaredEffect, name))
     }
+
     pub(in crate::domain_computation::primary_graph) fn record_selection<Field: RecordSelection>(
         &self,
         field: Field,
+    ) -> Result<&RecordFieldDefinition, Denial> {
+        self.record_column(field.identity())
+    }
+    pub(in crate::domain_computation::primary_graph) fn record_column(
+        &self,
+        field: worth_query_declaration::facade::application_schema::fragment::ColumnIdentity,
     ) -> Result<&RecordFieldDefinition, Denial> {
         field
             .installed(self.value_bindings.fragments())

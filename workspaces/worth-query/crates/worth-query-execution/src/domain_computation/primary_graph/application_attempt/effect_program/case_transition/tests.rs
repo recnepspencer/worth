@@ -1,5 +1,7 @@
 //! Private effect validation uses only declarations and effect vocabulary.
+use super::super::fragment::prepare_fields;
 use super::*;
+use worth_foundational::facade::{AspectKey, PortableAspectContractBasis};
 use worth_query_declaration::facade::application_schema::*;
 use worth_query_testkit_decl::fragment_fixture::*;
 use worth_relational::facade::identity::PartitionId;

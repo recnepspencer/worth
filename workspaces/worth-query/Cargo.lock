@@ -896,6 +896,7 @@ name = "worth-query-court-execution"
 version = "0.1.0"
 dependencies = [
  "im",
+ "serde_json",
  "sha2",
  "worth-execution",
  "worth-foundational",
@@ -906,6 +907,7 @@ dependencies = [
  "worth-query-testkit-execution-primary-graph-application-attempt",
  "worth-query-testkit-execution-primary-graph-application-attempt-2",
  "worth-query-testkit-execution-primary-graph-application-contribution",
+ "worth-query-testkit-instantiation",
  "worth-relational",
  "worth-runtime-world",
 ]
@@ -1503,6 +1505,14 @@ dependencies = [
  "worth-relational",
  "worth-runtime-bridge",
  "worth-signal",
+]
+
+[[package]]
+name = "worth-query-testkit-instantiation"
+version = "0.1.0"
+dependencies = [
+ "worth-query-declaration",
+ "worth-query-execution",
 ]
 
 [[package]]

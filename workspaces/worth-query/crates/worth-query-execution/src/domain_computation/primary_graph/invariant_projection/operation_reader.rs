@@ -15,6 +15,8 @@ pub(in crate::domain_computation::primary_graph) use applied::AppliedOperationPr
 mod borrowed;
 mod content;
 mod fragment;
+mod fragment_native;
+mod mutation_target;
 mod prepared_inputs;
 pub(in crate::domain_computation::primary_graph) use borrowed::BorrowedOperationProjection;
 pub(in crate::domain_computation::primary_graph) use prepared_inputs::PreparedCurrentInputs;

@@ -85,6 +85,7 @@ impl FragmentCatalog {
         self.fragment_type::<F>()
     }
 
+    #[inline(always)]
     pub fn fragment_type<F: Fragment>(&self) -> Option<&FragmentDefinition> {
         self.definitions.get(&TypeId::of::<F>())
     }
@@ -247,44 +248,7 @@ impl FragmentCatalog {
     }
 }
 
-impl FragmentDefinition {
-    /// Logical paths and physical names of the fragment's compiled aspect rows.
-    pub fn aspects(&self) -> impl Iterator<Item = &AspectDefinition> {
-        self.aspects.values()
-    }
-    pub fn relation_aspect<R: super::Relation, A: Aspect>(&self) -> Option<&AspectDefinition> {
-        self.aspects.get(&(TypeId::of::<R>(), TypeId::of::<A>()))
-    }
-
-    pub fn case_aspect<E: Entity>(
-        &self,
-        case: &super::CaseDefinition,
-    ) -> Option<&AspectDefinition> {
-        self.aspects.get(&(TypeId::of::<E>(), case.marker()))
-    }
-    pub fn path(&self) -> &str {
-        &self.path
-    }
-    pub fn entity<E: Entity>(&self) -> Option<&str> {
-        self.entities.get(&TypeId::of::<E>()).map(String::as_str)
-    }
-    pub fn aspect<E: Entity, A: Aspect>(&self) -> Option<&AspectDefinition> {
-        self.aspects.get(&(TypeId::of::<E>(), TypeId::of::<A>()))
-    }
-    pub fn group<E: Entity, G: super::OneOf>(&self) -> Option<&GroupDefinition> {
-        self.groups.get(&(TypeId::of::<E>(), TypeId::of::<G>()))
-    }
-    pub fn relation<E: Entity, R: super::Relation>(&self) -> Option<&RelationDefinition> {
-        self.relations.get(&(TypeId::of::<E>(), TypeId::of::<R>()))
-    }
-    pub fn case_group<E: Entity, A: Aspect>(&self) -> Option<&GroupDefinition> {
-        self.groups
-            .iter()
-            .filter(|((entity, _), _)| *entity == TypeId::of::<E>())
-            .map(|(_, group)| group)
-            .find(|group| group.contains::<A>())
-    }
-}
+mod lookup;
 
 impl AspectDefinition {
     pub fn path(&self) -> &str {

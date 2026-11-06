@@ -7,14 +7,14 @@ use worth_query_decl::facade::authentication::WorthQueryPrincipalMappingStatus;
 use worth_query_host::facade::runtime::WorthQueryExecutionRuntimeInstaller;
 
 #[derive(Clone, Copy)]
-pub(super) enum Mode {
+pub(crate) enum Mode {
     None,
     Named,
     Measured,
     BothBroken,
 }
 pub(super) type Program<O> = WorthQueryApplicationEffectProgramBuilder<Fixture, O, (), Item>;
-pub(super) struct World {
+pub(crate) struct World {
     pub(super) application: WorthQueryPrimaryGraphApplicationRuntime<Fixture>,
     pub(super) binding: WorthQueryInstalledPrincipalBinding<
         Fixture,
@@ -28,7 +28,7 @@ pub(super) struct World {
 }
 
 impl World {
-    pub(super) fn new(mode: Mode) -> Self {
+    pub(crate) fn new(mode: Mode) -> Self {
         worth_query_host::facade::application_contribution::with_bootstrap_advancement(
             execution_policy(),
             |phase| {
@@ -182,7 +182,7 @@ impl World {
             .unwrap()
     }
 
-    pub(super) fn read(&self) -> Result<FormValue, FragmentDenial> {
+    pub(crate) fn read(&self) -> Result<FormValue, FragmentDenial> {
         let request = live_scope();
         let external = authenticate_external(
             self.application.installed_schema(),

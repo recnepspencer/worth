@@ -56,19 +56,16 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
         )
     }
 
+    #[inline(always)]
     pub fn operation_read_field<Operation, Input, Field: super::fragment::RecordSelection>(
         mut self,
         operation: ApplicationOperationRef<Schema, Operation, Input>,
         field: Field,
     ) -> Self {
-        let recipe = field.expected_recipe();
-        let locus = recipe.locus();
-        let target = ApplicationOperationDecisionReadTarget::Field {
-            entity: locus.entity().to_owned(),
-            aspect: locus.aspect().to_owned(),
-            field: locus.field().to_owned(),
-        };
-        self.member_provenance.fragments.expect_field(recipe);
+        let target = declared_column(
+            &mut self.member_provenance.fragments,
+            field.expected_recipe(),
+        );
         self.decision_read(operation.name(), target)
     }
 
@@ -100,4 +97,18 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             target,
         })
     }
+}
+
+fn declared_column(
+    fragments: &mut super::fragment::provenance::FragmentProvenance,
+    recipe: super::ApplicationFieldBindingRecipe,
+) -> ApplicationOperationDecisionReadTarget {
+    let locus = recipe.locus();
+    let target = ApplicationOperationDecisionReadTarget::Field {
+        entity: locus.entity().to_owned(),
+        aspect: locus.aspect().to_owned(),
+        field: locus.field().to_owned(),
+    };
+    fragments.expect_field(recipe);
+    target
 }

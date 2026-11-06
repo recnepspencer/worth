@@ -1,5 +1,9 @@
 //! One native projection's codec admission, borrowing the original request.
+mod field;
 pub(crate) mod session;
+pub(in crate::domain_computation::primary_graph) use field::{
+    FieldDecoder, FieldEncoder, ScalarFieldDecoder, ScalarFieldEncoder,
+};
 pub(crate) mod state;
 
 pub(in crate::domain_computation::primary_graph) use session::ValueDecodeSession;

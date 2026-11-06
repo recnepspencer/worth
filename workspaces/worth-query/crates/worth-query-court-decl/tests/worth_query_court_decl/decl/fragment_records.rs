@@ -346,3 +346,20 @@ fn a_repeated_registration_is_a_typed_member_refusal() {
         Err(ApplicationSchemaDeclarationDenial::DuplicateFragmentMember { .. })
     ));
 }
+
+#[test]
+fn a_selected_handle_carries_its_record_requirement_into_generic_code() {
+    fn resolve<F, E, A, T>(
+        selection: FieldSelection<F, E, A, T>,
+    ) -> Result<RecordField<E, A, T>, ApplicationSchemaDeclarationDenial> {
+        selection.resolve()
+    }
+    let field = resolve(select_field::<_, _, _, u64, _, _>(
+        Fixture,
+        Item,
+        Metrics,
+        "components[1]",
+    ))
+    .unwrap();
+    assert_eq!(field.locus().field(), "components[1]");
+}

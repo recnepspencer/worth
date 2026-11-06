@@ -203,6 +203,7 @@ where
     }
 
     /// Read a value while retaining its exact field dependency for the attempt.
+    #[inline(always)]
     pub fn field<Entity, Aspect, Field, Value>(
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
@@ -230,6 +231,7 @@ where
 
     /// Read the complete admitted outgoing adjacency and retain absence as a
     /// source dependency for publication-time comparison.
+    #[inline(always)]
     pub fn relations_from<Relation, From, To>(
         &mut self,
         relation: ApplicationRelationRef<Schema, Relation, From, To>,
@@ -252,6 +254,7 @@ where
 
     /// Read the complete admitted incoming adjacency and retain absence as a
     /// source dependency for publication-time comparison.
+    #[inline(always)]
     pub fn relations_to<Relation, From, To>(
         &mut self,
         relation: ApplicationRelationRef<Schema, Relation, From, To>,

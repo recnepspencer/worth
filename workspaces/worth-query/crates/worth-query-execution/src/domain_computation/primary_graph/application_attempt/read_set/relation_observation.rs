@@ -46,43 +46,54 @@ impl<Schema, Operation, Input, Scope, Phase>
         WorthQueryObservedApplicationRelation<Schema, Relation, From, To>,
         WorthQueryApplicationAttemptDenial,
     > {
-        let matching_relations = self
-            .facts
-            .iter()
-            .find_map(|fact| match fact {
-                WorthQueryApplicationObservedFact::Relation {
-                    relation_kind,
-                    from: observed_from,
-                    to: observed_to,
-                    matching_relations,
-                    ..
-                } if *relation_kind == kind && *observed_from == from && *observed_to == to => {
-                    Some(matching_relations.clone())
-                }
-                WorthQueryApplicationObservedFact::Adjacency {
-                    relation_kind,
-                    relations,
-                    ..
-                } if *relation_kind == kind => {
-                    let matches = relations
-                        .iter()
-                        .filter(|observed| observed.from == from && observed.to == to)
-                        .map(|observed| observed.relation_id)
-                        .collect::<Vec<_>>();
-                    (!matches.is_empty()).then_some(matches)
-                }
-                _ => None,
-            })
-            .ok_or_else(|| {
-                denial(
-                    WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
-                    name,
-                )
-            })?;
+        let matching_relations = matching_relations(&self.facts, name, kind, from, to)?;
         Ok(WorthQueryObservedApplicationRelation {
             count: matching_relations.len(),
             matching_relations,
             _marker: std::marker::PhantomData,
         })
     }
+}
+
+pub(in crate::domain_computation::primary_graph::application_attempt) fn matching_relations(
+    facts: &crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
+    name: &str,
+    kind: KindId,
+    from: EntityId,
+    to: EntityId,
+) -> Result<Vec<worth_relational::facade::identity::RelationId>, WorthQueryApplicationAttemptDenial>
+{
+    let matching_relations = facts
+        .iter()
+        .find_map(|fact| match fact {
+            WorthQueryApplicationObservedFact::Relation {
+                relation_kind,
+                from: observed_from,
+                to: observed_to,
+                matching_relations,
+                ..
+            } if *relation_kind == kind && *observed_from == from && *observed_to == to => {
+                Some(matching_relations.clone())
+            }
+            WorthQueryApplicationObservedFact::Adjacency {
+                relation_kind,
+                relations,
+                ..
+            } if *relation_kind == kind => {
+                let matches = relations
+                    .iter()
+                    .filter(|observed| observed.from == from && observed.to == to)
+                    .map(|observed| observed.relation_id)
+                    .collect::<Vec<_>>();
+                (!matches.is_empty()).then_some(matches)
+            }
+            _ => None,
+        })
+        .ok_or_else(|| {
+            denial(
+                WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
+                name,
+            )
+        })?;
+    Ok(matching_relations)
 }

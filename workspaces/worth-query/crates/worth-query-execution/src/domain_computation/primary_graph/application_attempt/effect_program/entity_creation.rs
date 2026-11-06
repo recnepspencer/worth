@@ -1,21 +1,18 @@
-use std::marker::PhantomData;
-use std::sync::Arc;
+use worth_query_installation::facade::ApplicationEntityRef;
+use worth_query_installation::facade::OperationCreates;
 
-use worth_query_installation::facade::{
-    ApplicationEntityRef, ApplicationOperationProgramTarget, OperationCreates,
-};
-use worth_relational::facade::transactions::{CreatedEntityRef, EntityReference};
-
-use super::{
-    denial, WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationCreationPartition, WorthQueryApplicationEffectEntity,
-    WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationEntityKey,
-    WorthQueryApplicationRealizedEffect,
-};
+use super::denial;
+use super::WorthQueryApplicationAttemptDenial;
+use super::WorthQueryApplicationAttemptDenialKind;
+use super::WorthQueryApplicationCreationPartition;
+use super::WorthQueryApplicationEffectEntity;
+use super::WorthQueryApplicationEffectProgramBuilder;
+use super::WorthQueryApplicationEntityKey;
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>
 {
+    #[inline(always)]
     pub fn create_entity<Entity>(
         &mut self,
         entity: ApplicationEntityRef<Schema, Entity>,
@@ -24,9 +21,17 @@ impl<Schema, Operation, Input, Scope>
     where
         Entity: OperationCreates<Operation>,
     {
-        self.create_entity_at(entity, key, WorthQueryApplicationCreationPartition::Issued)
+        Ok(self
+            .native_effects()
+            .create_entity_named_at(
+                entity.name(),
+                key.into_string(),
+                WorthQueryApplicationCreationPartition::Issued,
+            )?
+            .into_typed())
     }
 
+    #[inline(always)]
     pub fn create_entity_in_context<Entity, ContextEntity>(
         &mut self,
         context: &WorthQueryApplicationEffectEntity<Schema, ContextEntity>,
@@ -36,29 +41,10 @@ impl<Schema, Operation, Input, Scope>
     where
         Entity: OperationCreates<Operation>,
     {
-        if !Arc::ptr_eq(&context.program, &self.program) {
-            return Err(foreign_context_denial());
-        }
-        let EntityReference::Existing(existing) = context.reference else {
-            return Err(foreign_context_denial());
-        };
-        self.create_entity_at(
-            entity,
-            key,
-            WorthQueryApplicationCreationPartition::Context(existing.partition_id),
-        )
-    }
-
-    fn create_entity_at<Entity>(
-        &mut self,
-        entity: ApplicationEntityRef<Schema, Entity>,
-        key: WorthQueryApplicationEntityKey<Schema, Entity>,
-        partition: WorthQueryApplicationCreationPartition,
-    ) -> Result<WorthQueryApplicationEffectEntity<Schema, Entity>, WorthQueryApplicationAttemptDenial>
-    where
-        Entity: OperationCreates<Operation>,
-    {
-        self.create_entity_named_at(entity.name(), key.into_string(), partition)
+        Ok(self
+            .native_effects()
+            .create_entity_in_context(context.borrowed(), entity.name(), key.into_string())?
+            .into_typed())
     }
 
     /// Only the installed native body may enter this dynamic bridge. The
@@ -72,23 +58,14 @@ impl<Schema, Operation, Input, Scope>
         key: &str,
     ) -> Result<WorthQueryApplicationEffectEntity<Schema, ()>, WorthQueryApplicationAttemptDenial>
     {
-        if !Arc::ptr_eq(&context.program, &self.program) {
-            return Err(foreign_context_denial());
-        }
-        let EntityReference::Existing(existing) = context.reference else {
-            return Err(foreign_context_denial());
-        };
+        let partition = super::core::context_partition(&self.program, context.borrowed())?;
         let key = WorthQueryApplicationEntityKey::<Schema, ()>::new(key).map_err(|_| {
             denial(
                 WorthQueryApplicationAttemptDenialKind::InvalidEffectValue,
                 entity,
             )
         })?;
-        self.create_entity_named_at(
-            entity,
-            key.into_string(),
-            WorthQueryApplicationCreationPartition::Context(existing.partition_id),
-        )
+        self.create_entity_named_at(entity, key.into_string(), partition)
     }
 
     pub(super) fn create_entity_named_at<Entity>(
@@ -98,60 +75,9 @@ impl<Schema, Operation, Input, Scope>
         partition: WorthQueryApplicationCreationPartition,
     ) -> Result<WorthQueryApplicationEffectEntity<Schema, Entity>, WorthQueryApplicationAttemptDenial>
     {
-        if self
-            .creation_partition
-            .is_some_and(|selected| selected != partition)
-        {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget,
-                "candidate creation partition",
-            ));
-        }
-        self.admit_program_target(&ApplicationOperationProgramTarget::Create {
-            entity: entity_name.to_string(),
-        })?;
-        let kind = self.layout.entity_kind(entity_name).ok_or_else(|| {
-            denial(
-                WorthQueryApplicationAttemptDenialKind::UndeclaredEffect,
-                entity_name,
-            )
-        })?;
-        if self.keys.contains(&(kind, key.clone())) {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::DuplicateEffectKey,
-                entity_name,
-            ));
-        }
-        self.reserve_effects(1)?;
-        self.keys.insert((kind, key.clone()));
-        self.creation_partition = Some(partition);
-        let reference = EntityReference::Created(CreatedEntityRef {
-            partition_id: partition
-                .resolve(worth_relational::facade::identity::PartitionId::main()),
-            kind_id: kind,
-            client_key: worth_relational::facade::symbols::ClientKey::raw(key.clone()),
-        });
-        let created_effect = self.effects.len();
-        self.effects
-            .push(WorthQueryApplicationRealizedEffect::CreateEntity {
-                kind,
-                key,
-                fields: std::collections::BTreeMap::new(),
-                partition,
-            });
-        Ok(WorthQueryApplicationEffectEntity {
-            reference,
-            entity: entity_name.to_string(),
-            created_effect: Some(created_effect),
-            program: Arc::clone(&self.program),
-            _marker: PhantomData,
-        })
+        Ok(self
+            .native_effects()
+            .create_entity_named_at(entity_name, key, partition)?
+            .into_typed())
     }
-}
-
-fn foreign_context_denial() -> WorthQueryApplicationAttemptDenial {
-    denial(
-        WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget,
-        "creation context",
-    )
 }

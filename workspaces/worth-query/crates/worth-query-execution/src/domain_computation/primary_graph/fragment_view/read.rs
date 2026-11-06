@@ -19,6 +19,7 @@ pub trait Readable<Set: BindingSet, Members, Witness, E: Entity>: In<Members, Wi
 }
 
 impl<F: Fragment> View<'_, F, Reading<'_>> {
+    #[inline(always)]
     pub fn read<E, Marker, EntityWitness, MemberWitness>(
         &mut self,
         target: &ObservedEntity<E>,
@@ -45,31 +46,15 @@ impl<F: Fragment> View<'_, F, Reading<'_>> {
         T: 'static,
         F::Bindings: BindingSet,
     {
-        let definition =
-            self.definition
-                .aspect::<E, A>()
-                .ok_or(FragmentDenial::MemberNotInstalled {
-                    entity: E::NAME,
-                    member: A::NAME,
-                })?;
-        let installed = definition.fields().iter().find(|installed| {
-            installed.recipe().locus() == field.locus()
-                && installed.recipe().value_type()
-                    == crate::equality_type_id::EqualityTypeId::of::<T>().into_external()
-                && installed.recipe().binding_type() == field.recipe().binding_type()
-                && installed.equality()
-        });
-        if installed.is_none() {
-            return Err(FragmentDenial::InvalidField {
-                path: format!("{}.{}", definition.path(), field.locus().field()),
-            });
-        }
-        let value = field
-            .encode(&value)
-            .map_err(|denial| FragmentDenial::Encode {
-                path: format!("{}.{}", definition.path(), field.locus().field()),
-                cause: denial.cause().clone(),
-            })?;
+        let definition = resolve_definition(
+            self.definition,
+            crate::equality_type_id::EqualityTypeId::of::<E>().into_external(),
+            crate::equality_type_id::EqualityTypeId::of::<A>().into_external(),
+            E::NAME,
+            A::NAME,
+            field.recipe(),
+        )?;
+        let value = encoded_resolution(definition, field.locus(), field.encode(&value))?;
         Ok(ObservedEntity {
             erased: self.access.port.resolve(field.locus(), value)?,
             marker: PhantomData,
@@ -103,19 +88,21 @@ where
         target: &ObservedEntity<E>,
         work: &mut Set::Work<'_>,
     ) -> Result<Self::Output, FragmentDenial> {
-        let definition = fragment
-            .aspect::<E, A>()
-            .ok_or(FragmentDenial::MemberNotInstalled {
-                entity: E::NAME,
-                member: A::NAME,
-            })?;
-        let raw = access
-            .port
-            .record(&target.erased, definition)?
-            .ok_or_else(|| FragmentDenial::MissingAspect {
-                path: definition.path().to_owned(),
-            })?;
-        decode_record::<Set, A::Row>(access, &raw, definition.path(), work)
+        let (definition, raw) = read_record(
+            access,
+            fragment,
+            &target.erased,
+            crate::equality_type_id::EqualityTypeId::of::<E>().into_external(),
+            crate::equality_type_id::EqualityTypeId::of::<A>().into_external(),
+            (E::NAME, A::NAME),
+            true,
+        )?;
+        decode_record::<Set, A::Row>(
+            access,
+            &raw.expect("required presence was checked"),
+            definition.path(),
+            work,
+        )
     }
 }
 
@@ -132,16 +119,16 @@ where
         target: &ObservedEntity<E>,
         work: &mut Set::Work<'_>,
     ) -> Result<Self::Output, FragmentDenial> {
-        let definition = fragment
-            .aspect::<E, A>()
-            .ok_or(FragmentDenial::MemberNotInstalled {
-                entity: E::NAME,
-                member: A::NAME,
-            })?;
-        access
-            .port
-            .record(&target.erased, definition)?
-            .map(|raw| decode_record::<Set, A::Row>(access, &raw, definition.path(), work))
+        let (definition, raw) = read_record(
+            access,
+            fragment,
+            &target.erased,
+            crate::equality_type_id::EqualityTypeId::of::<E>().into_external(),
+            crate::equality_type_id::EqualityTypeId::of::<A>().into_external(),
+            (E::NAME, A::NAME),
+            false,
+        )?;
+        raw.map(|raw| decode_record::<Set, A::Row>(access, &raw, definition.path(), work))
             .transpose()
     }
 }
@@ -158,4 +145,79 @@ pub(super) fn decode_record<Set: Record<T>, T: 'static>(
         Ok(())
     })?;
     Ok(decoded.expect("the original owner invokes its decode loan exactly once"))
+}
+
+type RawRecord = std::collections::BTreeMap<String, worth_foundational::facade::AspectValue>;
+fn read_record<'a>(
+    access: &mut Reading<'_>,
+    fragment: &'a FragmentDefinition,
+    target: &super::ErasedObserved,
+    entity: std::any::TypeId,
+    aspect: std::any::TypeId,
+    names: (&'static str, &'static str),
+    required: bool,
+) -> Result<
+    (
+        &'a worth_query_declaration::facade::application_schema::fragment::AspectDefinition,
+        Option<RawRecord>,
+    ),
+    FragmentDenial,
+> {
+    let definition =
+        fragment
+            .aspect_by_identity(entity, aspect)
+            .ok_or(FragmentDenial::MemberNotInstalled {
+                entity: names.0,
+                member: names.1,
+            })?;
+    let raw = access.port.record(target, definition)?;
+    if required && raw.is_none() {
+        return Err(FragmentDenial::MissingAspect {
+            path: definition.path().to_owned(),
+        });
+    }
+    Ok((definition, raw))
+}
+fn resolve_definition<'a>(
+    fragment: &'a FragmentDefinition,
+    entity: std::any::TypeId,
+    aspect: std::any::TypeId,
+    entity_name: &'static str,
+    aspect_name: &'static str,
+    recipe: &worth_query_declaration::facade::application_schema::ApplicationFieldBindingRecipe,
+) -> Result<
+    &'a worth_query_declaration::facade::application_schema::fragment::AspectDefinition,
+    FragmentDenial,
+> {
+    let definition =
+        fragment
+            .aspect_by_identity(entity, aspect)
+            .ok_or(FragmentDenial::MemberNotInstalled {
+                entity: entity_name,
+                member: aspect_name,
+            })?;
+    if !definition.fields().iter().any(|installed| {
+        installed.recipe().locus() == recipe.locus()
+            && installed.recipe().value_type() == recipe.value_type()
+            && installed.recipe().binding_type() == recipe.binding_type()
+            && installed.equality()
+    }) {
+        return Err(FragmentDenial::InvalidField {
+            path: format!("{}.{}", definition.path(), recipe.locus().field()),
+        });
+    }
+    Ok(definition)
+}
+fn encoded_resolution(
+    definition: &worth_query_declaration::facade::application_schema::fragment::AspectDefinition,
+    field: &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus,
+    value: Result<
+        worth_foundational::facade::AspectValue,
+        worth_query_declaration::facade::application_schema::fragment::FieldEncodeRefusal,
+    >,
+) -> Result<worth_foundational::facade::AspectValue, FragmentDenial> {
+    value.map_err(|denial| FragmentDenial::Encode {
+        path: format!("{}.{}", definition.path(), field.field()),
+        cause: denial.cause().clone(),
+    })
 }

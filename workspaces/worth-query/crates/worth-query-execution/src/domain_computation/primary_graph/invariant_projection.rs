@@ -23,6 +23,7 @@ mod lineage;
 mod orbit;
 pub use orbit::WorthQueryInvariantProjectionOrbit;
 mod locked_reader;
+mod native_read;
 mod operation_projection_denial;
 pub(crate) mod operation_reader;
 pub(in crate::domain_computation::primary_graph) use operation_reader::native_index_decision_cause;
