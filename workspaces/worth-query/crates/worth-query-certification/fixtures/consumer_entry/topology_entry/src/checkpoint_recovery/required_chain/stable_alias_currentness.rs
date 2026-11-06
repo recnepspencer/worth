@@ -21,6 +21,10 @@ fn output_probe() -> PlanarOperation {
     }])
 }
 
+#[expect(
+    clippy::result_large_err,
+    reason = "The fixture preserves the original typed owner denial."
+)]
 fn mutate_anchor<'application>(
     request: &worth_query_host::facade::application_entry::WorthQueryApplicationRequest<
         'application,

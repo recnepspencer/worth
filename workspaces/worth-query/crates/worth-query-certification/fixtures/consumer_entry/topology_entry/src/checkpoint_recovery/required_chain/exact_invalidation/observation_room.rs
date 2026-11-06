@@ -52,6 +52,10 @@ mod serial {
     /// basis is gone, the same request is answered as already committed and not
     /// performed again, and the outputs are produced by their next demand.
     #[test]
+    #[expect(
+        clippy::result_large_err,
+        reason = "The fixture preserves the original typed owner denial."
+    )]
     fn a_released_write_refuses_receipt_recovery_and_is_not_performed_again() {
         let _equivalence =
             primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();

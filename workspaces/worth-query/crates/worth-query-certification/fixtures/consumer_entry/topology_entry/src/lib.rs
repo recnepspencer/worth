@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 #![forbid(unsafe_code)]
 // Threaded owner tests derive Send/Sync through nested persistent graph storage.
 #![recursion_limit = "256"]
