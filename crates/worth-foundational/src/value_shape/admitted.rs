@@ -79,13 +79,13 @@ pub fn decode_stored_canonical_value<Value: CanonicalValue>(
     }
 }
 
-/// Encode and certify once; immutable copies carry their codec seal.
+/// Encode immutable text; its first successful decode certifies the codec round trip.
+/// Serialization alone cannot prove that a custom seed preserves those bytes.
 pub fn encode_stored_canonical_value<Value: CanonicalValue>(
     value: &Value,
     bounds: ValueDecodeBounds,
 ) -> Result<crate::values::InternedString, D> {
     let text = StoredValueText::new(super::encode_canonical_value(value, bounds)?);
-    text.seal::<ValueDelegate<Value>>(bounds);
     Ok(crate::values::InternedString::Stored(text))
 }
 
@@ -204,3 +204,6 @@ impl Write for CanonicalComparison<'_, '_> {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod normalizing_seed_tests;

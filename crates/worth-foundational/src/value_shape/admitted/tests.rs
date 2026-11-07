@@ -56,6 +56,15 @@ fn stored_reads_carry_the_codec_proof_and_restore_rechecks_untrusted_bytes() {
     let bounds = ValueDecodeBounds::unrestricted();
     let value = Text("alpha".to_owned());
     let text = encode_stored_canonical_value(&value, bounds).unwrap();
+    let encoded = counts();
+    assert_eq!(
+        decode_stored_canonical_value::<Text>(&text, bounds, None).unwrap(),
+        value
+    );
+    assert!(
+        counts().0 > encoded.0 && counts().1 > encoded.1,
+        "the first decode checks its actual seed round trip"
+    );
     let before = counts();
     for _ in 0..16 {
         assert_eq!(
@@ -121,6 +130,7 @@ fn a_fixed_stored_read_stays_flat_with_bystanders_and_prior_reads() {
     fn read(model: usize, history: usize) -> usize {
         let bounds = ValueDecodeBounds::unrestricted();
         let text = encode_stored_canonical_value(&Text("fixed".to_owned()), bounds).unwrap();
+        decode_stored_canonical_value::<Text>(&text, bounds, None).unwrap();
         let bystanders = (0..model)
             .map(|i| {
                 encode_stored_canonical_value(&Text(format!("bystander-{i}")), bounds).unwrap()
@@ -176,6 +186,7 @@ impl CanonicalValue for DifferentText {
 fn identical_wire_grammars_do_not_share_codec_or_policy_proof() {
     let bounds = ValueDecodeBounds::unrestricted();
     let text = encode_stored_canonical_value(&Text("alpha".to_owned()), bounds).unwrap();
+    decode_stored_canonical_value::<Text>(&text, bounds, None).unwrap();
     assert_eq!(
         decode_stored_canonical_value::<DifferentText>(&text, bounds, None),
         Err(D::NonCanonical)
@@ -202,6 +213,7 @@ fn a_standalone_shape_proof_does_not_admit_an_unsupported_seed() {
 fn immutable_text_copies_carry_proof_without_sharing_allocation_custody() {
     let bounds = ValueDecodeBounds::unrestricted();
     let text = encode_stored_canonical_value(&Text("alpha".to_owned()), bounds).unwrap();
+    decode_stored_canonical_value::<Text>(&text, bounds, None).unwrap();
     let copy = text.clone();
     assert_eq!(text, copy);
     assert_ne!(
