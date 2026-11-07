@@ -57,7 +57,7 @@ impl PreparedRecoveredCustodyBacking {
     ) -> RecoveredCheckpointCustodyEvidence {
         assert!(self.values.is_empty() && self.values.capacity() == 1);
         self.values.push(payload);
-        RecoveredCheckpointCustodyEvidence { backing: self }
+        RecoveredCheckpointCustodyEvidence::Recovered { backing: self }
     }
 
     pub(super) const fn payload(&self) -> &RecoveredCheckpointCustodyPayload {
