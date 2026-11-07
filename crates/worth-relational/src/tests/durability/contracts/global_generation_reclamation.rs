@@ -44,6 +44,8 @@ fn repeated_global_same_basis_builds_reclaim_duplicates_but_keep_pinned_root() {
         duplicates.push(generation.generation_id);
         runtime.indexes.restore_generation(generation);
     }
+    // The template is fixture construction, not an intended live generation reader.
+    drop(template);
     let selected_pinned = *duplicates.last().unwrap();
     let next = create_entity_outcome(execution, &runtime, "global-duplicate-next");
     let next_built = runtime.index_authority().build_for_commit(

@@ -58,6 +58,10 @@ fn exercise(degree: usize) -> fixture::Work {
         &basis,
     );
     assert!(built.failed_indexes.is_empty());
+    let mut court = worth_testkit_relational::maintenance::MaintainedCourt::new(
+        "native_join",
+        std::sync::Arc::new(built.generations[0].entries.clone()),
+    );
     drop(basis);
     let relation = fixture::relation_between(execution, &runtime, left[0], hub);
     let mut transaction = fixture::transaction(&runtime);
@@ -76,7 +80,13 @@ fn exercise(degree: usize) -> fixture::Work {
         .unwrap();
     let (candidate, work) = fixture::prepare(execution, &runtime, transaction);
     let committed = fixture::publish(execution, &runtime, candidate);
-    assert_cold(execution, &runtime, definition.index_id, &committed);
+    assert_cold(
+        execution,
+        &runtime,
+        definition.index_id,
+        &committed,
+        &mut court,
+    );
     fixture::release_test_commit_snapshot(&runtime, &committed);
     let mut transaction = fixture::transaction(&runtime);
     transaction
@@ -116,7 +126,13 @@ fn exercise(degree: usize) -> fixture::Work {
         .unwrap()
         .iter()
         .any(|row| row.shared_entity_id() == unpaired_hub));
-    assert_cold(execution, &runtime, definition.index_id, &committed);
+    assert_cold(
+        execution,
+        &runtime,
+        definition.index_id,
+        &committed,
+        &mut court,
+    );
     fixture::release_test_commit_snapshot(&runtime, &committed);
     work
 }
@@ -125,6 +141,9 @@ fn assert_cold(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     index: DerivedIndexId,
     committed: &worth_relational::facade::transactions::CommitResult,
+    court: &mut worth_testkit_relational::maintenance::MaintainedCourt<
+        worth_relational::facade::indexes::DerivedIndexEntries,
+    >,
 ) {
     let selected = runtime
         .index_access()
@@ -141,5 +160,11 @@ fn assert_cold(
         &main_basis(runtime),
     );
     assert!(cold.failed_indexes.is_empty());
-    assert_eq!(selected.entries, cold.generations[0].entries);
+    court
+        .check_against_cold::<()>(
+            std::sync::Arc::new(selected.entries.clone()),
+            std::sync::Arc::new(cold.generations[0].entries.clone()),
+            |left, right| left == right,
+        )
+        .unwrap();
 }

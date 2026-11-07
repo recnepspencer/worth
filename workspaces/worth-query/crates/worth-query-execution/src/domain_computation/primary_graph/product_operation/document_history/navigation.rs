@@ -95,7 +95,6 @@ pub enum WorthQueryHistoryNavigationDenial {
     Transaction(worth_relational::facade::mvcc::RelationalBranchTransactionAdmissionDenial),
     Preparation(worth_relational::facade::mvcc::RelationalRetainedEntitySelectionPreparationError),
     SelectorSnapshot(worth_relational::facade::snapshots::RelationalSnapshotAdmissionDenial),
-    SelectorMaintenance(worth_relational::facade::indexes::DerivedIndexMaintenanceDenial),
     Publication(worth_runtime_world::facade::NoEffectCompositePublication),
     Recovery(worth_runtime_world::facade::RuntimeWorldRecoveryDenial),
     RecoveryAffinity,

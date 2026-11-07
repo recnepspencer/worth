@@ -27,7 +27,6 @@ impl Denial {
                 | Preparation::ValidationUnavailable
                 | Preparation::PreparationUnavailable
                 | Preparation::SnapshotUnavailable
-                | Preparation::IndexPreparationUnavailable
                 | Preparation::InstalledBindingMismatch
                 | Preparation::DispatchOwnerMismatch => Retry::PublicationRetryRequired,
             },

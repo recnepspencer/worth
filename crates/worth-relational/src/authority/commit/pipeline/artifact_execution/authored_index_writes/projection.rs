@@ -120,11 +120,24 @@ impl Projection<'_, '_, '_, '_, '_> {
         {
             let levels = usize::BITS - routing.kind_count().leading_zeros();
             work(self.context, u64::from(levels) * 11 + 1)?;
-            for locator in routing.entity_fields(kind) {
+            let locators = if let Some(aspect) = aspect {
+                let fields = routing.entity_fields(kind).len();
+                let field_levels = usize::BITS - fields.leading_zeros();
+                let width = (aspect.as_str().len() as u64)
+                    .checked_add(1)
+                    .ok_or_else(overflow)?;
+                let lookup = u64::from(field_levels)
+                    .checked_mul(11)
+                    .and_then(|units| units.checked_mul(width))
+                    .and_then(|units| units.checked_add(u64::from(levels) * 11 + 2))
+                    .ok_or_else(overflow)?;
+                work(self.context, lookup)?;
+                routing.entity_fields_in_aspect(kind, aspect)
+            } else {
+                routing.entity_fields(kind)
+            };
+            for locator in locators {
                 work(self.context, 1)?;
-                if aspect.is_some_and(|aspect| aspect != locator.aspect().aspect_key()) {
-                    continue;
-                }
                 if let [field] = locator.field_path().fields() {
                     self.field(
                         entity,

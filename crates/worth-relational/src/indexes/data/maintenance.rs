@@ -2,8 +2,9 @@ use serde::{Deserialize, Serialize};
 
 use super::{DerivedIndexGeneration, DerivedIndexId};
 
-/// Explicit limits for patch-local work and optional cold reconstruction.
-/// An explicit Some(0) cold limit prohibits reconstruction, including a missing generation.
+/// Limits for change maintenance or an explicitly entered reconstruction.
+/// A cold allowance grants no reconstruction authority: ordinary maintenance
+/// refuses missing predecessor state even when this allowance is positive or absent.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DerivedIndexMaintenanceBudget {
     pub maximum_work_units: Option<usize>,

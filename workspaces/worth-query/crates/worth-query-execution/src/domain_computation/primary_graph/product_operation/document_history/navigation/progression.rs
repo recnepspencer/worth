@@ -148,7 +148,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
             .select_application_read_observation(phase, &source.source)
             .map_err(Denial::ProductAdmission)?;
         let graph = &self.application.runtime.primary_provider.graph;
-        let mut prepared = graph.with_runtime(&execution, |native| {
+        let prepared = graph.with_runtime(&execution, |native| {
             let transaction = native
                 .begin_branch_transaction(
                     current.product().relational_basis(),
@@ -166,22 +166,11 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
             port.prepare_retained_entity_selection(&execution, selection)
                 .map_err(Denial::Preparation)
         })?;
-        super::super::super::candidate_selectors::prepare(&execution, &current, &mut prepared)
-            .map_err(selector_denial)?;
         current
             .product()
             .publication_binding()
             .prepare_relational_candidate(prepared, request, true)
             .map_err(super::publication::publication_denial)
-    }
-}
-
-fn selector_denial(
-    cause: super::super::super::candidate_selectors::CandidateSelectorMaintenanceDenial,
-) -> WorthQueryHistoryNavigationDenial {
-    use super::super::super::candidate_selectors::CandidateSelectorMaintenanceDenial as Cause;
-    match cause {
-        Cause::Maintenance(cause) => WorthQueryHistoryNavigationDenial::SelectorMaintenance(cause),
     }
 }
 

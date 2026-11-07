@@ -1,5 +1,6 @@
 //! Immutable installed-definition meaning and its actual installation events.
 use super::*;
+use crate::indexes::data::DerivedIndexKind;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 fn incarnation() -> u64 {
@@ -50,6 +51,7 @@ pub(crate) struct IndexDefinitionCatalog {
     pub(super) definitions: BTreeMap<DerivedIndexId, Arc<DerivedIndexDefinition>>,
     pub(super) field_definitions:
         BTreeMap<AspectKey, BTreeMap<FieldKey, Vec<Arc<DerivedIndexDefinition>>>>,
+    entity_field_indexes: usize,
     introductions: BTreeMap<DerivedIndexId, u64>,
     routing: BTreeMap<SchemaVersionId, Arc<crate::indexes::data::InstalledIndexRouting>>,
     coverage: IndexCatalogCoverage,
@@ -60,6 +62,7 @@ impl Default for IndexDefinitionCatalog {
             installed: im::OrdSet::new(),
             definitions: BTreeMap::new(),
             field_definitions: BTreeMap::new(),
+            entity_field_indexes: 0,
             introductions: BTreeMap::new(),
             routing: BTreeMap::new(),
             coverage: IndexCatalogCoverage {
@@ -80,7 +83,19 @@ impl IndexDefinitionCatalog {
             .expect("index installation epoch exhausted");
         self.introductions
             .insert(definition.index_id, self.coverage.epoch);
-        if let Some(previous) = self.definitions.remove(&definition.index_id)
+        let previous = self.definitions.remove(&definition.index_id);
+        if previous.as_ref().is_some_and(|definition| {
+            matches!(definition.kind, DerivedIndexKind::EntityField { .. })
+        }) {
+            self.entity_field_indexes -= 1;
+        }
+        if matches!(definition.kind, DerivedIndexKind::EntityField { .. }) {
+            self.entity_field_indexes = self
+                .entity_field_indexes
+                .checked_add(1)
+                .expect("installed definitions fit the native catalog");
+        }
+        if let Some(previous) = previous
             && let Some((aspect, field)) = field_index_locator(&previous.kind)
             && let Some(fields) = self.field_definitions.get_mut(&aspect)
         {
@@ -108,6 +123,10 @@ impl IndexDefinitionCatalog {
 
     pub(super) fn renew_incarnation(&mut self) {
         self.coverage.incarnation = incarnation();
+    }
+
+    pub(crate) fn has_entity_field_indexes(&self) -> bool {
+        self.entity_field_indexes != 0
     }
 
     pub(crate) fn coverage(&self) -> IndexCatalogCoverage {
