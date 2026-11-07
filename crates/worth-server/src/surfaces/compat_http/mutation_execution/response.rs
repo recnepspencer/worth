@@ -17,7 +17,8 @@ pub struct WorthServerCompatibilityMutation {
     precondition: WorthServerMutationPrecondition,
     mutation_result: WorthServerCompatibilityMutationResult,
     envelope: WorthServerCompatibilityMutationEnvelope,
-    canonical_digest: String,
+    canonical_digest:
+        Result<String, worth_query::facade::runtime::WorthQueryEvidenceIdentityDerivationDenial>,
 }
 
 impl WorthServerCompatibilityMutation {
@@ -29,15 +30,15 @@ impl WorthServerCompatibilityMutation {
         mutation_result: WorthServerCompatibilityMutationResult,
         envelope: WorthServerCompatibilityMutationEnvelope,
     ) -> Self {
-        let canonical_digest = format!(
+        let canonical_digest = mutation_result.result_digest().map(|result_digest| format!(
             "worth-server-compat-mutation-v1|operation_request:{}|request:{}|precondition:{}|result:{}|inspection:{}|envelope:{}",
             operation_request.canonical_digest(),
             mutation_request.canonical_digest(),
             precondition.canonical_digest(),
-            mutation_result.result_digest(),
+            result_digest,
             mutation_result.inspection_digest(),
             envelope.canonical_digest(),
-        );
+        ));
         Self {
             operation_request,
             plan_proof,
@@ -95,8 +96,11 @@ impl WorthServerCompatibilityMutation {
         &self.envelope
     }
 
-    pub fn canonical_digest(&self) -> &str {
-        &self.canonical_digest
+    pub fn canonical_digest(
+        &self,
+    ) -> Result<&str, worth_query::facade::runtime::WorthQueryEvidenceIdentityDerivationDenial>
+    {
+        self.canonical_digest.as_deref().map_err(|cause| *cause)
     }
 }
 

@@ -17,7 +17,8 @@ pub struct WorthServerDirectMutation {
     direct_context: WorthServerDirectContextArtifact,
     mutation_result: WorthServerDirectMutationResult,
     response_envelope: WorthServerResponseEnvelope,
-    canonical_digest: String,
+    canonical_digest:
+        Result<String, worth_query::facade::runtime::WorthQueryEvidenceIdentityDerivationDenial>,
 }
 
 pub(crate) struct WorthServerDirectMutationParts {
@@ -43,13 +44,15 @@ impl WorthServerDirectMutation {
             mutation_result,
             response_envelope,
         } = parts;
-        let canonical_digest = format!(
-            "worth-server-direct-mutation-v1:{}:{}:{}:{}",
-            operation_request.canonical_digest(),
-            handoff_digest,
-            mutation_result.result_digest(),
-            mutation_result.inspection_digest()
-        );
+        let canonical_digest = mutation_result.result_digest().map(|result_digest| {
+            format!(
+                "worth-server-direct-mutation-v1:{}:{}:{}:{}",
+                operation_request.canonical_digest(),
+                handoff_digest,
+                result_digest,
+                mutation_result.inspection_digest()
+            )
+        });
         Self {
             operation_request,
             plan_proof,
@@ -95,8 +98,11 @@ impl WorthServerDirectMutation {
         &self.response_envelope
     }
 
-    pub fn canonical_digest(&self) -> &str {
-        &self.canonical_digest
+    pub fn canonical_digest(
+        &self,
+    ) -> Result<&str, worth_query::facade::runtime::WorthQueryEvidenceIdentityDerivationDenial>
+    {
+        self.canonical_digest.as_deref().map_err(|cause| *cause)
     }
 }
 

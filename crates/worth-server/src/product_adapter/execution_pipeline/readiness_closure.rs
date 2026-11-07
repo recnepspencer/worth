@@ -125,7 +125,7 @@ fn close_query_derived_product_readiness(
                     WorthServerProductOperationSurfaceDenialCode::EvidenceIdentityDerivationDenied(
                         cause,
                     ),
-                    "downstream contract identity exceeded canonical digest bounds",
+                    "downstream contract identity exceeded canonical digest bounds".to_string(),
                 )
             })?;
     let query_context = WorthServerOperationQuerySupportContext::new(

@@ -71,6 +71,15 @@ fn map_declaration_denial(
 ) -> WorthServerQueryHandoffDenial {
     let diagnostics = admission.request_context().diagnostics_profile();
     match denial {
+        WorthServerDirectDeclarationDenial::EvidenceIdentityDerivationDenied {
+            cause,
+            detail,
+            ..
+        } => WorthServerQueryHandoffDenial::new(
+            WorthServerQueryHandoffDenialCode::EvidenceIdentityDerivationDenied(cause),
+            diagnostics,
+            detail,
+        ),
         WorthServerDirectDeclarationDenial::InvalidDeclarationIdentity { detail, .. } => {
             WorthServerQueryHandoffDenial::new(
                 WorthServerQueryHandoffDenialCode::DirectDeclarationBindingInvalid,

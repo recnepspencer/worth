@@ -70,6 +70,9 @@ impl WorthServerOperationPlanDenial {
 
     pub(crate) fn into_query_handoff_denial(self) -> WorthServerQueryHandoffDenial {
         let code = match self.code {
+            WorthServerOperationPlanDenialCode::EvidenceIdentityDerivationDenied(cause) => {
+                WorthServerQueryHandoffDenialCode::EvidenceIdentityDerivationDenied(cause)
+            }
             WorthServerOperationPlanDenialCode::PreparedIntentMismatch => {
                 WorthServerQueryHandoffDenialCode::PreparedIntentMismatch
             }
