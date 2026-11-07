@@ -210,3 +210,6 @@ native-home-query-preparation workspaces/worth-store/crates/worth-store-court-ap
 query-home-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts/native_preparation.rs
 application-home-recovered-finalization workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts/epoch.rs
 application-home-recovered-finalization workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts/epoch/target_inventory.rs
+
+query-home-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts/successor_compilation.rs
+application-home-recovered-finalization workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts/successor_compilation.rs

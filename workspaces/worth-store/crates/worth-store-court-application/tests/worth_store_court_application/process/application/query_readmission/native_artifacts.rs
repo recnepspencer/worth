@@ -23,6 +23,7 @@ mod epoch;
 mod home_close;
 mod idempotency;
 mod native_preparation;
+mod successor_compilation;
 use native_preparation::{transition_unshared, unshared};
 mod observation_policy;
 mod operations;

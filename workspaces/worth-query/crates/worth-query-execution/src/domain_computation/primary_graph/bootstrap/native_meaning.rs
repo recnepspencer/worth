@@ -1,6 +1,12 @@
 //! Exclusive schema and custom-invariant installation on the actual Native owner.
 use super::*;
 use worth_relational::facade::runtime::RelationalInitialSchemaInstallationReceipt;
+mod compilation;
+mod inventory;
+pub(in crate::domain_computation::primary_graph) use compilation::{
+    CompiledNativeSchemaMeaning, NativeSchemaCompilation,
+};
+pub(in crate::domain_computation::primary_graph) use inventory::NativeSchemaInventory;
 
 pub(in crate::domain_computation::primary_graph) struct PreparedNativeSchemaMeaning {
     pub(in crate::domain_computation::primary_graph) managed_sources:
@@ -112,67 +118,29 @@ impl WorthQueryExecutionInstallationAuthority {
             Option<worth_foundational::facade::AspectIdentity>,
         )>,
     ) -> Result<PreparedNativeSchemaMeaning, WorthQueryPrimaryGraphInstallationDenial> {
-        if !self.belongs_to(runtime) {
-            return Err(primary_graph_denial(
-                WorthQueryPrimaryGraphInstallationDenialKind::ForeignRuntime,
-                "execution installation authority belongs to another runtime",
-            ));
-        }
-        if runtime.primary_graph().is_some() {
-            return Err(primary_graph_denial(
-                WorthQueryPrimaryGraphInstallationDenialKind::AlreadyInstalled,
-                "execution runtime already owns a primary graph",
-            ));
-        }
-        runtime
-            .installed_packages()
-            .validate_application_schema(installed_schema)
-            .map_err(|denial| {
-                primary_graph_denial(
-                    WorthQueryPrimaryGraphInstallationDenialKind::StaleInstalledSchema,
-                    denial.subject(),
-                )
-            })?;
-        let (layout, additions) = match source {
-            Some((source, maximum_kind, maximum_aspect)) => {
-                WorthQueryPrimaryGraphLayout::lower_with_original(
-                    installed_schema.installed_declaration(),
-                    installed_schema.native_contracts(),
-                    &relational_runtime.config().schema.registry,
-                    installed_schema.value_bindings(),
-                    source,
-                    maximum_kind,
-                    maximum_aspect,
-                )
-            }
-            None => WorthQueryPrimaryGraphLayout::lower(
-                installed_schema.installed_declaration(),
-                installed_schema.native_contracts(),
-                &relational_runtime.config().schema.registry,
-                installed_schema.value_bindings(),
-            ),
-        }?;
-        let (registrations, managed_sources, source_initializer) = invariant_factories.lower(
-            &_phase.execution_request(),
-            installed_schema.binding_identity(),
-            &layout,
+        let config = relational_runtime.config();
+        let source = match source {
+            Some((source, maximum_kind, maximum_aspect)) => NativeSchemaCompilation::Original {
+                base: &config.schema.registry,
+                source,
+                maximum_kind,
+                maximum_aspect,
+            },
+            None => NativeSchemaCompilation::Fresh(&config.schema.registry),
+        };
+        let compiled = self.compile_native_schema(
+            _phase,
+            runtime,
+            installed_schema,
+            source,
+            invariant_factories,
         )?;
-        let (invariant_installation_receipt, expected_invariant_inventory_digest) =
-            super::initial_installation::install(
-                relational_runtime,
-                additions,
-                registrations,
-                &layout,
-                &_phase.execution_request(),
-                initialization,
-            )?;
-        Ok(PreparedNativeSchemaMeaning {
-            managed_sources,
-            source_initializer,
-            layout,
-            receipt: invariant_installation_receipt,
-            expected_invariant_inventory_digest,
-        })
+        super::initial_installation::install(
+            relational_runtime,
+            compiled,
+            &_phase.execution_request(),
+            initialization,
+        )
     }
 }
 

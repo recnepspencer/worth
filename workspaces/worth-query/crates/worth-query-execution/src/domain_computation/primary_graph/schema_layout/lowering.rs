@@ -47,6 +47,23 @@ impl WorthQueryPrimaryGraphLayout {
         Ok(result)
     }
 
+    pub(in crate::domain_computation::primary_graph) fn lower_successor(
+        schema: &ErasedApplicationSchemaDeclaration,
+        native_contracts: &WorthQueryInstalledApplicationSchemaContractCatalog,
+        base: &RelationalSchemaRegistry,
+        value_bindings: &worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
+        predecessor: &Self,
+    ) -> Result<(Self, RelationalSchemaRegistry), WorthQueryPrimaryGraphInstallationDenial> {
+        Self::lower_with_roles(
+            schema,
+            native_contracts,
+            base,
+            value_bindings,
+            Some(&predecessor.physical_roles),
+            source_registration::SourceRegistration::new(None),
+        )
+    }
+
     // The physical-role handoff is distinct from registered occurrence retention.
     // Actual successor preparation consumes A's compiler-issued roles here with
     // genuine B declarations and a fresh B Source registration posture.

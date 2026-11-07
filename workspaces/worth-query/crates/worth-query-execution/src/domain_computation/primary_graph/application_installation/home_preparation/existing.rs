@@ -88,6 +88,14 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeNativeMeaning<Sc
 impl<Schema: ApplicationSchemaComposition, Program>
     ReadmittedExistingHomeNativeMeaning<Schema, Program>
 {
+    pub(super) fn predecessor_native_meaning(
+        &self,
+    ) -> (
+        &super::super::super::schema_layout::WorthQueryPrimaryGraphLayout,
+        &RelationalInitialSchemaInstallationReceipt,
+    ) {
+        (&self.schema.layout, &self.schema.receipt)
+    }
     pub fn home_bridge_definition(
         &self,
     ) -> Result<

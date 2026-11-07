@@ -242,14 +242,17 @@ impl RelationalRuntime {
     }
 
     pub fn fork(&self) -> Result<Self, RelationalRuntimeForkDenial> {
+        let binding = self.configuration_binding();
+        let configuration = binding.operation();
         let mut history = self.history.fork_snapshot()?;
         let services = RuntimeSubsystem::fork(&self.services);
         let runtime_instance_id = services.runtime_instance_id();
         history
             .bind_fork_runtime(runtime_instance_id)
             .map_err(RelationalRuntimeForkDenial::BranchIdentityRebind)?;
-        let config = self.config.as_ref().clone();
-        let schema_contract_runtime = RuntimeSubsystem::fork(self.schema_contract_runtime.as_ref());
+        let config = configuration.config.as_ref().clone();
+        let schema_contract_runtime =
+            RuntimeSubsystem::fork(configuration.schema_contract_runtime.as_ref());
         Ok(Self::from_state(crate::runtime::RelationalRuntimeState {
             configuration: RelationalRuntimeConfiguration::new(config, schema_contract_runtime),
             commit_strategies: RuntimeSubsystem::fork(&self.commit_strategies),

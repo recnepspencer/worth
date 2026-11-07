@@ -160,6 +160,19 @@ impl RelationalRuntime {
         self.schema_contract_runtime = installed.schema_contract_runtime;
     }
 
+    /// The outer owner observes the current pair; an admitted operation keeps
+    /// the coherent pair it captured at entry, including historical readers.
+    pub(crate) fn operation_configuration(&self) -> RelationalRuntimeConfigurationSnapshot {
+        if self.is_owner() {
+            self.configuration_binding().snapshot()
+        } else {
+            RelationalRuntimeConfigurationSnapshot {
+                config: self.config.clone(),
+                schema_contract_runtime: self.schema_contract_runtime.clone(),
+            }
+        }
+    }
+
     /// A weak binding to this runtime's exact state, for a service that must
     /// outlive its owner and deny once the owner is gone.
     pub(crate) fn state_binding(&self) -> std::sync::Weak<RelationalRuntimeState> {
