@@ -88,6 +88,7 @@ pub(super) fn load_head(
         let commitment = PartitionContentCommitment::capture_head(&partition, &symbols, &frontiers)
             .ok_or_else(|| unavailable(cold, Cause::Damaged))?;
         verify_leaf(cold, &partition, &commitment).map_err(|cause| unavailable(cold, cause))?;
+        super::RegionRecordDirectory::verify_member(lane, execution, &cold.directory, &partition)?;
         crate::history::data::current_route_presence::admission::validate(
             execution,
             &partition,
@@ -215,6 +216,7 @@ pub(super) fn load_full(
         let (commitment, _) = PartitionContentCommitment::capture(&partition, &symbols, None)
             .map_err(|_| unavailable(cold, Cause::Damaged))?;
         verify_leaf(cold, &partition, &commitment).map_err(|cause| unavailable(cold, cause))?;
+        super::RegionRecordDirectory::verify_member(lane, execution, &cold.directory, &partition)?;
         crate::execution::check_request(execution).map_err(Failure::Request)?;
         Ok(Arc::new(ResidentRegion {
             history_presence: super::history_presence::HistoryPresence::complete(),

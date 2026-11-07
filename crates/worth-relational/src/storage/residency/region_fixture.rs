@@ -135,6 +135,7 @@ pub(super) fn region_with_history() -> RegionFixture {
     let symbol_authority = crate::runtime::RuntimeSymbolTable::default();
     symbol_authority.replace((*symbols).clone());
     let cold = RelationalColdRegion {
+        directory: members.directory.portable(),
         history_members: members.history_members,
         kind_authority: members.kind_authority,
         source: source.clone(),

@@ -109,7 +109,7 @@ pub(super) fn restore(
             .get(&image.commit_id)
             .cloned()
             .ok_or_else(|| corrupt("root has no commit descriptor"))?;
-        let leaves = regions.regions(image.schema_carrier_digest, &image.regions)?;
+        let leaves = regions.regions(execution, image.schema_carrier_digest, &image.regions)?;
         let content_records = crate::durability::checkpoints::content::read_records(
             execution,
             &image.content,
@@ -159,7 +159,7 @@ pub(super) fn restore(
     work.branch_cells_readmitted += checkpoint.branch_cells.len();
     let mirror = match directory.manifest.mirror_schema {
         Some(schema) => regions
-            .regions(schema, &directory.manifest.mirror)?
+            .regions(execution, schema, &directory.manifest.mirror)?
             .into_iter()
             .map(|region| {
                 (

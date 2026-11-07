@@ -150,6 +150,7 @@ impl RelationalRegionResidency {
                 kind_authority: captured.kind_authority,
                 partition_id: partition.partition_id,
                 content_digest: commitment.digest(partition.partition_id),
+                directory: captured.directory.portable(),
                 live_counts: super::LiveRecordCounts::from_partition(partition),
                 entity_slots: partition.entity_arena.slot_count(),
                 relation_slots: partition.relation_arena.slot_count(),

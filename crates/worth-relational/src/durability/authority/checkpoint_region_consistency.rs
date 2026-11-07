@@ -12,6 +12,7 @@ pub(super) fn validate(
 ) -> Result<(), DurabilityError> {
     if captured.partition_id == selected.partition_id
         && captured.content_digest == selected.content_digest
+        && captured.directory.as_ref() == selected.directory.portable().as_ref()
         && captured.live_counts == selected.live_counts
         && captured.entity_slots == selected.entity_slots
         && captured.relation_slots == selected.relation_slots

@@ -113,6 +113,7 @@ pub(super) fn build_incremental_regions(
                 execution,
                 crate::storage::residency::RegionCaptureBasis {
                     retention: &prior.partition,
+                    directory: &prior.directory,
                     inventory: prior.allocation_inventory(),
                     unavailable_records: prior.materialization_unavailable_records(),
                     kind_commitment: prior.kind_commitment,

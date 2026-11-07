@@ -30,7 +30,7 @@ use worth_testkit_relational::aspect_storage::{
 };
 use worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request;
 
-/// `WORTH-REL-CHK19\n`: the prefix is emitted but not sized.
+/// `WORTH-REL-CHK20\n`: the prefix is emitted but not sized.
 const CHECKPOINT_MAGIC_BYTES: u64 = 16;
 /// Journal artifact header: magic 8, version 2, position 8, commit 8,
 /// digest 32, payload length 8.

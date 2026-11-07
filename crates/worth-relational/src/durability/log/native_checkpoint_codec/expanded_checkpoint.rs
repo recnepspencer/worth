@@ -272,6 +272,7 @@ fn expand_regions(
                 schema_carrier_digest: schema_digest,
                 symbols: symbols.clone(),
                 content_digest: leaf.content_digest,
+                directory: leaf.directory.clone(),
                 live_counts: leaf.live_counts,
                 entity_slots: leaf.entity_slots,
                 relation_slots: leaf.relation_slots,

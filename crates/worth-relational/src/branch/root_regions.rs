@@ -9,6 +9,7 @@ use super::root::{
 
 mod allocation_visitation;
 mod commitment;
+mod publication;
 use commitment::{empty_commitment, node_commitment};
 mod partition_visitation;
 pub(crate) use partition_visitation::RelationalPartitionVisit;
@@ -23,6 +24,7 @@ pub(crate) struct RelationalPersistentRegionSet {
     index_root: Option<Arc<RelationalPersistentRegionNode>>,
     count: usize,
     live_counts: crate::storage::residency::LiveRecordCounts,
+    pub(super) kinds: crate::storage::residency::KindRegionDirectory,
     materialization_unavailable_records: usize,
 }
 #[derive(Debug)]
@@ -44,108 +46,6 @@ struct RelationalRootRegionReference(Arc<RelationalRootRegion>);
 struct RelationalRemovedPartition(PartitionId);
 
 impl RelationalPersistentRegionSet {
-    pub(crate) fn initial(
-        set_id: u64,
-        regions: BTreeMap<PartitionId, Arc<RelationalRootRegion>>,
-        issuer: &RelationalBranchRootIdentityIssuer,
-    ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
-        let count = regions.len();
-        let live_counts = regions
-            .values()
-            .try_fold(
-                crate::storage::residency::LiveRecordCounts::default(),
-                |sum, region| sum.checked_add(region.live_counts),
-            )
-            .ok_or(RelationalBranchRootCaptureDenial::SlotCountOverflow)?;
-        let materialization_unavailable_records = regions
-            .values()
-            .map(|region| region.materialization_unavailable_records())
-            .sum();
-        let mut index_root = None;
-        for (partition_id, region) in regions {
-            index_root = Some(insert_leaf(
-                index_root.as_ref(),
-                partition_id,
-                RelationalPersistentRegionLeaf::Present(Box::new(RelationalRootRegionReference(
-                    region,
-                ))),
-                0,
-                issuer,
-            )?);
-        }
-        Ok(Arc::new(Self {
-            set_id,
-            index_root,
-            count,
-            live_counts,
-            materialization_unavailable_records,
-        }))
-    }
-
-    pub(crate) fn replace(
-        set_id: u64,
-        parent: &Arc<Self>,
-        replacements: BTreeMap<PartitionId, Arc<RelationalRootRegion>>,
-        removed: BTreeSet<PartitionId>,
-        issuer: &RelationalBranchRootIdentityIssuer,
-    ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
-        let mut index_root = parent.index_root.clone();
-        let mut count = parent.count;
-        let mut live_counts = parent.live_counts;
-        let mut materialization_unavailable_records = parent.materialization_unavailable_records;
-        for (partition_id, region) in replacements {
-            if let Some(previous) = get_region(index_root.as_ref(), partition_id) {
-                live_counts = live_counts
-                    .checked_sub(previous.live_counts)
-                    .ok_or(RelationalBranchRootCaptureDenial::SlotCountOverflow)?;
-                materialization_unavailable_records = materialization_unavailable_records
-                    .saturating_sub(previous.materialization_unavailable_records());
-            } else {
-                count = count.saturating_add(1);
-            }
-            live_counts = live_counts
-                .checked_add(region.live_counts)
-                .ok_or(RelationalBranchRootCaptureDenial::SlotCountOverflow)?;
-            materialization_unavailable_records = materialization_unavailable_records
-                .saturating_add(region.materialization_unavailable_records());
-            index_root = Some(insert_leaf(
-                index_root.as_ref(),
-                partition_id,
-                RelationalPersistentRegionLeaf::Present(Box::new(RelationalRootRegionReference(
-                    region,
-                ))),
-                0,
-                issuer,
-            )?);
-        }
-        for partition_id in removed {
-            if let Some(previous) = get_region(index_root.as_ref(), partition_id) {
-                live_counts = live_counts
-                    .checked_sub(previous.live_counts)
-                    .ok_or(RelationalBranchRootCaptureDenial::SlotCountOverflow)?;
-                count = count.saturating_sub(1);
-                materialization_unavailable_records = materialization_unavailable_records
-                    .saturating_sub(previous.materialization_unavailable_records());
-            }
-            index_root = Some(insert_leaf(
-                index_root.as_ref(),
-                partition_id,
-                RelationalPersistentRegionLeaf::Removed(Box::new(RelationalRemovedPartition(
-                    partition_id,
-                ))),
-                0,
-                issuer,
-            )?);
-        }
-        Ok(Arc::new(Self {
-            set_id,
-            index_root,
-            count,
-            live_counts,
-            materialization_unavailable_records,
-        }))
-    }
-
     pub(crate) fn materialize(&self) -> BTreeMap<PartitionId, Arc<RelationalRootRegion>> {
         let mut regions = BTreeMap::new();
         materialize_node(self.index_root.as_ref(), 0, 0, &mut regions);

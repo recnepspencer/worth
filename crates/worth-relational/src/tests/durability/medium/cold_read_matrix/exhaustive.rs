@@ -20,7 +20,10 @@ fn residency_failure_matrix_full_read_subjects_cover_every_door_and_class() {
                     .filter(|member| fixture.targets.contains(member))
                     .count();
                 fixture.inject(cause);
+                // These producers create only entities. An exact relation-kind
+                // lookup proves emptiness from the carried directory.
                 if door.is_metadata_only_read()
+                    || door.is_current_relation_scan()
                     || (door.is_current_projection_scan()
                         && !matches!(subject, ReadSubject::RegionHead))
                 {

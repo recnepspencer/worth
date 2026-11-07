@@ -15,3 +15,6 @@ crates/worth-relational/src/indexes/authority/maintenance/schema_transition.rs
 crates/worth-relational/src/indexes/authority/maintenance/recovery.rs
 crates/worth-relational/src/indexes/authority/recovery_build.rs
 crates/worth-relational/src/indexes/authority/checkpoint_admission.rs
+
+# Admit the canonical typed membership carried by untrusted checkpoint leaves.
+crates/worth-relational/src/durability/checkpoints/region_directory.rs

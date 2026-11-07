@@ -177,6 +177,10 @@ text after admitting only the required page; preserve typed storage refusals.
 carried region facts without materializing record regions. Checkpoint restore
 checks the facts against the selected root commitment, and member admission
 independently checks them against actual record data.
+Exact kind projections and packetized kind queries route through the selected
+root's maintained kind directory. They admit only reached Head regions and
+materialize matching typed generations; empty kinds require no record I/O.
+Retained exact roots keep their own directory across later edits and slot reuse.
 
 Native conditional observation owners borrow the genuine computed effect through
 `BridgeConditionalCausalObservation::computed_evaluation()` and its observed

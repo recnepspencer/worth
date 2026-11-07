@@ -68,6 +68,9 @@ fn leaf_values() -> (RelationalRootRegionCheckpoint, RelationalCheckpointRegion)
             head: [2; 32],
             history: [3; 32],
         },
+        directory: std::sync::Arc::new(crate::storage::residency::RegionRecordDirectory::empty(
+            partition_id,
+        )),
         live_counts: Default::default(),
         entity_slots: 0,
         relation_slots: 0,
@@ -83,6 +86,7 @@ fn leaf_values() -> (RelationalRootRegionCheckpoint, RelationalCheckpointRegion)
         partition_id,
         content_digest: selected.content_digest,
         kind_authority: selected.kind_commitment,
+        directory: selected.directory.portable(),
         live_counts: Default::default(),
         entity_slots: 0,
         relation_slots: 0,

@@ -3,7 +3,6 @@ use super::super::super::materialization;
 use super::ProjectionRecordSource;
 use crate::identity::data::{EntityId, RelationId};
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
-use crate::storage::overlay::PartitionAccess;
 
 pub(super) fn entity(
     source: &(impl ProjectionRecordSource + ?Sized),

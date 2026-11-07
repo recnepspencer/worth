@@ -18,6 +18,7 @@ use std::sync::Arc;
 
 pub(crate) struct RegionCaptureBasis<'region> {
     pub(crate) retention: &'region RelationalRegionRetention,
+    pub(crate) directory: &'region Arc<super::RegionRecordDirectory>,
     pub(crate) inventory: RelationalPartitionAllocationInventory,
     pub(crate) unavailable_records: usize,
     pub(crate) kind_commitment: RelationalRegionKindCommitment,
@@ -29,6 +30,7 @@ pub(crate) struct PreparedResidentRegion {
     pub(crate) inventory: RelationalPartitionAllocationInventory,
     pub(crate) content_digest: [u8; 32],
     pub(crate) kind_commitment: RelationalRegionKindCommitment,
+    pub(crate) directory: Arc<super::RegionRecordDirectory>,
     pub(crate) live_counts: crate::storage::residency::LiveRecordCounts,
     pub(crate) entity_slots: usize,
     pub(crate) relation_slots: usize,
@@ -75,6 +77,15 @@ impl PreparedResidentRegion {
             change,
         )?;
         let kind_commitment = kind_indexes.commitment();
+        let directory = super::RegionRecordDirectory::updated(
+            execution,
+            basis.directory,
+            &previous.partition,
+            &partition,
+            journal,
+            change,
+        )
+        .map_err(|error| error.into_content_failure(partition.partition_id))?;
         partition.clear_runtime_pin_counters();
         let (commitment, content_values_hashed) = PartitionContentCommitment::capture(
             &partition,
@@ -132,6 +143,7 @@ impl PreparedResidentRegion {
             inventory,
             content_digest,
             kind_commitment,
+            directory,
             live_counts,
             entity_slots,
             relation_slots,

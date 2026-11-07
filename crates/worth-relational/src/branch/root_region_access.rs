@@ -1,3 +1,5 @@
+#[path = "root_region_access/kind_directory.rs"]
+mod kind_directory;
 use super::*;
 
 impl RelationalBranchRoot {
@@ -286,6 +288,7 @@ impl RelationalBranchRoot {
                     partition_id: region.partition_id,
                     content_digest: region.content_digest,
                     kind_commitment: region.kind_commitment,
+                    directory: region.directory.clone(),
                     live_counts: region.live_counts,
                     entity_slots: region.entity_slots,
                     relation_slots: region.relation_slots,

@@ -1,4 +1,9 @@
 //! Shared region residency. Only an accepted, counted lease lends read views.
+mod record_directory;
+pub(crate) use record_directory::{
+    DirectoryError as RecordDirectoryError, KindRegionDirectory, PortableRecordDirectory,
+    RegionRecordDirectory,
+};
 mod live_counts;
 pub(crate) use live_counts::LiveRecordCounts;
 mod cell;

@@ -11,6 +11,7 @@ use crate::storage::substrate::maintenance::ReconstructionLane;
 pub(crate) struct CapturedRegionMembers {
     pub(crate) history_members:
         std::sync::Arc<crate::durability::data::RelationalHistoryMemberDirectory>,
+    pub(crate) directory: std::sync::Arc<super::RegionRecordDirectory>,
     pub(crate) kind_authority: super::RelationalRegionKindCommitment,
     pub(crate) head: (RelationalDurableMemberLocator, Vec<u8>),
     pub(crate) history: (RelationalDurableMemberLocator, Vec<u8>),
@@ -83,6 +84,8 @@ pub(crate) fn capture_region_members(
         )?;
         let history_members = super::history_capture::directory(partition, history.0, bases)?;
         Ok(CapturedRegionMembers {
+            directory: super::RegionRecordDirectory::capture(lane, partition, &mut |_, _| Ok(()))
+                .map_err(|_| Cause::IntegrityMismatch)?,
             history_members,
             kind_authority: super::RelationalRegionKindCommitment {
                 head: super::kind_commitment::digest(lane, &head.kind_projection)?,

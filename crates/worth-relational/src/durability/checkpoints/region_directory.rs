@@ -66,6 +66,7 @@ impl ReadmittedRegionDirectory {
 
     pub(crate) fn regions(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         schema_digest: [u8; 32],
         leaves: &[RelationalCheckpointRegion],
     ) -> Result<Vec<RelationalRootRegionCheckpoint>, RelationalRecoveryStop> {
@@ -77,6 +78,24 @@ impl ReadmittedRegionDirectory {
         let authority = Arc::new(RelationalRegionKindAuthority::default());
         let mut result = Vec::new();
         for leaf in leaves {
+            let record_directory =
+                crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
+                    |lane| {
+                        lane.recover(execution, |lane, work| {
+                            crate::storage::residency::RegionRecordDirectory::from_portable(
+                                lane,
+                                leaf.partition_id,
+                                leaf.directory.clone(),
+                                &mut |units, bytes| work.prepare(units, bytes).map_err(Into::into),
+                            )
+                        })
+                    },
+                )
+                .map_err(
+                    |error: crate::storage::residency::RecordDirectoryError| {
+                        error.into_failure(leaf.partition_id)
+                    },
+                )?;
             let key = (leaf.partition_id, schema_digest, leaf.head, leaf.history);
             let cell = match self.cells.entry(key) {
                 std::collections::btree_map::Entry::Occupied(entry) => entry.get().clone(),
@@ -92,6 +111,7 @@ impl ReadmittedRegionDirectory {
                         schema_carrier_digest: schema_digest,
                         symbols: self.symbols.clone(),
                         content_digest: leaf.content_digest,
+                        directory: leaf.directory.clone(),
                         live_counts: leaf.live_counts,
                         entity_slots: leaf.entity_slots,
                         relation_slots: leaf.relation_slots,
@@ -104,6 +124,7 @@ impl ReadmittedRegionDirectory {
                 partition_id: leaf.partition_id,
                 content_digest: leaf.content_digest,
                 kind_commitment: leaf.kind_authority,
+                directory: record_directory,
                 live_counts: leaf.live_counts,
                 entity_slots: leaf.entity_slots,
                 relation_slots: leaf.relation_slots,

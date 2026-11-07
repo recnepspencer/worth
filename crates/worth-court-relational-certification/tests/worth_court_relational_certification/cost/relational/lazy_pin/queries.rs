@@ -29,7 +29,7 @@ fn cold_explicit_scan_and_traversal_keep_their_selected_rows() {
         .unwrap();
     for mode in 0..3 {
         let source = Source::capture(&world.runtime, &request, &checkpoint);
-        let runtime = reopen(&request, &checkpoint, source.clone());
+        let runtime = reopen(&request, &checkpoint, source.clone(), World::new().runtime);
         let (_, basis) = runtime
             .observe_branch(&runtime.main_branch_identity())
             .unwrap();

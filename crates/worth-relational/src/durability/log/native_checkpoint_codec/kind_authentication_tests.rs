@@ -12,7 +12,7 @@ use std::sync::{
 
 #[test]
 fn forged_cross_region_kind_commitment_is_refused_before_member_reads() {
-    for dimension in 0..3 {
+    for dimension in 0..4 {
         let host = crate::test_execution_policy::serial_request();
         let execution = worth_execution::ExecutionRequest::serial(&host);
         let runtime = durable_runtime_with_test_schema();
@@ -52,7 +52,8 @@ fn forged_cross_region_kind_commitment_is_refused_before_member_reads() {
                 match dimension {
                     0 => leaf.kind_authority.head[0] ^= 1,
                     1 => leaf.live_counts.entities += 1,
-                    _ => leaf.live_counts.relations += 1,
+                    2 => leaf.live_counts.relations += 1,
+                    _ => Arc::make_mut(&mut leaf.directory).entities.clear(),
                 }
             }
         }

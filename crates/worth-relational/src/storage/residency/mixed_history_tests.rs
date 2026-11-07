@@ -251,6 +251,7 @@ pub(super) fn recapture(
     });
     (
         RelationalColdRegion {
+            directory: members.directory.portable(),
             history_members: members.history_members,
             head: members.head.0,
             history: members.history.0,

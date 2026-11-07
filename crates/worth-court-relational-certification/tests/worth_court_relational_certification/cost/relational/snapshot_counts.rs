@@ -119,7 +119,7 @@ fn count_read_bytes(regions: u32, history: usize) -> u64 {
         )
         .unwrap();
     let source = ColdCheckpointSource::capture(&world.runtime, &request, &checkpoint);
-    let runtime = reopen(&request, &checkpoint, source.clone());
+    let runtime = reopen(&request, &checkpoint, source.clone(), World::new().runtime);
     let handle = snapshot(&runtime);
     let before = source.bytes.load(Ordering::SeqCst);
     let counts = runtime

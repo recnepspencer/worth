@@ -131,6 +131,10 @@ impl<K: Ord + Copy, V: Clone> SharedMap<K, V> {
     pub(crate) fn iter(&self) -> SharedMapIter<'_, K, V> {
         SharedMapIter::new(self.root.as_deref())
     }
+    /// Seek once, then walk the ordered suffix without revisiting earlier keys.
+    pub(crate) fn iter_from(&self, first: &K) -> SharedMapIter<'_, K, V> {
+        SharedMapIter::from_key(self.root.as_deref(), first)
+    }
     pub(crate) fn try_iter<Stop>(
         &self,
         prepare: impl FnMut(u64, u64) -> Result<(), Stop>,

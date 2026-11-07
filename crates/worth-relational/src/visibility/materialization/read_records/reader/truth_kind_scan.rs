@@ -10,6 +10,7 @@
 //! The bound is applied while the arena is walked, never after materializing
 //! the answer, so an over-large scope costs the declared budget and stops.
 
+mod directory;
 use super::super::native_scan_stop::NativeScanStop;
 use super::*;
 
@@ -90,13 +91,20 @@ impl<'charge, 'memory> EntityKindScan<'charge, 'memory> {
         charge: &'charge mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: Option<&'charge mut worth_execution::ExecutionResultMemory<'memory>>,
     ) -> Self {
+        Self::with_limit(Some(maximum_work_units), charge, memory)
+    }
+    pub(super) fn with_limit(
+        maximum_work_units: Option<usize>,
+        charge: &'charge mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+        memory: Option<&'charge mut worth_execution::ExecutionResultMemory<'memory>>,
+    ) -> Self {
         Self {
             charge: Some(charge),
             memory,
             records: Vec::new(),
             entity_slots_examined: 0,
             work_units: 0,
-            maximum_work_units: Some(maximum_work_units),
+            maximum_work_units,
         }
     }
 

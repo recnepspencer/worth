@@ -1,5 +1,4 @@
 //! Immutable checkpoint placement with observable real member reads.
-use crate::content::historical_kind::fixture::World;
 use std::{
     collections::BTreeMap,
     sync::{
@@ -111,8 +110,8 @@ pub(super) fn reopen(
     request: &ExecutionRequest<'_, '_>,
     checkpoint: &RelationalNativeCheckpoint,
     source: Arc<ColdCheckpointSource>,
+    mut runtime: RelationalRuntime,
 ) -> RelationalRuntime {
-    let mut runtime = World::new().runtime;
     let recovery = RelationalDurableRecoverySource::new(
         Some(RelationalDurableCheckpointSource::new(
             checkpoint.covered_position().unwrap(),

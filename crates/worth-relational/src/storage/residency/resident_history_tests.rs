@@ -37,11 +37,18 @@ fn an_owned_head_promotes_without_a_checkpoint_and_keeps_its_old_observation() {
         RelationalRegionRetention::from_head_lease(head_demand(&fixture.cell, 1 << 24).unwrap());
     let mut journal = crate::storage::overlay::PartitionMutationJournal::default();
     journal.entity_slots.insert(fixture.entity.slot_index());
+    let directory = super::super::RegionRecordDirectory::capture(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &original.partition,
+        &mut |_, _| Ok(()),
+    )
+    .unwrap();
     let before = fixture.source.reads.load(Ordering::SeqCst);
     let prepared = PreparedResidentRegion::incremental(
         execution,
         RegionCaptureBasis {
             retention: &prior,
+            directory: &directory,
             kind_commitment: fixture.cold.kind_authority,
             inventory: original.partition.allocation_inventory(),
             unavailable_records: original

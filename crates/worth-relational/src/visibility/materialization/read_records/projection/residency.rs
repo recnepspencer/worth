@@ -3,7 +3,7 @@ use super::VisibilityProjectionView;
 use crate::execution::RelationalExecutionDenialCause;
 use crate::identity::data::PartitionId;
 impl VisibilityProjectionView {
-    pub(super) fn admitted_head_region(
+    pub(in crate::visibility::materialization::read_records) fn admitted_head_region(
         &self,
         id: PartitionId,
     ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {

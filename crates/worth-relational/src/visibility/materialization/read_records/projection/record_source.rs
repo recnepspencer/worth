@@ -8,6 +8,19 @@ impl super::ProjectionRecordSource for VisibilityProjectionView {
     ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
         self.demand_all_full(execution)
     }
+    fn demand_regions_head(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        partitions: impl IntoIterator<Item = crate::identity::data::PartitionId>,
+    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+        self.demand_regions_head(execution, partitions)
+    }
+    fn admitted_head_region(
+        &self,
+        id: crate::identity::data::PartitionId,
+    ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
+        self.admitted_head_region(id)
+    }
     fn demand_regions_full(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

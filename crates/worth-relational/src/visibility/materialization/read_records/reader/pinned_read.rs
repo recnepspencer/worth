@@ -215,6 +215,21 @@ impl<Snapshot> super::super::projection::ProjectionRecordSource for RelationalPi
             .demand_regions_full(execution, self.basis.root().partition_ids_iter())
             .map_err(Into::into)
     }
+    fn demand_regions_head(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        partitions: impl IntoIterator<Item = crate::identity::data::PartitionId>,
+    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+        self.basis
+            .demand_regions_head(execution, partitions)
+            .map_err(Into::into)
+    }
+    fn admitted_head_region(
+        &self,
+        id: crate::identity::data::PartitionId,
+    ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
+        self.basis.head_region(id)
+    }
     fn demand_regions_full(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

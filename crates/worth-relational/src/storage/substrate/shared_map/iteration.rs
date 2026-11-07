@@ -6,6 +6,23 @@ pub(crate) struct SharedMapIter<'a, K: Ord + Copy, V: Clone> {
 }
 
 impl<'a, K: Ord + Copy, V: Clone> SharedMapIter<'a, K, V> {
+    pub(super) fn from_key(root: Option<&'a MapNode<K, V>>, first: &K) -> Self {
+        let mut iterator = Self {
+            pending: Vec::with_capacity(root.map_or(0, |_| MAXIMUM_ADDRESSABLE_AVL_HEIGHT)),
+            remaining: root.map_or(0, |node| node.len),
+        };
+        let mut next = root;
+        while let Some(node) = next {
+            if node.key < *first {
+                iterator.remaining -= 1 + node.left.as_ref().map_or(0, |left| left.len);
+                next = node.right.as_deref();
+            } else {
+                iterator.pending.push(node);
+                next = node.left.as_deref();
+            }
+        }
+        iterator
+    }
     pub(super) fn new(root: Option<&'a MapNode<K, V>>) -> Self {
         let mut iterator = Self {
             pending: Vec::with_capacity(root.map_or(0, |_| MAXIMUM_ADDRESSABLE_AVL_HEIGHT)),

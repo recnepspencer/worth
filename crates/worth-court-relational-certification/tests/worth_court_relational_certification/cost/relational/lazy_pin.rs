@@ -130,7 +130,12 @@ fn fixed_read_work(regions: u32, history: usize, check_refusal: bool, width: usi
         )
         .unwrap();
     let source = Source::capture(&world.runtime, &request, &checkpoint);
-    let runtime = reopen(&request, &checkpoint, Arc::clone(&source));
+    let runtime = reopen(
+        &request,
+        &checkpoint,
+        Arc::clone(&source),
+        World::new().runtime,
+    );
     assert!(
         source.reads.lock().unwrap().is_empty(),
         "recovery leaves record regions cold"
@@ -226,7 +231,12 @@ fn fixed_read_work(regions: u32, history: usize, check_refusal: bool, width: usi
             "fresh custody must refuse the now damaged region"
         );
         source.unavailable.store(true, Ordering::SeqCst);
-        let denied_runtime = reopen(&request, &checkpoint, Arc::clone(&source));
+        let denied_runtime = reopen(
+            &request,
+            &checkpoint,
+            Arc::clone(&source),
+            World::new().runtime,
+        );
         let before = source.reads.lock().unwrap().len();
         let denied = pin(&denied_runtime, &request);
         assert_eq!(

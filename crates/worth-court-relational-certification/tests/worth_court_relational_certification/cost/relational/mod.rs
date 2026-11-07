@@ -8,6 +8,7 @@ mod restoration_header;
 mod schema_projection;
 
 mod incremental_indexes;
+mod kind_directory;
 mod kind_maintenance;
 
 mod pinned_projection;
