@@ -11,7 +11,7 @@ use worth_query_installation::facade::{
 use super::brand_tag::BrandTag;
 use super::{
     ErasedAuthorizationBasis, WorthQueryAdmittedApplicationOperation, WorthQueryAdmittedOperation,
-    WorthQueryOperationAdmissionIdentity,
+    WorthQueryAdmittedOperationData, WorthQueryOperationAdmissionIdentity,
 };
 use crate::domain_computation::authorization::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,

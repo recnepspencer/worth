@@ -1,12 +1,13 @@
 """Refresh the seven artifact identities from owned Cargo/nextest results."""
 import gc,json,struct,subprocess,sys
 from pathlib import Path
-r=Path.cwd();e=r/'target/lane-evidence';base=e/'layout-r1';sys.path.insert(0,str(e))
+r=Path.cwd();e=r/'target/lane-evidence';base=e/'layout-r3';sys.path.insert(0,str(e))
 from lifecycle_compiled_frames import Frames
 programs=json.loads((base/'ordinary/actual-entry-artifacts.json').read_text())
 manifest={name:program['exe'] for name,program in programs.items()}
 for owner,label,target in [('root','root-court','worth_court_runtime_bridge'),('query','query-court','worth_query_court_query_decl_host'),('bank','bank','worth_query_bank_court_external_rail_server')]:
- binaries=json.loads((base/owner/'build/binaries.json').read_text())['rust-binaries']
+ owner_base=e/'layout-r1' if owner=='root' else base
+ binaries=json.loads((owner_base/owner/'build/binaries.json').read_text())['rust-binaries']
  matches=[b['binary-path'] for b in binaries.values() if b['binary-name']==target]
  assert len(matches)==1,(owner,matches)
  manifest[label]=matches[0]
