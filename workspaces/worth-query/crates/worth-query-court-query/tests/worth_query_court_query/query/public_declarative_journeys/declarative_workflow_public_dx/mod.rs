@@ -230,8 +230,6 @@ fn domain_journey_lowers_contributed_vocabulary_through_query() {
         .unwrap();
     assert_eq!(
         outcome
-            .as_ref()
-            .expect("fixture digest must fit")
             .completed()
             .expect("domain workflow should complete")
             .completion()
