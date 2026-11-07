@@ -178,7 +178,7 @@ pub fn write_struct_aspect_value_identity_material<S: CanonicalMaterialSink>(
     append_u64(
         material,
         "value.struct.field-count",
-        value.fields().count() as u64,
+        value.len() as u64,
     )?;
     for (field_key, field_value) in value.fields() {
         append_token(material, "value.struct.field", field_key.as_str())?;
