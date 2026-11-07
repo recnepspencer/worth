@@ -134,3 +134,11 @@ pub(super) fn advance(
     )
     .unwrap()
 }
+
+pub(super) fn serial_request() -> worth_execution::SerialRequest {
+    worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(None),
+        worth_execution::CancellationSource::new().token(),
+        None,
+    )
+}

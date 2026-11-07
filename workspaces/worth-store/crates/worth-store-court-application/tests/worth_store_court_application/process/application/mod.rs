@@ -7,7 +7,6 @@ mod native_components;
 mod no_pending_owners;
 mod publication_close;
 mod query_readmission;
-mod signal_medium;
 mod world_durable_release;
 mod world_home;
 mod world_occurrence_readmission;

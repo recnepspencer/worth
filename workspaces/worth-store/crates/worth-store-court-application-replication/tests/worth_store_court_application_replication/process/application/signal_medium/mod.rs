@@ -40,7 +40,7 @@ fn committed(
 #[test]
 fn signal_journals_reopen_exact_owner_frames_and_preserve_the_original_read_cut() {
     let directory = tempfile::tempdir().unwrap();
-    let funding = crate::workload::serial_request();
+    let funding = medium_fixture::serial_request();
     let execution = ExecutionRequest::serial(&funding);
     let (serving, medium) = medium_fixture::open(directory.path(), true, &execution);
     let first = medium_fixture::definition(&execution, 7, None);
@@ -130,7 +130,7 @@ fn signal_journals_reopen_exact_owner_frames_and_preserve_the_original_read_cut(
 #[test]
 fn stopped_repeat_call_observes_original_commit_and_stopped_fresh_call_proves_no_effect() {
     let directory = tempfile::tempdir().unwrap();
-    let funding = crate::workload::serial_request();
+    let funding = medium_fixture::serial_request();
     let execution = ExecutionRequest::serial(&funding);
     let (serving, medium) = medium_fixture::open(directory.path(), true, &execution);
     let first = medium_fixture::definition(&execution, 7, None);

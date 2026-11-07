@@ -1736,15 +1736,27 @@ dependencies = [
  "worth-relational",
  "worth-runtime-bridge",
  "worth-runtime-world",
- "worth-signal",
  "worth-store",
  "worth-store-application",
  "worth-store-physical-format",
  "worth-store-relational",
  "worth-store-testkit-application-oracle",
  "worth-store-testkit-executables",
- "worth-store-testkit-store",
  "worth-store-testkit-sweep",
+]
+
+[[package]]
+name = "worth-store-court-application-replication"
+version = "0.1.0"
+dependencies = [
+ "sha2",
+ "tempfile",
+ "worth-execution",
+ "worth-foundational",
+ "worth-signal",
+ "worth-store",
+ "worth-store-application",
+ "worth-store-testkit-store",
 ]
 
 [[package]]

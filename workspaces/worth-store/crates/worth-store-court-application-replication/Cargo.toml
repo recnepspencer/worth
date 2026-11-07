@@ -1,0 +1,25 @@
+[package]
+name = "worth-store-court-application-replication"
+autotests = false
+publish = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+sha2 = "0.10"
+tempfile = "3"
+worth-execution = { path = "../../../../crates/worth-execution" }
+worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-signal = { path = "../../../../crates/worth-signal" }
+worth-store = { path = "../worth-store", features = ["certification-test-authority", "volatile-sync-for-tests"] }
+worth-store-application = { path = "../worth-store-application", features = ["certification-test-authority"] }
+worth-store-testkit-store = { path = "../worth-store-testkit-store" }
+
+[[test]]
+name = "worth_store_court_application_replication"
+path = "tests/worth_store_court_application_replication.rs"
+
+[lints]
+workspace = true
