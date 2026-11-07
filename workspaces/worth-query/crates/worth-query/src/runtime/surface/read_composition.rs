@@ -182,7 +182,10 @@ impl WorthQueryReadGraph {
             self.relationship_proof_admission.as_ref(),
             self.policy_aware_plan.as_ref(),
             &self.execution_plan,
-        );
+        )
+        .map_err(
+            WorthQueryInstalledGraphReadOperationBindingDenial::EvidenceIdentityDerivationDenied,
+        )?;
         Ok(self)
     }
 

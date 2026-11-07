@@ -60,7 +60,7 @@ impl WorthQueryRuntime {
             )
         })?;
         let handoff = WorthQueryAdmittedIntentExecutionHandoff::from(binding.handoff().clone());
-        let execution_provenance = authoritative_execution_provenance(&binding, &execution)?;
+        let execution_provenance = authoritative_execution_provenance(&binding, &execution);
         let decision_trace_envelope =
             WorthQueryIntentDecisionTraceEnvelope::for_admitted_execution(&handoff, &execution);
         let write_receipt = self.route_admitted_intent_execution(
@@ -116,7 +116,7 @@ impl WorthQueryRuntime {
                 Some(execution_provenance),
             )
         })?;
-        let execution_provenance = effect_execution_provenance(&binding, &execution)?;
+        let execution_provenance = effect_execution_provenance(&binding, &execution);
         let decision_trace_envelope =
             WorthQueryIntentDecisionTraceEnvelope::for_admitted_execution(&handoff, &execution);
         let write_receipt = self.route_admitted_intent_execution(
@@ -148,18 +148,16 @@ impl WorthQueryRuntime {
         let runtime = self.effects.get(&effect_target).ok_or_else(|| {
             WorthQueryRuntimeError::MissingEffect(binding.effect_name().to_string())
         })?;
-        runtime
-            .deliveries
-            .iter()
-            .enumerate()
-            .find(|(_, delivery)| {
-                delivery.family() == &WorthQueryEffectDeliveryFamily::PendingWriteIntent
-                    && binding.matches_pending_delivery(delivery)
-            })
-            .map(|(index, delivery)| (index, delivery.clone()))
-            .ok_or_else(|| {
-                WorthQueryRuntimeError::MissingPendingWriteIntent(binding.effect_name().to_string())
-            })
+        for (index, delivery) in runtime.deliveries.iter().enumerate() {
+            if delivery.family() == &WorthQueryEffectDeliveryFamily::PendingWriteIntent
+                && binding.matches_pending_delivery(delivery)?
+            {
+                return Ok((index, delivery.clone()));
+            }
+        }
+        Err(WorthQueryRuntimeError::MissingPendingWriteIntent(
+            binding.effect_name().to_string(),
+        ))
     }
 
     fn route_admitted_intent_execution(
@@ -188,50 +186,46 @@ impl WorthQueryRuntime {
                 decision_trace.clone(),
                 error,
             )
-        })?
+        })
     }
 }
 
 fn authoritative_execution_provenance(
     binding: &WorthQueryAuthoritativeIntentExecutionBinding,
     execution: &WorthQueryIntentExecution,
-) -> Result<WorthQueryIntentExecutionProvenance, IdentityDerivationDenial> {
+) -> WorthQueryIntentExecutionProvenance {
     let snapshot_identity = execution
         .mutation_receipt()
         .snapshot_identity
         .evidence_identity();
-    Ok(
-        WorthQueryIntentExecutionProvenance::for_shared_execution_typed_parts(
-            binding.family(),
-            binding.entrypoint(),
-            binding.execution_seam(),
-            binding.handoff().decision_digest(),
-            binding.handoff().handoff_digest(),
-            binding.binding_digest(),
-            execution.outcome_digest(),
-            &snapshot_identity,
-        )?,
-    )
+    WorthQueryIntentExecutionProvenance::for_shared_execution_typed_parts(
+        binding.family(),
+        binding.entrypoint(),
+        binding.execution_seam(),
+        binding.handoff().decision_digest(),
+        binding.handoff().handoff_digest(),
+        binding.binding_digest(),
+        execution.outcome_digest(),
+        &snapshot_identity,
+    ).expect("bounded performed receipt: closed enum labels, primitive counts and sealed identity digests")
 }
 
 fn effect_execution_provenance(
     binding: &WorthQueryEffectTriggeredIntentExecutionBinding,
     execution: &WorthQueryIntentExecution,
-) -> Result<WorthQueryIntentExecutionProvenance, IdentityDerivationDenial> {
+) -> WorthQueryIntentExecutionProvenance {
     let snapshot_identity = execution
         .mutation_receipt()
         .snapshot_identity
         .evidence_identity();
-    Ok(
-        WorthQueryIntentExecutionProvenance::for_shared_execution_typed_parts(
-            binding.family(),
-            binding.entrypoint(),
-            binding.execution_seam(),
-            binding.handoff().decision_digest(),
-            binding.handoff().handoff_digest(),
-            binding.binding_digest(),
-            execution.outcome_digest(),
-            &snapshot_identity,
-        )?,
-    )
+    WorthQueryIntentExecutionProvenance::for_shared_execution_typed_parts(
+        binding.family(),
+        binding.entrypoint(),
+        binding.execution_seam(),
+        binding.handoff().decision_digest(),
+        binding.handoff().handoff_digest(),
+        binding.binding_digest(),
+        execution.outcome_digest(),
+        &snapshot_identity,
+    ).expect("bounded performed receipt: closed enum labels, primitive counts and sealed identity digests")
 }

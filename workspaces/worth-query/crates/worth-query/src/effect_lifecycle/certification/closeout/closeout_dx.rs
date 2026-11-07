@@ -218,7 +218,7 @@ fn inspectable_lowered_story(
         EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         other => panic!("expected admitted inspectable story, got {other:?}"),
     };
-    let lowered = scope_admitted_effect_plan(admitted)?
+    let lowered = scope_admitted_effect_plan(admitted)
         .lower()
         .expect("dx lowered story lowers");
     let transcript = format!(

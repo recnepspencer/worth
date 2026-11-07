@@ -180,12 +180,12 @@ impl WorthQueryGenericInspectionIntentSeed {
             WorthQueryGenericInspectionIntentTargetSeed::BatchWriteReceipt(receipt.clone()),
             WorthQueryGenericInspectionRequestLabel::new(format!(
                 "inspect.batch_write_receipt.{}",
-                receipt.batch_digest()
+                receipt.batch_digest()?
             )),
             generic_inspection_seed_identity("batch_write_receipt")
                 .field_value(
                     WorthQueryEvidenceTag::new("batch_receipt"),
-                    receipt.batch_digest(),
+                    receipt.batch_digest()?,
                 )
                 .seal()?
                 .as_str()

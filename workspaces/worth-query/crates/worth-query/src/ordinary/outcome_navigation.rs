@@ -221,7 +221,9 @@ impl WorthQueryOutcomeNavigation
     fn posture(&self) -> WorthQueryOutcomePosture {
         match self {
             Self::Completed(completion) => workflow_completion_posture(completion.completion()),
-            Self::Stopped(stop) => workflow_stop_posture(stop.stop()),
+            Self::Stopped(stop) => stop
+                .stop()
+                .map_or(WorthQueryOutcomePosture::Unavailable, workflow_stop_posture),
         }
     }
 }

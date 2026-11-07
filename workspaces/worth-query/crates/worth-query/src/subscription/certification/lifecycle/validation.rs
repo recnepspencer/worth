@@ -41,13 +41,10 @@ pub(super) fn validate_lifecycle_sources(
         scale_report.clone(),
     )
     .map_err(|error| {
-        SubscriptionLifecycleCertificationError::new(
+        SubscriptionLifecycleCertificationError::with_evidence_derivation(
             SubscriptionLifecycleCertificationDenialKind::ActivationAdmissionMismatch,
             "subscription lifecycle certification requires aligned admission, activation, and scale evidence",
-            &[validation_role_evidence_identity(
-                "activation_certification",
-                error.failure_identity(),
-            )],
+            error.failure_identity().map(|identity| vec![validation_role_evidence_identity("activation_certification", identity)]),
         )
     })?;
 

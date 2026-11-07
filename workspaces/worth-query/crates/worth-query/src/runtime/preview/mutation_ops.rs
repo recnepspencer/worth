@@ -305,7 +305,7 @@ fn deny_preview_continuity(command: &WorthQueryWriteCommand) -> Result<(), Worth
         command.existing_truth_binding(),
         crate::runtime::WorthQueryContinuityMutationDenialKind::RequiresAuthoritativeLane,
         "continuity-aware mutation currently requires the authoritative bridge-backed lane",
-    )?;
+    );
     Err(WorthQueryRuntimeError::MutationContinuityDenied(denial))
 }
 

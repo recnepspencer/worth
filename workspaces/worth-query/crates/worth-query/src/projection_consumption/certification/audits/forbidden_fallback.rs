@@ -127,7 +127,10 @@ pub fn projection_consumption_forbidden_fallback_audit(
     let rows = ProjectionConsumptionOrdinaryPathSurface::all()
         .iter()
         .copied()
-        .flat_map(rows_for_surface)
+        .map(rows_for_surface)
+        .collect::<Result<Vec<_>, _>>()?
+        .into_iter()
+        .flatten()
         .collect::<Vec<_>>();
     let total_occurrence_count = rows.iter().map(|row| row.occurrence_count()).sum();
     let audit_digest = compose_forbidden_fallback_audit_digest(

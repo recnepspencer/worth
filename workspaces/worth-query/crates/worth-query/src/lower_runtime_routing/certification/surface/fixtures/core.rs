@@ -86,7 +86,7 @@ pub(crate) fn representative_write_authority_row(
             vec![status_value_touch()],
         )?],
     );
-    let execution = WriteAuthorityExecutionReceipt::from_command(&command, mutation_receipt)?;
+    let execution = WriteAuthorityExecutionReceipt::from_command(&command, mutation_receipt);
     Ok(RepresentativeArtifacts {
         seam_key: WorthQueryLowerRuntimeSeamKey::WriteAuthorityBackendExecution,
         request: execution.route_plan().eligibility().request().clone(),
@@ -307,7 +307,7 @@ pub(crate) fn representative_live_view_source_row(
         &route_plan,
         &boundary_receipt,
         &retained_evidence,
-    )?;
+    );
     Ok(RepresentativeArtifacts {
         seam_key: WorthQueryLowerRuntimeSeamKey::LiveViewSourceDeclaration,
         request,
@@ -384,7 +384,7 @@ pub(crate) fn representative_preview_basis_row(
         WorthQueryLowerRuntimeSeamKey::PreviewBasisAdmission,
         &handoff,
         &boundary_receipt,
-    )?;
+    );
     Ok(RepresentativeArtifacts {
         seam_key: WorthQueryLowerRuntimeSeamKey::PreviewBasisAdmission,
         request,

@@ -26,7 +26,7 @@ pub fn deny_raw_cdc_delivery_fallback(
 ) -> Result<QuerySubscriptionMaintenanceDelta, QueryDeliveryError> {
     let mut counters = ActiveSubscriptionCounters::default();
     counters.raw_cdc_delivery_denial_count = 1;
-    Err(QueryDeliveryError::new(
+    Err(QueryDeliveryError::with_source_derivation(
         QueryDeliveryDenialKind::RawCdcFallbackDenied,
         "raw CDC cannot be consumed as active query delivery",
         raw_delivery_denial_source_identity(source_label.as_ref()),
@@ -39,7 +39,7 @@ pub fn deny_raw_bridge_invalidation_delivery(
 ) -> Result<QuerySubscriptionMaintenanceDelta, QueryDeliveryError> {
     let mut counters = ActiveSubscriptionCounters::default();
     counters.raw_bridge_invalidation_denial_count = 1;
-    Err(QueryDeliveryError::new(
+    Err(QueryDeliveryError::with_source_derivation(
         QueryDeliveryDenialKind::RawBridgeInvalidationDenied,
         "raw bridge invalidation must lower into a query maintenance delta first",
         raw_delivery_denial_source_identity(source_label.as_ref()),

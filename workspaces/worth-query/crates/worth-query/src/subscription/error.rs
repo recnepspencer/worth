@@ -6,6 +6,7 @@ use super::diagnostic::{QuerySubscriptionDiagnosticEvidence, QuerySubscriptionDi
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum QuerySubscriptionFamilySelectionFailureClass {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     ViewFamilyLiveFamilyMismatch,
     InvalidAdmissionDimensions,
     WorkBudgetExceeded,
@@ -24,6 +25,7 @@ pub enum QuerySubscriptionFamilySelectionFailureClass {
 impl QuerySubscriptionFamilySelectionFailureClass {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => "evidence_identity_derivation_denied",
             Self::ViewFamilyLiveFamilyMismatch => "view_family_live_family_mismatch",
             Self::InvalidAdmissionDimensions => "invalid_admission_dimensions",
             Self::WorkBudgetExceeded => "work_budget_exceeded",
@@ -50,6 +52,21 @@ pub struct QuerySubscriptionFamilySelectionError {
 }
 
 impl QuerySubscriptionFamilySelectionError {
+    pub(super) fn identity_refused(
+        cause: IdentityDerivationDenial,
+        counters: QuerySubscriptionDeclarationCounters,
+    ) -> Self {
+        Self {
+            failure_class:
+                QuerySubscriptionFamilySelectionFailureClass::EvidenceIdentityDerivationDenied(
+                    cause,
+                ),
+            message: "canonical digest bounds refused subscription equivalence evidence".into(),
+            diagnostic: Err(cause),
+            counters,
+        }
+    }
+
     pub(super) fn new(
         failure_class: QuerySubscriptionFamilySelectionFailureClass,
         message: impl Into<String>,

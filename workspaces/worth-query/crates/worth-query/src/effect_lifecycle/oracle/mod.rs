@@ -72,10 +72,10 @@ impl ExecutedEffectBatchPlan {
     ) -> Result<EffectExecutionOracleVerification, EffectExecutionOracleError> {
         let target_branch = relational_target_branch_for_batch(self)?;
         let aggregate = self.aggregate_mutation().ok_or_else(|| {
-            EffectExecutionOracleError::new(
+            EffectExecutionOracleError::with_subject_derivation(
                 EffectExecutionOracleErrorKind::RelationalOracleUnsupportedEffect,
                 "relational batch oracle verification currently requires an aggregate mutation artifact",
-                self.batch_identity(),
+                self.batch_identity().cloned(),
                 Some(oracle.relational_oracle_identity()),
             )
         })?;

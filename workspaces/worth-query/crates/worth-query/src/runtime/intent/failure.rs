@@ -27,7 +27,7 @@ pub struct WorthQueryIntentExecutionFailureEvidence {
     snapshot_identity: WorthQuerySnapshotIdentity,
     execution_provenance: WorthQueryIntentExecutionProvenance,
     decision_trace_envelope: WorthQueryIntentDecisionTraceEnvelope,
-    failure_digest: WorthQueryEvidenceIdentity,
+    failure_digest: Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>,
 }
 
 impl WorthQueryIntentExecutionFailureEvidence {
@@ -38,7 +38,7 @@ impl WorthQueryIntentExecutionFailureEvidence {
         execution: &WorthQueryIntentExecution,
         execution_provenance: WorthQueryIntentExecutionProvenance,
         decision_trace_envelope: WorthQueryIntentDecisionTraceEnvelope,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let snapshot_identity = execution.mutation_receipt().snapshot_identity.clone();
         let snapshot_evidence_identity = snapshot_identity.evidence_identity();
         let invariant_evidence = execution.invariant_evidence().to_vec();
@@ -106,8 +106,8 @@ impl WorthQueryIntentExecutionFailureEvidence {
                     WorthQueryEvidenceTag::new("decision_trace_digest"),
                     decision_trace_envelope.trace_digest(),
                 )
-                .seal()?;
-        Ok(Self {
+                .seal();
+        Self {
             intent_name: declaration.name().to_string(),
             stage,
             message,
@@ -126,7 +126,7 @@ impl WorthQueryIntentExecutionFailureEvidence {
             execution_provenance,
             decision_trace_envelope,
             failure_digest,
-        })
+        }
     }
 
     pub fn intent_name(&self) -> &str {
@@ -205,11 +205,13 @@ impl WorthQueryIntentExecutionFailureEvidence {
         WorthQueryIntentConsumerInspection::from_failure(self)
     }
 
-    pub fn failure_digest(&self) -> &str {
-        self.failure_digest.as_str()
+    pub fn failure_digest(&self) -> Result<&str, IdentityDerivationDenial> {
+        Ok(self.failure_identity()?.as_str())
     }
 
-    pub fn failure_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.failure_digest
+    pub fn failure_identity(
+        &self,
+    ) -> Result<&WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        self.failure_digest.as_ref().map_err(|cause| *cause)
     }
 }

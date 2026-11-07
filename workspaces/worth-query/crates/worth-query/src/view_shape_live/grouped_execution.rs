@@ -222,7 +222,12 @@ pub fn materialize_grouped_execution_surface_from_truth_view(
         ));
     }
 
-    let plan_evidence_identity = plan.view_plan_digest().evidence_identity();
+    let plan_evidence_identity = plan
+        .view_plan_digest()
+        .evidence_identity()
+        .map_err(|cause| {
+            ViewShapeLiveError::identity_refused(cause, ViewShapeLiveCounters::default())
+        })?;
     let basis_evidence_identity = basis.proof().digest().evidence_identity();
     let grouped_truth_view_evidence_identity =
         bridge_grouped_truth_view_digest_evidence_identity(truth_view.digest()).map_err(

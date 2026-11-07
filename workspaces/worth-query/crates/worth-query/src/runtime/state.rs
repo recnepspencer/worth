@@ -268,7 +268,7 @@ impl WorthQueryRuntimeStateTarget for &WorthQueryBatchWriteReceipt {
         _runtime: &WorthQueryRuntime,
     ) -> Result<WorthQueryRuntimeStateSnapshot, WorthQueryRuntimeError> {
         Ok(WorthQueryRuntimeStateSnapshot::ready(
-            runtime_state_snapshot_basis_label_identity(self.batch_identity()),
+            runtime_state_snapshot_basis_label_identity(self.batch_identity()?),
             runtime_state_snapshot_result_shape_batch_write_receipt_identity(self),
             self.authority_lane(),
             format!(

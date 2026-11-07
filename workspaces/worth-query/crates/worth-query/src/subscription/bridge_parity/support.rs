@@ -29,6 +29,7 @@ impl QuerySubscriptionBridgeParityClass {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum QuerySubscriptionBridgeParityFailureKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     DeclarationMismatch,
     BridgeMismatch,
     BasisMismatch,
@@ -39,6 +40,7 @@ pub enum QuerySubscriptionBridgeParityFailureKind {
 impl QuerySubscriptionBridgeParityFailureKind {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => "evidence_identity_derivation_denied",
             Self::DeclarationMismatch => "declaration_mismatch",
             Self::BridgeMismatch => "bridge_mismatch",
             Self::BasisMismatch => "basis_mismatch",
@@ -228,7 +230,7 @@ pub struct QuerySubscriptionBridgeParityFailure {
     parity_class: QuerySubscriptionBridgeParityClass,
     reason: String,
     pub(in crate::subscription) source_identity: WorthQueryEvidenceIdentity,
-    failure_identity: WorthQueryEvidenceIdentity,
+    failure_identity: Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>,
 }
 
 impl QuerySubscriptionBridgeParityFailure {
@@ -238,7 +240,7 @@ impl QuerySubscriptionBridgeParityFailure {
         reason: impl Into<String>,
         source_identity: WorthQueryEvidenceIdentity,
         evidence: &[WorthQueryEvidenceIdentity],
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let reason = reason.into();
         let failure_identity = bridge_parity_failure_identity(
             failure_kind,
@@ -246,14 +248,14 @@ impl QuerySubscriptionBridgeParityFailure {
             &reason,
             &source_identity,
             evidence,
-        )?;
-        Ok(Self {
+        );
+        Self {
             failure_kind,
             parity_class,
             reason,
             source_identity,
             failure_identity,
-        })
+        }
     }
 
     pub fn failure_kind(&self) -> &QuerySubscriptionBridgeParityFailureKind {
@@ -270,12 +272,17 @@ impl QuerySubscriptionBridgeParityFailure {
 
     pub fn failure_projection(
         &self,
-    ) -> QueryProjectionIdentity<String, QuerySubscriptionIdentityKind> {
-        subscription_evidence_projection(&self.failure_identity)
+    ) -> Result<
+        QueryProjectionIdentity<String, QuerySubscriptionIdentityKind>,
+        IdentityDerivationDenial,
+    > {
+        Ok(subscription_evidence_projection(self.failure_identity()?))
     }
 
-    pub fn failure_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.failure_identity
+    pub fn failure_identity(
+        &self,
+    ) -> Result<&WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        self.failure_identity.as_ref().map_err(|cause| *cause)
     }
 }
 
@@ -286,6 +293,25 @@ pub struct QuerySubscriptionBridgeParityError {
 }
 
 impl QuerySubscriptionBridgeParityError {
+    pub(super) fn identity_refused(
+        cause: IdentityDerivationDenial,
+        source_identity: WorthQueryEvidenceIdentity,
+    ) -> Self {
+        Self {
+            failure: QuerySubscriptionBridgeParityFailure {
+                failure_kind:
+                    QuerySubscriptionBridgeParityFailureKind::EvidenceIdentityDerivationDenied(
+                        cause,
+                    ),
+                parity_class: QuerySubscriptionBridgeParityClass::DeniedUnsupported,
+                reason: "canonical digest bounds refused manual bridge witness evidence".into(),
+                source_identity,
+                failure_identity: Err(cause),
+            },
+            counters: QuerySubscriptionBridgeParityCounters::default(),
+        }
+    }
+
     pub(crate) fn new(
         failure: QuerySubscriptionBridgeParityFailure,
         counters: QuerySubscriptionBridgeParityCounters,

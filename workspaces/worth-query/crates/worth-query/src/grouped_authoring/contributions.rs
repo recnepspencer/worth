@@ -114,6 +114,9 @@ pub enum WorthQueryGroupedContributionStop<
     I: WorthQueryDeclarationInput<D>,
 > {
     DeclarationStopped(WorthQueryGroupedDeclarationStop),
+    EvidenceIdentityDerivationDenied(
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    ),
     WrongWorld(WorthQueryGroupedOrchestrationAlignmentStop<D, I>),
     WrongHandle(WorthQueryGroupedOrchestrationAlignmentStop<D, I>),
     MemberStopped(
@@ -194,7 +197,8 @@ fn lower_grouped_contributions_on_handle<
             member.progression().clone(),
             member_contributions_for_member(&shared_contributions, &member_specific),
             materialization_policy(materialization_profile),
-        );
+        )
+        .map_err(WorthQueryGroupedContributionStop::EvidenceIdentityDerivationDenied)?;
         let context = WorthQueryGroupedContributionMemberContext::new(
             member.member_index(),
             member.role(),

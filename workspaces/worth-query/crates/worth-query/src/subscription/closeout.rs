@@ -185,10 +185,7 @@ pub struct SubscriptionLifecycleCloseout {
 }
 
 impl SubscriptionLifecycleCloseout {
-    pub(super) fn new(
-        request: SubscriptionLifecycleCloseRequest,
-        lane_terminal: bool,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    pub(super) fn new(request: SubscriptionLifecycleCloseRequest, lane_terminal: bool) -> Self {
         let closeout_kind = request.closeout_kind();
         let mut counters = ActiveSubscriptionCounters::default();
         counters.consumer_attachment_close_count = 1;
@@ -227,8 +224,8 @@ impl SubscriptionLifecycleCloseout {
             performance_receipt.performance_receipt_identity(),
             &counters.evidence_identity(),
             &source_identity,
-        )?;
-        Ok(Self {
+        ).expect("bounded performed receipt: closed enum labels, primitive counts and sealed identity digests");
+        Self {
             active_lane_digest,
             attachment_digest,
             future_selection,
@@ -241,7 +238,7 @@ impl SubscriptionLifecycleCloseout {
             performance_receipt,
             counters,
             closeout_identity,
-        })
+        }
     }
 
     pub(crate) fn active_lane_digest(&self) -> &ActiveSubscriptionLaneDigest {

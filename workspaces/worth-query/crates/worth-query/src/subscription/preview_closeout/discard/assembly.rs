@@ -17,7 +17,7 @@ impl PreviewSubscriptionDiscardCloseout {
     pub(super) fn new(
         isolation: PreviewSubscriptionIsolationArtifact,
         residue_report: PreviewSubscriptionResidueReport,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let mut counters = ActiveSubscriptionCounters::default();
         counters.preview_discard_residue_check_count = 1;
         counters.preview_residue_width = residue_report.preview_residue_width();
@@ -44,8 +44,8 @@ impl PreviewSubscriptionDiscardCloseout {
             performance_receipt.performance_receipt_identity(),
             PreviewSubscriptionLifecycleState::PreviewDiscarded.as_str(),
             &counters.evidence_identity(),
-        )?;
-        Ok(Self {
+        ).expect("bounded performed receipt: closed enum labels, primitive counts and sealed identity digests");
+        Self {
             active_lane_digest: isolation.active_lane_digest().clone(),
             attachment_digest: isolation.attachment_digest().clone(),
             future_selection: isolation.future_selection().clone(),
@@ -56,7 +56,7 @@ impl PreviewSubscriptionDiscardCloseout {
             performance_receipt,
             counters,
             closeout_identity,
-        })
+        }
     }
 }
 

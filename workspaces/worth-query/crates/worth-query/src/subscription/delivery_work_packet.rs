@@ -98,7 +98,14 @@ impl ActiveDeliveryWorkPacket {
             request.allocation_posture,
             request.maintenance_delta.evidence_identity(),
         );
-        let work_packet_identity = work_packet_identity(&request, &widths, &performance_receipt);
+        let work_packet_identity = work_packet_identity(&request, &widths, &performance_receipt)
+            .map_err(|cause| {
+                QueryDeliveryError::identity_refused(
+                    cause,
+                    request.maintenance_delta.evidence_identity().clone(),
+                    counters.clone(),
+                )
+            })?;
         retain_work_packet_counters(
             &mut counters,
             &request,

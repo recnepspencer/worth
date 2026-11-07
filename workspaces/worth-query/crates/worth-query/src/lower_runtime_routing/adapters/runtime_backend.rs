@@ -70,7 +70,7 @@ impl LiveViewDeclarationAdmissionBoundaryReceipt {
             WorthQueryLowerRuntimeSeamKey::LiveViewSchemaAdmission,
             &readmission_receipt,
             &boundary_execution_receipt,
-        )?;
+        );
         Ok(Self {
             admission_receipt,
             readmission_receipt,
@@ -175,7 +175,7 @@ impl SignalInvalidationBoundaryReceipt {
                 &route_plan,
                 &boundary_execution_receipt,
                 &retained_evidence_identity,
-            )?;
+            );
         Ok(Self {
             routing_receipt,
             route_plan,
@@ -280,7 +280,7 @@ impl SubscriptionActivationBoundaryReceipt {
                 &route_plan,
                 &boundary_execution_receipt,
                 &retained_evidence_identity,
-            )?;
+            );
         Ok(Self {
             activation_receipt,
             route_plan,

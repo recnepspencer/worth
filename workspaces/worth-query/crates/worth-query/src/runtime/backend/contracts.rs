@@ -333,7 +333,7 @@ pub trait WorthQueryRuntimeSchemaAdapter {
         name: &str,
         request: &DeclarativeLiveQueryRequest,
         admission_receipt: LiveViewDeclarationAdmissionReceipt,
-    ) -> LiveViewDeclarationAdmissionBoundaryReceipt {
+    ) -> Result<LiveViewDeclarationAdmissionBoundaryReceipt, IdentityDerivationDenial> {
         LiveViewDeclarationAdmissionBoundaryReceipt::from_request(name, request, admission_receipt)
     }
 

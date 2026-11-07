@@ -278,7 +278,7 @@ pub(crate) fn commit_prepared_subscription_lifecycle_close(
         prepared.lane_index,
         prepared.request.attachment_digest(),
     );
-    let closeout = SubscriptionLifecycleCloseout::new(prepared.request, lane_terminal)?;
+    let closeout = SubscriptionLifecycleCloseout::new(prepared.request, lane_terminal);
     runtime.counters = closeout.counters().clone();
     Ok(closeout)
 }

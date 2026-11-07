@@ -88,7 +88,10 @@ impl WorthQueryRuntime {
             .and_then(|review| {
                 self.resolve_reviewed_admitted_derived_materialization_handoff(review)
             })
-            .map(|handoff| self.prepare_derived_materialization_execution_binding(handoff))
+            .and_then(|handoff| {
+                self.prepare_derived_materialization_execution_binding(handoff)
+                    .map_err(Into::into)
+            })
             .and_then(|binding| {
                 self.execute_derived_materialization_execution_binding(execution, binding)
             })
@@ -155,10 +158,15 @@ impl WorthQueryRuntime {
 
     pub(super) fn live_artifact_target_collections(
         &self,
-    ) -> BTreeMap<WorthQueryLiveArtifactTarget, WorthQueryMutationTargetCollectionIdentity> {
+    ) -> Result<
+        BTreeMap<WorthQueryLiveArtifactTarget, WorthQueryMutationTargetCollectionIdentity>,
+        IdentityDerivationDenial,
+    > {
         self.live_subscriptions
             .iter()
-            .map(|(target, state)| (target.clone(), state.request.target_collection_identity()))
+            .map(|(target, state)| {
+                Ok((target.clone(), state.request.target_collection_identity()?))
+            })
             .collect()
     }
 

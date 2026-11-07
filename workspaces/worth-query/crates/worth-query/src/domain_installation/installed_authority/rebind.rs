@@ -174,7 +174,7 @@ impl WorthQueryDomainRebindReceipt {
     pub(crate) fn new(
         prior: &WorthQueryInstalledDomainAuthorityWitness,
         current: &WorthQueryInstalledDomainAuthorityWitness,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let package_identity = current.package_identity().clone();
         let semantic_equivalence_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::InstalledDomainRebind)
@@ -186,7 +186,7 @@ impl WorthQueryDomainRebindReceipt {
                     WorthQueryEvidenceTag::new("package"),
                     package_identity.evidence_identity(),
                 )
-                .seal()?;
+                .seal().expect("fixed rebind grammar: enum labels, three counters and at most two sealed package identities");
         let receipt_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::InstalledDomainRebind)
                 .field_shape(WorthQueryEvidenceTag::new("outcome"), "rebound")
@@ -202,8 +202,8 @@ impl WorthQueryDomainRebindReceipt {
                     WorthQueryEvidenceTag::new("semantic_equivalence"),
                     &semantic_equivalence_identity,
                 )
-                .seal()?;
-        Ok(Self {
+                .seal().expect("fixed rebind grammar: enum labels, three counters and at most two sealed package identities");
+        Self {
             prior_authority: prior.authority_arc(),
             current_authority: current.authority_arc(),
             prior_witness_identity: prior.witness_identity().clone(),
@@ -211,7 +211,7 @@ impl WorthQueryDomainRebindReceipt {
             package_identity,
             semantic_equivalence_identity,
             receipt_identity,
-        })
+        }
     }
 
     pub fn prior_witness_identity(&self) -> &WorthQueryEvidenceIdentity {

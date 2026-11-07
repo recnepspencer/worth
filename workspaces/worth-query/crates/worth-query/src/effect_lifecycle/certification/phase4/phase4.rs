@@ -202,7 +202,9 @@ pub fn certify_effect_lifecycle_phase4(
         stale_after_lowering_row(execution),
         relational_oracle_row(execution),
         bridge_oracle_row(execution),
-        seeded_replay_row(&seeded),
-    ];
+        Ok(seeded_replay_row(&seeded)),
+    ]
+    .into_iter()
+    .collect::<Result<Vec<_>, _>>()?;
     Ok(EffectLifecyclePhase4CertificationBundle::new(rows, &seeded))
 }

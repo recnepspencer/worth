@@ -11,8 +11,11 @@ impl WorthQueryBatchWriteReceipt {
     pub fn graph_composition_evidence(
         &self,
     ) -> Result<Option<WorthQueryGraphCompositionEvidence>, IdentityDerivationDenial> {
-        let lifecycle_outcomes =
-            WorthQueryGraphCompositionLifecycleOutcomes::derive(&self.graph_composition_program)?;
+        let Some(lifecycle_outcomes) =
+            WorthQueryGraphCompositionLifecycleOutcomes::derive(&self.graph_composition_program)?
+        else {
+            return Ok(None);
+        };
         Ok(WorthQueryGraphCompositionEvidence::derive(
             &self.write_receipts,
             &self.graph_composition_breadth,

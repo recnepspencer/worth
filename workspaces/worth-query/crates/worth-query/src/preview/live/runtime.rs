@@ -170,6 +170,9 @@ pub fn assess_preview_live_drift(
         Ok(binding) => binding,
         Err(error) => {
             let failure_class = match error.failure_class() {
+                PreviewBindingFailureClass::EvidenceIdentityDerivationDenied(cause) => {
+                    PreviewLiveFailureClass::EvidenceIdentityDerivationDenied(*cause)
+                }
                 PreviewBindingFailureClass::InvalidPreviewBasis => {
                     PreviewLiveFailureClass::PreviewLiveBroadFallbackForbidden
                 }

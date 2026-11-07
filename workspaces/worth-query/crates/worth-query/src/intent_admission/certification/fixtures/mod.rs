@@ -178,7 +178,7 @@ pub(super) fn certified_admitted_intent_fixture(
                 request,
                 decision,
                 plan,
-                handoff: handoff.expect("authoritative admitted plan should still mint a handoff"),
+                handoff: handoff?.expect("authoritative admitted plan should still mint a handoff"),
                 binding,
                 trace,
                 receipt,

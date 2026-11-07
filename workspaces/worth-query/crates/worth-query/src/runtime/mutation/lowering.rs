@@ -85,8 +85,9 @@ pub(crate) fn command_declared_aspect_operations(
 
 pub(crate) fn command_declared_aspect_value_digest(
     command: &WorthQueryWriteCommand,
-) -> Option<String> {
-    command_declared_aspect_value_identity(command).map(|identity| identity.as_str().to_string())
+) -> Result<Option<String>, IdentityDerivationDenial> {
+    Ok(command_declared_aspect_value_identity(command)?
+        .map(|identity| identity.as_str().to_string()))
 }
 
 pub(crate) fn command_declared_aspect_value_identity(

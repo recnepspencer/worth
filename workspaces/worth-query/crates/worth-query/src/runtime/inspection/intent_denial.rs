@@ -122,7 +122,7 @@ impl WorthQueryIntentDenialInspection {
             attempt_digest,
             invariant_evidence,
             snapshot_identity,
-            denial_digest: evidence.denial_digest().clone()?,
+            denial_digest: evidence.denial_digest()?.clone(),
             inspection_digest,
         })
     }

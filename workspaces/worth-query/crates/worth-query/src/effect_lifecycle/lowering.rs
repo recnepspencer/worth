@@ -336,14 +336,11 @@ pub fn lower_authority_scoped_effect_plan(
 pub(crate) fn assemble_lowered_batch_mutation_component(
     admitted: AdmittedEffectIntent,
     declaration: LoweredMutationIntentDeclaration,
-) -> Result<
-    LoweredEffectExecutionPlan,
-    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
-> {
-    Ok(LoweredEffectExecutionPlan::new(
-        scope_admitted_effect_plan(admitted)?,
+) -> LoweredEffectExecutionPlan {
+    LoweredEffectExecutionPlan::new(
+        scope_admitted_effect_plan(admitted),
         LoweredEffectExecutionArtifact::Mutation(declaration),
-    ))
+    )
 }
 
 fn lowering_denial_kind(failure_class: &WorkflowLoweringFailureClass) -> EffectLoweringDenialKind {

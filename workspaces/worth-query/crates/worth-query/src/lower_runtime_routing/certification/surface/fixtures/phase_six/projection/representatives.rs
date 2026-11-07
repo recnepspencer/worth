@@ -199,7 +199,7 @@ fn readmission_projection_row(
         seam_key,
         &handoff,
         &boundary_receipt,
-    )?;
+    );
     Ok(RepresentativeArtifacts {
         seam_key,
         request,

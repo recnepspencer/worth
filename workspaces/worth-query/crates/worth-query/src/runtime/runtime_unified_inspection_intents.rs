@@ -17,7 +17,7 @@ impl WorthQueryRuntime {
     ) -> Result<WorthQueryUnifiedInspectionResult, WorthQueryRuntimeError> {
         let seed = WorthQueryGenericInspectionIntentSeed::from_target(
             WorthQueryInspectionTarget::LiveView { name: view_name },
-        )
+        )?
         .expect("live view names should always lower into unified inspection seeds");
         let review = self.review_unified_inspection(seed)?;
         let handoff = self.resolve_reviewed_admitted_unified_inspection_handoff(review)?;

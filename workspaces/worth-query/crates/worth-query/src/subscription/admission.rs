@@ -182,7 +182,7 @@ pub fn admit_query_subscription(
         QuerySubscriptionAdmissionDiagnosticOutcome::Admitted,
         "runtime-backed query subscription declaration admitted for activation handoff",
         source_identity,
-    );
+    ).expect("admission diagnostics use closed stages, literal messages, sealed sources and fixed counters");
     let support_profile =
         QuerySubscriptionSupportProfile::admitted(lowering.bridge_declaration_identity());
     let admission_identity = admission_artifact_identity(
@@ -224,28 +224,28 @@ fn admission_error(
     stage: QuerySubscriptionAdmissionDiagnosticStage,
     source_identity: &WorthQueryEvidenceIdentity,
     counters: QuerySubscriptionDeclarationCounters,
-) -> Result<QuerySubscriptionAdmissionError, IdentityDerivationDenial> {
+) -> QuerySubscriptionAdmissionError {
     let diagnostics = QuerySubscriptionAdmissionDiagnostics::new(
         stage,
         QuerySubscriptionAdmissionDiagnosticOutcome::Denied,
         message,
         source_identity,
-    )?;
+    ).expect("admission diagnostics use closed stages, literal messages, sealed sources and fixed counters");
     let pipeline_diagnostic = QuerySubscriptionDiagnosticEvidence::denied(
         admission_pipeline_stage(stage),
         message,
         source_identity,
         &counters.evidence_identity(),
-    )?;
+    ).expect("admission diagnostics use closed stages, literal messages, sealed sources and fixed counters");
     let support_profile = QuerySubscriptionSupportProfile::denied(source_identity);
-    Ok(QuerySubscriptionAdmissionError::new(
+    QuerySubscriptionAdmissionError::new(
         denial_kind,
         message,
         diagnostics,
         pipeline_diagnostic,
         support_profile,
         counters,
-    ))
+    )
 }
 
 fn admission_pipeline_stage(

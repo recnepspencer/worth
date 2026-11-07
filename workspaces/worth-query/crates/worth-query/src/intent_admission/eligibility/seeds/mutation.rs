@@ -202,7 +202,7 @@ pub(crate) fn authoritative_mutation_input_identity(
         .declared_entity_identity_ref()
         .map(|identity| identity.evidence_identity());
     let declared_collection_identity = command.declared_collection_identity();
-    let aspect_value_identity = command_declared_aspect_value_digest(command)
+    let aspect_value_identity = command_declared_aspect_value_digest(command)?
         .map(|digest| {
             worth_query_evidence_identity(WorthQueryEvidenceScope::AuthoritativeMutationIntentSeed)
                 .field_shape(WorthQueryEvidenceTag::new("role"), "declared-aspect-values")
@@ -316,12 +316,15 @@ fn symbolic_target_reference_identity(
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let symbol_identity =
         WorthQueryMutationSymbolIdentity::new("authoritative-mutation-seed", reference.symbol())?;
-    let collection_identity = reference.target_collection().map(|collection| {
-        WorthQueryMutationTargetCollectionIdentity::new(
-            "authoritative-mutation-seed-symbolic-target",
-            collection,
-        )
-    });
+    let collection_identity = reference
+        .target_collection()
+        .map(|collection| {
+            WorthQueryMutationTargetCollectionIdentity::new(
+                "authoritative-mutation-seed-symbolic-target",
+                collection,
+            )
+        })
+        .transpose()?;
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::AuthoritativeMutationIntentSeed)
             .field_shape(WorthQueryEvidenceTag::new("role"), "symbolic-target")

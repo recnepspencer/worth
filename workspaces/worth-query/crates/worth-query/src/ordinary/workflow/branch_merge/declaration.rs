@@ -10,6 +10,9 @@ pub enum WorthQueryBranchMergeDeclarationDenialKind {
     EmptyTargetBranch,
     EmptySourceBranch,
     SameBranch,
+    EvidenceIdentityDerivationDenied(
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    ),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -135,7 +138,13 @@ pub fn declare_branch_merge(
             WorthQueryEvidenceTag::new("source_branch"),
             source_branch.as_str(),
         )
-        .seal(),
+        .seal()
+        .map_err(|cause| {
+            stop(
+                WorthQueryBranchMergeDeclarationDenialKind::EvidenceIdentityDerivationDenied(cause),
+                "branch merge declaration identity exceeded canonical digest bounds",
+            )
+        })?,
     };
     Ok(WorthQueryBranchMergeDeclaration {
         identity,

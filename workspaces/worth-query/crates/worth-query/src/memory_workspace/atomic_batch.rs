@@ -229,7 +229,7 @@ impl WorthQueryMemoryWorkspace {
         let deltas =
             if changed.contains(&entity_id) || mutation.kind == WorthQueryMutationKind::Deleted {
                 vec![WorthQueryMutationDelta::from_collection_identity(
-                    self.mutation_delta_collection_identity()?,
+                    self.mutation_delta_collection_identity(),
                     entity,
                     mutation.kind,
                     mutation.touches,

@@ -227,7 +227,7 @@ impl WorthQueryRuntime {
                 Ok(WorthQueryInspection::DerivedView(result.evidence().clone()))
             }
             target => {
-                let seed = crate::intent_admission::WorthQueryGenericInspectionIntentSeed::from_target(target)
+                let seed = crate::intent_admission::WorthQueryGenericInspectionIntentSeed::from_target(target)?
                     .expect("derived inspection targets should route through the derived inspection lane");
                 let review = self.review_unified_inspection(seed)?;
                 let handoff = self.resolve_reviewed_admitted_unified_inspection_handoff(review)?;

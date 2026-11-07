@@ -12,6 +12,25 @@ pub struct SubscriptionLifecycleCertificationError {
 }
 
 impl SubscriptionLifecycleCertificationError {
+    pub(super) fn with_evidence_derivation(
+        denial_kind: SubscriptionLifecycleCertificationDenialKind,
+        message: &'static str,
+        evidence: Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial>,
+    ) -> Self {
+        Self {
+            denial_kind,
+            message,
+            failure_identity: evidence.and_then(|evidence| {
+                subscription_certification_failure_identity(
+                    "subscription_lifecycle_certification_error_v1",
+                    denial_kind.as_str(),
+                    message,
+                    &evidence,
+                )
+            }),
+        }
+    }
+
     pub(super) fn new(
         denial_kind: SubscriptionLifecycleCertificationDenialKind,
         message: &'static str,

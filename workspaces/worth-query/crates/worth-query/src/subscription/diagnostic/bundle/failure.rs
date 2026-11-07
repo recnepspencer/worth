@@ -209,8 +209,8 @@ impl QuerySubscriptionDiagnosticFailure {
         Ok(Self::new(
             QuerySubscriptionDiagnosticStage::SupportReporting,
             error.message(),
-            error.failure_identity().clone(),
-            error.failure_identity().clone(),
+            error.failure_identity()?.clone(),
+            error.failure_identity()?.clone(),
             error.denial_kind().as_str(),
             error.failure_identity()?,
         )?)
@@ -219,7 +219,7 @@ impl QuerySubscriptionDiagnosticFailure {
     pub fn from_lifecycle_certification_error(
         error: &SubscriptionLifecycleCertificationError,
     ) -> Result<Self, IdentityDerivationDenial> {
-        let failure_identity = error.failure_identity().clone();
+        let failure_identity = error.failure_identity()?.clone();
         Ok(Self::new(
             QuerySubscriptionDiagnosticStage::Certification,
             error.message(),

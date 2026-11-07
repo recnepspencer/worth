@@ -21,7 +21,7 @@ pub(super) fn row_set_control_expected_digest(
     let entries = row_set
         .rows()
         .iter()
-        .flat_map(|row| {
+        .map(|row| {
             let entity_identity = row
                 .projected_aspect_values()
                 .iter()
@@ -39,18 +39,21 @@ pub(super) fn row_set_control_expected_digest(
                         .then(|| canonical_snapshot_read_value(value))
                 })
                 .expect("display name should exist");
-            [
+            Ok::<_, IdentityDerivationDenial>([
                 compose_oracle_entity_identity_entry(
                     row.row_identity().as_str(),
-                    &crate::memory_workspace::admit_authored_entity_label(entity_identity),
+                    &crate::memory_workspace::admit_authored_entity_label(entity_identity)?,
                 ),
                 compose_oracle_display_field_entry(
                     row.row_identity().as_str(),
                     "profile.display_name",
                     &display_name,
                 ),
-            ]
+            ])
         })
+        .collect::<Result<Vec<_>, _>>()?
+        .into_iter()
+        .flatten()
         .collect::<Result<Vec<_>, _>>()?;
     Ok(compose_certification_sequence_digest(
         "projection_consumption_oracle_row_set_control_expected_v1",

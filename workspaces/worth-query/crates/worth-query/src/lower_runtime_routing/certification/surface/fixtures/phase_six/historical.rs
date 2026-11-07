@@ -145,7 +145,7 @@ pub(crate) fn representative_historical_bridge_lowering_row(
         &route_plan,
         &boundary_receipt,
         &retained_evidence_identity,
-    )?;
+    );
     Ok(RepresentativeArtifacts {
         seam_key: WorthQueryLowerRuntimeSeamKey::HistoricalBridgeLowering,
         request,

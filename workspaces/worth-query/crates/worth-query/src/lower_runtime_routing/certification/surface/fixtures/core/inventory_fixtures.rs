@@ -59,7 +59,7 @@ pub(crate) fn synthetic_inventory_row(
                 &plan,
                 &boundary_receipt,
                 &retained_evidence,
-            )?;
+            );
             RepresentativeArtifacts {
                 seam_key: row.seam_key(),
                 request,
@@ -90,7 +90,7 @@ pub(crate) fn synthetic_inventory_row(
                 row.seam_key(),
                 &handoff,
                 &boundary_receipt,
-            )?;
+            );
             RepresentativeArtifacts {
                 seam_key: row.seam_key(),
                 request,

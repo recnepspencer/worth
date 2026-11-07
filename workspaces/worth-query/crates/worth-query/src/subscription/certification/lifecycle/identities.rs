@@ -44,7 +44,7 @@ fn lifecycle_counter_identities(
                 crate::evidence_identity::WorthQueryEvidenceTag::new("sequence"),
                 frontier.acknowledged_sequence().get() as usize,
             )
-            .seal(),
+            .seal()?,
         )?,
         lifecycle_labeled_counter_identity("batch", batch_counters)?,
         lifecycle_labeled_counter_identity("closeout", closeout_counters)?,

@@ -98,7 +98,7 @@ impl WorthQueryJournalSegmentIdentity {
             WorthQueryEvidenceTag::new("journal_segment_end"),
             end_position.to_string(),
         )
-        .seal();
+        .seal()?;
         Ok(Self {
             start_position,
             end_position,

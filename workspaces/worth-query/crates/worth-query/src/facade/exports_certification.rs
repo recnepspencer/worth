@@ -230,7 +230,7 @@ pub fn write_authority_execution_receipt_for_certification(
     Ok(
         crate::lower_runtime_routing::WriteAuthorityExecutionReceipt::from_command(
             command, receipt,
-        )?,
+        ),
     )
 }
 

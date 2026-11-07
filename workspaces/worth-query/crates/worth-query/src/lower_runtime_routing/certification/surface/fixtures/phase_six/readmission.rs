@@ -101,7 +101,7 @@ pub(crate) fn representative_subscription_continuity_row(
         &route_plan,
         &boundary_receipt,
         &retained_evidence,
-    )?;
+    );
     Ok(RepresentativeArtifacts {
         seam_key: WorthQueryLowerRuntimeSeamKey::SubscriptionContinuity,
         request,
@@ -298,7 +298,7 @@ fn readmission_row(
         seam_key,
         &readmission,
         &boundary_receipt,
-    )?;
+    );
     Ok(RepresentativeArtifacts {
         seam_key,
         request,

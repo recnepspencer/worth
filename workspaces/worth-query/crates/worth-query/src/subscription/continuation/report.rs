@@ -23,9 +23,7 @@ pub struct SubscriptionContinuationReport {
 }
 
 impl SubscriptionContinuationReport {
-    pub(super) fn new(
-        evidence: &SubscriptionContinuationEvidence,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    pub(super) fn new(evidence: &SubscriptionContinuationEvidence) -> Self {
         let performance_receipt = SubscriptionPerformanceReceipt::new(
             evidence.remap_width(),
             evidence.remap_width(),
@@ -52,8 +50,8 @@ impl SubscriptionContinuationReport {
             crate::evidence_identity::WorthQueryEvidenceTag::new("performance"),
             performance_receipt.performance_receipt_identity(),
         )
-        .seal()?;
-        Ok(Self {
+        .seal().expect("bounded scalar receipt grammar: literal and enum labels, primitive values and sealed identity tokens");
+        Self {
             active_lane_digest: evidence.active_lane_digest().clone(),
             continuation_class: evidence.continuation_class(),
             continuation_identity: evidence.evidence_identity().clone(),
@@ -62,7 +60,7 @@ impl SubscriptionContinuationReport {
             remap_width: evidence.remap_width(),
             performance_receipt,
             report_identity,
-        })
+        }
     }
 
     pub(crate) fn active_lane_digest(&self) -> &ActiveSubscriptionLaneDigest {

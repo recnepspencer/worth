@@ -3,7 +3,9 @@ use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
 };
-use crate::runtime::WorthQueryAspectTouch;
+use crate::runtime::{
+    WorthQueryAspectTouch, WorthQueryDerivedMaterializationTarget, WorthQueryLiveArtifactTarget,
+};
 
 pub(super) fn evidence_value_identities(
     role: &'static str,
@@ -36,4 +38,22 @@ pub(super) fn terminal_touch_projection_identities(
                 .seal()
         })
         .collect::<Result<Vec<_>, _>>()?)
+}
+
+pub(in crate::runtime) fn terminal_live_view_ids(
+    targets: &[WorthQueryLiveArtifactTarget],
+) -> Vec<String> {
+    targets
+        .iter()
+        .map(|target| target.view_name().to_string())
+        .collect()
+}
+
+pub(in crate::runtime) fn terminal_derived_view_ids(
+    targets: &[WorthQueryDerivedMaterializationTarget],
+) -> Vec<String> {
+    targets
+        .iter()
+        .map(|target| target.view_name().to_string())
+        .collect()
 }

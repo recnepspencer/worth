@@ -42,16 +42,16 @@ impl WorthQueryLowerRuntimeBoundaryEnvelope {
         route_plan: &WorthQueryLowerRuntimeRoutePlan,
         boundary_execution_receipt: &WorthQueryLowerRuntimeBoundaryExecutionReceipt,
         retained_evidence_identity: &WorthQueryLowerRuntimeRetainedEvidenceIdentity,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let row = crossing_row(seam_key);
-        Ok(Self::new(
+        Self::new(
             row,
             route_plan.eligibility().request().request_identity(),
             route_plan.eligibility().eligibility_identity(),
             route_plan.route_identity(),
             boundary_execution_receipt.boundary_execution_identity(),
             retained_evidence_identity,
-        )?)
+        )
     }
 
     pub(crate) fn from_route_plan_with_retained_evidence_identity(
@@ -59,22 +59,22 @@ impl WorthQueryLowerRuntimeBoundaryEnvelope {
         route_plan: &WorthQueryLowerRuntimeRoutePlan,
         boundary_execution_receipt: &WorthQueryLowerRuntimeBoundaryExecutionReceipt,
         retained_evidence_identity: &WorthQueryLowerRuntimeRetainedEvidenceIdentity,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::from_route_plan(
+    ) -> Self {
+        Self::from_route_plan(
             seam_key,
             route_plan,
             boundary_execution_receipt,
             retained_evidence_identity,
-        )?)
+        )
     }
 
     pub(crate) fn from_readmission_receipt(
         seam_key: WorthQueryLowerRuntimeSeamKey,
         readmission_receipt: &WorthQueryLowerRuntimeReadmissionReceipt,
         boundary_execution_receipt: &WorthQueryLowerRuntimeBoundaryExecutionReceipt,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let row = crossing_row(seam_key);
-        Ok(Self::new(
+        Self::new(
             row,
             readmission_receipt
                 .eligibility()
@@ -84,7 +84,7 @@ impl WorthQueryLowerRuntimeBoundaryEnvelope {
             readmission_receipt.handoff_identity(),
             boundary_execution_receipt.boundary_execution_identity(),
             readmission_receipt.retained_evidence_identity(),
-        )?)
+        )
     }
 
     fn new(
@@ -94,7 +94,7 @@ impl WorthQueryLowerRuntimeBoundaryEnvelope {
         route_or_handoff_identity: &WorthQueryEvidenceIdentity,
         boundary_execution_identity: &WorthQueryEvidenceIdentity,
         retained_evidence_identity: &WorthQueryLowerRuntimeRetainedEvidenceIdentity,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let support_posture = support_posture_for_classification(row.classification());
         let route_cost_posture = cost_posture_for_classification(row.classification());
         let route_failure_topology = failure_topology_for_route_kind(row.route_kind());
@@ -109,7 +109,7 @@ impl WorthQueryLowerRuntimeBoundaryEnvelope {
                     WorthQueryEvidenceTag::new("classification"),
                     row.classification().as_str(),
                 )
-                .seal()?;
+                .seal().expect("bounded route grammar: sealed identifiers, primitive counts and closed inventory or policy labels");
         let route_evidence_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
                 .field_evidence_identity(
@@ -120,7 +120,7 @@ impl WorthQueryLowerRuntimeBoundaryEnvelope {
                     WorthQueryEvidenceTag::new("retained"),
                     retained_evidence_identity.evidence_identity(),
                 )
-                .seal()?;
+                .seal().expect("bounded route grammar: sealed identifiers, primitive counts and closed inventory or policy labels");
         let envelope_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEnvelope)
                 .field_shape(WorthQueryEvidenceTag::new("seam"), row.seam_key().as_str())
@@ -181,8 +181,8 @@ impl WorthQueryLowerRuntimeBoundaryEnvelope {
                     WorthQueryEvidenceTag::new("failure"),
                     route_failure_topology.as_str(),
                 )
-                .seal()?;
-        Ok(Self {
+                .seal().expect("bounded route grammar: sealed identifiers, primitive counts and closed inventory or policy labels");
+        Self {
             seam_key: row.seam_key(),
             capability_label: row.capability_label(),
             crossing_classification: row.classification(),
@@ -200,7 +200,7 @@ impl WorthQueryLowerRuntimeBoundaryEnvelope {
             route_cost_posture,
             route_failure_topology,
             envelope_identity,
-        })
+        }
     }
 
     pub fn seam_key(&self) -> WorthQueryLowerRuntimeSeamKey {

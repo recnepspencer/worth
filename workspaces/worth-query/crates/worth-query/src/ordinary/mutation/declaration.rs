@@ -72,7 +72,11 @@ where
             error: error.into(),
         }
     })?;
-    let identity = mutation_declaration_identity(&command);
+    let identity = mutation_declaration_identity(&command).map_err(|cause| {
+        WorthQueryMutationDeclarationStop {
+            error: Box::new(cause.into()),
+        }
+    })?;
     Ok(WorthQueryMutationDeclaration {
         identity: WorthQueryMutationDeclarationIdentity { identity },
         command,

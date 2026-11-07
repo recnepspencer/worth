@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::BTreeMap;
 
 use crate::declarative_live::DeclarativeLiveQueryRequest;
@@ -49,7 +50,7 @@ pub(in crate::runtime) fn materialize_read_rows(
     let source_rows = runtime.backend.live_entities_for_target(execution, &target);
     let records_examined_count = source_rows.len();
     let maintenance_source_rows =
-        select_source_rows_for_read_graph(read_graph, &request, &source_rows);
+        select_source_rows_for_read_graph(read_graph, &request, &source_rows)?;
     let rows = project_rows_to_request(maintenance_source_rows.clone(), &request);
     Ok(WorthQueryMaterializedReadRows {
         rows,
@@ -62,24 +63,27 @@ pub(in crate::runtime) fn materialize_source_rows_for_read_graph(
     read_graph: &WorthQueryReadGraph,
     request: &DeclarativeLiveQueryRequest,
     source_rows: &[WorthQueryEntity],
-) -> Vec<WorthQueryEntity> {
-    let rows = select_source_rows_for_read_graph(read_graph, request, source_rows);
-    project_rows_to_request(rows, request)
+) -> Result<Vec<WorthQueryEntity>, IdentityDerivationDenial> {
+    let rows = select_source_rows_for_read_graph(read_graph, request, source_rows)?;
+    Ok(project_rows_to_request(rows, request))
 }
 
 fn select_source_rows_for_read_graph(
     read_graph: &WorthQueryReadGraph,
     request: &DeclarativeLiveQueryRequest,
     source_rows: &[WorthQueryEntity],
-) -> Vec<WorthQueryEntity> {
+) -> Result<Vec<WorthQueryEntity>, IdentityDerivationDenial> {
     match read_graph.family() {
         WorthQueryReadGraphFamily::Detail => {
             materialize_detail_rows_from_request(read_graph, request, source_rows)
+                .map(Ok)
                 .unwrap_or_else(|| synthetic_detail_rows_for_request(request))
         }
-        WorthQueryReadGraphFamily::Collection => {
-            materialize_collection_rows_from_request(read_graph, request, source_rows)
-        }
+        WorthQueryReadGraphFamily::Collection => Ok(materialize_collection_rows_from_request(
+            read_graph,
+            request,
+            source_rows,
+        )),
     }
 }
 
@@ -96,7 +100,7 @@ pub(in crate::runtime) fn materialize_query_context_rows(
                     "query-context:{}:{}",
                     context_execution.family().as_str(),
                     index
-                )),
+                )).expect("synthetic query-context identity uses a closed family label and a primitive row index"),
                 query_context_row_values(context_execution, row),
             )
         })

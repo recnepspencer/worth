@@ -118,5 +118,13 @@ pub fn trace_admitted_query_subscription_diagnostics(
         ));
     }
 
-    Ok(trace_from_stage_evidence(stage_evidence))
+    let stage_evidence = stage_evidence
+        .into_iter()
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|cause| {
+            QuerySubscriptionDiagnosticBundleError::identity_refused(cause, Default::default())
+        })?;
+    trace_from_stage_evidence(stage_evidence).map_err(|cause| {
+        QuerySubscriptionDiagnosticBundleError::identity_refused(cause, Default::default())
+    })
 }

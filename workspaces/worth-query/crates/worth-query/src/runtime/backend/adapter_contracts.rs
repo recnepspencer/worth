@@ -83,7 +83,7 @@ pub trait WorthQueryRuntimeSubscriptionActivationAdapter {
         view_name: &str,
         activation: &SubscriptionActivationInput,
         activation_receipt: SubscriptionActivationReceipt,
-    ) -> SubscriptionActivationBoundaryReceipt {
+    ) -> Result<SubscriptionActivationBoundaryReceipt, IdentityDerivationDenial> {
         SubscriptionActivationBoundaryReceipt::from_activation(
             view_name,
             activation,

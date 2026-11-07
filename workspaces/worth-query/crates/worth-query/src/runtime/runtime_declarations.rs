@@ -87,12 +87,14 @@ impl WorthQueryRuntime {
             .future_selection_projection()
             .label()
             .to_string();
-        let pending_async_result_state =
-            future_selection.requests_completion_lifecycle().then(|| {
+        let pending_async_result_state = future_selection
+            .requests_completion_lifecycle()
+            .then(|| {
                 WorthQueryRuntimeAsyncResultProjection::pending(&format!(
                     "async-pending:{pending_async_projection_digest}"
                 ))
-            });
+            })
+            .transpose()?;
         let basis_binding_identity = async_source_binding
             .as_ref()
             .map(WorthQueryRuntimeAsyncSourceBinding::current_basis_identity)

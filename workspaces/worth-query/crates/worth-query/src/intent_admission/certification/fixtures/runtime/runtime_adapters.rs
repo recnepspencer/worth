@@ -36,7 +36,7 @@ impl WorthQueryRuntimeSubscriptionActivationAdapter for CertificationSubscriptio
         activation: &SubscriptionActivationInput,
     ) -> Result<SubscriptionActivationBoundaryReceipt, WorthQueryWorkspaceError> {
         let receipt = self.build_subscription_activation_receipt(view_name, activation)?;
-        Ok(self.build_subscription_activation_boundary_receipt(view_name, activation, receipt))
+        Ok(self.build_subscription_activation_boundary_receipt(view_name, activation, receipt)?)
     }
 }
 

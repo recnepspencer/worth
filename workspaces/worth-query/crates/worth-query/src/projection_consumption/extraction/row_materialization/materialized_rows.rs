@@ -264,9 +264,9 @@ where
         -> Result<Option<&'a ConsumedNativeValue>, ProjectionFactExtractionError>,
 {
     if matches!(mode, RowIdentityExtractionMode::RowIdentityAsEntityIdentity) {
-        return Ok(typed_identity.clone().unwrap_or_else(|| {
+        return Ok(typed_identity.clone().map(Ok).unwrap_or_else(|| {
             crate::memory_workspace::admit_authored_entity_label(row_identity)
-        }));
+        })?);
     }
     let path = identity_field_path();
     let value = lookup(
@@ -287,17 +287,22 @@ where
         .view()
         .scalar()
         .and_then(consumed_aspect_value_as_str)
-        .ok_or_else(
-            || ProjectionFactExtractionError::InvalidDeclaredFieldValueShape {
-                source_family: contract.source_family(),
-                source_identity: compose_scoped_row_source_identity(
-                    contract.source_identity(),
-                    row_identity,
-                ),
-                field_key: "identity.id".to_string(),
-                fact_kind: ProjectionFactKind::EntityIdentity,
-                expected_shape: "string",
-            },
-        )?;
+        .ok_or_else(|| {
+            (|| {
+                Ok::<_, IdentityDerivationDenial>(
+                    ProjectionFactExtractionError::InvalidDeclaredFieldValueShape {
+                        source_family: contract.source_family(),
+                        source_identity: compose_scoped_row_source_identity(
+                            contract.source_identity(),
+                            row_identity,
+                        )?,
+                        field_key: "identity.id".to_string(),
+                        fact_kind: ProjectionFactKind::EntityIdentity,
+                        expected_shape: "string",
+                    },
+                )
+            })()
+            .unwrap_or_else(ProjectionFactExtractionError::from)
+        })?;
     Ok(crate::memory_workspace::admit_authored_entity_label(label)?)
 }

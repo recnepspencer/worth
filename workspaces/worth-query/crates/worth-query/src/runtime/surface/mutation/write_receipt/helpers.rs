@@ -58,6 +58,7 @@ pub(super) fn naming_mutation_evidence(
                 target_collection,
             )
         })
+        .transpose()?
         .or_else(|| {
             authored_intent.map(|intent| {
                 WorthQueryNamingMutationEvidence::from_intent(
@@ -66,8 +67,7 @@ pub(super) fn naming_mutation_evidence(
                     target_collection,
                 )
             })
-        })
-        .transpose()?)
+        }))
 }
 
 pub(super) fn continuity_mutation_evidence(

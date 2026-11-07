@@ -50,7 +50,18 @@ impl WorthQueryBasisObservationIntentAuthoring {
     pub fn admit(
         self,
     ) -> Result<WorthQueryBasisObservationAdmittedIntent, WorthQueryIntentNonAdmittedStop> {
-        self.review().admit()
+        let family = self.request.family();
+        let entrypoint = self.request.entrypoint();
+        self.review()
+            .map_err(|cause| {
+                WorthQueryIntentNonAdmittedStop::Violation(
+                    super::WorthQueryIntentViolationDecision::identity_refused(
+                        family, entrypoint, cause,
+                    )
+                    .into_stop(),
+                )
+            })?
+            .admit()
     }
 }
 
@@ -126,7 +137,18 @@ impl WorthQueryProjectionConsumptionIntentAuthoring {
         self,
     ) -> Result<WorthQueryProjectionConsumptionAdmittedIntent, WorthQueryIntentNonAdmittedStop>
     {
-        self.review().admit()
+        let family = self.request.family();
+        let entrypoint = self.request.entrypoint();
+        self.review()
+            .map_err(|cause| {
+                WorthQueryIntentNonAdmittedStop::Violation(
+                    super::WorthQueryIntentViolationDecision::identity_refused(
+                        family, entrypoint, cause,
+                    )
+                    .into_stop(),
+                )
+            })?
+            .admit()
     }
 }
 

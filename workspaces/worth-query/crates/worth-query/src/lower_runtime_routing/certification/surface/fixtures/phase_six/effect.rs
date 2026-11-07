@@ -64,7 +64,7 @@ pub(crate) fn representative_effect_relational_mutation_row(
     let executed = scope_admitted_effect_plan(admit_effect(
         raw,
         EffectAuthoringBasis::from(branch_mutation_basis("main")),
-    )?)?
+    )?)
     .lower()
     .expect("relational mutation should lower")
     .execute_with(
@@ -123,7 +123,7 @@ pub(crate) fn representative_effect_relational_merge_row(
     let executed = scope_admitted_effect_plan(admit_effect(
         raw,
         EffectAuthoringBasis::from(branch_mutation_basis("main")),
-    )?)?
+    )?)
     .lower()
     .expect("relational merge should lower")
     .execute_with(
@@ -160,7 +160,7 @@ pub(crate) fn representative_effect_bridge_writeback_row(
     let executed = scope_admitted_effect_plan(admit_effect(
         raw,
         EffectAuthoringBasis::from(branch_mutation_basis("branch-a")),
-    )?)?
+    )?)
     .lower()
     .expect("bridge writeback should lower")
     .execute_with(execution, EffectExecutionAuthority::bridge(&bridge))
@@ -306,7 +306,7 @@ fn route_planned_row(
         &route_plan,
         &boundary_receipt,
         &retained_evidence_identity,
-    )?;
+    );
     Ok(RepresentativeArtifacts {
         seam_key,
         request,

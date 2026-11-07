@@ -102,7 +102,7 @@ where
             outcome_kind,
             labels.clone(),
             foundational_diagnostic_locator_boundary_artifact(BoundaryArtifactLocator::new(
-                boundary_artifact_id(&target.binding_identity()),
+                boundary_artifact_id(&target.binding_identity()?),
                 BoundaryArtifactField::Basis,
             )),
             evidence_posture,

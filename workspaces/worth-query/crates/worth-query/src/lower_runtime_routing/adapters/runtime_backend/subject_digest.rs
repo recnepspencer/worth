@@ -34,7 +34,7 @@ pub(super) fn live_view_subject_identity(
 
 pub(super) fn write_command_subject_identity(
     command: &WorthQueryWriteCommand,
-) -> Result<WorthQueryLowerRuntimeSubjectIdentity, IdentityDerivationDenial> {
+) -> WorthQueryLowerRuntimeSubjectIdentity {
     let mut encoder = WorthQueryLowerRuntimeSubjectIdentity::compose("write-command-route-subject")
         .field_shape(
             WorthQueryEvidenceTag::new("family"),
@@ -59,12 +59,12 @@ pub(super) fn write_command_subject_identity(
         encoder =
             encoder.field_evidence_identity(WorthQueryEvidenceTag::new("entity"), &entity_identity);
     }
-    Ok(encoder.seal()?)
+    encoder.seal().expect("bounded route grammar: sealed identifiers, primitive counts and closed inventory or policy labels")
 }
 
 pub(super) fn backend_admissible_mutation_subject_identity(
     mutation: &WorthQueryBackendAdmissibleMutation,
-) -> Result<WorthQueryLowerRuntimeSubjectIdentity, IdentityDerivationDenial> {
+) -> WorthQueryLowerRuntimeSubjectIdentity {
     let mut encoder = WorthQueryLowerRuntimeSubjectIdentity::compose("write-command-route-subject")
         .field_shape(
             WorthQueryEvidenceTag::new("family"),
@@ -89,7 +89,7 @@ pub(super) fn backend_admissible_mutation_subject_identity(
         encoder =
             encoder.field_evidence_identity(WorthQueryEvidenceTag::new("entity"), &entity_identity);
     }
-    Ok(encoder.seal()?)
+    encoder.seal().expect("bounded route grammar: sealed identifiers, primitive counts and closed inventory or policy labels")
 }
 
 pub(super) fn activation_subject_identity(

@@ -204,7 +204,7 @@ impl WorthQueryRuntime {
         execution_provenance: WorthQueryIntentExecutionProvenance,
         decision_trace_envelope: WorthQueryIntentDecisionTraceEnvelope,
         source: WorthQueryRuntimeError,
-    ) -> Result<WorthQueryRuntimeError, IdentityDerivationDenial> {
+    ) -> WorthQueryRuntimeError {
         let stage = "post-execution-routing";
         let message = source.to_string();
         let evidence = intent::WorthQueryIntentExecutionFailureEvidence::new(
@@ -214,14 +214,14 @@ impl WorthQueryRuntime {
             execution,
             execution_provenance,
             decision_trace_envelope,
-        )?;
-        Ok(WorthQueryRuntimeError::IntentExecutionRoutingFailed {
+        );
+        WorthQueryRuntimeError::IntentExecutionRoutingFailed {
             intent_name: declaration.name().to_string(),
             stage,
             message,
             evidence,
             source: Box::new(source),
-        })
+        }
     }
 
     pub(crate) fn admitted_handoff_violation_error(

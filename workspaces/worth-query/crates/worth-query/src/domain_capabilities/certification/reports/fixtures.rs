@@ -173,7 +173,7 @@ pub(super) fn lower_runtime_envelope(
         &route,
         &boundary,
         &retained_evidence,
-    )?)
+    ))
 }
 
 fn admitted_projection_source() -> Result<ProjectionConsumptionSource, IdentityDerivationDenial> {

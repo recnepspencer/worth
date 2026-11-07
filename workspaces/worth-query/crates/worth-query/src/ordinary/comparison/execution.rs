@@ -88,7 +88,8 @@ impl WorthQueryComparisonExecution for &mut WorthQueryWorkspace {
         let (right, materialization) = match historical
             .using(retained.clone())
             .run(execution, self)
-            .into_result()
+            .map_err(|cause| format!("historical identity refused: {cause:?}"))
+            .and_then(|outcome| outcome.into_result().map_err(|stop| format!("{stop:?}")))
         {
             Ok(completion) => completion.into_parts(),
             Err(stop) => {

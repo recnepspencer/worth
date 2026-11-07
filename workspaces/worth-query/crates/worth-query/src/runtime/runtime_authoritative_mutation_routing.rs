@@ -244,7 +244,7 @@ impl WorthQueryRuntime {
         let refresh_fallback = computed_result.refresh_fallback();
         let considered_computed_view_count = computed_result.considered_view_count();
         let affected_derived_view_targets = computed_result.affected_view_targets();
-        let live_artifact_target_collections = self.live_artifact_target_collections();
+        let live_artifact_target_collections = self.live_artifact_target_collections()?;
         let effect_result = route_effect_deliveries(
             &mut self.effects,
             &self.effect_index,

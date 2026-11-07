@@ -368,7 +368,10 @@ fn unrestricted_projection(
                 WorthQueryEvidenceTag::new("schema_basis"),
                 graph.schema_basis().render_support_hex(),
             )
-            .seal();
+            .seal()
+            .expect(
+                "projection policy uses a fixed role, sealed graph digest and fixed schema digest",
+            );
     derive_authorized_projection(
         graph.canonical().query(),
         graph.canonical().result_shape(),

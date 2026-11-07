@@ -114,7 +114,7 @@ fn aggregate_route_artifacts(
         &route_plan,
         &boundary_receipt,
         &retained_evidence,
-    )?;
+    );
     Ok(RepresentativeArtifacts {
         seam_key,
         request,

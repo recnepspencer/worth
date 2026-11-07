@@ -59,7 +59,7 @@ pub(super) fn branch_mutation_execution_row(
         EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         other => panic!("expected admitted mutation, got {other:?}"),
     };
-    let executed = scope_admitted_effect_plan(admitted)?
+    let executed = scope_admitted_effect_plan(admitted)
         .lower()
         .expect("mutation should lower")
         .execute_with(
@@ -125,7 +125,7 @@ pub(super) fn relational_merge_execution_row(
         EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         other => panic!("expected admitted merge, got {other:?}"),
     };
-    let executed = scope_admitted_effect_plan(admitted)?
+    let executed = scope_admitted_effect_plan(admitted)
         .lower()
         .expect("merge should lower")
         .execute_with(
@@ -169,7 +169,7 @@ pub(super) fn bridge_writeback_execution_row(
         EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         other => panic!("expected admitted writeback, got {other:?}"),
     };
-    let executed = scope_admitted_effect_plan(admitted)?
+    let executed = scope_admitted_effect_plan(admitted)
         .lower()
         .expect("writeback should lower")
         .execute_with(execution, EffectExecutionAuthority::bridge(&bridge))
@@ -292,7 +292,7 @@ pub(super) fn relational_oracle_row(
             EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
             other => panic!("expected admitted mutation, got {other:?}"),
         },
-    )?
+    )
     .lower()
     .expect("mutation should lower")
     .execute_with(
@@ -352,7 +352,7 @@ pub(super) fn bridge_oracle_row(
             EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
             other => panic!("expected admitted writeback, got {other:?}"),
         },
-    )?
+    )
     .lower()
     .expect("writeback should lower")
     .execute_with(execution, EffectExecutionAuthority::bridge(&bridge))

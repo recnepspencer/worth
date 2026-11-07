@@ -53,7 +53,7 @@ impl WorthQueryJournalReplayRegistry {
             &retained_segment.committed_truth_identities(),
             retained_segment.expected_count,
             retained_segment.journal_gap_count,
-        );
+        )?;
         let outcome = WorthQueryJournalReplayOutcome::new(
             segment,
             retained_segment
@@ -66,7 +66,7 @@ impl WorthQueryJournalReplayRegistry {
             retained_segment.scanned_entry_count,
             truth_reconstruction_identity,
             published_artifact_digest,
-        );
+        )?;
         self.counters.record_admitted_replay(
             retained_segment.scanned_entry_count,
             retained_segment.entries.len(),

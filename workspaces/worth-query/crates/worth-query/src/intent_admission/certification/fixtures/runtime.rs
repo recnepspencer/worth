@@ -201,7 +201,7 @@ impl WorthQueryRuntimeSchemaAdapter for CertificationSchemaAdapter {
         _schema_view: &QuerySchemaView,
     ) -> Result<LiveViewDeclarationAdmissionBoundaryReceipt, WorthQueryWorkspaceError> {
         let receipt = self.build_live_view_declaration_admission_receipt(name, request)?;
-        Ok(self.build_live_view_declaration_boundary_receipt(name, request, receipt))
+        Ok(self.build_live_view_declaration_boundary_receipt(name, request, receipt)?)
     }
 }
 
@@ -309,7 +309,8 @@ impl WorthQueryRuntimeExistingTruthVerificationAdapter for CertificationExisting
                 crate::runtime::WorthQueryExistingTruthProbeField::from_admitted_aspect_touch(
                     aspect_touch.clone(),
                     value,
-                ),
+                )
+                .expect("positive certification probe field is within digest bounds"),
             );
         }
         Ok(values)

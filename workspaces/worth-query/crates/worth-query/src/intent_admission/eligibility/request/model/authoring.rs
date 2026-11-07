@@ -43,7 +43,15 @@ impl WorthQueryRawIntentAdmissionRequest {
         seed: WorthQueryAuthoritativeMutationIntentSeed,
     ) -> Result<Self, WorthQueryIntentViolationDecision> {
         let intent_name = seed.command_label();
-        let input_digest = seed.command_input_digest();
+        let input_digest = seed.command_input_digest().map_err(|cause| {
+            WorthQueryIntentViolationDecision::identity_refused(
+                intent_family_for_entrypoint(
+                    WorthQueryIntentAdmissionCoveredEntrypoint::ExecuteScalarWrite,
+                ),
+                WorthQueryIntentAdmissionCoveredEntrypoint::ExecuteScalarWrite,
+                cause,
+            )
+        })?;
         Self::new(
             WorthQueryIntentAdmissionCoveredEntrypoint::ExecuteScalarWrite,
             intent_name,
@@ -56,7 +64,15 @@ impl WorthQueryRawIntentAdmissionRequest {
         seed: WorthQueryAuthoritativeMutationBatchIntentSeed,
     ) -> Result<Self, WorthQueryIntentViolationDecision> {
         let intent_name = seed.batch_label();
-        let input_digest = seed.batch_input_digest();
+        let input_digest = seed.batch_input_digest().map_err(|cause| {
+            WorthQueryIntentViolationDecision::identity_refused(
+                intent_family_for_entrypoint(
+                    WorthQueryIntentAdmissionCoveredEntrypoint::ExecuteBatchWrite,
+                ),
+                WorthQueryIntentAdmissionCoveredEntrypoint::ExecuteBatchWrite,
+                cause,
+            )
+        })?;
         Self::new(
             WorthQueryIntentAdmissionCoveredEntrypoint::ExecuteBatchWrite,
             intent_name,

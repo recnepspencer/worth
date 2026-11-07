@@ -218,7 +218,7 @@ impl WorthQueryRuntime {
         };
         let admitted = admit_effect_intent(eligibility);
         let admitted_effect_identity = admitted.admitted_identity().clone();
-        let lowered = scope_admitted_effect_plan(admitted)?
+        let lowered = scope_admitted_effect_plan(admitted)
             .lower()
             .map_err(|denial| {
                 WorthQueryOrdinaryWritebackExecutionError::new(

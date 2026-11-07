@@ -237,10 +237,18 @@ pub fn promote_preview_subscription(
         ));
     }
 
-    Ok(PreviewSubscriptionPromotionHandoff::new(
+    let source_identity = isolation.isolation_identity().clone();
+    PreviewSubscriptionPromotionHandoff::new(
         isolation,
         residue_report,
         authoritative_lane,
         authority_label,
-    ))
+    )
+    .map_err(|cause| {
+        PreviewSubscriptionIsolationError::identity_refused(
+            cause,
+            source_identity,
+            ActiveSubscriptionCounters::default(),
+        )
+    })
 }

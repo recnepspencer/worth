@@ -48,7 +48,7 @@ pub(super) fn scalar_mutation_row(
         EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         other => panic!("expected admitted mutation scenario, got {other:?}"),
     };
-    let scoped = scope_admitted_effect_plan(admitted)?;
+    let scoped = scope_admitted_effect_plan(admitted);
     let lowered = scoped.lower().expect("mutation scenario should lower");
     let executed = lowered
         .execute_with(
@@ -111,7 +111,7 @@ pub(super) fn scalar_writeback_row(
         EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         other => panic!("expected admitted writeback scenario, got {other:?}"),
     };
-    let scoped = scope_admitted_effect_plan(admitted)?;
+    let scoped = scope_admitted_effect_plan(admitted);
     let lowered = scoped.lower().expect("writeback scenario should lower");
     let bridge = test_bridge_with_writeback_authority();
     let executed = lowered
@@ -172,7 +172,7 @@ pub(super) fn merge_lowered_row(
         EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         other => panic!("expected admitted merge scenario, got {other:?}"),
     };
-    let scoped = scope_admitted_effect_plan(admitted)?;
+    let scoped = scope_admitted_effect_plan(admitted);
     let lowered = scoped.lower().expect("merge scenario should lower");
     Ok(scalar_or_terminal_row(
         format!("seeded-merge-lowered-{index}"),

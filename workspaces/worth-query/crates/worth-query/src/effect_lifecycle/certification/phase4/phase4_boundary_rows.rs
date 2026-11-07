@@ -164,7 +164,7 @@ pub(super) fn host_override_denial_row(
         EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         other => panic!("expected admitted mutation, got {other:?}"),
     };
-    let denial = scope_admitted_effect_plan(admitted)?
+    let denial = scope_admitted_effect_plan(admitted)
         .lower()
         .expect("mutation should lower")
         .execute_with(execution, EffectExecutionAuthority::bridge(&bridge))
@@ -218,7 +218,7 @@ pub(super) fn stale_after_admission_row(
         "intervening",
         BranchId("branch-a".to_string()),
     );
-    let denial = scope_admitted_effect_plan(admitted)?
+    let denial = scope_admitted_effect_plan(admitted)
         .lower()
         .expect("mutation should still lower after admission")
         .execute_with(
@@ -274,7 +274,7 @@ pub(super) fn stale_after_lowering_row(
             EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
             other => panic!("expected admitted mutation, got {other:?}"),
         },
-    )?
+    )
     .lower()
     .expect("mutation should lower");
     create_entity(

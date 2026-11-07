@@ -93,7 +93,7 @@ fn scalar_mutation_oracle_digest(
         EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         other => panic!("expected admitted closeout oracle mutation, got {other:?}"),
     };
-    let lowered = scope_admitted_effect_plan(admitted)?
+    let lowered = scope_admitted_effect_plan(admitted)
         .lower()
         .expect("closeout oracle mutation should lower");
 
@@ -185,7 +185,7 @@ fn bridge_oracle_digest(
         EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         other => panic!("expected admitted closeout bridge writeback, got {other:?}"),
     };
-    let executed = scope_admitted_effect_plan(admitted)?
+    let executed = scope_admitted_effect_plan(admitted)
         .lower()
         .expect("closeout bridge oracle writeback should lower")
         .execute_with(execution, EffectExecutionAuthority::bridge(&bridge))

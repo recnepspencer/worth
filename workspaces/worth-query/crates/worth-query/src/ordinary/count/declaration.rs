@@ -57,7 +57,8 @@ impl WorthQueryCountDeclaration {
                 ),
             ));
         }
-        let identity = WorthQueryCountDeclarationIdentity::from_declared_intent(&intent);
+        let identity = WorthQueryCountDeclarationIdentity::from_declared_intent(&intent)
+            .map_err(|cause| WorthQueryCountDeclarationStop::new(cause.into()))?;
         Ok(Self { identity, intent })
     }
 }
