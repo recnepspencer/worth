@@ -44,13 +44,10 @@ impl StoredValueText {
             .saturating_add(Self::proof_capacity_bytes())
     }
 
-    /// A copy owns length-sized text and retains its fixed shared proof cell.
-    /// Quotes include that reachable proof once per observer; they exclude
-    /// source spare text capacity and allocator bookkeeping.
+    /// A copy allocates its box and length-sized text. Its proof cell is shared,
+    /// so the clone quote excludes that existing allocation and spare capacity.
     pub fn clone_allocation_capacity_bytes(&self) -> usize {
-        std::mem::size_of::<StoredText>()
-            .saturating_add(self.0.text.len())
-            .saturating_add(Self::proof_capacity_bytes())
+        std::mem::size_of::<StoredText>().saturating_add(self.0.text.len())
     }
 
     fn proof_capacity_bytes() -> usize {
@@ -84,5 +81,19 @@ impl StoredValueText {
 impl serde::Serialize for StoredValueText {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         serializer.serialize_str(self.as_str())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn clone_quote_excludes_the_existing_shared_proof_allocation() {
+        let source = StoredValueText::new("immutable stored value".to_owned());
+        let copy = source.clone();
+        assert_ne!(source.as_str().as_ptr(), copy.as_str().as_ptr());
+        assert!(Arc::ptr_eq(&source.0.seal, &copy.0.seal));
+        assert!(copy.clone_allocation_capacity_bytes() < copy.owned_allocation_capacity_bytes());
     }
 }
