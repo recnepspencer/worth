@@ -139,18 +139,29 @@ pub fn install_owned(
     reason = "this shared schema-typed owner reopens V2; the original V1 owner stays live"
 )]
 pub fn restore(checkpoint: WorthQueryApplicationCheckpoint) -> Host {
-    WorthQueryInterimCheckpointRestore::rostered_program(
-        ApplicationProgramAuthoring::<CanonicalSchema, Program>::begin()
-            .validated_program()
-            .unwrap(),
-        WorthQueryApplicationProgramRoster::new().support(super::companion::host::program::<
-            super::companion::program::TargetProgram,
-        >()),
-        CanonicalSchema::declaration().unwrap(),
-        ((),),
-        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        limits(),
-        checkpoint,
+    let funding = worth_execution::ExecutionResourceLease::serial(
+        crate::facade::certification::canonical_transition::capture_child::complete_capture_funding(
+        ),
+    )
+    .unwrap();
+    crate::facade::certification::canonical_transition::capture_child::funded_by(
+        &funding,
+        |phase| {
+            WorthQueryInterimCheckpointRestore::rostered_program_in_advancement(
+                phase,
+                ApplicationProgramAuthoring::<CanonicalSchema, Program>::begin()
+                    .validated_program()
+                    .unwrap(),
+                WorthQueryApplicationProgramRoster::new().support(
+                    super::companion::host::program::<super::companion::program::TargetProgram>(),
+                ),
+                CanonicalSchema::declaration().unwrap(),
+                ((),),
+                ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+                limits(),
+                checkpoint,
+            )
+        },
     )
     .expect("current-format native checkpoint restores")
 }
@@ -298,14 +309,22 @@ pub fn output_ids(
     ]
 }
 pub fn capture(host: &Host) -> WorthQueryApplicationCheckpoint {
+    let funding = worth_execution::ExecutionResourceLease::serial(
+        crate::facade::certification::canonical_transition::capture_child::complete_capture_funding(
+        ),
+    )
+    .unwrap();
     host.runtime()
-        .with_host_advancement(|phase| {
-            host.runtime()
-                .capture_application_checkpoint(
-                    &phase,
-                    WorthQueryCheckpointCapturePolicy::SystemAllocation,
-                )
-                .unwrap()
-        })
+        .with_funded_host_advancement(
+            WorthQueryCheckpointCapturePolicy::Execution(&funding),
+            |phase| {
+                host.runtime()
+                    .capture_application_checkpoint(
+                        &phase,
+                        WorthQueryCheckpointCapturePolicy::Execution(&funding),
+                    )
+                    .unwrap()
+            },
+        )
         .unwrap()
 }

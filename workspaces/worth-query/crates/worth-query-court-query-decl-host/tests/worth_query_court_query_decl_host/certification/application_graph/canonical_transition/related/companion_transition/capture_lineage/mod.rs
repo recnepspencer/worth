@@ -8,7 +8,7 @@ fn sibling_foreign_and_unnamed_capture_policies_refuse_before_work_or_charge() {
     let checkpoint = old::host::capture(&original);
     let bytes = checkpoint.bytes().to_vec();
     let funding_request = || {
-        super::super::super::capture_child::funding(worth_execution::CancellationToken::new(), None)
+        super::super::super::capture_child::complete_capture_funding()
     };
     let root = ExecutionResourceLease::serial(funding_request()).unwrap();
     let funding = root.child(funding_request()).unwrap();

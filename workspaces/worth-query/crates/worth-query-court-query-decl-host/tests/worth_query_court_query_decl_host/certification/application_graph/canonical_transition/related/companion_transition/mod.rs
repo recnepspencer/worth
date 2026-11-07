@@ -49,11 +49,18 @@ fn companion_historical_rows_survive_real_transition_production_preserve_and_reo
     let held = checkpoint.clone();
     let bytes = checkpoint.bytes().to_vec();
     successor::output::reset_decodes();
-    let target = transition(
+    let funding = worth_execution::ExecutionResourceLease::serial(
+        super::super::capture_child::complete_capture_funding(),
+    ).unwrap();
+    let mut callbacks = 0;
+    let target = transition_funded(
         checkpoint,
-        installation::WorthQueryCheckpointCapturePolicy::SystemAllocation,
+        &funding,
+        installation::WorthQueryCheckpointCapturePolicy::Execution(&funding),
+        &mut callbacks,
     )
     .expect("native survivor association plus target relation rule admits");
+    assert_eq!(callbacks, 1);
     assert_eq!(
         successor::output::decodes(),
         0,

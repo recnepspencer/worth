@@ -154,15 +154,23 @@ pub fn capture<P: ApplicationProgramDefinition<CanonicalSchema>>(
 where
     P::Outputs: ApplicationProgramOutputsShape<CanonicalSchema>,
 {
+    let funding = worth_execution::ExecutionResourceLease::serial(
+        crate::facade::certification::canonical_transition::capture_child::complete_capture_funding(
+        ),
+    )
+    .unwrap();
     host.runtime()
-        .with_host_advancement(|phase| {
-            host.runtime()
-                .capture_application_checkpoint(
-                    &phase,
-                    WorthQueryCheckpointCapturePolicy::SystemAllocation,
-                )
-                .unwrap()
-        })
+        .with_funded_host_advancement(
+            WorthQueryCheckpointCapturePolicy::Execution(&funding),
+            |phase| {
+                host.runtime()
+                    .capture_application_checkpoint(
+                        &phase,
+                        WorthQueryCheckpointCapturePolicy::Execution(&funding),
+                    )
+                    .unwrap()
+            },
+        )
         .unwrap()
 }
 pub fn restore<
@@ -178,14 +186,25 @@ pub fn restore<
 where
     P::Outputs: ApplicationProgramOutputsShape<CanonicalSchema>,
 {
-    WorthQueryInterimCheckpointRestore::rostered_program(
-        program::<P>(),
-        roster,
-        CanonicalSchema::declaration().unwrap(),
-        ((),),
-        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        super::super::host::limits(),
-        checkpoint,
+    let funding = worth_execution::ExecutionResourceLease::serial(
+        crate::facade::certification::canonical_transition::capture_child::complete_capture_funding(
+        ),
+    )
+    .unwrap();
+    crate::facade::certification::canonical_transition::capture_child::funded_by(
+        &funding,
+        |phase| {
+            WorthQueryInterimCheckpointRestore::rostered_program_in_advancement(
+                phase,
+                program::<P>(),
+                roster,
+                CanonicalSchema::declaration().unwrap(),
+                ((),),
+                ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+                super::super::host::limits(),
+                checkpoint,
+            )
+        },
     )
     .unwrap()
 }

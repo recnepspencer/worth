@@ -11,6 +11,10 @@ pub fn successor(
     checkpoint: installation::WorthQueryApplicationCheckpoint,
 ) -> successor::host::Host {
     successor::output::reset_decodes();
+    let funding = worth_execution::ExecutionResourceLease::serial(
+        super::super::capture_child::complete_capture_funding(),
+    )
+    .unwrap();
     installation::WorthQueryInterimCheckpointRestore::rostered_program_with_transition(
         successor::host::program(),
         installation::WorthQueryApplicationProgramRoster::new().support(
@@ -26,7 +30,7 @@ pub fn successor(
         )
         .unwrap(),
         installation::WorthQueryCheckpointTransitionResources::bounded(8192, 32, 65_536).unwrap(),
-        installation::WorthQueryCheckpointCapturePolicy::SystemAllocation,
+        installation::WorthQueryCheckpointCapturePolicy::Execution(&funding),
         |_, _| Ok(()),
     )
     .expect("the real complete native output closure admits the target")
