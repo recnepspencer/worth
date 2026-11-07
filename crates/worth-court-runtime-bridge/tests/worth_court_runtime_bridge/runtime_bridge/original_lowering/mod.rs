@@ -31,8 +31,8 @@ fn original_lowering_charge_lives_until_the_last_shared_template_drops() {
     let runtime = source::runtime();
     let basis = source::admit(&runtime, source::planned(&runtime, execution), execution).unwrap();
     let template = basis.request().lowered().clone();
-    let first = template.instantiate_request_response("first").unwrap();
-    let second = first.instantiate_request_response("second").unwrap();
+    let first = template.clone();
+    let second = first.clone();
     drop(basis);
     drop(runtime);
     assert_eq!(budget.charged_memory_bytes(), bytes);
