@@ -69,11 +69,10 @@ pub use admission::residency_policy::{
     PhysicalResidencyDenial, PhysicalResidencyDimension, PhysicalSpeculativeWorkKind,
 };
 pub use admission::RecoveredPhysicalCheckpointCustody;
-pub(in crate::physical_runtime) use admission::RecoveredReleaseCustody;
 pub(in crate::physical_runtime) use admission::VerifiedRecoveredCheckpointCustody;
-#[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use admission::{
     GenerationZeroNoReleaseCustody, PreparedRecoveredCustodyBacking, RecoveredNoReleaseCustody,
+    RecoveredReleaseCustody,
 };
 pub use arena::{
     ArenaAllocationDenial, ArenaEvacuationThreshold, ExtentArenaCapacity, ExtentArenaPolicyDenial,

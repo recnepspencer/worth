@@ -16,14 +16,6 @@ pub(super) fn runtime() -> RuntimeBridge {
         .with_committed_patch_source(EmptySnapshot)
         .with_snapshot_read_source(EmptySnapshot)
         .with_signal_sink(EmptySnapshot)
-        .register_source(SourceDeclaration::new(
-            SourceDeclarationIdentity::from_stable_name("lowering-empty-snapshot"),
-            BridgeTruthViewSelector::branch_snapshot(branch(), snapshot()),
-            BridgeSourceCapabilitySet::new(vec![
-                BridgeSourceCapability::SnapshotRead,
-                BridgeSourceCapability::BranchRead,
-            ]),
-        ))
         .register_mapping(BridgeMappingRegistration::new(
             BridgeMappingId::from_stable_name("lowering-unused-mapping"),
             TruthPatchScope::for_entity_field(

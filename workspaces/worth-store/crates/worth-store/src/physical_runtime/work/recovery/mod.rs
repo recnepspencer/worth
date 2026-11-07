@@ -28,5 +28,4 @@ pub use observation::{
     PhysicalWorkRecoveryAdmissionOutcome, PhysicalWorkRecoveryIngressRejection,
     PhysicalWorkRecoveryObservationSubject,
 };
-#[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use recovered_admission::admit_recovered_obligation;
