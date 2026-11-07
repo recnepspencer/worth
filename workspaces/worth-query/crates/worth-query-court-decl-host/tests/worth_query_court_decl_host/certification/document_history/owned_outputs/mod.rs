@@ -68,3 +68,5 @@ mod fixed_forest_recording;
 mod forest_recording_dependency;
 
 mod recording_intent;
+
+mod group_recording;

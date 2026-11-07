@@ -19,6 +19,7 @@ use worth_query_declaration::facade::application_program::{
 };
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 mod completion;
+mod origin;
 mod source;
 mod verification;
 mod verified;
@@ -169,33 +170,16 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         let execution = phase
             .checked_execution_request_for(&self.application().runtime.product_runtime)
             .map_err(Denial::Stopped)?;
-        let memory = memory::reserve(
+        WorthQueryHistoryRecordingOutputOrigin::capture(
             &execution,
-            execution.has_accounting(),
-            (std::mem::size_of::<WorthQueryHistoryRecordingOutputOrigin>()
-                + 2 * std::mem::size_of::<usize>()) as u64,
+            self.model.clone(),
+            reserved,
+            candidate.branch(),
+            source,
+            profile,
+            prepared.source,
+            prepared.node.root_posture,
         )
-        .map_err(Denial::Recording)?;
-        Ok(Arc::new(WorthQueryHistoryRecordingOutputOrigin {
-            recipes: super::discovery_recipes::HistoryDiscoveryRecipeRecorder::new(
-                &execution,
-                reserved.record.node,
-                self.model.clone(),
-            )
-            .map_err(Denial::Recording)?,
-            node: reserved.record.node,
-            candidate: candidate.branch(),
-            expected: reserved.expected.clone(),
-            intent: source.idempotency_binding(),
-            source: source
-                .committed_product_publication()
-                .composite_commit()
-                .clone(),
-            observation: prepared.source,
-            profile: profile.clone(),
-            root_posture: prepared.node.root_posture,
-            _memory: memory,
-        }))
     }
 }
 

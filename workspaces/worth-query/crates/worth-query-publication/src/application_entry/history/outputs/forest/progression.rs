@@ -12,6 +12,9 @@ impl<S: ApplicationSchema + 'static, H: ApplicationHistoryBinding<S>>
 impl<S: ApplicationSchema + 'static, H: ApplicationHistoryBinding<S>> OutputDriver<S, H>
     for WorthQueryHistoryWithOutputTrees<S>
 {
+    fn records_output_forest(&self) -> bool {
+        true
+    }
     fn with_recording<T>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,

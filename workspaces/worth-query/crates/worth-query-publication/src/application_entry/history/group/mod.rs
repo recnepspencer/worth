@@ -32,6 +32,7 @@ mod handoff;
 pub use handoff::{
     WorthQueryHistoryGroupHandoffPauseForTest, WorthQueryHistoryGroupHandoffPointForTest,
 };
+mod output_recording;
 mod progression;
 mod results;
 pub use completion::WorthQueryHistoryGroupFinish;
@@ -59,6 +60,7 @@ pub enum WorthQueryHistoryGroupDenial {
     Input(crate::application_entry::WorthQueryOperationInputCaptureDenial),
     Construction(crate::application_entry::WorthQueryOperationConstructionDenial),
     Member(WorthQueryHistoryEditDenial),
+    Outputs(super::outputs::WorthQueryHistoryOutputDenial),
     Close(crate::application_entry::WorthQueryOperationCloseDenial),
     Memory(worth_execution::LeaseDenial),
     Work(worth_execution::WorkCeilingDenial),
@@ -73,6 +75,7 @@ pub enum WorthQueryHistoryGroupPosture {
     CreatingCandidate,
     CandidateUnavailable,
     Running,
+    QualifyingOutputs,
     ReadyToComplete,
     Selected,
     AlreadyRecorded,

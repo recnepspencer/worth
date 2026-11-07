@@ -18,6 +18,7 @@ use worth_query_installation::facade::WorthQueryInstalledDocumentHistory;
 
 mod admission;
 mod member;
+mod output_recording;
 mod sealing;
 
 /// Exact ordinary admission narrowed to one document before any group effect.
@@ -36,6 +37,7 @@ pub struct WorthQueryDocumentHistoryGroupReservation {
     members: Box<[WorthQueryApplicationIdempotencyBinding]>,
     scopes: Box<[HistoryOperationScope]>,
     completed: Vec<CapturedMember>,
+    outputs: Option<CapturedGroupOutputs>,
     candidate: Option<(
         crate::basis::WorthQueryProductBranch,
         Option<WorthQueryProductBranchReadIdentity>,
@@ -108,4 +110,11 @@ impl<S> std::fmt::Debug for WorthQueryDocumentHistoryGroupAdoptionFailure<'_, S>
             .field("denial", &self.denial)
             .finish_non_exhaustive()
     }
+}
+
+struct CapturedGroupOutputs {
+    endpoint: Arc<WorthQueryApplicationReadObservation>,
+    recipes: Arc<super::discovery_recipes::HistoryDiscoveryRecipes>,
+    root_posture:
+        Option<crate::domain_computation::primary_graph::WorthQueryOutputSettlementPosture>,
 }

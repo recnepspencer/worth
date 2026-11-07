@@ -9,6 +9,7 @@ where
     P: ApplicationProgramDefinition<S>,
     M: WorthQueryHistoryGroupMembers<S, H, P>,
     Payload: WorthQueryHistoryPayloadMode<S, H>,
+    Outputs: WorthQueryHistoryOutputsMode<S, H>,
 {
     /// This never reverses a publication. Earlier staged effects are retired
     /// through their actual owners while the document's selected head is preserved.
@@ -47,6 +48,15 @@ where
             return Err((self, Denial::NotReady));
         }
         self.execution.posture = WorthQueryHistoryGroupPosture::Aborting;
+        if let Some(candidate) = &self.execution.candidate {
+            if let Err(cause) = self
+                .document
+                .outputs
+                .discard_recording(request, candidate.branch())
+            {
+                return Err((self, Denial::Outputs(cause)));
+            }
+        }
         if let Some(reservation) = self.execution.reservation.take() {
             match self
                 .document

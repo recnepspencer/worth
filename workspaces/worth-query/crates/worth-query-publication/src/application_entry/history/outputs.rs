@@ -57,6 +57,10 @@ pub trait WorthQueryHistoryOutputsMode<S: ApplicationSchema, H: ApplicationHisto
 }
 
 pub(super) trait OutputDriver<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> {
+    /// Data posture only; final qualification still requires the original forest.
+    fn records_output_forest(&self) -> bool {
+        false
+    }
     fn with_recording<T>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,

@@ -2,12 +2,9 @@
 use super::CapturedApplicationQueryParameters;
 use crate::domain_computation::primary_graph::WorthQueryHistoryOutputReadDenial as Denial;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
-use sha2::{Digest, Sha256};
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
-use worth_foundational::facade::{
-    write_aspect_value_identity_material, AspectValue, CanonicalMaterialSink,
-};
+use worth_foundational::facade::AspectValue;
 use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters;
 use worth_query_declaration::facade::{
     application_query::{
@@ -27,7 +24,7 @@ type Scalar<S, B> = <Field<S, B> as RecordSelection>::Binding;
 pub(in crate::domain_computation::primary_graph) struct CapturedSourceQueryRequest {
     binding: std::any::TypeId,
     parameters: CapturedApplicationQueryParameters,
-    scope: Option<AspectValue>,
+    request: worth_query_admission::facade::application_query::WorthQueryCanonicalSourceRequest,
     field: (&'static str, &'static str, &'static str),
     seal: [u8; 32],
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
@@ -73,23 +70,45 @@ impl CapturedSourceQueryRequest {
         let bytes = scope
             .as_ref()
             .map_or(0, AspectValue::owned_allocation_capacity_bytes);
-        let memory = crate::domain_computation::primary_graph::structural_walk::memory::reserve(
-            execution,
-            execution.has_accounting(),
-            u64::try_from(bytes).map_err(|_| Denial::Preparation(Cause::ChargedBytesOverflow))?,
-        )
-        .map_err(Denial::Preparation)?;
-        let mut captured = Self {
+        let mut memory =
+            crate::domain_computation::primary_graph::structural_walk::memory::reserve(
+                execution,
+                execution.has_accounting(),
+                u64::try_from(bytes)
+                    .map_err(|_| Denial::Preparation(Cause::ChargedBytesOverflow))?,
+            )
+            .map_err(Denial::Preparation)?;
+        let installed = runtime
+            .installed_schema()
+            .installed_query_binding::<B>()
+            .map_err(|_| invalid(step, B::IDENTITY))?;
+        let mut retained =
+            u64::try_from(bytes).map_err(|_| Denial::Preparation(Cause::ChargedBytesOverflow))?;
+        let request = execution.run_native_with_checkpoint(|context| {
+            parameters.parameters().capture_source_request_admitted(installed.query(), field, scope, |work, bytes| {
+                crate::domain_computation::primary_graph::admitted_capture::checkpoint(context,
+                    u64::try_from(work).map_err(|_| Cause::WorkCounterOverflow)?)?;
+                retained = retained.checked_add(u64::try_from(bytes).map_err(|_| Cause::ChargedBytesOverflow)?)
+                    .ok_or(Cause::ChargedBytesOverflow)?;
+                crate::domain_computation::primary_graph::structural_walk::memory::resize(&mut memory, retained)
+            })
+        }).map_err(|cause| Denial::Preparation(cause.into()))?.0.map_err(|cause| {
+            use worth_query_admission::facade::application_query::WorthQueryParameterPreparationStop as Stop;
+            match cause {
+                Stop::Admission(cause) | Stop::Preparation { cause, .. } => Denial::Preparation(cause),
+                Stop::Parameters(cause) => Denial::RecipeCapture(
+                    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::source_disclosure_parameters(cause)),
+                Stop::AccountingOverflow => Denial::Preparation(Cause::ChargedBytesOverflow),
+            }
+        })?;
+        let captured = Self {
             binding: std::any::TypeId::of::<B>(),
             parameters,
-            scope,
             field,
-            seal: [0; 32],
+            seal: *request.identity().bytes(),
+            request,
             _memory: memory,
         };
-        captured.seal = captured
-            .content_digest(execution)
-            .map_err(Denial::Preparation)?;
         Ok(Arc::new(captured))
     }
     #[doc(hidden)]
@@ -102,7 +121,7 @@ impl CapturedSourceQueryRequest {
         self.parameters.parameters()
     }
     pub(in crate::domain_computation::primary_graph) fn scope(&self) -> Option<&AspectValue> {
-        self.scope.as_ref()
+        self.request.scope()
     }
     pub(in crate::domain_computation::primary_graph) fn matches_binding<
         S: ApplicationSchema,
@@ -125,69 +144,33 @@ impl CapturedSourceQueryRequest {
         &self,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<bool, Cause> {
-        self.content_digest(execution)
-            .map(|digest| digest == self.seal)
-    }
-    fn content_digest(&self, execution: &ExecutionRequest<'_, '_>) -> Result<[u8; 32], Cause> {
+        let work = self
+            .field
+            .0
+            .len()
+            .checked_add(self.field.1.len())
+            .and_then(|n| n.checked_add(self.field.2.len()))
+            .and_then(|n| n.checked_add(96))
+            .and_then(|n| u64::try_from(n).ok())
+            .ok_or(Cause::WorkCounterOverflow)?;
         execution
             .run_native_with_checkpoint(|context| {
-                let mut writer = RequestWriter {
-                    digest: Sha256::new(),
-                    context,
-                };
-                writer.bytes(self.parameters.query().as_bytes())?;
-                for name in [self.field.0, self.field.1, self.field.2] {
-                    writer.bytes(&(name.len() as u64).to_be_bytes())?;
-                    writer.bytes(name.as_bytes())?;
-                }
-                writer.bytes(self.parameters.parameters().identity().bytes())?;
-                writer.bytes(&[u8::from(self.scope.is_some())])?;
-                if let Some(scope) = &self.scope {
-                    write_aspect_value_identity_material(scope, &mut writer)?;
-                }
-                for (name, value) in self.parameters.parameters().bindings() {
-                    writer.bytes(&(name.len() as u64).to_be_bytes())?;
-                    writer.bytes(name.as_bytes())?;
-                    write_aspect_value_identity_material(value, &mut writer)?;
-                }
-                Ok(writer.digest.finalize().into())
+                crate::domain_computation::primary_graph::admitted_capture::checkpoint(
+                    context, work,
+                )
+                .map_err(Cause::from)?;
+                Ok(self.seal == *self.request.identity().bytes()
+                    && self.request.matches(
+                        self.parameters.query(),
+                        self.parameters.parameters(),
+                        self.field,
+                    ))
             })
             .map_err(Cause::from)?
             .0
     }
 }
-struct RequestWriter<'a, 'b, 'c> {
-    digest: Sha256,
-    context: &'a mut worth_execution::MapKernelContext<'b, 'c>,
-}
-impl RequestWriter<'_, '_, '_> {
-    fn bytes(&mut self, bytes: &[u8]) -> Result<(), Cause> {
-        for chunk in bytes.chunks(4096) {
-            crate::domain_computation::primary_graph::admitted_capture::checkpoint(
-                self.context,
-                chunk.len() as u64,
-            )?;
-            self.digest.update(chunk);
-        }
-        Ok(())
-    }
-}
-impl CanonicalMaterialSink for RequestWriter<'_, '_, '_> {
-    type Error = Cause;
-    fn append(&mut self, value: &str) -> Result<(), Cause> {
-        self.bytes(value.as_bytes())
-    }
-    fn admit_work(&mut self, work: usize) -> Result<(), Cause> {
-        crate::domain_computation::primary_graph::admitted_capture::checkpoint(
-            self.context,
-            work as u64,
-        )
-        .map_err(Cause::from)
-    }
-    fn accounting_overflow(&mut self) -> Cause {
-        Cause::ChargedBytesOverflow
-    }
-}
+
 fn invalid(
     step: crate::domain_computation::primary_graph::WorthQueryHistoryNodeId,
     binding: &'static str,

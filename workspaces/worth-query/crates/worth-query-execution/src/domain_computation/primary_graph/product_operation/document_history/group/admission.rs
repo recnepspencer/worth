@@ -155,6 +155,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 members,
                 scopes,
                 completed,
+                outputs: None,
                 candidate: None,
                 _allocation: allocation,
             },
@@ -227,9 +228,11 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             members,
             scopes,
             completed,
+            outputs,
             candidate,
             _allocation,
         } = group;
+        drop(outputs);
         drop(completed);
         drop(members);
         drop(scopes);

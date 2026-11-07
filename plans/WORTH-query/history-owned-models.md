@@ -2223,3 +2223,47 @@ courts must assert both families' actual identities/results and navigation, and
 the original discovery-meaning member-edit courts remain. Mutate away the Native
 current predecessor selection: the model-edit courts must fail compiled; restore
 by SHA256. Run Native current-custody and history courts before grouped recording.
+
+### D1255 full-qualification correction: carry admitted recipe integrity
+
+The complete Query comparison at92724f79b2 has one causal failure beyond the
+four identical master doctest failures: canonical_basis_residue rejects the new
+request_recipe.rs private SHA work. The source-intent owner instead carries
+immutable admitted parameter/scope artifacts and compares original custody or
+prepared canonical meaning. Its consumers never rehash a request. Fix the real
+boundary; do not exempt the recipe from the residue court or move the SHA helper.
+
+Extend the existing Query Admission parameter-canonical owner with a grant-free
+prepared source-request artifact. At capture only, it normalizes the installed
+query identity, existing admitted parameter identity, field locus and literal or
+symbolic-principal selector through the same admitted canonical basis engine.
+Use the existing complete-admission-planning budget and original-request work/
+memory callbacks; the ordinary parameter limit still governs actual parameters.
+The artifact owns immutable selector data and its canonical evidence. History
+records that owner's identity with the step; selection checks its carried
+identity plus query/parameter/locus correspondence, without deriving a digest.
+C principal, grants and installed meaning remain unchanged. A corrupted recorded
+identity still refuses the step; no decoder or new checkpoint format is added.
+
+Prove the unchanged freeze, missing/corrupt/foreign and C-permission courts, kill
+the three required mutants against this carried-evidence shape, and rerun the
+installation canonical-basis courts. Grouped-recording WIP remains preserved,
+but cannot close while this causal qualification failure remains.
+
+
+### D1347 history checkpoint and priority cutover
+
+Freeze further history53 feature work for the unified read-control/#84/cost lane.
+The admitted canonical recipe artifact replaces the private SHA reader; all three
+D1255 mutants compile and fail both serial/worker courts, with byte-exact SHA256
+restoration. Installation377 and the new homogeneous/mixed grouped-output4
+courts pass. Group recording qualifies its actual final forest on the original
+candidate and retains the final endpoint/recipes for the one history node.
+NoOutputs group stages and single-record intent gates remain distinct.
+
+This is a coherent development checkpoint, not an issue READY. Broader group
+negative/fixed/recipe evidence, initial descendant enrollment and codec-retired
+selection remain paused. The full document-history run and boundary/context/caps
+check qualify this checkpoint; full current-SHA root/Query comparison remains
+required before #84's eventual READY-FOR-MERGE. Continue with the separately
+planned read-control extraction, then merge2860933b14 and finish#84.

@@ -10,7 +10,10 @@ where
     Scope<S, H>: ApplicationQueryScopeResolution<S, Principal<S, H>>,
     Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
 {
-    pub fn advance<Payload: WorthQueryHistoryPayloadMode<S, H>, Outputs>(
+    pub fn advance<
+        Payload: WorthQueryHistoryPayloadMode<S, H>,
+        Outputs: WorthQueryHistoryOutputsMode<S, H>,
+    >(
         &mut self,
         document: &WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
@@ -21,12 +24,18 @@ where
             WorthQueryHistoryGroupPosture::Admitting => self.admit(document, request)?,
             WorthQueryHistoryGroupPosture::CreatingCandidate => self.fork(document, request)?,
             WorthQueryHistoryGroupPosture::Running => self.run_member(document, request)?,
+            WorthQueryHistoryGroupPosture::QualifyingOutputs => {
+                self.qualify_outputs(document, request)?
+            }
             _ => {}
         }
         Ok(self.posture)
     }
 
-    fn run_member<Payload: WorthQueryHistoryPayloadMode<S, H>, Outputs>(
+    fn run_member<
+        Payload: WorthQueryHistoryPayloadMode<S, H>,
+        Outputs: WorthQueryHistoryOutputsMode<S, H>,
+    >(
         &mut self,
         document: &WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
@@ -75,7 +84,10 @@ where
         Ok(())
     }
 
-    fn capture_member<Payload: WorthQueryHistoryPayloadMode<S, H>, Outputs>(
+    fn capture_member<
+        Payload: WorthQueryHistoryPayloadMode<S, H>,
+        Outputs: WorthQueryHistoryOutputsMode<S, H>,
+    >(
         &mut self,
         document: &WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
@@ -126,7 +138,11 @@ where
                 })?;
                 self.next += 1;
                 if self.next == self.members.len() {
-                    self.posture = WorthQueryHistoryGroupPosture::ReadyToComplete;
+                    self.posture = if document.outputs.records_output_forest() {
+                        WorthQueryHistoryGroupPosture::QualifyingOutputs
+                    } else {
+                        WorthQueryHistoryGroupPosture::ReadyToComplete
+                    };
                 }
                 Ok(())
             })

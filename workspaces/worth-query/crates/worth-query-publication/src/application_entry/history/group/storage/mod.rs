@@ -102,6 +102,25 @@ where
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<HistoryRecordingSource<'a>, WorthQueryHistoryGroupDenial>;
+    fn recording_source_at<'a>(
+        &'a self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+        endpoint: &crate::application_entry::WorthQueryApplicationReadObservation,
+    ) -> Result<HistoryRecordingSource<'a>, WorthQueryHistoryGroupDenial>;
+    fn with_recording_outputs<'runtime, 'scope>(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'scope>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+        owner: &WorthQueryDocumentHistory<'runtime, S, H>,
+        read: WorthQueryDocumentHistoryRead<'_, S, H>,
+        group: &WorthQueryDocumentHistoryGroupReservation,
+        candidate: &WorthQueryExpectedProductBranch<'runtime, S>,
+        origin: &std::sync::Arc<worth_query_execution::publication_boundary::document_history::WorthQueryHistoryRecordingOutputOrigin>,
+        callback: &mut dyn FnMut(&worth_query_execution::publication_boundary::document_history::WorthQueryHistoryOutputAuthority<'_, 'scope>) -> Result<bool, super::super::outputs::WorthQueryHistoryOutputDenial>,
+    ) -> Result<bool, WorthQueryHistoryGroupDenial>
+    where
+        Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>;
     fn adopt<'r>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,

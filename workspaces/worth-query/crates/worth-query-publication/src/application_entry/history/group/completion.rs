@@ -25,7 +25,10 @@ where
     Scope<S, H>: ApplicationQueryScopeResolution<S, Principal<S, H>>,
     Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
 {
-    pub fn complete<Payload: WorthQueryHistoryPayloadMode<S, H>, Outputs>(
+    pub fn complete<
+        Payload: WorthQueryHistoryPayloadMode<S, H>,
+        Outputs: WorthQueryHistoryOutputsMode<S, H>,
+    >(
         &mut self,
         document: &WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
@@ -66,32 +69,47 @@ where
                     .map_err(|cause| {
                         Denial::History(WorthQueryApplicationHistoryDenial::Installation(cause))
                     })?;
-                let adopted = self.members.member(self.members.len() - 1).adopt(
-                    &phase,
-                    &current,
-                    &document.owner,
-                    &installed,
-                    self.reservation.take().expect("reserved group"),
-                    self.candidate.take().expect("actual candidate"),
-                );
-                match adopted {
-                    Ok(step) => {
-                        self.selected = Some(step);
-                        self.posture = WorthQueryHistoryGroupPosture::Selected;
-                        self.pause_at(WorthQueryHistoryGroupHandoffPointForTest::Adoption);
-                    }
-                    Err((reservation, candidate, denial)) => {
-                        self.reservation = Some(reservation);
-                        self.candidate = Some(candidate);
-                        return Err(denial);
-                    }
-                }
                 document
-                    .owner
-                    .validate_record_delivery(&phase, &program_publication_access())
-                    .map_err(|cause| {
-                        Denial::History(WorthQueryApplicationHistoryDenial::Document(cause))
+                    .outputs
+                    .with_recording(&phase, |forest| {
+                        if forest.is_some_and(|forest| forest.completed().is_none()) {
+                            return (Err(Denial::NotReady), false);
+                        }
+                        let result = (|| {
+                            let adopted = self.members.member(self.members.len() - 1).adopt(
+                                &phase,
+                                &current,
+                                &document.owner,
+                                &installed,
+                                self.reservation.take().expect("reserved group"),
+                                self.candidate.take().expect("actual candidate"),
+                            );
+                            match adopted {
+                                Ok(step) => {
+                                    self.selected = Some(step);
+                                    self.posture = WorthQueryHistoryGroupPosture::Selected;
+                                    self.pause_at(
+                                        WorthQueryHistoryGroupHandoffPointForTest::Adoption,
+                                    );
+                                }
+                                Err((reservation, candidate, denial)) => {
+                                    self.reservation = Some(reservation);
+                                    self.candidate = Some(candidate);
+                                    return Err(denial);
+                                }
+                            }
+                            document
+                                .owner
+                                .validate_record_delivery(&phase, &program_publication_access())
+                                .map_err(|cause| {
+                                    Denial::History(WorthQueryApplicationHistoryDenial::Document(
+                                        cause,
+                                    ))
+                                })
+                        })();
+                        (result, self.selected.is_some())
                     })
+                    .map_err(Denial::Outputs)?
             })
             .map_err(|cause| {
                 Denial::History(WorthQueryApplicationHistoryDenial::ExecutionRequest(cause))
