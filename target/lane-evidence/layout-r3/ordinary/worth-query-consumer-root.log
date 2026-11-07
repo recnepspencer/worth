@@ -1,0 +1,16 @@
+Command: ["C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\scripts\\test_cost\\account.py", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\target\\debug\\worth-query-consumer-root.exe"]
+Working directory: C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-certification\fixtures\consumer_entry\consumer_root
+HEAD: 4d063ecf8da0e13d3b7b92f73a8865185a9afce2
+Git status --short empty: True
+Start: 2026-11-07T07:12:58.945590+00:00
+
+{"type": "cargo-invocation", "command": ["C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\scripts\\test_cost\\account.py", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\target\\debug\\worth-query-consumer-root.exe"], "cwd": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root", "capture": "separate", "mode": "build", "target_dir": null, "cargo_profile": null}
+Public candidate journey passed: variable cyclic allocation, atomic source-bound publication/read, producer-qualified current-output selection, sibling progress, retained-read correctness, root/child/nested aspect and adjacency ABA denial, exact invariant denial, idempotency
+
+
+{"type": "cargo-result", "exit_code": 0}
+
+End: 2026-11-07T07:13:54.322187+00:00
+Exit code: 0
+
+{"type": "test", "event": "ok", "name": "worth-query-consumer-root::bin/worth-query-consumer-root$<main>", "exec_time": 56.102253700140864, "test-cost": {"execution": "standalone-process", "target-kind": "bin"}}

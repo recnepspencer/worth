@@ -1,0 +1,26 @@
+[
+  {
+    "binary": "worth-relational",
+    "test": "inline_type_sizes::owned_carriers_stay_within_declared_inline_ceilings",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-runtime-bridge",
+    "test": "inline_type_sizes::owned_carriers_stay_within_declared_inline_ceilings",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-runtime-bridge",
+    "test": "source::async_declaration::lowering::storage_tests::repeated_instances_preserve_fresh_template_canonical_meaning",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-signal",
+    "test": "inline_type_sizes::owned_carriers_stay_within_declared_inline_ceilings",
+    "ignored": false,
+    "selected": true
+  }
+]

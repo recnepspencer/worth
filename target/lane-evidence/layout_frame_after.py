@@ -7,7 +7,8 @@ programs=json.loads((base/'ordinary/actual-entry-artifacts.json').read_text())
 manifest={name:program['exe'] for name,program in programs.items()}
 for owner,label,target in [('root','root-court','worth_court_runtime_bridge'),('query','query-court','worth_query_court_query_decl_host'),('bank','bank','worth_query_bank_court_external_rail_server')]:
  owner_base=e/'layout-r1' if owner=='root' else base
- binaries=json.loads((owner_base/owner/'build/binaries.json').read_text())['rust-binaries']
+ binary_file=e/'layout-fixture-final/build/binaries.json' if owner=='query' else owner_base/owner/'build/binaries.json'
+ binaries=json.loads(binary_file.read_text())['rust-binaries']
  matches=[b['binary-path'] for b in binaries.values() if b['binary-name']==target]
  assert len(matches)==1,(owner,matches)
  manifest[label]=matches[0]
