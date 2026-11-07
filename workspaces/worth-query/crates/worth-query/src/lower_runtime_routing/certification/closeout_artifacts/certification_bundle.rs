@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::hash_parts;
 use crate::lower_runtime_routing::{
     certify_lower_runtime_non_bypass, worth_query_lower_runtime_closeout_registry,
@@ -23,9 +24,9 @@ use crate::lower_runtime_routing::certification::surface::{
 
 pub fn certify_lower_runtime_routing(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> WorthQueryLowerRuntimeCertificationBundle {
-    let surface = worth_query_lower_runtime_representative_surface(execution);
-    let acceptance = worth_query_lower_runtime_acceptance_suite(execution);
+) -> Result<WorthQueryLowerRuntimeCertificationBundle, IdentityDerivationDenial> {
+    let surface = worth_query_lower_runtime_representative_surface(execution)?;
+    let acceptance = worth_query_lower_runtime_acceptance_suite(execution)?;
     let non_bypass = certify_lower_runtime_non_bypass()
         .expect("current workspace should satisfy the lower-runtime non-bypass audit");
     let crossings = worth_query_lower_runtime_crossing_inventory();
@@ -34,12 +35,12 @@ pub fn certify_lower_runtime_routing(
     let slopes = certify_lower_runtime_performance_slopes(&surface);
     let proof_shape = worth_query_lower_runtime_proof_shape_audit();
     let boundary_reconciliation = worth_query_lower_runtime_boundary_reconciliation_report();
-    let synthetic_tail = worth_query_lower_runtime_synthetic_tail_report(execution);
+    let synthetic_tail = worth_query_lower_runtime_synthetic_tail_report(execution)?;
     let rows = vec![
         certification_row(
             WorthQueryLowerRuntimeCertificationLane::CrossingsSurface,
             crossings
-                .inventory_digest()
+                .inventory_digest()?
                 .terminal_projection_for_reporting()
                 .to_string(),
             format!(
@@ -122,14 +123,14 @@ pub fn certify_lower_runtime_routing(
         ),
         certification_row(
             WorthQueryLowerRuntimeCertificationLane::FormerSpecialistSeamClosure,
-            former_specialist_closure_digest(),
+            former_specialist_closure_digest()?,
             "frontier and bridge writeback specialist seams are adapter-classified and absent from the gap registry".to_string(),
             counter_digest(&["checked_seams:2".to_string()]),
             None,
         ),
         certification_row(
             WorthQueryLowerRuntimeCertificationLane::DeferredNeighborDenial,
-            closeout.registry_digest(),
+            closeout.registry_digest()?,
             "deferred/store-temporal-async neighbors remain explicit closeout rows rather than admitted support".to_string(),
             counter_digest(&[
                 format!("closeout_rows:{}", closeout.rows().len()),
@@ -187,9 +188,12 @@ pub fn certify_lower_runtime_routing(
         &non_bypass,
         &slopes,
         &rows,
-    );
+    )?;
 
-    WorthQueryLowerRuntimeCertificationBundle::new(rows, output_digests)
+    Ok(WorthQueryLowerRuntimeCertificationBundle::new(
+        rows,
+        output_digests,
+    ))
 }
 
 fn certification_row(
@@ -208,7 +212,7 @@ fn certification_row(
     )
 }
 
-fn former_specialist_closure_digest() -> String {
+fn former_specialist_closure_digest() -> Result<String, IdentityDerivationDenial> {
     let crossings = worth_query_lower_runtime_crossing_inventory();
     let gaps = worth_query_lower_runtime_gap_registry();
     let frontier = crossings
@@ -239,7 +243,10 @@ fn former_specialist_closure_digest() -> String {
         }),
         "former specialist seams must not survive in the gap registry"
     );
-    hash_parts(&[frontier.row_digest(), writeback.row_digest()])
+    Ok(hash_parts(&[
+        frontier.row_digest()?,
+        writeback.row_digest()?,
+    ]))
 }
 
 fn deferred_neighbor_failure_digest() -> String {

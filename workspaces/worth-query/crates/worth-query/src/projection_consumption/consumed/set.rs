@@ -5,6 +5,7 @@ use super::facts::{
 };
 use super::field_value_fact::ConsumedFieldValueFact;
 use super::native_layout::ConsumedNativeLayoutProof;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::identity::{
     compose_consumed_projection_fact_set_digest, compose_extraction_counters_digest,
 };
@@ -50,8 +51,8 @@ impl ProjectionFactExtractionCounters {
         self.authority_reopen_count
     }
 
-    pub(crate) fn digest(&self) -> String {
-        compose_extraction_counters_digest(self)
+    pub(crate) fn digest(&self) -> Result<String, IdentityDerivationDenial> {
+        Ok(compose_extraction_counters_digest(self)?)
     }
 
     pub(crate) fn new(
@@ -210,8 +211,8 @@ impl ConsumedProjectionFactSet {
         &self.facts.relation_endpoints
     }
 
-    pub fn issue_receipt(&self) -> ProjectionConsumptionReceipt {
-        ProjectionConsumptionReceipt::from_fact_set(self)
+    pub fn issue_receipt(&self) -> Result<ProjectionConsumptionReceipt, IdentityDerivationDenial> {
+        Ok(ProjectionConsumptionReceipt::from_fact_set(self)?)
     }
 
     pub(crate) fn new(
@@ -219,7 +220,7 @@ impl ConsumedProjectionFactSet {
         source_truth: ConsumedProjectionSourceTruth,
         counters: ProjectionFactExtractionCounters,
         facts: ConsumedProjectionFactInventory,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let fact_set_digest = compose_consumed_projection_fact_set_digest(
             &provenance.declaration_digest,
             &provenance.contract_digest,
@@ -237,13 +238,13 @@ impl ConsumedProjectionFactSet {
             &facts.source_references,
             &facts.effect_continuity_facts,
             &facts.relation_endpoints,
-        );
-        Self {
+        )?;
+        Ok(Self {
             provenance,
             source_truth,
             counters,
             fact_set_digest,
             facts,
-        }
+        })
     }
 }

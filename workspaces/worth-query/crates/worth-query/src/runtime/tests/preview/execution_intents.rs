@@ -72,6 +72,7 @@ fn preview_local_intent_is_policy_admitted_without_authoritative_execution() {
         }));
         (receipt, preview.discard())
     };
+    let outcome = outcome.expect("fixture digest must fit");
 
     assert_eq!(
         attempted.get(),

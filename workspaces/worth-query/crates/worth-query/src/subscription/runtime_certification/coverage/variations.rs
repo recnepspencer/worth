@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::super::identities::{
     coverage_evidence_variation_set_identity, lifecycle_class_variation_set_identity,
@@ -49,7 +50,9 @@ pub struct QuerySubscriptionLifecycleClassVariationSet {
 macro_rules! variation_set_impl {
     ($name:ident, $prefix:literal) => {
         impl $name {
-            pub(super) fn from_identities<'a, I>(values: I) -> Self
+            pub(super) fn from_identities<'a, I>(
+                values: I,
+            ) -> Result<Self, IdentityDerivationDenial>
             where
                 I: IntoIterator<Item = &'a WorthQueryEvidenceIdentity>,
             {
@@ -61,12 +64,12 @@ macro_rules! variation_set_impl {
                     .map(|identity| identity.as_str().to_string())
                     .collect::<Vec<_>>();
                 let variation_identity =
-                    coverage_evidence_variation_set_identity($prefix, identities.iter());
-                Self {
+                    coverage_evidence_variation_set_identity($prefix, identities.iter())?;
+                Ok(Self {
                     digests,
                     identities,
                     variation_identity,
-                }
+                })
             }
 
             pub(crate) fn digests(&self) -> &[String] {
@@ -126,14 +129,14 @@ variation_set_impl!(
 impl QuerySubscriptionLifecycleClassVariationSet {
     pub(super) fn from_set(
         values: std::collections::BTreeSet<QuerySubscriptionLifecycleCoverageClass>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let classes = values.into_iter().collect::<Vec<_>>();
         let variation_identity =
-            lifecycle_class_variation_set_identity(classes.iter().map(|value| value.as_str()));
-        Self {
+            lifecycle_class_variation_set_identity(classes.iter().map(|value| value.as_str()))?;
+        Ok(Self {
             classes,
             variation_identity,
-        }
+        })
     }
 
     pub fn classes(&self) -> &[QuerySubscriptionLifecycleCoverageClass] {

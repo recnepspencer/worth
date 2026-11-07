@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 #[path = "closeout/closeout.rs"]
 mod closeout;
 #[path = "closeout/closeout_artifacts.rs"]
@@ -199,9 +200,9 @@ impl EffectLifecycleSeededCertificationBundle {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         seed: u64,
         rows: Vec<EffectLifecycleSeededCertificationRow>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let seeded_sequence_digest = rows_digest(&rows);
-        let replay_rows = scenarios::seeded_rows(execution, seed, rows.len());
+        let replay_rows = scenarios::seeded_rows(execution, seed, rows.len())?;
         let replay_rows_digest = rows_digest(&replay_rows);
         let replay_is_deterministic = seeded_sequence_digest == replay_rows_digest;
         let seed_replay_digest = hash_parts(&[
@@ -217,14 +218,14 @@ impl EffectLifecycleSeededCertificationBundle {
             format!("rows:{seeded_sequence_digest}"),
             format!("replay:{seed_replay_digest}"),
         ]);
-        Self {
+        Ok(Self {
             seed,
             rows,
             seeded_sequence_digest,
             seed_replay_digest,
             certification_bundle_digest,
             replay_is_deterministic,
-        }
+        })
     }
 
     pub fn rows(&self) -> &[EffectLifecycleSeededCertificationRow] {
@@ -253,13 +254,15 @@ pub fn certify_effect_lifecycle_seeded(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     seed: u64,
     scenario_count: usize,
-) -> EffectLifecycleSeededCertificationBundle {
+) -> Result<EffectLifecycleSeededCertificationBundle, IdentityDerivationDenial> {
     let rows = scenarios::seeded_rows(
         execution,
         seed,
         scenario_count.max(scenarios::minimum_seeded_scenario_count()),
-    );
-    EffectLifecycleSeededCertificationBundle::new(execution, seed, rows)
+    )?;
+    Ok(EffectLifecycleSeededCertificationBundle::new(
+        execution, seed, rows,
+    )?)
 }
 
 fn rows_digest(rows: &[EffectLifecycleSeededCertificationRow]) -> String {

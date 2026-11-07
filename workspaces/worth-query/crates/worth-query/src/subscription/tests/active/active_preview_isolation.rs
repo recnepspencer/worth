@@ -261,14 +261,16 @@ fn future_preview_isolation_retains_basis_and_checkpoint_identity() {
                 "request",
                 "employees",
             )],
-        ),
+        )
+        .expect("fixture digest must fit"),
         1,
         2,
     );
     let preview_attachment = attach_subscription_consumer(
         &mut runtime,
         &preview_handle,
-        SubscriptionConsumerAttachmentRequest::admitted("preview-a", "cursor"),
+        SubscriptionConsumerAttachmentRequest::admitted("preview-a", "cursor")
+            .expect("fixture digest must fit"),
         attachment_budget(2, DeliveryBackpressurePolicy::RetainWithinWindow),
     )
     .unwrap();
@@ -283,7 +285,8 @@ fn future_preview_isolation_retains_basis_and_checkpoint_identity() {
                 "request",
                 "employees",
             )],
-        ),
+        )
+        .expect("fixture digest must fit"),
         1,
         2,
     );

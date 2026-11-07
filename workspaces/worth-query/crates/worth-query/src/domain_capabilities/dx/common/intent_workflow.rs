@@ -13,12 +13,14 @@ use crate::domain_capabilities::eligibility::{
 use crate::domain_capabilities::{
     WorthQueryDomainCapabilityTargetKind, WorthQueryInstalledDeclarationContributionTarget,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::preview::PreviewWorkflowFoundationArtifact;
 use crate::workflow::QueryWorkflowDeclaration;
 use worth_runtime_bridge::facade::BridgePreviewSessionIdentity;
 
 use super::intent::WorthQueryIntentDomainContributionSurface;
-use super::shared::{materialize_common_lane, qualify_semantic_code};
+use super::materialization::materialize_common_lane;
+use super::semantic_code::qualify_semantic_code;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryIntentPreviewInspectionDraft {
@@ -78,16 +80,19 @@ pub struct WorthQueryIntentPreviewInspectionContribution {
 impl WorthQueryIntentPreviewInspectionContribution {
     pub fn try_materialize(
         self,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<PreviewWorkflowFoundationArtifact> {
+    ) -> Result<
+        WorthQueryCheckedDomainCapabilityOutcome<PreviewWorkflowFoundationArtifact>,
+        IdentityDerivationDenial,
+    > {
         let target = self.target.clone();
         let requested = WorthQueryWorkflowContributionAuthoring::preview_only_query_inspection(
             qualify_semantic_code(self.target.authority(), &self.semantic_code),
             self.detail,
             self.preview_session_identity,
-        )
-        .bind_to_installed_target(self.target);
+        )?
+        .bind_to_installed_target(self.target)?;
 
-        materialize_common_lane(
+        Ok(materialize_common_lane(
             "workflow-preview",
             WorthQueryDomainCapabilityTargetKind::IntentDeclaration,
             crate::domain_capabilities::payloads::WorthQueryWorkflowContributionPosture::PreviewOnly
@@ -100,15 +105,15 @@ impl WorthQueryIntentPreviewInspectionContribution {
                     admitted, target,
                 )
             },
-            materialize_query_preview_workflow_artifact,
-        )
+            |ready| Ok(materialize_query_preview_workflow_artifact(ready)),
+        )?)
     }
 
     pub fn materialize(
         self,
     ) -> Result<PreviewWorkflowFoundationArtifact, WorthQueryDomainCapabilityMaterializationError>
     {
-        self.try_materialize().into_result()
+        self.try_materialize()?.into_result()
     }
 }
 
@@ -156,17 +161,20 @@ impl WorthQueryIntentPreviewMutationPlan {
 impl WorthQueryIntentPreviewMutationContribution {
     pub fn try_materialize(
         self,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<WorthQueryIntentPreviewMutationPlan> {
+    ) -> Result<
+        WorthQueryCheckedDomainCapabilityOutcome<WorthQueryIntentPreviewMutationPlan>,
+        IdentityDerivationDenial,
+    > {
         let target = self.target.clone();
         let requested =
             WorthQueryWorkflowContributionAuthoring::promotion_eligible_mutation_lowering(
                 qualify_semantic_code(self.target.authority(), &self.semantic_code),
                 self.detail,
                 self.preview_session_identity,
-            )
-            .bind_to_installed_target(self.target);
+            )?
+            .bind_to_installed_target(self.target)?;
 
-        materialize_common_lane(
+        Ok(materialize_common_lane(
             "workflow-preview",
             WorthQueryDomainCapabilityTargetKind::IntentDeclaration,
             crate::domain_capabilities::payloads::WorthQueryWorkflowContributionPosture::PromotionEligible
@@ -180,17 +188,17 @@ impl WorthQueryIntentPreviewMutationContribution {
                 )
             },
             |ready| {
-                materialize_query_workflow_declaration(ready).map_success(
+                Ok(materialize_query_workflow_declaration(ready)?.map_success(
                     |declaration| WorthQueryIntentPreviewMutationPlan { inner: declaration },
-                )
+                ))
             },
-        )
+        )?)
     }
 
     pub fn materialize(
         self,
     ) -> Result<WorthQueryIntentPreviewMutationPlan, WorthQueryDomainCapabilityMaterializationError>
     {
-        self.try_materialize().into_result()
+        self.try_materialize()?.into_result()
     }
 }

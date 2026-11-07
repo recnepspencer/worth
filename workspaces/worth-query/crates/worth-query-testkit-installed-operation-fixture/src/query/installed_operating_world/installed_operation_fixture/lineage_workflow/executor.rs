@@ -227,7 +227,8 @@ pub fn correspondence_observation(
             .terminal_projection_for_reporting();
     let candidate = foundation::WorthQueryEntityIdentity::admit_authored_entity_token(
         foundation::QueryExternalIdentityToken::new(Arc::from(candidate_projection)),
-    );
+    )
+    .expect("candidate identity contains only primitive relational coordinates");
     match scenario {
         LineageEvidenceScenario::AdvisoryCorrespondence => Some(
             domain::WorthQueryInstalledCorrespondenceObservation::advisory_candidate_pair(

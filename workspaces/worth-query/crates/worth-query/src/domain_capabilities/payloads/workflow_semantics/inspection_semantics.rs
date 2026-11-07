@@ -1,4 +1,5 @@
 use crate::domain_capabilities::identity::domain_capability_scope_encoder;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{WorthQueryEvidenceIdentity, WorthQueryEvidenceTag};
 use worth_relational::facade::merge::RelationalMergeInspectionArtifact;
 
@@ -66,8 +67,10 @@ impl WorthQueryWorkflowInspectionSemantics {
         }
     }
 
-    pub(crate) fn semantics_identity(&self) -> WorthQueryEvidenceIdentity {
-        match self {
+    pub(crate) fn semantics_identity(
+        &self,
+    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(match self {
             Self::MergeConflict {
                 lowered_merge,
                 relational_inspection,
@@ -81,9 +84,9 @@ impl WorthQueryWorkflowInspectionSemantics {
                     WorthQueryEvidenceTag::new("relational_inspection"),
                     &workflow_external_relational_inspection_reference_identity(
                         relational_inspection.artifact_digest(),
-                    ),
+                    )?,
                 )
-                .seal(),
+                .seal()?,
             Self::PostMergeFromMerge { lowered_merge } => {
                 domain_capability_scope_encoder("worth_query_workflow_inspection_v1")
                     .field_shape(WorthQueryEvidenceTag::new("kind"), "post_merge_from_merge")
@@ -91,7 +94,7 @@ impl WorthQueryWorkflowInspectionSemantics {
                         WorthQueryEvidenceTag::new("lowered_merge"),
                         lowered_merge.lowering_identity(),
                     )
-                    .seal()
+                    .seal()?
             }
             Self::PostMergeFromWriteback { lowered_writeback } => {
                 domain_capability_scope_encoder("worth_query_workflow_inspection_v1")
@@ -103,21 +106,21 @@ impl WorthQueryWorkflowInspectionSemantics {
                         WorthQueryEvidenceTag::new("lowered_writeback"),
                         lowered_writeback.lowering_identity(),
                     )
-                    .seal()
+                    .seal()?
             }
-        }
+        })
     }
 }
 
 fn workflow_external_relational_inspection_reference_identity(
     external_artifact_digest: &str,
-) -> WorthQueryEvidenceIdentity {
-    domain_capability_scope_encoder(
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(domain_capability_scope_encoder(
         "worth_query_workflow_external_relational_inspection_reference_v1",
     )
     .field_shape(
         WorthQueryEvidenceTag::new("external_artifact_digest"),
         external_artifact_digest,
     )
-    .seal()
+    .seal()?)
 }

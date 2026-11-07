@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::BTreeSet;
 
 use worth_foundational::facade::PortableRecordAspectPatch;
@@ -178,7 +179,7 @@ impl WorthQueryMemoryWorkspace {
             .map(|mutation| {
                 self.receipt_from_prepared(mutation, &changed, &commit_identity, &snapshot_identity)
             })
-            .collect())
+            .collect::<Vec<_>>())
     }
 
     fn attach_inserted_entities(

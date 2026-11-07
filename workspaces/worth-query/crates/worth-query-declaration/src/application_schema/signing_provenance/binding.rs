@@ -49,7 +49,7 @@ impl ApplicationReadableScalarValueBinding for ApplicationSigningProvenanceBindi
         let refused = || ApplicationValueDecodeDenial::CodecRejected {
             binding_identity: Self::IDENTITY,
         };
-        let AspectValue::String(InternedString::Raw(text)) = value else {
+        let Some(text) = (value).raw_text() else {
             return Err(refused());
         };
         let parts: ApplicationSigningProvenanceParts =

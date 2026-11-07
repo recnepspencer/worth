@@ -159,11 +159,14 @@ fn unified_inspect_routes_live_effect_and_write_receipt_targets() {
         )
         .expect("live view should declare");
     let effect = runtime
-        .declare_effect::<WorthQueryUnrefinedLiveShape>(WorthQueryEffectDeclaration::deliver(
-            "ui.inspect-target",
-            WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title"])),
-            "ui.inspect",
-        ))
+        .declare_effect::<WorthQueryUnrefinedLiveShape>(
+            WorthQueryEffectDeclaration::deliver(
+                "ui.inspect-target",
+                WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title"])),
+                "ui.inspect",
+            )
+            .expect("fixture digest must fit"),
+        )
         .expect("effect should declare");
     let receipt = runtime
         .write(

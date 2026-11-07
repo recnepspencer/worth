@@ -14,7 +14,8 @@ pub(super) fn lowering_for(
         live_family,
         view_family,
         QuerySubscriptionConstructionSource::FacadeLive,
-    );
+    )
+    .expect("fixture digest must fit");
     let selection = select_query_subscription_family(input, roomy_budget()).unwrap();
     let declaration = declare_query_subscription(selection, roomy_slice_budget()).unwrap();
     lower_query_subscription_to_bridge(declaration, roomy_lowering_budget()).unwrap()
@@ -36,17 +37,20 @@ pub(super) fn admitted_activation_for(
             QuerySubscriptionScaleFixtureSize::Small,
             10,
             &activation,
-        ),
+        )
+        .expect("fixture digest must fit"),
         QuerySubscriptionScaleCounterSnapshot::from_activation(
             QuerySubscriptionScaleFixtureSize::Medium,
             100,
             &activation,
-        ),
+        )
+        .expect("fixture digest must fit"),
         QuerySubscriptionScaleCounterSnapshot::from_activation(
             QuerySubscriptionScaleFixtureSize::Large,
             1000,
             &activation,
-        ),
+        )
+        .expect("fixture digest must fit"),
     )
     .unwrap();
 

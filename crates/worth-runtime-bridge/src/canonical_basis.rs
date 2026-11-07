@@ -221,6 +221,7 @@ fn float_width_text(width: CanonicalFloatWidth) -> &'static str {
 fn interned_string_text(value: &InternedString) -> String {
     match value {
         InternedString::Raw(value) => value.clone(),
+        InternedString::Stored(value) => value.as_str().to_owned(),
         InternedString::Symbol(Symbol(value)) => format!("symbol:{value}"),
     }
 }

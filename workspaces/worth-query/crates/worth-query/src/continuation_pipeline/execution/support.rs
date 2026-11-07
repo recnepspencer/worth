@@ -1,3 +1,7 @@
+mod digest;
+use digest::canonical_derived_digest_identity;
+pub(super) use digest::{linked_artifacts_identity, prepared_digest, transcript_digest};
+
 use crate::application::{
     WorthQueryDeclarationBridgeContinuationRequest, WorthQueryDeclarationBridgeRoutingInput,
     WorthQueryDeclarationFamilyMarker, WorthQueryDeclarationInput,
@@ -7,6 +11,7 @@ use crate::application::{
 };
 use crate::basis_lifecycle::BasisFamily;
 use crate::binding_pipeline::WorthQueryBindingLinkedArtifacts;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -71,7 +76,7 @@ pub(super) fn linked_from_subject<
     I: WorthQueryDeclarationInput<D>,
 >(
     subject: &WorthQueryDeclarationBridgeRoutingInput<D, I>,
-) -> WorthQueryBindingLinkedArtifacts {
+) -> Result<WorthQueryBindingLinkedArtifacts, IdentityDerivationDenial> {
     let envelope = match subject {
         WorthQueryDeclarationBridgeRoutingInput::Enveloped(envelope) => envelope,
         WorthQueryDeclarationBridgeRoutingInput::Deferred(envelope) => envelope.envelope(),
@@ -98,18 +103,18 @@ pub(super) fn linked_from_subject<
         .with_receipt_digest(canonical_derived_digest_identity(
             "declaration-receipt",
             envelope.receipt_digest(),
-        ))
+        )?)
         .with_envelope_digest(canonical_derived_digest_identity(
             "declaration-envelope",
             envelope.envelope_digest(),
-        ));
+        )?);
     if let Some(progression_digest) = envelope.progression_digest() {
         linked = linked.with_progression_digest(progression_digest);
     }
     if let Some(route_plan_digest) = envelope.route_plan_digest() {
         linked = linked.with_route_plan_digest(route_plan_digest);
     }
-    linked
+    Ok(linked)
 }
 
 pub(super) fn linked_from_prepared<
@@ -117,24 +122,24 @@ pub(super) fn linked_from_prepared<
     I: WorthQueryDeclarationInput<D>,
 >(
     prepared: &WorthQueryPreparedContinuation<D, I>,
-) -> WorthQueryBindingLinkedArtifacts {
+) -> Result<WorthQueryBindingLinkedArtifacts, IdentityDerivationDenial> {
     let mut linked = WorthQueryBindingLinkedArtifacts::new()
         .with_declaration_digest(prepared.declaration_digest())
         .with_receipt_digest(canonical_derived_digest_identity(
             "declaration-receipt",
             prepared.receipt_digest(),
-        ))
+        )?)
         .with_envelope_digest(canonical_derived_digest_identity(
             "declaration-envelope",
             prepared.envelope_digest(),
-        ));
+        )?);
     if let Some(progression_digest) = prepared.progression_digest() {
         linked = linked.with_progression_digest(progression_digest);
     }
     if let Some(route_plan_digest) = prepared.route_plan_digest() {
         linked = linked.with_route_plan_digest(route_plan_digest);
     }
-    linked
+    Ok(linked)
 }
 
 pub(super) fn signal_subject_from_bridge_subject<
@@ -219,178 +224,4 @@ pub(super) fn bridge_subject_and_signal_truth<
             WorthQueryDeclarationBridgeRoutingInput::enveloped(failed.into_envelope()),
         ),
     }
-}
-
-pub(super) fn prepared_digest<
-    D: WorthQueryDomainEntryMarker,
-    C: WorthQueryDomainOperatingContext<D>,
-    I: WorthQueryDeclarationInput<D>,
->(
-    handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
-    bridge_request: &WorthQueryDeclarationBridgeContinuationRequest,
-    required_contract: &crate::application::WorthQueryDeclarationAspectContract,
-    linked: &WorthQueryBindingLinkedArtifacts,
-    signal_truth: &ResolvedSignalContinuationTruth,
-    bridge_routing: &crate::application::WorthQueryDeclarationBridgeRouting<D, I>,
-) -> String {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::ContinuationPreparedDigest)
-        .field_value(
-            WorthQueryEvidenceTag::new("handle"),
-            handle.handle_identity_digest(),
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("operating_context"),
-            handle.operating_context_identity_digest(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("bridge_mode"),
-            bridge_request.mode().as_str(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("truth_context"),
-            bridge_request.truth_context().as_str(),
-        )
-        .field_value_sequence(
-            WorthQueryEvidenceTag::new("required_aspects"),
-            required_contract
-                .required()
-                .iter()
-                .map(terminal_declaration_aspect_projection_for_digest),
-        )
-        .field_value_sequence(
-            WorthQueryEvidenceTag::new("preserved_aspects"),
-            required_contract
-                .preserved()
-                .iter()
-                .map(terminal_declaration_aspect_projection_for_digest),
-        )
-        .field_value_sequence(
-            WorthQueryEvidenceTag::new("published_aspects"),
-            required_contract
-                .published()
-                .iter()
-                .map(terminal_declaration_aspect_projection_for_digest),
-        )
-        .field_value_sequence(
-            WorthQueryEvidenceTag::new("masked_aspects"),
-            required_contract
-                .masked()
-                .iter()
-                .map(terminal_declaration_aspect_projection_for_digest),
-        )
-        .field_value_sequence(
-            WorthQueryEvidenceTag::new("incompatible_aspects"),
-            required_contract
-                .incompatible()
-                .iter()
-                .map(terminal_declaration_aspect_projection_for_digest),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("signal_posture"),
-            signal_truth.posture.as_str(),
-        )
-        .optional_shape(
-            WorthQueryEvidenceTag::new("signal_execution_family"),
-            signal_truth.execution_family.map(|family| family.as_str()),
-        )
-        .field_value_sequence(
-            WorthQueryEvidenceTag::new("signal_basis_families"),
-            signal_truth.basis_families.iter().map(BasisFamily::as_str),
-        )
-        .optional_value(
-            WorthQueryEvidenceTag::new("signal_digest"),
-            signal_truth.digest.as_deref(),
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("signal_reason"),
-            signal_truth.reason,
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("future_projection"),
-            bridge_routing.future_projection().projection_digest(),
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("basis_lifecycle_support"),
-            bridge_routing.basis_lifecycle_support_digest(),
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("bridge_routing"),
-            bridge_routing.bridge_routing_digest(),
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("linked_artifacts"),
-            linked_artifacts_identity(linked),
-        )
-        .seal()
-        .as_str()
-        .to_string()
-}
-
-pub(super) fn transcript_digest(
-    kind: &str,
-    family: &'static str,
-    linked: &WorthQueryBindingLinkedArtifacts,
-    outcome: &str,
-) -> String {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::ContinuationExecutionTranscript)
-        .field_shape(WorthQueryEvidenceTag::new("kind"), kind)
-        .field_shape(WorthQueryEvidenceTag::new("family"), family)
-        .field_shape(WorthQueryEvidenceTag::new("outcome"), outcome)
-        .field_value(
-            WorthQueryEvidenceTag::new("linked_artifacts"),
-            linked_artifacts_identity(linked),
-        )
-        .seal()
-        .as_str()
-        .to_string()
-}
-
-pub(super) fn linked_artifacts_identity(linked: &WorthQueryBindingLinkedArtifacts) -> String {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::ContinuationLinkedArtifacts)
-        .optional_value(
-            WorthQueryEvidenceTag::new("declaration"),
-            linked.declaration_digest(),
-        )
-        .optional_value(
-            WorthQueryEvidenceTag::new("progression"),
-            linked.progression_digest(),
-        )
-        .optional_value(
-            WorthQueryEvidenceTag::new("route_plan"),
-            linked.route_plan_digest(),
-        )
-        .optional_value(
-            WorthQueryEvidenceTag::new("receipt"),
-            linked.receipt_digest(),
-        )
-        .optional_value(
-            WorthQueryEvidenceTag::new("envelope"),
-            linked.envelope_digest(),
-        )
-        .optional_value(
-            WorthQueryEvidenceTag::new("orchestration"),
-            linked.orchestration_digest(),
-        )
-        .seal()
-        .as_str()
-        .to_string()
-}
-
-fn canonical_derived_digest_identity(
-    role: &'static str,
-    digest: &worth_foundational::facade::CanonicalDerivedDigest,
-) -> String {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::ContinuationLinkedArtifacts)
-        .field_shape(WorthQueryEvidenceTag::new("role"), role)
-        .field_shape(
-            WorthQueryEvidenceTag::new("algorithm"),
-            digest.metadata().algorithm().id().as_str(),
-        )
-        .field_value_sequence(
-            WorthQueryEvidenceTag::new("bytes"),
-            digest.value().bytes().iter().map(|byte| hex_byte(*byte)),
-        )
-        .seal()
-        .as_str()
-        .to_string()
 }

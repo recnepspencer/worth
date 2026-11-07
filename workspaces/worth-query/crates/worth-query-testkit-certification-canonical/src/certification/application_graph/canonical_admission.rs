@@ -39,7 +39,7 @@ pub use worth_query_host::facade::application_entry::WorthQueryApplicationMutati
 pub const FUNDED_WORK: u64 = 8_000_000;
 // Both values satisfy the same canonical grammar. This host policy
 // funds either decode independently, but cannot fund both in one original request.
-pub const ONE_VALUE_WORK: u64 = 26_000;
+pub const ONE_VALUE_WORK: u64 = 20_000;
 
 pub fn value() -> NestedValue {
     let mut value = authored_value();

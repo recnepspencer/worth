@@ -3,6 +3,7 @@ use super::super::error::CausalInspectionCertificationError;
 use super::super::validation::validate_scale_slope;
 use super::lane::CausalInspectionScaleFixtureSize;
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::inspection::causal::identity::{
     compose_causal_performance_certification_identity,
     compose_causal_performance_scale_slope_identity, compose_causal_performance_slope_identity,
@@ -30,7 +31,7 @@ impl CausalInspectionScaleCounterSnapshot {
     pub fn from_artifact(
         fixture_size: CausalInspectionScaleFixtureSize,
         artifact: &QueryCausalInspectionArtifact,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let performance = artifact.performance();
         let artifact_identity = artifact.artifact_identity().clone();
         let evidence_reference_width = performance.bridge_binding_count();
@@ -55,8 +56,8 @@ impl CausalInspectionScaleCounterSnapshot {
             artifact_serialization_slope_counter,
             bridge_unindexed_scan_count,
             bridge_readmission_proof_identity: bridge_readmission_proof_identity.as_ref(),
-        });
-        Self {
+        })?;
+        Ok(Self {
             fixture_size,
             artifact_identity,
             evidence_reference_width,
@@ -69,7 +70,7 @@ impl CausalInspectionScaleCounterSnapshot {
             bridge_unindexed_scan_count,
             bridge_readmission_proof_identity,
             snapshot_identity,
-        }
+        })
     }
 
     pub fn fixture_size(&self) -> CausalInspectionScaleFixtureSize {
@@ -126,7 +127,7 @@ impl CausalInspectionScaleCounterSnapshot {
     pub(in crate::runtime) fn with_bridge_envelope_slope_for_tests(
         mut self,
         bridge_envelope_slope_counter: usize,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         self.bridge_envelope_slope_counter = bridge_envelope_slope_counter;
         self.snapshot_identity = snapshot_identity(SnapshotDigestParts {
             fixture_size: self.fixture_size,
@@ -140,8 +141,8 @@ impl CausalInspectionScaleCounterSnapshot {
             artifact_serialization_slope_counter: self.artifact_serialization_slope_counter,
             bridge_unindexed_scan_count: self.bridge_unindexed_scan_count,
             bridge_readmission_proof_identity: self.bridge_readmission_proof_identity.as_ref(),
-        });
-        self
+        })?;
+        Ok(self)
     }
 }
 
@@ -178,37 +179,37 @@ impl CausalInspectionPerformanceCertificationBundle {
             small.anchor_derivation_slope_counter(),
             medium.anchor_derivation_slope_counter(),
             large.anchor_derivation_slope_counter(),
-        );
+        )?;
         let reference_resolution_slope_identity = slope_identity(
             "causal_reference_resolution_slope_digest_v1",
             small.reference_resolution_slope_counter(),
             medium.reference_resolution_slope_counter(),
             large.reference_resolution_slope_counter(),
-        );
+        )?;
         let admission_slope_identity = slope_identity(
             "causal_admission_slope_digest_v1",
             small.admission_slope_counter(),
             medium.admission_slope_counter(),
             large.admission_slope_counter(),
-        );
+        )?;
         let bridge_envelope_slope_identity = slope_identity(
             "causal_bridge_envelope_slope_digest_v1",
             small.bridge_envelope_slope_counter(),
             medium.bridge_envelope_slope_counter(),
             large.bridge_envelope_slope_counter(),
-        );
+        )?;
         let materialization_slope_identity = slope_identity(
             "causal_materialization_slope_digest_v1",
             small.materialization_slope_counter(),
             medium.materialization_slope_counter(),
             large.materialization_slope_counter(),
-        );
+        )?;
         let artifact_serialization_slope_identity = compose_causal_performance_slope_identity(
             "causal_artifact_serialization_slope_digest_v1",
             small.artifact_serialization_slope_counter(),
             medium.artifact_serialization_slope_counter(),
             large.artifact_serialization_slope_counter(),
-        );
+        )?;
         let scale_slope_identity = compose_causal_performance_scale_slope_identity(
             &anchor_derivation_slope_identity,
             &reference_resolution_slope_identity,
@@ -324,8 +325,8 @@ struct SnapshotDigestParts<'a> {
 
 fn snapshot_identity(
     parts: SnapshotDigestParts<'_>,
-) -> CausalInspectionPerformanceSnapshotIdentity {
-    compose_causal_performance_snapshot_identity(
+) -> Result<CausalInspectionPerformanceSnapshotIdentity, IdentityDerivationDenial> {
+    Ok(compose_causal_performance_snapshot_identity(
         parts.fixture_size,
         parts.artifact_identity,
         parts.evidence_reference_width,
@@ -337,7 +338,7 @@ fn snapshot_identity(
         parts.artifact_serialization_slope_counter,
         parts.bridge_unindexed_scan_count,
         parts.bridge_readmission_proof_identity,
-    )
+    )?)
 }
 
 fn slope_identity(
@@ -345,6 +346,8 @@ fn slope_identity(
     small: usize,
     medium: usize,
     large: usize,
-) -> CausalInspectionPerformanceSlopeIdentity {
-    compose_causal_performance_slope_identity(label, small, medium, large)
+) -> Result<CausalInspectionPerformanceSlopeIdentity, IdentityDerivationDenial> {
+    Ok(compose_causal_performance_slope_identity(
+        label, small, medium, large,
+    )?)
 }

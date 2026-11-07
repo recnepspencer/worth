@@ -21,7 +21,7 @@ fn installed_dag_mints_one_query_owned_trace_and_publication() {
         )
         .unwrap()
         .start_workflow(&mut workspace)
-        .unwrap();
+        .unwrap().unwrap();
     let run = run
         .advance(
             "start",
@@ -145,7 +145,7 @@ fn incomplete_completion_denial_retains_exact_run_work_without_deeper_execution(
         )
         .unwrap()
         .start_workflow(&mut workspace)
-        .unwrap()
+        .unwrap().unwrap()
         .advance(
             "start",
             domain::WorthQueryWorkflowValue::NotRequired,
@@ -186,7 +186,7 @@ fn skipping_a_predecessor_denies_before_stage_executor_contact() {
         )
         .unwrap()
         .start_workflow(&mut workspace)
-        .unwrap();
+        .unwrap().unwrap();
     let denial = match run.advance(
         "publish",
         domain::WorthQueryWorkflowValue::Text("skip".into()),
@@ -225,7 +225,7 @@ fn duplicate_stage_advancement_denies_without_a_second_executor_contact() {
         )
         .unwrap()
         .start_workflow(&mut workspace)
-        .unwrap()
+        .unwrap().unwrap()
         .advance(
             "start",
             domain::WorthQueryWorkflowValue::NotRequired,
@@ -268,7 +268,7 @@ fn copied_stage_label_is_only_a_candidate_and_cannot_invent_progression() {
         )
         .unwrap()
         .start_workflow(&mut workspace)
-        .unwrap();
+        .unwrap().unwrap();
     let copied_label = "not-an-installed-stage".to_string();
     let denial = match run.advance(
         &copied_label,
@@ -306,7 +306,7 @@ fn foreign_runtime_denies_stage_progression_before_executor_contact() {
         )
         .unwrap()
         .start_workflow(&mut owner)
-        .unwrap();
+        .unwrap().unwrap();
     let mut foreign = workflow_workspace(request_execution, "installed-workflow-foreign").unwrap();
     let denial = match run.advance(
         "start",

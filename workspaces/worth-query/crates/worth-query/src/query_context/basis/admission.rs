@@ -242,6 +242,12 @@ fn bind_historical_context(
                 &materialization_identity,
             )
             .seal()
+            .map_err(|cause| {
+                QueryContextAdmissionError::identity_refused(
+                    cause,
+                    QueryContextCounters::for_identity_refusal(true),
+                )
+            })?
             .as_str()
             .to_string(),
         basis_authority_family: query_preflight

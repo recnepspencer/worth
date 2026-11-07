@@ -34,7 +34,7 @@ impl<Stop, Admit: FnMut(usize, usize) -> Result<(), Stop>> CausalEnvelopeAssembl
             .requires_application_inspection_admission()
             || request.references().len() != 1
         {
-            return Err(Failure::InvalidReportingAssociation);
+            return Err((Failure::InvalidReportingAssociation).into());
         }
         Ok(
             BridgeCausalEnvelopeAssemblyProgress::query_observation_reporting(
@@ -53,7 +53,7 @@ impl<Stop, Admit: FnMut(usize, usize) -> Result<(), Stop>> CausalEnvelopeAssembl
             || reference.family() != Family::QueryObservation
             || reference.reference_evidence_identity() != self.observation
         {
-            return Err(Failure::InvalidReportingAssociation);
+            return Err((Failure::InvalidReportingAssociation).into());
         }
         let identity = compose(
             Kind::EvidenceBinding,
@@ -90,7 +90,7 @@ impl<Stop, Admit: FnMut(usize, usize) -> Result<(), Stop>> CausalEnvelopeAssembl
     ) -> Result<BridgeCausalExplanationEnvelope, Self::Stop> {
         let counts = progress.query_reporting_counts();
         if counts != [1, 0, 0, 0, 1, 1, 0, 0] {
-            return Err(Failure::InvalidReportingAssociation);
+            return Err((Failure::InvalidReportingAssociation).into());
         }
         let counter_identity = compose(
             Kind::Counters,

@@ -10,8 +10,11 @@ impl BridgeSealedRuntimeAssembly {
     pub fn assemble_conditional_causal_envelope(
         &self,
         request: BridgeConditionalCausalEnvelopeRequest,
-    ) -> Result<BridgeCausalExplanationEnvelope, BridgeCausalEnvelopeDenial> {
-        crate::diagnostics::causal_envelope::assembly::assemble_native(&self.runtime, request)
+    ) -> Result<
+        BridgeCausalExplanationEnvelope,
+        crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop,
+    > {
+        Ok(crate::diagnostics::causal_envelope::assembly::assemble_native(&self.runtime, request)?)
     }
 }
 

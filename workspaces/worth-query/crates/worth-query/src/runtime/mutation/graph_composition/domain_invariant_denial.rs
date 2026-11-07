@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -24,7 +25,7 @@ impl WorthQueryGraphCompositionDomainInvariantDenial {
         invariant_family: impl Into<String>,
         message: impl Into<String>,
         domain_invariant_summary: WorthQueryGraphCompositionDomainInvariantSummary,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let invariant_family = invariant_family.into();
         let message = message.into();
         let violation_digest = worth_query_evidence_identity(
@@ -34,13 +35,13 @@ impl WorthQueryGraphCompositionDomainInvariantDenial {
             WorthQueryEvidenceTag::new("invariant_family"),
             invariant_family.as_str(),
         )
-        .seal();
-        Self::build(
+        .seal()?;
+        Ok(Self::build(
             invariant_family,
             message,
             domain_invariant_summary,
             violation_digest,
-        )
+        )?)
     }
 
     pub fn owner_family(&self) -> &str {
@@ -78,7 +79,7 @@ impl WorthQueryGraphCompositionDomainInvariantDenial {
         message: String,
         domain_invariant_summary: WorthQueryGraphCompositionDomainInvariantSummary,
         violation_digest: WorthQueryEvidenceIdentity,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         use WorthQueryGraphCompositionAdmissionTraceStage as Stage;
 
         let admission_trace = WorthQueryGraphCompositionAdmissionTrace::new(
@@ -90,7 +91,7 @@ impl WorthQueryGraphCompositionDomainInvariantDenial {
                 Stage::DeniedBeforeExecution,
             ],
             Stage::DomainInvariantEvaluated,
-        );
+        )?;
         let denial_digest = worth_query_evidence_identity(
             WorthQueryEvidenceScope::GraphCompositionDomainInvariantDenial,
         )
@@ -114,17 +115,17 @@ impl WorthQueryGraphCompositionDomainInvariantDenial {
             WorthQueryEvidenceTag::new("violation_digest"),
             &violation_digest,
         )
-        .seal()
+        .seal()?
         .as_str()
         .to_string();
-        Self {
+        Ok(Self {
             owner_family: CONTRIBUTED_INVARIANT_OWNER_FAMILY.to_string(),
             invariant_family,
             message,
             domain_invariant_summary,
             admission_trace,
             denial_digest,
-        }
+        })
     }
 }
 

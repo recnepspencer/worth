@@ -136,7 +136,7 @@ impl SubscriptionConsumerAttachment {
             WorthQueryEvidenceTag::new("backpressure"),
             budget.backpressure_policy().as_str(),
         )
-        .seal();
+        .seal().expect("attachment identity grammar contains sealed tokens, primitive counters and closed posture labels");
         let attachment_digest = SubscriptionConsumerAttachmentDigest::new(
             WorthQueryEvidenceIdentity::compose(
                 WorthQueryEvidenceScope::SubscriptionActivationReceipt,
@@ -181,7 +181,7 @@ impl SubscriptionConsumerAttachment {
                 WorthQueryEvidenceTag::new("performance"),
                 performance_receipt.performance_receipt_identity(),
             )
-            .seal(),
+            .seal().expect("attachment identity grammar contains sealed tokens, primitive counters and closed posture labels"),
         );
         let acknowledgement_frontier =
             SubscriptionAcknowledgementFrontier::initial(attachment_digest.clone());

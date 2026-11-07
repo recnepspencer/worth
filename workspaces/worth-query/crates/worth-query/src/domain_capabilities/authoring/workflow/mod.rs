@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod inspection;
 mod merge;
 mod mutation;
@@ -20,10 +21,10 @@ impl WorthQueryWorkflowContributionAuthoring {
         posture: WorthQueryWorkflowContributionPosture,
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self {
-            payload: WorthQueryWorkflowContributionPayload::new(posture, semantic_code, detail),
-        }
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
+            payload: WorthQueryWorkflowContributionPayload::new(posture, semantic_code, detail)?,
+        })
     }
 
     fn with_runtime_semantics(
@@ -31,15 +32,15 @@ impl WorthQueryWorkflowContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
         runtime_semantics: WorthQueryWorkflowRuntimeSemantics,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             payload: WorthQueryWorkflowContributionPayload::with_runtime_semantics(
                 posture,
                 semantic_code,
                 detail,
                 Some(runtime_semantics),
-            ),
-        }
+            )?,
+        })
     }
 
     fn with_runtime_and_lowering_semantics(
@@ -48,15 +49,15 @@ impl WorthQueryWorkflowContributionAuthoring {
         detail: impl Into<String>,
         runtime_semantics: WorthQueryWorkflowRuntimeSemantics,
         lowering_semantics: WorthQueryWorkflowLoweringSemantics,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             payload: WorthQueryWorkflowContributionPayload::with_runtime_and_lowering_semantics(
                 posture,
                 semantic_code,
                 detail,
                 Some(runtime_semantics),
                 Some(lowering_semantics),
-            ),
-        }
+            )?,
+        })
     }
 }

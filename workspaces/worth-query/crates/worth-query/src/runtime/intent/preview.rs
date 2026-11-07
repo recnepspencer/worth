@@ -2,6 +2,7 @@ use super::preview_receipt_identity::{
     preview_intent_admission_identity, preview_intent_receipt_identity,
 };
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -28,20 +29,20 @@ impl WorthQueryPreviewIntentReceipt {
         effect_policy: WorthQueryEffectPolicy,
         basis_admission: &WorthQueryPreviewBasisAdmission,
         admission: WorthQueryEffectAdmission,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let basis_evidence = basis_admission.evidence().to_vec();
         let canonical_input_digest = declaration.input_digest();
         let basis_evidence_identity =
-            preview_intent_basis_evidence_identity(declaration.name(), basis_admission);
+            preview_intent_basis_evidence_identity(declaration.name(), basis_admission)?;
         let admission_identity = preview_intent_admission_identity(
             declaration,
             effect_policy,
             basis_admission,
             admission,
             &canonical_input_digest,
-        );
+        )?;
         let receipt_identity = preview_intent_receipt_identity(&admission_identity);
-        Self {
+        Ok(Self {
             intent_name: declaration.name().to_string(),
             strategy_identity: declaration.strategy_name().to_string(),
             strategy_version: declaration.strategy_version().to_string(),
@@ -53,7 +54,7 @@ impl WorthQueryPreviewIntentReceipt {
             basis_evidence_identity,
             admission_identity,
             receipt_identity,
-        }
+        })
     }
 
     pub fn intent_name(&self) -> &str {
@@ -112,16 +113,18 @@ impl WorthQueryPreviewIntentReceipt {
 fn preview_intent_basis_evidence_identity(
     intent_name: &str,
     basis_admission: &WorthQueryPreviewBasisAdmission,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::PreviewIntentBasisEvidence)
-        .field_shape(WorthQueryEvidenceTag::new("intent_name"), intent_name)
-        .field_usize(
-            WorthQueryEvidenceTag::new("basis_evidence_count"),
-            basis_admission.evidence_rows().len(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("basis_admission_identity"),
-            basis_admission.admission_identity(),
-        )
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::PreviewIntentBasisEvidence)
+            .field_shape(WorthQueryEvidenceTag::new("intent_name"), intent_name)
+            .field_usize(
+                WorthQueryEvidenceTag::new("basis_evidence_count"),
+                basis_admission.evidence_rows().len(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("basis_admission_identity"),
+                basis_admission.admission_identity(),
+            )
+            .seal()?,
+    )
 }

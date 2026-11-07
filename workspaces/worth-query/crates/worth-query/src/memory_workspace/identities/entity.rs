@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::sync::Arc;
 use worth_foundational::facade::admit_foundational_authority_identity;
 use worth_runtime_bridge::facade::{
@@ -68,8 +69,8 @@ impl WorthQueryEntityIdentity {
             Arc<str>,
             QueryEntityIdentityKind,
         >,
-    ) -> Self {
-        super::super::truth_identity_admission::admit_authored_entity_token(token)
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(super::super::truth_identity_admission::admit_authored_entity_token(token)?)
     }
 
     pub(crate) fn relational_record_parts(&self) -> Option<RelationalBridgeRecordIdentityParts> {
@@ -188,5 +189,5 @@ fn entity_evidence_from_relational_record(
             WorthQueryEvidenceTag::new("generation"),
             relational_record.generation() as usize,
         )
-        .seal()
+        .seal().expect("bounded record identity grammar: literals, primitive record coordinates, or already sealed identity tokens")
 }

@@ -51,16 +51,19 @@ fn basis_substitution_attempt_rejects_typed_and_early() {
         1,
         1,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let capability = HistoricalCapabilityDescriptor::retained_snapshot_for_test(
         "history:snapshot-1",
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let admission = admit_historical_evaluation_path(request, capability)
         .expect("retained history should admit");
     let resolved = resolve_historical_materialization_path(
         admission.clone(),
-        HistoricalMaterializationDescriptor::retained_snapshot_for_test("history:snapshot-1"),
+        HistoricalMaterializationDescriptor::retained_snapshot_for_test("history:snapshot-1")
+            .expect("fixture digest must fit"),
     )
     .expect("retained history should resolve");
     let metadata = materialization_metadata_from_resolved(resolved);
@@ -101,16 +104,19 @@ fn current_to_historical_diff_admission_attaches_cost_budget_and_prediction_post
         1,
         1,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let capability = HistoricalCapabilityDescriptor::retained_snapshot_for_test(
         "history:snapshot-1",
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let admission = admit_historical_evaluation_path(request, capability)
         .expect("retained history should admit");
     let resolved = resolve_historical_materialization_path(
         admission.clone(),
-        HistoricalMaterializationDescriptor::retained_snapshot_for_test("history:snapshot-1"),
+        HistoricalMaterializationDescriptor::retained_snapshot_for_test("history:snapshot-1")
+            .expect("fixture digest must fit"),
     )
     .expect("retained history should resolve");
     let metadata = materialization_metadata_from_resolved(resolved);
@@ -233,16 +239,19 @@ fn historical_reconstruction_broadening_denies_before_rich_execution() {
         4,
         8,
         HistoricalPathReuseDescriptor::no_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let capability = HistoricalCapabilityDescriptor::full_reconstruction_for_test(
         "history:reconstruction",
         HistoricalPathReuseDescriptor::no_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let admission =
         admit_historical_evaluation_path(request, capability).expect("reconstruction should admit");
     let resolved = resolve_historical_materialization_path(
         admission.clone(),
-        HistoricalMaterializationDescriptor::full_reconstruction_for_test("history:reconstruction"),
+        HistoricalMaterializationDescriptor::full_reconstruction_for_test("history:reconstruction")
+            .expect("fixture digest must fit"),
     )
     .expect("reconstruction should resolve");
     let metadata = materialization_metadata_from_resolved(resolved);

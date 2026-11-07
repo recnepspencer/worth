@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::{
     CanonicalQueryDigest, CanonicalResultShapeDigest, CollectionPlanDigest, ResultDigest,
     ValidatedQueryDigest,
@@ -39,6 +40,7 @@ pub struct AuthoritativePreviewComparisonCandidate {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PreviewComparisonFailureClass {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     CandidateBasisAuthorityMismatch,
     CandidateExecutionPlanMismatch,
     CandidateExecutionBasisMismatch,
@@ -59,6 +61,21 @@ pub struct PreviewComparisonError {
 }
 
 impl PreviewComparisonError {
+    pub(super) fn identity_refused(
+        cause: IdentityDerivationDenial,
+        preview: Option<&str>,
+        candidate: Option<&str>,
+        counters: PreviewComparisonCounters,
+    ) -> Self {
+        Self {
+            failure_class: PreviewComparisonFailureClass::EvidenceIdentityDerivationDenied(cause),
+            message: "preview comparison evidence identity refused",
+            preview_digest: preview.unwrap_or_default().to_owned(),
+            candidate_digest: candidate.unwrap_or_default().to_owned(),
+            counters,
+        }
+    }
+
     pub fn failure_class(&self) -> &PreviewComparisonFailureClass {
         &self.failure_class
     }

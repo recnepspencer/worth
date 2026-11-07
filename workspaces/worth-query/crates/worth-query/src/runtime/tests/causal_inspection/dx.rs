@@ -19,13 +19,16 @@ fn receipt_with_route(
                     "query-inspection:{}",
                     outcome.as_str()
                 )),
-            ),
+            )
+            .expect("fixture digest must fit"),
             CausalObservationEvidenceIdentity::new(
                 CausalEvidenceFamily::BridgeRoute,
                 route_identity,
-            ),
+            )
+            .expect("fixture digest must fit"),
         ],
     )
+    .expect("fixture digest must fit")
 }
 
 mod common_observation_paths;

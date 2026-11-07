@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct WorthQueryDerivedPatch {
@@ -140,14 +141,14 @@ impl WorthQueryDerivedPatch {
     pub(in crate::runtime) fn to_mutation_delta(
         &self,
         upstream_view: &str,
-    ) -> WorthQueryMutationDelta {
-        WorthQueryMutationDelta::from_touched_aspects(
+    ) -> Result<WorthQueryMutationDelta, IdentityDerivationDenial> {
+        Ok(WorthQueryMutationDelta::from_touched_aspects(
             format!("derived:{upstream_view}"),
-            self.entity_identity.clone().unwrap_or_else(|| {
+            self.entity_identity.clone().map(Ok).unwrap_or_else(|| {
                 crate::memory_workspace::admit_authored_entity_label(upstream_view)
-            }),
+            })?,
             WorthQueryMutationKind::Updated,
             self.aspect_touches.clone(),
-        )
+        )?)
     }
 }

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 use super::super::super::materialization::QueryCausalInspectionArtifact;
@@ -32,7 +33,7 @@ impl CausalInspectionBoundaryAudit {
             WorthQueryEvidenceTag::new("artifact"),
             artifact.artifact_identity().evidence_identity(),
         )
-        .seal()
+        .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
         .as_str()
         .to_string();
         Self {

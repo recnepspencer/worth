@@ -21,7 +21,8 @@ pub(in crate::runtime::tests) fn test_mutation_receipt(
             entity_identity,
             kind,
             aspect_touches,
-        )],
+        )
+        .expect("fixture digest must fit")],
     )
 }
 
@@ -42,7 +43,8 @@ pub(in crate::runtime::tests) fn test_mutation_receipt_with_bridge_authority(
             entity_identity,
             kind,
             aspect_touches,
-        )],
+        )
+        .expect("fixture digest must fit")],
         bridge_authority,
     )
     .admit_runtime_write_authority()

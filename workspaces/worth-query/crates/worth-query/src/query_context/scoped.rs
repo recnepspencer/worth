@@ -2,6 +2,7 @@ use crate::basis_lifecycle::{
     BasisFamily, BasisIntentDenial, BasisLifecycleDeclarationError, BasisLifecycleIntentDraft,
     DeniedBasisCapability, RawBasisIntent, ScopedMaterializationBasis, ScopedObservationBasis,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::{
     admit_legacy_query_basis_context, attach_legacy_query_basis_metadata,

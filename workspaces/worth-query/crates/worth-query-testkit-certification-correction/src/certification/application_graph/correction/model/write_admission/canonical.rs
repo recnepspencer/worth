@@ -105,7 +105,10 @@ impl ApplicationReadableScalarValueBinding for DelegatedBinding {
         value: &AspectValue,
         admission: &mut ValueDecodeAdmission<'_>,
     ) -> Result<DelegatedCounter, ApplicationValueDecodeDenial> {
-        let AspectValue::String(InternedString::Raw(raw)) = value else {
+        let Some(raw) = (match value {
+            AspectValue::String(raw) => raw.raw_text(),
+            _ => None,
+        }) else {
             return Err(ApplicationValueDecodeDenial::CodecRejected {
                 binding_identity: Self::IDENTITY,
             });

@@ -1,4 +1,5 @@
 use crate::declarative_live::canonicalize_declarative_request;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQuerySnapshotIdentity;
 use crate::projection_consumption::ProjectionMaterializedFactPosture;
 use crate::query_context::{
@@ -134,8 +135,8 @@ pub(in crate::runtime) fn execute_runtime_basis_context_read_graph(
         context_execution.with_materialized_fact_posture(materialized_fact_posture_for_read_graph(
             runtime,
             read_graph,
-            &query_context_basis_digest_identity(context.basis_digest()),
-        ));
+            &query_context_basis_digest_identity(context.basis_digest())?,
+        )?);
     let receipt_snapshot_identity = runtime.current_snapshot_identity_with_request(execution);
     let (rows, maintenance_source_rows) =
         if context_allows_runtime_materialization(&receipt_snapshot_identity, context) {
@@ -167,48 +168,48 @@ pub(super) fn materialized_fact_posture_for_read_graph(
     runtime: &WorthQueryRuntime,
     read_graph: &WorthQueryReadGraph,
     basis_identity: &crate::WorthQueryEvidenceIdentity,
-) -> Option<ProjectionMaterializedFactPosture> {
-    let lower_declaration_digest =
-        canonicalize_declarative_request(read_graph.declarative_request())
-            .ok()?
-            .query()
-            .digest()
-            .as_str()
-            .to_string();
+) -> Result<Option<ProjectionMaterializedFactPosture>, IdentityDerivationDenial> {
+    let Ok(canonical) = canonicalize_declarative_request(read_graph.declarative_request()) else {
+        return Ok(None);
+    };
+    let lower_declaration_digest = canonical.query().digest().as_str().to_string();
     let mut exact_request_matches = runtime
         .live_subscriptions
         .values()
         .filter(|state| state.request == *read_graph.declarative_request());
     let state = if let Some(state) = exact_request_matches.next() {
         if exact_request_matches.next().is_some() {
-            return None;
+            return Ok(None);
         }
         state
     } else {
         let mut canonical_matches = runtime.live_subscriptions.values().filter(|state| {
             state.installation.query_projection().label() == lower_declaration_digest.as_str()
         });
-        let state = canonical_matches.next()?;
+        let Some(state) = canonical_matches.next() else {
+            return Ok(None);
+        };
         if canonical_matches.next().is_some() {
-            return None;
+            return Ok(None);
         }
         state
     };
-    Some(materialized_fact_posture_from_live_subscription_state(
-        state,
-        basis_identity,
+    Ok(Some(
+        materialized_fact_posture_from_live_subscription_state(state, basis_identity)?,
     ))
 }
 
-fn query_context_basis_digest_identity(basis_digest: &str) -> crate::WorthQueryEvidenceIdentity {
-    crate::WorthQueryEvidenceIdentity::compose(
+fn query_context_basis_digest_identity(
+    basis_digest: &str,
+) -> Result<crate::WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(crate::WorthQueryEvidenceIdentity::compose(
         crate::WorthQueryEvidenceScope::QueryContextCompatibilityBasisLabel,
     )
     .field_value(
         crate::WorthQueryEvidenceTag::new("basis_digest"),
         basis_digest,
     )
-    .seal()
+    .seal()?)
 }
 
 fn ensure_context_matches_read_graph(

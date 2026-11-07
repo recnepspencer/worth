@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::harness::certification::digest_parts;
 use crate::projection_consumption::ProjectionConsumptionCertifiedSourceSurface;
 use crate::saved_query::{SavedQueryArtifact, SavedQueryReuseOutcome};
@@ -58,9 +59,9 @@ pub fn lane_bundle(
     projection_contract_digest: String,
     saved: &SavedQueryArtifact,
     reuse: &SavedQueryReuseOutcome,
-) -> MilestoneNineFiveHostileLaneBundle {
+) -> Result<MilestoneNineFiveHostileLaneBundle, IdentityDerivationDenial> {
     let report = application_support_report();
-    let projection_bundle = projection_bundle();
+    let projection_bundle = projection_bundle()?;
     let (reuse_matrix_digest, temporal_async_surface_posture) = match reuse {
         SavedQueryReuseOutcome::Admitted(decision) => (
             decision.matrix().digest().to_string(),
@@ -87,7 +88,7 @@ pub fn lane_bundle(
     let (admitted_families, _deferred_families, statuses) =
         crate::view_shape::runtime_backed_view_shape_support_profile();
 
-    MilestoneNineFiveHostileLaneBundle {
+    Ok(MilestoneNineFiveHostileLaneBundle {
         composition_axis: composition_axis.as_str().to_string(),
         view_axis: view_axis.as_str().to_string(),
         projection_axis: projection_axis.as_str().to_string(),
@@ -136,5 +137,5 @@ pub fn lane_bundle(
         bootstrap_contract_digest,
         bootstrap_support_digest,
         application_support_report_digest: report.report_digest().to_string(),
-    }
+    })
 }

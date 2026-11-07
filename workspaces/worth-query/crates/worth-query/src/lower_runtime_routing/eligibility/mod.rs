@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -17,31 +18,31 @@ impl WorthQueryLowerRuntimeCapabilityEligibility {
     pub(crate) fn admitted_with_evidence_identity(
         request: WorthQueryLowerRuntimeCapabilityRequest,
         posture_detail_identity: &WorthQueryEvidenceIdentity,
-    ) -> Self {
-        Self::new_with_evidence_identity(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new_with_evidence_identity(
             request,
             WorthQueryLowerRuntimeCapabilityPosture::Admitted,
             posture_detail_identity,
-        )
+        )?)
     }
 
     pub(crate) fn new_with_evidence_identity(
         request: WorthQueryLowerRuntimeCapabilityRequest,
         posture: WorthQueryLowerRuntimeCapabilityPosture,
         posture_detail_identity: &WorthQueryEvidenceIdentity,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let eligibility_identity = Self::digest_builder(&request, posture)
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("detail"),
                 posture_detail_identity,
             )
-            .seal();
-        Self {
+            .seal()?;
+        Ok(Self {
             request,
             posture,
             posture_detail_identity: posture_detail_identity.clone(),
             eligibility_identity,
-        }
+        })
     }
 
     fn digest_builder(
@@ -101,7 +102,8 @@ mod tests {
     };
 
     #[test]
-    fn eligibility_digest_binds_request_posture_and_detail() {
+    fn eligibility_digest_binds_request_posture_and_detail() -> Result<(), IdentityDerivationDenial>
+    {
         let request = WorthQueryLowerRuntimeCapabilityRequest::new(
             WorthQueryLowerRuntimeSeamKey::WriteAuthorityBackendExecution,
             WorthQueryLowerRuntimeRouteKind::RoutePlanning,
@@ -109,22 +111,24 @@ mod tests {
             "write-authority",
             WorthQueryLowerRuntimeSubjectIdentity::compose("test-subject")
                 .field_value(WorthQueryEvidenceTag::new("test_subject"), "subject-1")
-                .seal(),
-        );
+                .seal()?,
+        )?;
 
         let detail_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
         )
         .field_value(WorthQueryEvidenceTag::new("test_detail"), "detail-1")
-        .seal();
+        .seal()?;
         let eligibility =
             WorthQueryLowerRuntimeCapabilityEligibility::admitted_with_evidence_identity(
                 request,
                 &detail_identity,
-            );
+            )?;
 
         assert_eq!(eligibility.posture().as_str(), "admitted");
         let eligibility_identity = eligibility.eligibility_identity();
         assert!(!eligibility_identity.reporting_projection().is_empty());
+
+        Ok(())
     }
 }

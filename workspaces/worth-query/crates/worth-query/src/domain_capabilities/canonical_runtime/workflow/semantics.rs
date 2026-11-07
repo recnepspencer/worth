@@ -11,6 +11,7 @@ use crate::domain_capabilities::payloads::{
 };
 use crate::domain_capabilities::targets::WorthQueryDomainCapabilityTargetBinding;
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::workflow::WorkflowPreviewEvaluationClass;
 
 pub(super) fn workflow_source_label<T>(

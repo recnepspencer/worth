@@ -37,9 +37,11 @@ where
     let envelope_checked = handle.envelope_routes_checked(
         WorthQueryDeclarationEnvelopeInput::receipt_checked(receipt_checked),
     );
-    handle.route_bridge_continuation_checked(
-        WorthQueryDeclarationBridgeRoutingInput::envelope_checked(envelope_checked),
-    )
+    handle
+        .route_bridge_continuation_checked(
+            WorthQueryDeclarationBridgeRoutingInput::envelope_checked(envelope_checked),
+        )
+        .expect("fixture digest must fit")
 }
 
 pub(crate) fn routed_from_progressed<F>(
@@ -114,6 +116,7 @@ where
         WorthQueryDeclarationBridgeRoutingSupportStatus::Admitted,
         WorthQueryDeclarationBridgeRoutingInput::envelope_checked(envelope_checked),
     )
+    .expect("fixture digest must fit")
 }
 
 pub(crate) fn routed_from_future_supported_runtime_test_posture<F>(

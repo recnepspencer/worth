@@ -1,4 +1,5 @@
 use super::WorthQueryGraphCompositionProgram;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -78,9 +79,11 @@ pub struct WorthQueryGraphCompositionLifecycleOutcomes {
 }
 
 impl WorthQueryGraphCompositionLifecycleOutcomes {
-    pub(crate) fn derive(program: &WorthQueryGraphCompositionProgram) -> Option<Self> {
+    pub(crate) fn derive(
+        program: &WorthQueryGraphCompositionProgram,
+    ) -> Result<Option<Self>, IdentityDerivationDenial> {
         if program.is_empty() {
-            return None;
+            return Ok(None);
         }
 
         let entries = program
@@ -215,7 +218,7 @@ impl WorthQueryGraphCompositionLifecycleOutcomes {
                 )
                 .seal()
             })
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
         let lifecycle_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
                 .field_shape(
@@ -255,13 +258,13 @@ impl WorthQueryGraphCompositionLifecycleOutcomes {
                     WorthQueryEvidenceTag::new("entry"),
                     lifecycle_entry_digests.iter(),
                 )
-                .seal();
+                .seal()?;
 
-        Some(Self {
+        Ok(Some(Self {
             entries,
             lifecycle_digest,
             counter_snapshot,
-        })
+        }))
     }
 
     pub fn entries(&self) -> &[WorthQueryGraphCompositionLifecycleOutcomeEntry] {

@@ -10,6 +10,7 @@ use super::super::super::identity::compose_scoped_row_source_identity;
 use super::super::ProjectionFactExtractionError;
 use super::row_like_field_paths::identity_field_path;
 use super::row_like_values::consumed_aspect_value_as_str;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQueryEntityIdentity;
 
 #[derive(Clone, Copy)]
@@ -45,7 +46,7 @@ where
             row_identity_mode,
         )?;
     }
-    Ok(facts.into_fact_set(contract, rows.len(), shape))
+    Ok(facts.into_fact_set(contract, rows.len(), shape)?)
 }
 
 #[derive(Clone, Copy)]
@@ -201,12 +202,12 @@ impl ExtractedRowFacts {
         contract: &MaterializedProjectionContract,
         row_count: usize,
         shape: ExtractionShape,
-    ) -> ConsumedProjectionFactSet {
+    ) -> Result<ConsumedProjectionFactSet, IdentityDerivationDenial> {
         let extracted_fact_count = self.entity_identities.len()
             + self.view_local_identities.len()
             + self.display_fields.len()
             + self.derived_fields.len();
-        ConsumedProjectionFactSet::new(
+        Ok(ConsumedProjectionFactSet::new(
             ConsumedProjectionContractProvenance::from_contract(contract),
             ConsumedProjectionSourceTruth::from_contract(
                 contract,
@@ -232,7 +233,7 @@ impl ExtractedRowFacts {
                 effect_continuity_facts: Vec::new(),
                 relation_endpoints: Vec::new(),
             },
-        )
+        )?)
     }
 }
 
@@ -263,9 +264,9 @@ where
         -> Result<Option<&'a ConsumedNativeValue>, ProjectionFactExtractionError>,
 {
     if matches!(mode, RowIdentityExtractionMode::RowIdentityAsEntityIdentity) {
-        return Ok(typed_identity.clone().unwrap_or_else(|| {
+        return Ok(typed_identity.clone().map(Ok).unwrap_or_else(|| {
             crate::memory_workspace::admit_authored_entity_label(row_identity)
-        }));
+        })?);
     }
     let path = identity_field_path();
     let value = lookup(
@@ -286,17 +287,22 @@ where
         .view()
         .scalar()
         .and_then(consumed_aspect_value_as_str)
-        .ok_or_else(
-            || ProjectionFactExtractionError::InvalidDeclaredFieldValueShape {
-                source_family: contract.source_family(),
-                source_identity: compose_scoped_row_source_identity(
-                    contract.source_identity(),
-                    row_identity,
-                ),
-                field_key: "identity.id".to_string(),
-                fact_kind: ProjectionFactKind::EntityIdentity,
-                expected_shape: "string",
-            },
-        )?;
-    Ok(crate::memory_workspace::admit_authored_entity_label(label))
+        .ok_or_else(|| {
+            (|| {
+                Ok::<_, IdentityDerivationDenial>(
+                    ProjectionFactExtractionError::InvalidDeclaredFieldValueShape {
+                        source_family: contract.source_family(),
+                        source_identity: compose_scoped_row_source_identity(
+                            contract.source_identity(),
+                            row_identity,
+                        )?,
+                        field_key: "identity.id".to_string(),
+                        fact_kind: ProjectionFactKind::EntityIdentity,
+                        expected_shape: "string",
+                    },
+                )
+            })()
+            .unwrap_or_else(ProjectionFactExtractionError::from)
+        })?;
+    Ok(crate::memory_workspace::admit_authored_entity_label(label)?)
 }

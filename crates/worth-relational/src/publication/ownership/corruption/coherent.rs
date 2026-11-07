@@ -213,8 +213,7 @@ fn payload<'a>(
     let AspectValue::UInt64(publication) = fields.get(&FieldKey::new("publication")?)? else {
         return None;
     };
-    let AspectValue::String(InternedString::Raw(text)) = fields.get(&FieldKey::new("payload")?)?
-    else {
+    let Some(text) = (fields.get(&FieldKey::new("payload")?)?).raw_text() else {
         return None;
     };
     Some((*publication, text))
@@ -239,7 +238,10 @@ fn rewrite(
                 return entry.clone();
             };
             let payload = FieldKey::new("payload").unwrap();
-            let Some(AspectValue::String(InternedString::Raw(text))) = fields.get(&payload) else {
+            let Some(text) = (fields.get(&payload))
+                .as_ref()
+                .and_then(|value| value.raw_text())
+            else {
                 return entry.clone();
             };
             let Some(text) = change(text) else {

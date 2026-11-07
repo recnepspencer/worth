@@ -6,6 +6,7 @@ use super::follow_on::{
     WorthQueryEffectWriteAdjacentTrigger, WorthQueryEffectWriteAdjacentTriggerClass,
 };
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::WorthQueryAspectTouch;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -177,10 +178,10 @@ impl WorthQueryEffectDeclaration {
         name: impl Into<String>,
         trigger: WorthQueryEffectTrigger,
         target: impl Into<String>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let name = name.into();
-        Self {
-            write_adjacent_trigger: WorthQueryEffectWriteAdjacentTrigger::ordinary(&name),
+        Ok(Self {
+            write_adjacent_trigger: WorthQueryEffectWriteAdjacentTrigger::ordinary(&name)?,
             name,
             trigger,
             condition: WorthQueryEffectCondition::Always,
@@ -189,16 +190,16 @@ impl WorthQueryEffectDeclaration {
             target: target.into(),
             effect_policy: WorthQueryEffectPolicy::AuthoritativeAllowed,
             suppression_policy: WorthQueryEffectSuppressionPolicy::None,
-        }
+        })
     }
     pub fn write_intent(
         name: impl Into<String>,
         trigger: WorthQueryEffectTrigger,
         intent: impl Into<String>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let name = name.into();
-        Self {
-            write_adjacent_trigger: WorthQueryEffectWriteAdjacentTrigger::ordinary(&name),
+        Ok(Self {
+            write_adjacent_trigger: WorthQueryEffectWriteAdjacentTrigger::ordinary(&name)?,
             name,
             trigger,
             condition: WorthQueryEffectCondition::Always,
@@ -207,7 +208,7 @@ impl WorthQueryEffectDeclaration {
             target: intent.into(),
             effect_policy: WorthQueryEffectPolicy::SandboxedWriteIntent,
             suppression_policy: WorthQueryEffectSuppressionPolicy::None,
-        }
+        })
     }
     pub fn with_condition(mut self, condition: WorthQueryEffectCondition) -> Self {
         self.condition = condition;

@@ -314,6 +314,9 @@ impl WorthServerProductOperationSurfaceDenial {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthServerProductOperationSurfaceDenialCode {
+    EvidenceIdentityDerivationDenied(
+        worth_query::facade::runtime::WorthQueryEvidenceIdentityDerivationDenial,
+    ),
     UnknownOperationName,
     RequestDenied,
     AdmissionDenied,

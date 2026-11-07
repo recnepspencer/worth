@@ -1,4 +1,5 @@
 use crate::basis_lifecycle::admit_basis_capability;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::ProjectionConsumptionEligibility;
 
 use super::{
@@ -63,7 +64,9 @@ impl WorthQueryBasisObservationPlan {
 }
 
 impl WorthQueryProjectionConsumptionPlan {
-    pub(crate) fn from_eligibility(eligibility: WorthQueryIntentAdmissionEligibility) -> Self {
+    pub(crate) fn from_eligibility(
+        eligibility: WorthQueryIntentAdmissionEligibility,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let declaration = eligibility
             .request()
             .projection_consumption_declaration()
@@ -71,7 +74,7 @@ impl WorthQueryProjectionConsumptionPlan {
         let (admitted, warnings) =
             match crate::projection_consumption::evaluate_projection_consumption_eligibility(
                 declaration,
-            ) {
+            )? {
                 ProjectionConsumptionEligibility::Admitted(admitted) => (admitted, None),
                 ProjectionConsumptionEligibility::AdmittedWithWarnings(admitted, warnings) => {
                     (admitted, Some(warnings))
@@ -80,17 +83,19 @@ impl WorthQueryProjectionConsumptionPlan {
                     "projection plan requires admitted projection eligibility, got {other:?}"
                 ),
             };
-        Self {
+        Ok(Self {
             inner: WorthQueryAdmittedIntentPlanCore::from_eligibility(eligibility, None),
             admitted,
             warnings,
-        }
+        })
     }
 }
 
 impl WorthQueryAdmittedIntentPlan {
-    pub(crate) fn from_eligibility(eligibility: WorthQueryIntentAdmissionEligibility) -> Self {
-        match eligibility.request().family() {
+    pub(crate) fn from_eligibility(
+        eligibility: WorthQueryIntentAdmissionEligibility,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(match eligibility.request().family() {
             WorthQueryIntentAdmissionFamily::AuthoritativeUserIntent => Self::Authoritative(
                 WorthQueryAuthoritativeIntentExecutionPlan::from_eligibility(
                     eligibility,
@@ -191,8 +196,8 @@ impl WorthQueryAdmittedIntentPlan {
             WorthQueryIntentAdmissionFamily::ProjectionConsumptionIntent => {
                 Self::ProjectionConsumption(WorthQueryProjectionConsumptionPlan::from_eligibility(
                     eligibility,
-                ))
+                )?)
             }
-        }
+        })
     }
 }

@@ -33,7 +33,10 @@ fn symbolic_target_reference_denies_missing_same_batch_target() {
                 denial.kind(),
                 WorthQuerySymbolicTargetReferenceDenialKind::UnresolvedSameBatchTarget
             );
-            assert!(!denial.denial_digest().is_empty());
+            assert!(!denial
+                .denial_digest()
+                .expect("fixture digest must fit")
+                .is_empty());
         }
         other => panic!("expected symbolic target denial, got {other:?}"),
     }
@@ -143,6 +146,7 @@ fn preview_batch_symbolic_target_preserves_symbolic_evidence() {
     assert_eq!(
         receipt
             .batch_mutation_evidence()
+            .expect("fixture digest must fit")
             .symbolic_target_reference_count(),
         1
     );

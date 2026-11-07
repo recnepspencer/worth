@@ -4,7 +4,7 @@ use super::*;
 fn support_report_includes_identity_evolution_capability_and_profile() {
     let facade = WorthQueryApplicationFacade::runtime_backed_default();
     let support = facade.support_matrix();
-    let report = facade.support_report();
+    let report = facade.support_report().expect("fixture digest must fit");
 
     assert_eq!(
         support

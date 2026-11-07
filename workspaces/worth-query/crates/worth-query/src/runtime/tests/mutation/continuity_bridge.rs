@@ -19,7 +19,8 @@ fn bridge_split_successor_continuity_preserves_successor_set() {
             Some(target_collection("Task")),
         )
         .expect("split continuity bundle should build"),
-    );
+    )
+    .expect("fixture digest must fit");
 
     assert_eq!(
         evidence.family(),

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod admission;
 mod aftermath;
 mod continuity;
@@ -24,11 +25,13 @@ pub use workflow::*;
 fn bind_requested<P, T>(
     payload: P,
     target: T,
-) -> WorthQueryRequestedDomainCapabilityContribution<P, T>
+) -> Result<WorthQueryRequestedDomainCapabilityContribution<P, T>, IdentityDerivationDenial>
 where
     P: super::payloads::WorthQueryDomainCapabilityPayload,
     T: WorthQueryDomainCapabilityTargetBinding,
     (P, T): AllowedContributionBinding<P, T>,
 {
-    create_requested_domain_capability_contribution(target, payload)
+    Ok(create_requested_domain_capability_contribution(
+        target, payload,
+    )?)
 }

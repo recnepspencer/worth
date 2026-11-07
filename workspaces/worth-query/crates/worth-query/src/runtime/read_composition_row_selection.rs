@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -82,10 +83,13 @@ pub(super) fn materialize_collection_rows_from_request(
 
 pub(super) fn synthetic_detail_rows_for_request(
     request: &DeclarativeLiveQueryRequest,
-) -> Vec<WorthQueryEntity> {
+) -> Result<
+    Vec<WorthQueryEntity>,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+> {
     let anchor_identity = identity_anchor(request).unwrap_or("synthetic-anchor");
-    vec![WorthQueryEntity::from_aspect_projection(
-        crate::memory_workspace::admit_authored_entity_label(anchor_identity),
+    Ok(vec![WorthQueryEntity::from_aspect_projection(
+        crate::memory_workspace::admit_authored_entity_label(anchor_identity)?,
         BTreeMap::from([(
             worth_foundational::facade::AspectKey::new("read.synthetic").unwrap(),
             AspectValue::Bool(true),
@@ -101,7 +105,7 @@ pub(super) fn synthetic_detail_rows_for_request(
             .unwrap(),
         )]),
         BTreeMap::new(),
-    )]
+    )])
 }
 
 pub fn worth_query_materialized_relation_field_key(relation: &RelationName) -> FieldKey {
@@ -220,6 +224,10 @@ fn identity_anchor(request: &DeclarativeLiveQueryRequest) -> Option<&str> {
                 if is_identity_field_key(filter.source_field_key()) =>
             {
                 match filter.value().as_native() {
+                    AspectValue::String(InternedString::Stored(value)) => {
+                        let value = value.as_string();
+                        Some(value.as_str())
+                    }
                     AspectValue::String(InternedString::Raw(value)) => Some(value.as_str()),
                     _ => None,
                 }
@@ -346,6 +354,10 @@ fn identity_field_key() -> FieldKey {
 
 fn as_string_scalar(value: &AspectValue) -> Option<&str> {
     match value {
+        AspectValue::String(InternedString::Stored(value)) => {
+            let value = value.as_string();
+            Some(value.as_str())
+        }
         AspectValue::String(InternedString::Raw(value)) => Some(value.as_str()),
         _ => None,
     }

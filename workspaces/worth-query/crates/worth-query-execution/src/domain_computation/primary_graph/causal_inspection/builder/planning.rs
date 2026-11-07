@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CausalInspectionPlan {
@@ -22,22 +23,22 @@ impl CausalInspectionPlan {
         request: CausalInspectionRequest,
         redaction_policy: CausalInspectionRedactionPolicy,
         materialization_policy: CausalInspectionMaterializationPolicy,
-    ) -> Self {
-        let admission = admit_causal_inspection(request.clone());
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
+        let admission = admit_causal_inspection(request.clone())?;
         let inspection_basis = request
             .reference_set()
             .anchor()
             .observation_receipt()
             .inspection_basis()
             .clone();
-        Self {
+        Ok(Self {
             inspection_basis,
             reference_set,
             request,
             admission,
             redaction_policy,
             materialization_policy,
-        }
+        })
     }
 
     pub fn support_posture(&self) -> CausalInspectionSupportPosture {

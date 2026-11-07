@@ -152,5 +152,9 @@ fn lifecycle_certification_denies_attachment_from_foreign_lane() {
         error.denial_kind(),
         &SubscriptionLifecycleCertificationDenialKind::AttachmentSourceMismatch
     );
-    assert!(!error.failure_projection().label().is_empty());
+    assert!(!error
+        .failure_projection()
+        .expect("fixture digest must fit")
+        .label()
+        .is_empty());
 }

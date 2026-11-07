@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -129,7 +130,7 @@ impl QuerySubscriptionSupportProfile {
             durable_support.as_str(),
         )
         .field_evidence_identity(WorthQueryEvidenceTag::new("source"), source_identity)
-        .seal();
+        .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens");
         Self {
             runtime_backed_support,
             active_lifecycle_support,

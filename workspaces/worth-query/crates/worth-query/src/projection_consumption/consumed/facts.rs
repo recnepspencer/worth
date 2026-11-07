@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQueryEntityIdentity;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
@@ -8,7 +9,7 @@ pub struct ConsumedContinuityAuthorityIdentity {
 }
 
 impl ConsumedContinuityAuthorityIdentity {
-    pub(crate) fn new(label: impl Into<String>) -> Self {
+    pub(crate) fn new(label: impl Into<String>) -> Result<Self, IdentityDerivationDenial> {
         let label = label.into();
         let evidence_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::ProjectionConsumedContinuityAuthorityIdentity,
@@ -17,11 +18,11 @@ impl ConsumedContinuityAuthorityIdentity {
             WorthQueryEvidenceTag::new("authority_identity"),
             label.as_str(),
         )
-        .seal();
-        Self {
+        .seal()?;
+        Ok(Self {
             label,
             evidence_identity,
-        }
+        })
     }
 
     pub fn label(&self) -> &str {

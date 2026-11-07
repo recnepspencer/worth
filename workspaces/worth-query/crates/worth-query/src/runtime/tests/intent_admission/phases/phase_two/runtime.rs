@@ -15,7 +15,8 @@ fn authoritative_runtime_floor_eligibility_carries_closed_pre_execution_facts() 
         )
         .expect("authoritative request should build");
     let eligibility =
-        crate::intent_admission::WorthQueryIntentAdmissionEligibility::from_request(request);
+        crate::intent_admission::WorthQueryIntentAdmissionEligibility::from_request(request)
+            .expect("fixture digest must fit");
 
     assert_eq!(
         eligibility.support_posture(),
@@ -87,7 +88,8 @@ fn effect_runtime_floor_eligibility_carries_closed_pre_execution_facts() {
         )
         .expect("effect request should build");
     let eligibility =
-        crate::intent_admission::WorthQueryIntentAdmissionEligibility::from_request(request);
+        crate::intent_admission::WorthQueryIntentAdmissionEligibility::from_request(request)
+            .expect("fixture digest must fit");
 
     assert_eq!(
         eligibility.support_posture(),
@@ -134,8 +136,9 @@ fn mismatched_runtime_floor_eligibility_stops_as_violation() {
         .expect("authoritative request should build");
     let eligibility = crate::intent_admission::WorthQueryIntentAdmissionEligibility::from_request(
         request.clone(),
-    );
-    let decision = admit_runtime_intent_request(request);
+    )
+    .expect("fixture digest must fit");
+    let decision = admit_runtime_intent_request(request).expect("fixture digest must fit");
 
     assert_eq!(
         eligibility.capability_posture(),
@@ -187,8 +190,9 @@ fn authority_lane_mismatch_stops_as_violation() {
         .expect("authoritative request should build");
     let eligibility = crate::intent_admission::WorthQueryIntentAdmissionEligibility::from_request(
         request.clone(),
-    );
-    let decision = admit_runtime_intent_request(request);
+    )
+    .expect("fixture digest must fit");
+    let decision = admit_runtime_intent_request(request).expect("fixture digest must fit");
 
     assert_eq!(
         eligibility.capability_posture(),
@@ -237,7 +241,7 @@ fn eligibility_digest_changes_when_pre_decision_fact_meaning_changes() {
             .with_source_lane(WorthQueryIntentSourceLane::EffectTriggered),
         )
         .expect("authoritative request should build"),
-    );
+    ).expect("fixture digest must fit");
     let authority_lane_violation = crate::intent_admission::WorthQueryIntentAdmissionEligibility::from_request(
         crate::intent_admission::WorthQueryRawIntentAdmissionRequest::authoritative_runtime_entrypoint(
             WorthQueryIntentDeclaration::strategy_commit(
@@ -250,7 +254,7 @@ fn eligibility_digest_changes_when_pre_decision_fact_meaning_changes() {
             .with_target_lane(WorthQueryAuthorityLane::PreviewTruth),
         )
         .expect("authoritative request should build"),
-    );
+    ).expect("fixture digest must fit");
 
     assert_ne!(
         source_lane_violation.eligibility_digest(),

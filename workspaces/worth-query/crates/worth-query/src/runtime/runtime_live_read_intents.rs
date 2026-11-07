@@ -1,5 +1,6 @@
 use super::materialized_fact_posture::materialized_fact_posture_from_live_subscription_state;
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::intent_admission::dx::{
     non_admitted_runtime_violation, WorthQueryRuntimeIntentAdmissionReviewData,
 };
@@ -78,7 +79,7 @@ impl WorthQueryRuntime {
             })?;
         Ok(WorthQueryRuntimeIntentAdmissionReviewData::from_request(
             request,
-        ))
+        )?)
     }
 
     pub(crate) fn resolve_reviewed_admitted_live_read_execution_handoff(
@@ -117,7 +118,7 @@ impl WorthQueryRuntime {
         Ok(WorthQueryLiveReadExecutionBinding::from_handoff(
             handoff,
             live_graph_read_access_plan,
-        ))
+        )?)
     }
 
     pub(crate) fn execute_live_read_execution_binding(
@@ -169,6 +170,7 @@ impl WorthQueryRuntime {
                     &source_rows,
                 )
             });
+        let projected_rows = projected_rows.transpose()?;
         let (rows, maintenance_source_rows) = match projected_rows {
             Some(rows) => (rows, Some(source_rows)),
             None => (source_rows, None),
@@ -188,7 +190,7 @@ impl WorthQueryRuntime {
         let materialized_fact_posture = self.materialized_fact_posture_for_live_read(
             binding.installation().view_name(),
             &snapshot_evidence_identity,
-        );
+        )?;
         let receipt = WorthQueryLiveReadReceipt::from_rows(
             binding.installation(),
             snapshot_identity,
@@ -239,7 +241,7 @@ impl WorthQueryRuntime {
                 binding.binding_digest(),
                 result.receipt().result_digest(),
                 &snapshot_evidence_identity,
-            );
+            )?;
         result.attach_intent_admission_evidence(decision_trace_envelope, execution_provenance);
         Ok(result)
     }
@@ -248,12 +250,16 @@ impl WorthQueryRuntime {
         &self,
         view_name: &str,
         basis_identity: &crate::WorthQueryEvidenceIdentity,
-    ) -> Option<crate::projection_consumption::ProjectionMaterializedFactPosture> {
+    ) -> Result<
+        Option<crate::projection_consumption::ProjectionMaterializedFactPosture>,
+        IdentityDerivationDenial,
+    > {
         let target = WorthQueryLiveArtifactTarget::from_view_name(view_name);
-        let state = self.live_subscriptions.get(&target)?;
-        Some(materialized_fact_posture_from_live_subscription_state(
-            state,
-            basis_identity,
+        let Some(state) = self.live_subscriptions.get(&target) else {
+            return Ok(None);
+        };
+        Ok(Some(
+            materialized_fact_posture_from_live_subscription_state(state, basis_identity)?,
         ))
     }
 

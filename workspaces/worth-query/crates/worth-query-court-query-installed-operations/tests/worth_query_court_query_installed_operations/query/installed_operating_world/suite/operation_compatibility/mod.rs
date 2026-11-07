@@ -98,6 +98,7 @@ fn rebuilt_indexes_do_not_change_the_authority_oracle() {
     let before = bind(&workspace, &installed);
     assert!(workspace
         .verify_domain_execution_index_rebuild()
+        .expect("fixture digest must fit")
         .is_equivalent());
     let report = workspace.rebuild_conditional_execution_index();
     assert!(report.exact_index_parity());

@@ -8,10 +8,13 @@ use super::{
     WorthQueryLiveReadExecutionHandoff, WorthQueryReadExecutionHandoff,
     WorthQueryUnifiedInspectionExecutionHandoff,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 impl WorthQueryAdmittedIntentPlan {
-    pub fn into_execution_handoff(self) -> Option<WorthQueryAdmittedIntentExecutionHandoff> {
-        match self {
+    pub fn into_execution_handoff(
+        self,
+    ) -> Result<Option<WorthQueryAdmittedIntentExecutionHandoff>, IdentityDerivationDenial> {
+        Ok(match self {
             WorthQueryAdmittedIntentPlan::Authoritative(plan) => {
                 Some(WorthQueryAdmittedIntentExecutionHandoff::Authoritative(
                     WorthQueryAuthoritativeIntentExecutionHandoff::from_plan(plan),
@@ -24,12 +27,12 @@ impl WorthQueryAdmittedIntentPlan {
             }
             WorthQueryAdmittedIntentPlan::AuthoritativeMutation(plan) => Some(
                 WorthQueryAdmittedIntentExecutionHandoff::AuthoritativeMutation(
-                    WorthQueryAuthoritativeMutationExecutionHandoff::from_plan(plan),
+                    WorthQueryAuthoritativeMutationExecutionHandoff::from_plan(plan)?,
                 ),
             ),
             WorthQueryAdmittedIntentPlan::AuthoritativeMutationBatch(plan) => Some(
                 WorthQueryAdmittedIntentExecutionHandoff::AuthoritativeMutationBatch(
-                    WorthQueryAuthoritativeMutationBatchExecutionHandoff::from_plan(plan),
+                    WorthQueryAuthoritativeMutationBatchExecutionHandoff::from_plan(plan)?,
                 ),
             ),
             WorthQueryAdmittedIntentPlan::ReadExecution(plan) => {
@@ -64,6 +67,6 @@ impl WorthQueryAdmittedIntentPlan {
             ),
             WorthQueryAdmittedIntentPlan::BasisObservation(_)
             | WorthQueryAdmittedIntentPlan::ProjectionConsumption(_) => None,
-        }
+        })
     }
 }

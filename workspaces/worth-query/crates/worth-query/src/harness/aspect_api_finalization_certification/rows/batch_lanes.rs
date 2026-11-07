@@ -64,18 +64,24 @@ pub(super) fn authoritative_batch_lane(
         mutation_family_label: "batch".to_string(),
         support_matrix_digest: workspace
             .public_support_matrix()
+            .expect("fixture digest must fit")
             .matrix_digest()
             .terminal_projection_for_reporting()
             .to_string(),
         mutation_surface_report_digest: workspace
             .public_mutation_surface_report()
+            .expect("fixture digest must fit")
             .report_digest()
             .to_string(),
         closeout_digest: workspace
             .public_aspect_api_finalization_closeout()
+            .expect("fixture digest must fit")
             .closeout_digest()
             .to_string(),
-        receipt_digest: receipt.batch_digest().to_string(),
+        receipt_digest: receipt
+            .batch_digest()
+            .expect("fixture digest must fit")
+            .to_string(),
         state_digest: state
             .state_digest()
             .terminal_projection_for_reporting()
@@ -126,7 +132,7 @@ pub(super) fn preview_batch_lane(
                 })
         })
         .expect("preview batch should stage");
-    let outcome = preview.discard();
+    let outcome = preview.discard().expect("fixture digest must fit");
     let inspection = workspace
         .inspect(request_execution, &receipt)
         .expect("inspection should resolve");
@@ -140,18 +146,24 @@ pub(super) fn preview_batch_lane(
         mutation_family_label: "batch".to_string(),
         support_matrix_digest: workspace
             .public_support_matrix()
+            .expect("fixture digest must fit")
             .matrix_digest()
             .terminal_projection_for_reporting()
             .to_string(),
         mutation_surface_report_digest: workspace
             .public_mutation_surface_report()
+            .expect("fixture digest must fit")
             .report_digest()
             .to_string(),
         closeout_digest: workspace
             .public_aspect_api_finalization_closeout()
+            .expect("fixture digest must fit")
             .closeout_digest()
             .to_string(),
-        receipt_digest: receipt.batch_digest().to_string(),
+        receipt_digest: receipt
+            .batch_digest()
+            .expect("fixture digest must fit")
+            .to_string(),
         state_digest: state
             .state_digest()
             .terminal_projection_for_reporting()
@@ -172,8 +184,12 @@ pub(super) fn mutation_surface_contract_lane(
     let workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("aspect-api.contract")
         .expect("workspace should open");
-    let report = workspace.public_mutation_surface_report();
-    let closeout = workspace.public_aspect_api_finalization_closeout();
+    let report = workspace
+        .public_mutation_surface_report()
+        .expect("fixture digest must fit");
+    let closeout = workspace
+        .public_aspect_api_finalization_closeout()
+        .expect("fixture digest must fit");
 
     AspectApiFinalizationCertificationBundle {
         mutation_surface_label:
@@ -183,6 +199,7 @@ pub(super) fn mutation_surface_contract_lane(
         mutation_family_label: "contract".to_string(),
         support_matrix_digest: workspace
             .public_support_matrix()
+            .expect("fixture digest must fit")
             .matrix_digest()
             .terminal_projection_for_reporting()
             .to_string(),

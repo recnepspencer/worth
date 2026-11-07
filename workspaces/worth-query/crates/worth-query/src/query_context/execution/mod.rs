@@ -211,7 +211,13 @@ pub(crate) fn execute_legacy_query_basis_context(
                 result_shape_digest: compose_preview_derived_result_shape_digest(
                     foundation.validated_query_digest().as_str(),
                     foundation.shape_check_width(),
-                ),
+                )
+                .map_err(|cause| {
+                    QueryContextAdmissionError::identity_refused(
+                        cause,
+                        context.binding().counters().clone(),
+                    )
+                })?,
                 rows,
                 family: QueryContextExecutionFamily::PreviewDerivedHistorical,
                 cost_class: context.cost_class().clone(),

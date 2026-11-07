@@ -9,7 +9,10 @@ pub struct WorthQueryBridgeMutationArtifactIdentity {
 }
 
 impl WorthQueryBridgeMutationArtifactIdentity {
-    pub(crate) fn imported(role: &'static str, artifact: impl Into<String>) -> Self {
+    pub(crate) fn imported(
+        role: &'static str,
+        artifact: impl Into<String>,
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         let artifact = artifact.into();
         let identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceSourceDigest)
@@ -18,8 +21,8 @@ impl WorthQueryBridgeMutationArtifactIdentity {
                     WorthQueryEvidenceTag::new("imported_artifact"),
                     artifact.as_str(),
                 )
-                .seal();
-        Self { identity }
+                .seal()?;
+        Ok(Self { identity })
     }
 
     pub fn evidence_identity(&self) -> &WorthQueryEvidenceIdentity {

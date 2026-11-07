@@ -1,4 +1,5 @@
 use crate::basis_lifecycle::BasisFamily;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -133,7 +134,7 @@ impl AuthorityScopedEffectPlan {
                     WorthQueryEvidenceTag::new("counters"),
                     &counters.evidence_identity(),
                 )
-                .seal();
+                .seal().expect("bounded route grammar: sealed identifiers, primitive counts and closed inventory or policy labels");
         Self {
             admitted,
             invariant_scope,

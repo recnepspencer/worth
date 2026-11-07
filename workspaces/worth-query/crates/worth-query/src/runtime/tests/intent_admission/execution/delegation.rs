@@ -19,8 +19,9 @@ fn execute_intent_delegates_to_canonical_admission_and_execution_handoff() {
     let canonical = canonical_runtime
         .admit_authoritative_intent_for_execution(declaration.clone())
         .expect("canonical handoff should admit");
-    let canonical_binding =
-        canonical_runtime.prepare_authoritative_intent_execution_binding(canonical);
+    let canonical_binding = canonical_runtime
+        .prepare_authoritative_intent_execution_binding(canonical)
+        .expect("fixture digest must fit");
     let delegated = delegated_runtime
         .execute_intent(request_execution, declaration)
         .expect("delegated entrypoint should execute");
@@ -62,20 +63,24 @@ fn execute_next_effect_write_intent_delegates_to_canonical_admission_and_executi
         )
         .expect("live should declare");
     let delegated_effect = delegated_runtime
-        .declare_effect::<WorthQueryUnrefinedLiveShape>(WorthQueryEffectDeclaration::write_intent(
-            "effects.reconcile-admission",
-            WorthQueryEffectTrigger::live_view(
-                &delegated_live,
-                test_aspect_touches(["title.value"]),
-            ),
-            "strategy.intent.reconcile",
-        ))
+        .declare_effect::<WorthQueryUnrefinedLiveShape>(
+            WorthQueryEffectDeclaration::write_intent(
+                "effects.reconcile-admission",
+                WorthQueryEffectTrigger::live_view(
+                    &delegated_live,
+                    test_aspect_touches(["title.value"]),
+                ),
+                "strategy.intent.reconcile",
+            )
+            .expect("fixture digest must fit"),
+        )
         .expect("write-intent effect should declare");
     delegated_runtime
         .write(
             request_execution,
             test_update_string_aspect_command(
-                crate::memory_workspace::admit_authored_entity_label("task-1"),
+                crate::memory_workspace::admit_authored_entity_label("task-1")
+                    .expect("fixture digest must fit"),
                 "title.value",
                 "title from write",
             ),
@@ -102,20 +107,24 @@ fn execute_next_effect_write_intent_delegates_to_canonical_admission_and_executi
         )
         .expect("live should declare");
     let canonical_effect = canonical_runtime
-        .declare_effect::<WorthQueryUnrefinedLiveShape>(WorthQueryEffectDeclaration::write_intent(
-            "effects.reconcile-admission",
-            WorthQueryEffectTrigger::live_view(
-                &canonical_live,
-                test_aspect_touches(["title.value"]),
-            ),
-            "strategy.intent.reconcile",
-        ))
+        .declare_effect::<WorthQueryUnrefinedLiveShape>(
+            WorthQueryEffectDeclaration::write_intent(
+                "effects.reconcile-admission",
+                WorthQueryEffectTrigger::live_view(
+                    &canonical_live,
+                    test_aspect_touches(["title.value"]),
+                ),
+                "strategy.intent.reconcile",
+            )
+            .expect("fixture digest must fit"),
+        )
         .expect("write-intent effect should declare");
     canonical_runtime
         .write(
             request_execution,
             test_update_string_aspect_command(
-                crate::memory_workspace::admit_authored_entity_label("task-1"),
+                crate::memory_workspace::admit_authored_entity_label("task-1")
+                    .expect("fixture digest must fit"),
                 "title.value",
                 "title from write",
             ),
@@ -129,7 +138,8 @@ fn execute_next_effect_write_intent_delegates_to_canonical_admission_and_executi
         )
         .expect("canonical effect handoff should admit");
     let canonical_binding = canonical_runtime
-        .prepare_effect_intent_execution_binding(canonical_handoff, &pending_delivery);
+        .prepare_effect_intent_execution_binding(canonical_handoff, &pending_delivery)
+        .expect("fixture digest must fit");
     let canonical_receipt = canonical_runtime
         .execute_effect_intent_execution_binding(request_execution, canonical_binding)
         .expect("canonical effect handoff should execute");
@@ -174,7 +184,8 @@ fn scalar_write_delegates_to_canonical_admission_and_execution_handoff() {
     let mut delegated_runtime =
         intent_runtime_with_authority(request_execution, TestIntentAuthority);
     let command = test_update_string_aspect_command(
-        crate::memory_workspace::admit_authored_entity_label("task-1"),
+        crate::memory_workspace::admit_authored_entity_label("task-1")
+            .expect("fixture digest must fit"),
         "title.value",
         "title from scalar write",
     );
@@ -190,8 +201,9 @@ fn scalar_write_delegates_to_canonical_admission_and_execution_handoff() {
     let canonical_handoff = canonical_runtime
         .resolve_reviewed_admitted_authoritative_write_handoff(review)
         .expect("canonical write handoff should admit");
-    let canonical_binding =
-        canonical_runtime.prepare_authoritative_mutation_execution_binding(canonical_handoff);
+    let canonical_binding = canonical_runtime
+        .prepare_authoritative_mutation_execution_binding(canonical_handoff)
+        .expect("fixture digest must fit");
     let canonical_receipt = canonical_runtime
         .execute_authoritative_mutation_execution_binding(request_execution, canonical_binding)
         .expect("canonical write binding should execute");

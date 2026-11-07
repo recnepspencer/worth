@@ -19,11 +19,12 @@ fn declaration_support_evidence_composes_into_readiness() {
 
     let handle = handle(request_execution, "preview");
     let evidence = WorthQueryDeclarationEntryContributionEvidenceSet::new(vec![
-        WorthQueryDeclarationEntryContributionEvidence::from(admitted_declaration_support(
+        WorthQueryDeclarationEntryContributionEvidence::try_from(admitted_declaration_support(
             "family.readiness.digest",
             "support",
             "kept-by-domain",
-        )),
+        ))
+        .expect("fixture contribution must fit"),
     ]);
 
     let readiness = handle
@@ -61,11 +62,12 @@ fn declaration_explanation_evidence_composes_into_unified_inspection() {
         .matching_row_digests()
         .to_vec();
     let evidence = WorthQueryDeclarationEntryContributionEvidenceSet::new(vec![
-        WorthQueryDeclarationEntryContributionEvidence::from(admitted_declaration_explanation(
+        WorthQueryDeclarationEntryContributionEvidence::try_from(admitted_declaration_explanation(
             &canonical_declaration,
             "explain",
             "needs context",
-        )),
+        ))
+        .expect("fixture contribution must fit"),
     ]);
 
     let inspection = handle
@@ -105,9 +107,10 @@ fn contribution_digest_changes_without_changing_matching_rows() {
             )
             .with_contribution_evidence(
                 WorthQueryDeclarationEntryContributionEvidenceSet::new(vec![
-                    WorthQueryDeclarationEntryContributionEvidence::from(
+                    WorthQueryDeclarationEntryContributionEvidence::try_from(
                         admitted_declaration_advisory(&canonical_declaration, "advisory", "first"),
-                    ),
+                    )
+                    .expect("fixture contribution must fit"),
                 ]),
             ),
         )
@@ -119,9 +122,10 @@ fn contribution_digest_changes_without_changing_matching_rows() {
             )
             .with_contribution_evidence(
                 WorthQueryDeclarationEntryContributionEvidenceSet::new(vec![
-                    WorthQueryDeclarationEntryContributionEvidence::from(
+                    WorthQueryDeclarationEntryContributionEvidence::try_from(
                         admitted_declaration_advisory(&canonical_declaration, "advisory", "second"),
-                    ),
+                    )
+                    .expect("fixture contribution must fit"),
                 ]),
             ),
         )
@@ -142,13 +146,14 @@ fn readiness_digest_changes_while_baseline_rows_stay_intact() {
         .try_declaration_entry_readiness::<Input<BridgeSignalFamily>>(
             WorthQueryDeclarationEntryReadinessRequest::base().with_contribution_evidence(
                 WorthQueryDeclarationEntryContributionEvidenceSet::new(vec![
-                    WorthQueryDeclarationEntryContributionEvidence::from(
+                    WorthQueryDeclarationEntryContributionEvidence::try_from(
                         admitted_declaration_support(
                             "family.readiness.digest",
                             "support",
                             "composed",
                         ),
-                    ),
+                    )
+                    .expect("fixture contribution must fit"),
                 ]),
             ),
         )
@@ -175,11 +180,10 @@ fn declaration_workflow_evidence_composes_when_admitted_plan_scope_is_present() 
             .with_admitted_plan_scope(plan.clone())
             .with_contribution_evidence(
                 WorthQueryDeclarationEntryContributionEvidenceSet::new(vec![
-                    WorthQueryDeclarationEntryContributionEvidence::from(admitted_plan_workflow(
-                        &plan,
-                        "workflow",
-                        "preview-only",
-                    )),
+                    WorthQueryDeclarationEntryContributionEvidence::try_from(
+                        admitted_plan_workflow(&plan, "workflow", "preview-only"),
+                    )
+                    .expect("fixture contribution must fit"),
                 ]),
             ),
         )
@@ -212,18 +216,18 @@ fn admitted_plan_bound_categories_compose_with_retained_plan_scope() {
                 .with_admitted_plan_scope(plan.clone())
                 .with_contribution_evidence(
                     WorthQueryDeclarationEntryContributionEvidenceSet::new(vec![
-                        WorthQueryDeclarationEntryContributionEvidence::from(
+                        WorthQueryDeclarationEntryContributionEvidence::try_from(
                             admitted_plan_support(&plan, "support", "plan-bound"),
-                        ),
-                        WorthQueryDeclarationEntryContributionEvidence::from(
+                        ).expect("fixture contribution must fit"),
+                        WorthQueryDeclarationEntryContributionEvidence::try_from(
                             admitted_plan_workflow(&plan, "workflow", "plan-preview"),
-                        ),
-                        WorthQueryDeclarationEntryContributionEvidence::from(
+                        ).expect("fixture contribution must fit"),
+                        WorthQueryDeclarationEntryContributionEvidence::try_from(
                             admitted_plan_continuity(&plan, "continuity", "lineage"),
-                        ),
-                        WorthQueryDeclarationEntryContributionEvidence::from(
+                        ).expect("fixture contribution must fit"),
+                        WorthQueryDeclarationEntryContributionEvidence::try_from(
                             admitted_plan_aftermath(&plan, "aftermath", "residue"),
-                        ),
+                        ).expect("fixture contribution must fit"),
                     ]),
                 ),
         )
@@ -251,20 +255,22 @@ fn lower_runtime_bound_categories_compose_with_retained_lower_runtime_scope() {
             .with_lower_runtime_boundary_scope(lower_runtime.clone())
             .with_contribution_evidence(
                 WorthQueryDeclarationEntryContributionEvidenceSet::new(vec![
-                    WorthQueryDeclarationEntryContributionEvidence::from(
+                    WorthQueryDeclarationEntryContributionEvidence::try_from(
                         admitted_lower_runtime_explanation(
                             &lower_runtime,
                             "explain",
                             "cross-runtime context",
                         ),
-                    ),
-                    WorthQueryDeclarationEntryContributionEvidence::from(
+                    )
+                    .expect("fixture contribution must fit"),
+                    WorthQueryDeclarationEntryContributionEvidence::try_from(
                         admitted_lower_runtime_aftermath(
                             &lower_runtime,
                             "aftermath",
                             "runtime residue",
                         ),
-                    ),
+                    )
+                    .expect("fixture contribution must fit"),
                 ]),
             ),
         )

@@ -191,7 +191,10 @@ pub fn declare_query_subscription(
     }
 
     counters.scratch_allocation_count += 1;
-    let slice_intent = QuerySubscriptionSliceIntent::from_canonical_parts(raw_parts);
+    let slice_intent =
+        QuerySubscriptionSliceIntent::from_canonical_parts(raw_parts).map_err(|cause| {
+            QuerySubscriptionDeclarationDenial::identity_refused(cause, counters.clone())
+        })?;
     let delivery_intent = QuerySubscriptionDeliveryIntent::for_family(selection.family());
 
     counters.declaration_count = 1;
@@ -215,7 +218,10 @@ pub fn declare_query_subscription(
         &delivery_intent,
         selection.work_budget().max_admitted_slice_count(),
         &slice_budget,
-    );
+    )
+    .map_err(|cause| {
+        QuerySubscriptionDeclarationDenial::identity_refused(cause, counters.clone())
+    })?;
     counters.declaration_digest_part_count = 18;
     let declaration_digest =
         QuerySubscriptionDeclarationDigest::from_evidence_identity(&declaration_identity);

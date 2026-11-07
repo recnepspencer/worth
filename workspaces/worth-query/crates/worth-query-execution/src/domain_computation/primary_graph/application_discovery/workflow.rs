@@ -106,7 +106,7 @@ pub(in crate::domain_computation::primary_graph) fn current_definition(
             "workflow definition discovery",
         )
     })?;
-    let Some(AspectValue::String(InternedString::Raw(recorded))) = recorded else {
+    let Some(recorded) = (recorded).as_ref().and_then(|value| value.raw_text()) else {
         return Ok(None);
     };
     let Some(content_identity) =

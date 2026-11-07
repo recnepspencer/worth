@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 use super::super::super::materialization::QueryCausalInspectionArtifact;
@@ -46,7 +47,7 @@ pub(super) fn artifact_policy_digest(artifact: &QueryCausalInspectionArtifact) -
 pub(super) fn evidence_reference_collection_digest(
     artifact: &QueryCausalInspectionArtifact,
     kind: CausalInspectionRepresentativeKind,
-) -> String {
+) -> Result<String, IdentityDerivationDenial> {
     let references = match artifact {
         QueryCausalInspectionArtifact::Admitted(artifact) => artifact
             .evidence_references()
@@ -60,7 +61,7 @@ pub(super) fn evidence_reference_collection_digest(
             .collect::<Vec<_>>(),
         QueryCausalInspectionArtifact::Denied(_) => Vec::new(),
     };
-    WorthQueryEvidenceIdentity::compose(
+    Ok(WorthQueryEvidenceIdentity::compose(
         WorthQueryEvidenceScope::CausalInspectionCertificationFailureEvidence,
     )
     .field_shape(
@@ -69,7 +70,7 @@ pub(super) fn evidence_reference_collection_digest(
     )
     .field_shape(WorthQueryEvidenceTag::new("kind"), kind.as_str())
     .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("reference"), references)
-    .seal()
+    .seal()?
     .as_str()
-    .to_string()
+    .to_string())
 }

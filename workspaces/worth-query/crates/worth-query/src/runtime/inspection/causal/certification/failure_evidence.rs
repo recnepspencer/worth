@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -111,10 +112,12 @@ impl CausalInspectionCertificationFailureEvidence {
                 &[format!("kind:{}", representative_kind.as_str())],
             ));
         };
-        Ok(Self::from_kind(kind))
+        Ok(Self::from_kind(kind)?)
     }
 
-    pub fn from_kind(kind: CausalInspectionCertificationFailureKind) -> Self {
+    pub fn from_kind(
+        kind: CausalInspectionCertificationFailureKind,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let (source, ordinary_path_forbidden, later_milestone_debt) = failure_posture(kind);
         let failure_identity = worth_query_evidence_identity(
             WorthQueryEvidenceScope::CausalInspectionCertificationFailureEvidence,
@@ -129,15 +132,15 @@ impl CausalInspectionCertificationFailureEvidence {
             WorthQueryEvidenceTag::new("later_milestone_debt"),
             later_milestone_debt,
         )
-        .seal()
+        .seal()?
         .into();
-        Self {
+        Ok(Self {
             kind,
             source,
             ordinary_path_forbidden,
             later_milestone_debt,
             failure_identity,
-        }
+        })
     }
 
     pub fn kind(&self) -> CausalInspectionCertificationFailureKind {

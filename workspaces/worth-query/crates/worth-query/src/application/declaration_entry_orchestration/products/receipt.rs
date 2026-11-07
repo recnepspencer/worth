@@ -9,6 +9,7 @@ use crate::application::{
 };
 #[cfg(test)]
 use crate::application::{WorthQueryDeclarationReceipt, WorthQueryDeclarationReceiptTerminalError};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::common::receipt_orchestration_identity;
 #[cfg(test)]

@@ -11,7 +11,8 @@ fn preview_closeout_subject_certifies_preview_closeout() {
     );
     let (admission, closeout) = preview_closeout_for(&declaration);
     let subject =
-        QuerySubscriptionSupportSubject::preview_closeout(&declaration, &admission, &closeout);
+        QuerySubscriptionSupportSubject::preview_closeout(&declaration, &admission, &closeout)
+            .expect("fixture digest must fit");
 
     let (report, _) = report_query_subscription_support(
         subject,

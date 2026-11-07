@@ -9,7 +9,8 @@ fn compose_graph_supports_verified_edge_split_with_lineage_summary() {
     let expected_basis_binding_digest = WorthQueryMutationEvidenceDigest::source_identity(
         "continuity-basis-binding",
         binding.binding_evidence_identity(),
-    );
+    )
+    .expect("fixture digest must fit");
     let expected_edge_identity = binding.resolved_relation_identity().clone();
     let runtime = edge_split_runtime(request_execution, &binding);
     let mut workspace = runtime
@@ -34,16 +35,20 @@ fn compose_graph_supports_verified_edge_split_with_lineage_summary() {
         .expect("edge split receipt should expose program");
     let lifecycle = receipt
         .graph_composition_lifecycle_outcomes()
-        .expect("edge split receipt should expose lifecycle");
+        .expect("edge split receipt should expose lifecycle")
+        .expect("fixture digest must fit");
     let evidence = receipt
         .graph_composition_evidence()
-        .expect("edge split receipt should expose evidence");
+        .expect("edge split receipt should expose evidence")
+        .expect("fixture digest must fit");
     let assumptions = receipt
         .graph_composition_assumption_summary()
-        .expect("verified edge split should expose assumption summary");
+        .expect("verified edge split should expose assumption summary")
+        .expect("fixture digest must fit");
     let lineage = receipt
         .graph_composition_lineage_summary()
-        .expect("edge split should expose lineage summary");
+        .expect("edge split should expose lineage summary")
+        .expect("fixture digest must fit");
     let resolution_map = receipt.graph_composition_resolution_map();
     let continuity = receipt.write_receipts()[7]
         .continuity_mutation_evidence()

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 use super::{
@@ -45,7 +46,7 @@ impl WorthQueryAsyncResourceRequestIdentity {
             WorthQueryEvidenceTag::new("request_identity"),
             &encoded_parts,
         )
-        .seal();
+        .seal()?;
 
         Ok(Self {
             source_family,
@@ -79,6 +80,7 @@ impl WorthQueryAsyncResourceRequestIdentity {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryAsyncResourceRequestIdentityError {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     MissingIdentityParts,
     BlankIdentityKey,
     BlankIdentityValue { key: String },
@@ -171,5 +173,11 @@ mod tests {
 
     fn part(key: &str, value: &str) -> WorthQueryAsyncRequestIdentityPart {
         WorthQueryAsyncRequestIdentityPart::text(key, value)
+    }
+}
+
+impl From<IdentityDerivationDenial> for WorthQueryAsyncResourceRequestIdentityError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
     }
 }

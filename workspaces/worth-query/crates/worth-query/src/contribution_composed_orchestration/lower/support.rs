@@ -13,6 +13,7 @@ use crate::domain_capabilities::{
     WorthQueryDomainCapabilityPayload, WorthQueryDomainCapabilityTargetBinding,
     WorthQueryInstalledDeclarationContributionTarget,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 pub(super) fn denied_result(
     request: WorthQueryContributionComposedIntentRequestDescriptor,
@@ -93,7 +94,7 @@ pub(super) fn evidence_from_admitted<P>(
         P,
         WorthQueryInstalledDeclarationContributionTarget,
     >,
-) -> WorthQueryDeclarationEntryContributionEvidence
+) -> Result<WorthQueryDeclarationEntryContributionEvidence, IdentityDerivationDenial>
 where
     P: WorthQueryDomainCapabilityPayload,
 {
@@ -102,13 +103,13 @@ where
         target_family: WorthQueryDeclarationEntryContributionTargetFamily::DeclarationBound,
         target_digest: admitted.payload().target().target_digest().to_string(),
         target_binding_digest: admitted.payload().target().binding_digest().to_string(),
-        evidence_digest: admitted.admitted_for_reporting(),
+        evidence_digest: admitted.admitted_for_reporting()?,
         posture_label: payload.posture_label().to_string(),
         semantic_code: payload.semantic_code().to_string(),
         detail: payload.detail().to_string(),
         decision_stage: None,
     };
-    match payload.category() {
+    Ok(match payload.category() {
         crate::domain_capabilities::WorthQueryDomainCapabilityCategory::Admission => {
             WorthQueryDeclarationEntryContributionEvidence::Admission(record)
         }
@@ -130,5 +131,5 @@ where
         crate::domain_capabilities::WorthQueryDomainCapabilityCategory::InvariantCapability => {
             WorthQueryDeclarationEntryContributionEvidence::SupportTraceability(record)
         }
-    }
+    })
 }

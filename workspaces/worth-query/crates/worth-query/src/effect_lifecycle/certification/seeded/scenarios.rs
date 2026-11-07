@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 #[path = "scenarios_executed.rs"]
 mod scenarios_executed;
 #[path = "scenarios_non_admitted.rs"]
@@ -43,14 +44,14 @@ pub(super) fn seeded_rows(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     seed: u64,
     scenario_count: usize,
-) -> Vec<EffectLifecycleSeededCertificationRow> {
+) -> Result<Vec<EffectLifecycleSeededCertificationRow>, IdentityDerivationDenial> {
     let mut stepper = SeedStepper::new(seed);
-    (0..scenario_count)
+    Ok((0..scenario_count)
         .map(|index| {
             let template = ScenarioTemplate::from_index(((seed as usize) + index) % TEMPLATE_COUNT);
             materialize_row(execution, template, index, &mut stepper)
         })
-        .collect()
+        .collect::<Result<Vec<_>, _>>()?)
 }
 
 fn materialize_row(
@@ -58,34 +59,34 @@ fn materialize_row(
     template: ScenarioTemplate,
     index: usize,
     stepper: &mut SeedStepper,
-) -> EffectLifecycleSeededCertificationRow {
-    match template {
+) -> Result<EffectLifecycleSeededCertificationRow, IdentityDerivationDenial> {
+    Ok(match template {
         ScenarioTemplate::MutationExecuted => {
-            scenarios_executed::scalar_mutation_row(execution, index, stepper)
+            scenarios_executed::scalar_mutation_row(execution, index, stepper)?
         }
         ScenarioTemplate::WritebackExecuted => {
-            scenarios_executed::scalar_writeback_row(execution, index, stepper)
+            scenarios_executed::scalar_writeback_row(execution, index, stepper)?
         }
-        ScenarioTemplate::MergeLowered => scenarios_executed::merge_lowered_row(index, stepper),
+        ScenarioTemplate::MergeLowered => scenarios_executed::merge_lowered_row(index, stepper)?,
         ScenarioTemplate::BatchMutationExecuted => {
-            scenarios_executed::batch_mutation_row(execution, index, stepper)
+            scenarios_executed::batch_mutation_row(execution, index, stepper)?
         }
         ScenarioTemplate::PreviewMutationRebind => {
-            scenarios_non_admitted::preview_mutation_rebind_row(index, stepper)
+            scenarios_non_admitted::preview_mutation_rebind_row(index, stepper)?
         }
         ScenarioTemplate::PreviewDerivedAdvisory => {
-            scenarios_non_admitted::preview_derived_advisory_row(index, stepper)
+            scenarios_non_admitted::preview_derived_advisory_row(index, stepper)?
         }
         ScenarioTemplate::StoreBackedDeferred => {
-            scenarios_non_admitted::store_backed_deferred_row(index, stepper)
+            scenarios_non_admitted::store_backed_deferred_row(index, stepper)?
         }
         ScenarioTemplate::DurableReloadDeferred => {
-            scenarios_non_admitted::durable_reload_deferred_row(index, stepper)
+            scenarios_non_admitted::durable_reload_deferred_row(index, stepper)?
         }
         ScenarioTemplate::TenantMergeDenied => {
-            scenarios_non_admitted::tenant_merge_denied_row(index, stepper)
+            scenarios_non_admitted::tenant_merge_denied_row(index, stepper)?
         }
-    }
+    })
 }
 
 pub(super) fn branch_mutation_basis(branch_identity: &str) -> ScopedMutationPreparationBasis {
@@ -148,39 +149,46 @@ pub(super) fn preview_derived_inspection_advisory(
         .expect("preview-derived inspection should be advisory")
 }
 
-pub(super) fn runtime_workflow_binding() -> WorkflowContextBinding {
-    runtime_workflow_binding_with_snapshot(WorthQuerySnapshotIdentity::from_relational_snapshot(
-        RelationalBridgeSnapshotIdentityParts::new(1, 1),
-    ))
+pub(super) fn runtime_workflow_binding() -> Result<WorkflowContextBinding, IdentityDerivationDenial>
+{
+    Ok(runtime_workflow_binding_with_snapshot(
+        WorthQuerySnapshotIdentity::from_relational_snapshot(
+            RelationalBridgeSnapshotIdentityParts::new(1, 1),
+        ),
+    )?)
 }
 
 pub(super) fn runtime_workflow_binding_with_snapshot(
     snapshot_identity: WorthQuerySnapshotIdentity,
-) -> WorkflowContextBinding {
-    synthetic_runtime_workflow_binding_for_snapshot_identity(
+) -> Result<WorkflowContextBinding, IdentityDerivationDenial> {
+    Ok(synthetic_runtime_workflow_binding_for_snapshot_identity(
         "effect-lifecycle-seeded-runtime",
         snapshot_identity,
-    )
+    )?)
 }
 
 pub(super) fn runtime_workflow_binding_for_branch(
     snapshot_identity: WorthQuerySnapshotIdentity,
     branch: &str,
-) -> WorkflowContextBinding {
-    synthetic_runtime_workflow_binding_scoped_for_branch_snapshot_identity(
-        "effect-lifecycle-seeded-runtime",
-        "effect-lifecycle-seeded-branch",
-        snapshot_identity,
-        BranchId(branch.to_string()),
+) -> Result<WorkflowContextBinding, IdentityDerivationDenial> {
+    Ok(
+        synthetic_runtime_workflow_binding_scoped_for_branch_snapshot_identity(
+            "effect-lifecycle-seeded-runtime",
+            "effect-lifecycle-seeded-branch",
+            snapshot_identity,
+            BranchId(branch.to_string()),
+        )?,
     )
 }
 
-pub(super) fn preview_workflow_binding(label: &str) -> WorkflowContextBinding {
-    synthetic_preview_workflow_binding(
+pub(super) fn preview_workflow_binding(
+    label: &str,
+) -> Result<WorkflowContextBinding, IdentityDerivationDenial> {
+    Ok(synthetic_preview_workflow_binding(
         "effect-lifecycle-seeded-preview",
         BridgePreviewSessionIdentity::from_stable_name(label),
         WorkflowPreviewEvaluationClass::PromotionEligible,
-    )
+    )?)
 }
 
 pub(super) fn workflow_request(

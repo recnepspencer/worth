@@ -44,7 +44,8 @@ fn read_result_extracts_identity_and_payload_fields_without_reopening_authority(
                 ]),
             ),
     )
-    .bind_contract();
+    .bind_contract()
+    .expect("fixture digest must fit");
 
     let consumed = contract.extract_from_read_result(&result).unwrap();
 
@@ -87,7 +88,8 @@ fn read_result_extraction_rejects_query_basis_or_result_receipt_drift() {
             ]),
         ),
     )
-    .bind_contract();
+    .bind_contract()
+    .expect("fixture digest must fit");
     let mismatched_result = WorthQueryReadResult::test_only(
         result.rows().to_vec(),
         WorthQueryReadReceipt::test_only(
@@ -96,7 +98,8 @@ fn read_result_extraction_rejects_query_basis_or_result_receipt_drift() {
             "basis:test",
             "result:test",
             WorthQueryReadExecutionEngine::QueryRuntimeCurrent,
-        ),
+        )
+        .expect("fixture digest must fit"),
     );
 
     let error = contract
@@ -122,7 +125,8 @@ fn grouped_sources_extract_memberships_and_grouped_relation_endpoints() {
             .memberships()
             .relation_endpoints(),
     )
-    .bind_contract();
+    .bind_contract()
+    .expect("fixture digest must fit");
     let relational_consumed = relational_contract
         .extract_from_relational_grouped_projection(&relational_projection)
         .unwrap();
@@ -161,7 +165,8 @@ fn grouped_relation_endpoint_width_counts_unique_source_surfaces() {
         binding(&[]),
         ProjectMaterializedFacts::declare().relation_endpoints(),
     )
-    .bind_contract();
+    .bind_contract()
+    .expect("fixture digest must fit");
 
     let consumed = contract
         .extract_from_relational_grouped_projection(&relational_projection)
@@ -179,7 +184,8 @@ fn grouped_extraction_rejects_source_identity_mismatch() {
         binding(&[]),
         ProjectMaterializedFacts::declare().memberships(),
     )
-    .bind_contract();
+    .bind_contract()
+    .expect("fixture digest must fit");
     let mismatched = project_relational_grouped_truth(
         &relational_row_set(),
         grouped_projection_contract("status", "identity.id", "profile.display_name"),

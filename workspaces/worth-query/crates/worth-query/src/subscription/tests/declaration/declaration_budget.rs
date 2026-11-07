@@ -8,7 +8,8 @@ fn slice_budget_denies_before_declaration_artifact_exists() {
         LiveQueryFamily::OrderedCollection,
         Some(LiveViewShapeFamily::KanbanGrouped),
         QuerySubscriptionConstructionSource::FacadeLive,
-    );
+    )
+    .expect("fixture digest must fit");
     let selection = select_query_subscription_family(input, roomy_budget()).unwrap();
     let tight_budget = QuerySubscriptionSliceBudget::scratch_buffer_only(8, 8, 0, 8, 8, 8, 8, 8);
 
@@ -30,7 +31,8 @@ fn no_allocation_denies_before_declaration_scratch_sort_or_digest() {
         LiveQueryFamily::Detail,
         None,
         QuerySubscriptionConstructionSource::FacadeLive,
-    );
+    )
+    .expect("fixture digest must fit");
     let selection = select_query_subscription_family(input, roomy_budget()).unwrap();
     let no_allocation_budget = QuerySubscriptionSliceBudget::no_allocation(8, 8, 8, 8, 8, 8, 8, 8);
 
@@ -52,7 +54,8 @@ fn admitted_declaration_exposes_exact_structural_counters() {
         LiveQueryFamily::OrderedCollection,
         Some(LiveViewShapeFamily::Table),
         QuerySubscriptionConstructionSource::FacadeLive,
-    );
+    )
+    .expect("fixture digest must fit");
     let selection = select_query_subscription_family(input, roomy_budget()).unwrap();
 
     let declaration = declare_query_subscription(selection, roomy_slice_budget()).unwrap();
@@ -73,7 +76,8 @@ fn unsupported_grouping_slice_denies_before_declaration_digest() {
         LiveQueryFamily::OrderedCollection,
         Some(LiveViewShapeFamily::KanbanGrouped),
         QuerySubscriptionConstructionSource::FacadeLive,
-    );
+    )
+    .expect("fixture digest must fit");
     let selection = select_query_subscription_family(input, roomy_budget()).unwrap();
     let budget = roomy_slice_budget().without_grouping_slice_support();
 
@@ -94,7 +98,8 @@ fn masked_slice_request_denies_before_declaration_digest() {
         LiveQueryFamily::Detail,
         None,
         QuerySubscriptionConstructionSource::FacadeLive,
-    );
+    )
+    .expect("fixture digest must fit");
     let selection = select_query_subscription_family(input, roomy_budget()).unwrap();
     let budget = roomy_slice_budget().with_masked_slice_request_detected();
 
@@ -116,7 +121,8 @@ fn unsupported_bounded_materialization_slice_denies_before_declaration_digest() 
         LiveQueryFamily::BoundedMaterialization,
         None,
         QuerySubscriptionConstructionSource::FacadeLive,
-    );
+    )
+    .expect("fixture digest must fit");
     let selection = select_query_subscription_family(input, roomy_budget()).unwrap();
     let budget = roomy_slice_budget().without_bounded_materialization_slice_support();
 

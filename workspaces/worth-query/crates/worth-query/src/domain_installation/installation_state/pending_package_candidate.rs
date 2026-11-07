@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::any::TypeId;
 
 use crate::application::WorthQueryDomainEntryMarker;
@@ -17,7 +18,7 @@ pub(super) struct WorthQueryPendingPackageCandidate {
 
 pub(super) fn classify_pending_package<D: WorthQueryDomainEntryMarker + 'static>(
     package: &WorthQueryAdmittedDomainPackage<D>,
-) -> WorthQueryPendingPackageCandidate {
+) -> Result<WorthQueryPendingPackageCandidate, IdentityDerivationDenial> {
     let domain_owner = package.identity.canonical_owner();
     let semantic_version = package.identity.semantic_version();
     let package_identity = package.package_identity.as_str().to_string();
@@ -26,7 +27,7 @@ pub(super) fn classify_pending_package<D: WorthQueryDomainEntryMarker + 'static>
         semantic_version.major(),
         semantic_version.minor(),
         package_identity.clone(),
-    );
+    )?;
     let invariant_slots = package
         .invariant_definitions
         .iter()
@@ -37,7 +38,7 @@ pub(super) fn classify_pending_package<D: WorthQueryDomainEntryMarker + 'static>
         .iter()
         .map(|definition| format!("{}:{}", domain_owner, definition.slot_key()))
         .collect();
-    WorthQueryPendingPackageCandidate {
+    Ok(WorthQueryPendingPackageCandidate {
         marker_type: TypeId::of::<D>(),
         package_identity,
         domain_owner,
@@ -45,5 +46,5 @@ pub(super) fn classify_pending_package<D: WorthQueryDomainEntryMarker + 'static>
         substrate_provenance,
         invariant_slots,
         declaration_family_slots,
-    }
+    })
 }

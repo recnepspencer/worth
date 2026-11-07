@@ -48,6 +48,7 @@ fn admitted_replay_materialization_accepts_signal_owned_replay_cursor_posture() 
                     BridgeCausalEvidenceFamily::SignalReplayCursor.as_str(),
                     bridge_evidence(signal_replay_cursor),
                 )
+                .expect("fixture reference identity must fit")
     }));
     assert_eq!(artifact.performance().bridge_unindexed_scan_count(), 0);
 }

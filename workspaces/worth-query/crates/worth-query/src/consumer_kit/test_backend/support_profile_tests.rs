@@ -12,7 +12,9 @@ fn in_memory_test_runtime_support_profile_is_honest_about_debt_rows() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let workspace = task_workspace(request_execution);
-    let matrix = workspace.public_support_matrix();
+    let matrix = workspace
+        .public_support_matrix()
+        .expect("fixture digest must fit");
 
     assert_eq!(
         matrix_row_status(&matrix, WorthQueryRuntimeFacadeFamily::Read),

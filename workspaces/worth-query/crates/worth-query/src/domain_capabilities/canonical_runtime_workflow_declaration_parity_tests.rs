@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use super::targets::WorthQueryDeclarationBoundContributionTarget;
@@ -9,21 +10,22 @@ use super::{
 use crate::workflow::{bind_workflow_context, WorkflowBindingSource};
 
 #[test]
-fn workflow_materializer_reuses_admitted_preview_foundation_identity() {
+fn workflow_materializer_reuses_admitted_preview_foundation_identity(
+) -> Result<(), IdentityDerivationDenial> {
     let declaration = success(materialize_query_workflow_declaration(ready_workflow(
         WorthQueryWorkflowContributionAuthoring::preview_only_query_inspection(
             "spatial.preview.identity",
             "workflow declarations should bind through the same admitted preview foundation identity",
             crate::facade::runtime::BridgePreviewSessionIdentity::from_stable_name("preview-session:identity"),
-        ),
-    )));
+        )?,
+    )?)?);
     let foundation = success(materialize_admitted_preview_workflow_foundation(ready_workflow(
         WorthQueryWorkflowContributionAuthoring::preview_only_query_inspection(
             "spatial.preview.identity",
             "workflow declarations should bind through the same admitted preview foundation identity",
             crate::facade::runtime::BridgePreviewSessionIdentity::from_stable_name("preview-session:identity"),
-        ),
-    )));
+        )?,
+    )?));
 
     let expected_binding =
         bind_workflow_context(WorkflowBindingSource::PreviewFoundation(&foundation))
@@ -45,10 +47,13 @@ fn workflow_materializer_reuses_admitted_preview_foundation_identity() {
         declaration.binding().preview_request_family(),
         Some(foundation.request_family())
     );
+
+    Ok(())
 }
 
 #[test]
-fn workflow_materializer_denies_runtime_only_postures_at_preview_foundation_boundary() {
+fn workflow_materializer_denies_runtime_only_postures_at_preview_foundation_boundary(
+) -> Result<(), IdentityDerivationDenial> {
     let denied = materialize_query_workflow_declaration(ready(super::proof_integration::create_requested_domain_capability_contribution(
         declaration_target("intent-workflow-discard-read-only-denied"),
         super::WorthQueryWorkflowContributionPayload::with_runtime_semantics(
@@ -68,8 +73,8 @@ fn workflow_materializer_denies_runtime_only_postures_at_preview_foundation_boun
                 crate::workflow::WorkflowBudgetClass::InspectionBounded,
                 crate::workflow::WorkflowFreshnessPolicy::ExactBasis,
             )),
-        ),
-    )));
+        )?,
+    )?)?)?;
 
     assert!(matches!(
         denied,
@@ -77,12 +82,21 @@ fn workflow_materializer_denies_runtime_only_postures_at_preview_foundation_boun
             if denial.kind()
                 == super::WorthQueryDomainCapabilityProgressionDenialKind::InconsistentCanonicalMaterializationSemantics
     ));
+
+    Ok(())
 }
 
 fn ready_workflow(
     authoring: WorthQueryWorkflowContributionAuthoring,
-) -> super::WorthQueryMaterializationReadyWorkflowContribution<
-    WorthQueryDeclarationBoundContributionTarget,
+) -> Result<
+    super::WorthQueryMaterializationReadyWorkflowContribution<
+        WorthQueryDeclarationBoundContributionTarget,
+    >,
+    IdentityDerivationDenial,
 > {
-    ready(authoring.bind_to_declaration_target(declaration_target("intent-workflow")))
+    Ok(ready(
+        authoring
+            .bind_to_declaration_target(declaration_target("intent-workflow"))
+            .expect("fixture digest must fit"),
+    )?)
 }

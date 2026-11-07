@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::downstream_authority::{
     seal_completed_consumption, seal_completed_consumption_with_contract,
 };
@@ -104,20 +105,21 @@ impl ConsumedProjectionAuthorityCertificationBundle {
     }
 }
 
-pub fn certify_consumed_projection_authority() -> ConsumedProjectionAuthorityCertificationBundle {
-    let admitted = seal_completed_consumption(control_row_set_lifecycle(2).into_completed())
+pub fn certify_consumed_projection_authority(
+) -> Result<ConsumedProjectionAuthorityCertificationBundle, IdentityDerivationDenial> {
+    let admitted = seal_completed_consumption(control_row_set_lifecycle(2)?.into_completed())
         .expect("control authority must seal");
-    let replay = seal_completed_consumption(control_row_set_lifecycle(2).into_completed())
+    let replay = seal_completed_consumption(control_row_set_lifecycle(2)?.into_completed())
         .expect("replayed authority must seal");
-    let denied_completed = control_row_set_lifecycle(2).into_completed();
+    let denied_completed = control_row_set_lifecycle(2)?.into_completed();
     let contradictory_contract = ProjectionAuthorityContract::certification(
         denied_completed.declaration().requested().clone(),
         [ProjectionAuthorityRequirement::TargetIdentity],
     );
     let denial = seal_completed_consumption_with_contract(denied_completed, contradictory_contract)
         .expect_err("missing target identity must deny without authority");
-    let support_matrix = consumed_projection_authority_support_matrix();
-    let complexity = complexity_evidence();
+    let support_matrix = consumed_projection_authority_support_matrix()?;
+    let complexity = complexity_evidence()?;
     let rows = vec![
         row(
             ConsumedProjectionAuthorityCertificationLane::CanonicalAdmission,
@@ -126,56 +128,61 @@ pub fn certify_consumed_projection_authority() -> ConsumedProjectionAuthorityCer
                 "authority={}",
                 admitted.evidence().source_identity_projection()
             ),
-        ),
+        )?,
         row(
             ConsumedProjectionAuthorityCertificationLane::DeterministicReplay,
             admitted.structurally_equivalent(&replay),
             format!("receipt={}", admitted.receipt().receipt_digest()),
-        ),
+        )?,
         row(
             ConsumedProjectionAuthorityCertificationLane::TypedDenial,
             denial.counters().authority_constructions() == 0,
             format!("denial={:?}", denial.kind()),
-        ),
+        )?,
         row(
             ConsumedProjectionAuthorityCertificationLane::AuthorityProductSupport,
             support_matrix.rows().len()
                 == super::ProjectionConsumptionCertifiedSourceSurface::all().len(),
             format!("matrix={}", support_matrix.matrix_digest()),
-        ),
+        )?,
         row(
             ConsumedProjectionAuthorityCertificationLane::ExactComplexity,
             complexity.satisfied(),
             format!("slopes={}", complexity.evidence_digest()),
-        ),
+        )?,
     ];
     let bundle_digest = compose_digest_sequence(
         "consumed_projection_authority_certification_bundle_v1",
         "row",
         rows.iter().map(|row| row.row_digest.clone()),
-    );
-    ConsumedProjectionAuthorityCertificationBundle {
+    )?;
+    Ok(ConsumedProjectionAuthorityCertificationBundle {
         support_matrix,
         admitted_counters: admitted.counters().clone(),
         denial,
         complexity,
         rows,
         bundle_digest,
-    }
+    })
 }
 
 pub(super) fn seal_control(
     row_count: usize,
-) -> crate::projection_consumption::WorthQueryConsumedProjectionAuthority {
-    seal_completed_consumption(control_row_set_lifecycle(row_count).into_completed())
-        .expect("scaled control authority must seal")
+) -> Result<
+    crate::projection_consumption::WorthQueryConsumedProjectionAuthority,
+    IdentityDerivationDenial,
+> {
+    Ok(
+        seal_completed_consumption(control_row_set_lifecycle(row_count)?.into_completed())
+            .expect("scaled control authority must seal"),
+    )
 }
 
 fn row(
     lane: ConsumedProjectionAuthorityCertificationLane,
     satisfied: bool,
     evidence_detail: String,
-) -> ConsumedProjectionAuthorityCertificationRow {
+) -> Result<ConsumedProjectionAuthorityCertificationRow, IdentityDerivationDenial> {
     let row_digest = compose_certification_row_digest(
         "consumed_projection_authority_certification_row_v1",
         &[
@@ -183,11 +190,11 @@ fn row(
             ("satisfied", if satisfied { "true" } else { "false" }),
             ("evidence", evidence_detail.as_str()),
         ],
-    );
-    ConsumedProjectionAuthorityCertificationRow {
+    )?;
+    Ok(ConsumedProjectionAuthorityCertificationRow {
         lane,
         satisfied,
         evidence_detail,
         row_digest,
-    }
+    })
 }

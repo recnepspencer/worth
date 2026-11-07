@@ -6,7 +6,8 @@ fn unified_effect_execution_certification_binds_seeded_and_surfaces() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let bundle = certify_effect_execution_pipeline(request_execution);
+    let bundle =
+        certify_effect_execution_pipeline(request_execution).expect("fixture digest must fit");
 
     assert!(bundle
         .rows()

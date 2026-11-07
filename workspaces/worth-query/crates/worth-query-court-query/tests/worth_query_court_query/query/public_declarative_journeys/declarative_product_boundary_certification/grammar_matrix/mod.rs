@@ -78,7 +78,8 @@ fn grammar_history_journey_executes() {
         .expect("history should declare")
         .retained_snapshot()
         .using(context)
-        .run(request_execution, &mut workspace);
+        .run(request_execution, &mut workspace)
+        .expect("fixture digest must fit");
     assert!(outcome.completed().is_some());
     type_exists::<WorthQueryHistoricalStop>();
     type_exists::<WorthQueryHistoricalNextAction>();
@@ -148,7 +149,8 @@ fn grammar_mutation_journey_executes() {
         authoritative(request_execution, &workspace).expect("mutation authority should admit");
     let outcome: WorthQueryMutationOutcome = fixture::mutation("grammar-mutation")
         .using(context)
-        .run(request_execution, &mut workspace);
+        .run(request_execution, &mut workspace)
+        .expect("fixture digest must fit");
     assert!(outcome.completed().is_some());
     type_exists::<WorthQueryMutationStop>();
     type_exists::<WorthQueryMutationNextAction>();
@@ -169,7 +171,8 @@ fn grammar_workflow_journey_executes() {
         .expect("workflow context should admit");
     let outcome: WorthQueryWorkflowOutcome = declare(label, fixture::mutation("workflow"))
         .using(context)
-        .run(request_execution, &mut workspace);
+        .run(request_execution, &mut workspace)
+        .expect("fixture digest must fit");
     assert!(outcome.completed().is_some());
     type_exists::<WorthQueryWorkflowStop>();
     type_exists::<WorthQueryWorkflowNextAction>();
@@ -194,7 +197,8 @@ fn grammar_inspection_journey_executes() {
         .expect("read should complete");
     let outcome: WorthQueryInspectionOutcome = declare(&completion)
         .using(inspection_basis(fixture::inspection_basis("grammar")))
-        .run(&workspace);
+        .run(&workspace)
+        .expect("fixture digest must fit");
     assert!(outcome.settled().is_some());
     type_exists::<WorthQueryInspectionStop>();
     type_exists::<WorthQueryInspectionNextAction>();

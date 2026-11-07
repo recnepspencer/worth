@@ -27,9 +27,10 @@ fn subject_aware_readiness_rejects_mismatched_declaration_digest() {
                 ),
             )
             .with_contribution_evidence(WorthQueryDeclarationEntryContributionEvidenceSet::new(
-                vec![WorthQueryDeclarationEntryContributionEvidence::from(
+                vec![WorthQueryDeclarationEntryContributionEvidence::try_from(
                     admitted_declaration_support("wrong:digest", "support", "mismatch"),
-                )],
+                )
+                .expect("fixture contribution must fit")],
             )),
     ) {
         Ok(_) => panic!("subject-aware readiness should reject mismatched digest"),
@@ -83,9 +84,10 @@ fn workflow_and_plan_bound_evidence_fail_closed() {
         )
         .with_contribution_evidence(
             WorthQueryDeclarationEntryContributionEvidenceSet::new(vec![
-                WorthQueryDeclarationEntryContributionEvidence::from(
+                WorthQueryDeclarationEntryContributionEvidence::try_from(
                     admitted_declaration_workflow(&declaration_digest, "workflow", "preview-only"),
-                ),
+                )
+                .expect("fixture contribution must fit"),
             ]),
         ),
     ) {
@@ -100,20 +102,20 @@ fn workflow_and_plan_bound_evidence_fail_closed() {
         WorthQueryDeclarationEntryContributionCompositionFailureClass::TargetDigestMismatch
     );
 
-    let readiness_error = match handle.try_declaration_entry_readiness::<Input<BridgeSignalFamily>>(
-        WorthQueryDeclarationEntryReadinessRequest::base().with_contribution_evidence(
-            WorthQueryDeclarationEntryContributionEvidenceSet::new(vec![
-                WorthQueryDeclarationEntryContributionEvidence::from(admitted_plan_support(
-                    &admitted_plan(),
-                    "support",
-                    "plan-bound",
-                )),
-            ]),
-        ),
-    ) {
-        Ok(_) => panic!("plan-bound readiness evidence should fail closed"),
-        Err(error) => error,
-    };
+    let readiness_error =
+        match handle.try_declaration_entry_readiness::<Input<BridgeSignalFamily>>(
+            WorthQueryDeclarationEntryReadinessRequest::base().with_contribution_evidence(
+                WorthQueryDeclarationEntryContributionEvidenceSet::new(vec![
+                    WorthQueryDeclarationEntryContributionEvidence::try_from(
+                        admitted_plan_support(&admitted_plan(), "support", "plan-bound"),
+                    )
+                    .expect("fixture contribution must fit"),
+                ]),
+            ),
+        ) {
+            Ok(_) => panic!("plan-bound readiness evidence should fail closed"),
+            Err(error) => error,
+        };
     assert_eq!(
         readiness_error.failure_class(),
         WorthQueryDeclarationEntryContributionCompositionFailureClass::TargetFamilyTooStrong
@@ -139,9 +141,10 @@ fn admitted_plan_bound_evidence_rejects_mismatched_retained_plan_scope() {
             )
             .with_admitted_plan_scope(retained_plan)
             .with_contribution_evidence(WorthQueryDeclarationEntryContributionEvidenceSet::new(
-                vec![WorthQueryDeclarationEntryContributionEvidence::from(
+                vec![WorthQueryDeclarationEntryContributionEvidence::try_from(
                     admitted_plan_support(&evidence_plan, "support", "wrong-plan"),
-                )],
+                )
+                .expect("fixture contribution must fit")],
             )),
     ) {
         Ok(_) => panic!("mismatched admitted-plan proof should deny"),
@@ -170,13 +173,14 @@ fn lower_runtime_bound_evidence_rejects_mismatched_retained_lower_runtime_scope(
         .with_lower_runtime_boundary_scope(retained_lower_runtime)
         .with_contribution_evidence(
             WorthQueryDeclarationEntryContributionEvidenceSet::new(vec![
-                WorthQueryDeclarationEntryContributionEvidence::from(
+                WorthQueryDeclarationEntryContributionEvidence::try_from(
                     admitted_lower_runtime_explanation(
                         &evidence_lower_runtime,
                         "explain",
                         "wrong-lower-runtime",
                     ),
-                ),
+                )
+                .expect("fixture contribution must fit"),
             ]),
         ),
     ) {

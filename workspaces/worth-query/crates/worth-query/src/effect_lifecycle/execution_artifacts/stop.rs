@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 use super::super::counters::EffectLifecycleCounters;
@@ -9,7 +10,7 @@ pub struct EffectExecutionDeferred {
     kind: super::super::EffectExecutionDeferredKind,
     message: String,
     lowered_effect_execution_plan_identity: WorthQueryEvidenceIdentity,
-    outcome_identity: WorthQueryEvidenceIdentity,
+    outcome_identity: Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>,
     counters: EffectLifecycleCounters,
 }
 
@@ -53,8 +54,10 @@ impl EffectExecutionDeferred {
         &self.lowered_effect_execution_plan_identity
     }
 
-    pub fn outcome_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.outcome_identity
+    pub fn outcome_identity(
+        &self,
+    ) -> Result<&WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        self.outcome_identity.as_ref().map_err(|cause| *cause)
     }
 
     pub fn counters(&self) -> &EffectLifecycleCounters {
@@ -66,7 +69,7 @@ impl EffectExecutionDeferred {
 pub struct EffectExecutionDurabilityUnresolved {
     message: String,
     lowered_effect_execution_plan_identity: WorthQueryEvidenceIdentity,
-    outcome_identity: WorthQueryEvidenceIdentity,
+    outcome_identity: Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>,
     counters: EffectLifecycleCounters,
     unresolved: worth_relational::facade::durability::RelationalDurabilityUnresolved,
 }
@@ -114,8 +117,10 @@ impl EffectExecutionDurabilityUnresolved {
         &self.lowered_effect_execution_plan_identity
     }
 
-    pub fn outcome_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.outcome_identity
+    pub fn outcome_identity(
+        &self,
+    ) -> Result<&WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        self.outcome_identity.as_ref().map_err(|cause| *cause)
     }
 
     pub fn counters(&self) -> &EffectLifecycleCounters {

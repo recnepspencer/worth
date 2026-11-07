@@ -1,12 +1,13 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::{WorthQueryDerivedMaterializationTarget, WorthQueryLiveArtifactTarget};
 
 pub(super) fn relevant_live_aspects(
     request: &DeclarativeLiveQueryRequest,
     deltas: &[WorthQueryMutationDelta],
-) -> Vec<WorthQueryAspectTouch> {
+) -> Result<Vec<WorthQueryAspectTouch>, IdentityDerivationDenial> {
     let mut aspects: BTreeSet<WorthQueryAspectTouch> = BTreeSet::new();
-    let request_target = request.target_collection_identity();
+    let request_target = request.target_collection_identity()?;
     for delta in deltas {
         if !delta
             .target_collection_identity()
@@ -34,7 +35,7 @@ pub(super) fn relevant_live_aspects(
             }
         }
     }
-    aspects.into_iter().collect()
+    Ok(aspects.into_iter().collect())
 }
 
 pub(super) fn relevant_computed_aspects(

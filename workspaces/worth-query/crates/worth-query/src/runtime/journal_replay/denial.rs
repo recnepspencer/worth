@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryJournalReplayDenialKind {
     InvalidSegmentBounds,
@@ -5,6 +6,7 @@ pub enum WorthQueryJournalReplayDenialKind {
     StaleBasisReplay,
     CrossSchemeReplay,
     JournalGap,
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
 }
 
 impl WorthQueryJournalReplayDenialKind {
@@ -15,6 +17,7 @@ impl WorthQueryJournalReplayDenialKind {
             Self::StaleBasisReplay => "stale-basis-replay",
             Self::CrossSchemeReplay => "cross-scheme-replay",
             Self::JournalGap => "journal-gap",
+            Self::EvidenceIdentityDerivationDenied(_) => "evidence-identity-derivation-denied",
         }
     }
 }
@@ -42,5 +45,14 @@ impl WorthQueryJournalReplayDenial {
 
     pub fn message(&self) -> &str {
         &self.message
+    }
+}
+
+impl From<IdentityDerivationDenial> for WorthQueryJournalReplayDenial {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::new(
+            WorthQueryJournalReplayDenialKind::EvidenceIdentityDerivationDenied(cause),
+            "journal replay evidence identity refused by canonical digest limits",
+        )
     }
 }

@@ -65,6 +65,7 @@ pub(in crate::runtime::tests) fn compose_authoritative_intent_receipt_inspection
             inspection.delivery_counters().counter_identity(),
         )
         .seal()
+        .expect("fixture digest must fit")
 }
 
 pub(in crate::runtime::tests) fn compose_effect_intent_receipt_inspection_identity(
@@ -116,4 +117,5 @@ pub(in crate::runtime::tests) fn compose_effect_intent_receipt_inspection_identi
             inspection.feedback_graph().graph_identity(),
         )
         .seal()
+        .expect("fixture digest must fit")
 }

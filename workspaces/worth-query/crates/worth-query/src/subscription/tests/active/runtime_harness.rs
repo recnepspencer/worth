@@ -49,7 +49,8 @@ pub(super) fn activation_for(
         live_family,
         view_family,
         QuerySubscriptionConstructionSource::FacadeLive,
-    );
+    )
+    .expect("fixture digest must fit");
     activation_from_input(input, roomy_lowering_budget())
 }
 
@@ -63,7 +64,8 @@ pub(super) fn activation_for_future(
         view_family,
         QuerySubscriptionConstructionSource::FacadeLive,
         future_selection,
-    );
+    )
+    .expect("fixture digest must fit");
     activation_from_input(input, roomy_lowering_budget())
 }
 
@@ -83,7 +85,8 @@ pub(super) fn activation_for_with_context(
         Some("tenant".to_string()),
         Some("relationship-proof".to_string()),
         QuerySubscriptionRelationshipProofPosture::Admitted,
-    );
+    )
+    .expect("fixture digest must fit");
     let lowering_budget = if basis_posture == QuerySubscriptionBasisPosture::PreviewScoped {
         roomy_lowering_budget().with_preview_basis_support()
     } else {
@@ -154,7 +157,8 @@ pub(super) fn attached_consumer(
     let attachment = attach_subscription_consumer(
         runtime,
         &handle,
-        SubscriptionConsumerAttachmentRequest::admitted(consumer, "cursor"),
+        SubscriptionConsumerAttachmentRequest::admitted(consumer, "cursor")
+            .expect("fixture digest must fit"),
         attachment_budget(fanout_width, policy),
     )
     .unwrap();
@@ -185,7 +189,8 @@ pub(super) fn attached_future_consumer(
     attach_subscription_consumer(
         runtime,
         &handle,
-        SubscriptionConsumerAttachmentRequest::admitted(consumer, "cursor"),
+        SubscriptionConsumerAttachmentRequest::admitted(consumer, "cursor")
+            .expect("fixture digest must fit"),
         attachment_budget(fanout_width, policy),
     )
     .unwrap()
@@ -209,7 +214,8 @@ pub(super) fn emitted_receipt(
         attachment.lane_digest().clone(),
         scope,
         MaintenanceDeltaWidth::measured(1),
-    );
+    )
+    .expect("fixture digest must fit");
     let (delta, lowering_report, _) = lower_query_subscription_maintenance_delta(delta).unwrap();
     let packet = build_active_delivery_work_packet(
         runtime,

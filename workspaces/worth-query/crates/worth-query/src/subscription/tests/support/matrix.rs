@@ -33,7 +33,8 @@ fn support_matrix_is_family_aware_for_all_admitted_subscription_families() {
         ),
     ] {
         let declaration = declaration_for(live_family, view_family);
-        let subject = QuerySubscriptionSupportSubject::declaration(&declaration);
+        let subject = QuerySubscriptionSupportSubject::declaration(&declaration)
+            .expect("fixture digest must fit");
         let evidence = QuerySubscriptionSupportEvidence::declaration(&declaration);
 
         let (report, lookup_receipt) =
@@ -143,8 +144,11 @@ fn durable_and_store_backed_subjects_remain_explicitly_deferred() {
         QuerySubscriptionSupportSubject::durable_replay(&declaration),
         QuerySubscriptionSupportSubject::store_backed_restart(&declaration),
     ] {
-        let (report, lookup_receipt) =
-            report_query_subscription_support(subject, admission_evidence.clone()).unwrap();
+        let (report, lookup_receipt) = report_query_subscription_support(
+            subject.expect("fixture digest must fit"),
+            admission_evidence.clone(),
+        )
+        .unwrap();
 
         assert_eq!(
             report.support_posture(),

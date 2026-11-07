@@ -1,7 +1,9 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum QuerySubscriptionRuntimeCertificationErrorKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     CoverageResolutionDenied,
     CoverageFamilyMissing,
     CoverageFamilyMismatch,
@@ -17,6 +19,7 @@ pub enum QuerySubscriptionRuntimeCertificationErrorKind {
 impl QuerySubscriptionRuntimeCertificationErrorKind {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => "evidence_identity_derivation_denied",
             Self::CoverageResolutionDenied => "coverage_resolution_denied",
             Self::CoverageFamilyMissing => "coverage_family_missing",
             Self::CoverageFamilyMismatch => "coverage_family_mismatch",
@@ -42,6 +45,13 @@ pub struct QuerySubscriptionRuntimeCertificationCounters {
 }
 
 impl QuerySubscriptionRuntimeCertificationCounters {
+    pub(crate) fn coverage_handle_refusal(posture_requires_scan_debt: bool) -> Self {
+        Self {
+            family_coverage_matrix_scan_debt_count: u64::from(posture_requires_scan_debt),
+            ..Self::default()
+        }
+    }
+
     pub fn counter_identity(&self) -> WorthQueryEvidenceIdentity {
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
             .field_shape(
@@ -73,6 +83,7 @@ impl QuerySubscriptionRuntimeCertificationCounters {
                 self.family_coverage_matrix_scan_debt_count.to_string(),
             )
             .seal()
+            .expect("fixed counter grammar contains only primitive values and literals")
     }
 
     pub fn certification_scope_emission_count(&self) -> u64 {
@@ -139,28 +150,50 @@ impl QuerySubscriptionRuntimeCertificationCounters {
 pub struct QuerySubscriptionRuntimeCertificationError {
     error_kind: QuerySubscriptionRuntimeCertificationErrorKind,
     message: &'static str,
-    pub(in crate::subscription) failure_identity: WorthQueryEvidenceIdentity,
+    pub(in crate::subscription) failure_identity:
+        Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>,
     counters: QuerySubscriptionRuntimeCertificationCounters,
 }
 
 impl QuerySubscriptionRuntimeCertificationError {
+    pub(in crate::subscription) fn identity_refused(
+        cause: IdentityDerivationDenial,
+        counters: QuerySubscriptionRuntimeCertificationCounters,
+    ) -> Self {
+        Self {
+            error_kind:
+                QuerySubscriptionRuntimeCertificationErrorKind::EvidenceIdentityDerivationDenied(
+                    cause,
+                ),
+            message: "runtime certification evidence identity exceeded its digest bounds",
+            failure_identity: Err(cause),
+            counters,
+        }
+    }
+
     pub(crate) fn new(
         error_kind: QuerySubscriptionRuntimeCertificationErrorKind,
         message: &'static str,
-        evidence: &[WorthQueryEvidenceIdentity],
+        evidence: Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial>,
         counters: QuerySubscriptionRuntimeCertificationCounters,
     ) -> Self {
-        let failure_identity = WorthQueryEvidenceIdentity::compose(
-            WorthQueryEvidenceScope::SubscriptionActivationReceipt,
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            "query_subscription_runtime_certification_error_v1",
-        )
-        .field_shape(WorthQueryEvidenceTag::new("kind"), error_kind.as_str())
-        .field_value(WorthQueryEvidenceTag::new("message"), message)
-        .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("evidence"), evidence.iter())
-        .seal();
+        let failure_identity = (|| {
+            let evidence = evidence?;
+            Ok(WorthQueryEvidenceIdentity::compose(
+                WorthQueryEvidenceScope::SubscriptionActivationReceipt,
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                "query_subscription_runtime_certification_error_v1",
+            )
+            .field_shape(WorthQueryEvidenceTag::new("kind"), error_kind.as_str())
+            .field_value(WorthQueryEvidenceTag::new("message"), message)
+            .field_evidence_identity_sequence(
+                WorthQueryEvidenceTag::new("evidence"),
+                evidence.iter(),
+            )
+            .seal()?)
+        })();
         Self {
             error_kind,
             message,

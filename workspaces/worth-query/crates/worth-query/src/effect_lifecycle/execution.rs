@@ -10,6 +10,7 @@ use super::execution_relational_scalar::execute_lowered_mutation;
 use super::lowering::{LoweredEffectExecutionArtifact, LoweredEffectExecutionPlan};
 use super::receipt::EffectExecutionReceipt;
 use super::RelationalEffectExecutionFailure;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 impl LoweredEffectExecutionPlan {
     pub(crate) fn execute_with(
         self,

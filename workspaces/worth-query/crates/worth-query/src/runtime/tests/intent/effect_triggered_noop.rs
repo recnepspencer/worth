@@ -24,18 +24,22 @@ fn effect_triggered_idempotent_intent_noop_consumes_pending_work_without_feedbac
         )
         .expect("live should declare");
     let effect = runtime
-        .declare_effect::<WorthQueryUnrefinedLiveShape>(WorthQueryEffectDeclaration::write_intent(
-            "effects.noop-reconcile-title",
-            WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title.value"])),
-            "strategy.intent.reconcile",
-        ))
+        .declare_effect::<WorthQueryUnrefinedLiveShape>(
+            WorthQueryEffectDeclaration::write_intent(
+                "effects.noop-reconcile-title",
+                WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title.value"])),
+                "strategy.intent.reconcile",
+            )
+            .expect("fixture digest must fit"),
+        )
         .expect("write-intent effect should declare");
 
     let write = runtime
         .write(
             request_execution,
             test_update_string_aspect_command(
-                crate::memory_workspace::admit_authored_entity_label("task-1"),
+                crate::memory_workspace::admit_authored_entity_label("task-1")
+                    .expect("fixture digest must fit"),
                 "title.value",
                 "already reconciled title",
             ),

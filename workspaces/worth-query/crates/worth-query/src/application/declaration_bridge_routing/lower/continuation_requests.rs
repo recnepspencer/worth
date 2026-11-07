@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_runtime_bridge::facade::{
     BridgeDeliveryIntent, BridgeDiagnosticsTier, BridgePreviewSessionDeclaration,
     BridgePreviewSessionDeclarationIdentity, BridgePreviewSessionIdentity, BridgeReplayMode,
@@ -54,8 +55,8 @@ pub(super) fn preview_session_request<
     envelope: &WorthQueryDeclarationEnvelope<D, I>,
     lowering: &BridgeLoweringContext,
     request: WorthQueryDeclarationBridgeContinuationRequest,
-) -> BridgeSpeculativeSessionRequest {
-    let binding = preview_branch_basis(envelope);
+) -> Result<BridgeSpeculativeSessionRequest, IdentityDerivationDenial> {
+    let binding = preview_branch_basis(envelope)?;
     let declaration = BridgePreviewSessionDeclaration::new(
         BridgePreviewSessionDeclarationIdentity::from_bridge_evidence(
             &bridge_lowering_bridge_evidence_identity(
@@ -66,24 +67,24 @@ pub(super) fn preview_session_request<
                     .algorithm()
                     .id()
                     .as_str(),
-            ),
+            )?,
         ),
         BridgeRequestKind::Preview,
         binding,
         lowering.preview_session_basis(envelope, request.truth_context()),
     );
-    BridgeSpeculativeSessionRequest::new(
+    Ok(BridgeSpeculativeSessionRequest::new(
         BridgePreviewSessionIdentity::from_bridge_evidence(
             &bridge_lowering_bridge_evidence_identity(
                 "preview-session",
                 envelope.declaration_digest(),
-            ),
+            )?,
         ),
         declaration,
         1,
         1,
         1,
-    )
+    ))
 }
 
 fn preview_branch_basis<
@@ -91,13 +92,13 @@ fn preview_branch_basis<
     I: crate::application::WorthQueryDeclarationInput<D>,
 >(
     envelope: &WorthQueryDeclarationEnvelope<D, I>,
-) -> BridgeSpeculativeBranchBinding {
-    BridgeSpeculativeBranchBinding::new(
+) -> Result<BridgeSpeculativeBranchBinding, IdentityDerivationDenial> {
+    Ok(BridgeSpeculativeBranchBinding::new(
         BridgeSpeculativeBranchBindingIdentity::from_bridge_evidence(
             &bridge_lowering_bridge_evidence_identity(
                 "preview-branch-binding",
                 envelope.declaration_digest(),
-            ),
+            )?,
         ),
         query_truth_branch_identity(
             "query-preview-truth-branch",
@@ -107,7 +108,7 @@ fn preview_branch_basis<
             &bridge_lowering_bridge_evidence_identity(
                 "preview-signal-branch",
                 envelope.handle_identity_digest(),
-            ),
+            )?,
         ),
-    )
+    ))
 }

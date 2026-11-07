@@ -5,6 +5,7 @@ use crate::domain_capabilities::denials::{
 use crate::domain_capabilities::{
     WorthQueryDomainCapabilityTargetKind, WorthQueryDomainCapabilityTransitionOutcome,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryDomainCapabilityOutcomeKind {
@@ -17,6 +18,7 @@ pub enum WorthQueryDomainCapabilityOutcomeKind {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryDomainCapabilityMaterializationError {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     Denied(WorthQueryDomainCapabilityProgressionDenial),
     Stale(WorthQueryDomainCapabilityStale),
     RebindRequired(WorthQueryDomainCapabilityRebindRequired),
@@ -26,6 +28,9 @@ pub enum WorthQueryDomainCapabilityMaterializationError {
 impl WorthQueryDomainCapabilityMaterializationError {
     pub fn kind(&self) -> WorthQueryDomainCapabilityOutcomeKind {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => {
+                WorthQueryDomainCapabilityOutcomeKind::Failed
+            }
             Self::Denied(_) => WorthQueryDomainCapabilityOutcomeKind::Denied,
             Self::Stale(_) => WorthQueryDomainCapabilityOutcomeKind::Stale,
             Self::RebindRequired(_) => WorthQueryDomainCapabilityOutcomeKind::RebindRequired,
@@ -150,5 +155,11 @@ impl<T> WorthQueryCheckedDomainCapabilityOutcome<T> {
             ),
             worth_proof::TransitionOutcome::Deferred(never) => match never {},
         }
+    }
+}
+
+impl From<IdentityDerivationDenial> for WorthQueryDomainCapabilityMaterializationError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
     }
 }

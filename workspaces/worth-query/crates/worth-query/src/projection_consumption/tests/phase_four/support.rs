@@ -83,7 +83,9 @@ pub(crate) fn admitted(
     requested: ProjectMaterializedFacts,
 ) -> AdmittedProjectionConsumption {
     let declaration = declare_projection_consumption(source, binding, requested).unwrap();
-    match evaluate_projection_consumption_eligibility(&declaration) {
+    match evaluate_projection_consumption_eligibility(&declaration)
+        .expect("fixture digest must fit")
+    {
         ProjectionConsumptionEligibility::Admitted(admitted) => admitted,
         ProjectionConsumptionEligibility::AdmittedWithWarnings(admitted, _) => admitted,
         other => panic!("expected admitted eligibility, got {other:?}"),
@@ -202,15 +204,19 @@ pub(crate) fn write_receipt() -> WorthQueryWriteReceipt {
         Some(test_entity_identity("task-1")),
         Some("bridge-record:test"),
         Some("$same_batch_target"),
-        Some(WorthQueryContinuityMutationEvidence::test_only(
-            WorthQueryContinuityMutationFamily::RebindExistingTarget,
-            WorthQueryContinuityOutcomeClass::ContinuesAsSingleSuccessor,
-            "task-0",
-            vec!["task-1".to_string()],
-            Some(test_entity_identity("task-1")),
-            Some("tasks"),
-        )),
+        Some(
+            WorthQueryContinuityMutationEvidence::test_only(
+                WorthQueryContinuityMutationFamily::RebindExistingTarget,
+                WorthQueryContinuityOutcomeClass::ContinuesAsSingleSuccessor,
+                "task-0",
+                vec!["task-1".to_string()],
+                Some(test_entity_identity("task-1")),
+                Some("tasks"),
+            )
+            .expect("fixture digest must fit"),
+        ),
     )
+    .expect("fixture digest must fit")
 }
 
 pub(crate) fn write_receipt_without_source_references() -> WorthQueryWriteReceipt {
@@ -222,15 +228,19 @@ pub(crate) fn write_receipt_without_source_references() -> WorthQueryWriteReceip
         Some(test_entity_identity("task-1")),
         None,
         None,
-        Some(WorthQueryContinuityMutationEvidence::test_only(
-            WorthQueryContinuityMutationFamily::RebindExistingTarget,
-            WorthQueryContinuityOutcomeClass::ContinuesAsSingleSuccessor,
-            "task-0",
-            vec!["task-1".to_string()],
-            Some(test_entity_identity("task-1")),
-            Some("tasks"),
-        )),
+        Some(
+            WorthQueryContinuityMutationEvidence::test_only(
+                WorthQueryContinuityMutationFamily::RebindExistingTarget,
+                WorthQueryContinuityOutcomeClass::ContinuesAsSingleSuccessor,
+                "task-0",
+                vec!["task-1".to_string()],
+                Some(test_entity_identity("task-1")),
+                Some("tasks"),
+            )
+            .expect("fixture digest must fit"),
+        ),
     )
+    .expect("fixture digest must fit")
 }
 
 pub(crate) fn read_result() -> WorthQueryReadResult {
@@ -257,7 +267,8 @@ pub(crate) fn read_result() -> WorthQueryReadResult {
             "basis:test",
             "result:test",
             WorthQueryReadExecutionEngine::QueryRuntimeCurrent,
-        ),
+        )
+        .expect("fixture digest must fit"),
     )
 }
 
@@ -323,7 +334,7 @@ fn phase_four_fixture_position(namespace: &str, evidence: &str) -> u64 {
 }
 
 pub(crate) fn test_entity_identity(identity: &str) -> WorthQueryEntityIdentity {
-    crate::memory_workspace::admit_authored_entity_label(identity)
+    crate::memory_workspace::admit_authored_entity_label(identity).expect("fixture digest must fit")
 }
 
 pub(crate) fn read_result_shape() -> crate::canonicalization::CanonicalResultShapeArtifact {

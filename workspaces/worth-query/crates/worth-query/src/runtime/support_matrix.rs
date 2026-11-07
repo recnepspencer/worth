@@ -1,6 +1,7 @@
 use crate::application::{
     WorthQueryMilestoneNineSevenDerivedClosure, WorthQuerySharedReadPinningCertification,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -38,7 +39,7 @@ impl WorthQueryRuntimePublicSupportMatrixRow {
         parallel_api_forbidden: bool,
         admission_fail_closed: bool,
         support_contract_digest: Option<impl Into<String>>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let surface = surface.into();
         let owner_milestone = owner_milestone.into();
         let extension_rule = extension_rule.into();
@@ -77,8 +78,8 @@ impl WorthQueryRuntimePublicSupportMatrixRow {
                     WorthQueryEvidenceTag::new("support_contract_digest"),
                     support_contract_digest.as_deref(),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             surface,
             facade_family,
             status,
@@ -89,7 +90,7 @@ impl WorthQueryRuntimePublicSupportMatrixRow {
             admission_fail_closed,
             support_contract_digest,
             row_digest,
-        }
+        })
     }
 
     pub fn surface(&self) -> &str {
@@ -150,7 +151,9 @@ pub struct WorthQueryRuntimePublicSupportMatrix {
 }
 
 impl WorthQueryRuntimePublicSupportMatrix {
-    pub fn from_public_api_contract(contract: &WorthQueryRuntimePublicApiContract) -> Self {
+    pub fn from_public_api_contract(
+        contract: &WorthQueryRuntimePublicApiContract,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let mut rows = contract
             .families()
             .iter()
@@ -169,7 +172,7 @@ impl WorthQueryRuntimePublicSupportMatrix {
                     Some(family.contract_digest().to_string()),
                 )
             })
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
 
         rows.push(WorthQueryRuntimePublicSupportMatrixRow::new(
             "authoritative-mutation-evidence-certification",
@@ -187,7 +190,7 @@ impl WorthQueryRuntimePublicSupportMatrix {
                 .support_digest()
                 .to_string(),
             ),
-        ));
+        )?);
 
         rows.push(WorthQueryRuntimePublicSupportMatrixRow::new(
             "temporal-async-certification",
@@ -199,7 +202,7 @@ impl WorthQueryRuntimePublicSupportMatrix {
             true,
             false,
             None::<String>,
-        ));
+        )?);
 
         rows.push(WorthQueryRuntimePublicSupportMatrixRow::new(
             "temporal-async-remask",
@@ -211,7 +214,7 @@ impl WorthQueryRuntimePublicSupportMatrix {
             true,
             true,
             None::<String>,
-        ));
+        )?);
 
         rows.push(WorthQueryRuntimePublicSupportMatrixRow::new(
             "downstream-delivery-contract",
@@ -225,11 +228,11 @@ impl WorthQueryRuntimePublicSupportMatrix {
             Some(
                 WorthQueryRuntimeDownstreamDeliveryContract::from_backend_posture(
                     contract.backend_posture(),
-                )
+                )?
                 .contract_for_reporting()
                 .to_string(),
             ),
-        ));
+        )?);
 
         rows.push(WorthQueryRuntimePublicSupportMatrixRow::new(
             "shared-read-pinning-boundary-closure",
@@ -240,8 +243,8 @@ impl WorthQueryRuntimePublicSupportMatrix {
             "must-close-shared-read-context-pinning-boundary-before-journal-and-certification-phases",
             true,
             true,
-            Some(shared_read_pinning_boundary_closure_contract_digest()),
-        ));
+            Some(shared_read_pinning_boundary_closure_contract_digest()?),
+        )?);
 
         rows.push(WorthQueryRuntimePublicSupportMatrixRow::new(
             "milestone-9.7-derived-closure-posture",
@@ -252,8 +255,8 @@ impl WorthQueryRuntimePublicSupportMatrix {
             "must-derive-milestone-closure-from-phase-local-postures",
             true,
             true,
-            Some(milestone_nine_seven_derived_closure_contract_digest()),
-        ));
+            Some(milestone_nine_seven_derived_closure_contract_digest()?),
+        )?);
 
         let stable_row_count = rows
             .iter()
@@ -305,8 +308,8 @@ impl WorthQueryRuntimePublicSupportMatrix {
                     WorthQueryEvidenceTag::new("row_digest"),
                     rows.iter().map(|row| row.row_digest().as_str()),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             backend_posture: contract.backend_posture(),
             rows,
             stable_row_count,
@@ -315,7 +318,7 @@ impl WorthQueryRuntimePublicSupportMatrix {
             fail_closed_row_count,
             parallel_api_forbidden_row_count,
             matrix_digest,
-        }
+        })
     }
 
     pub fn backend_posture(&self) -> WorthQueryRuntimeBackendPosture {
@@ -364,14 +367,18 @@ impl WorthQueryRuntimePublicSupportMatrix {
     }
 }
 
-fn shared_read_pinning_boundary_closure_contract_digest() -> String {
-    let certification = WorthQuerySharedReadPinningCertification::support_gate_required();
+fn shared_read_pinning_boundary_closure_contract_digest() -> Result<String, IdentityDerivationDenial>
+{
+    let certification = WorthQuerySharedReadPinningCertification::support_gate_required()?;
     debug_assert_ne!(certification.closure().posture().as_str(), "closed");
-    certification.closure().closure_digest().to_string()
+    Ok(certification.closure().closure_digest().to_string())
 }
 
-fn milestone_nine_seven_derived_closure_contract_digest() -> String {
-    WorthQueryMilestoneNineSevenDerivedClosure::support_profile_publication_contract()
-        .closure_digest()
-        .to_string()
+fn milestone_nine_seven_derived_closure_contract_digest() -> Result<String, IdentityDerivationDenial>
+{
+    Ok(
+        WorthQueryMilestoneNineSevenDerivedClosure::support_profile_publication_contract()?
+            .closure_digest()
+            .to_string(),
+    )
 }

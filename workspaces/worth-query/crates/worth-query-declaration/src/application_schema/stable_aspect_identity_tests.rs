@@ -167,7 +167,17 @@ fn canonical_entry<'a>(
         .iter()
         .enumerate()
         .find_map(|(index, entry)| match entry.locus() {
-            CanonicalBasisLocus::Named(InternedString::Raw(name)) if name.ends_with(suffix) => {
+            CanonicalBasisLocus::Named(InternedString::Stored(name))
+                if name.as_str().ends_with(suffix) =>
+            {
+                let name = name.as_string();
+                {
+                    Some((index, entry.value()))
+                }
+            }
+            CanonicalBasisLocus::Named(InternedString::Raw(name))
+                if name.as_str().ends_with(suffix) =>
+            {
                 Some((index, entry.value()))
             }
             _ => None,
@@ -183,6 +193,12 @@ fn canonical_entries_golden(entries: &[worth_foundational::facade::CanonicalBasi
                 panic!("schema identity golden requires named raw loci")
             };
             let value = match entry.value() {
+                CanonicalBasisValue::ExactText(InternedString::Stored(value)) => {
+                    let value = value.as_string();
+                    {
+                        format!("text:{value}")
+                    }
+                }
                 CanonicalBasisValue::ExactText(InternedString::Raw(value)) => {
                     format!("text:{value}")
                 }

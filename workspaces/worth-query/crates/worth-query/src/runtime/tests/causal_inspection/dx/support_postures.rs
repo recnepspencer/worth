@@ -30,8 +30,10 @@ fn unsupported_durable_family_denies_without_bridge_assembly() {
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "query-inspection:durable-denied",
                 ),
-            )],
-        ),
+            )
+            .expect("fixture digest must fit")],
+        )
+        .expect("fixture digest must fit"),
     )
     .why_changed()
     .durable_archive()

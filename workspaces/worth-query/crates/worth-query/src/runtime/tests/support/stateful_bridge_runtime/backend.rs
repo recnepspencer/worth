@@ -66,7 +66,8 @@ impl WorthQueryRuntimeBackend for StatefulBridgeRuntimeBackend {
                     WorthQueryEvidenceTag::new("stateful_bridge_snapshot_sequence"),
                     state.next_snapshot_token,
                 )
-                .seal(),
+                .seal()
+                .expect("fixture digest must fit"),
         )
     }
 
@@ -86,10 +87,12 @@ impl WorthQueryRuntimeBackend for StatefulBridgeRuntimeBackend {
         _schema_view: QuerySchemaView,
     ) -> Result<WorthQueryLiveViewHandle, WorthQueryWorkspaceError> {
         let live_target = WorthQueryLiveArtifactTarget::from_view_name(name.clone());
-        self.state
-            .borrow_mut()
-            .live_views
-            .insert(live_target, request.target_collection_identity());
+        self.state.borrow_mut().live_views.insert(
+            live_target,
+            request
+                .target_collection_identity()
+                .expect("fixture digest must fit"),
+        );
         Ok(WorthQueryLiveViewHandle::new(name))
     }
 
@@ -272,6 +275,7 @@ impl WorthQueryRuntimeBackend for StatefulBridgeRuntimeBackend {
                         .cloned()
                         .unwrap_or_else(|| {
                             crate::memory_workspace::admit_authored_entity_label(identity)
+                                .expect("fixture digest must fit")
                         }),
                     external_row.clone(),
                 )

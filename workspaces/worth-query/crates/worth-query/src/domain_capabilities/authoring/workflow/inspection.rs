@@ -4,6 +4,7 @@ use crate::domain_capabilities::payloads::{
     WorthQueryWorkflowContributionPosture, WorthQueryWorkflowRuntimeBindingSemantics,
     WorthQueryWorkflowRuntimeSemantics,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQuerySnapshotIdentity;
 use crate::workflow::{
     WorkflowAuthorityTargetFamily, WorkflowBudgetClass, WorkflowCostClass,
@@ -16,8 +17,8 @@ impl WorthQueryWorkflowContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
         preview_session_identity: BridgePreviewSessionIdentity,
-    ) -> Self {
-        Self::with_runtime_semantics(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_runtime_semantics(
             WorthQueryWorkflowContributionPosture::PreviewOnly,
             semantic_code,
             detail,
@@ -27,15 +28,15 @@ impl WorthQueryWorkflowContributionAuthoring {
                     WorkflowPreviewEvaluationClass::ReadOnly,
                 ),
             ),
-        )
+        )?)
     }
 
     pub fn confirmation_required_query_inspection(
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
         runtime_snapshot_identity: WorthQuerySnapshotIdentity,
-    ) -> Self {
-        Self::with_runtime_semantics(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_runtime_semantics(
             WorthQueryWorkflowContributionPosture::ConfirmationRequired,
             semantic_code,
             detail,
@@ -44,30 +45,30 @@ impl WorthQueryWorkflowContributionAuthoring {
                     runtime_snapshot_identity,
                 ),
             ),
-        )
+        )?)
     }
 
     pub fn confirmation_required_query_inspection_from_preflight(
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
         preflight: ExecutionPreflightBundle,
-    ) -> Self {
-        Self::with_runtime_semantics(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_runtime_semantics(
             WorthQueryWorkflowContributionPosture::ConfirmationRequired,
             semantic_code,
             detail,
             inspection_runtime_semantics(
                 WorthQueryWorkflowRuntimeBindingSemantics::runtime_preflight_bundle(preflight),
             ),
-        )
+        )?)
     }
 
     pub fn discard_required_query_inspection(
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
         preview_session_identity: BridgePreviewSessionIdentity,
-    ) -> Self {
-        Self::with_runtime_semantics(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_runtime_semantics(
             WorthQueryWorkflowContributionPosture::DiscardRequired,
             semantic_code,
             detail,
@@ -77,7 +78,7 @@ impl WorthQueryWorkflowContributionAuthoring {
                     WorkflowPreviewEvaluationClass::PromotionEligible,
                 ),
             ),
-        )
+        )?)
     }
 }
 

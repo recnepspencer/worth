@@ -47,6 +47,7 @@ pub(in super::super) fn compose_public_api_family_contract_identity(
         contract.reason(),
     )
     .seal()
+    .expect("fixture digest must fit")
 }
 
 pub(in super::super) fn compose_public_api_contract_identity(
@@ -79,6 +80,7 @@ pub(in super::super) fn compose_public_api_contract_identity(
         contract.unsupported_family_count(),
     )
     .seal()
+    .expect("fixture digest must fit")
 }
 
 pub(in super::super) fn compose_public_support_matrix_row_identity(
@@ -123,6 +125,7 @@ pub(in super::super) fn compose_public_support_matrix_row_identity(
         row.support_contract_digest(),
     )
     .seal()
+    .expect("fixture digest must fit")
 }
 
 pub(in super::super) fn compose_public_support_matrix_identity(
@@ -160,6 +163,7 @@ pub(in super::super) fn compose_public_support_matrix_identity(
         matrix.rows().iter().map(|row| row.row_digest().as_str()),
     )
     .seal()
+    .expect("fixture digest must fit")
 }
 
 pub(in super::super) fn compose_state_snapshot_identity(
@@ -205,6 +209,7 @@ pub(in super::super) fn compose_state_snapshot_identity(
                 .map(WorthQueryRuntimeRemaskPosture::remask_identity),
         )
         .seal()
+        .expect("fixture digest must fit")
 }
 
 pub(in super::super) fn compose_runtime_public_api_transcript_identity(
@@ -265,4 +270,5 @@ pub(in super::super) fn compose_runtime_public_api_transcript_identity(
         transcript.meaningful_assertion_count(),
     )
     .seal()
+    .expect("fixture digest must fit")
 }

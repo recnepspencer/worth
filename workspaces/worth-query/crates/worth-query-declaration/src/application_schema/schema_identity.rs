@@ -29,7 +29,8 @@ impl ApplicationSchemaIdentity {
             .iter()
             .map(|entry| {
                 let name = match entry.locus() {
-                    CanonicalBasisLocus::Named(InternedString::Raw(name)) => name,
+                    CanonicalBasisLocus::Named(InternedString::Stored(name)) => name.as_str(),
+                    CanonicalBasisLocus::Named(InternedString::Raw(name)) => name.as_str(),
                     _ => unreachable!(
                         "application-schema canonical construction creates only named raw loci"
                     ),

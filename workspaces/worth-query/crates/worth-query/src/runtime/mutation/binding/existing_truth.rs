@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -65,7 +66,7 @@ impl WorthQueryExistingEntityTarget {
                 collection.into(),
                 "existing-truth target collection may not be empty",
             )?,
-        ));
+        )?);
         Ok(self)
     }
 
@@ -113,7 +114,7 @@ impl WorthQueryExistingRelationTarget {
                 collection.into(),
                 "existing-truth target collection may not be empty",
             )?,
-        ));
+        )?);
         Ok(self)
     }
 
@@ -198,7 +199,7 @@ impl WorthQueryExistingTruthTargetBinding {
                 collection.into(),
                 "existing-truth target collection may not be empty",
             )?,
-        ));
+        )?);
         self.binding_identity = existing_truth_binding_identity(
             self.family,
             &self.authoritative_identity,
@@ -280,27 +281,28 @@ fn existing_truth_binding_identity(
     target_collection: Option<&WorthQueryMutationTargetCollectionIdentity>,
 ) -> WorthQueryEvidenceIdentity {
     worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
-        .field_shape(WorthQueryEvidenceTag::new("role"), "existing-truth-binding")
-        .field_shape(WorthQueryEvidenceTag::new("family"), family.as_str())
-        .field_shape(
-            WorthQueryEvidenceTag::new("outcome"),
-            crate::runtime::WorthQueryExistingTruthBindingOutcome::ExistingAuthoritativeTarget
-                .as_str(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("authoritative"),
-            authoritative_identity.evidence_identity(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("resolved"),
-            &resolved_target_identity.evidence_identity(),
-        )
-        .optional_evidence_identity(
-            WorthQueryEvidenceTag::new("collection"),
-            target_collection
-                .map(crate::runtime::WorthQueryMutationTargetCollectionIdentity::evidence_identity),
-        )
-        .seal()
+            .field_shape(WorthQueryEvidenceTag::new("role"), "existing-truth-binding")
+            .field_shape(WorthQueryEvidenceTag::new("family"), family.as_str())
+            .field_shape(
+                WorthQueryEvidenceTag::new("outcome"),
+                crate::runtime::WorthQueryExistingTruthBindingOutcome::ExistingAuthoritativeTarget
+                    .as_str(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("authoritative"),
+                authoritative_identity.evidence_identity(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("resolved"),
+                &resolved_target_identity.evidence_identity(),
+            )
+            .optional_evidence_identity(
+                WorthQueryEvidenceTag::new("collection"),
+                target_collection.map(
+                    crate::runtime::WorthQueryMutationTargetCollectionIdentity::evidence_identity,
+                ),
+            )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 fn normalize_non_empty(value: String, message: &str) -> Result<String, WorthQueryWorkspaceError> {

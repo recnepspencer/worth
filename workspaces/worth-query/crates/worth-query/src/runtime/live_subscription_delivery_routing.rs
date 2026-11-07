@@ -1,4 +1,5 @@
 use crate::declarative_live::{DeclarativeLiveQueryRequest, DeclarativeLiveViewShape};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::{WorthQueryMutationKind, WorthQueryMutationReceipt};
 use crate::subscription::{
     advance_subscription_acknowledgement, build_active_delivery_work_packet,
@@ -106,7 +107,7 @@ impl RelevantLiveSubscriptionDeltaRoute<'_> {
             self.receipt.commit_identity.bridge_identity().cloned(),
             Some(self.delta.clone()),
             Some(live_graph_read_maintenance),
-        );
+        )?;
         if let Some(impact) = self.preclassified_installed_impact.take() {
             runtime_batch = runtime_batch.with_preclassified_installed_impact(impact);
         }

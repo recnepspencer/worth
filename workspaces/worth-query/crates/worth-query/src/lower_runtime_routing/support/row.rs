@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -80,7 +81,7 @@ impl WorthQueryLowerRuntimeSupportRow {
         self.detail.certification_row()
     }
 
-    pub fn row_digest(&self) -> String {
+    pub fn row_digest(&self) -> Result<String, IdentityDerivationDenial> {
         let mut identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
         )
@@ -131,6 +132,6 @@ impl WorthQueryLowerRuntimeSupportRow {
                     );
             }
         }
-        identity.seal().as_str().to_string()
+        Ok(identity.seal()?.as_str().to_string())
     }
 }

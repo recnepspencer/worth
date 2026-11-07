@@ -134,6 +134,9 @@ impl RejectionDigest for BasisPreflightError {
 impl RejectionDigest for BasisResolutionError {
     fn failure_class_name(&self) -> &'static str {
         match self {
+            BasisResolutionError::EvidenceIdentityDerivationDenied(_) => {
+                "evidence-identity-derivation-denied"
+            }
             BasisResolutionError::UnsupportedBasisKind => "unsupported-basis-kind",
             BasisResolutionError::ResolutionIdentityMismatch => "snapshot-basis-resolution-failure",
         }
@@ -141,6 +144,9 @@ impl RejectionDigest for BasisResolutionError {
 
     fn failure_digest(&self) -> String {
         match self {
+            BasisResolutionError::EvidenceIdentityDerivationDenied(cause) => {
+                format!("evidence-identity-derivation-denied:{cause:?}")
+            }
             BasisResolutionError::UnsupportedBasisKind => "unsupported-basis-kind".to_string(),
             BasisResolutionError::ResolutionIdentityMismatch => {
                 "snapshot-basis-resolution-failure".to_string()
@@ -275,7 +281,7 @@ pub(super) fn snapshot_basis_resolution_failure_hostile() -> Result<(), BasisRes
         ResolvedSnapshotIdentity::new(
             BasisAuthorityFamily::Store,
             Some("workspace-main".to_string()),
-            crate::memory_workspace::admit_external_snapshot_label("snapshot-2")
+            crate::memory_workspace::admit_external_snapshot_label("snapshot-2")?
                 .evidence_identity(),
             validated.query().schema_basis().clone(),
             SnapshotLineageClass::CurrentHead,

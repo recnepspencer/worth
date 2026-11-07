@@ -23,7 +23,10 @@ use super::super::digest_basis::{
 pub(crate) fn source_materialization_record_digest(
     facade: &BridgeDiagnosticsFacade,
     reference_identity: &BridgeIdentityEvidence,
-) -> Option<BridgeIdentityEvidence> {
+) -> Result<
+    Option<BridgeIdentityEvidence>,
+    crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal,
+> {
     facade
         .source_materialization_record_for_identity(
             &SourceMaterializationRecordIdentity::from_reference_evidence(
@@ -38,23 +41,29 @@ pub(crate) fn source_materialization_record_digest(
                 )],
             )
         })
+        .transpose()
 }
 
 pub(crate) fn source_failure_record_digest(
     facade: &BridgeDiagnosticsFacade,
     reference_identity: &BridgeIdentityEvidence,
-) -> Option<BridgeIdentityEvidence> {
+) -> Result<
+    Option<BridgeIdentityEvidence>,
+    crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal,
+> {
     facade
         .source_failure_record_for_identity(&SourceFailureRecordIdentity::from_reference_evidence(
             reference_identity.revalidate_bridge_retained_reference(),
         ))
         .map(|record| source_failure_digest(&record))
+        .transpose()
 }
 
 pub(crate) fn source_failure_digest(
     record: &crate::source::SourceFailureRecord,
-) -> BridgeIdentityEvidence {
-    compose_retained_causal_mapping_evidence_identity(
+) -> Result<BridgeIdentityEvidence, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal>
+{
+    Ok(compose_retained_causal_mapping_evidence_identity(
         RetainedCausalMappingDigestArtifact::SourceFailureRecord,
         &[
             retained_mapping_bridge_identity_part(record.failure_identity()),
@@ -62,7 +71,7 @@ pub(crate) fn source_failure_digest(
             retained_mapping_shape_part(source_failure_class_label(record.failure_class())),
             retained_mapping_shape_part(delivery_error_kind_label(record.delivery_error_kind())),
         ],
-    )
+    )?)
 }
 
 fn source_failure_class_label(value: SourceFailureClass) -> &'static str {
@@ -112,7 +121,10 @@ fn delivery_error_kind_label(value: BridgeDeliveryErrorKind) -> &'static str {
 pub(crate) fn structural_remap_record_digest(
     facade: &BridgeDiagnosticsFacade,
     reference_identity: &BridgeIdentityEvidence,
-) -> Option<BridgeIdentityEvidence> {
+) -> Result<
+    Option<BridgeIdentityEvidence>,
+    crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal,
+> {
     facade
         .structural_remap_record_for_identity(
             &BridgeStructuralRemapRecordIdentity::from_reference_evidence(
@@ -129,12 +141,16 @@ pub(crate) fn structural_remap_record_digest(
                 ],
             )
         })
+        .transpose()
 }
 
 pub(crate) fn structural_branch_comparison_record_digest(
     facade: &BridgeDiagnosticsFacade,
     reference_identity: &BridgeIdentityEvidence,
-) -> Option<BridgeIdentityEvidence> {
+) -> Result<
+    Option<BridgeIdentityEvidence>,
+    crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal,
+> {
     facade
         .structural_branch_comparison_record_for_identity(
             &BridgeStructuralBranchComparisonRecordIdentity::from_reference_evidence(
@@ -151,12 +167,16 @@ pub(crate) fn structural_branch_comparison_record_digest(
                 ],
             )
         })
+        .transpose()
 }
 
 pub(crate) fn stream_replay_record_digest(
     facade: &BridgeDiagnosticsFacade,
     reference_identity: &BridgeIdentityEvidence,
-) -> Option<BridgeIdentityEvidence> {
+) -> Result<
+    Option<BridgeIdentityEvidence>,
+    crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal,
+> {
     facade
         .stream_replay_record_for_identity(&StreamReplayRecordIdentity::from_reference_evidence(
             reference_identity.revalidate_bridge_retained_reference(),
@@ -172,12 +192,16 @@ pub(crate) fn stream_replay_record_digest(
                 ],
             )
         })
+        .transpose()
 }
 
 pub(crate) fn continuity_record_digest(
     facade: &BridgeDiagnosticsFacade,
     reference_identity: &BridgeIdentityEvidence,
-) -> Option<BridgeIdentityEvidence> {
+) -> Result<
+    Option<BridgeIdentityEvidence>,
+    crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal,
+> {
     facade
         .continuity_record_for_route_identity(&BridgeRouteIdentity::from_reference_evidence(
             reference_identity.revalidate_bridge_retained_reference(),
@@ -195,12 +219,16 @@ pub(crate) fn continuity_record_digest(
                 ],
             )
         })
+        .transpose()
 }
 
 pub(crate) fn merge_record_digest(
     facade: &BridgeDiagnosticsFacade,
     reference_identity: &BridgeIdentityEvidence,
-) -> Option<BridgeIdentityEvidence> {
+) -> Result<
+    Option<BridgeIdentityEvidence>,
+    crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal,
+> {
     facade
         .merge_record_for_identity(&BridgeMergeRecordIdentity::from_reference_evidence(
             reference_identity.revalidate_bridge_retained_reference(),
@@ -215,4 +243,5 @@ pub(crate) fn merge_record_digest(
                 ],
             )
         })
+        .transpose()
 }

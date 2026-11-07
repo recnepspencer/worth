@@ -1,4 +1,5 @@
 use super::super::scope::{consumption_scope_encoder, seal};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::WorthQueryEvidenceTag;
 
 use super::super::super::contracts::ProjectionContractSupportPosture;
@@ -9,27 +10,27 @@ pub(crate) fn compose_envelope_source_refs_digest(
     receipt_digest: &str,
     fact_set_digest: &str,
     contract_digest: &str,
-) -> String {
-    seal(
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(seal(
         consumption_scope_encoder("projection_consumption_envelope_source_refs_v1")
             .field_shape(WorthQueryEvidenceTag::new("receipt"), receipt_digest)
             .field_shape(WorthQueryEvidenceTag::new("fact_set"), fact_set_digest)
             .field_shape(WorthQueryEvidenceTag::new("contract"), contract_digest),
-    )
+    )?)
 }
 
 pub(crate) fn compose_envelope_performance_digest(
     receipt_digest: &str,
     counter_snapshot_digest: &str,
-) -> String {
-    seal(
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(seal(
         consumption_scope_encoder("projection_consumption_envelope_performance_v1")
             .field_shape(WorthQueryEvidenceTag::new("receipt"), receipt_digest)
             .field_shape(
                 WorthQueryEvidenceTag::new("counters"),
                 counter_snapshot_digest,
             ),
-    )
+    )?)
 }
 
 pub(crate) fn compose_envelope_boundary_digest(
@@ -37,8 +38,8 @@ pub(crate) fn compose_envelope_boundary_digest(
     source_identity: &str,
     support_posture: &ProjectionContractSupportPosture,
     warning_kinds: &[ProjectionConsumptionWarningKind],
-) -> String {
-    seal(
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(seal(
         consumption_scope_encoder("projection_consumption_envelope_boundary_v1")
             .field_shape(
                 WorthQueryEvidenceTag::new("source_family"),
@@ -56,7 +57,7 @@ pub(crate) fn compose_envelope_boundary_digest(
                 WorthQueryEvidenceTag::new("warning_kind"),
                 warning_kinds.iter().map(|warning| warning.as_str()),
             ),
-    )
+    )?)
 }
 
 pub(crate) fn compose_envelope_digest(
@@ -66,8 +67,8 @@ pub(crate) fn compose_envelope_digest(
     boundary_digest: &str,
     transition_rules_digest: &str,
     source_refs_digest: &str,
-) -> String {
-    seal(
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(seal(
         consumption_scope_encoder("self_describing_projection_consumption_envelope_v1")
             .field_shape(WorthQueryEvidenceTag::new("receipt"), receipt_digest)
             .field_shape(WorthQueryEvidenceTag::new("integrity"), integrity_digest)
@@ -81,5 +82,5 @@ pub(crate) fn compose_envelope_digest(
                 transition_rules_digest,
             )
             .field_shape(WorthQueryEvidenceTag::new("sources"), source_refs_digest),
-    )
+    )?)
 }

@@ -187,6 +187,10 @@ fn mix_interned_string(revision: &mut RevisionHasher, value: &InternedString) {
             revision.mix_u8(0);
             revision.mix_text(value);
         }
+        InternedString::Stored(value) => {
+            revision.mix_u8(0);
+            revision.mix_text(value.as_str());
+        }
         InternedString::Symbol(symbol) => {
             revision.mix_u8(1);
             revision.mix_u32(symbol.0);

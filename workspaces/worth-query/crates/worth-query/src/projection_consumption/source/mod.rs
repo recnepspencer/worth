@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod basis_authority;
 mod basis_authority_binding;
 mod constructors;
@@ -192,21 +193,21 @@ impl ProjectionConsumptionSource {
         capability_profile: ProjectionSourceCapabilityProfile,
         source_identity: impl Into<ProjectionSourceIdentity>,
         source_reference_identities: Vec<ProjectionSourceReferenceIdentity>,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             family,
             capability_profile,
             query_digest: None,
             basis_digest: None,
             basis_authority: ProjectionSourceBasisAuthority::certification(
-                certification_basis_identity("projection-source-certification-basis"),
+                certification_basis_identity("projection-source-certification-basis")?,
             ),
             result_digest: None,
             result_shape_digest: None,
             source_identity: source_identity.into(),
             source_reference_identities,
             materialized_fact_posture: None,
-        }
+        })
     }
 
     pub(crate) fn intent_admission_certification(
@@ -218,28 +219,32 @@ impl ProjectionConsumptionSource {
         result_shape_digest: Option<String>,
         source_identity: impl Into<ProjectionSourceIdentity>,
         source_reference_identities: Vec<ProjectionSourceReferenceIdentity>,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             family,
             capability_profile,
             query_digest,
             basis_digest,
             basis_authority: ProjectionSourceBasisAuthority::certification(
-                certification_basis_identity("projection-source-intent-certification-basis"),
+                certification_basis_identity("projection-source-intent-certification-basis")?,
             ),
             result_digest,
             result_shape_digest,
             source_identity: source_identity.into(),
             source_reference_identities,
             materialized_fact_posture: None,
-        }
+        })
     }
 }
 
-fn certification_basis_identity(label: &'static str) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::ProjectionConsumptionIdentity)
-        .field_shape(WorthQueryEvidenceTag::new("certification_basis"), label)
-        .seal()
+fn certification_basis_identity(
+    label: &'static str,
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::ProjectionConsumptionIdentity)
+            .field_shape(WorthQueryEvidenceTag::new("certification_basis"), label)
+            .seal()?,
+    )
 }
 
 #[cfg(test)]

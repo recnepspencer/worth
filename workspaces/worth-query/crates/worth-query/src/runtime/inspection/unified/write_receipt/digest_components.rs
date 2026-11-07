@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -6,8 +7,8 @@ use crate::runtime::{WorthQueryAspectMutationOperation, WorthQueryMutationMetada
 
 pub(super) fn declared_aspect_operation_identities(
     operations: &[WorthQueryAspectMutationOperation],
-) -> Vec<WorthQueryEvidenceIdentity> {
-    operations
+) -> Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
+    Ok(operations
         .iter()
         .map(|operation| {
             worth_query_evidence_identity(
@@ -23,13 +24,13 @@ pub(super) fn declared_aspect_operation_identities(
             )
             .seal()
         })
-        .collect()
+        .collect::<Result<Vec<_>, _>>()?)
 }
 
 pub(super) fn mutation_metadata_entry_identities(
     mutation_metadata: &WorthQueryMutationMetadata,
-) -> Vec<WorthQueryEvidenceIdentity> {
-    mutation_metadata
+) -> Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
+    Ok(mutation_metadata
         .entries()
         .map(|(key, value)| {
             worth_query_evidence_identity(
@@ -42,5 +43,5 @@ pub(super) fn mutation_metadata_entry_identities(
             )
             .seal()
         })
-        .collect()
+        .collect::<Result<Vec<_>, _>>()?)
 }

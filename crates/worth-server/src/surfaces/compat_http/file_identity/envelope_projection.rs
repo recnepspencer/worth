@@ -83,7 +83,10 @@ pub(crate) fn project_binary_egress_envelope(
 pub(crate) fn project_upload_envelope(
     session: &crate::WorthServerBinaryIngressSession,
     mutation: &crate::WorthServerCompatibilityMutation,
-) -> WorthServerCompatibilityFileEnvelope {
+) -> Result<
+    WorthServerCompatibilityFileEnvelope,
+    worth_query::facade::runtime::WorthQueryEvidenceIdentityDerivationDenial,
+> {
     let canonical_filename = WorthServerCanonicalFilename::admit(
         session.operation_name(),
         mutation
@@ -100,7 +103,7 @@ pub(crate) fn project_upload_envelope(
             branch_digest: session.branch_digest().to_string(),
             operation_name: canonical_filename.canonical().to_string(),
             truth_kind: WorthServerFileMetadataTruthKind::CommittedMutation,
-            truth_digest: mutation.mutation_result().result_digest().to_string(),
+            truth_digest: mutation.mutation_result().result_digest()?.to_string(),
             basis_digest: mutation
                 .envelope()
                 .direct_context()
@@ -174,14 +177,14 @@ pub(crate) fn project_upload_envelope(
         metadata_receipt.metadata_identity(),
         metadata_receipt.branch_digest(),
     );
-    WorthServerCompatibilityFileEnvelope::new(
+    Ok(WorthServerCompatibilityFileEnvelope::new(
         metadata_receipt,
         canonical_filename,
         metadata_normalization_receipt,
         cacheability_policy,
         policy_decision,
         transfer_provenance,
-    )
+    ))
 }
 
 struct ObservedEnvelopeProjection<'a> {

@@ -229,6 +229,7 @@ fn text(
     };
     match value {
         worth_foundational::facade::InternedString::Raw(value) => value.clone(),
+        worth_foundational::facade::InternedString::Stored(value) => value.as_str().to_owned(),
         worth_foundational::facade::InternedString::Symbol(symbol) => pin
             .with_symbol_text(
                 execution,

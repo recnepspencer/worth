@@ -110,16 +110,19 @@ fn retained_historical_context_binding_reuses_admitted_history_artifacts() {
         1,
         1,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let capability = HistoricalCapabilityDescriptor::retained_snapshot_for_test(
         "history:snapshot-1",
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let admission = admit_historical_evaluation_path(request, capability)
         .expect("retained history should admit");
     let resolved = resolve_historical_materialization_path(
         admission.clone(),
-        HistoricalMaterializationDescriptor::retained_snapshot_for_test("history:snapshot-1"),
+        HistoricalMaterializationDescriptor::retained_snapshot_for_test("history:snapshot-1")
+            .expect("fixture digest must fit"),
     )
     .expect("retained history should resolve");
     let metadata = materialization_metadata_from_resolved(resolved);
@@ -183,18 +186,21 @@ fn retained_historical_admission_owns_runtime_snapshot_matching() {
         1,
         1,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let capability = HistoricalCapabilityDescriptor::retained_snapshot_for_test(
         admitted_projection.clone(),
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let admission = admit_historical_evaluation_path(request, capability)
         .expect("retained snapshot path should admit");
     let resolved = resolve_historical_materialization_path(
         admission.clone(),
         HistoricalMaterializationDescriptor::retained_snapshot_for_test(
             admitted_projection.clone(),
-        ),
+        )
+        .expect("fixture digest must fit"),
     )
     .expect("retained snapshot path should resolve");
     let metadata = materialization_metadata_from_resolved(resolved);

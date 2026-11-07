@@ -17,11 +17,11 @@ fn encode(value: &str) -> InternedString {
     value.to_owned().into()
 }
 fn decode(value: InternedString) -> Option<String> {
-    let InternedString::Raw(value) = value else {
+    let Some(value) = (value).raw_text() else {
         return None;
     };
     assert_ne!(value, "decoder-must-not-run");
-    (value != "malformed").then_some(value)
+    (value != "malformed").then(|| value.to_owned())
 }
 
 #[test]

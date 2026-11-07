@@ -306,6 +306,7 @@ pub(super) fn text(
     match state.get(&aspect_key(aspect)).unwrap().view() {
         View::Scalar(AspectValue::String(value)) => match value {
             worth_foundational::facade::InternedString::Raw(value) => value.clone(),
+            worth_foundational::facade::InternedString::Stored(value) => value.as_str().to_owned(),
             worth_foundational::facade::InternedString::Symbol(value) => symbols
                 .resolve(worth_relational::facade::symbols::Symbol(value.0))
                 .unwrap()

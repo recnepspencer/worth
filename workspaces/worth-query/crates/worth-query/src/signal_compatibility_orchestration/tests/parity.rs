@@ -19,7 +19,9 @@ fn compatible_only_orchestration_matches_retained_signal_truth() {
         ))
         .unwrap_or_else(|_| panic!("expected retained signal compatibility"));
 
-    let outcome = handle.orchestrate_signal_compatibility(orchestration_input(&handle, "face-a"));
+    let outcome = handle
+        .orchestrate_signal_compatibility(orchestration_input(&handle, "face-a"))
+        .expect("fixture digest must fit");
     match outcome {
         crate::signal_compatibility_orchestration::WorthQuerySignalCompatibilityOrchestrationOutcome::Bound(value) => {
             assert_eq!(
@@ -53,11 +55,14 @@ fn bridge_request_path_matches_explicit_continuation_preparation_posture() {
             bridge_request(),
             SignalFamily::aspect_contract(),
         )
+        .expect("fixture digest must fit")
         .into_checked()
         .into_outcome();
-    let orchestrated = handle.orchestrate_signal_compatibility(
-        orchestration_input(&handle, "face-a").with_bridge_request(bridge_request()),
-    );
+    let orchestrated = handle
+        .orchestrate_signal_compatibility(
+            orchestration_input(&handle, "face-a").with_bridge_request(bridge_request()),
+        )
+        .expect("fixture digest must fit");
 
     assert_eq!(
         continuation_outcome_token(&explicit),

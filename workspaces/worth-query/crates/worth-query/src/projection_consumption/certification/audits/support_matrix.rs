@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::identity::{
     compose_certification_row_digest, compose_certified_surface_representative_digest,
     compose_digest_sequence, compose_support_traceability_digest,
@@ -134,58 +135,67 @@ impl ProjectionConsumptionSupportMatrix {
     }
 }
 
-pub fn projection_consumption_family_inventory() -> ProjectionConsumptionFamilyInventory {
+pub fn projection_consumption_family_inventory(
+) -> Result<ProjectionConsumptionFamilyInventory, IdentityDerivationDenial> {
     let rows = ProjectionConsumptionCertifiedSourceSurface::all()
         .iter()
         .copied()
         .map(inventory_row)
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     let inventory_digest = compose_digest_sequence(
         "projection_consumption_family_inventory_v1",
         "row",
         rows.iter().map(|row| row.row_digest().to_string()),
-    );
-    ProjectionConsumptionFamilyInventory {
+    )?;
+    Ok(ProjectionConsumptionFamilyInventory {
         rows,
         inventory_digest,
-    }
+    })
 }
 
-pub fn projection_consumption_support_matrix() -> ProjectionConsumptionSupportMatrix {
+pub fn projection_consumption_support_matrix(
+) -> Result<ProjectionConsumptionSupportMatrix, IdentityDerivationDenial> {
     let rows = ProjectionConsumptionCertifiedSourceSurface::all()
         .iter()
         .copied()
-        .flat_map(matrix_rows_for_surface)
+        .map(matrix_rows_for_surface)
+        .collect::<Result<Vec<_>, _>>()?
+        .into_iter()
+        .flatten()
         .collect::<Vec<_>>();
     let matrix_digest = compose_digest_sequence(
         "projection_consumption_support_matrix_v1",
         "row",
         rows.iter().map(|row| row.row_digest().to_string()),
-    );
-    let support_traceability_digest = compose_support_traceability_digest(rows.iter().map(|row| {
-        compose_support_traceability_row_digest(
-            row.admission_rule(),
-            row.hostile_neighbor(),
-            row.certification_lane(),
-            row.structural_proof().as_str(),
-        )
-    }));
-    ProjectionConsumptionSupportMatrix {
+    )?;
+    let support_traceability_digest = compose_support_traceability_digest(
+        rows.iter()
+            .map(|row| {
+                compose_support_traceability_row_digest(
+                    row.admission_rule(),
+                    row.hostile_neighbor(),
+                    row.certification_lane(),
+                    row.structural_proof().as_str(),
+                )
+            })
+            .collect::<Result<Vec<_>, _>>()?,
+    )?;
+    Ok(ProjectionConsumptionSupportMatrix {
         rows,
         matrix_digest,
         support_traceability_digest,
-    }
+    })
 }
 
 fn inventory_row(
     surface: ProjectionConsumptionCertifiedSourceSurface,
-) -> ProjectionConsumptionFamilyInventoryRow {
-    let source = representative_source(surface);
+) -> Result<ProjectionConsumptionFamilyInventoryRow, IdentityDerivationDenial> {
+    let source = representative_source(surface)?;
     let representative_digest = compose_certified_surface_representative_digest(
         surface.as_str(),
         source.family(),
         source.source_identity(),
-    );
+    )?;
     let row_digest = compose_certification_row_digest(
         "projection_consumption_family_inventory_row_v1",
         &[
@@ -193,32 +203,32 @@ fn inventory_row(
             ("family", source.family().as_str()),
             ("representative", representative_digest.as_str()),
         ],
-    );
-    ProjectionConsumptionFamilyInventoryRow {
+    )?;
+    Ok(ProjectionConsumptionFamilyInventoryRow {
         certified_surface: surface,
         source_family: source.family(),
         representative_digest,
         row_digest,
-    }
+    })
 }
 
 fn matrix_rows_for_surface(
     surface: ProjectionConsumptionCertifiedSourceSurface,
-) -> Vec<ProjectionConsumptionSupportMatrixRow> {
-    let source = representative_source(surface);
-    ProjectionFactKind::all()
+) -> Result<Vec<ProjectionConsumptionSupportMatrixRow>, IdentityDerivationDenial> {
+    let source = representative_source(surface)?;
+    Ok(ProjectionFactKind::all()
         .iter()
         .copied()
         .map(|fact_kind| matrix_row(surface, &source, fact_kind))
-        .collect()
+        .collect::<Result<Vec<_>, _>>()?)
 }
 
 fn matrix_row(
     surface: ProjectionConsumptionCertifiedSourceSurface,
     source: &ProjectionConsumptionSource,
     fact_kind: ProjectionFactKind,
-) -> ProjectionConsumptionSupportMatrixRow {
-    let support = executable_support_row(source, fact_kind);
+) -> Result<ProjectionConsumptionSupportMatrixRow, IdentityDerivationDenial> {
+    let support = executable_support_row(source, fact_kind)?;
     let traceability = traceability_for(surface, fact_kind);
     let row_digest = compose_certification_row_digest(
         "projection_consumption_support_matrix_row_v1",
@@ -233,8 +243,8 @@ fn matrix_row(
             ("lane", traceability.2),
             ("proof", traceability.3.as_str()),
         ],
-    );
-    ProjectionConsumptionSupportMatrixRow {
+    )?;
+    Ok(ProjectionConsumptionSupportMatrixRow {
         certified_surface: surface,
         source_family: source.family(),
         fact_kind,
@@ -245,27 +255,27 @@ fn matrix_row(
         certification_lane: traceability.2,
         structural_proof: traceability.3,
         row_digest,
-    }
+    })
 }
 
 fn executable_support_row(
     source: &ProjectionConsumptionSource,
     fact_kind: ProjectionFactKind,
-) -> ProjectionConsumptionSupportRow {
-    discover_projection_consumption_support(source)
+) -> Result<ProjectionConsumptionSupportRow, IdentityDerivationDenial> {
+    Ok(discover_projection_consumption_support(source)?
         .rows()
         .iter()
         .find(|row| row.fact_kind() == fact_kind)
         .cloned()
-        .expect("support report should contain one row for every fact kind")
+        .expect("support report should contain one row for every fact kind"))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
-    fn family_inventory_covers_every_certified_surface() {
-        let inventory = projection_consumption_family_inventory();
+    fn family_inventory_covers_every_certified_surface() -> Result<(), IdentityDerivationDenial> {
+        let inventory = projection_consumption_family_inventory()?;
         assert_eq!(
             inventory.rows().len(),
             ProjectionConsumptionCertifiedSourceSurface::all().len()
@@ -275,11 +285,14 @@ mod tests {
             .iter()
             .all(|row| !row.representative_digest().is_empty()));
         assert!(!inventory.inventory_digest().is_empty());
+
+        Ok(())
     }
 
     #[test]
-    fn family_inventory_includes_retained_and_live_surfaces() {
-        let inventory = projection_consumption_family_inventory();
+    fn family_inventory_includes_retained_and_live_surfaces() -> Result<(), IdentityDerivationDenial>
+    {
+        let inventory = projection_consumption_family_inventory()?;
         let families = inventory
             .rows()
             .iter()
@@ -287,11 +300,14 @@ mod tests {
             .collect::<Vec<_>>();
         assert!(families.contains(&ProjectionSourceFamily::RetainedDerivedArtifactBinding));
         assert!(families.contains(&ProjectionSourceFamily::LiveArtifactBinding));
+
+        Ok(())
     }
 
     #[test]
-    fn support_matrix_rows_are_behavior_derived_and_traceable() {
-        let matrix = projection_consumption_support_matrix();
+    fn support_matrix_rows_are_behavior_derived_and_traceable(
+    ) -> Result<(), IdentityDerivationDenial> {
+        let matrix = projection_consumption_support_matrix()?;
         assert_eq!(
             matrix.rows().len(),
             ProjectionConsumptionCertifiedSourceSurface::all().len()
@@ -309,11 +325,14 @@ mod tests {
         }));
         assert!(!matrix.matrix_digest().is_empty());
         assert!(!matrix.support_traceability_digest().is_empty());
+
+        Ok(())
     }
 
     #[test]
-    fn retained_and_live_certified_surfaces_capture_admitted_subsets() {
-        let matrix = projection_consumption_support_matrix();
+    fn retained_and_live_certified_surfaces_capture_admitted_subsets(
+    ) -> Result<(), IdentityDerivationDenial> {
+        let matrix = projection_consumption_support_matrix()?;
         let retained_rows = matrix
             .rows()
             .iter()
@@ -355,5 +374,7 @@ mod tests {
                     ProjectionConsumptionSupportPosture::SourceMismatch
                 )
         }));
+
+        Ok(())
     }
 }

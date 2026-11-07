@@ -174,7 +174,7 @@ impl EvidenceReportDeclaration {
         }
 
         let identities =
-            derive_evidence_report_identities(&self.scope, &self.report_name, &self.fields);
+            derive_evidence_report_identities(&self.scope, &self.report_name, &self.fields)?;
         EvidenceReport::sealed(self.scope, self.report_name, self.fields, identities)
     }
 

@@ -57,4 +57,5 @@ pub(in crate::runtime::tests) fn compose_effect_intent_receipt_identity(
             receipt.intent_receipt().receipt_identity(),
         )
         .seal()
+        .expect("fixture digest must fit")
 }

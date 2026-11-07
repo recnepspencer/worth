@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -121,7 +122,7 @@ impl WorthQueryContinuationExecutionReadmissionStop {
             WorthQueryEvidenceTag::new("execution_attempts"),
             counters.execution_attempts().to_string(),
         )
-        .seal();
+        .seal().expect("fixed readmission stop grammar: enum labels and three primitive counters; reason is not digest material");
         Self {
             kind,
             next_action,

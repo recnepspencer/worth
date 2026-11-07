@@ -73,16 +73,16 @@ where
         FoundationalBoundaryEvidenceFreshnessPosture::ReconstructedFromReplay => {
             boundary_evidence()
                 .provenance()
-                .replay_derived(source_basis_for(contribution))
+                .replay_derived(source_basis_for(contribution)?)
         }
         FoundationalBoundaryEvidenceFreshnessPosture::RestoredFromCheckpoint => boundary_evidence()
             .provenance()
-            .restored_readmitted(source_basis_for(contribution)),
+            .restored_readmitted(source_basis_for(contribution)?),
         FoundationalBoundaryEvidenceFreshnessPosture::FreshRetained
         | FoundationalBoundaryEvidenceFreshnessPosture::StaleRetained
         | FoundationalBoundaryEvidenceFreshnessPosture::ReducedRetained => boundary_evidence()
             .provenance()
-            .current(source_basis_for(contribution)),
+            .current(source_basis_for(contribution)?),
     }
     .profile_basis(FoundationalBoundaryEvidenceProfileBasis::profile(
         profile_identity.clone(),
@@ -113,16 +113,21 @@ where
 
 fn source_basis_for<P, T>(
     contribution: &WorthQueryMaterializationReadyDomainCapabilityContribution<P, T>,
-) -> FoundationalBoundaryEvidenceSourceBasis
+) -> Result<
+    FoundationalBoundaryEvidenceSourceBasis,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+>
 where
     P: WorthQueryDomainCapabilityPayload,
     T: WorthQueryDomainCapabilityTargetBinding,
 {
     let locator = worth_foundational::BoundaryArtifactLocator::new(
-        super::identity::boundary_artifact_id(&contribution.payload().target().binding_identity()),
+        super::identity::boundary_artifact_id(&contribution.payload().target().binding_identity()?),
         worth_foundational::BoundaryArtifactField::Basis,
     );
-    FoundationalBoundaryEvidenceSourceBasis::boundary_artifact(locator)
+    Ok(FoundationalBoundaryEvidenceSourceBasis::boundary_artifact(
+        locator,
+    ))
 }
 
 fn freshness_for(

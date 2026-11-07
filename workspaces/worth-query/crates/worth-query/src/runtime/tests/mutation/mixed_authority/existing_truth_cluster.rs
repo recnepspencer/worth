@@ -169,7 +169,9 @@ fn mixed_batch_preserves_existing_truth_mode_and_neighbor_aggregate_evidence() {
         })
         .expect("mixed authority batch should execute");
 
-    let batch_evidence = receipt.batch_mutation_evidence();
+    let batch_evidence = receipt
+        .batch_mutation_evidence()
+        .expect("fixture digest must fit");
     assert_eq!(batch_evidence.component_count(), 6);
     assert_eq!(batch_evidence.existing_truth_assertion_count(), 4);
     assert_eq!(batch_evidence.retained_authoritative_assertion_count(), 1);

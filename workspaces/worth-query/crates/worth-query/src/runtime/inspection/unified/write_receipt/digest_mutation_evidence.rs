@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{WorthQueryEvidenceIdentityEncoder, WorthQueryEvidenceTag};
 use crate::runtime::{
     WorthQueryContinuityMutationEvidence, WorthQueryContinuityOutcomeClass,

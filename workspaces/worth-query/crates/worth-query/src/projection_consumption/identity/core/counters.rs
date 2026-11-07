@@ -1,4 +1,5 @@
 use super::super::scope::{consumption_scope_encoder, seal};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::WorthQueryEvidenceTag;
 
 use super::super::super::consumed::ProjectionFactExtractionCounters;
@@ -6,8 +7,8 @@ use super::super::super::facts::ProjectionMaterializedFactPostureKind;
 
 pub(crate) fn compose_extraction_counters_digest(
     counters: &ProjectionFactExtractionCounters,
-) -> String {
-    seal(
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(seal(
         consumption_scope_encoder("projection_fact_extraction_counters_v1")
             .field_usize(
                 WorthQueryEvidenceTag::new("declared"),
@@ -33,7 +34,7 @@ pub(crate) fn compose_extraction_counters_digest(
                 WorthQueryEvidenceTag::new("authority_reopen"),
                 counters.authority_reopen_count(),
             ),
-    )
+    )?)
 }
 
 pub(crate) fn compose_materialized_fact_posture_digest(
@@ -42,7 +43,7 @@ pub(crate) fn compose_materialized_fact_posture_digest(
     basis_digest: &str,
     support_evidence_digest: &str,
     runtime_origin_digest: Option<&str>,
-) -> String {
+) -> Result<String, IdentityDerivationDenial> {
     let mut encoder = consumption_scope_encoder("projection_materialized_fact_posture_v1")
         .field_shape(WorthQueryEvidenceTag::new("kind"), kind.as_str())
         .field_shape(
@@ -57,5 +58,5 @@ pub(crate) fn compose_materialized_fact_posture_digest(
     if let Some(runtime_origin) = runtime_origin_digest {
         encoder = encoder.field_shape(WorthQueryEvidenceTag::new("runtime_origin"), runtime_origin);
     }
-    seal(encoder)
+    Ok(seal(encoder)?)
 }

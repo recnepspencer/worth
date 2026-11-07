@@ -1,4 +1,5 @@
 use crate::canonicalization::CanonicalQueryBundle;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -29,10 +30,14 @@ impl ViewShapePlanDigest {
         &self.0
     }
 
-    pub(crate) fn evidence_identity(&self) -> WorthQueryEvidenceIdentity {
-        worth_query_evidence_identity(WorthQueryEvidenceScope::ViewShapePlanDigest)
-            .field_value(WorthQueryEvidenceTag::new("plan_digest"), self.as_str())
-            .seal()
+    pub(crate) fn evidence_identity(
+        &self,
+    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(
+            worth_query_evidence_identity(WorthQueryEvidenceScope::ViewShapePlanDigest)
+                .field_value(WorthQueryEvidenceTag::new("plan_digest"), self.as_str())
+                .seal()?,
+        )
     }
 }
 

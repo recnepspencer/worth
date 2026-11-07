@@ -13,8 +13,10 @@ fn seeded_certification_replays_the_same_seed_identically() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let left = certify_effect_lifecycle_seeded(request_execution, 17, 12);
-    let right = certify_effect_lifecycle_seeded(request_execution, 17, 12);
+    let left = certify_effect_lifecycle_seeded(request_execution, 17, 12)
+        .expect("fixture digest must fit");
+    let right = certify_effect_lifecycle_seeded(request_execution, 17, 12)
+        .expect("fixture digest must fit");
 
     assert_eq!(
         left.seeded_sequence_digest(),
@@ -34,8 +36,10 @@ fn seeded_certification_changes_when_the_seed_changes() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let left = certify_effect_lifecycle_seeded(request_execution, 17, 12);
-    let right = certify_effect_lifecycle_seeded(request_execution, 18, 12);
+    let left = certify_effect_lifecycle_seeded(request_execution, 17, 12)
+        .expect("fixture digest must fit");
+    let right = certify_effect_lifecycle_seeded(request_execution, 18, 12)
+        .expect("fixture digest must fit");
 
     assert_ne!(
         left.seeded_sequence_digest(),
@@ -52,7 +56,8 @@ fn seeded_certification_covers_distinct_postures_and_batch_widths() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let bundle = certify_effect_lifecycle_seeded(request_execution, 17, 12);
+    let bundle = certify_effect_lifecycle_seeded(request_execution, 17, 12)
+        .expect("fixture digest must fit");
     let rows = bundle.rows();
 
     assert!(rows
@@ -91,7 +96,8 @@ fn seeded_certification_never_certifies_less_than_full_template_coverage() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let bundle = certify_effect_lifecycle_seeded(request_execution, 17, 1);
+    let bundle =
+        certify_effect_lifecycle_seeded(request_execution, 17, 1).expect("fixture digest must fit");
     let rows = bundle.rows();
 
     assert!(rows.len() >= 9);
@@ -120,7 +126,8 @@ fn certification_covers_named_execution_and_boundary_lanes() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let bundle = certify_effect_lifecycle_phase4(request_execution);
+    let bundle =
+        certify_effect_lifecycle_phase4(request_execution).expect("fixture digest must fit");
     let rows = bundle.rows();
 
     assert!(rows.iter().any(|row| row.lane_kind()
@@ -172,7 +179,8 @@ fn certification_retains_batch_native_and_zero_rediscovery_evidence() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let bundle = certify_effect_lifecycle_phase4(request_execution);
+    let bundle =
+        certify_effect_lifecycle_phase4(request_execution).expect("fixture digest must fit");
     let batch = bundle
         .rows()
         .iter()
@@ -200,7 +208,8 @@ fn unified_effect_execution_certification_exposes_named_closeout_outputs() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let bundle = certify_effect_execution_pipeline(request_execution);
+    let bundle =
+        certify_effect_execution_pipeline(request_execution).expect("fixture digest must fit");
 
     assert_ne!(
         bundle.output_digest("effect_proof_shape_digest"),

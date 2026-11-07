@@ -281,6 +281,10 @@ fn entry_map(basis: &RelationalMergeProofPacketCanonicalBasis) -> BTreeMap<Strin
 
 fn entry_locus(locus: &CanonicalBasisLocus) -> String {
     match locus {
+        CanonicalBasisLocus::Named(InternedString::Stored(value)) => {
+            let value = value.as_string();
+            value.clone()
+        }
         CanonicalBasisLocus::Named(InternedString::Raw(value)) => value.clone(),
         CanonicalBasisLocus::Named(InternedString::Symbol(symbol)) => {
             format!("symbol:{}", symbol.0)
@@ -304,6 +308,10 @@ fn differing_loci(
 
 fn canonical_value_text(value: &CanonicalBasisValue) -> String {
     match value {
+        CanonicalBasisValue::ExactText(InternedString::Stored(text)) => {
+            let text = text.as_string();
+            format!("text:{text}")
+        }
         CanonicalBasisValue::ExactText(InternedString::Raw(text)) => format!("text:{text}"),
         CanonicalBasisValue::ExactText(InternedString::Symbol(symbol)) => {
             format!("text:symbol:{}", symbol.0)

@@ -10,7 +10,7 @@ pub(super) fn query_context_lane() -> UnifiedFacadeLane {
     let left_preflight = execution_preflights::direct_runtime_preflight();
     let right_preflight = execution_preflights::alternate_basis_runtime_preflight();
     let support = facade.support_matrix();
-    let report = facade.support_report();
+    let report = facade.support_report().expect("fixture digest must fit");
     let contexts = facade
         .query_context_capability()
         .expect("query context capability should admit");

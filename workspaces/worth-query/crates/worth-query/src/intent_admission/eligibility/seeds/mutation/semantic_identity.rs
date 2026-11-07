@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -6,8 +7,8 @@ use crate::runtime::WorthQueryWriteCommand;
 
 pub(super) fn metadata_identities(
     command: &WorthQueryWriteCommand,
-) -> Vec<WorthQueryEvidenceIdentity> {
-    command
+) -> Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
+    Ok(command
         .mutation_metadata_ref()
         .into_iter()
         .flat_map(|metadata| metadata.entries())
@@ -21,66 +22,72 @@ pub(super) fn metadata_identities(
                 )
                 .seal()
         })
-        .collect()
+        .collect::<Result<Vec<_>, _>>()?)
 }
 
 pub(super) fn naming_identity(
     command: &WorthQueryWriteCommand,
-) -> Option<WorthQueryEvidenceIdentity> {
-    command.naming_intent().map(|intent| {
-        worth_query_evidence_identity(WorthQueryEvidenceScope::AuthoritativeMutationIntentSeed)
-            .field_shape(WorthQueryEvidenceTag::new("role"), "naming-intent")
-            .field_shape(
-                WorthQueryEvidenceTag::new("family"),
-                intent.family().as_str(),
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("attachment"),
-                intent.attachment_identity().evidence_identity(),
-            )
-            .optional_evidence_identity(
-                WorthQueryEvidenceTag::new("prior_authority"),
-                intent
-                    .prior_authoritative_identity()
-                    .map(|identity| identity.evidence_identity()),
-            )
-            .optional_evidence_identity(
-                WorthQueryEvidenceTag::new("target_authority"),
-                intent
-                    .target_authoritative_identity()
-                    .map(|identity| identity.evidence_identity()),
-            )
-            .seal()
-    })
+) -> Result<Option<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
+    Ok(command
+        .naming_intent()
+        .map(|intent| {
+            worth_query_evidence_identity(WorthQueryEvidenceScope::AuthoritativeMutationIntentSeed)
+                .field_shape(WorthQueryEvidenceTag::new("role"), "naming-intent")
+                .field_shape(
+                    WorthQueryEvidenceTag::new("family"),
+                    intent.family().as_str(),
+                )
+                .field_evidence_identity(
+                    WorthQueryEvidenceTag::new("attachment"),
+                    intent.attachment_identity().evidence_identity(),
+                )
+                .optional_evidence_identity(
+                    WorthQueryEvidenceTag::new("prior_authority"),
+                    intent
+                        .prior_authoritative_identity()
+                        .map(|identity| identity.evidence_identity()),
+                )
+                .optional_evidence_identity(
+                    WorthQueryEvidenceTag::new("target_authority"),
+                    intent
+                        .target_authoritative_identity()
+                        .map(|identity| identity.evidence_identity()),
+                )
+                .seal()
+        })
+        .transpose()?)
 }
 
 pub(super) fn continuity_identity(
     command: &WorthQueryWriteCommand,
-) -> Option<WorthQueryEvidenceIdentity> {
-    command.continuity_intent().map(|intent| {
-        worth_query_evidence_identity(WorthQueryEvidenceScope::AuthoritativeMutationIntentSeed)
-            .field_shape(WorthQueryEvidenceTag::new("role"), "continuity-intent")
-            .field_shape(
-                WorthQueryEvidenceTag::new("family"),
-                intent.family().as_str(),
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("outcome_class"),
-                intent.outcome_class().as_str(),
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("prior_authority"),
-                intent.prior_authoritative_identity().evidence_identity(),
-            )
-            .field_evidence_identity_sequence(
-                WorthQueryEvidenceTag::new("successor_authorities"),
-                intent
-                    .successor_authoritative_identities()
-                    .iter()
-                    .map(|identity| identity.evidence_identity()),
-            )
-            .seal()
-    })
+) -> Result<Option<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
+    Ok(command
+        .continuity_intent()
+        .map(|intent| {
+            worth_query_evidence_identity(WorthQueryEvidenceScope::AuthoritativeMutationIntentSeed)
+                .field_shape(WorthQueryEvidenceTag::new("role"), "continuity-intent")
+                .field_shape(
+                    WorthQueryEvidenceTag::new("family"),
+                    intent.family().as_str(),
+                )
+                .field_shape(
+                    WorthQueryEvidenceTag::new("outcome_class"),
+                    intent.outcome_class().as_str(),
+                )
+                .field_evidence_identity(
+                    WorthQueryEvidenceTag::new("prior_authority"),
+                    intent.prior_authoritative_identity().evidence_identity(),
+                )
+                .field_evidence_identity_sequence(
+                    WorthQueryEvidenceTag::new("successor_authorities"),
+                    intent
+                        .successor_authoritative_identities()
+                        .iter()
+                        .map(|identity| identity.evidence_identity()),
+                )
+                .seal()
+        })
+        .transpose()?)
 }
 
 pub(super) fn mutation_command_shape(command: &WorthQueryWriteCommand) -> &'static str {

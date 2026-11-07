@@ -11,6 +11,7 @@ use crate::application::{
     WorthQueryDeclarationInput, WorthQueryDomainEntryMarker, WorthQueryDomainOperatingContext,
     WorthQueryInstalledDomainDeclarationContext, WorthQueryTemporalDeclarationSupport,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryDeclarationCapabilityDenial<
@@ -103,6 +104,7 @@ pub enum WorthQueryDeclarationAdmissionError<
     D: WorthQueryDomainEntryMarker,
     I: WorthQueryDeclarationInput<D>,
 > {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     Deferred(WorthQueryDeclarationCapabilityDenial<D, I::Family>),
     Unsupported(WorthQueryDeclarationCapabilityDenial<D, I::Family>),
     InvalidContext(WorthQueryDeclarationCapabilityDenial<D, I::Family>),
@@ -203,5 +205,13 @@ pub(crate) fn worth_query_checked_family_declaration<
     match worth_query_canonical_declaration(handle, input, version) {
         Ok(artifact) => WorthQueryDeclaredFamilyChecked::Admitted(artifact),
         Err(error) => WorthQueryDeclaredFamilyChecked::Canonicalization(error),
+    }
+}
+
+impl<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>
+    From<IdentityDerivationDenial> for WorthQueryDeclarationAdmissionError<D, I>
+{
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
     }
 }

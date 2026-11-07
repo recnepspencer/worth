@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity_authority::{QueryProjectionIdentity, QuerySubscriptionIdentityKind};
 
 use super::super::active_digest::ActiveSubscriptionLaneDigest;
@@ -49,7 +50,7 @@ impl SubscriptionContinuationReport {
             crate::evidence_identity::WorthQueryEvidenceTag::new("performance"),
             performance_receipt.performance_receipt_identity(),
         )
-        .seal();
+        .seal().expect("bounded scalar receipt grammar: literal and enum labels, primitive values and sealed identity tokens");
         Self {
             active_lane_digest: evidence.active_lane_digest().clone(),
             continuation_class: evidence.continuation_class(),

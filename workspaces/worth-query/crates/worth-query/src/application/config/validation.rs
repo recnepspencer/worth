@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::hash_parts;
 
 use super::families::{
@@ -55,6 +56,20 @@ pub struct ConfigurationAdmissionError {
 }
 
 impl ConfigurationAdmissionError {
+    pub(crate) fn identity_denied(
+        cause: IdentityDerivationDenial,
+        counters: WorthQueryConfigCounters,
+    ) -> Self {
+        Self {
+            failure_class: ConfigurationAdmissionFailureClass::EvidenceIdentityDerivationDenied(
+                cause,
+            ),
+            section: None,
+            counters,
+            reason: "application support identity exceeds its canonical digest limit",
+        }
+    }
+
     fn new(
         failure_class: ConfigurationAdmissionFailureClass,
         section: Option<WorthQueryConfigSectionFamily>,

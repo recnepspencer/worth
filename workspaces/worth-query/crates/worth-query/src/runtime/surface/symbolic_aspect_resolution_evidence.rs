@@ -17,17 +17,17 @@ impl WorthQuerySymbolicAspectResolutionEvidence {
     pub(in crate::runtime) fn from_reference(
         reference: &WorthQuerySymbolicAspectReference,
         resolved_entity_identity: &WorthQueryEntityIdentity,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        Ok(Self {
             aspect_touch: reference.aspect_touch().clone(),
             family: reference.family(),
             symbol: WorthQueryMutationSymbolIdentity::new(
                 "symbolic-aspect-reference",
                 reference.reference().symbol(),
-            ),
+            )?,
             resolved_entity_identity: resolved_entity_identity.clone(),
             target_collection: reference.reference().target_collection_identity().cloned(),
-        }
+        })
     }
 
     pub fn aspect_touch(&self) -> &WorthQueryAspectTouch {

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::harness::certification::digest_parts;
 use crate::projection_consumption::ProjectionConsumptionCertifiedSourceSurface;
 
@@ -25,7 +26,7 @@ const CAPABILITY_IDENTITY: &str = "milestone_nine_five_cross_lane";
 
 pub fn direct_table_lane(
     projection_surface: ProjectionConsumptionCertifiedSourceSurface,
-) -> MilestoneNineFiveHostileLaneBundle {
+) -> Result<MilestoneNineFiveHostileLaneBundle, IdentityDerivationDenial> {
     let canonical = direct_collection();
     let view = table_view(&canonical);
     let saved = freeze_ordinary_grouped_saved_query(
@@ -33,7 +34,7 @@ pub fn direct_table_lane(
         CAPABILITY_IDENTITY,
     );
     let reuse = exact_saved_query_reuse(&saved);
-    lane_bundle(
+    Ok(lane_bundle(
         MilestoneNineFiveCompositionAxis::Direct,
         MilestoneNineFiveViewAxis::Table,
         projection_axis_for(projection_surface),
@@ -47,13 +48,14 @@ pub fn direct_table_lane(
         ]),
         view.view_shape_digest().as_str().to_string(),
         view.view_plan_digest().as_str().to_string(),
-        projection_surface_digest(&projection_bundle(), projection_surface),
+        projection_surface_digest(&projection_bundle()?, projection_surface),
         &saved,
         &reuse,
-    )
+    )?)
 }
 
-pub fn named_scope_table_lane() -> MilestoneNineFiveHostileLaneBundle {
+pub fn named_scope_table_lane(
+) -> Result<MilestoneNineFiveHostileLaneBundle, IdentityDerivationDenial> {
     let composed = named_scope_collection();
     let view = table_view(composed.canonical());
     let saved = freeze_ordinary_grouped_saved_query(
@@ -61,7 +63,7 @@ pub fn named_scope_table_lane() -> MilestoneNineFiveHostileLaneBundle {
         CAPABILITY_IDENTITY,
     );
     let reuse = exact_saved_query_reuse(&saved);
-    lane_bundle(
+    Ok(lane_bundle(
         MilestoneNineFiveCompositionAxis::NamedScopeExpansion,
         MilestoneNineFiveViewAxis::Table,
         MilestoneNineFiveProjectionAxis::RetainedDerivedArtifactBinding,
@@ -82,15 +84,16 @@ pub fn named_scope_table_lane() -> MilestoneNineFiveHostileLaneBundle {
         view.view_shape_digest().as_str().to_string(),
         view.view_plan_digest().as_str().to_string(),
         projection_surface_digest(
-            &projection_bundle(),
+            &projection_bundle()?,
             ProjectionConsumptionCertifiedSourceSurface::RetainedDerivedArtifactBinding,
         ),
         &saved,
         &reuse,
-    )
+    )?)
 }
 
-pub fn direct_detail_live_lane() -> MilestoneNineFiveHostileLaneBundle {
+pub fn direct_detail_live_lane(
+) -> Result<MilestoneNineFiveHostileLaneBundle, IdentityDerivationDenial> {
     let canonical = direct_detail();
     let view = detail_view(&canonical);
     let saved = freeze_ordinary_detail_saved_query(
@@ -98,7 +101,7 @@ pub fn direct_detail_live_lane() -> MilestoneNineFiveHostileLaneBundle {
         CAPABILITY_IDENTITY,
     );
     let reuse = exact_saved_query_reuse(&saved);
-    lane_bundle(
+    Ok(lane_bundle(
         MilestoneNineFiveCompositionAxis::Direct,
         MilestoneNineFiveViewAxis::Detail,
         MilestoneNineFiveProjectionAxis::LiveArtifactBinding,
@@ -113,15 +116,16 @@ pub fn direct_detail_live_lane() -> MilestoneNineFiveHostileLaneBundle {
         view.view_shape_digest().as_str().to_string(),
         view.view_plan_digest().as_str().to_string(),
         projection_surface_digest(
-            &projection_bundle(),
+            &projection_bundle()?,
             ProjectionConsumptionCertifiedSourceSurface::LiveArtifactBinding,
         ),
         &saved,
         &reuse,
-    )
+    )?)
 }
 
-pub fn template_detail_live_lane() -> MilestoneNineFiveHostileLaneBundle {
+pub fn template_detail_live_lane(
+) -> Result<MilestoneNineFiveHostileLaneBundle, IdentityDerivationDenial> {
     let composed = template_detail();
     let view = detail_view(composed.canonical());
     let saved = freeze_ordinary_detail_saved_query(
@@ -129,7 +133,7 @@ pub fn template_detail_live_lane() -> MilestoneNineFiveHostileLaneBundle {
         CAPABILITY_IDENTITY,
     );
     let reuse = exact_saved_query_reuse(&saved);
-    lane_bundle(
+    Ok(lane_bundle(
         MilestoneNineFiveCompositionAxis::TemplateInstantiation,
         MilestoneNineFiveViewAxis::Detail,
         MilestoneNineFiveProjectionAxis::LiveArtifactBinding,
@@ -150,15 +154,16 @@ pub fn template_detail_live_lane() -> MilestoneNineFiveHostileLaneBundle {
         view.view_shape_digest().as_str().to_string(),
         view.view_plan_digest().as_str().to_string(),
         projection_surface_digest(
-            &projection_bundle(),
+            &projection_bundle()?,
             ProjectionConsumptionCertifiedSourceSurface::LiveArtifactBinding,
         ),
         &saved,
         &reuse,
-    )
+    )?)
 }
 
-pub fn grouped_ordinary_lane() -> MilestoneNineFiveHostileLaneBundle {
+pub fn grouped_ordinary_lane(
+) -> Result<MilestoneNineFiveHostileLaneBundle, IdentityDerivationDenial> {
     let canonical = direct_collection();
     let view = grouped_view(&canonical);
     let saved = freeze_ordinary_grouped_saved_query(
@@ -166,7 +171,7 @@ pub fn grouped_ordinary_lane() -> MilestoneNineFiveHostileLaneBundle {
         CAPABILITY_IDENTITY,
     );
     let reuse = exact_saved_query_reuse(&saved);
-    lane_bundle(
+    Ok(lane_bundle(
         MilestoneNineFiveCompositionAxis::Direct,
         MilestoneNineFiveViewAxis::KanbanGrouped,
         MilestoneNineFiveProjectionAxis::RelationalGroupedProjection,
@@ -181,15 +186,16 @@ pub fn grouped_ordinary_lane() -> MilestoneNineFiveHostileLaneBundle {
         view.view_shape_digest().as_str().to_string(),
         view.view_plan_digest().as_str().to_string(),
         projection_surface_digest(
-            &projection_bundle(),
+            &projection_bundle()?,
             ProjectionConsumptionCertifiedSourceSurface::RelationalGroupedProjection,
         ),
         &saved,
         &reuse,
-    )
+    )?)
 }
 
-pub fn grouped_preserved_lane() -> MilestoneNineFiveHostileLaneBundle {
+pub fn grouped_preserved_lane(
+) -> Result<MilestoneNineFiveHostileLaneBundle, IdentityDerivationDenial> {
     let composed = basis_aware_composed_collection();
     let view = grouped_view(composed.canonical());
     let saved = freeze_future_preserving_grouped_saved_query(
@@ -197,7 +203,7 @@ pub fn grouped_preserved_lane() -> MilestoneNineFiveHostileLaneBundle {
         CAPABILITY_IDENTITY,
     );
     let reuse = exact_saved_query_reuse(&saved);
-    lane_bundle(
+    Ok(lane_bundle(
         MilestoneNineFiveCompositionAxis::BasisAwareComposition,
         MilestoneNineFiveViewAxis::KanbanGrouped,
         MilestoneNineFiveProjectionAxis::RelationalGroupedProjection,
@@ -218,15 +224,16 @@ pub fn grouped_preserved_lane() -> MilestoneNineFiveHostileLaneBundle {
         view.view_shape_digest().as_str().to_string(),
         view.view_plan_digest().as_str().to_string(),
         projection_surface_digest(
-            &projection_bundle(),
+            &projection_bundle()?,
             ProjectionConsumptionCertifiedSourceSurface::RelationalGroupedProjection,
         ),
         &saved,
         &reuse,
-    )
+    )?)
 }
 
-pub fn template_public_bridge_table_lane() -> MilestoneNineFiveHostileLaneBundle {
+pub fn template_public_bridge_table_lane(
+) -> Result<MilestoneNineFiveHostileLaneBundle, IdentityDerivationDenial> {
     let composed = template_collection();
     let view = table_view(composed.canonical());
     let saved = freeze_ordinary_grouped_saved_query(
@@ -234,7 +241,7 @@ pub fn template_public_bridge_table_lane() -> MilestoneNineFiveHostileLaneBundle
         CAPABILITY_IDENTITY,
     );
     let reuse = exact_saved_query_reuse(&saved);
-    lane_bundle(
+    Ok(lane_bundle(
         MilestoneNineFiveCompositionAxis::TemplateInstantiation,
         MilestoneNineFiveViewAxis::Table,
         MilestoneNineFiveProjectionAxis::LiveArtifactBinding,
@@ -255,15 +262,16 @@ pub fn template_public_bridge_table_lane() -> MilestoneNineFiveHostileLaneBundle
         view.view_shape_digest().as_str().to_string(),
         view.view_plan_digest().as_str().to_string(),
         projection_surface_digest(
-            &projection_bundle(),
+            &projection_bundle()?,
             ProjectionConsumptionCertifiedSourceSurface::LiveArtifactBinding,
         ),
         &saved,
         &reuse,
-    )
+    )?)
 }
 
-pub fn preserved_detail_lane() -> MilestoneNineFiveHostileLaneBundle {
+pub fn preserved_detail_lane(
+) -> Result<MilestoneNineFiveHostileLaneBundle, IdentityDerivationDenial> {
     let saved = freeze_future_preserving_detail_saved_query(
         application_support_report().report_digest(),
         CAPABILITY_IDENTITY,
@@ -271,7 +279,7 @@ pub fn preserved_detail_lane() -> MilestoneNineFiveHostileLaneBundle {
     let reuse = exact_saved_query_reuse(&saved);
     let canonical = direct_detail();
     let view = detail_view(&canonical);
-    lane_bundle(
+    Ok(lane_bundle(
         MilestoneNineFiveCompositionAxis::BasisAwareComposition,
         MilestoneNineFiveViewAxis::Detail,
         MilestoneNineFiveProjectionAxis::LiveArtifactBinding,
@@ -291,10 +299,10 @@ pub fn preserved_detail_lane() -> MilestoneNineFiveHostileLaneBundle {
         view.view_shape_digest().as_str().to_string(),
         view.view_plan_digest().as_str().to_string(),
         projection_surface_digest(
-            &projection_bundle(),
+            &projection_bundle()?,
             ProjectionConsumptionCertifiedSourceSurface::LiveArtifactBinding,
         ),
         &saved,
         &reuse,
-    )
+    )?)
 }

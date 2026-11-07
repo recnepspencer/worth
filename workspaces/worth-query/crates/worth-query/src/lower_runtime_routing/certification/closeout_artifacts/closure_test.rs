@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::hash_parts;
 
 use super::{
@@ -155,9 +156,9 @@ impl WorthQueryLowerRuntimeClosureTest {
 
 pub fn worth_query_lower_runtime_closure_test(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> WorthQueryLowerRuntimeClosureTest {
-    let certification_bundle = certify_lower_runtime_routing(execution);
-    let acceptance_suite = worth_query_lower_runtime_acceptance_suite(execution);
+) -> Result<WorthQueryLowerRuntimeClosureTest, IdentityDerivationDenial> {
+    let certification_bundle = certify_lower_runtime_routing(execution)?;
+    let acceptance_suite = worth_query_lower_runtime_acceptance_suite(execution)?;
     let boundary_reconciliation = worth_query_lower_runtime_boundary_reconciliation_report();
     let proof_shape_audit = worth_query_lower_runtime_proof_shape_audit();
 
@@ -220,7 +221,7 @@ pub fn worth_query_lower_runtime_closure_test(
         "named closure test requires bundle parity with proof-shape audit"
     );
 
-    WorthQueryLowerRuntimeClosureTest::new(
+    Ok(WorthQueryLowerRuntimeClosureTest::new(
         certification_bundle,
         acceptance_suite,
         boundary_reconciliation,
@@ -254,7 +255,7 @@ pub fn worth_query_lower_runtime_closure_test(
                 downstream_boundary.detail(),
             ),
         ],
-    )
+    ))
 }
 
 #[cfg(test)]
@@ -262,11 +263,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn closure_test_has_named_control_hostile_and_parity_lanes() {
+    fn closure_test_has_named_control_hostile_and_parity_lanes(
+    ) -> Result<(), IdentityDerivationDenial> {
         let host_request = crate::test_execution_policy::serial_request();
         let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-        let suite = worth_query_lower_runtime_closure_test(request_execution);
+        let suite = worth_query_lower_runtime_closure_test(request_execution)?;
 
         assert_eq!(suite.name(), LOWER_RUNTIME_CLOSURE_TEST_NAME);
         assert_eq!(suite.rows().len(), 4);
@@ -294,14 +296,17 @@ mod tests {
                 .output_digest("route_proof_shape_digest")
                 .expect("proof-shape output should exist")
         );
+
+        Ok(())
     }
 
     #[test]
-    fn closure_test_binds_downstream_boundary_lane_to_certified_row() {
+    fn closure_test_binds_downstream_boundary_lane_to_certified_row(
+    ) -> Result<(), IdentityDerivationDenial> {
         let host_request = crate::test_execution_policy::serial_request();
         let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-        let suite = worth_query_lower_runtime_closure_test(request_execution);
+        let suite = worth_query_lower_runtime_closure_test(request_execution)?;
 
         assert_eq!(
             suite
@@ -316,14 +321,17 @@ mod tests {
                 .expect("downstream boundary row")
                 .artifact_digest()
         );
+
+        Ok(())
     }
 
     #[test]
-    fn closure_test_hostile_lane_aggregates_hostile_obligations() {
+    fn closure_test_hostile_lane_aggregates_hostile_obligations(
+    ) -> Result<(), IdentityDerivationDenial> {
         let host_request = crate::test_execution_policy::serial_request();
         let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-        let suite = worth_query_lower_runtime_closure_test(request_execution);
+        let suite = worth_query_lower_runtime_closure_test(request_execution)?;
         let former_specialist = suite
             .certification_bundle()
             .rows()
@@ -368,5 +376,7 @@ mod tests {
                 .lane(WorthQueryLowerRuntimeAcceptanceLane::Parity)
                 .digest()
         );
+
+        Ok(())
     }
 }

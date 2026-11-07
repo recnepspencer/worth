@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -24,7 +25,7 @@ impl EffectEligibilityDecisionTrace {
         outcome: &'static str,
         message: &'static str,
         cause: &'static str,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let trace_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
                 .field_shape(
@@ -38,14 +39,14 @@ impl EffectEligibilityDecisionTrace {
                 .field_shape(WorthQueryEvidenceTag::new("outcome"), outcome)
                 .field_shape(WorthQueryEvidenceTag::new("message"), message)
                 .field_shape(WorthQueryEvidenceTag::new("cause"), cause)
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             normalized_identity: normalized.normalized_identity().clone(),
             outcome,
             message,
             cause,
             trace_identity,
-        }
+        })
     }
 
     pub fn normalized_identity(&self) -> &WorthQueryEvidenceIdentity {
@@ -90,18 +91,18 @@ impl EffectEligibility {
         normalized: NormalizedEffectIntent,
         workflow_declaration: QueryWorkflowDeclaration,
         support_row_count: usize,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             decision_trace: EffectEligibilityDecisionTrace::new(
                 &normalized,
                 "admitted",
                 "effect is admitted",
                 "supported",
-            ),
+            )?,
             normalized,
             workflow_declaration,
             counters: EffectLifecycleCounters::admitted(support_row_count),
-        }
+        })
     }
 
     pub fn normalized(&self) -> &NormalizedEffectIntent {
@@ -135,18 +136,18 @@ impl AdvisoryEffectEligibility {
         advisory_cause: EffectSupportCause,
         message: &'static str,
         support_row_count: usize,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             advisory_cause,
             decision_trace: EffectEligibilityDecisionTrace::new(
                 &normalized,
                 "advisory",
                 message,
                 advisory_cause.as_str(),
-            ),
+            )?,
             normalized,
             counters: EffectLifecycleCounters::advisory(support_row_count),
-        }
+        })
     }
 
     pub fn normalized(&self) -> &NormalizedEffectIntent {
@@ -181,15 +182,15 @@ impl DeniedEffectEligibility {
         message: &'static str,
         cause: &'static str,
         support_row_count: usize,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             normalized: normalized.clone(),
             denial_kind,
             decision_trace: EffectEligibilityDecisionTrace::new(
                 normalized, "denied", message, cause,
-            ),
+            )?,
             counters: EffectLifecycleCounters::denied(support_row_count),
-        }
+        })
     }
 
     pub fn normalized(&self) -> &NormalizedEffectIntent {
@@ -223,8 +224,8 @@ impl RebindRequiredEffectEligibility {
         message: &'static str,
         cause: &'static str,
         support_row_count: usize,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             normalized: normalized.clone(),
             denial_kind: DeniedEffectEligibilityKind::PreviewRebindRequired,
             decision_trace: EffectEligibilityDecisionTrace::new(
@@ -232,9 +233,9 @@ impl RebindRequiredEffectEligibility {
                 "rebind_required",
                 message,
                 cause,
-            ),
+            )?,
             counters: EffectLifecycleCounters::rebind_required(support_row_count),
-        }
+        })
     }
 
     pub fn normalized(&self) -> &NormalizedEffectIntent {
@@ -270,16 +271,16 @@ impl DeferredEffectEligibility {
         message: &'static str,
         cause: &'static str,
         support_row_count: usize,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             normalized: normalized.clone(),
             denial_kind: deferred_contract.denial_kind(),
             deferred_contract,
             decision_trace: EffectEligibilityDecisionTrace::new(
                 normalized, "deferred", message, cause,
-            ),
+            )?,
             counters: EffectLifecycleCounters::deferred(support_row_count),
-        }
+        })
     }
 
     pub fn normalized(&self) -> &NormalizedEffectIntent {

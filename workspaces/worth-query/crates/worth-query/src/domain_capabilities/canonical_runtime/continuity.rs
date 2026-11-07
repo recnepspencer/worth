@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use crate::domain_capabilities::denials::{
@@ -20,16 +21,19 @@ use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceTag};
 
 pub fn materialize_canonical_continuity_artifact<T>(
     contribution: WorthQueryMaterializationReadyContinuityContribution<T>,
-) -> WorthQueryCanonicalContinuityArtifact<T>
+) -> Result<WorthQueryCanonicalContinuityArtifact<T>, IdentityDerivationDenial>
 where
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)
+    Ok(super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)?)
 }
 
 pub(crate) fn materialize_runtime_continuity_evidence<T>(
     contribution: WorthQueryMaterializationReadyContinuityContribution<T>,
-) -> WorthQueryDomainCapabilityTransitionOutcome<WorthQueryContinuityMutationEvidence>
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<WorthQueryContinuityMutationEvidence>,
+    IdentityDerivationDenial,
+>
 where
     T: crate::domain_capabilities::WorthQueryAdmittedPlanContributionTargetBinding,
 {
@@ -37,47 +41,53 @@ where
     let payload = domain_contribution.payload();
     let binding_identity = domain_capability_continuity_binding_identity(
         domain_contribution.target().kind(),
-        &domain_contribution.target().binding_identity(),
-    );
+        &domain_contribution.target().binding_identity()?,
+    )?;
     let Some(runtime_semantics) = payload.runtime_semantics() else {
-        return TransitionOutcome::Denied(missing_runtime_semantics_denial(
+        return Ok(TransitionOutcome::Denied(missing_runtime_semantics_denial(
             payload,
             domain_contribution.request_identity().clone(),
-        ));
+        )));
     };
     if !runtime_semantics_match_posture(runtime_semantics, payload.posture()) {
-        return TransitionOutcome::Denied(inconsistent_runtime_semantics_denial(
-            payload,
-            runtime_semantics,
-            domain_contribution.request_identity().clone(),
+        return Ok(TransitionOutcome::Denied(
+            inconsistent_runtime_semantics_denial(
+                payload,
+                runtime_semantics,
+                domain_contribution.request_identity().clone(),
+            ),
         ));
     }
     let Some(intent) = continuity_intent_from_runtime_semantics(runtime_semantics, payload) else {
-        return TransitionOutcome::Denied(unsupported_posture_denial(
+        return Ok(TransitionOutcome::Denied(unsupported_posture_denial(
             payload,
             domain_contribution.request_identity().clone(),
-        ));
+        )));
     };
 
-    TransitionOutcome::Success(WorthQueryContinuityMutationEvidence::from_intent(
-        &intent,
-        Some(&binding_identity),
-        None,
-        None,
+    Ok(TransitionOutcome::Success(
+        WorthQueryContinuityMutationEvidence::from_intent(
+            &intent,
+            Some(&binding_identity),
+            None,
+            None,
+        )?,
     ))
 }
 
 fn domain_capability_continuity_binding_identity(
     target_kind: WorthQueryDomainCapabilityTargetKind,
     binding_identity: &WorthQueryEvidenceIdentity,
-) -> WorthQueryEvidenceIdentity {
-    domain_capability_scope_encoder("domain_capability_continuity_binding_v1")
-        .field_shape(
-            WorthQueryEvidenceTag::new("target_kind"),
-            target_kind.as_str(),
-        )
-        .field_evidence_identity(WorthQueryEvidenceTag::new("binding"), binding_identity)
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        domain_capability_scope_encoder("domain_capability_continuity_binding_v1")
+            .field_shape(
+                WorthQueryEvidenceTag::new("target_kind"),
+                target_kind.as_str(),
+            )
+            .field_evidence_identity(WorthQueryEvidenceTag::new("binding"), binding_identity)
+            .seal()?,
+    )
 }
 
 fn runtime_semantics_match_posture(

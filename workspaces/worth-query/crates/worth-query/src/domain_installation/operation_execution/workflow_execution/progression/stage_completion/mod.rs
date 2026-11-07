@@ -273,15 +273,21 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
             .collect::<Vec<_>>();
         self.assert_predecessor_authority(&predecessor_receipts);
         self.counters.stage_executor_contacts += 1;
-        let effect_workflow_binding = self.stage_effect_workflow_binding(
-            stage,
-            workspace.snapshot_identity(execution).map_err(|cause| {
-                WorthQueryWorkflowAdvanceDenial::new(
-                    WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(cause),
-                    self.counters,
+        let effect_workflow_binding = self
+            .stage_effect_workflow_binding(
+                stage,
+                workspace.snapshot_identity(execution).map_err(|cause| {
+                    WorthQueryWorkflowAdvanceDenial::new(
+                        WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(cause),
+                        self.counters,
+                    )
+                })?,
+            )
+            .map_err(|cause| {
+                self.denial(
+                    WorthQueryWorkflowAdvanceDenialKind::EvidenceIdentityDerivationDenied(cause),
                 )
-            })?,
-        );
+            })?;
         let context = self.stage_execution_context(
             execution
                 .checked_execution_request_for(&workspace.advancement_owner())

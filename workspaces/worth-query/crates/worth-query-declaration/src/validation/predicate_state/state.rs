@@ -257,9 +257,9 @@ fn apply_equality_constraints(
         );
     }
 
-    if let worth_foundational::facade::AspectValue::String(
-        worth_foundational::facade::InternedString::Raw(value),
-    ) = scalar_operand(&equality.0).as_native()
+    if let worth_foundational::facade::AspectValue::String(value) =
+        scalar_operand(&equality.0).as_native()
+        && let Some(value) = value.raw_text()
     {
         for contains_predicate in constraints.contains {
             if !value.contains(string_scalar(&contains_predicate.0)) {

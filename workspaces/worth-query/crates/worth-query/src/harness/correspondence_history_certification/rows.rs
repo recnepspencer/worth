@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::harness::certification::ParityAnchor;
 
 use super::fixtures::{
@@ -87,46 +88,46 @@ pub(crate) fn canonical_row(
 pub(crate) fn rejection_row(
     spec: &CorrespondenceHistoryRejectionRowSpec,
     lanes: &CertificationLanes,
-) -> model::CorrespondenceHistoryRejectionRow {
+) -> Result<model::CorrespondenceHistoryRejectionRow, IdentityDerivationDenial> {
     let (control_lane, hostile_lane, parity_lane) = match spec.row_name {
         "unsupported-correspondence-family" => (
             lanes.structural.clone(),
-            unsupported_correspondence_family_rejection(),
+            unsupported_correspondence_family_rejection()?,
             lanes.structural.clone(),
         ),
         "unsupported-historical-materialization-path" => (
             lanes.replay.clone(),
-            unsupported_historical_materialization_rejection(),
+            unsupported_historical_materialization_rejection()?,
             lanes.replay.clone(),
         ),
         "hidden-materialization-path-substitution-forbidden" => (
             lanes.replay.clone(),
-            hidden_materialization_substitution_rejection(),
+            hidden_materialization_substitution_rejection()?,
             lanes.replay.clone(),
         ),
         "broad-candidate-scan-success-forbidden" => (
             lanes.structural.clone(),
-            broad_candidate_scan_rejection(),
+            broad_candidate_scan_rejection()?,
             lanes.structural.clone(),
         ),
         "no-executor-path-mutation-after-planning" => (
             lanes.replay.clone(),
-            executor_path_mutation_rejection(),
+            executor_path_mutation_rejection()?,
             lanes.replay.clone(),
         ),
         "host-cache-history-authority-forbidden" => (
             lanes.replay.clone(),
-            host_cache_history_authority_rejection(),
+            host_cache_history_authority_rejection()?,
             lanes.replay.clone(),
         ),
         other => panic!("unknown 5.4 rejection row {other}"),
     };
 
-    model::CorrespondenceHistoryRejectionRow {
+    Ok(model::CorrespondenceHistoryRejectionRow {
         row_name: spec.row_name,
         perturbation_class: spec.perturbation_class,
         control_lane,
         hostile_lane,
         parity_lane,
-    }
+    })
 }

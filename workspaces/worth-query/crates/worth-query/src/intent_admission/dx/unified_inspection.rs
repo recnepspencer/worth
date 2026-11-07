@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::intent_admission::dx::WorthQueryRuntimeIntentAdmissionReviewData;
 use crate::intent_admission::{
     WorthQueryGenericInspectionIntentSeed, WorthQueryGenericInspectionIntentTarget,
@@ -97,7 +98,7 @@ impl<'a> WorthQueryRuntimeInspectionIntentAdmissionReview<'a> {
             })?;
         let execution_binding = self
             .runtime
-            .prepare_unified_inspection_execution_binding(handoff.clone());
+            .prepare_unified_inspection_execution_binding(handoff.clone())?;
         Ok(WorthQueryAdmittedRuntimeInspectionIntent {
             runtime: self.runtime,
             review: self.review,
@@ -155,13 +156,13 @@ impl WorthQueryRuntime {
     pub fn inspect_intent<'a, T>(
         &'a self,
         target: T,
-    ) -> WorthQueryRuntimeInspectionIntentAuthoring<'a>
+    ) -> Result<WorthQueryRuntimeInspectionIntentAuthoring<'a>, IdentityDerivationDenial>
     where
         T: WorthQueryGenericInspectionIntentTarget<'a>,
     {
-        WorthQueryRuntimeInspectionIntentAuthoring::new(
+        Ok(WorthQueryRuntimeInspectionIntentAuthoring::new(
             self,
-            target.into_generic_inspection_intent_seed(),
-        )
+            target.into_generic_inspection_intent_seed()?,
+        ))
     }
 }

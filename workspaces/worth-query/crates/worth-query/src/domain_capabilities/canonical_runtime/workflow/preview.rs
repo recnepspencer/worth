@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use crate::domain_capabilities::denials::{
@@ -193,8 +194,12 @@ where
     let source_label = workflow_source_label(target, payload);
     let request_family = preview_request_family(payload.posture());
     let request_family_label = request_family.as_str();
-    let binding_identity = target.binding_identity();
     let request_identity = domain_contribution.request_identity();
+    let identity_refused = |cause| {
+        WorthQueryDomainCapabilityProgressionDenial::new(crate::domain_capabilities::WorthQueryDomainCapabilityProgressionDenialKind::EvidenceIdentityDerivationDenied(cause), "workflow-preview", target.kind(), request_identity.clone(), "preview workflow evidence identity exceeded its digest bounds")
+    };
+
+    let binding_identity = target.binding_identity().map_err(&identity_refused)?;
     let canonical_query_identity = preview_canonical_query_identity(
         &source_label,
         &binding_identity,
@@ -202,8 +207,10 @@ where
         preview_session_identity,
         &evaluation_class,
         request_family_label,
-    );
-    let validated_query_identity = preview_validated_query_identity(&canonical_query_identity);
+    )
+    .map_err(&identity_refused)?;
+    let validated_query_identity =
+        preview_validated_query_identity(&canonical_query_identity).map_err(&identity_refused)?;
     let canonical_query_digest = canonical_query_digest_from_identity(&canonical_query_identity);
     let validated_query_digest = validated_query_digest_from_identity(&validated_query_identity);
     let preview_declaration_identity = preview_declaration_identity(
@@ -213,14 +220,16 @@ where
         preview_session_identity,
         &evaluation_class,
         request_family_label,
-    );
+    )
+    .map_err(&identity_refused)?;
     let declaration_identity =
         sealed_preview_declaration_bridge_identity(&preview_declaration_identity);
     let declaration_digest_identity = preview_declaration_digest_identity(
         &preview_declaration_identity,
         &canonical_query_digest,
         &validated_query_digest,
-    );
+    )
+    .map_err(&identity_refused)?;
     let artifact = materialize_contributed_preview_workflow_foundation_artifact(
         binding_identity,
         canonical_query_digest,
@@ -231,7 +240,8 @@ where
         declaration_digest_identity,
         preview_evaluation_class(evaluation_class),
         0,
-    );
+    )
+    .map_err(&identity_refused)?;
 
     Ok((
         artifact,

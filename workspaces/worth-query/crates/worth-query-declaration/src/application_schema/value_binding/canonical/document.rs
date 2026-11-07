@@ -41,7 +41,7 @@ pub fn decode_application_document<Codec: CanonicalDocumentCodec>(
             observed: raw.value_family(),
         });
     };
-    let InternedString::Raw(text) = text else {
+    let Some(text) = (text).raw_text() else {
         return Err(ApplicationValueDecodeDenial::CodecRejected { binding_identity });
     };
     match admission {

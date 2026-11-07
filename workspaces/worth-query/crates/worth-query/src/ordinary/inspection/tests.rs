@@ -25,11 +25,13 @@ fn operational_and_rich_inspection_preserve_the_same_receipt_and_operational_pos
     let basis = scoped_inspection_basis("policy-equivalence");
     let operational = declare(&completion)
         .using(inspection_basis(basis.clone()))
-        .run(&workspace);
+        .run(&workspace)
+        .expect("fixture digest must fit");
     let rich = declare(&completion)
         .with_rich_inspection()
         .using(inspection_basis(basis))
-        .run(&workspace);
+        .run(&workspace)
+        .expect("fixture digest must fit");
 
     let operational = completion_or_panic(&operational);
     let rich = completion_or_panic(&rich);
@@ -64,7 +66,8 @@ fn ordinary_inspection_implements_common_outcome_navigation() {
         .expect("read should complete");
     let outcome = declare(&completion)
         .using(inspection_basis(scoped_inspection_basis("navigation")))
-        .run(&workspace);
+        .run(&workspace)
+        .expect("fixture digest must fit");
 
     assert_eq!(outcome.posture(), WorthQueryOutcomePosture::Completed);
     assert!(outcome.is_completed());
@@ -114,6 +117,7 @@ fn completion_or_panic(
             "inspection stopped at {:?}: {}",
             stop.source(),
             stop.evidence_for_reporting()
+                .expect("stop retains evidence")
         );
     }
     if let Some(unavailable) = outcome.unavailable() {

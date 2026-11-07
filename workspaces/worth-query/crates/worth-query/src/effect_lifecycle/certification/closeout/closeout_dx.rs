@@ -6,6 +6,7 @@ use crate::effect_lifecycle::{
     EffectExecutionCertificationRow, EffectFamily, EffectLifecycleCounters,
     EffectLifecyclePublicSurfaceInventory, EffectPublicSurfaceKind, RawEffectIntent,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::hash_parts;
 use crate::workflow::{
     MutationLoweringInput, WorkflowAuthorityTargetFamily, WorkflowDeclarationFamily,
@@ -93,15 +94,15 @@ pub(super) struct CloseoutDxEvidence {
 pub(super) fn build_closeout_dx(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     public_surface: &EffectLifecyclePublicSurfaceInventory,
-) -> CloseoutDxEvidence {
-    let mutation = mutation_receipt_surface(execution);
-    let writeback = writeback_receipt_surface(execution);
-    let batch = batch_receipt_surface(execution);
+) -> Result<CloseoutDxEvidence, IdentityDerivationDenial> {
+    let mutation = mutation_receipt_surface(execution)?;
+    let writeback = writeback_receipt_surface(execution)?;
+    let batch = batch_receipt_surface(execution)?;
     let common_path = common_path_story(&mutation);
     let writeback_common_path = writeback_common_path_story(&writeback);
-    let inspectable = inspectable_lowered_story(execution);
-    let denial_or_rebind = denial_or_rebind_story();
-    let support_discovery = support_discovery_story();
+    let inspectable = inspectable_lowered_story(execution)?;
+    let denial_or_rebind = denial_or_rebind_story()?;
+    let support_discovery = support_discovery_story()?;
     let support_lookup_counters = support_discovery.counters.clone();
     let batch_execution = batch_execution_story(&batch);
     let receipt_first = receipt_first_story(&mutation);
@@ -125,7 +126,7 @@ pub(super) fn build_closeout_dx(
     let row_evidence_digest = hash_parts(&[
         target_dx_digest.clone(),
         golden_transcript_digest.clone(),
-        effect_lifecycle_support_matrix()
+        effect_lifecycle_support_matrix()?
             .matrix_for_reporting()
             .to_string(),
     ]);
@@ -140,7 +141,7 @@ pub(super) fn build_closeout_dx(
             aggregate.combine(&story.counters)
         });
 
-    CloseoutDxEvidence {
+    Ok(CloseoutDxEvidence {
         row: EffectExecutionCertificationRow::new(
             EffectExecutionCertificationLane::SupportAndDxSurface,
             row_evidence_digest,
@@ -151,7 +152,7 @@ pub(super) fn build_closeout_dx(
         support_lookup_counters,
         target_dx_digest,
         golden_transcript_digest,
-    }
+    })
 }
 
 fn common_path_story(
@@ -182,7 +183,7 @@ fn common_path_story(
 
 fn inspectable_lowered_story(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> DxStoryEvidence {
+) -> Result<DxStoryEvidence, IdentityDerivationDenial> {
     let branch = "dx-lowered";
     let mut runtime = relational_runtime_with_intent_strategy();
     let entity = create_entity(
@@ -194,7 +195,7 @@ fn inspectable_lowered_story(
     fork_seed_branch_from_main(execution, &mut runtime, branch);
     let basis = EffectAuthoringBasis::from(branch_mutation_basis(branch));
     let binding =
-        runtime_workflow_binding_for_branch(branch_snapshot_identity(&runtime, branch), branch);
+        runtime_workflow_binding_for_branch(branch_snapshot_identity(&runtime, branch), branch)?;
     let raw = RawEffectIntent::Mutation {
         binding,
         request: workflow_request(
@@ -213,7 +214,7 @@ fn inspectable_lowered_story(
         },
     };
     let normalized = normalize_raw_effect_intent(&basis, raw).expect("dx lowered story normalizes");
-    let admitted = match evaluate_effect_eligibility(normalized) {
+    let admitted = match evaluate_effect_eligibility(normalized)? {
         EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         other => panic!("expected admitted inspectable story, got {other:?}"),
     };
@@ -229,7 +230,7 @@ fn inspectable_lowered_story(
         lowered.invariant_scope().as_str(),
         lowered.artifact_policy().as_str(),
     );
-    DxStoryEvidence::new(
+    Ok(DxStoryEvidence::new(
         DxStoryKind::InspectableLoweredPlan,
         transcript,
         vec![
@@ -242,7 +243,7 @@ fn inspectable_lowered_story(
             lowered.conflict_footprint().as_str().to_string(),
         ],
         lowered.counters().clone(),
-    )
+    ))
 }
 
 fn writeback_common_path_story(
@@ -272,10 +273,10 @@ fn writeback_common_path_story(
     )
 }
 
-fn denial_or_rebind_story() -> DxStoryEvidence {
+fn denial_or_rebind_story() -> Result<DxStoryEvidence, IdentityDerivationDenial> {
     let basis = EffectAuthoringBasis::from(preview_closeout_basis("dx-preview"));
     let raw = RawEffectIntent::Mutation {
-        binding: preview_workflow_binding("dx-preview"),
+        binding: preview_workflow_binding("dx-preview")?,
         request: workflow_request(
             WorkflowDeclarationFamily::MutationLoweringNarrow,
             WorkflowAuthorityTargetFamily::RelationalMutation,
@@ -296,11 +297,11 @@ fn denial_or_rebind_story() -> DxStoryEvidence {
         },
     };
     let normalized = normalize_raw_effect_intent(&basis, raw).expect("dx rebind story normalizes");
-    let rebind = match evaluate_effect_eligibility(normalized) {
+    let rebind = match evaluate_effect_eligibility(normalized)? {
         EffectEligibilityOutcome::RebindRequired(rebind) => rebind,
         other => panic!("expected rebind story, got {other:?}"),
     };
-    DxStoryEvidence::new(
+    Ok(DxStoryEvidence::new(
         DxStoryKind::DenialOrRebind,
         format!(
             "kind:{:?} cause:{} message:{}",
@@ -313,16 +314,16 @@ fn denial_or_rebind_story() -> DxStoryEvidence {
             rebind.decision_trace().trace_for_reporting().to_string(),
         ],
         rebind.counters().clone(),
-    )
+    ))
 }
 
-fn support_discovery_story() -> DxStoryEvidence {
+fn support_discovery_story() -> Result<DxStoryEvidence, IdentityDerivationDenial> {
     let admitted =
-        discover_effect_lifecycle_support(BasisFamily::BranchHead, EffectFamily::Mutation);
-    let rebind = discover_effect_lifecycle_support(BasisFamily::Preview, EffectFamily::Mutation);
+        discover_effect_lifecycle_support(BasisFamily::BranchHead, EffectFamily::Mutation)?;
+    let rebind = discover_effect_lifecycle_support(BasisFamily::Preview, EffectFamily::Mutation)?;
     let deferred =
-        discover_effect_lifecycle_support(BasisFamily::StoreBacked, EffectFamily::Writeback);
-    DxStoryEvidence::new(
+        discover_effect_lifecycle_support(BasisFamily::StoreBacked, EffectFamily::Writeback)?;
+    Ok(DxStoryEvidence::new(
         DxStoryKind::SupportDiscovery,
         format!(
             "admitted:{} rebind:{} deferred:{}",
@@ -339,7 +340,7 @@ fn support_discovery_story() -> DxStoryEvidence {
             .counters()
             .combine(rebind.counters())
             .combine(deferred.counters()),
-    )
+    ))
 }
 
 fn batch_execution_story(

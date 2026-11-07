@@ -15,7 +15,10 @@ use super::super::digest_basis::{
 pub(crate) fn route_record_digest(
     facade: &BridgeDiagnosticsFacade,
     reference_identity: &BridgeIdentityEvidence,
-) -> Option<BridgeIdentityEvidence> {
+) -> Result<
+    Option<BridgeIdentityEvidence>,
+    crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal,
+> {
     facade
         .route_record_for_route_identity(&BridgeRouteIdentity::from_reference_evidence(
             reference_identity.revalidate_bridge_retained_reference(),
@@ -30,12 +33,16 @@ pub(crate) fn route_record_digest(
                 ],
             )
         })
+        .transpose()
 }
 
 pub(crate) fn historical_evaluation_record_digest(
     facade: &BridgeDiagnosticsFacade,
     reference_identity: &BridgeIdentityEvidence,
-) -> Option<BridgeIdentityEvidence> {
+) -> Result<
+    Option<BridgeIdentityEvidence>,
+    crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal,
+> {
     facade
         .historical_record_for_record_identity(
             &BridgeHistoricalEvaluationRecordIdentity::from_reference_evidence(
@@ -56,12 +63,16 @@ pub(crate) fn historical_evaluation_record_digest(
                 ],
             )
         })
+        .transpose()
 }
 
 pub(crate) fn preview_execution_record_digest(
     facade: &BridgeDiagnosticsFacade,
     reference_identity: &BridgeIdentityEvidence,
-) -> Option<BridgeIdentityEvidence> {
+) -> Result<
+    Option<BridgeIdentityEvidence>,
+    crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal,
+> {
     facade
         .preview_execution_record_for_identity(
             &PreviewExecutionRecordIdentity::from_reference_evidence(
@@ -76,12 +87,16 @@ pub(crate) fn preview_execution_record_digest(
                 )],
             )
         })
+        .transpose()
 }
 
 pub(crate) fn preview_discard_record_digest(
     facade: &BridgeDiagnosticsFacade,
     reference_identity: &BridgeIdentityEvidence,
-) -> Option<BridgeIdentityEvidence> {
+) -> Result<
+    Option<BridgeIdentityEvidence>,
+    crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal,
+> {
     facade
         .preview_discard_record_for_identity(
             &BridgePreviewDiscardRecordIdentity::from_reference_evidence(
@@ -99,12 +114,16 @@ pub(crate) fn preview_discard_record_digest(
                 ],
             )
         })
+        .transpose()
 }
 
 pub(crate) fn preview_promotion_record_digest(
     facade: &BridgeDiagnosticsFacade,
     reference_identity: &BridgeIdentityEvidence,
-) -> Option<BridgeIdentityEvidence> {
+) -> Result<
+    Option<BridgeIdentityEvidence>,
+    crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal,
+> {
     facade
         .preview_promotion_record_for_identity(
             &BridgePreviewPromotionRecordIdentity::from_reference_evidence(
@@ -122,4 +141,5 @@ pub(crate) fn preview_promotion_record_digest(
                 ],
             )
         })
+        .transpose()
 }

@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::{
     WorthQueryCommitIdentity, WorthQueryEntityIdentity, WorthQuerySnapshotIdentity,
 };
@@ -127,7 +128,7 @@ pub(super) fn synthetic_existing_assertion_receipt(
     binding: &WorthQueryExistingTruthTargetBinding,
     snapshot_identity: &WorthQuerySnapshotIdentity,
     declared_aspect_value_digest: Option<&crate::evidence_identity::WorthQueryEvidenceIdentity>,
-) -> WorthQueryMutationReceipt {
+) -> Result<WorthQueryMutationReceipt, IdentityDerivationDenial> {
     let assertion_identity = crate::evidence_identity::WorthQueryEvidenceIdentity::compose(
         crate::evidence_identity::WorthQueryEvidenceScope::WriteReceiptCommitIdentity,
     )
@@ -143,13 +144,13 @@ pub(super) fn synthetic_existing_assertion_receipt(
         crate::evidence_identity::WorthQueryEvidenceTag::new("aspect_digest"),
         declared_aspect_value_digest,
     )
-    .seal();
-    WorthQueryMutationReceipt {
+    .seal()?;
+    Ok(WorthQueryMutationReceipt {
         commit_identity: WorthQueryCommitIdentity::preview(assertion_identity),
         snapshot_identity: snapshot_identity.clone(),
         deltas: Vec::new(),
         bridge_authority: None,
-    }
+    })
 }
 
 pub(super) fn record_same_batch_symbolic_target(
@@ -309,7 +310,7 @@ pub(super) fn combined_batch_mutation_receipt(
                     .to_string()
             }),
         )
-        .seal(),
+        .seal()?,
     );
     let deltas = receipts
         .iter()

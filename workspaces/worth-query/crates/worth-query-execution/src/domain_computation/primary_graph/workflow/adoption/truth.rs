@@ -223,6 +223,10 @@ impl WorkflowAdoptionEntity<'_> {
     ) -> Result<Option<String>, WorkflowAdoptionReadDenial> {
         match self.value(execution, locator)? {
             None => Ok(None),
+            Some(AspectValue::String(InternedString::Stored(text))) => {
+                let text = text.as_string();
+                Ok(Some(text.to_owned()))
+            }
             Some(AspectValue::String(InternedString::Raw(text))) => Ok(Some(text)),
             Some(_) => Err(self.unreadable()),
         }

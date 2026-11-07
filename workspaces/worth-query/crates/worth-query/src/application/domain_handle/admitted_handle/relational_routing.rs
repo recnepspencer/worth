@@ -11,6 +11,7 @@ use crate::application::{
     WorthQueryDomainEntryMarker, WorthQueryDomainOperatingContext,
     WorthQueryInstalledDomainDeclarationContext,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     WorthQueryInstalledDomainDeclarationContext<D, C>
@@ -22,7 +23,7 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         WorthQueryDeclarationRelationalRouting<D, I>,
         WorthQueryDeclarationRelationalRoutingTerminalError<D, I>,
     > {
-        match self.route_relational_truth_checked(subject) {
+        match self.route_relational_truth_checked(subject)? {
             WorthQueryDeclarationRelationalRoutingChecked::Routed(routing) => Ok(routing),
             WorthQueryDeclarationRelationalRoutingChecked::Deferred(routing) => {
                 Err(WorthQueryDeclarationRelationalRoutingTerminalError::Deferred(routing))
@@ -39,7 +40,7 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     pub fn route_relational_truth_checked<I: WorthQueryDeclarationInput<D>>(
         &self,
         subject: WorthQueryDeclarationRelationalRoutingInput<D, I>,
-    ) -> WorthQueryDeclarationRelationalRoutingChecked<D, I> {
+    ) -> Result<WorthQueryDeclarationRelationalRoutingChecked<D, I>, IdentityDerivationDenial> {
         let support_status = self
             .relational_truth_support::<I>()
             .rows()
@@ -62,11 +63,13 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
                 }
             })
             .unwrap_or(WorthQueryDeclarationRelationalTruthRoutingSupportStatus::Unsupported);
-        worth_query_checked_declaration_relational_routing_on_handle(
-            self.handle_identity_digest(),
-            self.operating_context_identity_digest(),
-            support_status,
-            subject,
+        Ok(
+            worth_query_checked_declaration_relational_routing_on_handle(
+                self.handle_identity_digest(),
+                self.operating_context_identity_digest(),
+                support_status,
+                subject,
+            )?,
         )
     }
 
@@ -129,7 +132,7 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         );
         match self.route_relational_truth_checked(
             WorthQueryDeclarationRelationalRoutingInput::envelope_checked(envelope_checked),
-        ) {
+        )? {
             WorthQueryDeclarationRelationalRoutingChecked::Routed(routing) => Ok(routing),
             WorthQueryDeclarationRelationalRoutingChecked::Deferred(routing) => {
                 Err(WorthQueryDeclarationRelationalRoutingTerminalError::Deferred(routing))

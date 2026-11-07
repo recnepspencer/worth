@@ -53,7 +53,7 @@ impl AuthorityBackedDigestLabel {
                 identity_family,
             )
             .field_value(WorthQueryEvidenceTag::new(field_tag), self.as_str())
-            .seal()
+            .seal().expect("private runtime digest labels contain fixed metadata and one 64-byte SHA256 projection")
     }
 }
 

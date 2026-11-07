@@ -89,7 +89,7 @@ fn lower_command(
                 );
             }
             builder
-                .build_update(admit_compat_entity_identity(entity_identity))
+                .build_update(admit_compat_entity_identity(entity_identity).map_err(|cause| WorthServerQueryHandoffDenial::new(WorthServerQueryHandoffDenialCode::EvidenceIdentityDerivationDenied(cause), diagnostics_profile, "entity identity exceeded canonical digest bounds"))?)
                 .map_err(|error| {
                     WorthServerQueryHandoffDenial::new(
                         WorthServerQueryHandoffDenialCode::CompatibilityMutationRequestInvalid,
@@ -106,7 +106,7 @@ fn lower_command(
         } => {
             let mut builder = WorthQueryDeleteMutationBuilder::new();
             if let Some(collection) = declared_collection {
-                builder = builder.target_collection(collection);
+                builder = builder.target_collection(collection).map_err(|cause| WorthServerQueryHandoffDenial::new(WorthServerQueryHandoffDenialCode::EvidenceIdentityDerivationDenied(cause), diagnostics_profile, "target collection identity exceeded canonical digest bounds"))?;
             }
             let touches = touched_aspect_paths
                 .iter()
@@ -120,7 +120,7 @@ fn lower_command(
                 );
             }
             builder
-                .build_delete(admit_compat_entity_identity(entity_identity))
+                .build_delete(admit_compat_entity_identity(entity_identity).map_err(|cause| WorthServerQueryHandoffDenial::new(WorthServerQueryHandoffDenialCode::EvidenceIdentityDerivationDenied(cause), diagnostics_profile, "entity identity exceeded canonical digest bounds"))?)
                 .map_err(|error| {
                     WorthServerQueryHandoffDenial::new(
                         WorthServerQueryHandoffDenialCode::CompatibilityMutationRequestInvalid,
@@ -139,9 +139,15 @@ fn lower_command(
     }
 }
 
-fn admit_compat_entity_identity(entity_identity: &str) -> WorthQueryEntityIdentity {
+fn admit_compat_entity_identity(
+    entity_identity: &str,
+) -> Result<
+    WorthQueryEntityIdentity,
+    worth_query::facade::runtime::WorthQueryEvidenceIdentityDerivationDenial,
+> {
     RelationalBridgeRecordIdentityParts::from_bridge_entity_identity(entity_identity)
         .map(WorthQueryEntityIdentity::from_bridge_record_projection)
+        .map(Ok)
         .unwrap_or_else(|| {
             WorthQueryEntityIdentity::admit_authored_entity_token(QueryExternalIdentityToken::new(
                 Arc::from(entity_identity),

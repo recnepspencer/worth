@@ -53,7 +53,7 @@ impl WorthQueryJournalReplayRegistry {
             &retained_segment.committed_truth_identities(),
             retained_segment.expected_count,
             retained_segment.journal_gap_count,
-        );
+        )?;
         let outcome = WorthQueryJournalReplayOutcome::new(
             segment,
             retained_segment
@@ -66,7 +66,7 @@ impl WorthQueryJournalReplayRegistry {
             retained_segment.scanned_entry_count,
             truth_reconstruction_identity,
             published_artifact_digest,
-        );
+        )?;
         self.counters.record_admitted_replay(
             retained_segment.scanned_entry_count,
             retained_segment.entries.len(),
@@ -180,18 +180,23 @@ impl WorthQueryJournalReplayEntry {
 
 pub(in crate::runtime) fn published_artifact_replay_digest(
     diagnostics: &crate::runtime::WorthQueryPublishedArtifactDiagnostics,
-) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::JournalReplayOutcome)
-        .field_usize(
-            WorthQueryEvidenceTag::new("published_artifact_generation_count"),
-            diagnostics.retained_generation_count(),
-        )
-        .field_value_sequence(
-            WorthQueryEvidenceTag::new("published_artifact_generation_ordinal"),
-            diagnostics
-                .generations()
-                .iter()
-                .map(|generation| generation.ordinal().to_string()),
-        )
-        .seal()
+) -> Result<
+    WorthQueryEvidenceIdentity,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::JournalReplayOutcome)
+            .field_usize(
+                WorthQueryEvidenceTag::new("published_artifact_generation_count"),
+                diagnostics.retained_generation_count(),
+            )
+            .field_value_sequence(
+                WorthQueryEvidenceTag::new("published_artifact_generation_ordinal"),
+                diagnostics
+                    .generations()
+                    .iter()
+                    .map(|generation| generation.ordinal().to_string()),
+            )
+            .seal()?,
+    )
 }

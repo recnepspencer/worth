@@ -252,7 +252,7 @@ impl WorthQueryRuntime {
             &mut self.active_subscriptions,
             &active_lane_handle,
             SubscriptionConsumerAttachmentRequest::from_consumer_identity(
-                runtime_live_view_consumer_attachment_identity(view_name),
+                runtime_live_view_consumer_attachment_identity(view_name)?,
                 activation_receipt.activation_identity().clone(),
             ),
             runtime_consumer_attachment_budget(),
@@ -279,22 +279,22 @@ impl WorthQueryRuntime {
             live_subscription_source_identity(
                 "activation",
                 activation_receipt.activation_identity(),
-            ),
+            )?,
             lowered_subscription.basis_binding_identity,
             lowered_subscription.signal_strategy_identity,
             live_subscription_source_identity(
                 "active_lane",
                 active_lane_handle.lane_digest().evidence_identity(),
-            ),
+            )?,
             &consumer_attachment,
-            runtime_subscription_budget_policy(),
-            runtime_active_lifecycle_budget_policy(),
-            runtime_consumer_attachment_budget_policy(),
+            runtime_subscription_budget_policy()?,
+            runtime_active_lifecycle_budget_policy()?,
+            runtime_consumer_attachment_budget_policy()?,
             active_lane_counters,
             consumer_attachment_counters,
-            live_subscription_source_identity("support", activation_receipt.support_identity()),
+            live_subscription_source_identity("support", activation_receipt.support_identity())?,
             counters,
-        );
+        )?;
 
         Ok(WorthQueryRuntimeLiveSubscriptionActivation {
             installation,

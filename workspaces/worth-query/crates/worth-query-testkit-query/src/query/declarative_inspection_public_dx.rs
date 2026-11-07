@@ -14,6 +14,7 @@ pub fn ordinary_inspection_journey(
         .with_rich_inspection()
         .using(inspection_basis(basis))
         .run(workspace)
+        .expect("fixture digest must fit")
 }
 
 pub fn common_outcome_navigation(outcome: &WorthQueryInspectionOutcome) {

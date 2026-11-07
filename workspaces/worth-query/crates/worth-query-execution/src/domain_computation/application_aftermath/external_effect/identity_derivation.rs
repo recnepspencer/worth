@@ -169,6 +169,9 @@ mod tests {
 
     #[test]
     fn v4_rule_has_a_frozen_distinct_canonical_corpus() {
+        // The event grammar is v4; D1289 explicitly versions the hash policy as
+        // sha256-canonical-v2. Independently framed and SHA-256 hashed corpus:
+        // 8d093ec56688f3b670270b5b9ae93ac2ba6fd3d575fa31b0e912fd51ceacac45
         let derived = derive(vec![
             text_entry("stage", "v4-corpus"),
             integer_entry("query-runtime", 7),
@@ -177,8 +180,8 @@ mod tests {
         assert_eq!(
             derived.digest.bytes(),
             &[
-                52, 50, 78, 208, 166, 12, 4, 218, 68, 175, 119, 7, 75, 239, 170, 103, 231, 247,
-                238, 125, 199, 241, 217, 214, 210, 142, 140, 66, 205, 221, 138, 82,
+                141, 9, 62, 197, 102, 136, 243, 182, 112, 39, 11, 91, 154, 233, 58, 194, 186, 111,
+                211, 213, 117, 250, 49, 176, 233, 18, 253, 81, 206, 172, 172, 69,
             ]
         );
     }

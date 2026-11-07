@@ -39,7 +39,8 @@ fn store_backed_historical_debt_is_denied_typed_and_early() {
         false,
         true,
         HistoricalPathReuseDescriptor::no_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let error = bind_legacy_query_basis_context(
         QueryBasisContextRequest::historical_commit("history:store"),
         QueryContextBindingSource::HistoricalCapability(&capability),
@@ -64,16 +65,19 @@ fn store_backed_retained_historical_binding_preserves_query_owned_parity() {
         1,
         1,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let capability = HistoricalCapabilityDescriptor::retained_snapshot_for_test(
         "history:snapshot-1",
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let admission = admit_historical_evaluation_path(request, capability)
         .expect("retained history should admit");
     let resolved = resolve_historical_materialization_path(
         admission.clone(),
-        HistoricalMaterializationDescriptor::retained_snapshot_for_test("history:snapshot-1"),
+        HistoricalMaterializationDescriptor::retained_snapshot_for_test("history:snapshot-1")
+            .expect("fixture digest must fit"),
     )
     .expect("retained history should resolve");
     let metadata = materialization_metadata_from_resolved(resolved);
@@ -145,16 +149,19 @@ fn store_backed_replay_historical_binding_stays_explicit_deferred_debt() {
         1,
         1,
         HistoricalPathReuseDescriptor::no_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let capability = HistoricalCapabilityDescriptor::delta_replay_for_test(
         "history:snapshot-1",
         HistoricalPathReuseDescriptor::no_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let admission =
         admit_historical_evaluation_path(request, capability).expect("replay history should admit");
     let resolved = resolve_historical_materialization_path(
         admission.clone(),
-        HistoricalMaterializationDescriptor::delta_replay_for_test("history:snapshot-1"),
+        HistoricalMaterializationDescriptor::delta_replay_for_test("history:snapshot-1")
+            .expect("fixture digest must fit"),
     )
     .expect("replay history should resolve");
     let metadata = materialization_metadata_from_resolved(resolved);
@@ -186,16 +193,19 @@ fn store_backed_reconstruction_historical_binding_stays_explicit_deferred_debt()
         1,
         1,
         HistoricalPathReuseDescriptor::no_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let capability = HistoricalCapabilityDescriptor::full_reconstruction_for_test(
         "history:snapshot-1",
         HistoricalPathReuseDescriptor::no_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let admission = admit_historical_evaluation_path(request, capability)
         .expect("reconstruction history should admit");
     let resolved = resolve_historical_materialization_path(
         admission.clone(),
-        HistoricalMaterializationDescriptor::full_reconstruction_for_test("history:snapshot-1"),
+        HistoricalMaterializationDescriptor::full_reconstruction_for_test("history:snapshot-1")
+            .expect("fixture digest must fit"),
     )
     .expect("reconstruction history should resolve");
     let metadata = materialization_metadata_from_resolved(resolved);

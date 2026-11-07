@@ -9,7 +9,7 @@ use crate::domain_capabilities::{
 };
 use crate::domain_installation::{
     WorthQueryDomainHandleDenial, WorthQueryDomainHandleDenialKind,
-    WorthQueryInstalledDomainAuthority,
+    WorthQueryInstalledDomainAuthority, WorthQueryInstalledDomainDeclarationContextDenial,
 };
 use crate::runtime::{
     WorthQueryAdmittedIntentPlan, WorthQueryIntentDeclaration,
@@ -40,19 +40,25 @@ impl WorthQueryInstalledDomainContributionSurface {
     pub fn intent_target(
         &self,
         declaration: &WorthQueryIntentDeclaration,
-    ) -> Result<WorthQueryInstalledDeclarationContributionTarget, WorthQueryDomainHandleDenial>
-    {
-        self.validate_current_authority()?;
+    ) -> Result<
+        WorthQueryInstalledDeclarationContributionTarget,
+        WorthQueryInstalledDomainDeclarationContextDenial,
+    > {
+        self.validate_current_authority()
+            .map_err(WorthQueryInstalledDomainDeclarationContextDenial::handle)?;
         Ok(WorthQueryInstalledDomainContributionTarget::bind(
             Arc::clone(&self.authority),
             WorthQueryDeclarationBoundContributionTarget::for_intent_declaration(declaration),
-        ))
+        )?)
     }
 
     pub fn for_intent(
         &self,
         declaration: &WorthQueryIntentDeclaration,
-    ) -> Result<WorthQueryIntentDomainContributionSurface, WorthQueryDomainHandleDenial> {
+    ) -> Result<
+        WorthQueryIntentDomainContributionSurface,
+        WorthQueryInstalledDomainDeclarationContextDenial,
+    > {
         Ok(WorthQueryIntentDomainContributionSurface {
             target: self.intent_target(declaration)?,
         })
@@ -61,28 +67,39 @@ impl WorthQueryInstalledDomainContributionSurface {
     pub fn for_intent_target(
         &self,
         target: WorthQueryInstalledDeclarationContributionTarget,
-    ) -> Result<WorthQueryIntentDomainContributionSurface, WorthQueryDomainHandleDenial> {
-        self.validate_current_authority()?;
-        self.validate_target_authority(target.authority())?;
+    ) -> Result<
+        WorthQueryIntentDomainContributionSurface,
+        WorthQueryInstalledDomainDeclarationContextDenial,
+    > {
+        self.validate_current_authority()
+            .map_err(WorthQueryInstalledDomainDeclarationContextDenial::handle)?;
+        self.validate_target_authority(target.authority())
+            .map_err(WorthQueryInstalledDomainDeclarationContextDenial::handle)?;
         Ok(WorthQueryIntentDomainContributionSurface { target })
     }
 
     pub fn admitted_plan_target(
         &self,
         plan: &WorthQueryAdmittedIntentPlan,
-    ) -> Result<WorthQueryInstalledAdmittedPlanContributionTarget, WorthQueryDomainHandleDenial>
-    {
-        self.validate_current_authority()?;
+    ) -> Result<
+        WorthQueryInstalledAdmittedPlanContributionTarget,
+        WorthQueryInstalledDomainDeclarationContextDenial,
+    > {
+        self.validate_current_authority()
+            .map_err(WorthQueryInstalledDomainDeclarationContextDenial::handle)?;
         Ok(WorthQueryInstalledDomainContributionTarget::bind(
             Arc::clone(&self.authority),
             WorthQueryAdmittedPlanBoundContributionTarget::for_admitted_intent_plan(plan),
-        ))
+        )?)
     }
 
     pub fn for_admitted_intent_plan(
         &self,
         plan: &WorthQueryAdmittedIntentPlan,
-    ) -> Result<WorthQueryAdmittedPlanDomainContributionSurface, WorthQueryDomainHandleDenial> {
+    ) -> Result<
+        WorthQueryAdmittedPlanDomainContributionSurface,
+        WorthQueryInstalledDomainDeclarationContextDenial,
+    > {
         Ok(WorthQueryAdmittedPlanDomainContributionSurface {
             target: self.admitted_plan_target(plan)?,
         })
@@ -91,30 +108,41 @@ impl WorthQueryInstalledDomainContributionSurface {
     pub fn for_admitted_plan_target(
         &self,
         target: WorthQueryInstalledAdmittedPlanContributionTarget,
-    ) -> Result<WorthQueryAdmittedPlanDomainContributionSurface, WorthQueryDomainHandleDenial> {
-        self.validate_current_authority()?;
-        self.validate_target_authority(target.authority())?;
+    ) -> Result<
+        WorthQueryAdmittedPlanDomainContributionSurface,
+        WorthQueryInstalledDomainDeclarationContextDenial,
+    > {
+        self.validate_current_authority()
+            .map_err(WorthQueryInstalledDomainDeclarationContextDenial::handle)?;
+        self.validate_target_authority(target.authority())
+            .map_err(WorthQueryInstalledDomainDeclarationContextDenial::handle)?;
         Ok(WorthQueryAdmittedPlanDomainContributionSurface { target })
     }
 
     pub fn lower_runtime_target(
         &self,
         envelope: &WorthQueryLowerRuntimeBoundaryEnvelope,
-    ) -> Result<WorthQueryInstalledLowerRuntimeContributionTarget, WorthQueryDomainHandleDenial>
-    {
-        self.validate_current_authority()?;
+    ) -> Result<
+        WorthQueryInstalledLowerRuntimeContributionTarget,
+        WorthQueryInstalledDomainDeclarationContextDenial,
+    > {
+        self.validate_current_authority()
+            .map_err(WorthQueryInstalledDomainDeclarationContextDenial::handle)?;
         Ok(WorthQueryInstalledDomainContributionTarget::bind(
             Arc::clone(&self.authority),
             WorthQueryLowerRuntimeBoundaryBoundContributionTarget::for_lower_runtime_boundary_envelope(
                 envelope,
             ),
-        ))
+        )?)
     }
 
     pub fn for_lower_runtime_boundary_envelope(
         &self,
         envelope: &WorthQueryLowerRuntimeBoundaryEnvelope,
-    ) -> Result<WorthQueryLowerRuntimeDomainContributionSurface, WorthQueryDomainHandleDenial> {
+    ) -> Result<
+        WorthQueryLowerRuntimeDomainContributionSurface,
+        WorthQueryInstalledDomainDeclarationContextDenial,
+    > {
         Ok(WorthQueryLowerRuntimeDomainContributionSurface {
             target: self.lower_runtime_target(envelope)?,
         })
@@ -123,16 +151,24 @@ impl WorthQueryInstalledDomainContributionSurface {
     pub fn for_lower_runtime_target(
         &self,
         target: WorthQueryInstalledLowerRuntimeContributionTarget,
-    ) -> Result<WorthQueryLowerRuntimeDomainContributionSurface, WorthQueryDomainHandleDenial> {
-        self.validate_current_authority()?;
-        self.validate_target_authority(target.authority())?;
+    ) -> Result<
+        WorthQueryLowerRuntimeDomainContributionSurface,
+        WorthQueryInstalledDomainDeclarationContextDenial,
+    > {
+        self.validate_current_authority()
+            .map_err(WorthQueryInstalledDomainDeclarationContextDenial::handle)?;
+        self.validate_target_authority(target.authority())
+            .map_err(WorthQueryInstalledDomainDeclarationContextDenial::handle)?;
         Ok(WorthQueryLowerRuntimeDomainContributionSurface { target })
     }
 
     pub fn for_lower_runtime_boundary_source<S>(
         &self,
         source: &S,
-    ) -> Result<WorthQueryLowerRuntimeDomainContributionSurface, WorthQueryDomainHandleDenial>
+    ) -> Result<
+        WorthQueryLowerRuntimeDomainContributionSurface,
+        WorthQueryInstalledDomainDeclarationContextDenial,
+    >
     where
         S: WorthQueryLowerRuntimeBoundaryEnvelopeSource + ?Sized,
     {

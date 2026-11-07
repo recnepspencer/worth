@@ -1,3 +1,4 @@
+use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 use crate::domain_computation::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceTag,
 };
@@ -23,10 +24,11 @@ impl CausalBridgeReadmissionProof {
         query_admission_identity: &CausalInspectionOutcomeIdentity,
         anchor_identity: &CausalObservationAnchorDigest,
         envelope: &BridgeCausalExplanationEnvelope,
-    ) -> Self {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let bridge_admission_summary_identity =
             envelope.admission_summary_evidence_identity().clone();
-        let bridge_envelope_identity = compose_bridge_causal_envelope_identity(envelope.identity());
+        let bridge_envelope_identity =
+            compose_bridge_causal_envelope_identity(envelope.identity())?;
         let readmission_proof_identity = WorthQueryEvidenceIdentity::compose(
             crate::domain_computation::evidence_identity::WorthQueryEvidenceScope::CausalInspectionArtifact,
         )
@@ -50,14 +52,14 @@ impl CausalBridgeReadmissionProof {
             WorthQueryEvidenceTag::new("bridge_envelope"),
             &bridge_envelope_identity,
         )
-        .seal();
-        Self {
+        .seal()?;
+        Ok(Self {
             query_admission_identity: query_admission_identity.clone(),
             anchor_identity: anchor_identity.clone(),
             bridge_admission_summary_identity,
             bridge_envelope_identity,
             readmission_proof_identity,
-        }
+        })
     }
 
     pub fn query_admission_for_reporting(&self) -> &str {

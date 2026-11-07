@@ -18,6 +18,9 @@ fn causal_envelope_request_denies_missing_query_observation_anchor() {
         )],
     )
     .expect_err("bridge assembly request must carry a query observation anchor");
+    let crate::facade::BridgeCausalEnvelopeConstructionStop::Denied(denial) = denial else {
+        panic!("expected domain denial, got {denial:?}")
+    };
 
     assert_eq!(
         denial.kind(),
@@ -68,6 +71,9 @@ fn causal_envelope_request_denies_multiple_query_observation_anchors() {
         ],
     )
     .expect_err("bridge assembly request must bind exactly one query observation anchor");
+    let crate::facade::BridgeCausalEnvelopeConstructionStop::Denied(denial) = denial else {
+        panic!("expected domain denial, got {denial:?}")
+    };
 
     assert_eq!(
         denial.kind(),

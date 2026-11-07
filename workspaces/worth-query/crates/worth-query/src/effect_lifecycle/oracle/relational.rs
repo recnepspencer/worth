@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_relational::facade::history::BranchId;
 use worth_relational::facade::runtime::RelationalRuntime;
 
@@ -5,14 +6,18 @@ use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvide
 
 use super::{EffectExecutionOracleError, EffectExecutionOracleErrorKind};
 
-fn relational_branch_observation_subject(branch: &BranchId) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            "relational_branch_observation_subject_v1",
-        )
-        .field_shape(WorthQueryEvidenceTag::new("branch"), branch.0.as_str())
-        .seal()
+fn relational_branch_observation_subject(
+    branch: &BranchId,
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                "relational_branch_observation_subject_v1",
+            )
+            .field_shape(WorthQueryEvidenceTag::new("branch"), branch.0.as_str())
+            .seal()?,
+    )
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -30,21 +35,21 @@ impl RelationalExecutionOracle {
         observed_commit_id: u64,
         observed_version_id: u64,
         observed_parent_commit_ids: Vec<u64>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let branch_identity = branch_identity.into();
         let relational_oracle_identity = compose_relational_oracle_identity(
             &branch_identity,
             observed_commit_id,
             observed_version_id,
             &observed_parent_commit_ids,
-        );
-        Self {
+        )?;
+        Ok(Self {
             branch_identity,
             observed_commit_id,
             observed_version_id,
             observed_parent_commit_ids,
             relational_oracle_identity,
-        }
+        })
     }
 
     pub fn observe_branch_head(
@@ -52,24 +57,24 @@ impl RelationalExecutionOracle {
         branch: &BranchId,
     ) -> Result<Self, EffectExecutionOracleError> {
         let identity = runtime.branch_identity(branch).map_err(|_| {
-            EffectExecutionOracleError::new(
+            EffectExecutionOracleError::with_subject_derivation(
                 EffectExecutionOracleErrorKind::RelationalObservationMissingBranchHead,
                 format!(
                     "independent relational oracle inspection could not resolve branch head for `{}`",
                     branch.0
                 ),
-                &relational_branch_observation_subject(branch),
+                relational_branch_observation_subject(branch),
                 None,
             )
         })?;
         let (_, basis) = runtime.observe_branch(&identity).map_err(|_| {
-            EffectExecutionOracleError::new(
+            EffectExecutionOracleError::with_subject_derivation(
                 EffectExecutionOracleErrorKind::RelationalObservationMissingBranchHead,
                 format!(
                     "independent relational oracle could not admit branch `{}`",
                     branch.0
                 ),
-                &relational_branch_observation_subject(branch),
+                relational_branch_observation_subject(branch),
                 None,
             )
         })?;
@@ -78,24 +83,24 @@ impl RelationalExecutionOracle {
         let observed = history
             .branch_head_for_observation(&observation)
             .map_err(|_| {
-                EffectExecutionOracleError::new(
+                EffectExecutionOracleError::with_subject_derivation(
                     EffectExecutionOracleErrorKind::RelationalObservationMissingBranchHead,
                     format!(
                         "independent relational oracle rejected branch basis `{}`",
                         branch.0
                     ),
-                    &relational_branch_observation_subject(branch),
+                    relational_branch_observation_subject(branch),
                     None,
                 )
             })?
             .ok_or_else(|| {
-                EffectExecutionOracleError::new(
+                EffectExecutionOracleError::with_subject_derivation(
                     EffectExecutionOracleErrorKind::RelationalObservationMissingBranchHead,
                     format!(
                         "independent relational oracle inspection found no head for `{}`",
                         branch.0
                     ),
-                    &relational_branch_observation_subject(branch),
+                    relational_branch_observation_subject(branch),
                     None,
                 )
             })?;
@@ -104,7 +109,7 @@ impl RelationalExecutionOracle {
             observed.commit_id.0,
             observed.version_id.0,
             observed.parents.iter().map(|parent| parent.0).collect(),
-        ))
+        )?)
     }
 
     pub fn branch_identity(&self) -> &str {
@@ -137,26 +142,28 @@ fn compose_relational_oracle_identity(
     observed_commit_id: u64,
     observed_version_id: u64,
     observed_parent_commit_ids: &[u64],
-) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            "relational_execution_oracle_v1",
-        )
-        .field_shape(WorthQueryEvidenceTag::new("branch"), branch_identity)
-        .field_usize(
-            WorthQueryEvidenceTag::new("commit_id"),
-            observed_commit_id as usize,
-        )
-        .field_usize(
-            WorthQueryEvidenceTag::new("version_id"),
-            observed_version_id as usize,
-        )
-        .field_value_sequence(
-            WorthQueryEvidenceTag::new("parent_commit_ids"),
-            observed_parent_commit_ids
-                .iter()
-                .map(|parent| parent.to_string()),
-        )
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                "relational_execution_oracle_v1",
+            )
+            .field_shape(WorthQueryEvidenceTag::new("branch"), branch_identity)
+            .field_usize(
+                WorthQueryEvidenceTag::new("commit_id"),
+                observed_commit_id as usize,
+            )
+            .field_usize(
+                WorthQueryEvidenceTag::new("version_id"),
+                observed_version_id as usize,
+            )
+            .field_value_sequence(
+                WorthQueryEvidenceTag::new("parent_commit_ids"),
+                observed_parent_commit_ids
+                    .iter()
+                    .map(|parent| parent.to_string()),
+            )
+            .seal()?,
+    )
 }

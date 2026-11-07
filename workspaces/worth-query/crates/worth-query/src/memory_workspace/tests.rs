@@ -296,3 +296,5 @@ fn struct_field(
     )
     .unwrap()
 }
+
+mod digest_admission;

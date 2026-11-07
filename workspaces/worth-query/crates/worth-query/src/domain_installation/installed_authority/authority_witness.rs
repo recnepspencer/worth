@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::sync::Arc;
 
 use crate::evidence_identity::{
@@ -25,7 +26,7 @@ impl WorthQueryInstalledDomainAuthorityWitness {
                     WorthQueryEvidenceTag::new("world"),
                     authority.world_identity(),
                 )
-                .seal();
+                .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens");
         Self {
             authority,
             witness_identity,

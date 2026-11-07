@@ -1,5 +1,6 @@
 use super::*;
 use crate::declarative_live::{DeclarativeLiveQueryRequest, DeclarativeLiveViewShape};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::{
     WorthQueryMutationDelta, WorthQueryMutationKind, WorthQueryMutationReceipt,
 };
@@ -17,22 +18,25 @@ use worth_foundational::facade::{
 use worth_runtime_bridge::facade::RelationalBridgeSnapshotIdentityParts;
 
 #[test]
-fn live_view_declaration_receipt_captures_request_shape() {
+fn live_view_declaration_receipt_captures_request_shape() -> Result<(), IdentityDerivationDenial> {
     let request = DeclarativeLiveQueryRequest::new("Task", DeclarativeLiveViewShape::table());
-    let receipt = LiveViewDeclarationAdmissionReceipt::from_request("tasks.table", &request);
+    let receipt = LiveViewDeclarationAdmissionReceipt::from_request("tasks.table", &request)?;
 
     assert_eq!(receipt.view_name(), "tasks.table");
     assert_eq!(receipt.target_collection_for_reporting(), "Task");
     assert_eq!(receipt.view_shape(), &DeclarativeLiveViewShape::table());
     assert_eq!(receipt.view_shape_for_reporting(), "table");
     assert!(!receipt.receipt_for_reporting().is_empty());
+
+    Ok(())
 }
 
 #[test]
-fn signal_invalidation_routing_receipt_rejects_authority_less_receipt() {
+fn signal_invalidation_routing_receipt_rejects_authority_less_receipt(
+) -> Result<(), IdentityDerivationDenial> {
     let receipt = WorthQueryMutationReceipt::from_authoritative_parts(
-        crate::memory_workspace::admit_external_commit_label("commit-1"),
-        crate::memory_workspace::admit_external_snapshot_label("snapshot-1"),
+        crate::memory_workspace::admit_external_commit_label("commit-1")?,
+        crate::memory_workspace::admit_external_snapshot_label("snapshot-1")?,
         Vec::new(),
     );
 
@@ -42,10 +46,13 @@ fn signal_invalidation_routing_receipt_rejects_authority_less_receipt() {
     assert!(error
         .to_string()
         .contains("requires bridge-authored mutation authority"));
+
+    Ok(())
 }
 
 #[test]
-fn signal_invalidation_routing_receipt_summarizes_authoritative_delta() {
+fn signal_invalidation_routing_receipt_summarizes_authoritative_delta(
+) -> Result<(), IdentityDerivationDenial> {
     let command_entity_identity = relational_entity_identity(1);
     let command = WorthQueryWriteCommand::UpdateAspects {
         entity_identity: command_entity_identity.clone(),
@@ -90,7 +97,7 @@ fn signal_invalidation_routing_receipt_summarizes_authoritative_delta() {
             command_entity_identity,
             WorthQueryMutationKind::Updated,
             vec![title_value_touch(), status_value_touch()],
-        )],
+        )?],
         bridge_authority,
     )
     .admit_runtime_write_authority();
@@ -106,10 +113,13 @@ fn signal_invalidation_routing_receipt_summarizes_authoritative_delta() {
         WorthQueryEvidenceScope::SignalInvalidationRoutingReceipt
     );
     assert!(!routed.receipt_identity().as_str().is_empty());
+
+    Ok(())
 }
 
 #[test]
-fn bridge_authority_cannot_admit_a_different_commit_or_snapshot_handoff() {
+fn bridge_authority_cannot_admit_a_different_commit_or_snapshot_handoff(
+) -> Result<(), IdentityDerivationDenial> {
     let authority = bridge_authority_for_title_value("Done");
     let entity_identity = crate::memory_workspace::WorthQueryEntityIdentity::from_relational_record(
         worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts::entity(1, 1, 0),
@@ -119,7 +129,7 @@ fn bridge_authority_cannot_admit_a_different_commit_or_snapshot_handoff() {
         entity_identity,
         WorthQueryMutationKind::Updated,
         vec![title_value_touch()],
-    );
+    )?;
     let wrong_commit = WorthQueryMutationReceipt::from_bridge_authoritative_parts(
         crate::memory_workspace::WorthQueryCommitIdentity::from_relational_commit_id(2),
         crate::memory_workspace::WorthQuerySnapshotIdentity::from_relational_snapshot(
@@ -141,10 +151,13 @@ fn bridge_authority_cannot_admit_a_different_commit_or_snapshot_handoff() {
 
     assert!(!wrong_commit.has_current_mutation_authority());
     assert!(!wrong_snapshot.has_current_mutation_authority());
+
+    Ok(())
 }
 
 #[test]
-fn bridge_authority_cannot_admit_a_different_mutation_subject() {
+fn bridge_authority_cannot_admit_a_different_mutation_subject(
+) -> Result<(), IdentityDerivationDenial> {
     let authority = bridge_authority_for_title_value("Done");
     let mismatched_deltas = [
         WorthQueryMutationDelta::from_touched_aspects(
@@ -152,32 +165,32 @@ fn bridge_authority_cannot_admit_a_different_mutation_subject() {
             relational_entity_identity(1),
             WorthQueryMutationKind::Updated,
             vec![title_value_touch()],
-        ),
+        )?,
         WorthQueryMutationDelta::from_touched_aspects(
             "Task",
             relational_entity_identity(2),
             WorthQueryMutationKind::Updated,
             vec![title_value_touch()],
-        ),
+        )?,
         WorthQueryMutationDelta::from_touched_aspects(
             "Task",
             relational_entity_identity(1),
             WorthQueryMutationKind::Created,
             vec![title_value_touch()],
-        ),
+        )?,
         WorthQueryMutationDelta::from_touched_aspects(
             "Task",
             relational_entity_identity(1),
             WorthQueryMutationKind::Updated,
             vec![status_value_touch()],
-        ),
+        )?,
     ];
 
-    for delta in mismatched_deltas {
+    Ok(for delta in mismatched_deltas {
         let receipt =
             projected_receipt_for_delta(delta, authority.clone()).admit_runtime_write_authority();
         assert!(!receipt.has_current_mutation_authority());
-    }
+    })
 }
 
 #[test]

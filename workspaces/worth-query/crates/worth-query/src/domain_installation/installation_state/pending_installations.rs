@@ -76,7 +76,7 @@ impl WorthQueryPendingDomainInstallations {
     where
         D: WorthQueryDomainEntryMarker + 'static,
     {
-        let candidate = classify_pending_package(&package);
+        let candidate = classify_pending_package(&package)?;
         self.reject_identity_conflicts(
             candidate.marker_type,
             &candidate.package_identity,

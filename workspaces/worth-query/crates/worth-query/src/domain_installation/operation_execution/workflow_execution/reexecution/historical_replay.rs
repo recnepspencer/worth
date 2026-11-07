@@ -182,7 +182,7 @@ where
                     ..Default::default()
                 },
                 &phase,
-            )
+            ).unwrap_or_else(|cause| TransitionOutcome::Denied(super::certification_replay::WorthQueryCertificationReplayStop::EvidenceIdentityDerivationDenied(cause)))
         })
         .unwrap_or_else(|cause| {
             TransitionOutcome::Denied(

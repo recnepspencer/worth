@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::harness::certification::{
     digest_parts, CanonicalCertificationRow, HostileExpectation, ParityAnchor,
     RejectionCertificationRow,
@@ -36,7 +37,8 @@ pub(super) fn canonical_rows(
                 "inspect",
             ],
             9,
-        ),
+        )
+        .expect("fixture digest must fit"),
         canonical_row(
             request_execution,
             "geometry-kernel-golden-transcript",
@@ -50,7 +52,8 @@ pub(super) fn canonical_rows(
                 "inspect",
             ],
             8,
-        ),
+        )
+        .expect("fixture digest must fit"),
         canonical_row(
             request_execution,
             "table-spreadsheet-golden-transcript",
@@ -64,8 +67,9 @@ pub(super) fn canonical_rows(
                 "batched-intent",
             ],
             8,
-        ),
-        adversarial_composed_row(request_execution),
+        )
+        .expect("fixture digest must fit"),
+        adversarial_composed_row(request_execution).expect("fixture digest must fit"),
     ]
 }
 
@@ -85,14 +89,16 @@ pub(super) fn rejection_rows(
             RuntimeApiStabilizationPerturbationClass::StoreBackedParityDeferredGate,
             WorthQueryRuntimeFacadeFamily::StoreBackedExecution,
             RuntimeApiStabilizationFailureClass::DeferredStoreDurableGate,
-        ),
+        )
+        .expect("fixture digest must fit"),
         rejection_row(
             request_execution,
             "durable-restart-deferred-gate",
             RuntimeApiStabilizationPerturbationClass::DurableRestartDeferredGate,
             WorthQueryRuntimeFacadeFamily::DurableArtifacts,
             RuntimeApiStabilizationFailureClass::DeferredStoreDurableGate,
-        ),
+        )
+        .expect("fixture digest must fit"),
     ]
 }
 
@@ -102,15 +108,21 @@ fn canonical_row(
     perturbation_class: RuntimeApiStabilizationPerturbationClass,
     transcript: fn(
         &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> crate::runtime::WorthQueryRuntimePublicApiTranscriptEvidence,
+    ) -> Result<
+        crate::runtime::WorthQueryRuntimePublicApiTranscriptEvidence,
+        IdentityDerivationDenial,
+    >,
     surfaces: impl IntoIterator<Item = &'static str> + Clone,
     meaningful_assertion_count: usize,
-) -> CanonicalCertificationRow<
-    RuntimeApiStabilizationPerturbationClass,
-    RuntimeApiStabilizationBundle,
+) -> Result<
+    CanonicalCertificationRow<
+        RuntimeApiStabilizationPerturbationClass,
+        RuntimeApiStabilizationBundle,
+    >,
+    IdentityDerivationDenial,
 > {
-    let transcript_evidence = transcript(request_execution);
-    CanonicalCertificationRow {
+    let transcript_evidence = transcript(request_execution)?;
+    Ok(CanonicalCertificationRow {
         row_name,
         perturbation_class,
         hostile_expectation: HostileExpectation::EquivalentToControl,
@@ -119,24 +131,27 @@ fn canonical_row(
             transcript_evidence.clone(),
             surfaces.clone(),
             meaningful_assertion_count,
-        ),
+        )?,
         hostile_lane: bundle(
             transcript_evidence.clone(),
             surfaces.clone(),
             meaningful_assertion_count,
-        ),
-        parity_lane: bundle(transcript_evidence, surfaces, meaningful_assertion_count),
-    }
+        )?,
+        parity_lane: bundle(transcript_evidence, surfaces, meaningful_assertion_count)?,
+    })
 }
 
 fn adversarial_composed_row(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> CanonicalCertificationRow<
-    RuntimeApiStabilizationPerturbationClass,
-    RuntimeApiStabilizationBundle,
+) -> Result<
+    CanonicalCertificationRow<
+        RuntimeApiStabilizationPerturbationClass,
+        RuntimeApiStabilizationBundle,
+    >,
+    IdentityDerivationDenial,
 > {
     let control_lane = bundle(
-        transcripts::composed_runtime_transcript(request_execution),
+        transcripts::composed_runtime_transcript(request_execution)?,
         [
             "live-subscription",
             "nested-computed",
@@ -148,9 +163,9 @@ fn adversarial_composed_row(
             "feedback-graph",
         ],
         14,
-    );
+    )?;
     let hostile_lane = bundle(
-        transcripts::composed_runtime_hostile_transcript(request_execution),
+        transcripts::composed_runtime_hostile_transcript(request_execution)?,
         [
             "live-subscription",
             "nested-computed",
@@ -164,8 +179,8 @@ fn adversarial_composed_row(
             "async-resource-neighbor-denial",
         ],
         18,
-    );
-    CanonicalCertificationRow {
+    )?;
+    Ok(CanonicalCertificationRow {
         row_name: "composed-runtime-adversarial-transcript",
         perturbation_class:
             RuntimeApiStabilizationPerturbationClass::ComposedRuntimeAdversarialTranscript,
@@ -174,7 +189,7 @@ fn adversarial_composed_row(
         control_lane,
         parity_lane: hostile_lane.clone(),
         hostile_lane,
-    }
+    })
 }
 
 fn rejection_row(
@@ -183,17 +198,20 @@ fn rejection_row(
     perturbation_class: RuntimeApiStabilizationPerturbationClass,
     family: WorthQueryRuntimeFacadeFamily,
     failure_class: RuntimeApiStabilizationFailureClass,
-) -> RejectionCertificationRow<
-    RuntimeApiStabilizationPerturbationClass,
-    RuntimeApiStabilizationBundle,
-    RuntimeApiStabilizationRejectionBundle,
+) -> Result<
+    RejectionCertificationRow<
+        RuntimeApiStabilizationPerturbationClass,
+        RuntimeApiStabilizationBundle,
+        RuntimeApiStabilizationRejectionBundle,
+    >,
+    IdentityDerivationDenial,
 > {
     let control_lane = bundle(
-        transcripts::workflow_editor_transcript(request_execution),
+        transcripts::workflow_editor_transcript(request_execution)?,
         ["read", "live", "inspect"],
         6,
-    );
-    let contract = contract();
+    )?;
+    let contract = contract()?;
     let row = contract
         .family(family)
         .expect("deferred public API family should have support row");
@@ -203,7 +221,7 @@ fn rejection_row(
         format!("status:{}", row.status().as_str()),
         format!("reason:{}", row.reason().unwrap_or("none")),
     ]);
-    RejectionCertificationRow {
+    Ok(RejectionCertificationRow {
         row_name,
         perturbation_class,
         control_lane: control_lane.clone(),
@@ -217,18 +235,18 @@ fn rejection_row(
             compile_fail_boundary_digest: compile_fail_boundary_digest(),
         },
         parity_lane: control_lane,
-    }
+    })
 }
 
 fn bundle(
     transcript_evidence: crate::runtime::WorthQueryRuntimePublicApiTranscriptEvidence,
     surfaces: impl IntoIterator<Item = &'static str>,
     meaningful_assertion_count: usize,
-) -> RuntimeApiStabilizationBundle {
-    let contract = contract();
+) -> Result<RuntimeApiStabilizationBundle, IdentityDerivationDenial> {
+    let contract = contract()?;
     let handle_contract = WorthQueryHandleContract::from_public_api_contract(&contract);
-    let naming_contract = WorthQueryRuntimePublicApiNamingContract::standard();
-    let support_matrix = WorthQueryRuntimePublicSupportMatrix::from_public_api_contract(&contract);
+    let naming_contract = WorthQueryRuntimePublicApiNamingContract::standard()?;
+    let support_matrix = WorthQueryRuntimePublicSupportMatrix::from_public_api_contract(&contract)?;
     let surface_list: Vec<_> = surfaces.into_iter().collect();
     let transcript_family = transcript_evidence.transcript_family().to_string();
     let golden_transcript_digest = digest_parts(
@@ -238,7 +256,7 @@ fn bundle(
             .chain([format!("transcript:{transcript_family}")])
             .collect::<Vec<_>>(),
     );
-    RuntimeApiStabilizationBundle {
+    Ok(RuntimeApiStabilizationBundle {
         public_api_surface_digest: contract.contract_digest().to_string(),
         public_api_naming_contract_digest: naming_contract.contract_digest().to_string(),
         golden_transcript_digest,
@@ -296,13 +314,13 @@ fn bundle(
         stable_family_count: contract.stable_family_count(),
         deferred_family_count: support_matrix.deferred_row_count(),
         unsupported_family_count: contract.unsupported_family_count(),
-    }
+    })
 }
 
-fn contract() -> WorthQueryRuntimePublicApiContract {
-    WorthQueryRuntimePublicApiContract::from_support_profile(
+fn contract() -> Result<WorthQueryRuntimePublicApiContract, IdentityDerivationDenial> {
+    Ok(WorthQueryRuntimePublicApiContract::from_support_profile(
         &WorthQueryRuntimeSupportProfile::scaffold_backend_profile(),
-    )
+    )?)
 }
 
 fn deferred_gate_digest(contract: &WorthQueryRuntimePublicApiContract) -> String {

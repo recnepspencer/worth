@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_relational::facade::transactions::{CommitResult, MergeExecutionOutcome};
 use worth_runtime_bridge::facade::{
     BridgeAdmittedWritebackExecution, BridgeAdmittedWritebackExecutionReceipt,
@@ -61,7 +62,7 @@ impl ExecutedEffectPlan {
                     WorthQueryEvidenceTag::new("artifact"),
                     &executed_authority_artifact_identity(&artifact),
                 )
-                .seal();
+                .seal().expect("fixed performed artifact grammar: closed labels, primitive coordinates, sealed identities, and Bridge-owned SHA256 output tokens");
         let counters = EffectLifecycleCounters::executed(
             lowered.counters().effect_support_row_count(),
             lowered.counters().effect_lowering_width(),
@@ -167,7 +168,7 @@ pub(crate) fn executed_authority_artifact_identity(
                     WorthQueryEvidenceTag::new("version_id"),
                     result.outcome().commit.version_id.0 as usize,
                 )
-                .seal()
+                .seal().expect("fixed performed artifact grammar: closed labels, primitive coordinates, sealed identities, and Bridge-owned SHA256 output tokens")
         }
         ExecutedEffectAuthorityArtifact::Merge(result) => {
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
@@ -183,7 +184,7 @@ pub(crate) fn executed_authority_artifact_identity(
                     WorthQueryEvidenceTag::new("version_id"),
                     result.commit.outcome().commit.version_id.0 as usize,
                 )
-                .seal()
+                .seal().expect("fixed performed artifact grammar: closed labels, primitive coordinates, sealed identities, and Bridge-owned SHA256 output tokens")
         }
         ExecutedEffectAuthorityArtifact::Writeback { execution } => {
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
@@ -195,7 +196,7 @@ pub(crate) fn executed_authority_artifact_identity(
                     WorthQueryEvidenceTag::new("execution"),
                     &executed_writeback_execution_identity(execution),
                 )
-                .seal()
+                .seal().expect("fixed performed artifact grammar: closed labels, primitive coordinates, sealed identities, and Bridge-owned SHA256 output tokens")
         }
     }
 }
@@ -226,7 +227,7 @@ fn executed_writeback_execution_identity(
                 execution.execution_receipt(),
             ),
         )
-        .seal()
+        .seal().expect("fixed performed artifact grammar: closed labels, primitive coordinates, sealed identities, and Bridge-owned SHA256 output tokens")
 }
 
 pub(crate) fn writeback_bridge_evidence_identity(
@@ -251,7 +252,7 @@ pub(crate) fn writeback_bridge_evidence_identity(
             WorthQueryEvidenceTag::new("authoritative_artifact_digest"),
             outcome.authoritative_artifact_digest(),
         )
-        .seal()
+        .seal().expect("fixed performed artifact grammar: closed labels, primitive coordinates, sealed identities, and Bridge-owned SHA256 output tokens")
 }
 
 pub(crate) fn writeback_bridge_receipt_evidence_identity(
@@ -280,7 +281,7 @@ pub(crate) fn writeback_bridge_receipt_evidence_identity(
             WorthQueryEvidenceTag::new("authoritative_artifact_digest"),
             receipt.authoritative_artifact_digest(),
         )
-        .seal()
+        .seal().expect("fixed performed artifact grammar: closed labels, primitive coordinates, sealed identities, and Bridge-owned SHA256 output tokens")
 }
 
 pub(crate) fn writeback_bridge_execution_receipt_evidence_identity(
@@ -332,7 +333,7 @@ pub(crate) fn writeback_bridge_execution_receipt_evidence_identity(
             WorthQueryEvidenceTag::new("replay_bundle_digest"),
             receipt.replay_bundle_digest(),
         )
-        .seal()
+        .seal().expect("fixed performed artifact grammar: closed labels, primitive coordinates, sealed identities, and Bridge-owned SHA256 output tokens")
 }
 
 fn writeback_outcome_class_label(outcome_class: BridgeWritebackOutcomeClass) -> &'static str {

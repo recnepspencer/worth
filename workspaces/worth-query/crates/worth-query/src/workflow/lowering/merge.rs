@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -84,7 +85,14 @@ pub(crate) fn lower_merge_workflow_declaration(
         MergeIntent::ReconcileIntoTarget,
     );
     let lowering_identity =
-        merge_lowering_identity(declaration, &input, &freshness_binding, &staleness_class);
+        merge_lowering_identity(declaration, &input, &freshness_binding, &staleness_class)
+            .map_err(|cause| {
+                WorkflowLoweringError::identity_derivation_denied(
+                    cause,
+                    staleness_class.clone(),
+                    lowering_denial_counters(1, LoweringDenialClass::MergeDenied),
+                )
+            })?;
 
     Ok(LoweredMergeWorkflowDeclaration {
         declaration: declaration.clone(),
@@ -161,32 +169,34 @@ fn merge_lowering_identity(
     input: &MergeLoweringInput,
     freshness_binding: &WorkflowFreshnessBinding,
     staleness_class: &WorkflowStalenessClass,
-) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
-        .field_shape(WorthQueryEvidenceTag::new("lowering_kind"), "merge")
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("declaration"),
-            declaration.report().declaration_identity(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("merge_intent"),
-            input.intent().as_str(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("target_branch"),
-            &input.target_branch().0,
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("source_branch"),
-            &input.source_branch().0,
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("freshness"),
-            freshness_binding.as_str(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("staleness"),
-            staleness_class.as_str(),
-        )
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
+            .field_shape(WorthQueryEvidenceTag::new("lowering_kind"), "merge")
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("declaration"),
+                declaration.report().declaration_identity(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("merge_intent"),
+                input.intent().as_str(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("target_branch"),
+                &input.target_branch().0,
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("source_branch"),
+                &input.source_branch().0,
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("freshness"),
+                freshness_binding.as_str(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("staleness"),
+                staleness_class.as_str(),
+            )
+            .seal()?,
+    )
 }

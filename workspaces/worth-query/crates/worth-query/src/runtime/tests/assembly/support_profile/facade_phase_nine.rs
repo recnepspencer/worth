@@ -24,7 +24,8 @@ impl WorthQueryDerivedViewMaintainer for PhaseNineMaintainer {
             view.name(),
             crate::memory_workspace::admit_external_commit_label(format!(
                 "phase-nine-refresh-{next}"
-            )),
+            ))
+            .expect("fixture digest must fit"),
             [test_aspect_touch("title.value")],
             WorthQueryDerivedPatchPayload::from_retained_row(retained_row),
             format!("phase-nine-publication-{next}"),
@@ -41,7 +42,9 @@ fn facade_families_are_supported_and_admitted() {
         .workspace("task.phase-nine-support")
         .expect("workspace should build");
 
-    let contract = workspace.public_api_contract();
+    let contract = workspace
+        .public_api_contract()
+        .expect("fixture digest must fit");
     for family in [
         WorthQueryRuntimeFacadeFamily::Read,
         WorthQueryRuntimeFacadeFamily::Live,

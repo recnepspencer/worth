@@ -335,6 +335,10 @@ pub(super) fn external_row_text_at_path(
 ) -> Option<String> {
     match external_row.get(field_path)? {
         AspectValue::String(value) => Some(match value {
+            worth_foundational::facade::InternedString::Stored(value) => {
+                let value = value.as_string();
+                value.clone()
+            }
             worth_foundational::facade::InternedString::Raw(value) => value.clone(),
             worth_foundational::facade::InternedString::Symbol(symbol) => {
                 format!("symbol:{}", symbol.0)

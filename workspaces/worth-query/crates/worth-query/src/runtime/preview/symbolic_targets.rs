@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 pub(super) fn admit_preview_batch_symbolic_references(
     commands: &[WorthQueryWriteCommand],
@@ -14,7 +15,7 @@ pub(super) fn admit_preview_batch_symbolic_references(
         for reference in command.symbolic_aspect_references() {
             resolve_preview_symbolic_target(&planned_symbolic_targets, reference.reference())?;
         }
-        record_planned_preview_symbolic_target(&mut planned_symbolic_targets, command);
+        record_planned_preview_symbolic_target(&mut planned_symbolic_targets, command)?;
     }
     Ok(())
 }
@@ -25,17 +26,17 @@ fn record_planned_preview_symbolic_target(
         WorthQuerySameBatchSymbolicTarget,
     >,
     command: &WorthQueryWriteCommand,
-) {
+) -> Result<(), IdentityDerivationDenial> {
     if command.mutation_family() != crate::runtime::WorthQueryMutationFamily::Insert {
-        return;
+        return Ok(());
     }
     let Some(reference) = command.symbolic_target_reference() else {
-        return;
+        return Ok(());
     };
     let planned_identity = crate::memory_workspace::admit_authored_entity_label(format!(
         "planned-preview-symbolic:{}",
         reference.symbol()
-    ));
+    ))?;
     planned_symbolic_targets.insert(
         WorthQuerySameBatchSymbolicTargetKey::from_reference(reference),
         WorthQuerySameBatchSymbolicTarget::new(
@@ -43,6 +44,8 @@ fn record_planned_preview_symbolic_target(
             command.declared_collection_identity(),
         ),
     );
+
+    Ok(())
 }
 
 pub(super) fn record_preview_symbolic_target(

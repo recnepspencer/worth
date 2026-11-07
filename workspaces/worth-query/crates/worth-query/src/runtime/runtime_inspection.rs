@@ -51,7 +51,7 @@ impl WorthQueryRuntime {
         let state = self.live_subscriptions.get(&target).ok_or_else(|| {
             WorthQueryRuntimeError::MissingLiveSubscription(view.name().to_string())
         })?;
-        Ok(WorthQueryLiveViewInspection::from_state(state))
+        Ok(WorthQueryLiveViewInspection::from_state(state)?)
     }
 
     pub fn inspect_receipt<'a>(
@@ -163,7 +163,7 @@ impl WorthQueryRuntime {
             .effects
             .get(&effect_target)
             .ok_or_else(|| WorthQueryRuntimeError::MissingEffect(effect.name().to_string()))?;
-        WorthQueryFeedbackPhaseGraphInspection::from_effect_runtime(runtime).ok_or_else(|| {
+        WorthQueryFeedbackPhaseGraphInspection::from_effect_runtime(runtime)?.ok_or_else(|| {
             WorthQueryRuntimeError::MissingEffect(format!(
                 "{} has no retained feedback delivery",
                 effect.name()
@@ -176,7 +176,7 @@ impl WorthQueryRuntime {
         receipt: &WorthQueryEffectIntentReceipt,
     ) -> Result<WorthQueryFeedbackPhaseGraphInspection, WorthQueryRuntimeError> {
         self.admit_facade_family(WorthQueryRuntimeFacadeFamily::Inspect)?;
-        Ok(WorthQueryFeedbackPhaseGraphInspection::from_effect_intent_receipt(receipt))
+        Ok(WorthQueryFeedbackPhaseGraphInspection::from_effect_intent_receipt(receipt)?)
     }
 
     pub fn inspect<'a, T>(
@@ -221,17 +221,17 @@ impl WorthQueryRuntime {
             WorthQueryInspectionTarget::DerivedView { name } => {
                 let review = self.review_runtime_derived_inspection(name.to_string())?;
                 let handoff = self.resolve_reviewed_admitted_derived_inspection_handoff(review)?;
-                let binding = self.prepare_derived_inspection_execution_binding(handoff);
+                let binding = self.prepare_derived_inspection_execution_binding(handoff)?;
                 let result =
                     self.execute_derived_inspection_execution_binding(execution, binding)?;
                 Ok(WorthQueryInspection::DerivedView(result.evidence().clone()))
             }
             target => {
-                let seed = crate::intent_admission::WorthQueryGenericInspectionIntentSeed::from_target(target)
+                let seed = crate::intent_admission::WorthQueryGenericInspectionIntentSeed::from_target(target)?
                     .expect("derived inspection targets should route through the derived inspection lane");
                 let review = self.review_unified_inspection(seed)?;
                 let handoff = self.resolve_reviewed_admitted_unified_inspection_handoff(review)?;
-                let binding = self.prepare_unified_inspection_execution_binding(handoff);
+                let binding = self.prepare_unified_inspection_execution_binding(handoff)?;
                 let result =
                     self.execute_unified_inspection_execution_binding(execution, binding)?;
                 Ok(result.inspection().clone())

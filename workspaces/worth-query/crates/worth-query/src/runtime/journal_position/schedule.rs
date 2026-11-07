@@ -38,7 +38,9 @@ pub struct WorthQueryJournalPositionSchedule {
     schedule_digest: WorthQueryEvidenceIdentity,
 }
 impl WorthQueryJournalPositionSchedule {
-    pub fn derive<I>(positions: I) -> Self
+    pub fn derive<I>(
+        positions: I,
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial>
     where
         I: IntoIterator<Item = WorthQueryJournalPosition>,
     {
@@ -58,12 +60,12 @@ impl WorthQueryJournalPositionSchedule {
                     WorthQueryEvidenceTag::new("journal_position_count"),
                     positions.len(),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             positions,
             violations,
             schedule_digest,
-        }
+        })
     }
     pub fn positions(&self) -> &[WorthQueryJournalPosition] {
         &self.positions

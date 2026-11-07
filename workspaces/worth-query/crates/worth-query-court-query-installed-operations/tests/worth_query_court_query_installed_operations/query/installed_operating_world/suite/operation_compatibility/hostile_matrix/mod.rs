@@ -19,6 +19,7 @@ fn all_five_relationship_oracles_are_stable_across_index_rebuild() {
 
     assert!(controlled
         .verify_domain_execution_index_rebuild()
+        .expect("fixture digest must fit")
         .is_equivalent());
     assert!(controlled
         .rebuild_conditional_execution_index()
@@ -41,6 +42,7 @@ fn all_five_relationship_oracles_are_stable_across_index_rebuild() {
 
     assert!(controlled
         .verify_domain_execution_index_rebuild()
+        .expect("fixture digest must fit")
         .is_equivalent());
     assert!(controlled
         .rebuild_conditional_execution_index()

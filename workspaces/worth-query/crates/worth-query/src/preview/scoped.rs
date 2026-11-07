@@ -99,7 +99,10 @@ pub(crate) fn admit_scoped_preview_live_session_plan(
                 WorthQueryEvidenceTag::new("live"),
                 preview_live.report().digest(),
             )
-            .seal();
+            .seal()
+            .map_err(|cause| {
+                PreviewLiveError::identity_refused(cause, preview_live.report().counters().clone())
+            })?;
     Ok(ScopedPreviewLiveSessionPlanBinding {
         scoped_binding,
         preview_live,

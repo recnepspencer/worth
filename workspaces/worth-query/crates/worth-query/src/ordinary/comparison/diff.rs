@@ -149,14 +149,16 @@ fn classify_row_change(
 
 #[cfg(test)]
 mod tests {
+    use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
     use std::collections::BTreeMap;
 
     use super::assemble_query_shaped_row_changes;
     use crate::memory_workspace::{admit_authored_entity_label, WorthQueryEntity};
 
     #[test]
-    fn duplicate_left_identity_fails_closed_at_exact_scan_width() {
-        let row = test_row("duplicate-left");
+    fn duplicate_left_identity_fails_closed_at_exact_scan_width(
+    ) -> Result<(), IdentityDerivationDenial> {
+        let row = test_row("duplicate-left")?;
         let failure = assemble_query_shaped_row_changes(&[row.clone(), row], &[])
             .err()
             .expect("duplicate identity must deny assembly");
@@ -164,12 +166,15 @@ mod tests {
         assert_eq!(failure.left_row_scan_count(), 2);
         assert_eq!(failure.right_row_scan_count(), 0);
         assert!(failure.reason().contains("left"));
+
+        Ok(())
     }
 
     #[test]
-    fn duplicate_right_identity_fails_closed_after_left_indexing() {
-        let left = test_row("unique-left");
-        let right = test_row("duplicate-right");
+    fn duplicate_right_identity_fails_closed_after_left_indexing(
+    ) -> Result<(), IdentityDerivationDenial> {
+        let left = test_row("unique-left")?;
+        let right = test_row("duplicate-right")?;
         let failure = assemble_query_shaped_row_changes(&[left], &[right.clone(), right])
             .err()
             .expect("duplicate identity must deny assembly");
@@ -177,12 +182,14 @@ mod tests {
         assert_eq!(failure.left_row_scan_count(), 1);
         assert_eq!(failure.right_row_scan_count(), 2);
         assert!(failure.reason().contains("right"));
+
+        Ok(())
     }
 
-    fn test_row(label: &str) -> WorthQueryEntity {
-        WorthQueryEntity::from_native_field_values(
-            admit_authored_entity_label(label),
+    fn test_row(label: &str) -> Result<WorthQueryEntity, IdentityDerivationDenial> {
+        Ok(WorthQueryEntity::from_native_field_values(
+            admit_authored_entity_label(label)?,
             BTreeMap::new(),
-        )
+        ))
     }
 }

@@ -59,10 +59,10 @@ fn text(value: &str) -> InternedString {
     value.to_owned().into()
 }
 fn from_text(value: InternedString) -> Option<String> {
-    let InternedString::Raw(value) = value else {
+    let Some(value) = (value).raw_text() else {
         return None;
     };
-    Some(value)
+    Some(value.to_owned())
 }
 
 struct NoEvidence;

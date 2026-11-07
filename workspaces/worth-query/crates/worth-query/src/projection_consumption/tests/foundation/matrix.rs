@@ -12,7 +12,8 @@ use super::support::{
 fn support_discovery_and_eligibility_stay_in_sync_for_all_lanes() {
     for family in all_source_families() {
         let source = test_source(family);
-        let report = discover_projection_consumption_support(&source);
+        let report =
+            discover_projection_consumption_support(&source).expect("fixture digest must fit");
         for fact_kind in ProjectionFactKind::all().iter().copied() {
             let row = report
                 .rows()
@@ -25,7 +26,8 @@ fn support_discovery_and_eligibility_stay_in_sync_for_all_lanes() {
                 request_for_kind(fact_kind),
             )
             .expect("matrix declaration should be structurally valid");
-            let eligibility = evaluate_projection_consumption_eligibility(&declaration);
+            let eligibility = evaluate_projection_consumption_eligibility(&declaration)
+                .expect("fixture digest must fit");
             match (row.posture(), eligibility) {
                 (
                     ProjectionConsumptionSupportPosture::Admitted,

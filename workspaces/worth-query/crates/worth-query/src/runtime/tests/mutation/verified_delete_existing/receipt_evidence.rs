@@ -263,11 +263,13 @@ fn batch_delete_existing_verified_preserves_aggregate_assertion_digest() {
     assert_eq!(
         receipt
             .batch_mutation_evidence()
+            .expect("fixture digest must fit")
             .existing_truth_assertion_count(),
         2
     );
     assert!(receipt
         .batch_mutation_evidence()
+        .expect("fixture digest must fit")
         .aggregate_existing_truth_assertion_digest()
         .is_some());
 }

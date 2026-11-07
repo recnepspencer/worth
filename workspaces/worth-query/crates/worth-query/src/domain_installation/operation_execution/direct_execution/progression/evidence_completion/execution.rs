@@ -1,6 +1,7 @@
 //! Consuming direct-execution phases before exact evidence completion.
 
 use crate::basis_lifecycle::BasisOperationLane;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use super::super::super::{
@@ -265,6 +266,13 @@ where
     O: WorthQueryExecutableDomainOperation<D, F>,
 {
     match stop {
+        crate::domain_installation::WorthQueryConditionalEvaluationStop::EvidenceIdentityDerivationDenied(cause) => {
+            TransitionOutcome::Denied(WorthQueryBoundExecutionDenial::new(
+                WorthQueryBoundExecutionDenialKind::EvidenceIdentityDerivationDenied(cause),
+                "conditional evidence identity exceeded its digest bounds",
+                counters,
+            ))
+        }
         crate::domain_installation::WorthQueryConditionalEvaluationStop::Deferred(conditional) => {
             TransitionOutcome::Deferred(
                 crate::domain_installation::WorthQueryDeferredDomainOperation {

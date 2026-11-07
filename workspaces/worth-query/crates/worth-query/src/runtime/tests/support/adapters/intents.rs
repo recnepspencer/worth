@@ -81,10 +81,10 @@ impl WorthQueryIntentAuthorityAdapter for NoopIntentAuthority {
                 declaration.input_digest().to_string(),
             ]),
             ["test-invariant-authority", "idempotent-noop"],
-            crate::memory_workspace::admit_external_commit_label("external-intent-noop-commit-1"),
+            crate::memory_workspace::admit_external_commit_label("external-intent-noop-commit-1")?,
             crate::memory_workspace::admit_external_snapshot_label(
                 "external-intent-noop-snapshot-1",
-            ),
+            )?,
         ))
     }
 }
@@ -147,7 +147,8 @@ impl WorthQueryIntentAuthorityAdapter for InvariantViolationIntentAuthority {
             ],
             crate::memory_workspace::admit_external_snapshot_label(
                 "external-intent-invariant-denial-snapshot-1",
-            ),
+            )
+            .expect("fixture digest must fit"),
         ))
     }
 }
@@ -266,6 +267,7 @@ fn bridge_authoritative_intent_receipt(
                 WorthQueryMutationKind::Updated,
                 vec![touch],
             )
+            .expect("fixture digest must fit")
         })
         .into_iter()
         .collect();

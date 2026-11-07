@@ -7,45 +7,53 @@ fn bridge_projection_for(
     match kind {
         WorthQueryRuntimeAsyncResultStateKind::Pending => {
             WorthQueryRuntimeAsyncResultProjection::pending("async:pending")
+                .expect("fixture digest must fit")
         }
         WorthQueryRuntimeAsyncResultStateKind::Current => {
             WorthQueryRuntimeAsyncResultProjection::completion_state(
                 BridgeAsyncCompletionState::Admitted(BridgeAsyncCompletionClass::Fulfilled),
                 "async:current",
             )
+            .expect("fixture digest must fit")
         }
         WorthQueryRuntimeAsyncResultStateKind::Failed => {
             WorthQueryRuntimeAsyncResultProjection::completion_state(
                 BridgeAsyncCompletionState::Denied(BridgeAsyncCompletionDenialClass::Rejected),
                 "async:failed",
             )
+            .expect("fixture digest must fit")
         }
         WorthQueryRuntimeAsyncResultStateKind::Stale => {
             WorthQueryRuntimeAsyncResultProjection::completion_state(
                 BridgeAsyncCompletionState::Denied(BridgeAsyncCompletionDenialClass::StaleDenied),
                 "async:stale",
             )
+            .expect("fixture digest must fit")
         }
         WorthQueryRuntimeAsyncResultStateKind::Cancelled => {
             WorthQueryRuntimeAsyncResultProjection::completion_state(
                 BridgeAsyncCompletionState::Denied(BridgeAsyncCompletionDenialClass::Cancelled),
                 "async:cancelled",
             )
+            .expect("fixture digest must fit")
         }
         WorthQueryRuntimeAsyncResultStateKind::Retried => {
             WorthQueryRuntimeAsyncResultProjection::forward_causality(
                 BridgeAsyncForwardCausalityClass::RetryAfterTimeout,
                 "async:retried",
             )
+            .expect("fixture digest must fit")
         }
         WorthQueryRuntimeAsyncResultStateKind::Revalidating => {
             WorthQueryRuntimeAsyncResultProjection::forward_causality(
                 BridgeAsyncForwardCausalityClass::RevalidationAfterTruthBasisDrift,
                 "async:revalidating",
             )
+            .expect("fixture digest must fit")
         }
         WorthQueryRuntimeAsyncResultStateKind::Superseded => {
             WorthQueryRuntimeAsyncResultProjection::supersession("async:superseded")
+                .expect("fixture digest must fit")
         }
         WorthQueryRuntimeAsyncResultStateKind::Denied => {
             WorthQueryRuntimeAsyncResultProjection::completion_state(
@@ -54,6 +62,7 @@ fn bridge_projection_for(
                 ),
                 "async:denied",
             )
+            .expect("fixture digest must fit")
         }
         WorthQueryRuntimeAsyncResultStateKind::Unresolved => {
             WorthQueryRuntimeAsyncResultProjection::completion_state(
@@ -62,6 +71,7 @@ fn bridge_projection_for(
                 ),
                 "async:unresolved",
             )
+            .expect("fixture digest must fit")
         }
     }
 }
@@ -221,8 +231,10 @@ fn runtime_async_result_state_fails_closed_for_generation_drift_and_preview_mism
     let (basis_identity, checkpoint_identity) =
         live_subscription_async_identity(&runtime, view.name());
 
-    let drifted_checkpoint = runtime_async_checkpoint_label_identity("generation:drifted");
-    let drifted_basis = runtime_async_checkpoint_label_identity("basis:drifted");
+    let drifted_checkpoint = runtime_async_checkpoint_label_identity("generation:drifted")
+        .expect("fixture digest must fit");
+    let drifted_basis =
+        runtime_async_checkpoint_label_identity("basis:drifted").expect("fixture digest must fit");
 
     let generation_drift = runtime
         .project_async_result_state(
@@ -230,7 +242,8 @@ fn runtime_async_result_state_fails_closed_for_generation_drift_and_preview_mism
             &WorthQueryRuntimeAsyncResultProjection::completion_state(
                 BridgeAsyncCompletionState::Admitted(BridgeAsyncCompletionClass::Fulfilled),
                 "async:generation-drift",
-            ),
+            )
+            .expect("fixture digest must fit"),
             &basis_identity,
             &drifted_checkpoint,
         )
@@ -241,7 +254,8 @@ fn runtime_async_result_state_fails_closed_for_generation_drift_and_preview_mism
             &WorthQueryRuntimeAsyncResultProjection::completion_state(
                 BridgeAsyncCompletionState::Admitted(BridgeAsyncCompletionClass::Fulfilled),
                 "async:preview-mismatch",
-            ),
+            )
+            .expect("fixture digest must fit"),
             &drifted_basis,
             &checkpoint_identity,
         )
@@ -249,7 +263,8 @@ fn runtime_async_result_state_fails_closed_for_generation_drift_and_preview_mism
     let superseded = runtime
         .project_async_result_state(
             view.name(),
-            &WorthQueryRuntimeAsyncResultProjection::supersession("async:superseded-drift"),
+            &WorthQueryRuntimeAsyncResultProjection::supersession("async:superseded-drift")
+                .expect("fixture digest must fit"),
             &basis_identity,
             &drifted_checkpoint,
         )
@@ -262,7 +277,8 @@ fn runtime_async_result_state_fails_closed_for_generation_drift_and_preview_mism
                     BridgeAsyncCompletionDenialClass::SignalLifecycleDenied,
                 ),
                 "async:denied-preview",
-            ),
+            )
+            .expect("fixture digest must fit"),
             &drifted_basis,
             &checkpoint_identity,
         )

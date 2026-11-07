@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::hash_parts;
 
 use super::{
@@ -18,12 +19,12 @@ pub(crate) const INTENT_ADMISSION_DECISIONS_EXPORTED_SURFACE: &[&str] = &[
 
 pub(crate) fn admit_runtime_intent_request(
     request: WorthQueryRawIntentAdmissionRequest,
-) -> WorthQueryIntentAdmissionDecision {
-    let eligibility = WorthQueryIntentAdmissionEligibility::from_request(request);
-    match eligibility.pre_decision_posture() {
+) -> Result<WorthQueryIntentAdmissionDecision, IdentityDerivationDenial> {
+    let eligibility = WorthQueryIntentAdmissionEligibility::from_request(request)?;
+    Ok(match eligibility.pre_decision_posture() {
         WorthQueryIntentAdmissionPreDecisionPosture::Admitted => {
             WorthQueryIntentAdmissionDecision::Admitted(
-                WorthQueryAdmittedIntentPlan::from_eligibility(eligibility),
+                WorthQueryAdmittedIntentPlan::from_eligibility(eligibility)?,
             )
         }
         WorthQueryIntentAdmissionPreDecisionPosture::Deferred { stage, message } => {
@@ -45,7 +46,7 @@ pub(crate) fn admit_runtime_intent_request(
                 ),
             )
         }
-    }
+    })
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -142,6 +143,8 @@ impl WorthQueryIntentAdvisoryDecision {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryIntentViolationDecision {
+    identity_derivation_denial:
+        Option<crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial>,
     family: super::WorthQueryIntentAdmissionFamily,
     entrypoint: WorthQueryIntentAdmissionCoveredEntrypoint,
     stage: &'static str,
@@ -152,6 +155,29 @@ pub struct WorthQueryIntentViolationDecision {
 }
 
 impl WorthQueryIntentViolationDecision {
+    pub fn identity_derivation_denial(
+        &self,
+    ) -> Option<crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        self.identity_derivation_denial
+    }
+
+    pub(crate) fn identity_refused(
+        family: super::WorthQueryIntentAdmissionFamily,
+        entrypoint: WorthQueryIntentAdmissionCoveredEntrypoint,
+        cause: crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    ) -> Self {
+        let mut decision = Self::new(
+            family,
+            entrypoint,
+            "evidence-identity-derivation",
+            "canonical digest bounds refused intent identity construction",
+            "",
+            "",
+        );
+        decision.identity_derivation_denial = Some(cause);
+        decision
+    }
+
     pub(crate) fn new(
         family: super::WorthQueryIntentAdmissionFamily,
         entrypoint: WorthQueryIntentAdmissionCoveredEntrypoint,
@@ -171,6 +197,7 @@ impl WorthQueryIntentViolationDecision {
             format!("eligibility:{eligibility_digest}"),
         ]);
         Self {
+            identity_derivation_denial: None,
             family,
             entrypoint,
             stage,

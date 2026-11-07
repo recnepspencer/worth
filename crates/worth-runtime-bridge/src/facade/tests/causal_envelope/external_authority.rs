@@ -256,6 +256,9 @@ fn signal_replay_cursor_reference_denies_runtime_bridge_owner_mismatch() {
         .expect("signal reference identity should be valid"),
     )
     .expect_err("signal replay cursor must stay signal-owned");
+    let crate::facade::BridgeCausalEnvelopeConstructionStop::Denied(denial) = denial else {
+        panic!("expected domain denial, got {denial:?}")
+    };
 
     assert_eq!(
         denial.kind(),

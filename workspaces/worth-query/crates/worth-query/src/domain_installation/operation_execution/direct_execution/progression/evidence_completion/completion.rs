@@ -1,6 +1,7 @@
 //! Terminal validation and exact evidence/receipt completion.
 
 use crate::basis_lifecycle::BasisOperationLane;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use super::super::super::{

@@ -1,6 +1,7 @@
 use crate::correspondence::{
     StructuralCandidateDiscoveryPlan, StructuralCandidateOrderingContract,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use crate::domain_capabilities::payloads::{
     WorthQueryContinuityContributionPayload, WorthQueryContinuityContributionPosture,
@@ -17,8 +18,8 @@ impl WorthQueryContinuityContributionAuthoring {
         budget: usize,
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self::with_correspondence_semantics(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_correspondence_semantics(
             WorthQueryContinuityContributionPosture::CorrespondenceOnly,
             semantic_code,
             detail,
@@ -28,7 +29,7 @@ impl WorthQueryContinuityContributionAuthoring {
                 discovery_plan,
                 budget,
             ),
-        )
+        )?)
     }
 
     pub fn correspondence_structural_only(
@@ -38,8 +39,8 @@ impl WorthQueryContinuityContributionAuthoring {
         ordering_contract: StructuralCandidateOrderingContract,
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self::with_correspondence_semantics(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_correspondence_semantics(
             WorthQueryContinuityContributionPosture::CorrespondenceOnly,
             semantic_code,
             detail,
@@ -49,7 +50,7 @@ impl WorthQueryContinuityContributionAuthoring {
                 budget,
                 ordering_contract,
             ),
-        )
+        )?)
     }
 
     pub fn correspondence_mixed(
@@ -61,8 +62,8 @@ impl WorthQueryContinuityContributionAuthoring {
         ordering_contract: StructuralCandidateOrderingContract,
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self::with_correspondence_semantics(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_correspondence_semantics(
             WorthQueryContinuityContributionPosture::CorrespondenceOnly,
             semantic_code,
             detail,
@@ -74,7 +75,7 @@ impl WorthQueryContinuityContributionAuthoring {
                 budget,
                 ordering_contract,
             ),
-        )
+        )?)
     }
 
     fn with_correspondence_semantics(
@@ -82,14 +83,14 @@ impl WorthQueryContinuityContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
         correspondence_semantics: WorthQueryContinuityCorrespondenceSemantics,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             payload: WorthQueryContinuityContributionPayload::with_correspondence_semantics(
                 posture,
                 semantic_code,
                 detail,
                 Some(correspondence_semantics),
-            ),
-        }
+            )?,
+        })
     }
 }

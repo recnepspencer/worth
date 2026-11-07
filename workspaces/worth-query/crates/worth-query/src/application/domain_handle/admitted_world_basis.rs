@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -87,5 +88,5 @@ pub(crate) fn compose_basis_lifecycle_support_identity(
             "basis_lifecycle_support_matrix_v1",
         )
         .field_shape(WorthQueryEvidenceTag::new("support_matrix"), matrix_digest)
-        .seal()
+        .seal().expect("private lifecycle matrix identity contains fixed metadata and one 64-byte SHA256 projection")
 }

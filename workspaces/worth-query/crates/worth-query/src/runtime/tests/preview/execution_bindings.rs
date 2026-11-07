@@ -24,18 +24,24 @@ fn derive_only_preview_binds_handles_and_mutes_effects_without_residue() {
         )
         .expect("computed should declare");
     let delivery_effect = runtime
-        .declare_effect::<WorthQueryUnrefinedLiveShape>(WorthQueryEffectDeclaration::deliver(
-            "ui.preview-bind",
-            WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title"])),
-            "ui.preview",
-        ))
+        .declare_effect::<WorthQueryUnrefinedLiveShape>(
+            WorthQueryEffectDeclaration::deliver(
+                "ui.preview-bind",
+                WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title"])),
+                "ui.preview",
+            )
+            .expect("fixture digest must fit"),
+        )
         .expect("delivery effect should declare");
     let intent_effect = runtime
-        .declare_effect::<WorthQueryUnrefinedLiveShape>(WorthQueryEffectDeclaration::write_intent(
-            "intent.preview-bind",
-            WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title"])),
-            "preview-intent",
-        ))
+        .declare_effect::<WorthQueryUnrefinedLiveShape>(
+            WorthQueryEffectDeclaration::write_intent(
+                "intent.preview-bind",
+                WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title"])),
+                "preview-intent",
+            )
+            .expect("fixture digest must fit"),
+        )
         .expect("write-intent effect should declare");
 
     let (live_binding, computed_binding, delivery_binding, intent_binding, outcome) = {
@@ -85,6 +91,8 @@ fn derive_only_preview_binds_handles_and_mutes_effects_without_residue() {
             preview.discard(),
         )
     };
+    let outcome = outcome.expect("fixture digest must fit");
+    let outcome = outcome;
 
     assert_eq!(outcome.preview_binding_count(), 4);
     assert_eq!(outcome.effect_binding_count(), 2);
@@ -203,14 +211,17 @@ fn preview_write_routes_bound_live_computed_and_redirected_effect_without_author
         )
         .expect("computed should declare");
     let delivery_effect = runtime
-        .declare_effect::<WorthQueryUnrefinedLiveShape>(WorthQueryEffectDeclaration::deliver(
-            "ui.preview-execution",
-            WorthQueryEffectTrigger::computed_view(
-                &computed,
-                test_aspect_touches(["title.summary"]),
-            ),
-            "ui.preview",
-        ))
+        .declare_effect::<WorthQueryUnrefinedLiveShape>(
+            WorthQueryEffectDeclaration::deliver(
+                "ui.preview-execution",
+                WorthQueryEffectTrigger::computed_view(
+                    &computed,
+                    test_aspect_touches(["title.summary"]),
+                ),
+                "ui.preview",
+            )
+            .expect("fixture digest must fit"),
+        )
         .expect("delivery effect should declare");
 
     let (execution_evidence, outcome) = {
@@ -249,6 +260,7 @@ fn preview_write_routes_bound_live_computed_and_redirected_effect_without_author
             preview.discard(),
         )
     };
+    let outcome = outcome.expect("fixture digest must fit");
 
     assert!(execution_evidence.iter().any(|evidence| {
         evidence.kind() == WorthQueryPreviewExecutionKind::LivePatch
@@ -311,11 +323,14 @@ fn preview_sandboxed_write_intent_execution_stays_separate_from_delivery_residue
         )
         .expect("live should declare");
     let intent_effect = runtime
-        .declare_effect::<WorthQueryUnrefinedLiveShape>(WorthQueryEffectDeclaration::write_intent(
-            "intent.preview-execution",
-            WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title"])),
-            "preview-intent",
-        ))
+        .declare_effect::<WorthQueryUnrefinedLiveShape>(
+            WorthQueryEffectDeclaration::write_intent(
+                "intent.preview-execution",
+                WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title"])),
+                "preview-intent",
+            )
+            .expect("fixture digest must fit"),
+        )
         .expect("write-intent effect should declare");
 
     let (execution_evidence, outcome) = {
@@ -353,6 +368,7 @@ fn preview_sandboxed_write_intent_execution_stays_separate_from_delivery_residue
             preview.discard(),
         )
     };
+    let outcome = outcome.expect("fixture digest must fit");
 
     assert!(execution_evidence.iter().any(|evidence| {
         evidence.kind() == WorthQueryPreviewExecutionKind::PendingWriteIntent

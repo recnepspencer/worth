@@ -1,10 +1,12 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::counters::QuerySubscriptionDeclarationCounters;
 use super::diagnostic::{QuerySubscriptionDiagnosticEvidence, QuerySubscriptionDiagnosticStage};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum QuerySubscriptionBridgeLoweringDenialKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     BridgeFamilyUnsupported,
     BridgeSliceUnsupported,
     BridgeFallbackUnsupported,
@@ -15,6 +17,7 @@ pub enum QuerySubscriptionBridgeLoweringDenialKind {
 impl QuerySubscriptionBridgeLoweringDenialKind {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => "evidence_identity_derivation_denied",
             Self::BridgeFamilyUnsupported => "bridge_family_unsupported",
             Self::BridgeSliceUnsupported => "bridge_slice_unsupported",
             Self::BridgeFallbackUnsupported => "bridge_fallback_unsupported",
@@ -28,11 +31,25 @@ impl QuerySubscriptionBridgeLoweringDenialKind {
 pub struct QuerySubscriptionBridgeLoweringError {
     denial_kind: QuerySubscriptionBridgeLoweringDenialKind,
     message: String,
-    diagnostic: QuerySubscriptionDiagnosticEvidence,
+    diagnostic: Result<QuerySubscriptionDiagnosticEvidence, IdentityDerivationDenial>,
     counters: QuerySubscriptionDeclarationCounters,
 }
 
 impl QuerySubscriptionBridgeLoweringError {
+    pub(super) fn identity_refused(
+        cause: IdentityDerivationDenial,
+        mut counters: QuerySubscriptionDeclarationCounters,
+    ) -> Self {
+        counters.bridge_lowering_count = 0;
+        Self {
+            denial_kind:
+                QuerySubscriptionBridgeLoweringDenialKind::EvidenceIdentityDerivationDenied(cause),
+            message: "subscription evidence identity exceeded its digest bounds".to_owned(),
+            diagnostic: Err(cause),
+            counters,
+        }
+    }
+
     pub(super) fn new(
         denial_kind: QuerySubscriptionBridgeLoweringDenialKind,
         message: impl Into<String>,
@@ -41,12 +58,14 @@ impl QuerySubscriptionBridgeLoweringError {
         counters: QuerySubscriptionDeclarationCounters,
     ) -> Self {
         let message = message.into();
-        let diagnostic = QuerySubscriptionDiagnosticEvidence::denied(
-            diagnostic_stage,
-            message.clone(),
-            source_identity,
-            &counters.evidence_identity(),
-        );
+        let diagnostic = (|| {
+            Ok(QuerySubscriptionDiagnosticEvidence::denied(
+                diagnostic_stage,
+                message.clone(),
+                source_identity,
+                &counters.evidence_identity(),
+            )?)
+        })();
         Self {
             denial_kind,
             message,
@@ -63,8 +82,10 @@ impl QuerySubscriptionBridgeLoweringError {
         &self.message
     }
 
-    pub fn diagnostic(&self) -> &QuerySubscriptionDiagnosticEvidence {
-        &self.diagnostic
+    pub fn diagnostic(
+        &self,
+    ) -> Result<&QuerySubscriptionDiagnosticEvidence, IdentityDerivationDenial> {
+        Ok(self.diagnostic.as_ref().map_err(|cause| *cause)?)
     }
 
     pub fn counters(&self) -> &QuerySubscriptionDeclarationCounters {

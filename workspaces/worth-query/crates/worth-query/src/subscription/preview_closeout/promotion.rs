@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity_authority::{QueryProjectionIdentity, QuerySubscriptionIdentityKind};
 
 use super::super::active_counters::ActiveSubscriptionCounters;
@@ -46,8 +47,8 @@ impl PreviewSubscriptionPromotionHandoff {
         residue_report: &PreviewSubscriptionResidueReport,
         authoritative_lane: &ActiveSubscriptionLaneHandle,
         authority_label: impl Into<String>,
-    ) -> Self {
-        let authority_identity = preview_promotion_authority_identity(&authority_label.into());
+    ) -> Result<Self, IdentityDerivationDenial> {
+        let authority_identity = preview_promotion_authority_identity(&authority_label.into())?;
         let mut counters = ActiveSubscriptionCounters::default();
         counters.preview_promotion_handoff_count = 1;
         let performance_receipt = SubscriptionPerformanceReceipt::new(
@@ -82,8 +83,8 @@ impl PreviewSubscriptionPromotionHandoff {
             performance_receipt.performance_receipt_identity(),
             PreviewSubscriptionLifecycleState::PreviewPromoted.as_str(),
             &counters.evidence_identity(),
-        );
-        Self {
+        )?;
+        Ok(Self {
             preview_lane_digest: isolation.active_lane_digest().clone(),
             authoritative_active_lane_digest: authoritative_lane.lane_digest().clone(),
             attachment_digest: isolation.attachment_digest().clone(),
@@ -101,7 +102,7 @@ impl PreviewSubscriptionPromotionHandoff {
             performance_receipt,
             counters,
             handoff_identity,
-        }
+        })
     }
 
     pub(crate) fn preview_lane_digest(&self) -> &ActiveSubscriptionLaneDigest {
@@ -236,10 +237,18 @@ pub fn promote_preview_subscription(
         ));
     }
 
-    Ok(PreviewSubscriptionPromotionHandoff::new(
+    let source_identity = isolation.isolation_identity().clone();
+    PreviewSubscriptionPromotionHandoff::new(
         isolation,
         residue_report,
         authoritative_lane,
         authority_label,
-    ))
+    )
+    .map_err(|cause| {
+        PreviewSubscriptionIsolationError::identity_refused(
+            cause,
+            source_identity,
+            ActiveSubscriptionCounters::default(),
+        )
+    })
 }

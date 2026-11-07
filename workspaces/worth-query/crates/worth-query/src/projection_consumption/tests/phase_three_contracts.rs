@@ -44,7 +44,9 @@ pub(super) fn admitted(
 ) -> AdmittedProjectionConsumption {
     let declaration = declare_projection_consumption(source, binding, requested)
         .expect("declaration should be valid");
-    match evaluate_projection_consumption_eligibility(&declaration) {
+    match evaluate_projection_consumption_eligibility(&declaration)
+        .expect("fixture digest must fit")
+    {
         ProjectionConsumptionEligibility::Admitted(admitted) => admitted,
         ProjectionConsumptionEligibility::AdmittedWithWarnings(admitted, _) => admitted,
         other => panic!("expected admitted posture, got {other:?}"),
@@ -104,7 +106,9 @@ fn visibility_admission_requires_exact_native_aspect_field_key() {
     )
     .expect("declaration should be valid");
 
-    let denied = match evaluate_projection_consumption_eligibility(&declaration) {
+    let denied = match evaluate_projection_consumption_eligibility(&declaration)
+        .expect("fixture digest must fit")
+    {
         ProjectionConsumptionEligibility::Denied(denied) => denied,
         other => panic!("expected exact native field-key visibility denial, got {other:?}"),
     };
@@ -134,7 +138,7 @@ fn admitted_read_receipt_binds_query_owned_contract() {
             ),
     );
 
-    let contract = admitted.bind_contract();
+    let contract = admitted.bind_contract().expect("fixture digest must fit");
 
     assert_eq!(
         contract.source_posture(),
@@ -195,7 +199,7 @@ fn warning_bearing_query_context_contract_carries_warning_posture() {
         ),
     );
 
-    let contract = admitted.bind_contract();
+    let contract = admitted.bind_contract().expect("fixture digest must fit");
 
     assert_eq!(
         contract.support_posture(),
@@ -222,7 +226,7 @@ fn write_receipt_contract_binds_source_reference_identities() {
             .relation_endpoints(),
     );
 
-    let contract = admitted.bind_contract();
+    let contract = admitted.bind_contract().expect("fixture digest must fit");
 
     assert_eq!(
         contract.source_posture(),
@@ -257,7 +261,8 @@ fn relational_and_bridge_sources_bind_distinct_contract_postures() {
         test_binding(&["identity.id"]),
         ProjectMaterializedFacts::declare().entity_identities(),
     )
-    .bind_contract();
+    .bind_contract()
+    .expect("fixture digest must fit");
     let bridge_contract = admitted(
         ProjectionConsumptionSource::test_only(
             ProjectionSourceFamily::BridgeTruthViewRowSet,
@@ -270,7 +275,8 @@ fn relational_and_bridge_sources_bind_distinct_contract_postures() {
         test_binding(&["identity.id"]),
         ProjectMaterializedFacts::declare().entity_identities(),
     )
-    .bind_contract();
+    .bind_contract()
+    .expect("fixture digest must fit");
 
     assert_eq!(
         relational_contract.source_posture(),
@@ -302,7 +308,8 @@ fn equivalent_contracts_normalize_to_the_same_digest() {
                 ]),
             ),
     )
-    .bind_contract();
+    .bind_contract()
+    .expect("fixture digest must fit");
     let right = admitted(
         query_read_source(),
         test_binding(&["identity.id", "profile.display_name"]),
@@ -317,7 +324,8 @@ fn equivalent_contracts_normalize_to_the_same_digest() {
                 ]),
             ),
     )
-    .bind_contract();
+    .bind_contract()
+    .expect("fixture digest must fit");
 
     assert_eq!(left.contract_digest(), right.contract_digest());
 }
@@ -329,7 +337,8 @@ fn contract_digest_changes_for_fact_inventory_and_policy_basis() {
         binding_with_policy("policy:a", "tenant-schema:a"),
         ProjectMaterializedFacts::declare().entity_identities(),
     )
-    .bind_contract();
+    .bind_contract()
+    .expect("fixture digest must fit");
     let widened_facts = admitted(
         query_read_source(),
         binding_with_policy("policy:a", "tenant-schema:a"),
@@ -344,13 +353,15 @@ fn contract_digest_changes_for_fact_inventory_and_policy_basis() {
                 ]),
             ),
     )
-    .bind_contract();
+    .bind_contract()
+    .expect("fixture digest must fit");
     let different_policy = admitted(
         query_read_source(),
         binding_with_policy("policy:b", "tenant-schema:a"),
         ProjectMaterializedFacts::declare().entity_identities(),
     )
-    .bind_contract();
+    .bind_contract()
+    .expect("fixture digest must fit");
 
     assert_ne!(baseline.contract_digest(), widened_facts.contract_digest());
     assert_ne!(

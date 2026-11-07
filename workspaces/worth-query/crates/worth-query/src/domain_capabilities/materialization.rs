@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_foundational::{
     FoundationalDiagnosticMaterializationDenial, FoundationalProfileIdentityDenial,
     FoundationalProfileProgressionDenial,
@@ -30,6 +31,7 @@ impl WorthQueryDomainCapabilityDescriptiveArtifactKind {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum WorthQueryDomainCapabilityDescriptiveMaterializationDenial {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     ProfileAdmission {
         category: WorthQueryDomainCapabilityCategory,
         artifact_kind: WorthQueryDomainCapabilityDescriptiveArtifactKind,
@@ -84,5 +86,11 @@ impl WorthQueryDomainCapabilityProfileProgression {
 
     pub fn materialized(&self) -> &worth_foundational::MaterializedFoundationalProfileArtifact {
         &self.materialized
+    }
+}
+
+impl From<IdentityDerivationDenial> for WorthQueryDomainCapabilityDescriptiveMaterializationDenial {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
     }
 }

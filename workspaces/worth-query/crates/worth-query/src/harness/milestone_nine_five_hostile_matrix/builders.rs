@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::harness::certification::{
     digest_parts, HostileExpectation, ParityAnchor, RejectionCertificationRow,
 };
@@ -22,20 +23,20 @@ use crate::projection_consumption::ProjectionConsumptionCertifiedSourceSurface;
 
 const CAPABILITY_IDENTITY: &str = "milestone_nine_five_cross_lane";
 
-pub fn canonical_rows() -> Vec<MilestoneNineFiveHostileRow> {
+pub fn canonical_rows() -> Result<Vec<MilestoneNineFiveHostileRow>, IdentityDerivationDenial> {
     let direct_table_retained = direct_table_lane(
         ProjectionConsumptionCertifiedSourceSurface::RetainedDerivedArtifactBinding,
-    );
+    )?;
     let direct_table_live =
-        direct_table_lane(ProjectionConsumptionCertifiedSourceSurface::LiveArtifactBinding);
-    let named_scope_table = named_scope_table_lane();
-    let direct_detail_live = direct_detail_live_lane();
-    let template_detail_live = template_detail_live_lane();
-    let grouped_ordinary = grouped_ordinary_lane();
-    let grouped_preserved = grouped_preserved_lane();
-    let template_public_bridge_table = template_public_bridge_table_lane();
+        direct_table_lane(ProjectionConsumptionCertifiedSourceSurface::LiveArtifactBinding)?;
+    let named_scope_table = named_scope_table_lane()?;
+    let direct_detail_live = direct_detail_live_lane()?;
+    let template_detail_live = template_detail_live_lane()?;
+    let grouped_ordinary = grouped_ordinary_lane()?;
+    let grouped_preserved = grouped_preserved_lane()?;
+    let template_public_bridge_table = template_public_bridge_table_lane()?;
 
-    vec![
+    Ok(vec![
         admitted_row(
             "named-scope-table-retained-derived-parity",
             MilestoneNineFivePerturbationClass::NamedScopeTableRetainedDerivedParity,
@@ -84,21 +85,24 @@ pub fn canonical_rows() -> Vec<MilestoneNineFiveHostileRow> {
             &template_public_bridge_table,
             &direct_table_live,
         ),
-    ]
+    ])
 }
 
-pub fn rejection_rows() -> Vec<
-    RejectionCertificationRow<
-        MilestoneNineFivePerturbationClass,
-        MilestoneNineFiveHostileLaneBundle,
-        MilestoneNineFiveHostileRejectionBundle,
+pub fn rejection_rows() -> Result<
+    Vec<
+        RejectionCertificationRow<
+            MilestoneNineFivePerturbationClass,
+            MilestoneNineFiveHostileLaneBundle,
+            MilestoneNineFiveHostileRejectionBundle,
+        >,
     >,
+    IdentityDerivationDenial,
 > {
-    let grouped_preserved = grouped_preserved_lane();
-    let preserved_detail = preserved_detail_lane();
+    let grouped_preserved = grouped_preserved_lane()?;
+    let preserved_detail = preserved_detail_lane()?;
     let support_digest = application_support_report().report_digest().to_string();
 
-    vec![
+    Ok(vec![
         rejection_row(
             "grouped-preserved-reuse-basis-erasure-denied",
             MilestoneNineFivePerturbationClass::GroupedPreservedReuseBasisErasureDenied,
@@ -117,7 +121,7 @@ pub fn rejection_rows() -> Vec<
             )),
             &preserved_detail,
         ),
-    ]
+    ])
 }
 
 fn admitted_row(

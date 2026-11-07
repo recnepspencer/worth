@@ -298,6 +298,7 @@ fn profile_set_from_basis(ready: &CanonicalBasisSequence) -> FoundationalProfile
     let text = |name: &str| match entry(name).value() {
         CanonicalBasisValue::ExactText(value) => match value {
             crate::values::InternedString::Raw(value) => value.as_str(),
+            crate::values::InternedString::Stored(value) => value.as_str(),
             crate::values::InternedString::Symbol(symbol) => {
                 panic!("expected raw profile token, got symbol {}", symbol.0)
             }

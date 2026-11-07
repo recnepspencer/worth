@@ -24,6 +24,9 @@ pub(super) fn inspect<R>(
         kind,
         field,
         |value| match value {
+            Some(AspectValue::String(InternedString::Stored(text))) => {
+                Ok(inspect(Some(text.as_str())))
+            }
             Some(AspectValue::String(InternedString::Raw(text))) => {
                 Ok(inspect(Some(text.as_str())))
             }

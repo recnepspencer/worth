@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -26,7 +27,7 @@ impl WorthQueryPublicBridgeReaderLaneCertification {
         published_artifact_digests: Vec<String>,
         inventory: WorthQueryPublicBridgeReaderLaneInventory,
         sabotage: WorthQueryPublicBridgeReaderLaneSabotage,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let direct_materialization_read_count = inventory.direct_materialization_read_count();
         let has_projection_receipts = !projection_reads.is_empty()
             && projection_reads.iter().all(|read| {
@@ -89,8 +90,8 @@ impl WorthQueryPublicBridgeReaderLaneCertification {
             WorthQueryEvidenceTag::new("sabotage_rejected"),
             if sabotage.rejected() { "true" } else { "false" },
         )
-        .seal();
-        Self {
+        .seal()?;
+        Ok(Self {
             posture,
             projection_reads,
             projection_receipt_digests,
@@ -99,7 +100,7 @@ impl WorthQueryPublicBridgeReaderLaneCertification {
             direct_materialization_read_count,
             sabotage,
             digest,
-        }
+        })
     }
 
     pub fn posture(&self) -> WorthQueryPublicBridgeReaderLanePosture {

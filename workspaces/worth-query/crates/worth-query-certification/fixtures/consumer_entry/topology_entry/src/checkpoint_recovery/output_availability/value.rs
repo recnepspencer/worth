@@ -84,7 +84,7 @@ fn encode(value: &Snapshot) -> InternedString {
     InternedString::Raw(toml::to_string(value).expect("finite typed snapshot encodes"))
 }
 fn decode(value: InternedString) -> Option<Snapshot> {
-    let InternedString::Raw(value) = value else {
+    let Some(value) = (value).raw_text() else {
         return None;
     };
     toml::from_str(&value).ok()

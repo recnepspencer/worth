@@ -75,4 +75,5 @@ pub(in super::super) fn compose_support_report_identity(
         report.counters().support_report_generation_count(),
     )
     .seal()
+    .expect("fixture digest must fit")
 }

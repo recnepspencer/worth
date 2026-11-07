@@ -6,8 +6,9 @@ fn proof_stops_at_compatibility_when_no_bridge_request_is_supplied() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let handle = proof_handle(request_execution, "main");
-    let proof =
-        handle.orchestrate_signal_compatibility_proof(orchestration_input(&handle, "face-a"));
+    let proof = handle
+        .orchestrate_signal_compatibility_proof(orchestration_input(&handle, "face-a"))
+        .expect("fixture digest must fit");
 
     assert_eq!(
         proof.request().request_kind(),
@@ -29,7 +30,9 @@ fn wrong_world_is_preserved_through_signal_orchestration() {
 
     let left = proof_handle(request_execution, "left");
     let right = proof_handle(request_execution, "right");
-    let outcome = right.orchestrate_signal_compatibility(orchestration_input(&left, "face-a"));
+    let outcome = right
+        .orchestrate_signal_compatibility(orchestration_input(&left, "face-a"))
+        .expect("fixture digest must fit");
     assert!(matches!(
         outcome,
         crate::signal_compatibility_orchestration::WorthQuerySignalCompatibilityOrchestrationOutcome::WrongWorld(_)
@@ -43,7 +46,10 @@ fn ordinary_outcome_keeps_signal_checked_topology_visible() {
 
     let left = proof_handle(request_execution, "left");
     let right = proof_handle(request_execution, "right");
-    match right.orchestrate_signal_compatibility_outcome(orchestration_input(&left, "face-a")) {
+    match right
+        .orchestrate_signal_compatibility_outcome(orchestration_input(&left, "face-a"))
+        .expect("fixture digest must fit")
+    {
         WorthQueryOrdinaryOutcome::WrongWorld(posture) => {
             assert_eq!(
                 posture
@@ -68,10 +74,13 @@ fn ordinary_outcome_keeps_deferred_distinct() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let handle = proof_handle(request_execution, "main");
-    match handle.orchestrate_signal_compatibility_outcome(local_input::<DeferredSignalInput>(
-        &handle,
-        "face-deferred",
-    )) {
+    match handle
+        .orchestrate_signal_compatibility_outcome(local_input::<DeferredSignalInput>(
+            &handle,
+            "face-deferred",
+        ))
+        .expect("fixture digest must fit")
+    {
         WorthQueryOrdinaryOutcome::Deferred(_) => {}
         _ => panic!("expected deferred ordinary outcome"),
     }
@@ -83,10 +92,13 @@ fn ordinary_outcome_keeps_unsupported_distinct() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let handle = proof_handle(request_execution, "main");
-    match handle.orchestrate_signal_compatibility_outcome(local_input::<UnsupportedSignalInput>(
-        &handle,
-        "face-unsupported",
-    )) {
+    match handle
+        .orchestrate_signal_compatibility_outcome(local_input::<UnsupportedSignalInput>(
+            &handle,
+            "face-unsupported",
+        ))
+        .expect("fixture digest must fit")
+    {
         WorthQueryOrdinaryOutcome::Unsupported(_) => {}
         _ => panic!("expected unsupported ordinary outcome"),
     }
@@ -100,6 +112,7 @@ fn ordinary_outcome_keeps_basis_mismatch_distinct() {
     let handle = admitted_basis_mismatch_handle(request_execution);
     match handle
         .orchestrate_signal_compatibility_outcome(basis_mismatch_input(&handle, "face-basis"))
+        .expect("fixture digest must fit")
     {
         WorthQueryOrdinaryOutcome::BasisMismatch(_) => {}
         _ => panic!("expected basis-mismatch ordinary outcome"),
@@ -113,7 +126,9 @@ fn ordinary_outcome_keeps_wrong_handle_distinct() {
 
     let left = proof_handle(request_execution, "shared");
     let right = admitted_same_world_different_handle(request_execution);
-    match right.orchestrate_signal_compatibility_outcome(orchestration_input(&left, "face-handle"))
+    match right
+        .orchestrate_signal_compatibility_outcome(orchestration_input(&left, "face-handle"))
+        .expect("fixture digest must fit")
     {
         WorthQueryOrdinaryOutcome::WrongHandle(posture) => {
             assert_eq!(

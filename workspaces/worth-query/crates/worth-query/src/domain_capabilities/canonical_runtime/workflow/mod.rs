@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use crate::domain_capabilities::denials::{
@@ -25,16 +26,19 @@ use self::semantics::{
 
 pub fn materialize_canonical_workflow_artifact<T>(
     contribution: WorthQueryMaterializationReadyWorkflowContribution<T>,
-) -> WorthQueryCanonicalWorkflowArtifact<T>
+) -> Result<WorthQueryCanonicalWorkflowArtifact<T>, IdentityDerivationDenial>
 where
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)
+    Ok(super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)?)
 }
 
 pub fn materialize_query_workflow_declaration<T>(
     contribution: WorthQueryMaterializationReadyWorkflowContribution<T>,
-) -> WorthQueryDomainCapabilityTransitionOutcome<QueryWorkflowDeclaration>
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<QueryWorkflowDeclaration>,
+    IdentityDerivationDenial,
+>
 where
     T: WorthQueryWorkflowDeclarationMaterializationTarget,
 {
@@ -42,20 +46,24 @@ where
     let payload = domain_contribution.payload();
     let target = domain_contribution.target();
     let Some(runtime_semantics) = payload.runtime_semantics() else {
-        return TransitionOutcome::Denied(missing_workflow_runtime_semantics_denial(
-            "workflow declaration materialization",
-            payload,
-            target.kind(),
-            domain_contribution.request_identity().clone(),
+        return Ok(TransitionOutcome::Denied(
+            missing_workflow_runtime_semantics_denial(
+                "workflow declaration materialization",
+                payload,
+                target.kind(),
+                domain_contribution.request_identity().clone(),
+            ),
         ));
     };
     if !workflow_runtime_semantics_match_posture(payload.posture(), runtime_semantics) {
-        return TransitionOutcome::Denied(inconsistent_workflow_runtime_semantics_denial(
-            "workflow declaration materialization",
-            payload,
-            runtime_semantics,
-            target.kind(),
-            domain_contribution.request_identity().clone(),
+        return Ok(TransitionOutcome::Denied(
+            inconsistent_workflow_runtime_semantics_denial(
+                "workflow declaration materialization",
+                payload,
+                runtime_semantics,
+                target.kind(),
+                domain_contribution.request_identity().clone(),
+            ),
         ));
     }
 
@@ -65,21 +73,21 @@ where
             runtime_snapshot_identity,
         } => {
             let binding_scope =
-                WorkflowBindingScopeField::Identity(&target.binding_identity());
+                WorkflowBindingScopeField::Identity(&target.binding_identity()?);
             crate::workflow::synthetic_runtime_workflow_binding_scoped_for_snapshot_binding_identity(
                 source_label.as_str(),
                 &binding_scope,
                 runtime_snapshot_identity.clone(),
-            )
+            )?
         }
         WorthQueryWorkflowRuntimeBindingSemantics::RuntimePreflightBundle { preflight } =>
             match scoped_runtime_preflight_workflow_binding_for_binding_identity(
                 preflight,
-                &target.binding_identity(),
+                &target.binding_identity()?,
             ) {
                 Ok(binding) => binding,
                 Err(error) => {
-                    return TransitionOutcome::Denied(
+                    return Ok(TransitionOutcome::Denied(
                         WorthQueryDomainCapabilityProgressionDenial::new(
                             WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture,
                             "workflow-preview",
@@ -91,7 +99,7 @@ where
                                 error.message()
                             ),
                         ),
-                    )
+                    ))
                 }
             },
         WorthQueryWorkflowRuntimeBindingSemantics::PreviewFoundation { .. } => {
@@ -100,12 +108,12 @@ where
                 runtime_semantics,
             ) {
                 Ok(foundation) => foundation,
-                Err(denial) => return TransitionOutcome::Denied(denial),
+                Err(denial) => return Ok(TransitionOutcome::Denied(denial)),
             };
             match bind_workflow_context(WorkflowBindingSource::PreviewFoundation(&foundation)) {
                 Ok(binding) => binding,
                 Err(error) => {
-                    return TransitionOutcome::Denied(
+                    return Ok(TransitionOutcome::Denied(
                         WorthQueryDomainCapabilityProgressionDenial::new(
                             WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture,
                             "workflow-preview",
@@ -117,7 +125,7 @@ where
                                 error.message()
                             ),
                         ),
-                    )
+                    ))
                 }
             }
         }
@@ -130,7 +138,7 @@ where
         runtime_semantics.freshness_policy().clone(),
     );
 
-    match admit_query_workflow_declaration(&binding, request) {
+    Ok(match admit_query_workflow_declaration(&binding, request) {
         Ok(declaration) => TransitionOutcome::Success(declaration),
         Err(error) => TransitionOutcome::Denied(WorthQueryDomainCapabilityProgressionDenial::new(
             WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture,
@@ -143,7 +151,7 @@ where
                 error.message()
             ),
         )),
-    }
+    })
 }
 
 pub trait WorthQueryWorkflowDeclarationMaterializationTarget:

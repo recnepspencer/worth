@@ -37,7 +37,8 @@ fn grouped_contributions_reuse_member_progression_after_group_admission() {
                 WorthQuerySupportContributionAuthoring::declaration_support(
                     "support.shared",
                     "shared grouped support",
-                ),
+                )
+                .expect("fixture digest must fit"),
             ),
     );
 
@@ -73,13 +74,15 @@ fn grouped_contributions_from_admitted_declaration_reuse_grouped_authority_witho
     };
 
     reset_counting_geometry_canonicalization_count();
-    let result =
-        handle.grouped_contributions_checked(declaration.with_shared_support_contribution(
+    let result = handle.grouped_contributions_checked(
+        declaration.with_shared_support_contribution(
             WorthQuerySupportContributionAuthoring::declaration_support(
                 "support.shared",
                 "shared grouped support",
-            ),
-        ));
+            )
+            .expect("fixture digest must fit"),
+        ),
+    );
 
     assert!(
         result.is_ok(),
@@ -102,7 +105,8 @@ fn grouped_contributions_from_admitted_declaration_match_direct_grouped_path_ide
         WorthQueryExplanationContributionAuthoring::explains_fallback(
             "explain.member",
             "member-local fallback explanation",
-        ),
+        )
+        .expect("fixture digest must fit"),
     );
     let direct = match handle.grouped_contributions_checked(
         handle
@@ -113,7 +117,8 @@ fn grouped_contributions_from_admitted_declaration_match_direct_grouped_path_ide
                 WorthQuerySupportContributionAuthoring::declaration_support(
                     "support.shared",
                     "shared grouped support",
-                ),
+                )
+                .expect("fixture digest must fit"),
             )
             .with_member_contribution(1, member_explanation.clone()),
     ) {
@@ -138,7 +143,8 @@ fn grouped_contributions_from_admitted_declaration_match_direct_grouped_path_ide
                 WorthQuerySupportContributionAuthoring::declaration_support(
                     "support.shared",
                     "shared grouped support",
-                ),
+                )
+                .expect("fixture digest must fit"),
             )
             .with_member_contribution(1, member_explanation),
     ) {
@@ -193,12 +199,15 @@ fn grouped_contributions_from_admitted_declaration_reject_wrong_world_before_mem
     };
 
     reset_counting_geometry_canonicalization_count();
-    match right.grouped_contributions_checked(declaration.with_shared_support_contribution(
-        WorthQuerySupportContributionAuthoring::declaration_support(
-            "support.shared",
-            "shared grouped support",
+    match right.grouped_contributions_checked(
+        declaration.with_shared_support_contribution(
+            WorthQuerySupportContributionAuthoring::declaration_support(
+                "support.shared",
+                "shared grouped support",
+            )
+            .expect("fixture digest must fit"),
         ),
-    )) {
+    ) {
         Err(WorthQueryGroupedContributionStop::WrongWorld(stop)) => {
             assert_eq!(
                 stop.reason(),
@@ -233,12 +242,15 @@ fn grouped_contributions_from_admitted_declaration_reject_wrong_handle_before_me
     };
 
     reset_counting_geometry_canonicalization_count();
-    match right.grouped_contributions_checked(declaration.with_shared_support_contribution(
-        WorthQuerySupportContributionAuthoring::declaration_support(
-            "support.shared",
-            "shared grouped support",
+    match right.grouped_contributions_checked(
+        declaration.with_shared_support_contribution(
+            WorthQuerySupportContributionAuthoring::declaration_support(
+                "support.shared",
+                "shared grouped support",
+            )
+            .expect("fixture digest must fit"),
         ),
-    )) {
+    ) {
         Err(WorthQueryGroupedContributionStop::WrongHandle(stop)) => {
             assert_eq!(
                 stop.reason(),

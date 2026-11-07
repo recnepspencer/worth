@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_runtime_bridge::facade::{
     BridgeIdentityEvidence, RelationalBridgeSnapshotIdentityParts, TruthCommitIdentity,
     TruthSnapshotIdentity,
@@ -75,8 +76,8 @@ impl WorthQueryCommitIdentity {
             std::sync::Arc<str>,
             crate::identity_authority::QueryCommitIdentityKind,
         >,
-    ) -> Self {
-        super::truth_identity_admission::admit_external_commit_token(token)
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(super::truth_identity_admission::admit_external_commit_token(token)?)
     }
 
     pub fn absent() -> Self {
@@ -174,8 +175,8 @@ impl WorthQuerySnapshotIdentity {
             std::sync::Arc<str>,
             crate::identity_authority::QuerySnapshotIdentityKind,
         >,
-    ) -> Self {
-        super::truth_identity_admission::admit_external_snapshot_token(token)
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(super::truth_identity_admission::admit_external_snapshot_token(token)?)
     }
 
     pub(crate) fn bridge_identity(&self) -> Option<&TruthSnapshotIdentity> {
@@ -206,7 +207,7 @@ impl WorthQuerySnapshotIdentity {
                     WorthQueryEvidenceTag::new("snapshot_state"),
                     "empty-relational",
                 )
-                .seal()
+                .seal().expect("bounded record identity grammar: literals, primitive record coordinates, or already sealed identity tokens")
             }
             WorthQuerySnapshotIdentityInner::RelationalBridge { parts, .. } => {
                 WorthQueryEvidenceIdentity::compose(
@@ -220,7 +221,7 @@ impl WorthQuerySnapshotIdentity {
                     WorthQueryEvidenceTag::new("relational_version_id"),
                     parts.version_id() as usize,
                 )
-                .seal()
+                .seal().expect("bounded record identity grammar: literals, primitive record coordinates, or already sealed identity tokens")
             }
             WorthQuerySnapshotIdentityInner::Preview { evidence_identity } => {
                 evidence_identity.clone()

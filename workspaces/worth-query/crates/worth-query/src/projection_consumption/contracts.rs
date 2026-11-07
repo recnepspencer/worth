@@ -7,6 +7,7 @@ use super::source::{
     ProjectionSourceReferenceIdentity,
 };
 use super::DeclaredNativeFactContract;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ProjectionContractSourcePosture {
@@ -187,7 +188,7 @@ impl MaterializedProjectionContract {
 
 pub(crate) fn bind_materialized_projection_contract(
     admitted: &AdmittedProjectionConsumption,
-) -> MaterializedProjectionContract {
+) -> Result<MaterializedProjectionContract, IdentityDerivationDenial> {
     let declaration = admitted.declaration();
     let source = declaration.source();
     let support_posture = if admitted.warning_kinds().is_empty() {
@@ -214,8 +215,8 @@ pub(crate) fn bind_materialized_projection_contract(
         &fact_families,
         &support_posture,
         contract_source_posture(source.family()),
-    );
-    MaterializedProjectionContract {
+    )?;
+    Ok(MaterializedProjectionContract {
         declaration_digest: declaration.declaration_digest().to_string(),
         eligibility_digest: admitted.eligibility_digest().to_string(),
         query_digest: source.query_digest().map(str::to_string),
@@ -244,7 +245,7 @@ pub(crate) fn bind_materialized_projection_contract(
         fact_families,
         support_posture,
         contract_digest,
-    }
+    })
 }
 
 fn contract_source_posture(family: ProjectionSourceFamily) -> ProjectionContractSourcePosture {

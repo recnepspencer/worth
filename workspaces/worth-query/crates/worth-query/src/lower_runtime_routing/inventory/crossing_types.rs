@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryLowerRuntimeCrossingClassification {
     CanonicalLowerRuntimeReuse,
@@ -256,43 +257,45 @@ impl WorthQueryLowerRuntimeCrossingRow {
         self.required_action
     }
 
-    pub fn row_digest(&self) -> String {
-        self.row_identity().as_str().to_string()
+    pub fn row_digest(&self) -> Result<String, IdentityDerivationDenial> {
+        Ok(self.row_identity()?.as_str().to_string())
     }
 
-    fn row_identity(&self) -> WorthQueryEvidenceIdentity {
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "lower_runtime_crossing_row_v1",
-            )
-            .field_shape(WorthQueryEvidenceTag::new("seam"), self.seam_key.as_str())
-            .field_shape(
-                WorthQueryEvidenceTag::new("capability"),
-                self.capability_label,
-            )
-            .field_value(WorthQueryEvidenceTag::new("seam_path"), self.concrete_seam)
-            .field_shape(
-                WorthQueryEvidenceTag::new("classification"),
-                self.classification.as_str(),
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("route_kind"),
-                self.route_kind.as_str(),
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("owner"),
-                self.lower_runtime_owner.as_str(),
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("artifact"),
-                self.current_artifact_strength.as_str(),
-            )
-            .field_value(
-                WorthQueryEvidenceTag::new("required_action"),
-                self.required_action,
-            )
-            .seal()
+    fn row_identity(&self) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(WorthQueryEvidenceIdentity::compose(
+            WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "lower_runtime_crossing_row_v1",
+        )
+        .field_shape(WorthQueryEvidenceTag::new("seam"), self.seam_key.as_str())
+        .field_shape(
+            WorthQueryEvidenceTag::new("capability"),
+            self.capability_label,
+        )
+        .field_value(WorthQueryEvidenceTag::new("seam_path"), self.concrete_seam)
+        .field_shape(
+            WorthQueryEvidenceTag::new("classification"),
+            self.classification.as_str(),
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("route_kind"),
+            self.route_kind.as_str(),
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("owner"),
+            self.lower_runtime_owner.as_str(),
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("artifact"),
+            self.current_artifact_strength.as_str(),
+        )
+        .field_value(
+            WorthQueryEvidenceTag::new("required_action"),
+            self.required_action,
+        )
+        .seal()?)
     }
 }
 
@@ -310,22 +313,26 @@ impl WorthQueryLowerRuntimeCrossingInventory {
         self.rows
     }
 
-    pub fn inventory_digest(&self) -> WorthQueryEvidenceIdentity {
+    pub fn inventory_digest(&self) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
         let row_identities = self
             .rows
             .iter()
             .map(WorthQueryLowerRuntimeCrossingRow::row_identity)
-            .collect::<Vec<_>>();
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "lower_runtime_crossing_inventory_v1",
-            )
-            .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("rows"), &row_identities)
-            .seal()
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(WorthQueryEvidenceIdentity::compose(
+            WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "lower_runtime_crossing_inventory_v1",
+        )
+        .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("rows"), &row_identities)
+        .seal()?)
     }
 
-    pub fn classification_digest(&self) -> WorthQueryEvidenceIdentity {
+    pub fn classification_digest(
+        &self,
+    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
         let classification_identities = self
             .rows
             .iter()
@@ -340,17 +347,19 @@ impl WorthQueryLowerRuntimeCrossingInventory {
                 )
                 .seal()
             })
-            .collect::<Vec<_>>();
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "lower_runtime_crossing_classification_v1",
-            )
-            .field_evidence_identity_sequence(
-                WorthQueryEvidenceTag::new("rows"),
-                &classification_identities,
-            )
-            .seal()
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(WorthQueryEvidenceIdentity::compose(
+            WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "lower_runtime_crossing_classification_v1",
+        )
+        .field_evidence_identity_sequence(
+            WorthQueryEvidenceTag::new("rows"),
+            &classification_identities,
+        )
+        .seal()?)
     }
 }
 use crate::evidence_identity::{

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_foundational::facade::{
     AspectFieldLocator, AspectLocator, AspectMask, AspectMaskLocator, AspectValueLocator,
     BoundaryArtifactField, BoundaryArtifactLocator, FoundationalBoundaryEvidenceFreshnessPosture,
@@ -47,20 +48,22 @@ impl WorthQueryFoundationalInvalidationProjection {
 }
 
 impl super::WorthQueryConsumerInvalidationDelta {
-    pub fn foundational_projection(&self) -> WorthQueryFoundationalInvalidationProjection {
-        foundational_projection(
+    pub fn foundational_projection(
+        &self,
+    ) -> Result<WorthQueryFoundationalInvalidationProjection, IdentityDerivationDenial> {
+        Ok(foundational_projection(
             self,
             FoundationalBoundaryEvidenceFreshnessPosture::StaleRetained,
-        )
+        )?)
     }
 }
 
 pub(super) fn foundational_projection(
     delta: &super::WorthQueryConsumerInvalidationDelta,
     freshness: FoundationalBoundaryEvidenceFreshnessPosture,
-) -> WorthQueryFoundationalInvalidationProjection {
+) -> Result<WorthQueryFoundationalInvalidationProjection, IdentityDerivationDenial> {
     let semantic_boundary = BoundaryArtifactLocator::new(
-        super::foundational_identity::descriptive_boundary_id(delta),
+        super::foundational_identity::descriptive_boundary_id(delta)?,
         BoundaryArtifactField::Payload,
     );
     let scopes =
@@ -73,12 +76,12 @@ pub(super) fn foundational_projection(
         } else {
             Vec::new()
         };
-    WorthQueryFoundationalInvalidationProjection {
+    Ok(WorthQueryFoundationalInvalidationProjection {
         scopes,
         locality: delta.locality(),
         semantic_boundary,
         provenance: super::foundational_identity::provenance(semantic_boundary, freshness),
-    }
+    })
 }
 
 pub(super) fn foundational_scope(

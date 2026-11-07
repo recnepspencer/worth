@@ -1,5 +1,6 @@
 use crate::authorized_projection::AuthorizedProjectionArtifact;
 use crate::canonicalization::CanonicalResultShapeArtifact;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::query_context::QueryContextExecutionArtifact;
 use crate::runtime::{
     WorthQueryDerivedArtifactBinding, WorthQueryLiveArtifactBinding, WorthQueryReadReceipt,

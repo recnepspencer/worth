@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -31,7 +32,9 @@ pub struct WorthQueryGraphTouchDescriptorRow {
 }
 
 impl WorthQueryGraphTouchDescriptorRow {
-    pub(crate) fn new(input: WorthQueryGraphTouchDescriptorRowInput) -> Self {
+    pub(crate) fn new(
+        input: WorthQueryGraphTouchDescriptorRowInput,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let row_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::GraphTouchDescriptorRow)
                 .field_shape(WorthQueryEvidenceTag::new("role"), "graph-touch-row")
@@ -99,8 +102,8 @@ impl WorthQueryGraphTouchDescriptorRow {
                     WorthQueryEvidenceTag::new("symbolic_aspect_reference_count"),
                     input.symbolic_aspect_reference_count,
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             component_index: input.component_index,
             mutation_family: input.mutation_family,
             read_verb: input.read_verb,
@@ -115,7 +118,7 @@ impl WorthQueryGraphTouchDescriptorRow {
             has_existing_truth_binding: input.has_existing_truth_binding,
             symbolic_aspect_reference_count: input.symbolic_aspect_reference_count,
             row_digest,
-        }
+        })
     }
 
     pub fn component_index(&self) -> usize {

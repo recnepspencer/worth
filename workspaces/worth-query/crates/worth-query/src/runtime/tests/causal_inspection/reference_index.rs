@@ -13,21 +13,25 @@ fn changed_anchor_with_route_signal_and_inspection() -> CausalObservationAnchor 
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         "indexed-query-inspection-reference",
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::BridgeRoute,
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         "indexed-bridge-route-reference",
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::SignalInvalidation,
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         "indexed-signal-invalidation-reference",
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
             ],
-        ),
+        )
+        .expect("positive fixture identity fits canonical digest bounds"),
         CausalInspectionReason::ChangedResult,
     )
     .unwrap()
@@ -54,7 +58,8 @@ fn indexed_evidence_reference_resolution_uses_index_records_without_scan_fallbac
             ),
         )
         .unwrap(),
-    ]);
+    ])
+    .expect("fixture digest must fit");
 
     let resolution = resolve_indexed_causal_evidence_references(
         anchor,
@@ -63,7 +68,8 @@ fn indexed_evidence_reference_resolution_uses_index_records_without_scan_fallbac
             CausalEvidenceFamily::SignalInvalidation,
         ],
         &index,
-    );
+    )
+    .expect("fixture digest must fit");
 
     let CausalEvidenceReferenceResolution::Resolved {
         reference_set,
@@ -116,13 +122,15 @@ fn indexed_reference_resolution_denies_missing_index_record_for_anchor_carried_f
             "indexed-query-inspection-reference",
         ),
     )
-    .unwrap()]);
+    .unwrap()])
+    .expect("fixture digest must fit");
 
     let resolution = resolve_indexed_causal_evidence_references(
         anchor,
         &[CausalEvidenceFamily::BridgeRoute],
         &index,
-    );
+    )
+    .expect("fixture digest must fit");
 
     let CausalEvidenceReferenceResolution::MissingRequiredEvidence { denial, counters } =
         resolution
@@ -172,13 +180,15 @@ fn indexed_reference_resolution_ignores_unrelated_retained_index_records() {
             ),
         )
         .unwrap(),
-    ]);
+    ])
+    .expect("fixture digest must fit");
 
     let resolution = resolve_indexed_causal_evidence_references(
         anchor,
         &[CausalEvidenceFamily::BridgeRoute],
         &index,
-    );
+    )
+    .expect("fixture digest must fit");
 
     let CausalEvidenceReferenceResolution::Resolved {
         reference_set,
@@ -227,13 +237,15 @@ fn indexed_reference_resolution_lookup_cost_follows_anchor_reference_width_not_r
                 .unwrap(),
             );
         }
-        let index = causal_evidence_reference_index(index_records);
+        let index =
+            causal_evidence_reference_index(index_records).expect("fixture digest must fit");
 
         let resolution = resolve_indexed_causal_evidence_references(
             anchor,
             &[CausalEvidenceFamily::BridgeRoute],
             &index,
-        );
+        )
+        .expect("fixture digest must fit");
 
         let CausalEvidenceReferenceResolution::Resolved { counters, .. } = resolution else {
             panic!("expected exact indexed bridge route reference to resolve");
@@ -262,6 +274,7 @@ fn reference_index_record_denies_owner_mismatch_and_seals_fixture_reference_labe
         ),
     )
     .unwrap_err();
+    let owner_mismatch=match owner_mismatch { worth_query_execution::facade::causal_inspection::CausalInspectionConstructionStop::ReferenceIndex(denial)=>denial, other=>panic!("expected a semantic denial, got {other:?}"), };
 
     assert_eq!(
         owner_mismatch.kind(),

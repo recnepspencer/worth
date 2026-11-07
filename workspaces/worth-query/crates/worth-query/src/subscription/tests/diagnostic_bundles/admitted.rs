@@ -15,7 +15,8 @@ fn admitted_diagnostic_bundle_carries_offline_semantic_labels_and_canonical_dige
         &artifacts.declaration,
         &artifacts.admission,
         &artifacts.active_admission,
-    );
+    )
+    .expect("fixture digest must fit");
     let support_evidence =
         QuerySubscriptionSupportEvidence::admission(&artifacts.declaration, &artifacts.admission)
             .unwrap();
@@ -123,7 +124,8 @@ fn admitted_diagnostic_bundle_preserves_canonical_basis_posture_labels() {
         &artifacts.declaration,
         &artifacts.admission,
         &artifacts.active_admission,
-    );
+    )
+    .expect("fixture digest must fit");
     let support_evidence =
         QuerySubscriptionSupportEvidence::admission(&artifacts.declaration, &artifacts.admission)
             .unwrap();

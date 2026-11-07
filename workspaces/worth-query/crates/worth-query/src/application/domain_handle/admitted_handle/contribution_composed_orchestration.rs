@@ -8,6 +8,7 @@ use crate::contribution_composed_orchestration::{
     WorthQueryContributionComposedOrchestrationOutcome,
     WorthQueryContributionComposedOrchestrationTranscript,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::ordinary_outcome::WorthQueryOrdinaryOutcome;
 
 use super::WorthQueryInstalledDomainDeclarationContext;
@@ -26,7 +27,7 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        match orchestrate_declaration_with_contributions_on_handle(self, input).into_checked() {
+        match orchestrate_declaration_with_contributions_on_handle(self, input)?.into_checked() {
             WorthQueryContributionComposedOrchestrationOutcome::Bound(value) => Ok(value),
             other => Err(other),
         }
@@ -35,32 +36,37 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     pub fn orchestrate_declaration_with_contributions_outcome<I>(
         &self,
         input: WorthQueryContributionComposedOrchestrationInput<D, I>,
-    ) -> WorthQueryOrdinaryOutcome<WorthQueryContributionComposedOrchestration<D, I>>
+    ) -> Result<
+        WorthQueryOrdinaryOutcome<WorthQueryContributionComposedOrchestration<D, I>>,
+        IdentityDerivationDenial,
+    >
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        ordinary_outcome_from_contribution_composed_checked(
-            orchestrate_declaration_with_contributions_on_handle(self, input).into_checked(),
-        )
+        Ok(ordinary_outcome_from_contribution_composed_checked(
+            orchestrate_declaration_with_contributions_on_handle(self, input)?.into_checked(),
+        )?)
     }
 
     pub fn orchestrate_declaration_with_contributions_checked<I>(
         &self,
         input: WorthQueryContributionComposedOrchestrationInput<D, I>,
-    ) -> WorthQueryContributionComposedOrchestrationChecked<D, I>
+    ) -> Result<WorthQueryContributionComposedOrchestrationChecked<D, I>, IdentityDerivationDenial>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        orchestrate_declaration_with_contributions_on_handle(self, input).into_checked()
+        Ok(orchestrate_declaration_with_contributions_on_handle(self, input)?.into_checked())
     }
 
     pub fn orchestrate_declaration_with_contributions_proof<I>(
         &self,
         input: WorthQueryContributionComposedOrchestrationInput<D, I>,
-    ) -> WorthQueryContributionComposedOrchestrationTranscript<D, I>
+    ) -> Result<WorthQueryContributionComposedOrchestrationTranscript<D, I>, IdentityDerivationDenial>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        orchestrate_declaration_with_contributions_on_handle(self, input)
+        Ok(orchestrate_declaration_with_contributions_on_handle(
+            self, input,
+        )?)
     }
 }

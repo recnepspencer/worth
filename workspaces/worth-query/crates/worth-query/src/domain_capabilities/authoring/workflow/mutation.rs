@@ -4,6 +4,7 @@ use crate::domain_capabilities::payloads::{
     WorthQueryWorkflowContributionPosture, WorthQueryWorkflowLoweringSemantics,
     WorthQueryWorkflowRuntimeBindingSemantics, WorthQueryWorkflowRuntimeSemantics,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQuerySnapshotIdentity;
 use crate::workflow::{
     MutationLoweringInput, WorkflowAuthorityTargetFamily, WorkflowBudgetClass, WorkflowCostClass,
@@ -19,8 +20,8 @@ impl WorthQueryWorkflowContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
         preview_session_identity: BridgePreviewSessionIdentity,
-    ) -> Self {
-        Self::with_runtime_semantics(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_runtime_semantics(
             WorthQueryWorkflowContributionPosture::PromotionEligible,
             semantic_code,
             detail,
@@ -31,7 +32,7 @@ impl WorthQueryWorkflowContributionAuthoring {
                 ),
                 WorkflowFreshnessPolicy::AllowExplicitRebind,
             ),
-        )
+        )?)
     }
 
     pub fn confirmation_required_mutation_reconciliation(
@@ -41,8 +42,8 @@ impl WorthQueryWorkflowContributionAuthoring {
         authority_binding_identity: WorthQueryEvidenceIdentity,
         entity_id: EntityId,
         desired_aspect_fields: AspectFieldPatch,
-    ) -> Self {
-        Self::with_runtime_and_lowering_semantics(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_runtime_and_lowering_semantics(
             WorthQueryWorkflowContributionPosture::ConfirmationRequired,
             semantic_code,
             detail,
@@ -59,7 +60,7 @@ impl WorthQueryWorkflowContributionAuthoring {
                     desired_aspect_fields,
                 },
             ),
-        )
+        )?)
     }
 
     pub fn confirmation_required_mutation_reconciliation_from_preflight(
@@ -69,8 +70,8 @@ impl WorthQueryWorkflowContributionAuthoring {
         authority_binding_identity: WorthQueryEvidenceIdentity,
         entity_id: EntityId,
         desired_aspect_fields: AspectFieldPatch,
-    ) -> Self {
-        Self::with_runtime_and_lowering_semantics(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_runtime_and_lowering_semantics(
             WorthQueryWorkflowContributionPosture::ConfirmationRequired,
             semantic_code,
             detail,
@@ -85,7 +86,7 @@ impl WorthQueryWorkflowContributionAuthoring {
                     desired_aspect_fields,
                 },
             ),
-        )
+        )?)
     }
 }
 

@@ -103,7 +103,7 @@ fn stale_installation_generation_denies_artifact_transfer_before_consumer_access
         )
         .unwrap()
         .start_workflow(&mut workspace)
-        .unwrap()
+        .unwrap().unwrap()
         .advance(
             "produce",
             domain::WorthQueryWorkflowValue::Text("produce".into()),
@@ -147,7 +147,7 @@ fn foreign_runtime_denies_artifact_progression_before_consumer_access() {
         )
         .unwrap()
         .start_workflow(&mut owner)
-        .unwrap()
+        .unwrap().unwrap()
         .advance(
             "produce",
             domain::WorthQueryWorkflowValue::Text("retain-observer-lease".into()),
@@ -205,7 +205,7 @@ fn undeclared_predecessor_denies_before_artifact_transfer_or_consumer_access() {
         )
         .unwrap()
         .start_workflow(&mut workspace)
-        .unwrap()
+        .unwrap().unwrap()
         .advance(
             "produce",
             domain::WorthQueryWorkflowValue::Text("produce".into()),

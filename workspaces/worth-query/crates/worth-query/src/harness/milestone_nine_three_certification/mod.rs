@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod builders;
 mod evidence;
 mod lane_fixtures;
@@ -179,11 +180,11 @@ pub struct MilestoneNineThreeCertificationAdapter;
 
 impl MilestoneNineThreeCertificationAdapter {
     pub fn query_subscription_bridge_parity_and_diagnostic_sufficiency_test(
-    ) -> MilestoneNineThreeCertificationMatrix {
-        MilestoneNineThreeCertificationMatrix {
+    ) -> Result<MilestoneNineThreeCertificationMatrix, IdentityDerivationDenial> {
+        Ok(MilestoneNineThreeCertificationMatrix {
             suite_name: "Query Subscription Bridge Parity And Diagnostic Sufficiency Test",
-            rows: builders::canonical_rows(),
-            rejection_rows: builders::rejection_rows(),
-        }
+            rows: builders::canonical_rows()?,
+            rejection_rows: builders::rejection_rows()?,
+        })
     }
 }

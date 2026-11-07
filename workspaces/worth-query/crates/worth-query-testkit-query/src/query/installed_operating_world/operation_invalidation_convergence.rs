@@ -22,8 +22,12 @@ pub fn observe_delivery(
     workspace: &runtime::WorthQueryWorkspace,
 ) -> ObservedInvalidation {
     let delta = lease.consumer_invalidation_delta(delivery).unwrap();
-    let semantic = delta.semantic_projection();
-    let foundational = delta.foundational_projection();
+    let semantic = delta
+        .semantic_projection()
+        .expect("fixture digest must fit");
+    let foundational = delta
+        .foundational_projection()
+        .expect("fixture digest must fit");
     let maintenance_ordinal = delta.maintenance_ordinal();
     let counters = delta.counters();
     let epoch_counters = delta.epoch_counters();
@@ -32,7 +36,8 @@ pub fn observe_delivery(
         .unwrap_or_else(|_| panic!("current replay-convergence delta did not readmit"));
     let admitted = admitted
         .admitted_semantic_projection(workspace)
-        .expect("current admitted delta retains semantic continuity");
+        .expect("current admitted delta retains semantic continuity")
+        .expect("fixture digest must fit");
     ObservedInvalidation {
         semantic,
         admitted_bytes: *admitted.canonical_bytes(),

@@ -14,6 +14,7 @@ pub(super) fn compose_preview_intent_receipt_identity(
             "preview-local-staged-no-authoritative-execution",
         )
         .seal()
+        .expect("fixture digest must fit")
 }
 
 pub(super) fn compose_preview_intent_receipt_inspection_basis_identity(
@@ -35,6 +36,7 @@ pub(super) fn compose_preview_intent_receipt_inspection_basis_identity(
         receipt.basis_evidence_identity(),
     )
     .seal()
+    .expect("fixture digest must fit")
 }
 
 pub(super) fn compose_preview_intent_receipt_inspection_identity(
@@ -80,6 +82,7 @@ pub(super) fn compose_preview_intent_receipt_inspection_identity(
             receipt.receipt_identity(),
         )
         .seal()
+        .expect("fixture digest must fit")
 }
 
 pub(super) fn compose_preview_intent_receipt_inspection_identity_for_inspection(
@@ -127,4 +130,5 @@ pub(super) fn compose_preview_intent_receipt_inspection_identity_for_inspection(
             inspection.receipt_identity(),
         )
         .seal()
+        .expect("fixture digest must fit")
 }

@@ -23,6 +23,7 @@ impl JournalPositionSchedule {
 
     fn position_schedule(&self) -> WorthQueryJournalPositionSchedule {
         WorthQueryJournalPositionSchedule::derive(self.positions.clone())
+            .expect("fixture digest must fit")
     }
 
     fn duplicate_first_position_schedule(&self) -> WorthQueryJournalPositionSchedule {
@@ -33,7 +34,7 @@ impl JournalPositionSchedule {
                 .expect("schedule should carry at least one position")
                 .clone(),
         );
-        WorthQueryJournalPositionSchedule::derive(positions)
+        WorthQueryJournalPositionSchedule::derive(positions).expect("fixture digest must fit")
     }
 }
 
@@ -229,6 +230,7 @@ fn inventory_digest(forbidden_count: usize, required_count: usize, missing_count
         missing_count,
     )
     .seal()
+    .expect("fixture digest must fit")
     .as_str()
     .to_string()
 }

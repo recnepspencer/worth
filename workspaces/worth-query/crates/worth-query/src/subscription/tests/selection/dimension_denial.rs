@@ -4,7 +4,8 @@ use crate::view_shape_live::LiveViewShapeFamily;
 
 #[test]
 fn malformed_family_dimensions_deny_before_slice_count_is_repaired() {
-    let input = LiveQueryAdmissionArtifact::for_test_grouped_with_missing_grouping_width();
+    let input = LiveQueryAdmissionArtifact::for_test_grouped_with_missing_grouping_width()
+        .expect("fixture digest must fit");
 
     let error = select_query_subscription_family(input, roomy_budget()).unwrap_err();
 
@@ -25,7 +26,8 @@ fn view_family_mismatch_denies_before_bridge_lowering() {
         LiveQueryFamily::Detail,
         Some(LiveViewShapeFamily::KanbanGrouped),
         QuerySubscriptionConstructionSource::FacadeLive,
-    );
+    )
+    .expect("fixture digest must fit");
 
     let error = select_query_subscription_family(input, roomy_budget()).unwrap_err();
 

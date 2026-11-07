@@ -187,7 +187,10 @@ pub fn build_query_diff_result_bundle(
         context,
         change_set.result_digest(),
         change_set.prediction_drift_outcome(),
-    );
+    )
+    .map_err(|cause| {
+        QueryContextAdmissionError::identity_refused(cause, context.counters().clone())
+    })?;
     let counter_snapshot_digest = compose_query_diff_counter_snapshot_digest(context, &change_set);
 
     Ok(QueryDiffResultBundle {

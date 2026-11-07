@@ -12,7 +12,7 @@ use super::CanonicalDigestWorkEvidence;
 pub struct CanonicalDigestDerivationInput {
     algorithm: CanonicalDigestAlgorithmMetadata,
     evidence: CanonicalDigestInputEvidence,
-    material: Vec<u8>,
+    digest: [u8; 32],
     work: CanonicalDigestWorkEvidence,
 }
 
@@ -20,13 +20,13 @@ impl CanonicalDigestDerivationInput {
     pub(super) fn new(
         algorithm: CanonicalDigestAlgorithmMetadata,
         evidence: CanonicalDigestInputEvidence,
-        material: Vec<u8>,
+        digest: [u8; 32],
         work: CanonicalDigestWorkEvidence,
     ) -> Self {
         Self {
             algorithm,
             evidence,
-            material,
+            digest,
             work,
         }
     }
@@ -39,8 +39,8 @@ impl CanonicalDigestDerivationInput {
         &self.evidence
     }
 
-    pub(super) fn material(&self) -> &[u8] {
-        &self.material
+    pub(super) fn digest(&self) -> [u8; 32] {
+        self.digest
     }
 
     pub const fn work(&self) -> CanonicalDigestWorkEvidence {
@@ -138,16 +138,14 @@ impl CanonicalDigestBasisSequence {
         }
     }
 
-    pub(super) fn new(
-        version: CanonicalizationRuleVersion,
-        domain: CanonicalBasisDomain,
-        entries: &[CanonicalBasisEntry],
-        cost: CanonicalizationCost,
+    pub(super) fn from_owned_export(
+        sequence: crate::canonicalization::CanonicalExportBasisSequence,
     ) -> Self {
+        let (version, domain, entries, cost) = sequence.into_parts();
         Self {
             version,
             domain,
-            entries: entries.to_vec(),
+            entries,
             cost,
         }
     }

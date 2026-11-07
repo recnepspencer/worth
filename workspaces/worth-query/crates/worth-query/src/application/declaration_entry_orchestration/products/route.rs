@@ -11,6 +11,7 @@ use crate::application::{
 use crate::application::{
     WorthQueryDeclarationRoutePlan, WorthQueryDeclarationRoutePlanTerminalError,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::common::route_orchestration_identity;
 #[cfg(test)]

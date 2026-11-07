@@ -18,13 +18,15 @@ pub(crate) fn runtime_backed_subscription_certification_summary(
         LiveQueryFamily::Detail,
         None::<LiveViewShapeFamily>,
         QuerySubscriptionConstructionSource::FacadeLive,
-    );
+    )
+    .expect("fixture digest must fit");
     let selection = select_query_subscription_family(
         live.clone(),
         QuerySubscriptionWorkBudget::scratch_buffer_only(8, 8, 8, 32, 1),
     )
     .expect("runtime-backed detail family should select");
-    let context = SubscriptionLifecycleCertificationContext::from_live_selection(&live, &selection);
+    let context = SubscriptionLifecycleCertificationContext::from_live_selection(&live, &selection)
+        .expect("fixture digest must fit");
     let declaration = declare_query_subscription(
         selection.clone(),
         QuerySubscriptionSliceBudget::scratch_buffer_only(8, 8, 8, 8, 8, 8, 8, 8),
@@ -53,17 +55,20 @@ pub(crate) fn runtime_backed_subscription_certification_summary(
             QuerySubscriptionScaleFixtureSize::Small,
             10,
             &activation,
-        ),
+        )
+        .expect("fixture digest must fit"),
         QuerySubscriptionScaleCounterSnapshot::from_activation(
             QuerySubscriptionScaleFixtureSize::Medium,
             100,
             &activation,
-        ),
+        )
+        .expect("fixture digest must fit"),
         QuerySubscriptionScaleCounterSnapshot::from_activation(
             QuerySubscriptionScaleFixtureSize::Large,
             1000,
             &activation,
-        ),
+        )
+        .expect("fixture digest must fit"),
     )
     .expect("runtime-backed detail family should certify scale slope");
     let mut runtime = ActiveSubscriptionRuntime::new();
@@ -82,7 +87,8 @@ pub(crate) fn runtime_backed_subscription_certification_summary(
     let attachment = attach_subscription_consumer(
         &mut runtime,
         &handle,
-        SubscriptionConsumerAttachmentRequest::admitted("runtime-certification", "cursor"),
+        SubscriptionConsumerAttachmentRequest::admitted("runtime-certification", "cursor")
+            .expect("fixture digest must fit"),
         SubscriptionConsumerAttachmentBudget::admitted(
             ActiveFanoutWidth::measured(1),
             ConsumerDeliveryPacingWidth::measured(1),
@@ -109,7 +115,8 @@ pub(crate) fn runtime_backed_subscription_certification_summary(
         attachment.lane_digest().clone(),
         "affected-scope",
         MaintenanceDeltaWidth::measured(1),
-    );
+    )
+    .expect("fixture digest must fit");
     let _delivery_window_digest = window.delivery_window_projection().label().to_string();
     let (delta, lowering_report, _) = lower_query_subscription_maintenance_delta(delta)
         .expect("runtime-backed detail family should lower maintenance delta");
@@ -166,7 +173,8 @@ pub(crate) fn runtime_backed_subscription_certification_summary(
             &declaration,
             &admission,
             &active_admission,
-        ),
+        )
+        .expect("fixture digest must fit"),
         QuerySubscriptionSupportEvidence::admission(&declaration, &admission)
             .expect("runtime-backed detail family should admit support evidence"),
     )
@@ -204,11 +212,13 @@ pub(crate) fn runtime_backed_subscription_certification_summary(
             QuerySubscriptionSupportSubject::activation(
                 &declaration,
                 &prepare_subscription_activation(admission.clone()),
-            ),
+            )
+            .expect("fixture digest must fit"),
             QuerySubscriptionSupportEvidence::declaration(&declaration),
         )
         .expect_err("activation support should fail closed for hostile runtime coverage"),
-    );
+    )
+    .expect("fixture digest must fit");
     let selection_context = QuerySubscriptionDiagnosticSelectionContext::from_selection(&selection);
     let denied_trace = trace_denied_query_subscription_diagnostics(
         &selection_context,
@@ -250,7 +260,8 @@ pub(crate) fn runtime_backed_subscription_certification_summary(
         QuerySubscriptionLifecycleCoverageClass::ActiveLifecycle,
     )
     .expect("runtime-backed detail family should admit hostile certification row");
-    let matrix = build_query_subscription_family_coverage_matrix(vec![admitted_row, hostile_row]);
+    let matrix = build_query_subscription_family_coverage_matrix(vec![admitted_row, hostile_row])
+        .expect("fixture digest must fit");
     let handle = build_certified_family_coverage_handle(
         &matrix,
         declaration.family(),

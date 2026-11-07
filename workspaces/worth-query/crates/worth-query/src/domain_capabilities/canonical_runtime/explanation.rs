@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use crate::domain_capabilities::denials::{
@@ -54,27 +55,30 @@ impl WorthQueryExplanationInspectionReview {
 
 pub fn materialize_canonical_explanation_artifact<T>(
     contribution: WorthQueryMaterializationReadyExplanationContribution<T>,
-) -> WorthQueryCanonicalExplanationArtifact<T>
+) -> Result<WorthQueryCanonicalExplanationArtifact<T>, IdentityDerivationDenial>
 where
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)
+    Ok(super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)?)
 }
 
 pub(crate) fn materialize_query_causal_inspection_artifact<T>(
     contribution: WorthQueryMaterializationReadyExplanationContribution<T>,
-) -> WorthQueryDomainCapabilityTransitionOutcome<QueryCausalInspectionArtifact>
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<QueryCausalInspectionArtifact>,
+    IdentityDerivationDenial,
+>
 where
     T: crate::domain_capabilities::WorthQueryLowerRuntimeContributionTargetBinding,
 {
-    let review = match materialize_query_causal_inspection_review(contribution) {
+    let review = match materialize_query_causal_inspection_review(contribution)? {
         TransitionOutcome::Success(review) => review,
-        TransitionOutcome::Denied(denial) => return TransitionOutcome::Denied(denial),
-        TransitionOutcome::Stale(stale) => return TransitionOutcome::Stale(stale),
+        TransitionOutcome::Denied(denial) => return Ok(TransitionOutcome::Denied(denial)),
+        TransitionOutcome::Stale(stale) => return Ok(TransitionOutcome::Stale(stale)),
         TransitionOutcome::RebindRequired(rebind) => {
-            return TransitionOutcome::RebindRequired(rebind);
+            return Ok(TransitionOutcome::RebindRequired(rebind));
         }
-        TransitionOutcome::Failed(failure) => return TransitionOutcome::Failed(failure),
+        TransitionOutcome::Failed(failure) => return Ok(TransitionOutcome::Failed(failure)),
         TransitionOutcome::Deferred(never) => match never {},
     };
     let domain_plan = review.plan();
@@ -84,13 +88,13 @@ where
     let domain_target_kind = review.target_kind();
     let materialization_policy = domain_plan.materialization_policy();
     let redaction_policy = domain_plan.redaction_policy();
-    match domain_plan.admission() {
+    Ok(match domain_plan.admission() {
         CausalInspectionProofFlow::Admitted(inspection) => {
             let Some(envelope) = review.bridge_envelope() else {
-                return TransitionOutcome::Denied(missing_bridge_envelope_denial(
+                return Ok(TransitionOutcome::Denied(missing_bridge_envelope_denial(
                     &domain_contribution_semantic_code,
                     request_identity.clone(),
-                ));
+                )));
             };
             match materialize_admitted_causal_inspection(
                 inspection,
@@ -101,14 +105,16 @@ where
                 Ok(artifact) => TransitionOutcome::Success(artifact),
                 Err(error) => TransitionOutcome::Denied(
                     WorthQueryDomainCapabilityProgressionDenial::new(
-                        WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture,
+                        causal_stop_progression_kind(
+                            &error,
+                            WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture,
+                        ),
                         "explanation-inspection",
                         domain_target_kind,
                         request_identity.clone(),
                         format!(
-                            "admitted causal inspection materialization denied for `{}` with `{}`",
+                            "admitted causal inspection materialization denied for `{}` with `{error:?}`",
                             domain_contribution_semantic_code,
-                            error.kind().as_str(),
                         ),
                     ),
                 ),
@@ -116,10 +122,10 @@ where
         }
         CausalInspectionProofFlow::Advisory(inspection) => {
             let Some(envelope) = review.bridge_envelope() else {
-                return TransitionOutcome::Denied(missing_bridge_envelope_denial(
+                return Ok(TransitionOutcome::Denied(missing_bridge_envelope_denial(
                     &domain_contribution_semantic_code,
                     request_identity.clone(),
-                ));
+                )));
             };
             match materialize_advisory_causal_inspection(
                 inspection,
@@ -130,43 +136,60 @@ where
                 Ok(artifact) => TransitionOutcome::Success(artifact),
                 Err(error) => TransitionOutcome::Denied(
                     WorthQueryDomainCapabilityProgressionDenial::new(
-                        WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture,
+                        causal_stop_progression_kind(
+                            &error,
+                            WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture,
+                        ),
                         "explanation-inspection",
                         domain_target_kind,
                         request_identity.clone(),
                         format!(
-                            "advisory causal inspection materialization denied for `{}` with `{}`",
+                            "advisory causal inspection materialization denied for `{}` with `{error:?}`",
                             domain_contribution_semantic_code,
-                            error.kind().as_str(),
                         ),
                     ),
                 ),
             }
         }
         CausalInspectionProofFlow::Denied(inspection) => {
-            TransitionOutcome::Success(materialize_denied_causal_inspection(
+            match materialize_denied_causal_inspection(
                 inspection,
                 None,
                 redaction_policy,
                 materialization_policy,
-            ))
+            ) {
+                Ok(artifact) => TransitionOutcome::Success(artifact),
+                Err(error) => TransitionOutcome::Denied(WorthQueryDomainCapabilityProgressionDenial::new(
+                    causal_stop_progression_kind(
+                        &crate::runtime::CausalInspectionConstructionStop::Digest(error),
+                        WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture,
+                    ),
+                    "explanation-inspection",
+                    domain_target_kind,
+                    request_identity.clone(),
+                    format!("denied causal inspection materialization refused: {error:?}"),
+                )),
+            }
         }
-    }
+    })
 }
 
 pub(crate) fn materialize_query_causal_inspection_review<T>(
     contribution: WorthQueryMaterializationReadyExplanationContribution<T>,
-) -> WorthQueryDomainCapabilityTransitionOutcome<WorthQueryExplanationInspectionReview>
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<WorthQueryExplanationInspectionReview>,
+    IdentityDerivationDenial,
+>
 where
     T: crate::domain_capabilities::WorthQueryLowerRuntimeContributionTargetBinding,
 {
     let domain_contribution = contribution.payload();
     let payload = domain_contribution.payload();
     let Some(runtime_semantics) = payload.runtime_semantics() else {
-        return TransitionOutcome::Denied(missing_runtime_semantics_denial(
+        return Ok(TransitionOutcome::Denied(missing_runtime_semantics_denial(
             payload.semantic_code(),
             domain_contribution.request_identity().clone(),
-        ));
+        )));
     };
 
     let request = match request_causal_inspection(
@@ -178,33 +201,36 @@ where
     ) {
         Ok(request) => request,
         Err(error) => {
-            return TransitionOutcome::Denied(WorthQueryDomainCapabilityProgressionDenial::new(
-                WorthQueryDomainCapabilityProgressionDenialKind::InconsistentCanonicalMaterializationSemantics,
+            return Ok(TransitionOutcome::Denied(WorthQueryDomainCapabilityProgressionDenial::new(
+                causal_stop_progression_kind(
+                    &error,
+                    WorthQueryDomainCapabilityProgressionDenialKind::InconsistentCanonicalMaterializationSemantics,
+                ),
                 "explanation-inspection",
                 domain_contribution.target().kind(),
                 domain_contribution.request_identity().clone(),
                 format!(
-                    "causal inspection request denied for `{}` with `{}`: {}",
+                    "causal inspection request denied for `{}`: {error:?}",
                     payload.semantic_code(),
-                    error.kind().as_str(),
-                    error.message(),
                 ),
-            ));
+            )));
         }
     };
 
-    TransitionOutcome::Success(WorthQueryExplanationInspectionReview {
-        semantic_code: payload.semantic_code().to_string(),
-        request_identity: domain_contribution.request_identity().clone(),
-        target_kind: domain_contribution.target().kind(),
-        bridge_envelope: runtime_semantics.bridge_envelope().cloned(),
-        plan: CausalInspectionPlan::from_resolved_request(
-            runtime_semantics.reference_set().clone(),
-            request,
-            runtime_semantics.redaction_policy(),
-            runtime_semantics.materialization_policy(),
-        ),
-    })
+    Ok(TransitionOutcome::Success(
+        WorthQueryExplanationInspectionReview {
+            semantic_code: payload.semantic_code().to_string(),
+            request_identity: domain_contribution.request_identity().clone(),
+            target_kind: domain_contribution.target().kind(),
+            bridge_envelope: runtime_semantics.bridge_envelope().cloned(),
+            plan: CausalInspectionPlan::from_resolved_request(
+                runtime_semantics.reference_set().clone(),
+                request,
+                runtime_semantics.redaction_policy(),
+                runtime_semantics.materialization_policy(),
+            )?,
+        },
+    ))
 }
 
 fn missing_runtime_semantics_denial(
@@ -235,4 +261,26 @@ fn missing_bridge_envelope_denial(
             "bridge-backed causal inspection materialization requires a bridge envelope for `{semantic_code}`"
         ),
     )
+}
+
+fn causal_stop_progression_kind(
+    error: &crate::runtime::CausalInspectionConstructionStop,
+    ordinary: WorthQueryDomainCapabilityProgressionDenialKind,
+) -> WorthQueryDomainCapabilityProgressionDenialKind {
+    use crate::runtime::CausalInspectionConstructionStop as Stop;
+    match error {
+        Stop::Digest(cause) => {
+            WorthQueryDomainCapabilityProgressionDenialKind::EvidenceIdentityDerivationDenied(
+                *cause,
+            )
+        }
+        Stop::Bridge(
+            worth_runtime_bridge::facade::BridgeCausalEnvelopeConstructionStop::Digest(cause),
+        ) => WorthQueryDomainCapabilityProgressionDenialKind::BridgeDigestRefused(*cause),
+        Stop::Bridge(_)
+        | Stop::Anchor(_)
+        | Stop::Request(_)
+        | Stop::ReferenceIndex(_)
+        | Stop::Materialization(_) => ordinary,
+    }
 }

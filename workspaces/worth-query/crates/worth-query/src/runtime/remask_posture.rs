@@ -1,5 +1,6 @@
 use super::WorthQueryRuntimeStateKind;
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::evidence_identities::runtime_remask_posture_identity;
 use crate::evidence_identity::{
@@ -143,23 +144,24 @@ impl WorthQueryRuntimeRemaskPosture {
         tenant_schema_digest: impl Into<String>,
         relationship_proof_digest: impl Into<String>,
         schema_context_digest: impl Into<String>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let policy_digest = policy_digest.into();
         let tenant_truth_digest = tenant_truth_digest.into();
         let tenant_schema_digest = tenant_schema_digest.into();
         let relationship_proof_digest = relationship_proof_digest.into();
         let schema_context_digest = schema_context_digest.into();
-        let policy_identity = remask_drift_label_identity("remask_policy_label_v1", &policy_digest);
+        let policy_identity =
+            remask_drift_label_identity("remask_policy_label_v1", &policy_digest)?;
         let tenant_truth_identity =
-            remask_drift_label_identity("remask_tenant_truth_label_v1", &tenant_truth_digest);
+            remask_drift_label_identity("remask_tenant_truth_label_v1", &tenant_truth_digest)?;
         let tenant_schema_identity =
-            remask_drift_label_identity("remask_tenant_schema_label_v1", &tenant_schema_digest);
+            remask_drift_label_identity("remask_tenant_schema_label_v1", &tenant_schema_digest)?;
         let relationship_proof_identity = remask_drift_label_identity(
             "remask_relationship_proof_label_v1",
             &relationship_proof_digest,
-        );
+        )?;
         let schema_context_identity =
-            remask_drift_label_identity("remask_schema_context_label_v1", &schema_context_digest);
+            remask_drift_label_identity("remask_schema_context_label_v1", &schema_context_digest)?;
         let remask_identity = runtime_remask_posture_identity(
             disposition_kind,
             reason_kind,
@@ -171,7 +173,7 @@ impl WorthQueryRuntimeRemaskPosture {
             &relationship_proof_identity,
             &schema_context_identity,
         );
-        Self {
+        Ok(Self {
             disposition_kind,
             reason_kind,
             support_identity,
@@ -182,15 +184,15 @@ impl WorthQueryRuntimeRemaskPosture {
             relationship_proof_identity,
             schema_context_identity,
             remask_identity,
-        }
+        })
     }
 
     pub(crate) fn from_activation_projection(
         projection: &WorthQueryRuntimeRemaskProjection,
         support_identity: &WorthQueryEvidenceIdentity,
         basis_identity: &WorthQueryEvidenceIdentity,
-    ) -> Self {
-        Self::new(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             projection.disposition_kind,
             projection.reason_kind,
             support_identity.clone(),
@@ -200,7 +202,7 @@ impl WorthQueryRuntimeRemaskPosture {
             projection.tenant_schema_digest.clone(),
             projection.relationship_proof_digest.clone(),
             projection.schema_context_digest.clone(),
-        )
+        )?)
     }
 
     pub fn disposition_kind(&self) -> WorthQueryRuntimeRemaskDispositionKind {
@@ -276,12 +278,17 @@ impl WorthQueryRuntimeRemaskPosture {
     }
 }
 
-fn remask_drift_label_identity(identity_family: &str, digest: &str) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            identity_family,
-        )
-        .field_shape(WorthQueryEvidenceTag::new("digest"), digest)
-        .seal()
+fn remask_drift_label_identity(
+    identity_family: &str,
+    digest: &str,
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                identity_family,
+            )
+            .field_shape(WorthQueryEvidenceTag::new("digest"), digest)
+            .seal()?,
+    )
 }

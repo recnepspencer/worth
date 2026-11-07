@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryJournalIdentityInventoryEvidence {
     forbidden_pattern_count: usize,
@@ -116,16 +117,17 @@ impl WorthQueryJournalReplaySurfaceEvidence {
         expected_receipt_count: usize,
         committed_receipts: &[WorthQueryWriteReceipt],
         counter_snapshot: WorthQueryJournalReplayCounterSnapshot,
-    ) -> Self {
-        let committed_truth_identity = crate::runtime::journal_replay_truth_reconstruction_identity(
-            &committed_receipts
-                .iter()
-                .map(|receipt| receipt.committed_truth_identity().clone())
-                .collect::<Vec<_>>(),
-            expected_receipt_count,
-            0,
-        );
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        let committed_truth_identity =
+            crate::runtime::journal_replay_truth_reconstruction_identity(
+                &committed_receipts
+                    .iter()
+                    .map(|receipt| receipt.committed_truth_identity().clone())
+                    .collect::<Vec<_>>(),
+                expected_receipt_count,
+                0,
+            )?;
+        Ok(Self {
             journal_segment_identity_digest: outcome
                 .segment_identity()
                 .identity_digest()
@@ -141,7 +143,7 @@ impl WorthQueryJournalReplaySurfaceEvidence {
             published_artifact_digest: outcome.published_artifact_digest().as_str().to_string(),
             replay_outcome_digest: outcome.outcome_identity().as_str().to_string(),
             counter_snapshot,
-        }
+        })
     }
 
     pub fn certified(&self) -> bool {
