@@ -112,36 +112,6 @@ fn relink_rejects_visibility_tuple_mutation() {
 }
 
 #[test]
-fn completeness_recomputes_visibility_commitment() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let (runtime, root, mut altered_envelope) = committed_root_and_envelope(execution);
-    assert!(root.is_complete(&runtime.services.symbols.interner_snapshot()));
-    altered_envelope
-        .body_mut_for_test()
-        .patch
-        .authoritative_record_patches[0]
-        .contains_opaque_aspect ^= true;
-    let mut corrupted = root.as_ref().clone();
-    let committed = corrupted
-        .committed
-        .as_mut()
-        .expect("performed root owns committed axes");
-    committed.axes.visibility = RelationalBranchVisibilityCommitment::for_root(
-        &altered_envelope,
-        committed.axes.storage_root,
-        committed.axes.schema_root,
-        committed.axes.correctness_index,
-    );
-
-    assert!(
-        !corrupted.is_complete(&runtime.services.symbols.interner_snapshot()),
-        "completeness must reject a commitment to any different visible tuple"
-    );
-}
-
-#[test]
 fn visibility_commitment_binds_every_visible_tuple_axis() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);

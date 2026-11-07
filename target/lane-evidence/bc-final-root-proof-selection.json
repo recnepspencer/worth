@@ -1,0 +1,7 @@
+[
+  "completeness_recomputes_visibility_commitment",
+  "completeness_rejects_each_reconstructed_binding_axis_mismatch",
+  "request_root_refusal_preserves_original_and_releases_partial_backing",
+  "checkpoint_image_restores_publication_bases_and_creations_without_canonical_body_reads",
+  "public_inspection_artifacts_are_read_only_complete_root_evidence"
+]

@@ -299,3 +299,25 @@ Post-review added all-New funding guard fails before the complete invoice. Sourc
 BC finalfailed-name retry1/0/0, paired with unchanged two green public migrations. Full independent invoice:16533outer+6962payloads+696roster+152canonicalcursor+136original-bytecontrol=24479, exact caller retention; all original pressure/clone/restore/edit/final-zero assertions pass at unchanged416/1MiB/1M ceilings. Native funding untouched. Final scopedClippy exit0, known33lib/21lib-test warnings,no newwarning;7Rustlinecaps pass. Boundary/context and fresh independent source review follow. Current turn counts0cargo checks,3Clippy,5focusedbuilds,5selectedtest runs; added rounds explicitly justified above.
 
 Public three-court safe point committed2dbd922f6f after independent APPROVE; fresh no-history reviewer also APPROVE named and migration source. Finalboundary14(threeownedadapterfindings),context/fmt/Clippy/linecaps pass. BC9002 remains IN PROGRESS at actual root completeness owner fence and exact allocation claim; see turn-end-state.md. Counts0checks/3Clippy/5builds/5tests; no further source changes or Cargo planned.
+
+New turn: clean e7f2490cb1. Root completeness grant and dead-constructor ruling read.
+Exact shipping unchanged allocation traced; independent boundary review could not
+establish its exact public reservation identity. Complete safe-point batch deletes
+readmit_for_request and its explicitly retired whole test,extracts actual original
+recomputation/common completeness predicate into root-free value operations,uses
+existing descriptive Body writer,keeps shipping unchanged refusal test. Two pure
+units plus actual public inspection/image and unchanged refusal selected together.
+First scoped RootClippy follows whole batch. Proof-driver preparation had a Python
+quoting error before any test/build; fixed using a literal script. This turn has
+0checks,1Clippy invocation in progress,0focused builds,0test runs.
+
+Root Clippy exits0,32library/23lib-test warnings. No new warning sites versus the
+accepted prior full log; deleting the test makes two already-known library dead
+helpers unused in the test build too. Standing-rule probes for root_region.rs
+new_for_request and storage/residency/region_publication/full.rs initial_for_request
+both show Lifecycle/master differences,so leave them untouched and report them.
+Exact constructor search now returns no readmit_for_request hit in Native Rust.
+One owned five-name packet now builds all selected affected Root packages together.
+No Query/Store check or ignored/exhaustive test is selected.
+
+Root focused5/0/0 after one coherent build,including actual external public sharing inspector and operational image restoration plus untouched exact private refusal. No test or compiler failure and no rerun. Planned phase gates follow; live assertion retirement question remains pending,not assumed approved. Current0checks/1Clippy/1focusedbuild/1testrun.
