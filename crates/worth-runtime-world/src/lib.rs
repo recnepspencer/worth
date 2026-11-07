@@ -1,3 +1,5 @@
+#![recursion_limit = "256"]
+// Persistent aspect maps need this depth when proving runtime handles are Send/Sync.
 #![cfg_attr(
     not(test),
     deny(clippy::iter_over_hash_type, clippy::disallowed_methods)

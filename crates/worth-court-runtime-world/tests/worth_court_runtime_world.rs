@@ -1,3 +1,5 @@
+#![recursion_limit = "256"]
+// Persistent aspect maps need this depth when proving runtime handles are Send/Sync.
 #![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[path = "worth_court_runtime_world/compile_fail/mod.rs"]
 pub(crate) mod compile_fail;
