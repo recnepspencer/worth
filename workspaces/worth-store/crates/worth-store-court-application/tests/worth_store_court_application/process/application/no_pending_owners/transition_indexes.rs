@@ -1,5 +1,6 @@
 //! Private definitions join the actual positioned Home Target effect.
 use worth_execution::ExecutionRequest;
+mod promotion;
 mod publication;
 mod target;
 

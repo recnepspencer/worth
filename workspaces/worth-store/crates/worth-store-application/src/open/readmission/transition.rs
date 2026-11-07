@@ -7,7 +7,11 @@ pub(crate) use catalog_admission::{
 mod history;
 mod intent;
 pub(crate) use history::{HomeTransitionAdmission, ReadmittedHomeProgramTransitions};
+pub(crate) mod completion;
 mod owner;
+pub use completion::{
+    ApplicationHomeTransitionCompletionDenial, ApplicationHomeTransitionStepRejected,
+};
 mod publication;
 use publication::HomeIntentPublication;
 pub use publication::{
@@ -45,6 +49,8 @@ pub enum ApplicationHomeOwnerAdmissionDenial {
     Execution(worth_execution::WorkCeilingDenial),
     NativeRecoveryRequired,
     NativeCodecTransitionPending,
+    ProgramTransitionRequired,
+    TransitionAdmission(ApplicationHomeTransitionIntentDenial),
     JournalUnavailable {
         journal: &'static str,
         cause: OrderedJournalDenial,
@@ -89,10 +95,27 @@ pub(crate) fn require_no_pending_home_journals(
     for journal in HOME_JOURNALS {
         match journal.admission {
             HomeJournalAdmission::Native | HomeJournalAdmission::World => {}
+            HomeJournalAdmission::Transition => {
+                if !context
+                    .transition
+                    .settled(&context.descriptor.binding)
+                    .map_err(ApplicationHomeOwnerAdmissionDenial::TransitionAdmission)?
+                {
+                    require_empty_journal(context, journal.name, request)?;
+                }
+            }
             HomeJournalAdmission::RequireAbsent => {
                 require_empty_journal(context, journal.name, request)?;
             }
         }
+    }
+    if context.transition.required().is_some()
+        && !context
+            .transition
+            .settled(&context.descriptor.binding)
+            .map_err(ApplicationHomeOwnerAdmissionDenial::TransitionAdmission)?
+    {
+        return Err(ApplicationHomeOwnerAdmissionDenial::ProgramTransitionRequired);
     }
     Ok(())
 }

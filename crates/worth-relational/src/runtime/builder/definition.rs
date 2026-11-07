@@ -45,6 +45,17 @@ impl RelationalRuntimeDefinition {
         &self.configuration
     }
 
+    pub(in crate::runtime) fn into_home_configuration(
+        self,
+    ) -> Result<RelationalRuntimeConfig, crate::runtime::RelationalHomeProgramContractDenial> {
+        if !self.extensions.is_home_configuration_only() {
+            return Err(
+                crate::runtime::RelationalHomeProgramContractDenial::UnsupportedConfigurationChange,
+            );
+        }
+        Ok(self.configuration)
+    }
+
     pub fn build(self) -> Result<RelationalRuntime, RelationalRuntimeConstructionDenial> {
         self.build_with(None)
     }

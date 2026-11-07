@@ -19,6 +19,11 @@ struct PreparedWorldHomeDataState {
     _memory: Option<ExecutionMemoryReservation>,
 }
 impl PreparedWorldHomeData {
+    /// The same immutable preparation input, for attaching its actual writer.
+    pub fn home_binding(&self) -> &WorldDurableHomeBinding {
+        &self.state.expected
+    }
+
     pub fn from_home_source(
         expected: WorldDurableHomeBinding,
         source: Box<dyn WorldCheckpointReadSource>,
@@ -33,24 +38,6 @@ impl PreparedWorldHomeData {
         )?;
         if recovered.branches.len() > 1 {
             return Err(Denial::OccurrenceReadmissionRequired);
-        }
-        for origin in recovered.branch_origins() {
-            let crate::durability::WorldRecord::Branch {
-                program_revision, ..
-            } = &origin.record().record
-            else {
-                unreachable!("admitted branch origin")
-            };
-            if *program_revision != expected.program_revision() {
-                return Err(Denial::ProgramRevisionMismatch);
-            }
-        }
-        if recovered
-            .opens
-            .values()
-            .any(|open| open.program_revision != expected.program_revision())
-        {
-            return Err(Denial::ProgramRevisionMismatch);
         }
         let catalog = native_catalog::prepare(&recovered, request, selected_native)?;
         let memory = request

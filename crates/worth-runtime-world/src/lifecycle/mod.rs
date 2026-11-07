@@ -1,4 +1,6 @@
 mod clock;
+mod home_program_binding;
+pub use home_program_binding::{PreparedWorldHomeProgramBinding, WorldHomeProgramBindingDenial};
 mod close;
 pub(crate) use close::{checkpoint_close_step, RecoveredCloseReceipt};
 pub mod owner;

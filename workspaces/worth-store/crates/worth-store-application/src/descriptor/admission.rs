@@ -192,6 +192,7 @@ fn prepare(
         incarnation,
         binding,
         build,
+        _binding_memory: None,
     };
     let config = definition.configuration();
     let runtime = &config.execution.runtime_name;

@@ -94,6 +94,16 @@ impl RelationalRuntimeConfiguration {
 }
 
 impl RelationalRuntimeConfigurationBinding {
+    pub(in crate::runtime) fn try_home_promotion(
+        &self,
+    ) -> Option<std::sync::RwLockWriteGuard<'_, RelationalRuntimeConfigurationSnapshot>> {
+        match self.state.try_write() {
+            Ok(guard) => Some(guard),
+            Err(std::sync::TryLockError::Poisoned(cause)) => Some(cause.into_inner()),
+            Err(std::sync::TryLockError::WouldBlock) => None,
+        }
+    }
+
     /// Hold the configuration epoch through preparation or publication. The owner
     /// takes the matching write guard across initial branch and schema cutover.
     pub(crate) fn operation(

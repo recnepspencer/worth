@@ -24,7 +24,7 @@ impl RelationalRuntime {
         self.reconfigure(|configuration| {
             let binding = configuration.binding();
             let mut pair = binding.initial_installation();
-            let config = Arc::new(pair.config.as_ref().clone());
+            let config = Arc::clone(&pair.config);
             let contracts = Arc::new(pair.schema_contract_runtime.as_ref().clone());
             pair.config = config;
             pair.schema_contract_runtime = contracts;

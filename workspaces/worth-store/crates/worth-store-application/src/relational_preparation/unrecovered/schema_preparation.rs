@@ -5,6 +5,7 @@ use super::*;
 pub enum ApplicationHomeNativeSchemaPreparationDenial {
     Initialization(worth_relational::facade::runtime::RelationalInitialSchemaInstallationDenial),
     Source(ReadmissionDenial),
+    Transition(crate::ApplicationHomeTransitionIntentDenial),
 }
 
 /// Source-origin routing precedes schema effects. Existing receivers receive
@@ -43,7 +44,9 @@ impl UnrecoveredApplicationHome {
                 })
             }
             HomeInitializationOrigin::Available(RecoveryStorePresence::ExistingArtifacts) => {
-                let (native, source, maximum_kind, maximum_aspect) = self.relational.prepare_home_existing_schema_source(request)
+                let target = self.context.transition.acknowledged_target(&self.context.descriptor.binding)
+                    .map_err(Denial::Transition)?;
+                let (native, source, maximum_kind, maximum_aspect) = self.relational.prepare_home_existing_schema_source(request, target)
                     .map_err(Denial::Source)?;
                 Ok(ApplicationHomeNativeSchemaPreparation::Existing { native, source, maximum_kind, maximum_aspect })
             }

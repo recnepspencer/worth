@@ -36,6 +36,7 @@ impl RelationalRuntime {
             }),
             receiver_epoch,
             index_definitions: None,
+            configuration: None,
         })
     }
 }

@@ -19,7 +19,10 @@ mod catalog_receipt;
 pub use catalog_receipt::RelationalHomeProgramCatalogReceipt;
 mod catalog_source;
 pub use catalog_source::RelationalHomeProgramCatalogReadmissionSource;
+pub(in crate::runtime) mod configuration;
 mod coverage;
+mod promotion;
+pub use promotion::RelationalHomeProgramPromotionRefused;
 mod schema_compilation_denial;
 mod step_admission;
 mod target_step;
@@ -50,6 +53,11 @@ pub enum RelationalHomeProgramContractDenial {
     CallerEnvelope(worth_foundational::facade::HomeProgramTransitionCallerDenial),
     SourceContractChanged,
     SourceBasisMismatch,
+    UnsupportedConfigurationChange,
+    TargetAlreadyShared,
+    ReceiverConfigurationRequired,
+    PromotionContended,
+    OwnerUnavailable,
     Transaction(crate::mvcc::RelationalBranchTransactionAdmissionDenial),
     SchemaTransition(crate::runtime::RelationalSchemaTransitionAdmissionDenial),
 }
@@ -60,6 +68,7 @@ pub struct PreparedRelationalHomeProgramContracts {
     pub(crate) meaning: Arc<RelationalRootExecutionContracts>,
     pub(crate) receiver_epoch: crate::runtime::RelationalRuntimeConfigurationSnapshot,
     pub(crate) index_definitions: Option<Arc<crate::runtime::PreparedRelationalIndexDefinitions>>,
+    pub(crate) configuration: Option<Arc<crate::runtime::RelationalRuntimeConfig>>,
 }
 impl PreparedRelationalHomeProgramContracts {
     /// Attach privately prepared definitions from this actual Native owner.
@@ -123,20 +132,6 @@ pub(crate) struct RelationalRootExecutionContracts {
 }
 
 impl RelationalRuntime {
-    /// Release the before-service writer fence only with the Home owner's
-    /// actual final binding acknowledgement, checked against its attachment.
-    pub fn complete_home_program_transition(
-        &self,
-        completed: worth_proof::HomeProgramTransitionBindingCommitted,
-    ) -> Result<(), crate::durability::medium::RelationalHomeProgramWriteDenial> {
-        self.durability
-            .medium()
-            .ok_or(
-                crate::durability::medium::RelationalHomeProgramWriteDenial::TransitionNotRequested,
-            )?
-            .complete_home_program_transition(completed)
-    }
-
     /// Compile the complete successor without installing it or invoking a
     /// provider. Only a committed Home step can later admit it for execution.
     pub fn prepare_home_program_contracts(

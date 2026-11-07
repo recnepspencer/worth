@@ -113,7 +113,7 @@ pub fn admit_home(
             == worth_store::physical_runtime::RecoveryStorePresence::ExistingArtifacts
         {
             let descriptor = prepared_descriptor.descriptor();
-            let binding =
+            let mut binding =
                 worth_runtime_world::facade::WorldDurableHomeBinding::from_admitted_adapter(
                     crate::world_section::UnclaimedWorldSlot::owner_identity_for_home(
                         descriptor.identity,
@@ -121,6 +121,14 @@ pub fn admit_home(
                     descriptor.incarnation,
                     *descriptor.binding.selected().revision().bytes(),
                 );
+            if let Some(lineage) = prepared_descriptor
+                .world_program_lineage(execution)
+                .map_err(ApplicationHomeOpenRefusal::Transition)?
+            {
+                binding = binding
+                    .with_recorded_program_lineage(lineage)
+                    .map_err(ApplicationHomeOpenRefusal::World)?;
+            }
             let source = crate::world_section::checkpoint::prepare_source(
                 &selected_source,
                 &recovered.serving,
@@ -163,6 +171,7 @@ pub fn admit_home(
         let world_slot = crate::world_section::UnclaimedWorldSlot::from_admitted_home(
             Arc::clone(&recovered.serving),
             &descriptor,
+            world_data.as_ref().map(|data| data.home_binding().clone()),
             transition.authority(),
             transition.reserved_attempt_frontier(),
             &checkpoint,

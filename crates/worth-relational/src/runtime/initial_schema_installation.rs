@@ -6,6 +6,7 @@ use std::sync::Arc;
 
 mod application_publication;
 mod fresh_admission;
+mod home_target;
 mod inventory_digest;
 mod publication;
 mod receipt;

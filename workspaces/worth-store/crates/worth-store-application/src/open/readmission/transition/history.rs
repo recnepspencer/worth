@@ -14,6 +14,56 @@ struct ReadmittedHomeProgramTransition {
     _entry: OrderedJournalEntry,
 }
 impl ReadmittedHomeProgramTransitions {
+    pub(crate) fn acknowledged_target(
+        &self,
+        binding: &ApplicationHomeBinding,
+    ) -> Result<Option<worth_foundational::facade::HomeProgramTransitionTargetMeaning>, Denial>
+    {
+        let count = self.intents.elements().len() - usize::from(self.pending(binding)?.is_some());
+        Ok(count
+            .checked_sub(1)
+            .map(|last| self.intents.elements()[last].intent.plan().target_meaning()))
+    }
+
+    pub(crate) fn completed_binding(&self, binding: &ApplicationHomeBinding) -> bool {
+        self.intents
+            .elements()
+            .last()
+            .is_some_and(|last| last.intent.successor() == binding)
+    }
+
+    pub(crate) fn program_lineage(
+        &self,
+        binding: &ApplicationHomeBinding,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Option<std::sync::Arc<worth_runtime_world::facade::WorldHomeProgramLineage>>, Denial>
+    {
+        let count = self.intents.elements().len() - usize::from(self.pending(binding)?.is_some());
+        let rows = &self.intents.elements()[..count];
+        let Some(first) = rows.first() else {
+            return Ok(None);
+        };
+        let initial = first.intent.predecessor().selected().revision();
+        let current = binding.selected().revision();
+        let owner = first.intent.plan().predecessor().branch().owner();
+        let boundaries = rows.iter().map(|row| {
+            worth_foundational::facade::HomeProgramRevisionBoundary::from_recorded(
+                row.intent.predecessor().selected().revision(),
+                row.intent.successor().selected().revision(),
+                row.intent
+                    .assignments()
+                    .last()
+                    .expect("decoded nonempty original plan")
+                    .attempt(),
+            )
+        });
+        worth_runtime_world::facade::WorldHomeProgramLineage::from_recorded(
+            owner, initial, current, boundaries, request,
+        )
+        .map(Some)
+        .map_err(Denial::WorldLineage)
+    }
+
     pub(crate) fn read(
         serving: &ServingPhysicalRuntime,
         source: &SelectedHomeSource,

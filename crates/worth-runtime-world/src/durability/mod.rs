@@ -18,7 +18,9 @@ pub use prepared_home_source::{PreparedWorldHomeData, PreparedWorldHomeSource};
 mod frontiers;
 mod initial_components;
 pub(crate) use initial_components::RecordedWorldInitialComponents;
+mod home_program_lineage;
 mod medium;
+pub use home_program_lineage::WorldHomeProgramLineage;
 mod occurrence_custody;
 mod open_custody;
 pub(crate) use occurrence_custody::WorldOccurrenceCustody;
@@ -45,8 +47,8 @@ pub(crate) use association::{
     decode_association, encode_association, encode_home_transition_association,
 };
 pub(crate) use binding::{
-    ActualWorldPublication, WorldCommittedPublication, WorldDurableMediumBinding,
-    WorldDurablePublicationStop,
+    ActualWorldPublication, HomeProgramBindingReservation, WorldCommittedPublication,
+    WorldDurableMediumBinding, WorldDurablePublicationStop,
 };
 pub(crate) use frontiers::WorldIdentityFrontiers;
 pub use medium::{

@@ -64,6 +64,16 @@ pub(crate) struct RelationalBranchRootSchemaAuthority {
 }
 
 impl RelationalBranchRootSchemaAuthority {
+    pub(crate) fn registry_copy_bytes(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<u64, super::RelationalBranchRootCaptureDenial> {
+        registry_quote::retained(
+            self.registry(),
+            crate::schema::SchemaCompilationControl::Request(*request),
+        )
+    }
+
     /// The descriptor and its before-copy funding have one lexical lifetime.
     pub(crate) fn registry_digest_for_request(
         registry: &crate::schema::data::RelationalSchemaRegistry,

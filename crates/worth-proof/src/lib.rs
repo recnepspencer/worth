@@ -19,9 +19,10 @@ mod home_program_transition;
 pub use home_program_transition::{
     AdmittedHomeProgramTransitionCatalog, AdmittedHomeProgramTransitionExecution,
     AdmittedHomeProgramTransitionPlan, AdmittedHomeProgramTransitionStep,
-    CompletedHomeProgramTransitionSteps, HomeProgramTransitionAdmissionDenial,
-    HomeProgramTransitionAuthority, HomeProgramTransitionBindingCommitted,
-    HomeProgramTransitionOwner, HomeProgramTransitionRequired,
+    AdmittedHomeProgramTransitionSuccessor, CompletedHomeProgramTransitionSteps,
+    HomeProgramTransitionAdmissionDenial, HomeProgramTransitionAuthority,
+    HomeProgramTransitionBindingCommitted, HomeProgramTransitionOwner,
+    HomeProgramTransitionRequired,
 };
 mod home_world_selection;
 pub use home_world_selection::{

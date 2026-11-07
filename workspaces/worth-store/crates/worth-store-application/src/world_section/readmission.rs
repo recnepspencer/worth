@@ -1,5 +1,9 @@
 //! Concrete Home custody cannot skip Native recovery or duplicate its World slot.
 mod transition_catalog;
+mod transition_completion;
+pub use transition_completion::{
+    ApplicationHomeTransitionBindingStageDenial, ApplicationHomeTransitionFinishDenial,
+};
 use worth_execution::ExecutionRequest;
 use worth_proof::{AuthorityMarker, RelationalReadmitted, WorldReconciled};
 use worth_runtime_world::facade::RuntimeWorldOwner;
@@ -203,6 +207,11 @@ where
     }
     pub fn home_identity(&self) -> worth_foundational::facade::HomeIdentity {
         self.home.home_identity()
+    }
+    /// The current descriptor meaning on this same admitted Home. Reading it
+    /// grants neither transition authority nor permission to rewrite history.
+    pub fn binding(&self) -> &worth_foundational::facade::ApplicationHomeBinding {
+        self.home.binding()
     }
     pub fn incarnation(&self) -> worth_foundational::facade::HomeIncarnation {
         self.home.incarnation()

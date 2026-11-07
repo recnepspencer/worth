@@ -8,6 +8,39 @@ pub struct RuntimeWorldBranchPort {
     owner: Weak<dyn RuntimeWorldBranchService + Send + Sync>,
 }
 impl RuntimeWorldBranchPort {
+    /// Lend the same durable World's final source while the original Home
+    /// owner publishes its descriptor. The callback must not reenter this cell.
+    pub fn with_home_program_binding<R>(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        expected: &crate::branch::ProductBranchObservation,
+        required: &worth_proof::HomeProgramTransitionRequired,
+        successor: &worth_proof::AdmittedHomeProgramTransitionSuccessor<
+            &worth_foundational::facade::ApplicationHomeBinding,
+        >,
+        handoff: impl for<'owner> FnOnce(super::super::PreparedWorldHomeProgramBinding<'owner>) -> R,
+    ) -> Result<R, super::super::WorldHomeProgramBindingDenial> {
+        let service = self
+            .service()
+            .map_err(|_| super::super::WorldHomeProgramBindingDenial::OwnerUnavailable)?;
+        let mut handoff = Some(handoff);
+        let mut result = None;
+        service.with_home_program_binding(
+            request,
+            expected,
+            required,
+            successor,
+            &mut |prepared| {
+                result = Some(handoff
+                    .take()
+                    .expect("the original final-source guard lends once")(
+                    prepared
+                ));
+            },
+        )?;
+        Ok(result.expect("a successful final-source guard invokes its handoff"))
+    }
+
     /// Admit exact retained truth without claiming its source head is current.
     /// No destination is reserved and no component fork runs during admission.
     pub fn admit_retained_branch_source(

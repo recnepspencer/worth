@@ -7,6 +7,7 @@ impl UnrecoveredRelationalSection {
     pub fn prepare_home_existing_schema_source(
         &mut self,
         request: &ExecutionRequest<'_, '_>,
+        acknowledged_target: Option<worth_foundational::facade::HomeProgramTransitionTargetMeaning>,
     ) -> Result<
         (
             &mut RelationalRuntime,
@@ -43,9 +44,13 @@ impl UnrecoveredRelationalSection {
                     .map_err(Denial::HomePreparation)?;
                 Ok((
                     &mut self.attached.runtime,
-                    recovery
-                        .receiver_schema_data(request)
-                        .map_err(Denial::HomePreparation)?,
+                    match acknowledged_target {
+                        Some(target) => {
+                            recovery.schema_data(request, target.carrier(), target.schema())
+                        }
+                        None => recovery.receiver_schema_data(request),
+                    }
+                    .map_err(Denial::HomePreparation)?,
                     maximum_kind,
                     maximum_aspect,
                 ))

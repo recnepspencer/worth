@@ -112,3 +112,31 @@ fn transition_proofs_retain_original_backing_without_sharing_owner_authority() {
     drop(proof);
     assert_eq!(reclaimed.load(Ordering::SeqCst), 1);
 }
+
+#[test]
+fn successor_binding_requires_the_same_home_occurrence_incarnation_and_commitment() {
+    let installed = owner(1);
+    let required = installed.require_transition([7; 32]);
+    let successor = installed.admit_successor([7; 32], 42);
+    assert_eq!(
+        installed.authority().admit_successor(&required, &successor),
+        Ok(())
+    );
+    assert_eq!(*successor.binding(), 42);
+    assert_eq!(
+        installed
+            .authority()
+            .admit_successor(&required, &installed.admit_successor([8; 32], 42)),
+        Err(HomeProgramTransitionAdmissionDenial::CommitmentMismatch)
+    );
+    assert_eq!(
+        installed
+            .authority()
+            .admit_successor(&required, &owner(1).admit_successor([7; 32], 42)),
+        Err(HomeProgramTransitionAdmissionDenial::ForeignOwner)
+    );
+    assert_eq!(
+        owner(2).authority().admit_successor(&required, &successor),
+        Err(HomeProgramTransitionAdmissionDenial::StaleIncarnation)
+    );
+}

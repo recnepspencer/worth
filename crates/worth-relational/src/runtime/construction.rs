@@ -59,10 +59,18 @@ impl RuntimeExtensions {
 
     pub(crate) fn with_post_commit_consumer(
         mut self,
-        post_commit_consumer: std::sync::Arc<dyn crate::publication::PostCommitConsumer>,
+        post_commit_consumer: Option<std::sync::Arc<dyn crate::publication::PostCommitConsumer>>,
     ) -> Self {
-        self.post_commit_consumer = Some(post_commit_consumer);
+        self.post_commit_consumer = post_commit_consumer;
         self
+    }
+
+    pub(in crate::runtime) fn is_home_configuration_only(&self) -> bool {
+        self.custom_invariants.is_empty()
+            && self.managed_sources.is_empty()
+            && self.commit_strategy_executors.is_empty()
+            && self.post_commit_consumer.is_none()
+            && self.durable_medium.is_none()
     }
 
     pub(crate) fn with_durable_medium(

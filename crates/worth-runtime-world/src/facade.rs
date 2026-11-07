@@ -9,9 +9,10 @@ pub use crate::durability::{
     WorldCheckpointOriginRetirementDenial, WorldCheckpointPort, WorldCheckpointReadSource,
     WorldCheckpointReadView, WorldCheckpointSelection, WorldCheckpointSubject,
     WorldDurableArtifact, WorldDurableFrameDenial, WorldDurableHomeBinding,
-    WorldDurableMediumDenial, WorldPublicationCompletion, WorldPublicationObservation,
-    WorldPublicationTaskPosture, WorldReadmissionDenial, WORLD_ARTIFACT_PROTOCOL,
-    WORLD_ARTIFACT_VERSION, WORLD_CHECKPOINT_PROTOCOL, WORLD_CHECKPOINT_VERSION,
+    WorldDurableMediumDenial, WorldHomeProgramLineage, WorldPublicationCompletion,
+    WorldPublicationObservation, WorldPublicationTaskPosture, WorldReadmissionDenial,
+    WORLD_ARTIFACT_PROTOCOL, WORLD_ARTIFACT_VERSION, WORLD_CHECKPOINT_PROTOCOL,
+    WORLD_CHECKPOINT_VERSION,
 };
 
 // Public signatures below name the already-issued component owner bundles and
@@ -97,11 +98,11 @@ pub use crate::publication::{
 };
 
 pub use crate::lifecycle::{
-    MissingRuntimeWorldInput, PreparedWorldRelationalCutover, RuntimeWorldBranchCreationOutcome,
-    RuntimeWorldBranchPort, RuntimeWorldBuildDenial, RuntimeWorldClock, RuntimeWorldClockSource,
-    RuntimeWorldCloseDenial, RuntimeWorldCloseReport, RuntimeWorldExecutionPlacement,
-    RuntimeWorldHomeBuilder, RuntimeWorldInspectionPort, RuntimeWorldInstant,
-    RuntimeWorldLifecyclePort, RuntimeWorldObservationPort,
+    MissingRuntimeWorldInput, PreparedWorldHomeProgramBinding, PreparedWorldRelationalCutover,
+    RuntimeWorldBranchCreationOutcome, RuntimeWorldBranchPort, RuntimeWorldBuildDenial,
+    RuntimeWorldClock, RuntimeWorldClockSource, RuntimeWorldCloseDenial, RuntimeWorldCloseReport,
+    RuntimeWorldExecutionPlacement, RuntimeWorldHomeBuilder, RuntimeWorldInspectionPort,
+    RuntimeWorldInstant, RuntimeWorldLifecyclePort, RuntimeWorldObservationPort,
     RuntimeWorldOwnedAsyncManagedRevalidationDenial, RuntimeWorldOwnedAsyncRequestAdmissionDenial,
     RuntimeWorldOwnedAsyncRevalidationDenial, RuntimeWorldOwner, RuntimeWorldOwnerBuilder,
     RuntimeWorldOwnerLifecycleObservation, RuntimeWorldOwnerUnavailable,
@@ -109,7 +110,7 @@ pub use crate::lifecycle::{
     RuntimeWorldRecoveryPort, RuntimeWorldResultSnapshotCleanup,
     RuntimeWorldResultSnapshotCleanupDenial, RuntimeWorldResultSnapshotCleanupProgress,
     RuntimeWorldResultSnapshotCleanupReport, RuntimeWorldRetainedRecordReport,
-    RuntimeWorldServiceDenial,
+    RuntimeWorldServiceDenial, WorldHomeProgramBindingDenial,
 };
 
 pub use crate::publication::{

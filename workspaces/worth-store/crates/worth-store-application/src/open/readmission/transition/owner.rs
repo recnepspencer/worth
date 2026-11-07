@@ -6,6 +6,12 @@ pub(crate) struct HomeTransitionOwner {
     publication: std::sync::OnceLock<std::sync::Arc<super::HomeIntentPublication>>,
     resumed_executions:
         std::sync::Mutex<Option<worth_execution::ExecutionArray<std::sync::Mutex<bool>>>>,
+    pub(super) completion: std::sync::Mutex<super::completion::HomeTransitionCompletion>,
+    settled: Option<SettledHomeTransition>,
+}
+struct SettledHomeTransition {
+    acknowledged: worth_proof::HomeProgramTransitionBindingCommitted,
+    _catalog: worth_relational::facade::runtime::RelationalHomeProgramCatalogReceipt,
 }
 
 impl HomeTransitionOwner {
@@ -28,6 +34,8 @@ impl HomeTransitionOwner {
             observation,
             publication: std::sync::OnceLock::new(),
             resumed_executions: std::sync::Mutex::new(None),
+            completion: std::sync::Mutex::new(Default::default()),
+            settled: None,
         })
     }
 
@@ -78,6 +86,16 @@ impl HomeTransitionOwner {
 
     pub(crate) fn reserved_attempt_frontier(&self) -> Option<u64> {
         self.admission.history().reserved_attempt_frontier()
+    }
+
+    pub(crate) fn acknowledged_target(
+        &self,
+        binding: &worth_foundational::facade::ApplicationHomeBinding,
+    ) -> Result<
+        Option<worth_foundational::facade::HomeProgramTransitionTargetMeaning>,
+        super::ApplicationHomeTransitionIntentDenial,
+    > {
+        self.admission.history().acknowledged_target(binding)
     }
 
     pub(crate) fn observation(&self) -> super::ApplicationHomeTransitionAdmissionObservation {
@@ -156,6 +174,73 @@ impl HomeTransitionOwner {
 
     pub(crate) fn authority(&self) -> worth_proof::HomeProgramTransitionAuthority {
         self.seal.authority()
+    }
+
+    pub(super) fn admit_completed_steps<Source>(
+        &self,
+        binding: [u8; 32],
+        plan: [u8; 32],
+        source: Source,
+    ) -> worth_proof::CompletedHomeProgramTransitionSteps<Source> {
+        self.seal.admit_completed_steps(binding, plan, source)
+    }
+
+    pub(crate) fn admit_successor<'a>(
+        &self,
+        binding: &'a worth_foundational::facade::ApplicationHomeBinding,
+    ) -> worth_proof::AdmittedHomeProgramTransitionSuccessor<
+        &'a worth_foundational::facade::ApplicationHomeBinding,
+    > {
+        self.seal
+            .admit_successor(crate::descriptor::binding::commitment(binding), binding)
+    }
+
+    pub(crate) fn acknowledge_binding(
+        &self,
+        binding: &worth_foundational::facade::ApplicationHomeBinding,
+        plan: [u8; 32],
+    ) -> worth_proof::HomeProgramTransitionBindingCommitted {
+        self.seal
+            .admit_binding_committed(crate::descriptor::binding::commitment(binding), plan)
+    }
+
+    pub(crate) fn finish_binding(
+        &mut self,
+        acknowledged: worth_proof::HomeProgramTransitionBindingCommitted,
+        catalog: worth_relational::facade::runtime::RelationalHomeProgramCatalogReceipt,
+    ) {
+        self.settled = Some(SettledHomeTransition {
+            acknowledged,
+            _catalog: catalog,
+        });
+        // The final Native/World guards have ended. The actual intent is
+        // durable; its live preparation is no longer an owner operation.
+        // Releasing it here prevents our own old Source/reservation holding close.
+        drop(self.publication.take());
+    }
+
+    pub(crate) fn settled(
+        &self,
+        binding: &worth_foundational::facade::ApplicationHomeBinding,
+    ) -> Result<bool, super::ApplicationHomeTransitionIntentDenial> {
+        match &self.settled {
+            None => Ok(match &self.admission {
+                super::HomeTransitionAdmission::Current { history } => {
+                    history.completed_binding(binding)
+                }
+                super::HomeTransitionAdmission::Requested { .. } => false,
+            }),
+            Some(settled) => {
+                let required = self
+                    .seal
+                    .require_transition(crate::descriptor::binding::commitment(binding));
+                self.seal
+                    .authority()
+                    .admit_binding_committed(&required, &settled.acknowledged)
+                    .map_err(|_| super::ApplicationHomeTransitionIntentDenial::BindingLineage)?;
+                Ok(true)
+            }
+        }
     }
 
     pub(crate) fn required(&self) -> Option<worth_proof::HomeProgramTransitionRequired> {

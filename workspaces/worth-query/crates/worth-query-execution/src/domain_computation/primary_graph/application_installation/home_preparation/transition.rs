@@ -171,6 +171,7 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Sche
                     sources,
                 )
                 .and_then(|contracts| contracts.with_index_definitions(definitions))
+                .and_then(|contracts| contracts.with_receiver_configuration(&execution, definition))
                 .map_err(QueryHomeTransitionPreparationDenial::Native)
         })();
         match compiled {
