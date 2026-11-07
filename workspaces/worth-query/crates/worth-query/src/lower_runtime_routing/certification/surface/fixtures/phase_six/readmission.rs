@@ -86,7 +86,7 @@ pub(crate) fn representative_subscription_continuity_row(
             "subscription-continuity-route",
             &continuity_evidence,
         )?,
-    )?;
+    );
     let retained_evidence =
         crate::lower_runtime_routing::worth_query_lower_runtime_retained_evidence_identity(
             "phase-six-continuity-route",
@@ -291,7 +291,7 @@ fn readmission_row(
     let readmission = WorthQueryLowerRuntimeReadmissionReceipt::new(
         eligibility.clone(),
         &retained_evidence_identity,
-    )?;
+    );
     let boundary_receipt =
         WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_readmission_receipt(&readmission)?;
     let envelope = WorthQueryLowerRuntimeBoundaryEnvelope::from_readmission_receipt(

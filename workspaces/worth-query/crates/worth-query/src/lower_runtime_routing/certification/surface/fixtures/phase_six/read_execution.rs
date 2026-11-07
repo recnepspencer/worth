@@ -141,7 +141,7 @@ fn route_planned_read_row(
             "read-execution-engine-route",
             &read_evidence,
         )?,
-    )?;
+    );
     let retained_evidence_identity =
         crate::lower_runtime_routing::worth_query_lower_runtime_retained_evidence_identity(
             "phase-six-read-execution-route",
@@ -172,7 +172,7 @@ fn read_result_evidence_identity(
     result: &WorthQueryReadResult,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let receipt = result.receipt();
-    let snapshot_evidence_identity = receipt.snapshot_evidence_identity()?;
+    let snapshot_evidence_identity = receipt.snapshot_evidence_identity();
     let mut builder =
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_shape(

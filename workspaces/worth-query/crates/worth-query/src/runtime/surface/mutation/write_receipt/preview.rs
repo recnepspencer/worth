@@ -30,11 +30,11 @@ impl WorthQueryWriteReceipt {
         let preview_identity = preview_write_receipt_identity(label, sequence)?;
         let commit_identity = WorthQueryCommitIdentity::preview(preview_identity.clone());
         let commit_evidence_identity =
-            super::write_receipt_commit_evidence_identity(&commit_identity)?;
+            super::write_receipt_commit_evidence_identity(&commit_identity);
         let journal_position =
             WorthQueryJournalPosition::preview(preview_identity.clone(), sequence as u64)?;
         let snapshot_evidence_identity =
-            super::write_receipt_snapshot_evidence_identity(&snapshot_identity)?;
+            super::write_receipt_snapshot_evidence_identity(&snapshot_identity);
         let delta = preview_receipt_delta(command, &preview_identity)?;
         let inner = crate::memory_workspace::WorthQueryMutationReceipt {
             commit_identity,

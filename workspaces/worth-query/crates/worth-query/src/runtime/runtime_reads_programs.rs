@@ -177,11 +177,10 @@ impl WorthQueryRuntime {
     pub(in crate::runtime) fn current_snapshot_identity_with_request(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<WorthQuerySnapshotIdentity, IdentityDerivationDenial> {
-        Ok(self
-            .backend
+    ) -> WorthQuerySnapshotIdentity {
+        self.backend
             .current_snapshot_identity(execution)
-            .admit_runtime_backend_authority())
+            .admit_runtime_backend_authority()
     }
 
     pub fn install_program(

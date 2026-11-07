@@ -8,21 +8,15 @@ use super::evidence_projection::subscription_evidence_projection;
 impl QuerySubscriptionDeclarationCounters {
     pub fn counter_projection(
         &self,
-    ) -> Result<
-        QueryProjectionIdentity<String, QuerySubscriptionIdentityKind>,
-        IdentityDerivationDenial,
-    > {
-        Ok(subscription_evidence_projection(&self.evidence_identity()))
+    ) -> QueryProjectionIdentity<String, QuerySubscriptionIdentityKind> {
+        subscription_evidence_projection(&self.evidence_identity())
     }
 }
 
 impl ActiveSubscriptionCounters {
     pub fn counter_projection(
         &self,
-    ) -> Result<
-        QueryProjectionIdentity<String, QuerySubscriptionIdentityKind>,
-        IdentityDerivationDenial,
-    > {
-        Ok(subscription_evidence_projection(&self.evidence_identity()))
+    ) -> QueryProjectionIdentity<String, QuerySubscriptionIdentityKind> {
+        subscription_evidence_projection(&self.evidence_identity())
     }
 }

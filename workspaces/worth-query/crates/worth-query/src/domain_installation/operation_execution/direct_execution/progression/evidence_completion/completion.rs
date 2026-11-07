@@ -28,7 +28,7 @@ where
     ) -> Result<WorthQueryBoundExecutionOutcome<D, O, F, L, Output>, IdentityDerivationDenial> {
         let output_identity = self.output.operation_output_identity();
         let attachment =
-            WorthQueryDirectDomainEvidenceAttachment::new(&self, output_identity.clone())?;
+            WorthQueryDirectDomainEvidenceAttachment::new(&self, output_identity.clone());
         let material = self.material.take();
         let domain_evidence =
             match super::super::super::admit_direct_completion_content(attachment, material) {
@@ -159,12 +159,12 @@ impl WorthQueryDirectDomainEvidenceAttachment {
     fn new<D, O, F, L, Output>(
         completion: &WorthQueryValidatedDirectEvidenceCompletion<D, O, F, L, Output>,
         output_occurrence_identity: String,
-    ) -> Result<Self, IdentityDerivationDenial>
+    ) -> Self
     where
         L: BasisOperationLane,
         O: WorthQueryExecutableDomainOperation<D, F>,
     {
-        Ok(Self {
+        Self {
             operation_identity: completion
                 .bound
                 .definition()
@@ -185,7 +185,7 @@ impl WorthQueryDirectDomainEvidenceAttachment {
                 .map(|receipt| receipt.evidence_identity().to_owned())
                 .collect(),
             output_occurrence_identity,
-        })
+        }
     }
 
     pub(in crate::domain_installation::operation_execution) fn contract(

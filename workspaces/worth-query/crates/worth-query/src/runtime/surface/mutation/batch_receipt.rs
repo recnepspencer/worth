@@ -263,7 +263,7 @@ impl WorthQueryBatchWriteReceipt {
             write_receipts,
             authority_lane,
             basis_lane,
-            WorthQueryGraphCompositionBreadth::empty()?,
+            WorthQueryGraphCompositionBreadth::empty(),
             WorthQueryGraphCompositionProgram::empty()?,
             aggregates.touched_aspects,
             aggregates.affected_live_view_targets,

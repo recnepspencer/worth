@@ -206,9 +206,8 @@ pub(in crate::subscription) fn admission_artifact_identity(
     signal_width_limit: usize,
     activation_width_limit: usize,
     counters_identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "query_subscription_admission_artifact_v1",
@@ -252,8 +251,7 @@ pub(in crate::subscription) fn admission_artifact_identity(
                 activation_width_limit,
             )
             .field_evidence_identity(WorthQueryEvidenceTag::new("counters"), counters_identity)
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 pub(in crate::subscription) fn activation_checkpoint_identity(
@@ -261,9 +259,8 @@ pub(in crate::subscription) fn activation_checkpoint_identity(
     basis_binding_identity: &WorthQueryEvidenceIdentity,
     future_selection_projection_identity: &WorthQueryEvidenceIdentity,
     signal_strategy_identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "query_subscription_active_checkpoint_identity_v1",
@@ -281,8 +278,7 @@ pub(in crate::subscription) fn activation_checkpoint_identity(
                 WorthQueryEvidenceTag::new("signal_strategy"),
                 signal_strategy_identity,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 pub(in crate::subscription) fn activation_input_identity(
@@ -294,9 +290,8 @@ pub(in crate::subscription) fn activation_input_identity(
     signal_strategy_identity: &WorthQueryEvidenceIdentity,
     future_selection_projection_identity: &WorthQueryEvidenceIdentity,
     counters_identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "query_subscription_activation_input_v1",
@@ -324,6 +319,5 @@ pub(in crate::subscription) fn activation_input_identity(
                 signal_strategy_identity,
             )
             .field_evidence_identity(WorthQueryEvidenceTag::new("counters"), counters_identity)
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }

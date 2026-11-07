@@ -68,9 +68,8 @@ pub(in crate::subscription) fn preview_authoritative_sharing_denial_identity(
     authoritative_basis_binding_identity: &WorthQueryEvidenceIdentity,
     preview_checkpoint_identity: &WorthQueryEvidenceIdentity,
     authoritative_checkpoint_identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "preview_authoritative_sharing_denial_v1",
@@ -96,8 +95,7 @@ pub(in crate::subscription) fn preview_authoritative_sharing_denial_identity(
                 WorthQueryEvidenceTag::new("authoritative_checkpoint"),
                 authoritative_checkpoint_identity,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -169,9 +167,8 @@ pub(in crate::subscription) fn preview_promotion_rebinding_identity(
     authoritative_basis_binding_identity: &WorthQueryEvidenceIdentity,
     preview_checkpoint_identity: &WorthQueryEvidenceIdentity,
     authoritative_checkpoint_identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "preview_subscription_promotion_rebinding_v1",
@@ -192,8 +189,7 @@ pub(in crate::subscription) fn preview_promotion_rebinding_identity(
                 WorthQueryEvidenceTag::new("authoritative_checkpoint"),
                 authoritative_checkpoint_identity,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 #[allow(clippy::too_many_arguments)]

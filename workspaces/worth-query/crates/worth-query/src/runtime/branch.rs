@@ -51,7 +51,7 @@ impl<'a> WorthQueryBranchSession<'a> {
         options: WorthQueryBranchOptions,
         basis_admission: WorthQueryBranchBasisAdmission,
     ) -> Result<Self, IdentityDerivationDenial> {
-        let basis_snapshot_identity = runtime.current_snapshot_identity_with_request(execution)?;
+        let basis_snapshot_identity = runtime.current_snapshot_identity_with_request(execution);
         Ok(Self {
             label,
             runtime,

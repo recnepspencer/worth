@@ -49,7 +49,7 @@ pub(super) fn trace_from_stage_evidence(
         .collect();
     let trace_identity = diagnostic_trace_identity(
         terminal_stage.as_str(),
-        &counters.evidence_identity()?,
+        &counters.evidence_identity(),
         stage_trace_refs,
     )?;
     Ok(QuerySubscriptionDiagnosticTrace::from_parts(

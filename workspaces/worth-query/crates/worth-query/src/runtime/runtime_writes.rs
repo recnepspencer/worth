@@ -246,7 +246,7 @@ impl WorthQueryRuntime {
             | WorthQueryWriteCommand::VerifyExistingAspects { binding, .. } => {
                 Ok(synthetic_existing_assertion_receipt(
                     binding,
-                    &self.current_snapshot_identity_with_request(execution)?,
+                    &self.current_snapshot_identity_with_request(execution),
                     declared_aspect_value_digest,
                 )?)
             }

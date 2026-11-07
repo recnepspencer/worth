@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 pub(in crate::runtime) struct RuntimeLiveViewInspectionIdentityParts<'a> {
     pub view_name: &'a str,
@@ -35,10 +36,7 @@ pub(in crate::runtime) struct RuntimeLiveViewInspectionIdentityParts<'a> {
 
 pub(in crate::runtime) fn runtime_live_view_inspection_identity(
     parts: RuntimeLiveViewInspectionIdentityParts<'_>,
-) -> Result<
-    WorthQueryEvidenceIdentity,
-    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_shape(
@@ -186,12 +184,8 @@ pub(in crate::runtime) fn runtime_live_subscription_counter_inspection_identity(
     active_lane_handle_issue_count: u64,
     consumer_attachment_count: u64,
     consumer_attachment_denial_count: u64,
-) -> Result<
-    WorthQueryEvidenceIdentity,
-    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
-> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+) -> WorthQueryEvidenceIdentity {
+    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "worth_query_live_subscription_inspection_counters_v1",
@@ -252,6 +246,5 @@ pub(in crate::runtime) fn runtime_live_subscription_counter_inspection_identity(
                 WorthQueryEvidenceTag::new("consumer_attachment_denial"),
                 consumer_attachment_denial_count as usize,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }

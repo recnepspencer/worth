@@ -190,7 +190,7 @@ impl<D, O, F, L: BasisOperationLane> WorthQueryPublishedWorkflow<D, O, F, L> {
                 WorthQueryPromotionOnReferenceDenial::LineageSubjectEntityBindingUnavailable,
             ));
         };
-        if !self.publication_carries_entity(subject_entity)? {
+        if !self.publication_carries_entity(subject_entity) {
             return Ok(denied(
                 WorthQueryPromotionOnReferenceDenial::LineageSubjectNotCarriedByPublication,
             ));

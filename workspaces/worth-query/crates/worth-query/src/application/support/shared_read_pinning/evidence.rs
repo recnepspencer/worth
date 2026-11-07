@@ -144,7 +144,7 @@ impl WorthQuerySharedReadPinningCounterEvidence {
         unretired_pin_count: usize,
         shared_read_mint_row_clone_count: usize,
         reader_derived_evaluation_count: usize,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let counter_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::ApplicationSupportReport)
                 .field_usize(
@@ -167,17 +167,17 @@ impl WorthQuerySharedReadPinningCounterEvidence {
                     WorthQueryEvidenceTag::new("reader_derived_evaluation_count"),
                     reader_derived_evaluation_count,
                 )
-                .seal()?
+                .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
                 .as_str()
                 .to_string();
-        Ok(Self {
+        Self {
             committed_read_hot_path_lock_count,
             orphaned_generation_count,
             unretired_pin_count,
             shared_read_mint_row_clone_count,
             reader_derived_evaluation_count,
             counter_digest,
-        })
+        }
     }
 
     pub fn residue_count(&self) -> usize {
@@ -200,6 +200,6 @@ impl WorthQuerySharedReadPinningCounterEvidence {
             self.unretired_pin_count + 1,
             self.shared_read_mint_row_clone_count,
             self.reader_derived_evaluation_count,
-        )?)
+        ))
     }
 }

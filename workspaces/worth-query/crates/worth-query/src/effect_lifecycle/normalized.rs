@@ -197,11 +197,8 @@ impl NormalizedEffectIntent {
         &self.counters
     }
 
-    pub(crate) fn admitted_identity(
-        &self,
-    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(
-            WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
+    pub(crate) fn admitted_identity(&self) -> WorthQueryEvidenceIdentity {
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
                 .field_shape(
                     WorthQueryEvidenceTag::new("identity_family"),
                     "admitted_effect_intent_v1",
@@ -210,8 +207,7 @@ impl NormalizedEffectIntent {
                     WorthQueryEvidenceTag::new("normalized"),
                     &self.normalized_identity,
                 )
-                .seal()?,
-        )
+                .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
     }
 }
 

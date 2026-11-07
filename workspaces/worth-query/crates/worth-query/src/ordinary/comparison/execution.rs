@@ -224,7 +224,7 @@ fn assemble(
             structural_correspondence(left, right, candidate_budget, pair, counters)
         }
         super::WorthQueryComparisonIntent::Lineage => {
-            lineage_correspondence(left, right, pair, counters)?
+            lineage_correspondence(left, right, pair, counters)
         }
     })
 }
@@ -312,16 +312,16 @@ fn lineage_correspondence(
     right: WorthQueryReadResult,
     pair: WorthQueryComparisonBasisPairEvidence,
     counters: WorthQueryComparisonJourneyCounters,
-) -> Result<WorthQueryComparisonOutcome, IdentityDerivationDenial> {
+) -> WorthQueryComparisonOutcome {
     let ([left_row], [right_row]) = (left.rows(), right.rows()) else {
-        return Ok(stopped(
+        return stopped(
             WorthQueryComparisonStopSource::CorrespondenceDenied,
             WorthQueryComparisonNextAction::NarrowCandidates,
             "authoritative lineage comparison requires exactly one row on each basis",
             counters,
-        ));
+        );
     };
-    Ok(resolve_correspondence(
+    resolve_correspondence(
         CorrespondenceEvaluationRequest::lineage_only(
             left_row.identity().evidence_identity().as_str(),
             right_row.identity().evidence_identity().as_str(),
@@ -331,7 +331,7 @@ fn lineage_correspondence(
         left_row.identity().clone(),
         pair,
         counters.resolve_correspondence(),
-    ))
+    )
 }
 
 fn resolve_correspondence(

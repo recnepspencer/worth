@@ -79,7 +79,7 @@ pub(crate) fn representative_subscription_activation_row(
         .expect("subscription activation fixture should lower to bridge");
     let admission = admit_query_subscription(lowering, admission_budget())
         .expect("subscription activation fixture should admit");
-    let activation = prepare_subscription_activation(admission)?;
+    let activation = prepare_subscription_activation(admission);
     let activation_receipt = SubscriptionActivationReceipt::from_activation(
         "tasks.subscription",
         &activation,

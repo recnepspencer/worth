@@ -155,7 +155,7 @@ pub(crate) fn representative_signal_invalidation_row(
         )],
         bridge_authority,
     )
-    .admit_runtime_write_authority()?;
+    .admit_runtime_write_authority();
     let routing = SignalInvalidationRoutingReceipt::from_mutation_receipt(&mutation_receipt)
         .expect("representative signal routing fixture must carry bridge authority");
     let boundary_receipt =
@@ -292,7 +292,7 @@ pub(crate) fn representative_live_view_source_row(
     let route_plan = WorthQueryLowerRuntimeRoutePlan::new(
         eligibility.clone(),
         fixture_route_subject_identity("live-view-source-route", handle.name())?,
-    )?;
+    );
     let retained_evidence =
         crate::lower_runtime_routing::worth_query_lower_runtime_retained_evidence_identity(
             "representative-live-view-source",
@@ -377,7 +377,7 @@ pub(crate) fn representative_preview_basis_row(
             )?,
         )?;
     let handoff =
-        WorthQueryLowerRuntimeReadmissionReceipt::new(eligibility.clone(), &retained_evidence)?;
+        WorthQueryLowerRuntimeReadmissionReceipt::new(eligibility.clone(), &retained_evidence);
     let boundary_receipt =
         WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_readmission_receipt(&handoff)?;
     let envelope = WorthQueryLowerRuntimeBoundaryEnvelope::from_readmission_receipt(

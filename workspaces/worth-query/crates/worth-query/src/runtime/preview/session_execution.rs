@@ -21,7 +21,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
             self.pending_commands.len() + 1,
             &command,
             self.runtime
-                .current_snapshot_identity_with_request(execution)?,
+                .current_snapshot_identity_with_request(execution),
         )?;
         self.pending_commands.push(command);
         self.route_preview_execution(&receipt)?;

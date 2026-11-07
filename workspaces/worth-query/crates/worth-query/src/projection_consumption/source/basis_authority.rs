@@ -19,11 +19,8 @@ pub(crate) enum ProjectionSourceBasisAuthorityKind {
 }
 
 impl ProjectionSourceBasisAuthority {
-    pub fn canonical_digest(
-        &self,
-    ) -> Result<Option<worth_foundational::facade::CanonicalDerivedDigest>, IdentityDerivationDenial>
-    {
-        Ok(match &self.kind {
+    pub fn canonical_digest(&self) -> Option<worth_foundational::facade::CanonicalDerivedDigest> {
+        match &self.kind {
             ProjectionSourceBasisAuthorityKind::RuntimeSnapshot(identity) => {
                 Some(identity.evidence_identity().canonical_digest().clone())
             }
@@ -31,7 +28,7 @@ impl ProjectionSourceBasisAuthority {
                 Some(identity.canonical_digest().clone())
             }
             ProjectionSourceBasisAuthorityKind::QueryContext { .. } => None,
-        })
+        }
     }
 
     pub fn snapshot_identity(&self) -> Option<&WorthQuerySnapshotIdentity> {
@@ -50,8 +47,8 @@ impl ProjectionSourceBasisAuthority {
         }
     }
 
-    pub fn terminal_projection_for_reporting(&self) -> Result<String, IdentityDerivationDenial> {
-        Ok(match &self.kind {
+    pub fn terminal_projection_for_reporting(&self) -> String {
+        match &self.kind {
             ProjectionSourceBasisAuthorityKind::RuntimeSnapshot(identity) => {
                 identity.evidence_identity().as_str().to_string()
             }
@@ -61,7 +58,7 @@ impl ProjectionSourceBasisAuthority {
             ProjectionSourceBasisAuthorityKind::Certification(identity) => {
                 identity.as_str().to_string()
             }
-        })
+        }
     }
 
     pub(crate) fn runtime_snapshot(identity: WorthQuerySnapshotIdentity) -> Self {

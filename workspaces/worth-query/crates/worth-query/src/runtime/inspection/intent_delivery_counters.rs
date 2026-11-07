@@ -21,9 +21,7 @@ pub struct WorthQueryIntentInspectionDeliveryCounters {
 }
 
 impl WorthQueryIntentInspectionDeliveryCounters {
-    pub(in crate::runtime) fn from_receipt(
-        receipt: &WorthQueryIntentReceipt,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    pub(in crate::runtime) fn from_receipt(receipt: &WorthQueryIntentReceipt) -> Self {
         let affected_live_view_count = receipt.affected_live_view_targets().len();
         let affected_derived_view_count = receipt.affected_derived_view_targets().len();
         let considered_computed_view_count = receipt.considered_computed_view_count();
@@ -47,8 +45,8 @@ impl WorthQueryIntentInspectionDeliveryCounters {
                 effect_expression_failure_count,
                 refresh_fallback,
             },
-        )?;
-        Ok(Self {
+        );
+        Self {
             affected_live_view_count,
             affected_derived_view_count,
             considered_computed_view_count,
@@ -60,7 +58,7 @@ impl WorthQueryIntentInspectionDeliveryCounters {
             effect_expression_failure_count,
             refresh_fallback,
             counter_digest,
-        })
+        }
     }
 
     pub fn affected_live_view_count(&self) -> usize {

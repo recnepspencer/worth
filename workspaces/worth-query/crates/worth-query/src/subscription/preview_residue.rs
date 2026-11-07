@@ -64,7 +64,7 @@ impl PreviewSubscriptionResidueReport {
         authoritative_writeback_width: PreviewResidueWidth,
         temporary_execution_width: PreviewResidueWidth,
         temporary_diagnostics_width: PreviewResidueWidth,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let report_identity = preview_residue_report_identity(
             authoritative_routing_width.get(),
             authoritative_checkpoint_width.get(),
@@ -73,8 +73,8 @@ impl PreviewSubscriptionResidueReport {
             authoritative_writeback_width.get(),
             temporary_execution_width.get(),
             temporary_diagnostics_width.get(),
-        )?;
-        Ok(Self {
+        );
+        Self {
             authoritative_routing_width,
             authoritative_checkpoint_width,
             authoritative_replay_width,
@@ -83,7 +83,7 @@ impl PreviewSubscriptionResidueReport {
             temporary_execution_width,
             temporary_diagnostics_width,
             report_identity,
-        })
+        }
     }
 
     pub fn authoritative_residue_width(&self) -> u64 {
@@ -157,5 +157,5 @@ pub fn measure_preview_subscription_residue(
         authoritative_writeback_width,
         temporary_execution_width,
         temporary_diagnostics_width,
-    )?)
+    ))
 }

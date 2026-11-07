@@ -148,7 +148,7 @@ fn certified_lane_from_live(
         format!("support:{support_profile_digest}"),
         format!("diagnostics:{diagnostics_digest}"),
     ]);
-    let activation = prepare_subscription_activation(admission.clone())?;
+    let activation = prepare_subscription_activation(admission.clone());
     let scale_report = certify_query_subscription_scale_slope(
         QuerySubscriptionScaleCounterSnapshot::from_activation(
             QuerySubscriptionScaleFixtureSize::Small,
@@ -235,7 +235,7 @@ pub(super) fn admitted_activation(
     let declaration = declare_query_subscription(selection, slice_budget()).unwrap();
     let lowering = lower_query_subscription_to_bridge(declaration, lowering_budget()).unwrap();
     let admission = admit_query_subscription(lowering, admission_budget()).unwrap();
-    let activation = prepare_subscription_activation(admission.clone())?;
+    let activation = prepare_subscription_activation(admission.clone());
     Ok((admission, activation))
 }
 

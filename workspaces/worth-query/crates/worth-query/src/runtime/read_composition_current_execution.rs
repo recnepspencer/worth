@@ -114,7 +114,7 @@ fn admit_current_read_execution(
     runtime: &WorthQueryRuntime,
     read_graph: &WorthQueryReadGraph,
 ) -> Result<WorthQueryCurrentReadExecutionAdmission, WorthQueryReadDenial> {
-    let snapshot_identity = runtime.current_snapshot_identity_with_request(execution)?;
+    let snapshot_identity = runtime.current_snapshot_identity_with_request(execution);
     let identity = crate::basis::ResolvedSnapshotIdentity::new(
         BasisAuthorityFamily::Runtime,
         None,
@@ -190,6 +190,9 @@ fn runtime_basis_intent() -> ExecutionBasisIntent {
 
 fn basis_resolution_error_message(error: BasisResolutionError) -> String {
     match error {
+        BasisResolutionError::EvidenceIdentityDerivationDenied(cause) => {
+            format!("evidence identity refused: {cause:?}")
+        }
         BasisResolutionError::UnsupportedBasisKind => "unsupported basis kind".to_string(),
         BasisResolutionError::ResolutionIdentityMismatch => {
             "resolution identity mismatch".to_string()

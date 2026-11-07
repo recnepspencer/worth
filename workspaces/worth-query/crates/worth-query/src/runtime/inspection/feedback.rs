@@ -223,7 +223,7 @@ impl WorthQueryFeedbackPhaseGraphInspection {
             resubscribed_derived_view_count,
             pending_write_intent_count,
         })?;
-        let inspection_digest = feedback_phase_graph_inspection_identity(&graph_digest)?;
+        let inspection_digest = feedback_phase_graph_inspection_identity(&graph_digest);
         Ok(Self {
             effect_name: effect_name.to_string(),
             trigger_source_kind,

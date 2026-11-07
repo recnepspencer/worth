@@ -13,9 +13,7 @@ pub struct EffectEnvelopeSourceRefs {
 }
 
 impl EffectEnvelopeSourceRefs {
-    pub(super) fn from_receipt(
-        receipt: &EffectExecutionReceipt,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    pub(super) fn from_receipt(receipt: &EffectExecutionReceipt) -> Self {
         let receipt_identity = receipt.receipt_identity().clone();
         let lowered_identity = receipt.decision_trace().lowered_identity().clone();
         let authority_artifact_identity = receipt
@@ -42,14 +40,14 @@ impl EffectEnvelopeSourceRefs {
                     WorthQueryEvidenceTag::new("counters"),
                     &counter_snapshot_identity,
                 )
-                .seal()?;
-        Ok(Self {
+                .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens");
+        Self {
             receipt_identity,
             lowered_identity,
             authority_artifact_identity,
             counter_snapshot_identity,
             sources_identity,
-        })
+        }
     }
 
     pub fn receipt_identity(&self) -> &WorthQueryEvidenceIdentity {

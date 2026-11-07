@@ -178,7 +178,7 @@ pub fn certify_query_subscription_activation(
         &admission.counters().evidence_identity(),
         &activation.counters().evidence_identity(),
         scale_report.evidence_identity_ref(),
-    )?;
+    );
     Ok(QuerySubscriptionCertificationBundle {
         certification_bundle_identity,
         admission_identity: admission.evidence_identity().clone(),

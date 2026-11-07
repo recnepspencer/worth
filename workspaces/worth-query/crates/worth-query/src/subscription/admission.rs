@@ -112,7 +112,7 @@ impl QuerySubscriptionAdmissionArtifact {
             self.admission_budget().signal_strategy_width_limit(),
             self.admission_budget().activation_input_width_limit(),
             counters_identity,
-        )?)
+        ))
     }
 
     pub fn admission_budget(&self) -> &QuerySubscriptionAdmissionBudget {

@@ -24,9 +24,9 @@ impl WorthQueryExistingTruthProbeReceipt {
         request: &crate::runtime::WorthQueryExistingTruthProbeRequest,
         probe: &WorthQueryExistingTruthProbe,
         snapshot_identity: WorthQuerySnapshotIdentity,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let snapshot_evidence_identity = snapshot_identity.evidence_identity();
-        Ok(Self {
+        Self {
             authoritative_identity: request
                 .binding()
                 .authoritative_identity()
@@ -40,7 +40,7 @@ impl WorthQueryExistingTruthProbeReceipt {
             field_count: probe.fields().len(),
             decision_trace_envelope: None,
             execution_provenance: None,
-        })
+        }
     }
 
     pub fn authoritative_identity(&self) -> &str {

@@ -176,7 +176,7 @@ impl WorthQueryGraphCompositionProgram {
     pub(crate) fn empty() -> Result<Self, IdentityDerivationDenial> {
         Ok(Self::new(
             Vec::new(),
-            &WorthQueryGraphCompositionBreadth::empty()?,
+            &WorthQueryGraphCompositionBreadth::empty(),
         )?)
     }
 

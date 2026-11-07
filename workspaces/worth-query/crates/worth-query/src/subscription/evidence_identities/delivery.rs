@@ -112,9 +112,8 @@ pub(in crate::subscription) fn live_delivery_intent_projection_identity(
 pub(in crate::subscription) fn subscription_fanout_plan_identity(
     lane_identity: &WorthQueryEvidenceIdentity,
     affected_consumer_attachment_width: u64,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "subscription_fanout_plan_v1",
@@ -124,17 +123,15 @@ pub(in crate::subscription) fn subscription_fanout_plan_identity(
                 WorthQueryEvidenceTag::new("affected_consumer_attachment_width"),
                 affected_consumer_attachment_width as usize,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 pub(in crate::subscription) fn subscription_fanout_report_identity(
     plan_identity: &WorthQueryEvidenceIdentity,
     shared_lane_count: u64,
     fanout_width: u64,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "subscription_fanout_report_v1",
@@ -148,6 +145,5 @@ pub(in crate::subscription) fn subscription_fanout_report_identity(
                 WorthQueryEvidenceTag::new("fanout_width"),
                 fanout_width as usize,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }

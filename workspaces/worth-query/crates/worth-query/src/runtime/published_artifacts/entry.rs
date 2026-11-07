@@ -60,7 +60,7 @@ impl WorthQueryPublishedArtifactEntry {
         let receipt = WorthQueryDerivedMaterializationReceipt::from_evidence(
             &evidence,
             snapshot_identity.clone(),
-        )?;
+        );
         let materialization = WorthQueryDerivedMaterializationResult::from_retained_rows(
             runtime_view.materialization.retained_rows().to_vec(),
             receipt,
@@ -141,9 +141,9 @@ fn async_result_state_for_shared_read_entry(
             view_name,
             kind,
             &snapshot_identity.evidence_identity(),
-        )?)?,
+        )?),
         &snapshot_identity.evidence_identity(),
-        &shared_read_generation_identity(snapshot_identity)?,
+        &shared_read_generation_identity(snapshot_identity),
     )?))
 }
 
@@ -156,21 +156,19 @@ fn unpublished_async_result_state(
         &runtime_async_causality_identity(&shared_read_unpublished_causality_identity(
             view_name,
             &snapshot_identity.evidence_identity(),
-        )?)?,
+        )?),
         &snapshot_identity.evidence_identity(),
-        &shared_read_generation_identity(snapshot_identity)?,
+        &shared_read_generation_identity(snapshot_identity),
     )?)
 }
 
 fn shared_read_generation_identity(
     snapshot_identity: &WorthQuerySnapshotIdentity,
-) -> Result<crate::evidence_identity::WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::SharedReadGeneration)
+) -> crate::evidence_identity::WorthQueryEvidenceIdentity {
+    worth_query_evidence_identity(WorthQueryEvidenceScope::SharedReadGeneration)
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("snapshot_identity"),
                 &snapshot_identity.evidence_identity(),
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }

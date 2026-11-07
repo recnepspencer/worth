@@ -113,10 +113,8 @@ pub(in crate::runtime) fn fixture_inspection_basis(
     .expect("fixture inspection basis should admit")
 }
 
-fn not_executed_snapshot_basis_identity(
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::CausalObservationBasis)
+fn not_executed_snapshot_basis_identity() -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::CausalObservationBasis)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "not_executed_snapshot_basis_v1",
@@ -125,8 +123,7 @@ fn not_executed_snapshot_basis_identity(
                 WorthQueryEvidenceTag::new("execution_state"),
                 "not-executed",
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 fn fixture_authority_identity(

@@ -41,7 +41,7 @@ pub(crate) fn synthetic_inventory_row(
                     "synthetic-inventory-route",
                     format!("{}-route", row.seam_key().as_str()),
                 )?,
-            )?;
+            );
             let retained_evidence =
                 crate::lower_runtime_routing::worth_query_lower_runtime_retained_evidence_identity(
                     "synthetic-inventory-route-plan",
@@ -83,7 +83,7 @@ pub(crate) fn synthetic_inventory_row(
             let handoff = WorthQueryLowerRuntimeReadmissionReceipt::new(
                 eligibility.clone(),
                 &retained_evidence,
-            )?;
+            );
             let boundary_receipt =
                 WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_readmission_receipt(&handoff)?;
             let envelope = WorthQueryLowerRuntimeBoundaryEnvelope::from_readmission_receipt(

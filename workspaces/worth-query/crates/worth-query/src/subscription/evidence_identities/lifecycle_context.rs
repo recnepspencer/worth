@@ -83,16 +83,14 @@ pub(in crate::subscription) fn lifecycle_context_relationship_proof_identity(
 }
 
 pub(in crate::subscription) fn lifecycle_context_collection_absent_identity(
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "subscription_lifecycle_collection_v1",
             )
             .field_shape(WorthQueryEvidenceTag::new("collection"), "none")
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 pub(in crate::subscription) fn lifecycle_subscription_family_identity(
@@ -118,9 +116,8 @@ pub(in crate::subscription) fn lifecycle_subscription_equivalence_identity(
 pub(in crate::subscription) fn lifecycle_active_lane_handle_identity(
     lane_identity: &WorthQueryEvidenceIdentity,
     handle: &ActiveSubscriptionLaneHandle,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "subscription_active_lane_handle_v1",
@@ -134,69 +131,58 @@ pub(in crate::subscription) fn lifecycle_active_lane_handle_identity(
                 WorthQueryEvidenceTag::new("generation"),
                 handle.registry_generation() as usize,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 #[cfg(test)]
-pub(in crate::subscription) fn lifecycle_absent_work_packet_identity(
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+pub(in crate::subscription) fn lifecycle_absent_work_packet_identity() -> WorthQueryEvidenceIdentity
+{
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "active_delivery_work_packet_absent_v1",
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 pub(in crate::subscription) fn lifecycle_absent_performance_receipt_identity(
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "subscription_performance_receipt_absent_v1",
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 pub(in crate::subscription) fn lifecycle_absent_preview_isolation_identity(
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "subscription_preview_isolation_absent_v1",
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 pub(in crate::subscription) fn lifecycle_absent_preview_residue_identity(
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "subscription_preview_residue_absent_v1",
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
-pub(in crate::subscription) fn lifecycle_absent_continuation_identity(
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+pub(in crate::subscription) fn lifecycle_absent_continuation_identity() -> WorthQueryEvidenceIdentity
+{
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "subscription_continuation_absent_v1",
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 pub(in crate::subscription) fn lifecycle_performance_sequence_identity<'a>(

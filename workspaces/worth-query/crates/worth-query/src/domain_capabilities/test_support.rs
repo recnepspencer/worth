@@ -187,7 +187,7 @@ pub(super) fn lower_runtime_envelope(
             "domain-capability-fixture-route",
             &detail_identity,
         )?,
-    )?;
+    );
     let retained_evidence =
         crate::lower_runtime_routing::worth_query_lower_runtime_retained_evidence_identity(
             "domain-capability-fixture",

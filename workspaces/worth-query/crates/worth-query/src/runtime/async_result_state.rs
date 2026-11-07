@@ -219,7 +219,7 @@ impl WorthQueryRuntimeAsyncResultProjection {
         Ok(Self::Pending {
             causality_identity: runtime_async_causality_identity(
                 &runtime_async_causality_label_identity(causality_label)?,
-            )?,
+            ),
         })
     }
 
@@ -232,7 +232,7 @@ impl WorthQueryRuntimeAsyncResultProjection {
             state,
             causality_identity: runtime_async_causality_identity(
                 &runtime_async_causality_label_identity(causality_label)?,
-            )?,
+            ),
         })
     }
 
@@ -245,7 +245,7 @@ impl WorthQueryRuntimeAsyncResultProjection {
             class,
             causality_identity: runtime_async_causality_identity(
                 &runtime_async_causality_label_identity(causality_label)?,
-            )?,
+            ),
         })
     }
 
@@ -255,7 +255,7 @@ impl WorthQueryRuntimeAsyncResultProjection {
             class: BridgeAsyncCompletionSupersessionClass::SignalGenerationSuperseded,
             causality_identity: runtime_async_causality_identity(
                 &runtime_async_causality_label_identity(causality_label)?,
-            )?,
+            ),
         })
     }
 }

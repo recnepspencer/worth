@@ -107,7 +107,7 @@ pub(in crate::intent_admission::certification) fn read_delegation_parity_fixture
     let basis_context = current_context_for_family(
         &basis_family,
         certification_snapshot_identity("certification-read-basis"),
-    )?;
+    );
     let basis_legacy = delegated_basis
         .execute_read_family_in_basis_context(execution, &basis_family, &basis_context)
         .expect("delegated basis read should execute");
@@ -117,7 +117,7 @@ pub(in crate::intent_admission::certification) fn read_delegation_parity_fixture
     let canonical_context = current_context_for_family(
         &canonical_basis_family,
         certification_snapshot_identity("certification-read-basis"),
-    )?;
+    );
     let basis_review = canonical_basis
         .review_read_execution(canonical_basis_family, Some(canonical_context))
         .expect("canonical basis review should succeed");
@@ -183,7 +183,7 @@ fn certification_read_family(
 fn current_context_for_family(
     family: &WorthQueryReadFamily,
     snapshot_identity: WorthQuerySnapshotIdentity,
-) -> Result<ScopedQueryBasisContext, IdentityDerivationDenial> {
+) -> ScopedQueryBasisContext {
     let intent = ExecutionBasisIntent::new(
         BasisAuthorityFamily::Runtime,
         SnapshotLineageClass::CurrentHead,
@@ -200,11 +200,11 @@ fn current_context_for_family(
         .expect("runtime basis should resolve");
     let preflight = preflight_execution_basis(family.read_graph().execution_plan().clone(), basis)
         .expect("family preflight should build");
-    Ok(admit_query_basis_context(
+    admit_query_basis_context(
         basis_lifecycle().current_head(),
         QueryContextBindingSource::RuntimeCurrent(&preflight),
     )
-    .expect("current basis context should admit"))
+    .expect("current basis context should admit")
 }
 
 fn certification_manager_schema() -> QuerySchemaView {

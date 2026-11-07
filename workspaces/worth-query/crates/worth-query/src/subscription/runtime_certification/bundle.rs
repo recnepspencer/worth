@@ -28,18 +28,18 @@ impl SubscriptionCertificationCoverageWidth {
         admitted_row_count: usize,
         hostile_row_count: usize,
         covered_variation_axis_count: usize,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let width_identity = coverage_width_identity(
             admitted_row_count,
             hostile_row_count,
             covered_variation_axis_count,
-        )?;
-        Ok(Self {
+        );
+        Self {
             admitted_row_count,
             hostile_row_count,
             covered_variation_axis_count,
             width_identity,
-        })
+        }
     }
 
     pub fn admitted_row_count(&self) -> usize {

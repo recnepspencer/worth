@@ -73,7 +73,7 @@ impl WriteAuthorityExecutionReceipt {
                 "write-authority-route",
                 &commit_evidence_identity,
             )?,
-        )?;
+        );
         let boundary_execution_receipt =
             WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan_with_retained_evidence_identity(
                 &route_plan,

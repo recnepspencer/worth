@@ -84,7 +84,7 @@ pub(in crate::intent_admission::certification) fn certified_inspection_advisory_
         .expect("redacted inspection artifact should materialize");
 
     let boundary_audit =
-        CausalInspectionBoundaryAudit::from_query_artifact_public_surface(&redacted)?;
+        CausalInspectionBoundaryAudit::from_query_artifact_public_surface(&redacted);
     let execution_provenance_chain_digest = inspection_result
         .receipt()
         .execution_provenance()

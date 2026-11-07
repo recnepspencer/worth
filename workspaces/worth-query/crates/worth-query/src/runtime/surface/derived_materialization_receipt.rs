@@ -23,9 +23,9 @@ impl WorthQueryDerivedMaterializationReceipt {
     pub(in crate::runtime) fn from_evidence(
         evidence: &WorthQueryComputedInspectionEvidence,
         snapshot_identity: WorthQuerySnapshotIdentity,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let snapshot_evidence_identity = snapshot_identity.evidence_identity();
-        Ok(Self {
+        Self {
             view_name: evidence.name().to_string(),
             dependency_digest: evidence.dependency_digest().to_string(),
             materialization_digest: evidence.materialization_digest().to_string(),
@@ -35,7 +35,7 @@ impl WorthQueryDerivedMaterializationReceipt {
             row_count: evidence.materialized_row_count(),
             decision_trace_envelope: None,
             execution_provenance: None,
-        })
+        }
     }
 
     pub fn view_name(&self) -> &str {

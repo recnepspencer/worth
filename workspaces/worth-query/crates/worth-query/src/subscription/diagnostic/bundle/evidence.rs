@@ -36,18 +36,18 @@ impl QuerySubscriptionDiagnosticBundleWidth {
         stage_evidence_count: usize,
         failure_evidence_count: usize,
         hostile_row_reference_count: usize,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let bundle_width_identity = diagnostic_bundle_width_identity(
             stage_evidence_count,
             failure_evidence_count,
             hostile_row_reference_count,
-        )?;
-        Ok(Self {
+        );
+        Self {
             stage_evidence_count,
             failure_evidence_count,
             hostile_row_reference_count,
             bundle_width_identity,
-        })
+        }
     }
 
     pub fn stage_evidence_count(&self) -> usize {
@@ -77,16 +77,14 @@ pub struct QuerySubscriptionDiagnosticCounters {
 }
 
 impl QuerySubscriptionDiagnosticCounters {
-    pub fn evidence_identity(
-        &self,
-    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(diagnostic_counters_identity(
+    pub fn evidence_identity(&self) -> WorthQueryEvidenceIdentity {
+        diagnostic_counters_identity(
             self.diagnostic_trace_emission_count,
             self.diagnostic_bundle_emission_count,
             self.denied_bundle_emission_count,
             self.diagnostic_missing_stage_denial_count,
             self.diagnostic_bundle_width,
-        )?)
+        )
     }
 
     pub fn diagnostic_trace_emission_count(&self) -> u64 {

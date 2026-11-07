@@ -60,7 +60,7 @@ pub(crate) fn worth_query_checked_declaration_route_orchestration_from_progresse
             WorthQueryDeclarationEntryOrchestrationArtifactPolicy::CheckedOutcomeOnly,
             WorthQueryDeclarationEntryOrchestrationProduct::RoutePlan,
             route_intent,
-        )?
+        )
         .checked
         {
             WorthQueryDeclarationEntryProductChecked::RoutePlan(checked) => checked,
@@ -86,7 +86,7 @@ pub(crate) fn worth_query_declaration_route_orchestration_from_progressed_proof_
             WorthQueryDeclarationEntryOrchestrationArtifactPolicy::ProofVisibleTranscript,
             WorthQueryDeclarationEntryOrchestrationProduct::RoutePlan,
             route_intent,
-        )?;
+        );
     let checked = match lowered.checked {
         WorthQueryDeclarationEntryProductChecked::RoutePlan(checked) => checked,
         _ => panic!("route orchestration proof must project the route product"),

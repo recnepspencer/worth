@@ -122,7 +122,7 @@ impl WorthQuerySharedReadPinningCertification {
             WorthQuerySharedReadPinningHostileMatrixEvidence::new(false, ""),
             WorthQuerySharedReadPortabilityEvidence::proven(""),
             WorthQuerySharedReadStaleBasisDenialEvidence::proven(""),
-            WorthQuerySharedReadPinningCounterEvidence::new(0, 0, 0, 0, 0)?,
+            WorthQuerySharedReadPinningCounterEvidence::new(0, 0, 0, 0, 0),
         )?)
     }
 

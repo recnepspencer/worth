@@ -127,9 +127,8 @@ pub(in crate::subscription) fn support_counters_identity(
     support_matrix_emission_count: u64,
     support_family_index_lookup_count: u64,
     support_matrix_scan_debt_count: u64,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "query_subscription_support_counters_v1",
@@ -166,8 +165,7 @@ pub(in crate::subscription) fn support_counters_identity(
                 WorthQueryEvidenceTag::new("support_matrix_scan_debt"),
                 support_matrix_scan_debt_count as usize,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 pub(in crate::subscription) fn support_report_identity(

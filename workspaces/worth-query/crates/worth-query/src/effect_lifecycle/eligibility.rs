@@ -322,7 +322,7 @@ pub struct AdmittedEffectIntent {
 
 impl AdmittedEffectIntent {
     pub(crate) fn new(eligibility: EffectEligibility) -> Result<Self, IdentityDerivationDenial> {
-        let admitted_identity = eligibility.normalized.admitted_identity()?;
+        let admitted_identity = eligibility.normalized.admitted_identity();
         Ok(Self {
             normalized: eligibility.normalized,
             workflow_declaration: eligibility.workflow_declaration,

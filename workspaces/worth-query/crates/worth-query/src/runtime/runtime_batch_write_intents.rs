@@ -24,7 +24,7 @@ impl WorthQueryRuntime {
     > {
         self.review_authoritative_runtime_write_batch_with_graph_artifacts(
             commands,
-            WorthQueryGraphCompositionBreadth::empty()?,
+            WorthQueryGraphCompositionBreadth::empty(),
             WorthQueryGraphCompositionProgram::empty()?,
         )
     }

@@ -18,10 +18,8 @@ pub struct QuerySubscriptionSupportCounters {
 }
 
 impl QuerySubscriptionSupportCounters {
-    pub fn evidence_identity(
-        &self,
-    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(support_counters_identity(
+    pub fn evidence_identity(&self) -> WorthQueryEvidenceIdentity {
+        support_counters_identity(
             self.support_report_request_count,
             self.supported_family_count,
             self.denied_family_count,
@@ -30,7 +28,7 @@ impl QuerySubscriptionSupportCounters {
             self.support_matrix_emission_count,
             self.support_family_index_lookup_count,
             self.support_matrix_scan_debt_count,
-        )?)
+        )
     }
 
     pub fn counter_projection(
@@ -39,7 +37,7 @@ impl QuerySubscriptionSupportCounters {
         QueryProjectionIdentity<String, QuerySubscriptionIdentityKind>,
         IdentityDerivationDenial,
     > {
-        let identity = self.evidence_identity()?;
+        let identity = self.evidence_identity();
         Ok(subscription_evidence_projection(&identity))
     }
 

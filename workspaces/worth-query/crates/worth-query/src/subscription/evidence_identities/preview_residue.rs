@@ -10,9 +10,8 @@ pub(in crate::subscription) fn preview_residue_report_identity(
     authoritative_writeback_width: u64,
     temporary_execution_width: u64,
     temporary_diagnostics_width: u64,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "preview_subscription_residue_report_v1",
@@ -45,6 +44,5 @@ pub(in crate::subscription) fn preview_residue_report_identity(
                 WorthQueryEvidenceTag::new("temporary_diagnostics"),
                 temporary_diagnostics_width as usize,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }

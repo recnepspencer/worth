@@ -79,12 +79,10 @@ pub(super) fn feedback_phase_graph_identity(
 
 pub(super) fn feedback_phase_graph_inspection_identity(
     graph_identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::FeedbackPhaseGraphInspection)
+) -> WorthQueryEvidenceIdentity {
+    worth_query_evidence_identity(WorthQueryEvidenceScope::FeedbackPhaseGraphInspection)
             .field_evidence_identity(WorthQueryEvidenceTag::new("graph_digest"), graph_identity)
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 pub(super) struct FeedbackPhaseGraphIdentityParts<'a> {

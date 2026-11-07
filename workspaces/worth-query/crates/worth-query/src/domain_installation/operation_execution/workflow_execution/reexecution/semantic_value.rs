@@ -22,10 +22,8 @@ pub enum WorthQueryWorkflowSemanticValue {
 }
 
 impl WorthQueryWorkflowValue {
-    pub(crate) fn semantic_value(
-        &self,
-    ) -> Result<WorthQueryWorkflowSemanticValue, IdentityDerivationDenial> {
-        Ok(match self {
+    pub(crate) fn semantic_value(&self) -> WorthQueryWorkflowSemanticValue {
+        match self {
             Self::NotRequired => WorthQueryWorkflowSemanticValue::NotRequired,
             Self::Bool(value) => WorthQueryWorkflowSemanticValue::Bool(*value),
             Self::I64(value) => WorthQueryWorkflowSemanticValue::I64(*value),
@@ -51,14 +49,14 @@ impl WorthQueryWorkflowValue {
             Self::TransferredArtifact(handle) => {
                 WorthQueryWorkflowSemanticValue::InstalledArtifact(handle.trace_meaning())
             }
-        })
+        }
     }
 
     pub fn domain_evidence_occurrence_identity(&self) -> Result<String, IdentityDerivationDenial> {
         Ok(crate::identity::hash_parts(&[
             "worth_query_workflow_output_occurrence_v1".into(),
             crate::domain_installation::operation_identity_basis::workflow_semantic_value_material(
-                &self.semantic_value()?,
+                &self.semantic_value(),
             ),
         ]))
     }

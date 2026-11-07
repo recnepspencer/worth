@@ -24,6 +24,6 @@ impl WorthQueryWorkspace {
     ) -> Result<WorthQuerySnapshotIdentity, IdentityDerivationDenial> {
         Ok(self
             .runtime
-            .current_snapshot_identity_with_request(execution)?)
+            .current_snapshot_identity_with_request(execution))
     }
 }

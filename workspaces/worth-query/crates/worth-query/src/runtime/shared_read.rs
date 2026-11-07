@@ -106,10 +106,8 @@ impl WorthQueryPublishedDerivedArtifactHandle {
         self.async_result_state.as_ref()
     }
 
-    pub fn inspect_projection_consumption(
-        &self,
-    ) -> Result<WorthQueryPublishedProjectionInspection, IdentityDerivationDenial> {
-        Ok(WorthQueryPublishedProjectionInspection {
+    pub fn inspect_projection_consumption(&self) -> WorthQueryPublishedProjectionInspection {
+        WorthQueryPublishedProjectionInspection {
             published: self.published_binding.is_some(),
             artifact_binding_identity: self
                 .published_binding
@@ -118,7 +116,7 @@ impl WorthQueryPublishedDerivedArtifactHandle {
             snapshot_identity: self.snapshot_identity().clone(),
             snapshot_evidence_identity: self.snapshot_identity().evidence_identity(),
             async_result_state: self.async_result_state.clone(),
-        })
+        }
     }
 
     pub fn consume_projection_authority(
@@ -153,15 +151,13 @@ pub struct WorthQuerySharedReadBasisInspection {
 }
 
 impl WorthQuerySharedReadBasisInspection {
-    pub(in crate::runtime) fn from_lease(
-        lease: &WorthQuerySharedReadGenerationLease,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    pub(in crate::runtime) fn from_lease(lease: &WorthQuerySharedReadGenerationLease) -> Self {
         let generation = lease.generation();
-        Ok(Self {
+        Self {
             generation_ordinal: generation.ordinal(),
             snapshot_identity: generation.snapshot_identity().clone(),
             snapshot_evidence_identity: generation.snapshot_identity().evidence_identity(),
-        })
+        }
     }
 
     pub fn generation_ordinal(&self) -> u64 {
@@ -191,9 +187,7 @@ impl WorthQuerySharedReadContext {
     pub fn inspect_basis(
         &self,
     ) -> Result<WorthQuerySharedReadBasisInspection, IdentityDerivationDenial> {
-        Ok(WorthQuerySharedReadBasisInspection::from_lease(
-            &self.lease,
-        )?)
+        Ok(WorthQuerySharedReadBasisInspection::from_lease(&self.lease))
     }
 
     pub fn published_derived_artifact<T>(
@@ -258,7 +252,7 @@ impl WorthQueryRuntime {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<WorthQuerySharedReadContext, WorthQueryRuntimeError> {
-        let snapshot_identity = self.current_snapshot_identity_with_request(execution)?;
+        let snapshot_identity = self.current_snapshot_identity_with_request(execution);
         if !self.shared_read_pins.has_current_generation() {
             self.capture_shared_read_generation_for_current_snapshot(snapshot_identity);
         }

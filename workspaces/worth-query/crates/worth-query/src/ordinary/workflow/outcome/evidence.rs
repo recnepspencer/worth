@@ -32,9 +32,7 @@ impl WorthQueryPromotionEligibility {
         self.eligibility_identity.as_str()
     }
 
-    pub(crate) fn from_authority(
-        authority: &WorthQueryOrdinaryAuthorityAdmission,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    pub(crate) fn from_authority(authority: &WorthQueryOrdinaryAuthorityAdmission) -> Self {
         let session_label = authority
             .session_label()
             .expect("preview authority must carry a session label")
@@ -55,12 +53,12 @@ impl WorthQueryPromotionEligibility {
             WorthQueryEvidenceTag::new("snapshot"),
             &snapshot_identity.evidence_identity(),
         )
-        .seal()?;
-        Ok(Self {
+        .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens");
+        Self {
             session_label,
             snapshot_identity,
             eligibility_identity,
-        })
+        }
     }
 }
 
@@ -77,8 +75,8 @@ impl WorthQueryAdmittedWorkflowEffect {
     pub(crate) fn new(
         declaration_identity: &WorthQueryEvidenceIdentity,
         authority: &WorthQueryOrdinaryAuthorityAdmission,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             effect_identity: WorthQueryEvidenceIdentity::compose(
                 WorthQueryEvidenceScope::PreviewExecutionEvidence,
             )
@@ -94,8 +92,8 @@ impl WorthQueryAdmittedWorkflowEffect {
                 WorthQueryEvidenceTag::new("authority"),
                 authority.admission_identity(),
             )
-            .seal()?,
-        })
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens"),
+        }
     }
 
     pub(crate) fn from_effect_lifecycle(effect_identity: WorthQueryEvidenceIdentity) -> Self {

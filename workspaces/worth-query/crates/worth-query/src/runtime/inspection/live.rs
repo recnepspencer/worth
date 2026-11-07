@@ -60,7 +60,7 @@ impl WorthQueryLiveViewInspection {
     ) -> Result<Self, IdentityDerivationDenial> {
         let installation = &state.installation;
         let counters =
-            WorthQueryLiveSubscriptionInspectionCounters::from_installation(installation)?;
+            WorthQueryLiveSubscriptionInspectionCounters::from_installation(installation);
         let last_delivery_cause_kind = state
             .last_delivery
             .as_ref()

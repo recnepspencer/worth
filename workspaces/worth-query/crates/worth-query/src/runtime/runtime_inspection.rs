@@ -191,7 +191,7 @@ impl WorthQueryRuntime {
         match target.into() {
             WorthQueryInspectionTarget::AdmittedWorldBasis(basis) => {
                 Ok(WorthQueryInspection::BasisLifecycle(
-                    WorthQueryBasisLifecycleInspection::from_admitted_world_basis(basis)?,
+                    WorthQueryBasisLifecycleInspection::from_admitted_world_basis(basis),
                 ))
             }
             WorthQueryInspectionTarget::ScopedObservationBasis(basis) => {

@@ -12,9 +12,7 @@ pub struct CausalInspectionBoundaryAudit {
 }
 
 impl CausalInspectionBoundaryAudit {
-    pub fn from_query_artifact_public_surface(
-        artifact: &QueryCausalInspectionArtifact,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    pub fn from_query_artifact_public_surface(artifact: &QueryCausalInspectionArtifact) -> Self {
         let audited_artifact_digest = artifact.artifact_identity().as_str().to_string();
         let audit_digest = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalInspectionCertificationFailureEvidence,
@@ -35,15 +33,15 @@ impl CausalInspectionBoundaryAudit {
             WorthQueryEvidenceTag::new("artifact"),
             artifact.artifact_identity().evidence_identity(),
         )
-        .seal()?
+        .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
         .as_str()
         .to_string();
-        Ok(Self {
+        Self {
             ordinary_path_uses_query_artifact: true,
             direct_lower_runtime_stitching_absent: true,
             audited_artifact_digest,
             audit_digest,
-        })
+        }
     }
 
     pub fn ordinary_path_uses_query_artifact(&self) -> bool {

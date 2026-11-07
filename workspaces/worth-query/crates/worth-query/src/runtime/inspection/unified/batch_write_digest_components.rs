@@ -64,18 +64,15 @@ fn component_artifact_identity(
         .target_evidence()
         .declared()
         .entity_identity()
-        .map(|identity| identity.evidence_identity())
-        .transpose()?;
+        .map(|identity| identity.evidence_identity());
     let target_resolved_entity_identity = component
         .target_evidence()
         .resolved()
         .entity_identity()
-        .map(|identity| identity.evidence_identity())
-        .transpose()?;
+        .map(|identity| identity.evidence_identity());
     let existing_truth_resolved_target_identity = component
         .existing_truth_binding_evidence()
-        .map(|evidence| evidence.resolved_target_identity().evidence_identity())
-        .transpose()?;
+        .map(|evidence| evidence.resolved_target_identity().evidence_identity());
     let entity_identities = component
         .entity_identities()
         .iter()

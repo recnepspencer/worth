@@ -210,11 +210,9 @@ impl WorthQueryMutationReceipt {
                 .all(|delta| delta.entity_identity.has_current_authority())
     }
 
-    pub(crate) fn admit_runtime_write_authority(
-        mut self,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    pub(crate) fn admit_runtime_write_authority(mut self) -> Self {
         let Some(authority) = self.bridge_authority.as_ref() else {
-            return Ok(self);
+            return self;
         };
         if !mutation_authority_admission::bridge_authority_admits_receipt(
             &self.commit_identity,
@@ -222,7 +220,7 @@ impl WorthQueryMutationReceipt {
             &self.deltas,
             authority,
         ) {
-            return Ok(self);
+            return self;
         }
         self.commit_identity = self.commit_identity.admit_runtime_write_authority();
         self.snapshot_identity = self.snapshot_identity.admit_runtime_backend_authority();
@@ -232,7 +230,7 @@ impl WorthQueryMutationReceipt {
                 .clone()
                 .admit_runtime_write_authority();
         }
-        Ok(self)
+        self
     }
 
     pub fn from_authoritative_parts(

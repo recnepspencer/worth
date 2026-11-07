@@ -16,9 +16,8 @@ pub(super) fn semantic_evidence_identity(
         Some(evidence) => append_continuity_semantics(identity, evidence),
         None => identity,
     };
-    let lifecycle_identity = lifecycle_target
-        .map(crate::memory_workspace::WorthQueryEntityIdentity::evidence_identity)
-        .transpose()?;
+    let lifecycle_identity =
+        lifecycle_target.map(crate::memory_workspace::WorthQueryEntityIdentity::evidence_identity);
     let establishing_target_identities = establishing_entity_targets
         .iter()
         .map(crate::memory_workspace::WorthQueryEntityIdentity::evidence_identity)

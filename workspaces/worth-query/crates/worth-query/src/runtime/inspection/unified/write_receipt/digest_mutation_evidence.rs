@@ -18,20 +18,16 @@ pub(super) fn append_mutation_evidence_fields(
 ) -> Result<WorthQueryEvidenceIdentityEncoder, IdentityDerivationDenial> {
     let symbolic_target_resolved_entity_identity = symbolic_target_reference_evidence
         .map(WorthQuerySymbolicTargetReferenceEvidence::resolved_entity_identity)
-        .map(|identity| identity.evidence_identity())
-        .transpose()?;
+        .map(|identity| identity.evidence_identity());
     let naming_resolved_target_entity_identity = naming_mutation_evidence
         .and_then(WorthQueryNamingMutationEvidence::resolved_target_entity_identity)
-        .map(|identity| identity.evidence_identity())
-        .transpose()?;
+        .map(|identity| identity.evidence_identity());
     let continuity_resolved_target_entity_identity = continuity_mutation_evidence
         .and_then(WorthQueryContinuityMutationEvidence::resolved_target_entity_identity)
-        .map(|identity| identity.evidence_identity())
-        .transpose()?;
+        .map(|identity| identity.evidence_identity());
     let existing_truth_resolved_entity_identity = existing_truth_binding_evidence
         .map(WorthQueryExistingTruthBindingEvidence::resolved_entity_identity)
-        .map(|identity| identity.evidence_identity())
-        .transpose()?;
+        .map(|identity| identity.evidence_identity());
     let successor_authoritative_identities = continuity_mutation_evidence
         .map(|evidence| evidence.successor_authoritative_identities().to_vec())
         .unwrap_or_default();

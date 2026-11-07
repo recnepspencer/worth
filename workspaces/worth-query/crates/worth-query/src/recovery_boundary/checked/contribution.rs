@@ -30,7 +30,7 @@ pub fn worth_query_recovery_brief_from_contribution_composed_checked<
     let explanation = contribution_checked_explanation(
         &checked,
         WorthQueryRecoveryEvidenceStrength::CheckedRetained,
-    );
+    )?;
     Ok(worth_query_recovery_brief_from_ordinary_outcome(
         &ordinary_outcome_from_contribution_composed_checked(checked)?,
     )
@@ -92,14 +92,18 @@ fn contribution_checked_explanation<
 >(
     checked: &WorthQueryContributionComposedOrchestrationChecked<D, I>,
     evidence_strength: WorthQueryRecoveryEvidenceStrength,
-) -> WorthQueryRecoveryExplanation {
+) -> Result<WorthQueryRecoveryExplanation, IdentityDerivationDenial> {
     let (kind, linked) = match checked {
+        WorthQueryContributionComposedOrchestrationOutcome::EvidenceIdentityDerivationDenied(
+            cause,
+        ) => return Err(*cause),
+
         WorthQueryContributionComposedOrchestrationOutcome::Bound(_) => {
-            return base_contribution_explanation(
+            return Ok(base_contribution_explanation(
                 evidence_strength,
                 WorthQueryRecoveryBasisPosture::Unknown,
                 WorthQueryRecoveryConflictPosture::None,
-            );
+            ));
         }
         WorthQueryContributionComposedOrchestrationOutcome::Deferred(value)
         | WorthQueryContributionComposedOrchestrationOutcome::DeclarationDenied(value)
@@ -136,7 +140,7 @@ fn contribution_checked_explanation<
     if let Some(descriptor) = primary_checked_intent_descriptor(checked) {
         explanation = explanation.with_contribution_intent_descriptor(descriptor.clone());
     }
-    explanation
+    Ok(explanation)
 }
 
 fn contribution_proof_explanation<
@@ -237,6 +241,10 @@ fn checked_posture<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput
     >,
 > {
     match checked {
+        WorthQueryContributionComposedOrchestrationOutcome::EvidenceIdentityDerivationDenied(_) => {
+            None
+        }
+
         WorthQueryContributionComposedOrchestrationOutcome::Bound(_) => None,
         WorthQueryContributionComposedOrchestrationOutcome::Deferred(value)
         | WorthQueryContributionComposedOrchestrationOutcome::DeclarationDenied(value)

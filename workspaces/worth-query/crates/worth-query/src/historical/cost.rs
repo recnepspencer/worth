@@ -1,5 +1,6 @@
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum HistoricalPathCostPosture {
+    EvidenceIdentityDerivationDenied,
     HistoricalRetainedFastPath,
     HistoricalReplayBounded,
     HistoricalReconstructionExpensive,

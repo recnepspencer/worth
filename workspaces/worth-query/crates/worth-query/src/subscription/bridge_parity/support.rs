@@ -63,11 +63,11 @@ impl QuerySubscriptionBridgeParityCounters {
         QueryProjectionIdentity<String, QuerySubscriptionIdentityKind>,
         IdentityDerivationDenial,
     > {
-        Ok(subscription_evidence_projection(&self.counter_identity()?))
+        Ok(subscription_evidence_projection(&self.counter_identity()))
     }
 
-    pub fn counter_identity(&self) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(bridge_parity_counter_identity(self)?)
+    pub fn counter_identity(&self) -> WorthQueryEvidenceIdentity {
+        bridge_parity_counter_identity(self)
     }
 
     pub fn subscription_bridge_parity_comparison_count(&self) -> u64 {
@@ -129,7 +129,7 @@ impl SubscriptionBridgeParityWidth {
             compared_slice_dimension_count,
             compared_basis_dimension_count,
             compared_signal_dimension_count,
-        )?;
+        );
         Ok(Self {
             compared_family_dimension_count,
             compared_slice_dimension_count,

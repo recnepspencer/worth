@@ -37,29 +37,29 @@ impl SubscriptionAcknowledgementFrontier {
         Ok(Self::new(
             attachment_digest,
             QueryDeliverySequence::initial(),
-        )?)
+        ))
     }
 
     pub(super) fn advance(
         &self,
         sequence: QueryDeliverySequence,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(self.attachment_digest.clone(), sequence)?)
+        Ok(Self::new(self.attachment_digest.clone(), sequence))
     }
 
     fn new(
         attachment_digest: SubscriptionConsumerAttachmentDigest,
         acknowledged_sequence: QueryDeliverySequence,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let frontier_identity = lifecycle_acknowledgement_frontier_identity(
             attachment_digest.evidence_identity(),
             acknowledged_sequence.get(),
-        )?;
-        Ok(Self {
+        );
+        Self {
             attachment_digest,
             acknowledged_sequence,
             frontier_identity,
-        })
+        }
     }
 
     pub(crate) fn attachment_digest(&self) -> &SubscriptionConsumerAttachmentDigest {
@@ -86,16 +86,16 @@ impl QueryDeliveryBatchReceipt {
     pub(super) fn new(
         attachment_digest: SubscriptionConsumerAttachmentDigest,
         sequence: QueryDeliverySequence,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let receipt_identity = lifecycle_delivery_batch_receipt_identity(
             attachment_digest.evidence_identity(),
             sequence.get(),
-        )?;
-        Ok(Self {
+        );
+        Self {
             attachment_digest,
             sequence,
             receipt_identity,
-        })
+        }
     }
 
     pub(crate) fn attachment_digest(&self) -> &SubscriptionConsumerAttachmentDigest {

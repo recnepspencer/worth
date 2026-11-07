@@ -48,11 +48,11 @@ impl WorthQueryWorkflowRequest {
             crate::runtime::WorthQueryOrdinaryAuthorityFamily::PromotionPreview
         );
         debug_assert!(self.context.authority.preview_basis().is_some());
-        let eligibility = WorthQueryPromotionEligibility::from_authority(&self.context.authority)?;
+        let eligibility = WorthQueryPromotionEligibility::from_authority(&self.context.authority);
         let admitted_effect = WorthQueryAdmittedWorkflowEffect::new(
             identity.evidence_identity(),
             &self.context.authority,
-        )?;
+        );
         let basis_admission = self
             .context
             .authority

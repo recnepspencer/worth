@@ -38,22 +38,18 @@ pub(super) fn build_write_receipt_inspection_digest(
     let snapshot_identity = receipt.snapshot_identity().evidence_identity();
     let declared_entity_identity = receipt
         .declared_entity_identity()
-        .map(|identity| identity.evidence_identity())
-        .transpose()?;
+        .map(|identity| identity.evidence_identity());
     let target_entity_identity = receipt
         .target_entity_identity()
-        .map(|identity| identity.evidence_identity())
-        .transpose()?;
+        .map(|identity| identity.evidence_identity());
     let target_declared_entity_identity = target_evidence
         .declared()
         .entity_identity()
-        .map(|identity| identity.evidence_identity())
-        .transpose()?;
+        .map(|identity| identity.evidence_identity());
     let target_resolved_entity_identity = target_evidence
         .resolved()
         .entity_identity()
-        .map(|identity| identity.evidence_identity())
-        .transpose()?;
+        .map(|identity| identity.evidence_identity());
     let declared_operations =
         digest_components::declared_aspect_operation_identities(declared_aspect_operations);
     let mutation_metadata_entries =

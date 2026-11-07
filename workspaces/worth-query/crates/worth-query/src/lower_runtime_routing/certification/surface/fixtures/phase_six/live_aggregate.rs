@@ -58,7 +58,7 @@ pub(crate) fn representative_public_live_view_declaration_row(
     Ok(aggregate_route_artifacts(
         WorthQueryLowerRuntimeSeamKey::PublicLiveViewDeclaration,
         "Public live view declaration",
-        public_live_declaration_evidence(&fixture)?,
+        public_live_declaration_evidence(&fixture),
     )?)
 }
 
@@ -68,7 +68,7 @@ pub(crate) fn representative_runtime_live_installation_orchestration_row(
     Ok(aggregate_route_artifacts(
         WorthQueryLowerRuntimeSeamKey::RuntimeLiveInstallationOrchestration,
         "Runtime live installation orchestration",
-        runtime_live_installation_evidence(&fixture)?,
+        runtime_live_installation_evidence(&fixture),
     )?)
 }
 
@@ -102,7 +102,7 @@ fn aggregate_route_artifacts(
             capability_label,
             &evidence,
         )?,
-    )?;
+    );
     let retained_evidence =
         worth_query_lower_runtime_retained_evidence_identity(capability_label, &evidence)?;
     let boundary_receipt = WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(
@@ -126,11 +126,8 @@ fn aggregate_route_artifacts(
     })
 }
 
-fn public_live_declaration_evidence(
-    fixture: &LiveAggregateFixture,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+fn public_live_declaration_evidence(fixture: &LiveAggregateFixture) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("declaration_request"),
                 fixture
@@ -145,15 +142,13 @@ fn public_live_declaration_evidence(
                     .boundary_envelope()
                     .envelope_identity(),
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 fn runtime_live_installation_evidence(
     fixture: &LiveAggregateFixture,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("declaration_envelope"),
                 fixture
@@ -168,8 +163,7 @@ fn runtime_live_installation_evidence(
                     .boundary_envelope()
                     .envelope_identity(),
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 fn live_aggregate_fixture() -> Result<LiveAggregateFixture, IdentityDerivationDenial> {
@@ -239,7 +233,7 @@ fn live_aggregate_fixture() -> Result<LiveAggregateFixture, IdentityDerivationDe
     let admission_identity = admission.evidence_identity().clone();
     let basis_binding_identity = admission.basis_binding_identity().clone();
     let signal_strategy_identity = admission.signal_strategy_identity().clone();
-    let activation = prepare_subscription_activation(admission)?;
+    let activation = prepare_subscription_activation(admission);
     let activation_receipt = crate::runtime::SubscriptionActivationReceipt::from_activation(
         LIVE_AGGREGATE_VIEW_NAME,
         &activation,

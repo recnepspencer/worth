@@ -134,7 +134,7 @@ impl ProjectionConsumptionAuthoringSurface {
         authorized_projection: &AuthorizedProjectionArtifact,
     ) -> Result<Self, IdentityDerivationDenial> {
         Ok(Self {
-            source: ProjectionConsumptionSource::from_retained_derived_artifact_binding(binding)?,
+            source: ProjectionConsumptionSource::from_retained_derived_artifact_binding(binding),
             binding: ProjectionConsumptionBindingContext::from_authorized_projection(
                 result_shape,
                 authorized_projection,
@@ -148,7 +148,7 @@ impl ProjectionConsumptionAuthoringSurface {
         authorized_projection: &AuthorizedProjectionArtifact,
     ) -> Result<Self, IdentityDerivationDenial> {
         Ok(Self {
-            source: ProjectionConsumptionSource::from_live_artifact_binding(binding)?,
+            source: ProjectionConsumptionSource::from_live_artifact_binding(binding),
             binding: ProjectionConsumptionBindingContext::from_result_shape_identity(
                 result_shape_identity,
                 authorized_projection,

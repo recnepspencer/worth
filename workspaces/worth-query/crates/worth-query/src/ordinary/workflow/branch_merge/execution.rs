@@ -134,6 +134,13 @@ impl WorthQueryBranchMergeRequest {
             materialize_inspection,
         ) {
             Ok(execution) => execution,
+            Err(crate::runtime::WorthQueryOrdinaryMergeExecutionError::EvidenceIdentityDerivationDenied(cause)) => {
+                return WorthQueryBranchMergeOutcome::Stopped(WorthQueryBranchMergeStop::denied(
+                    WorthQueryBranchMergeStopSource::EvidenceIdentityDerivationDenied(cause),
+                    "branch merge evidence identity exceeded its digest bounds",
+                    counters,
+                ));
+            }
             Err(crate::runtime::WorthQueryOrdinaryMergeExecutionError::Deferred {
                 kind,
                 message,

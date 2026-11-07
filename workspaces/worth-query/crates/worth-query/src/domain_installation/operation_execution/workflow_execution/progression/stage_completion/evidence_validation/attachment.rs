@@ -29,11 +29,11 @@ impl WorthQueryWorkflowDomainEvidenceAttachment {
         stage: &worth_query_installation::facade::WorthQueryPortableWorkflowStage,
         input: &WorthQueryWorkflowStageCompletion,
         output_occurrence_identity: String,
-    ) -> Result<Self, IdentityDerivationDenial>
+    ) -> Self
     where
         L: BasisOperationLane,
     {
-        Ok(Self {
+        Self {
             operation_identity: run.bound.definition().canonical_identity().to_owned(),
             binding_identity: run.bound.binding_identity().to_owned(),
             run_identity: run.identity.clone(),
@@ -52,7 +52,7 @@ impl WorthQueryWorkflowDomainEvidenceAttachment {
                 .map(|receipt| receipt.evidence_identity().to_owned())
                 .collect(),
             output_occurrence_identity,
-        })
+        }
     }
 
     pub(in crate::domain_installation::operation_execution) fn contract(

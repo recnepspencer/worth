@@ -221,7 +221,7 @@ fn writeback_bridge_declaration(
     declaration: &QueryWorkflowDeclaration,
     family: &WritebackDeclarationFamily,
     request_kind: BridgeRequestKind,
-) -> Result<BridgeWritebackDeclaration, IdentityDerivationDenial> {
+) -> BridgeWritebackDeclaration {
     let (family_kind, effect_class, strategy_class, idempotence_class) =
         writeback_bridge_family_terms(family);
     let bridge_declaration_identity =
@@ -234,8 +234,8 @@ fn writeback_bridge_declaration(
                 WorthQueryEvidenceTag::new("declaration"),
                 declaration.report().declaration_identity(),
             )
-            .seal()?;
-    Ok(BridgeWritebackDeclaration::writeback_capable(
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens");
+    BridgeWritebackDeclaration::writeback_capable(
         BridgeWritebackDeclarationIdentity::from_bridge_evidence(
             &bridge_declaration_identity.bridge_external_identity_evidence(),
         ),
@@ -244,7 +244,7 @@ fn writeback_bridge_declaration(
         effect_class,
         strategy_class,
         idempotence_class,
-    ))
+    )
 }
 
 fn writeback_bridge_family_terms(

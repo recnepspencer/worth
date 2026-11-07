@@ -49,7 +49,7 @@ pub(super) fn activation_from_live(
     let declaration = declare_query_subscription(selection, slice_budget()).unwrap();
     let lowering = lower_query_subscription_to_bridge(declaration, lowering_budget()).unwrap();
     let admission = admit_query_subscription(lowering, admission_budget()).unwrap();
-    Ok(prepare_subscription_activation(admission)?)
+    Ok(prepare_subscription_activation(admission))
 }
 
 pub(super) fn active_attachment(

@@ -15,9 +15,7 @@ pub struct WorthQueryInstalledDomainAuthorityWitness {
 }
 
 impl WorthQueryInstalledDomainAuthorityWitness {
-    pub(crate) fn from_authority(
-        authority: Arc<WorthQueryInstalledDomainAuthority>,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    pub(crate) fn from_authority(authority: Arc<WorthQueryInstalledDomainAuthority>) -> Self {
         let witness_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::InstalledDomainExecution)
                 .field_evidence_identity(
@@ -28,11 +26,11 @@ impl WorthQueryInstalledDomainAuthorityWitness {
                     WorthQueryEvidenceTag::new("world"),
                     authority.world_identity(),
                 )
-                .seal()?;
-        Ok(Self {
+                .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens");
+        Self {
             authority,
             witness_identity,
-        })
+        }
     }
 
     pub fn authority(&self) -> &WorthQueryInstalledDomainAuthority {

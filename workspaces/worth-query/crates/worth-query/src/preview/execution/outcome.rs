@@ -72,6 +72,7 @@ impl PreviewExecutionReport {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PreviewExecutionFailureClass {
+    EvidenceIdentityDerivationDenied,
     UnderlyingExecutionFailure,
     InvalidExecutionClass,
     InternalInvariantBreak,
@@ -93,6 +94,9 @@ pub enum PreviewExecutionError {
 impl PreviewExecutionError {
     pub fn failure_class(&self) -> PreviewExecutionFailureClass {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => {
+                PreviewExecutionFailureClass::EvidenceIdentityDerivationDenied
+            }
             Self::ExecutionFailure(_) => PreviewExecutionFailureClass::UnderlyingExecutionFailure,
             Self::EvaluationClassMismatch { .. } => {
                 PreviewExecutionFailureClass::InvalidExecutionClass

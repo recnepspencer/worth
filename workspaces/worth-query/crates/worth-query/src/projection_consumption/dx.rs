@@ -309,7 +309,7 @@ impl WorthQueryDerivedArtifactBinding {
         &self,
     ) -> Result<ProjectionConsumptionSupportReport, IdentityDerivationDenial> {
         Ok(discover_projection_consumption_support(
-            &ProjectionConsumptionSource::from_retained_derived_artifact_binding(self)?,
+            &ProjectionConsumptionSource::from_retained_derived_artifact_binding(self),
         )?)
     }
 }
@@ -337,7 +337,7 @@ impl WorthQueryLiveArtifactBinding {
         &self,
     ) -> Result<ProjectionConsumptionSupportReport, IdentityDerivationDenial> {
         Ok(discover_projection_consumption_support(
-            &ProjectionConsumptionSource::from_live_artifact_binding(self)?,
+            &ProjectionConsumptionSource::from_live_artifact_binding(self),
         )?)
     }
 }

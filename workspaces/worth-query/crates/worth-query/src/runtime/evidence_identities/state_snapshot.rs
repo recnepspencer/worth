@@ -3,23 +3,20 @@ use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as Iden
 
 pub(crate) fn runtime_state_snapshot_basis_label_identity(
     basis_identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+) -> WorthQueryEvidenceIdentity {
+    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "worth_query_runtime_state_snapshot_basis_v1",
             )
             .field_evidence_identity(WorthQueryEvidenceTag::new("basis"), basis_identity)
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 pub(crate) fn runtime_state_snapshot_result_shape_label_identity(
     result_shape_identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+) -> WorthQueryEvidenceIdentity {
+    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "worth_query_runtime_state_snapshot_result_shape_v1",
@@ -28,8 +25,7 @@ pub(crate) fn runtime_state_snapshot_result_shape_label_identity(
                 WorthQueryEvidenceTag::new("result_shape"),
                 result_shape_identity,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 pub(in crate::runtime) fn runtime_state_snapshot_result_shape_facade_family_identity(
@@ -54,8 +50,7 @@ pub(in crate::runtime) fn runtime_state_snapshot_result_shape_write_receipt_iden
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let declared_entity_identity = receipt
         .declared_entity_identity()
-        .map(|identity| identity.evidence_identity())
-        .transpose()?;
+        .map(|identity| identity.evidence_identity());
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_shape(
@@ -84,9 +79,8 @@ pub(in crate::runtime) fn runtime_state_snapshot_result_shape_write_receipt_iden
 
 pub(in crate::runtime) fn runtime_state_snapshot_result_shape_batch_write_receipt_identity(
     receipt: &WorthQueryBatchWriteReceipt,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+) -> WorthQueryEvidenceIdentity {
+    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "worth_query_runtime_state_snapshot_result_shape_batch_write_receipt_v1",
@@ -95,8 +89,7 @@ pub(in crate::runtime) fn runtime_state_snapshot_result_shape_batch_write_receip
                 WorthQueryEvidenceTag::new("write_count"),
                 receipt.write_count(),
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 pub(in crate::runtime) fn runtime_live_view_consumer_attachment_identity(

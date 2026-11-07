@@ -292,7 +292,7 @@ pub fn certify_query_subscription_scale_slope(
         medium.fixture_row_count,
         large.fixture_row_count,
         &structural_counter_identity,
-    )?;
+    );
 
     Ok(QuerySubscriptionScaleSlopeReport {
         report_identity,

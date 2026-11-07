@@ -69,7 +69,7 @@ impl WorthQueryReadReceipt {
             execution_counters.execution_fallback_taken_count(),
             breadth,
             result_digest,
-        )?)
+        ))
     }
 
     pub(in crate::runtime) fn from_materialized_rows(
@@ -130,7 +130,7 @@ impl WorthQueryReadReceipt {
                 execution_rollup_input_count: execution_counters.rollup_input_count(),
             },
             result_digest,
-        )?)
+        ))
     }
 
     pub(in crate::runtime) fn from_query_context_execution(
@@ -187,7 +187,7 @@ impl WorthQueryReadReceipt {
                 execution_rollup_input_count: 0,
             },
             result_digest,
-        )?;
+        );
         receipt.materialized_fact_posture = context_execution.materialized_fact_posture().cloned();
         Ok(receipt)
     }
@@ -201,13 +201,13 @@ impl WorthQueryReadReceipt {
         fallback_count: usize,
         breadth: WorthQueryReadBreadth,
         result_digest: String,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let relationship_proof_admission = read_graph.relationship_proof_admission().cloned();
         let relationship_proof_support_profile = relationship_proof_admission
             .as_ref()
             .map(support_profile_for_relationship_proof);
         let policy_aware_plan = read_graph.policy_aware_plan();
-        Ok(Self {
+        Self {
             read_graph_identity: read_graph.evidence_identity().clone(),
             graph_family: read_graph.family().clone(),
             collection_result_family: read_graph
@@ -258,7 +258,7 @@ impl WorthQueryReadReceipt {
             graph_read_access_complexity_counters: None,
             decision_trace_envelope: None,
             execution_provenance: None,
-        })
+        }
     }
 }
 

@@ -30,18 +30,16 @@ pub struct QuerySubscriptionDiagnosticSelectionContext {
 }
 
 impl QuerySubscriptionDiagnosticSelectionContext {
-    pub fn from_selection(
-        selection: &QuerySubscriptionFamilySelection,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    pub fn from_selection(selection: &QuerySubscriptionFamilySelection) -> Self {
         let context_identity = diagnostic_selection_context_selected_identity(
             selection.equivalence_basis().evidence_identity(),
-        )?;
-        Ok(Self {
+        );
+        Self {
             kind: QuerySubscriptionDiagnosticSelectionContextKind::Selected {
                 selection: selection.clone(),
                 context_identity,
             },
-        })
+        }
     }
 
     pub fn from_selection_denial(

@@ -229,7 +229,7 @@ where
     let installed_authority =
         crate::domain_installation::WorthQueryInstalledDomainAuthorityWitness::from_authority(
             admitted.payload().target().authority_arc(),
-        )?;
+        );
     let contribution_category = admitted.payload().payload().category();
     let semantic_posture = admitted.payload().payload().semantic_posture();
     let contribution = WorthQueryContributionComposedContribution::new(

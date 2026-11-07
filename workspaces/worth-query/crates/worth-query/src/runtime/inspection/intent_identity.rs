@@ -12,9 +12,8 @@ use super::intent_delivery_counters::WorthQueryIntentInspectionDeliveryCounters;
 
 pub(super) fn intent_inspection_delivery_counter_identity(
     counters: IntentInspectionDeliveryCounterIdentityParts,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::IntentInspectionDeliveryCounters)
+) -> WorthQueryEvidenceIdentity {
+    worth_query_evidence_identity(WorthQueryEvidenceScope::IntentInspectionDeliveryCounters)
             .field_usize(
                 WorthQueryEvidenceTag::new("affected_live_view_count"),
                 counters.affected_live_view_count,
@@ -55,8 +54,7 @@ pub(super) fn intent_inspection_delivery_counter_identity(
                 WorthQueryEvidenceTag::new("refresh_fallback"),
                 counters.refresh_fallback,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 pub(super) fn intent_receipt_inspection_identity(

@@ -57,7 +57,7 @@ pub(crate) fn worth_query_checked_declaration_receipt_orchestration_from_progres
             WorthQueryDeclarationEntryOrchestrationArtifactPolicy::CheckedOutcomeOnly,
             WorthQueryDeclarationEntryOrchestrationProduct::Receipt,
             route_intent,
-        )?
+        )
         .checked
         {
             WorthQueryDeclarationEntryProductChecked::Receipt(checked) => checked,
@@ -83,7 +83,7 @@ pub(crate) fn worth_query_declaration_receipt_orchestration_from_progressed_proo
             WorthQueryDeclarationEntryOrchestrationArtifactPolicy::ProofVisibleTranscript,
             WorthQueryDeclarationEntryOrchestrationProduct::Receipt,
             route_intent,
-        )?;
+        );
     let checked = match lowered.checked {
         WorthQueryDeclarationEntryProductChecked::Receipt(checked) => checked,
         _ => panic!("receipt orchestration proof must project the receipt product"),

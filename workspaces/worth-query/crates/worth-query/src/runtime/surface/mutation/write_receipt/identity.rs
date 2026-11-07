@@ -2,14 +2,14 @@ use super::*;
 
 pub(super) fn write_receipt_commit_evidence_identity(
     commit_identity: &WorthQueryCommitIdentity,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(commit_identity.evidence_identity())
+) -> WorthQueryEvidenceIdentity {
+    commit_identity.evidence_identity()
 }
 
 pub(super) fn write_receipt_snapshot_evidence_identity(
     snapshot_identity: &WorthQuerySnapshotIdentity,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(snapshot_identity.evidence_identity())
+) -> WorthQueryEvidenceIdentity {
+    snapshot_identity.evidence_identity()
 }
 
 pub(super) fn write_receipt_committed_truth_identity(

@@ -108,7 +108,7 @@ impl WorthQueryRuntime {
             family: binding.family(),
             entrypoint: binding.entrypoint(),
             execution_seam: binding.execution_seam(),
-            request_detail: review_request_detail(handoff.command())?,
+            request_detail: review_request_detail(handoff.command()),
             request_digest: handoff.request_digest().to_string(),
             eligibility_trace: handoff.eligibility_trace().clone(),
             decision_digest: handoff.decision_digest().to_string(),
@@ -125,10 +125,8 @@ impl WorthQueryRuntime {
     }
 }
 
-fn review_request_detail(
-    command: &WorthQueryWriteCommand,
-) -> Result<String, IdentityDerivationDenial> {
-    Ok(match command.declared_entity_identity_ref() {
+fn review_request_detail(command: &WorthQueryWriteCommand) -> String {
+    match command.declared_entity_identity_ref() {
         Some(identity) => identity
             .evidence_identity()
             .reporting_projection()
@@ -137,5 +135,5 @@ fn review_request_detail(
             .declared_collection_identity()
             .map(|collection| collection.as_str().to_string())
             .unwrap_or_else(|| "scalar-write".to_string()),
-    })
+    }
 }

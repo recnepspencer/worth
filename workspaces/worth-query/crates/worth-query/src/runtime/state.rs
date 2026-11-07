@@ -207,7 +207,7 @@ impl WorthQueryRuntimeStateTarget for WorthQueryRuntimeFacadeFamily {
         match row.status() {
             WorthQueryRuntimeFamilySupportStatus::Supported => {
                 Ok(WorthQueryRuntimeStateSnapshot::ready(
-                    runtime_state_snapshot_basis_label_identity(row.contract_identity())?,
+                    runtime_state_snapshot_basis_label_identity(row.contract_identity()),
                     result_shape_identity,
                     row.authority_lanes()
                         .first()
@@ -219,7 +219,7 @@ impl WorthQueryRuntimeStateTarget for WorthQueryRuntimeFacadeFamily {
             WorthQueryRuntimeFamilySupportStatus::DeferredDebt => {
                 Ok(WorthQueryRuntimeStateSnapshot::deferred(
                     WorthQueryRuntimeStateKind::Pending,
-                    runtime_state_snapshot_basis_label_identity(row.contract_identity())?,
+                    runtime_state_snapshot_basis_label_identity(row.contract_identity()),
                     result_shape_identity,
                     deferred_authority_lane(self),
                     explanation,
@@ -228,7 +228,7 @@ impl WorthQueryRuntimeStateTarget for WorthQueryRuntimeFacadeFamily {
             WorthQueryRuntimeFamilySupportStatus::Unsupported => {
                 Ok(WorthQueryRuntimeStateSnapshot::deferred(
                     WorthQueryRuntimeStateKind::Unsupported,
-                    runtime_state_snapshot_basis_label_identity(row.contract_identity())?,
+                    runtime_state_snapshot_basis_label_identity(row.contract_identity()),
                     result_shape_identity,
                     deferred_authority_lane(self),
                     explanation,
@@ -268,8 +268,8 @@ impl WorthQueryRuntimeStateTarget for &WorthQueryBatchWriteReceipt {
         _runtime: &WorthQueryRuntime,
     ) -> Result<WorthQueryRuntimeStateSnapshot, WorthQueryRuntimeError> {
         Ok(WorthQueryRuntimeStateSnapshot::ready(
-            runtime_state_snapshot_basis_label_identity(self.batch_identity())?,
-            runtime_state_snapshot_result_shape_batch_write_receipt_identity(self)?,
+            runtime_state_snapshot_basis_label_identity(self.batch_identity()),
+            runtime_state_snapshot_result_shape_batch_write_receipt_identity(self),
             self.authority_lane(),
             format!(
                 "batch write receipt `{}` is ready with {} component writes over `{}` basis lane",

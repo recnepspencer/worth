@@ -100,7 +100,7 @@ impl QueryObservationReceipt {
             observation_target: target_identity
                 .as_ref()
                 .map(CausalObservationTargetHandle::from_evidence_identity)
-                .unwrap_or(fallback_target_identity),
+                .unwrap_or(fallback_target_identity)?,
             outcome: CausalObservationOutcome::Changed,
             evidence_identities,
         })?)

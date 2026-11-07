@@ -149,7 +149,7 @@ impl<D: 'static> WorthQueryInstalledDomainLiveHandle<D> {
                 "live-read-result",
                 result.receipt().result_digest(),
             )?,
-        );
+        )?;
         Ok(WorthQueryInstalledDomainLiveRead { result, receipt })
     }
 

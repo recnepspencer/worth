@@ -189,7 +189,7 @@ pub(super) fn denied_bridge_parity_failure(
     detail: &CertifiedLaneArtifacts,
     foreign: &CertifiedLaneArtifacts,
 ) -> Result<MilestoneNineThreeRejectionBundle, IdentityDerivationDenial> {
-    let activation = prepare_subscription_activation(foreign.admission.clone())?;
+    let activation = prepare_subscription_activation(foreign.admission.clone());
     let error = explain_query_subscription_bridge_parity(
         &foreign.declaration,
         &foreign.lowering,
@@ -325,13 +325,13 @@ pub(super) fn denied_support_artifacts_from_parts(
         &report_query_subscription_support(
             QuerySubscriptionSupportSubject::activation(
                 declaration,
-                &prepare_subscription_activation(admission.clone())?,
+                &prepare_subscription_activation(admission.clone()),
             )?,
             QuerySubscriptionSupportEvidence::declaration(declaration),
         )
         .unwrap_err(),
     )?;
-    let selection_context = QuerySubscriptionDiagnosticSelectionContext::from_selection(selection)?;
+    let selection_context = QuerySubscriptionDiagnosticSelectionContext::from_selection(selection);
     let denied_trace = trace_denied_query_subscription_diagnostics(
         &selection_context,
         Some(declaration),

@@ -126,6 +126,7 @@ pub enum WorthQueryProjectionViolation {
 
 #[derive(Debug)]
 pub enum WorthQueryProjectionUnavailable {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     AuthorityBinding(AuthorizedProjectionError),
     Extraction(ProjectionFactExtractionError),
 }
@@ -288,6 +289,7 @@ impl WorthQueryReadProjectionBinding {
         );
         match result.consume_projection_authority_with_binding(binding, contract) {
             Ok(outcome) => WorthQueryProjectionOutcome::from_foundation(outcome),
+            Err(crate::projection_consumption::ProjectionFactConsumptionPathError::EvidenceIdentityDerivationDenied(cause)) => WorthQueryProjectionOutcome::Unavailable(WorthQueryProjectionUnavailable::EvidenceIdentityDerivationDenied(cause)),
             Err(
                 crate::projection_consumption::ProjectionFactConsumptionPathError::Declaration(
                     error,
@@ -318,6 +320,7 @@ impl WorthQueryReadProjectionBinding {
         };
         match result.consume_projection_authority(&self.result_shape, authorized, contract) {
             Ok(outcome) => WorthQueryProjectionOutcome::from_foundation(outcome),
+            Err(crate::projection_consumption::ProjectionFactConsumptionPathError::EvidenceIdentityDerivationDenied(cause)) => WorthQueryProjectionOutcome::Unavailable(WorthQueryProjectionUnavailable::EvidenceIdentityDerivationDenied(cause)),
             Err(
                 crate::projection_consumption::ProjectionFactConsumptionPathError::Declaration(
                     error,

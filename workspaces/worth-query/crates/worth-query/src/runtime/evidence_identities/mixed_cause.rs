@@ -1,14 +1,11 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::WorthQueryRuntimeMixedCauseLaneKind;
 
 pub(in crate::runtime) fn runtime_mixed_cause_atomic_identity(
     delivery_cause_identity: &WorthQueryEvidenceIdentity,
-) -> Result<
-    WorthQueryEvidenceIdentity,
-    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
-> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+) -> WorthQueryEvidenceIdentity {
+    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "worth_query_runtime_mixed_cause_atomic_v1",
@@ -17,17 +14,13 @@ pub(in crate::runtime) fn runtime_mixed_cause_atomic_identity(
                 WorthQueryEvidenceTag::new("delivery_cause"),
                 delivery_cause_identity,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 #[cfg(test)]
 pub(in crate::runtime) fn runtime_mixed_cause_ordering_identity(
     ordering: &BridgeMixedCauseOrdering,
-) -> Result<
-    WorthQueryEvidenceIdentity,
-    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_shape(
@@ -46,10 +39,7 @@ pub(in crate::runtime) fn runtime_mixed_cause_ordering_identity(
 pub(in crate::runtime) fn runtime_mixed_cause_delivery_window_identity(
     delivery_window: &BridgeMixedCauseDeliveryWindowPlan,
     ordering: &BridgeMixedCauseOrdering,
-) -> Result<
-    WorthQueryEvidenceIdentity,
-    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_shape(
@@ -73,10 +63,7 @@ pub(in crate::runtime) fn runtime_mixed_cause_delivery_window_identity(
 #[cfg(test)]
 pub(in crate::runtime) fn runtime_mixed_cause_ordered_cause_identity(
     cause: &BridgeOrderedMixedCause,
-) -> Result<
-    WorthQueryEvidenceIdentity,
-    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_shape(
@@ -94,10 +81,7 @@ pub(in crate::runtime) fn runtime_mixed_cause_ordered_cause_identity(
 #[cfg(test)]
 pub(in crate::runtime) fn runtime_mixed_cause_suppressed_cause_identity(
     cause: &BridgeSuppressedMixedCause,
-) -> Result<
-    WorthQueryEvidenceIdentity,
-    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_shape(
@@ -117,10 +101,7 @@ pub(in crate::runtime) fn runtime_mixed_cause_suppressed_cause_identity(
 #[cfg(test)]
 pub(in crate::runtime) fn runtime_mixed_cause_denied_cause_identity(
     cause: &BridgeDeniedMixedCause,
-) -> Result<
-    WorthQueryEvidenceIdentity,
-    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_shape(
@@ -137,10 +118,7 @@ pub(in crate::runtime) fn runtime_mixed_cause_denied_cause_identity(
 
 pub(in crate::runtime) fn runtime_mixed_cause_delivery_identity(
     delivery: &WorthQueryRuntimeMixedCauseDelivery,
-) -> Result<
-    WorthQueryEvidenceIdentity,
-    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_shape(

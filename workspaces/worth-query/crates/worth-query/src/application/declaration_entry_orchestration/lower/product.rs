@@ -48,7 +48,7 @@ pub(crate) fn worth_query_lower_declaration_entry_product_orchestration_from_pro
     artifact_policy: WorthQueryDeclarationEntryOrchestrationArtifactPolicy,
     product: WorthQueryDeclarationEntryOrchestrationProduct,
     route_intent: Option<WorthQueryDeclarationRouteIntent>,
-) -> Result<WorthQueryLoweredDeclarationEntryProductOrchestration<D, I>, IdentityDerivationDenial> {
+) -> WorthQueryLoweredDeclarationEntryProductOrchestration<D, I> {
     let resolved_progression = resolve_admitted_progression_target(progressed);
     let (_, _, _, _, _, aspect_contract, reviewed_aspect_coverage) = resolved_progression
         .target()
@@ -103,11 +103,11 @@ pub(crate) fn worth_query_lower_declaration_entry_product_orchestration_from_pro
             WorthQueryDeclarationEntryProductChecked::Envelope(envelope_checked)
         }
     };
-    Ok(WorthQueryLoweredDeclarationEntryProductOrchestration {
+    WorthQueryLoweredDeclarationEntryProductOrchestration {
         plan,
         checked,
         step_records,
-    })
+    }
 }
 
 fn foundational_record<D, I>(

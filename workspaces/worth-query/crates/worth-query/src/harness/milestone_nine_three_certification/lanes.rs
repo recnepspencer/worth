@@ -59,7 +59,7 @@ pub(super) fn lane_for(
         QuerySubscriptionAdmissionBudget::admitted(admission_width, 8, 1, 1, 1),
     )
     .unwrap();
-    let activation = prepare_subscription_activation(admission.clone())?;
+    let activation = prepare_subscription_activation(admission.clone());
     let witness =
         build_query_subscription_manual_bridge_witness(&declaration, &lowering, &activation)
             .unwrap();
@@ -206,7 +206,7 @@ pub(super) fn lane_for(
     let lifecycle_bundle = certify_subscription_lifecycle(
         context,
         &admission,
-        &prepare_subscription_activation(admission.clone())?,
+        &prepare_subscription_activation(admission.clone()),
         &scale_report,
         &active_admission,
         &handle,

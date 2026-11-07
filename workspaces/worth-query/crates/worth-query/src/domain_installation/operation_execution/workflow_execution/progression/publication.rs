@@ -131,11 +131,10 @@ impl<D, O, F, L: BasisOperationLane> WorthQueryPublishedWorkflow<D, O, F, L> {
     pub(crate) fn publication_carries_entity(
         &self,
         subject: &crate::memory_workspace::WorthQueryEntityIdentity,
-    ) -> Result<bool, IdentityDerivationDenial> {
-        Ok(self
-            .publication_subjects_by_evidence_identity
+    ) -> bool {
+        self.publication_subjects_by_evidence_identity
             .get(subject.evidence_identity().as_str())
-            == Some(subject))
+            == Some(subject)
     }
     pub fn consume(
         mut self,

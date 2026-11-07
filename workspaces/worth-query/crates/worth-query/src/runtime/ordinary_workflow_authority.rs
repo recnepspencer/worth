@@ -241,7 +241,7 @@ impl WorthQueryRuntime {
             WorthQueryOrdinaryAuthorityDrift::ForeignOwner
         } else if !admission
             .snapshot_identity
-            .is_same_current_identity_as(&self.current_snapshot_identity_with_request(execution)?)
+            .is_same_current_identity_as(&self.current_snapshot_identity_with_request(execution))
         {
             WorthQueryOrdinaryAuthorityDrift::StaleSnapshot
         } else {

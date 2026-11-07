@@ -88,30 +88,26 @@ pub(super) fn binding_scope_for_context_binding<'a>(
 
 pub(crate) fn workflow_context_source_identity(
     source_identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowContextBinding)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowContextBinding)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "workflow_context_source_v1",
             )
             .field_evidence_identity(WorthQueryEvidenceTag::new("source"), source_identity)
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 pub(crate) fn workflow_context_query_identity(
     query_identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowContextBinding)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowContextBinding)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "workflow_context_query_v1",
             )
             .field_evidence_identity(WorthQueryEvidenceTag::new("query"), query_identity)
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 pub(crate) fn workflow_context_basis_identity(

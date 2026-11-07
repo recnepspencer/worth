@@ -130,9 +130,8 @@ pub(in crate::subscription) fn scale_slope_report_identity(
     medium_row_count: u64,
     large_row_count: u64,
     structural_counter_identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "query_subscription_scale_slope_report_v1",
@@ -170,8 +169,7 @@ pub(in crate::subscription) fn scale_slope_report_identity(
                 WorthQueryEvidenceTag::new("structural_counter"),
                 structural_counter_identity,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 pub(in crate::subscription) fn certification_activation_bundle_identity(
@@ -186,9 +184,8 @@ pub(in crate::subscription) fn certification_activation_bundle_identity(
     admission_counters_identity: &WorthQueryEvidenceIdentity,
     activation_counters_identity: &WorthQueryEvidenceIdentity,
     scale_slope_identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "query_subscription_certification_bundle_v1",
@@ -228,6 +225,5 @@ pub(in crate::subscription) fn certification_activation_bundle_identity(
                 WorthQueryEvidenceTag::new("scale_slope"),
                 scale_slope_identity,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }

@@ -247,7 +247,7 @@ fn lower_runtime_envelope(
             "domain-capabilities-dx-route",
             &detail_identity,
         )?,
-    )?;
+    );
     let retained_evidence =
         crate::lower_runtime_routing::worth_query_lower_runtime_retained_evidence_identity(
             "domain-capabilities-dx-test",

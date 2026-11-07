@@ -138,7 +138,7 @@ pub(crate) fn orchestrate_declaration_with_contributions_on_handle<
                 request_digest_value,
                 materialization_policy,
                 WorthQueryContributionComposedDeclarationRecord::from_linked_artifacts(
-                    declaration_stage(&outcome),
+                    declaration_stage(&outcome)?,
                     &linked,
                 ),
                 outcome,
@@ -258,8 +258,12 @@ fn empty_contribution_transcript<
 
 fn declaration_stage<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>(
     outcome: &WorthQueryContributionComposedOrchestrationOutcome<D, I>,
-) -> WorthQueryDeclarationEntryOrchestrationStage {
-    match outcome {
+) -> Result<WorthQueryDeclarationEntryOrchestrationStage, IdentityDerivationDenial> {
+    Ok(match outcome {
+        WorthQueryContributionComposedOrchestrationOutcome::EvidenceIdentityDerivationDenied(
+            cause,
+        ) => return Err(*cause),
+
         WorthQueryContributionComposedOrchestrationOutcome::Bound(_) => {
             WorthQueryDeclarationEntryOrchestrationStage::EnvelopeConstructed
         }
@@ -270,7 +274,7 @@ fn declaration_stage<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInp
         | WorthQueryContributionComposedOrchestrationOutcome::RebindRequired(value)
         | WorthQueryContributionComposedOrchestrationOutcome::Unsupported(value)
         | WorthQueryContributionComposedOrchestrationOutcome::Failed(value) => value.stop_stage(),
-    }
+    })
 }
 
 fn stop_outcome_kind(

@@ -71,7 +71,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
         effect_policy: WorthQueryEffectPolicy,
         basis_admission: WorthQueryPreviewBasisAdmission,
     ) -> Result<Self, IdentityDerivationDenial> {
-        let basis_snapshot_identity = runtime.current_snapshot_identity_with_request(execution)?;
+        let basis_snapshot_identity = runtime.current_snapshot_identity_with_request(execution);
         Ok(Self {
             label,
             runtime,

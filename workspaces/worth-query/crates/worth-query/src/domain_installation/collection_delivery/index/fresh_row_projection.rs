@@ -38,7 +38,7 @@ impl WorthQueryCollectionMaintenanceIndex {
                     .map(|target| target.replacement(&fresh));
                 prior.entity.clone().replace_native_values(replacements)
             }))
-        })?;
+        });
         Ok(self.preview_delta(window, affected, keys, delta, counters))
     }
 }

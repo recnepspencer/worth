@@ -62,9 +62,7 @@ impl WorthQueryPromotionEligiblePreviewDeclaration {
     }
 }
 
-pub fn declare(
-    label: WorthQuerySessionLabel,
-) -> Result<WorthQueryReadOnlyPreviewDeclaration, IdentityDerivationDenial> {
+pub fn declare(label: WorthQuerySessionLabel) -> WorthQueryReadOnlyPreviewDeclaration {
     let identity =
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::PreviewExecutionEvidence)
             .field_shape(
@@ -75,10 +73,10 @@ pub fn declare(
                 WorthQueryEvidenceTag::new("session_label"),
                 label.identity_digest(),
             )
-            .seal()?;
-    Ok(WorthQueryReadOnlyPreviewDeclaration {
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens");
+    WorthQueryReadOnlyPreviewDeclaration {
         identity,
         label,
         inspection_policy: WorthQueryOrdinaryInspectionPolicy::OperationalOnly,
-    })
+    }
 }

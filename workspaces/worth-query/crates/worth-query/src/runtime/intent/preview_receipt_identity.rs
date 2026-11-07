@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -14,10 +15,7 @@ pub(super) fn preview_intent_admission_identity(
     basis_admission: &WorthQueryPreviewBasisAdmission,
     admission: WorthQueryEffectAdmission,
     canonical_input_digest: &str,
-) -> Result<
-    WorthQueryEvidenceIdentity,
-    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::PreviewIntentAdmission)
             .field_shape(
@@ -66,12 +64,8 @@ pub(super) fn preview_intent_admission_identity(
 
 pub(super) fn preview_intent_receipt_identity(
     admission_identity: &WorthQueryEvidenceIdentity,
-) -> Result<
-    WorthQueryEvidenceIdentity,
-    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
-> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::PreviewIntentReceipt)
+) -> WorthQueryEvidenceIdentity {
+    worth_query_evidence_identity(WorthQueryEvidenceScope::PreviewIntentReceipt)
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("admission_identity"),
                 admission_identity,
@@ -80,6 +74,5 @@ pub(super) fn preview_intent_receipt_identity(
                 WorthQueryEvidenceTag::new("posture"),
                 "preview-local-staged-no-authoritative-execution",
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }

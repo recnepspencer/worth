@@ -28,8 +28,8 @@ impl WorthQueryRuntimeStateTarget for &WorthQueryAdmittedWorldBasis {
             .validate_installed_domain_authority(self.installed_authority())
             .map_err(WorthQueryRuntimeError::InstalledDomainAuthorityDenied)?;
         Ok(WorthQueryRuntimeStateSnapshot::ready(
-            runtime_state_snapshot_basis_label_identity(self.basis_lifecycle_support_identity())?,
-            runtime_state_snapshot_result_shape_label_identity(self.handle_identity())?,
+            runtime_state_snapshot_basis_label_identity(self.basis_lifecycle_support_identity()),
+            runtime_state_snapshot_result_shape_label_identity(self.handle_identity()),
             WorthQueryAuthorityLane::AuthoritativeTruth,
             format!(
                 "retained admitted world basis `{}` is ready with basis lifecycle support `{}`",
@@ -80,11 +80,11 @@ fn scoped_basis_snapshot(
         runtime_state_snapshot_basis_label_identity(&scoped_identity(
             "scoped_basis",
             basis.scoped_basis_digest(),
-        )?)?,
+        )?),
         runtime_state_snapshot_result_shape_label_identity(&scoped_identity(
             "basis_capability",
             basis.capability_digest(),
-        )?)?,
+        )?),
         authority_lane_for_family(basis.family()),
         format!(
             "{label} is ready with `{}` authority and `{}` lifecycle posture",

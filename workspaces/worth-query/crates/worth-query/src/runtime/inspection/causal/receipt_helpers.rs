@@ -105,7 +105,7 @@ pub(super) fn write_observation_query_identity(
 pub(super) fn read_observation_receipt_identity(
     receipt: &WorthQueryReadReceipt,
 ) -> Result<CausalObservationReceiptIdentity, IdentityDerivationDenial> {
-    let snapshot_identity = receipt.snapshot_evidence_identity()?;
+    let snapshot_identity = receipt.snapshot_evidence_identity();
     Ok(
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::CausalObservationReceipt)
             .field_shape(

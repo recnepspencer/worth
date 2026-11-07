@@ -68,7 +68,7 @@ impl WorthQueryLowerRuntimeReadmissionReceipt {
     pub(crate) fn new(
         eligibility: WorthQueryLowerRuntimeCapabilityEligibility,
         retained_evidence_identity: &WorthQueryLowerRuntimeRetainedEvidenceIdentity,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let handoff_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeReadmissionReceipt)
                 .field_evidence_identity(
@@ -79,12 +79,12 @@ impl WorthQueryLowerRuntimeReadmissionReceipt {
                     WorthQueryEvidenceTag::new("retained_evidence"),
                     retained_evidence_identity.evidence_identity(),
                 )
-                .seal()?;
-        Ok(Self {
+                .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens");
+        Self {
             eligibility,
             retained_evidence_identity: retained_evidence_identity.clone(),
             handoff_identity,
-        })
+        }
     }
 
     pub fn eligibility(&self) -> &WorthQueryLowerRuntimeCapabilityEligibility {
@@ -326,7 +326,7 @@ mod tests {
                 "test-route",
                 &detail_identity,
             )?,
-        )?;
+        );
         let retained_evidence = worth_query_lower_runtime_retained_evidence_identity(
             "receipt-test",
             &WorthQueryEvidenceIdentity::compose(

@@ -177,9 +177,8 @@ pub(super) fn preview_intent_admission_identity_fixture(
 
 pub(super) fn preview_intent_receipt_identity_fixture(
     admission_identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::PreviewIntentReceipt)
+) -> WorthQueryEvidenceIdentity {
+    worth_query_evidence_identity(WorthQueryEvidenceScope::PreviewIntentReceipt)
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("admission_identity"),
                 admission_identity,
@@ -188,8 +187,7 @@ pub(super) fn preview_intent_receipt_identity_fixture(
                 WorthQueryEvidenceTag::new("posture"),
                 "preview-local-staged-no-authoritative-execution",
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 pub(super) fn preview_intent_receipt_inspection_identity_fixture(

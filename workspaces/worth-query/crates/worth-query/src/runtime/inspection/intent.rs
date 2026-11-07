@@ -38,7 +38,7 @@ impl WorthQueryIntentReceiptInspection {
     pub(in crate::runtime) fn from_receipt(
         receipt: &WorthQueryIntentReceipt,
     ) -> Result<Self, IdentityDerivationDenial> {
-        let delivery_counters = WorthQueryIntentInspectionDeliveryCounters::from_receipt(receipt)?;
+        let delivery_counters = WorthQueryIntentInspectionDeliveryCounters::from_receipt(receipt);
         let produced_mutation_digest = receipt.produced_mutation_digest().map(str::to_string);
         let invariant_evidence = receipt.invariant_evidence().to_vec();
         let inspection_identity = intent_receipt_inspection_identity(

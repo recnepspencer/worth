@@ -109,12 +109,12 @@ impl WorthQueryWriteReceipt {
         execution_provenance: Option<WorthQueryIntentExecutionProvenance>,
     ) -> Result<Self, IdentityDerivationDenial> {
         let commit_evidence_identity =
-            write_receipt_commit_evidence_identity(&inner.commit_identity)?;
+            write_receipt_commit_evidence_identity(&inner.commit_identity);
         let committed_truth_identity = write_receipt_committed_truth_identity(&inner)?;
         let journal_position =
             WorthQueryJournalPosition::from_commit_identity(&inner.commit_identity);
         let snapshot_evidence_identity =
-            write_receipt_snapshot_evidence_identity(&inner.snapshot_identity)?;
+            write_receipt_snapshot_evidence_identity(&inner.snapshot_identity);
         let target_evidence = target_evidence_from_receipt(
             mutation_family,
             declared_collection_identity.clone(),
@@ -239,12 +239,12 @@ impl WorthQueryWriteReceipt {
         authority_lane: WorthQueryAuthorityLane,
     ) -> Result<Self, IdentityDerivationDenial> {
         let commit_evidence_identity =
-            write_receipt_commit_evidence_identity(&inner.commit_identity)?;
+            write_receipt_commit_evidence_identity(&inner.commit_identity);
         let committed_truth_identity = write_receipt_committed_truth_identity(&inner)?;
         let journal_position =
             WorthQueryJournalPosition::from_commit_identity(&inner.commit_identity);
         let snapshot_evidence_identity =
-            write_receipt_snapshot_evidence_identity(&inner.snapshot_identity)?;
+            write_receipt_snapshot_evidence_identity(&inner.snapshot_identity);
         let target_evidence = target_evidence_from_receipt(
             mutation_family,
             declared_collection_identity.clone(),

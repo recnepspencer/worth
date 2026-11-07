@@ -91,7 +91,7 @@ pub(super) fn assemble_lifecycle_bundle(
     let active_lane_handle_identity = lifecycle_active_lane_handle_identity(
         active_admission.lane_digest().evidence_identity(),
         active_lane_handle,
-    )?;
+    );
     let active_lane_lookup_class_identity =
         lifecycle_active_lane_lookup_class_identity(active_admission.lookup_class().as_str())?;
     let subscription_budget_identity = lifecycle_subscription_budget_identity(
@@ -103,7 +103,7 @@ pub(super) fn assemble_lifecycle_bundle(
         active_admission.budget().durable_checkpoint_requested(),
         active_admission.budget().store_backed_restart_requested(),
     )?;
-    let absent_performance = lifecycle_absent_performance_receipt_identity()?;
+    let absent_performance = lifecycle_absent_performance_receipt_identity();
     let preview_performance_identity = preview_evidence.performance_receipt_identity.clone();
     let performance_receipt_identities = [
         active_admission
@@ -182,7 +182,7 @@ pub(super) fn assemble_lifecycle_bundle(
         lifecycle_closeout.evidence_identity(),
         &support_matrix_identity,
         &counter_sequence_identity,
-    )?;
+    );
 
     Ok(SubscriptionLifecycleCertificationBundle {
         certification_bundle_authority: admit_query_subscription_authority_identity(

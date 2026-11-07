@@ -36,7 +36,7 @@ pub(super) fn preview_discard_lane(
     let declaration = declare_query_subscription(selection, slice_budget()).unwrap();
     let lowering = lower_query_subscription_to_bridge(declaration, lowering_budget()).unwrap();
     let admission = admit_query_subscription(lowering, admission_budget()).unwrap();
-    let activation = prepare_subscription_activation(admission.clone())?;
+    let activation = prepare_subscription_activation(admission.clone());
     let scale_report = scale_slope_report(&activation, 1, 0)?;
     let mut runtime = ActiveSubscriptionRuntime::new();
     let active_admission =
@@ -151,7 +151,7 @@ pub(super) fn preview_promotion_lane(
     let declaration = declare_query_subscription(selection, slice_budget()).unwrap();
     let lowering = lower_query_subscription_to_bridge(declaration, lowering_budget()).unwrap();
     let admission = admit_query_subscription(lowering, admission_budget()).unwrap();
-    let activation = prepare_subscription_activation(admission.clone())?;
+    let activation = prepare_subscription_activation(admission.clone());
     let scale_report = scale_slope_report(&activation, 1, 0)?;
     let mut runtime = ActiveSubscriptionRuntime::new();
     let active_admission =

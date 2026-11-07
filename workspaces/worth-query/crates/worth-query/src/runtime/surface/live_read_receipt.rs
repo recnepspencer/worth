@@ -36,9 +36,9 @@ impl WorthQueryLiveReadReceipt {
         snapshot_identity: WorthQuerySnapshotIdentity,
         materialized_fact_posture: Option<ProjectionMaterializedFactPosture>,
         rows: &[crate::memory_workspace::WorthQueryEntity],
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let snapshot_evidence_identity = snapshot_identity.evidence_identity();
-        Ok(Self {
+        Self {
             view_name: installation.view_name().to_string(),
             installation_digest: installation.installation_projection().label().to_string(),
             installation_identity: installation.installation_identity().clone(),
@@ -64,7 +64,7 @@ impl WorthQueryLiveReadReceipt {
             live_graph_read_access: None,
             decision_trace_envelope: None,
             execution_provenance: None,
-        })
+        }
     }
 
     pub fn view_name(&self) -> &str {

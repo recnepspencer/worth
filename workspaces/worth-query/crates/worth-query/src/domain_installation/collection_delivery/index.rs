@@ -46,7 +46,7 @@ impl WorthQueryCollectionMaintenanceIndex {
     pub(crate) fn build(
         inputs: WorthQueryCollectionMaintenanceInputs<'_>,
         counters: &mut crate::domain_installation::WorthQueryCollectionCapabilityCounters,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let WorthQueryCollectionMaintenanceInputs {
             request,
             window_policy,
@@ -86,7 +86,7 @@ impl WorthQueryCollectionMaintenanceIndex {
             );
             counters.maintenance_rows_indexed += 1;
         }
-        Ok(Self {
+        Self {
             collection: request.target().to_string(),
             request,
             window_policy,
@@ -98,7 +98,7 @@ impl WorthQueryCollectionMaintenanceIndex {
             rows,
             identities,
             source_identities,
-        })
+        }
     }
 
     pub(super) const fn window_policy(
@@ -282,7 +282,7 @@ impl WorthQueryCollectionMaintenanceIndex {
         affected: &BTreeSet<WorthQueryEntityIdentity>,
         counters: &mut WorthQueryCollectionDeliveryCounters,
         mut fresh: impl FnMut(&WorthQueryEntityIdentity) -> Option<WorthQueryEntity>,
-    ) -> Result<WorthQueryCollectionIndexDelta, IdentityDerivationDenial> {
+    ) -> WorthQueryCollectionIndexDelta {
         let mut removals = BTreeSet::new();
         let mut upserts = BTreeMap::new();
         let mut group_transitions = Vec::new();
@@ -334,11 +334,11 @@ impl WorthQueryCollectionMaintenanceIndex {
             );
             counters.ordering_index_updates += 1;
         }
-        Ok(WorthQueryCollectionIndexDelta {
+        WorthQueryCollectionIndexDelta {
             removals,
             upserts,
             group_transitions,
-        })
+        }
     }
 
     fn window_rows(

@@ -8,9 +8,8 @@ pub(in crate::subscription) fn diagnostic_counters_identity(
     denied_bundle_emission_count: u64,
     diagnostic_missing_stage_denial_count: u64,
     diagnostic_bundle_width: u64,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "query_subscription_diagnostic_counters_v1",
@@ -35,17 +34,15 @@ pub(in crate::subscription) fn diagnostic_counters_identity(
                 WorthQueryEvidenceTag::new("diagnostic_bundle_width"),
                 diagnostic_bundle_width as usize,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 pub(in crate::subscription) fn diagnostic_bundle_width_identity(
     stage_evidence_count: usize,
     failure_evidence_count: usize,
     hostile_row_reference_count: usize,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "query_subscription_diagnostic_bundle_width_v1",
@@ -62,8 +59,7 @@ pub(in crate::subscription) fn diagnostic_bundle_width_identity(
                 WorthQueryEvidenceTag::new("hostile_row_reference_count"),
                 hostile_row_reference_count,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 pub(in crate::subscription) fn diagnostic_assembly_receipt_identity(

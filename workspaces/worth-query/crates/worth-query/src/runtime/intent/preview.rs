@@ -2,6 +2,7 @@ use super::preview_receipt_identity::{
     preview_intent_admission_identity, preview_intent_receipt_identity,
 };
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -28,7 +29,7 @@ impl WorthQueryPreviewIntentReceipt {
         effect_policy: WorthQueryEffectPolicy,
         basis_admission: &WorthQueryPreviewBasisAdmission,
         admission: WorthQueryEffectAdmission,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let basis_evidence = basis_admission.evidence().to_vec();
         let canonical_input_digest = declaration.input_digest();
         let basis_evidence_identity =
@@ -40,7 +41,7 @@ impl WorthQueryPreviewIntentReceipt {
             admission,
             &canonical_input_digest,
         )?;
-        let receipt_identity = preview_intent_receipt_identity(&admission_identity)?;
+        let receipt_identity = preview_intent_receipt_identity(&admission_identity);
         Ok(Self {
             intent_name: declaration.name().to_string(),
             strategy_identity: declaration.strategy_name().to_string(),
@@ -112,10 +113,7 @@ impl WorthQueryPreviewIntentReceipt {
 fn preview_intent_basis_evidence_identity(
     intent_name: &str,
     basis_admission: &WorthQueryPreviewBasisAdmission,
-) -> Result<
-    WorthQueryEvidenceIdentity,
-    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::PreviewIntentBasisEvidence)
             .field_shape(WorthQueryEvidenceTag::new("intent_name"), intent_name)

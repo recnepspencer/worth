@@ -173,7 +173,7 @@ mod tests {
                 .seal()?,
             )?;
         let readmission =
-            WorthQueryLowerRuntimeReadmissionReceipt::new(eligibility, &retained_evidence)?;
+            WorthQueryLowerRuntimeReadmissionReceipt::new(eligibility, &retained_evidence);
         let boundary =
             WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_readmission_receipt(&readmission)?;
         let envelope = crate::lower_runtime_routing::WorthQueryLowerRuntimeBoundaryEnvelope::from_readmission_receipt(
@@ -231,7 +231,7 @@ mod tests {
                 "lower-runtime-dx-route",
                 &detail_identity,
             )?,
-        )?;
+        );
         let retained_evidence =
             crate::lower_runtime_routing::worth_query_lower_runtime_retained_evidence_identity(
                 "dx-route-test",

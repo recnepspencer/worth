@@ -288,6 +288,9 @@ fn missing_runtime_semantics_denial(
 
 fn declaration_error_label(error: &ProjectionConsumptionDeclarationError) -> &'static str {
     match error {
+        ProjectionConsumptionDeclarationError::EvidenceIdentityDerivationDenied(_) => {
+            "evidence-identity-derivation-denied"
+        }
         ProjectionConsumptionDeclarationError::NoRequestedFacts => "no-requested-facts",
         ProjectionConsumptionDeclarationError::SourceAuthorizedProjectionQueryMismatch {
             ..

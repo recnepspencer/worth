@@ -107,7 +107,7 @@ impl<D> WorthQueryInstalledDomainHandle<D> {
     ) -> Result<WorthQueryInstalledDomainAuthorityWitness, IdentityDerivationDenial> {
         Ok(WorthQueryInstalledDomainAuthorityWitness::from_authority(
             self.authority_arc(),
-        )?)
+        ))
     }
     pub fn graph_read_operation(
         &self,

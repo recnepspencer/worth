@@ -96,7 +96,7 @@ fn lifecycle_lane_with_delivery_profile(
     let declaration = declare_query_subscription(selection, slice_budget()).unwrap();
     let lowering = lower_query_subscription_to_bridge(declaration, lowering_budget()).unwrap();
     let admission_artifact = admit_query_subscription(lowering, admission_budget()).unwrap();
-    let activation = prepare_subscription_activation(admission_artifact.clone())?;
+    let activation = prepare_subscription_activation(admission_artifact.clone());
     let scale_report = scale_slope_report(&activation, patch_width, continuation_width)?;
     let mut runtime = ActiveSubscriptionRuntime::new();
     let active_admission =

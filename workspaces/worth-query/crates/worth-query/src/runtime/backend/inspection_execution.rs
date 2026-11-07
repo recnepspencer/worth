@@ -4,6 +4,7 @@ use crate::runtime::CausalInspectionMaterializationError;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryBackendInspectionErrorKind {
+    EvidenceIdentityDerivationDenied,
     Unavailable,
     Materialization,
 }
@@ -18,6 +19,9 @@ pub enum WorthQueryBackendInspectionError {
 impl WorthQueryBackendInspectionError {
     pub fn kind(&self) -> WorthQueryBackendInspectionErrorKind {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => {
+                WorthQueryBackendInspectionErrorKind::EvidenceIdentityDerivationDenied
+            }
             Self::Unavailable(_) => WorthQueryBackendInspectionErrorKind::Unavailable,
             Self::Materialization(_) => WorthQueryBackendInspectionErrorKind::Materialization,
         }
@@ -25,6 +29,9 @@ impl WorthQueryBackendInspectionError {
 
     pub fn message(&self) -> String {
         match self {
+            Self::EvidenceIdentityDerivationDenied(cause) => {
+                format!("evidence identity refused: {cause:?}")
+            }
             Self::Unavailable(error) => error.to_string(),
             Self::Materialization(error) => format!("{error:?}"),
         }

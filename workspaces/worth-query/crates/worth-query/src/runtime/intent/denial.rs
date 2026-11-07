@@ -62,8 +62,7 @@ impl WorthQueryIntentDenialEvidence {
             execution.map(|execution| execution.mutation_receipt().snapshot_identity.clone());
         let snapshot_evidence_identity = snapshot_identity
             .as_ref()
-            .map(WorthQuerySnapshotIdentity::evidence_identity)
-            .transpose()?;
+            .map(WorthQuerySnapshotIdentity::evidence_identity);
         let denial_digest =
             (|| {
                 Ok(worth_query_evidence_identity(WorthQueryEvidenceScope::IntentDenialEvidence)
@@ -223,8 +222,7 @@ impl WorthQueryIntentDenialEvidence {
         Ok(self
             .snapshot_identity
             .as_ref()
-            .map(WorthQuerySnapshotIdentity::evidence_identity)
-            .transpose()?)
+            .map(WorthQuerySnapshotIdentity::evidence_identity))
     }
 
     pub fn execution_provenance(&self) -> Option<&WorthQueryIntentExecutionProvenance> {

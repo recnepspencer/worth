@@ -52,7 +52,7 @@ pub(crate) fn worth_query_checked_declaration_envelope_orchestration_from_progre
             WorthQueryDeclarationEntryOrchestrationArtifactPolicy::CheckedOutcomeOnly,
             WorthQueryDeclarationEntryOrchestrationProduct::Envelope,
             route_intent,
-        )?
+        )
         .checked
         {
             WorthQueryDeclarationEntryProductChecked::Envelope(checked) => checked,
@@ -78,7 +78,7 @@ pub(crate) fn worth_query_declaration_envelope_orchestration_from_progressed_pro
             WorthQueryDeclarationEntryOrchestrationArtifactPolicy::ProofVisibleTranscript,
             WorthQueryDeclarationEntryOrchestrationProduct::Envelope,
             route_intent,
-        )?;
+        );
     let checked = match lowered.checked {
         WorthQueryDeclarationEntryProductChecked::Envelope(checked) => checked,
         _ => panic!("envelope orchestration proof must project the envelope product"),

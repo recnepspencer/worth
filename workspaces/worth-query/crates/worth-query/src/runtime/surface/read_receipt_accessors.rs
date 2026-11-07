@@ -60,10 +60,8 @@ impl WorthQueryReadReceipt {
         &self.snapshot_identity
     }
 
-    pub fn snapshot_evidence_identity(
-        &self,
-    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(self.snapshot_identity.evidence_identity())
+    pub fn snapshot_evidence_identity(&self) -> WorthQueryEvidenceIdentity {
+        self.snapshot_identity.evidence_identity()
     }
 
     pub fn scope_class(&self) -> &WorthQueryReadScopeClass {

@@ -63,7 +63,7 @@ impl WorthQueryRuntime {
         )?;
         Ok(WorthQueryRuntimeBranchComparisonBasis::new(
             admission,
-            self.current_snapshot_identity_with_request(execution)?,
+            self.current_snapshot_identity_with_request(execution),
         ))
     }
 

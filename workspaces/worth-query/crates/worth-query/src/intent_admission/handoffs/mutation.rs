@@ -228,8 +228,7 @@ fn command_handoff_fingerprint(
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let declared_entity_identity = command
         .declared_entity_identity_ref()
-        .map(|identity| identity.evidence_identity())
-        .transpose()?;
+        .map(|identity| identity.evidence_identity());
     let declared_collection_identity = command.declared_collection_identity();
     Ok(worth_query_evidence_identity(
         WorthQueryEvidenceScope::AuthoritativeMutationExecutionHandoff,

@@ -61,7 +61,7 @@ impl LiveViewDeclarationAdmissionBoundaryReceipt {
                 "live-view-declaration-admission",
                 admission_receipt.receipt_identity(),
             )?,
-        )?;
+        );
         let boundary_execution_receipt =
             WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_readmission_receipt(
                 &readmission_receipt,
@@ -158,7 +158,7 @@ impl SignalInvalidationBoundaryReceipt {
                 "signal-invalidation-route",
                 routing_receipt.receipt_identity(),
             )?,
-        )?;
+        );
         let retained_evidence_identity =
             WorthQueryLowerRuntimeRetainedEvidenceIdentity::from_evidence_identity(
                 "signal-invalidation-routing",
@@ -263,7 +263,7 @@ impl SubscriptionActivationBoundaryReceipt {
                 "subscription-activation-route",
                 activation_receipt.receipt_identity(),
             )?,
-        )?;
+        );
         let retained_evidence_identity =
             WorthQueryLowerRuntimeRetainedEvidenceIdentity::from_evidence_identity(
                 "subscription-activation",

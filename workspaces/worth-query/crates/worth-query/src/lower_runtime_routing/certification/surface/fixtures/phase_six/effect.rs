@@ -291,7 +291,7 @@ fn route_planned_row(
             "phase-six-effect-route",
             &evidence,
         )?,
-    )?;
+    );
     let retained_evidence_identity =
         crate::lower_runtime_routing::worth_query_lower_runtime_retained_evidence_identity(
             "phase-six-effect-route",

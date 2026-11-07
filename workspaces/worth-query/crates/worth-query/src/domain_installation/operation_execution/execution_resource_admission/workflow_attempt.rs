@@ -73,7 +73,7 @@ where
         let witness =
             crate::domain_installation::WorthQueryInstalledDomainAuthorityWitness::from_authority(
                 std::sync::Arc::clone(self.operation().domain_authority()),
-            )?;
+            );
         if let Err(denial) = workspace.validate_installed_domain_witness::<D>(&witness) {
             let kind = denial.kind();
             let denial = WorthQueryExecutionResourceAdmissionDenial::new(

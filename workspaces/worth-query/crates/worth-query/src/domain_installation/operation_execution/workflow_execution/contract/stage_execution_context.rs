@@ -167,7 +167,7 @@ impl<'a> WorthQueryWorkflowStageExecutionContext<'a> {
                 &self.query_authority,
                 self.operation_identity,
                 &self.identity_evolution_basis_identity,
-                observation.into_engine_comparison()?,
+                observation.into_engine_comparison(),
             )?;
         let admitted = crate::identity_evolution::admit_identity_evolution_query(query)
             .map_err(WorthQueryWorkflowStageLineageDenial::IdentityEvolutionAdmission)?;

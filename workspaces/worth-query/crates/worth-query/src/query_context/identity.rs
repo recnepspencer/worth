@@ -73,8 +73,8 @@ pub(crate) fn compose_query_basis_replay_digest(
 pub(crate) fn compose_query_basis_counter_snapshot_digest(
     context: &AdmittedQueryBasisContext,
     execution: &QueryContextExecutionArtifact,
-) -> Result<String, IdentityDerivationDenial> {
-    Ok(WorthQueryEvidenceIdentity::compose(
+) -> String {
+    WorthQueryEvidenceIdentity::compose(
         WorthQueryEvidenceScope::QueryContextCompatibilityBasisLabel,
     )
     .field_shape(
@@ -109,9 +109,9 @@ pub(crate) fn compose_query_basis_counter_snapshot_digest(
         WorthQueryEvidenceTag::new("result_shape_width"),
         execution.counters().result_shape_width(),
     )
-    .seal()?
+    .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
     .as_str()
-    .to_string())
+    .to_string()
 }
 
 pub(crate) fn compose_query_diff_replay_digest(
@@ -158,8 +158,8 @@ pub(crate) fn compose_query_diff_replay_digest(
 pub(crate) fn compose_query_diff_counter_snapshot_digest(
     context: &AdmittedDiffQueryContext,
     change_set: &QueryDiffChangeSetArtifact,
-) -> Result<String, IdentityDerivationDenial> {
-    Ok(WorthQueryEvidenceIdentity::compose(
+) -> String {
+    WorthQueryEvidenceIdentity::compose(
         WorthQueryEvidenceScope::QueryContextCompatibilityBasisLabel,
     )
     .field_shape(
@@ -190,9 +190,9 @@ pub(crate) fn compose_query_diff_counter_snapshot_digest(
         WorthQueryEvidenceTag::new("change_rows"),
         change_set.rows().len(),
     )
-    .seal()?
+    .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
     .as_str()
-    .to_string())
+    .to_string()
 }
 
 pub(crate) fn compose_query_context_support_profile_digest(

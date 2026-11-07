@@ -30,9 +30,8 @@ pub(in crate::subscription) fn lifecycle_certification_bundle_identity(
     closeout_identity: &WorthQueryEvidenceIdentity,
     support_matrix_identity: &WorthQueryEvidenceIdentity,
     counter_sequence_identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "subscription_lifecycle_certification_bundle_v1",
@@ -123,8 +122,7 @@ pub(in crate::subscription) fn lifecycle_certification_bundle_identity(
                 WorthQueryEvidenceTag::new("counters"),
                 counter_sequence_identity,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 pub(in crate::subscription) fn lifecycle_active_lane_lookup_class_identity(
@@ -262,9 +260,8 @@ pub(in crate::subscription) fn lifecycle_preview_promotion_residue_identity(
     residue_identity: &WorthQueryEvidenceIdentity,
     handoff_identity: &WorthQueryEvidenceIdentity,
     authoritative_lane_identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "subscription_preview_residue_v1",
@@ -275,6 +272,5 @@ pub(in crate::subscription) fn lifecycle_preview_promotion_residue_identity(
                 WorthQueryEvidenceTag::new("authoritative_lane"),
                 authoritative_lane_identity,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }

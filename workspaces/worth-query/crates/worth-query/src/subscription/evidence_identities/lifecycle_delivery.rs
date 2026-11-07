@@ -77,9 +77,8 @@ pub(in crate::subscription) fn lifecycle_work_packet_identity(
 pub(in crate::subscription) fn lifecycle_delivery_batch_receipt_identity(
     attachment_identity: &WorthQueryEvidenceIdentity,
     sequence: u64,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "query_delivery_batch_receipt_v1",
@@ -89,8 +88,7 @@ pub(in crate::subscription) fn lifecycle_delivery_batch_receipt_identity(
                 attachment_identity,
             )
             .field_usize(WorthQueryEvidenceTag::new("sequence"), sequence as usize)
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 pub(in crate::subscription) fn lifecycle_delivery_batch_identity(

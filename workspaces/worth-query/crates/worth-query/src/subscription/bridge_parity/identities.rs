@@ -12,9 +12,8 @@ use super::witness::BridgeWitnessAssemblyPosture;
 
 pub(super) fn bridge_parity_counter_identity(
     counters: &QuerySubscriptionBridgeParityCounters,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "query_subscription_bridge_parity_counters_v1",
@@ -35,8 +34,7 @@ pub(super) fn bridge_parity_counter_identity(
                 WorthQueryEvidenceTag::new("family_distinction_preservation_count"),
                 counters.subscription_bridge_family_distinction_preservation_count() as usize,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 #[cfg(test)]
@@ -45,9 +43,8 @@ pub(super) fn bridge_parity_width_identity(
     compared_slice_dimension_count: usize,
     compared_basis_dimension_count: usize,
     compared_signal_dimension_count: usize,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "query_subscription_bridge_parity_width_v1",
@@ -68,8 +65,7 @@ pub(super) fn bridge_parity_width_identity(
                 WorthQueryEvidenceTag::new("signal_dimensions"),
                 compared_signal_dimension_count,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 #[cfg(test)]
@@ -146,9 +142,8 @@ pub(super) fn bridge_parity_explanation_identity(
     witness_identity: &WorthQueryEvidenceIdentity,
     receipt_identity: &WorthQueryEvidenceIdentity,
     counter_identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "query_subscription_bridge_parity_explanation_v1",
@@ -160,8 +155,7 @@ pub(super) fn bridge_parity_explanation_identity(
             .field_evidence_identity(WorthQueryEvidenceTag::new("witness"), witness_identity)
             .field_evidence_identity(WorthQueryEvidenceTag::new("receipt"), receipt_identity)
             .field_evidence_identity(WorthQueryEvidenceTag::new("counters"), counter_identity)
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 pub(super) fn bridge_parity_failure_identity(

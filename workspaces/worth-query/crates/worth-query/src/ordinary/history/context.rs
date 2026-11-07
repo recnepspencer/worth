@@ -20,12 +20,11 @@ impl WorthQueryHistoricalContext {
         &self.snapshot_identity
     }
 
-    pub(crate) fn basis_label(&self) -> Result<String, IdentityDerivationDenial> {
-        Ok(self
-            .snapshot_identity
+    pub(crate) fn basis_label(&self) -> String {
+        self.snapshot_identity
             .evidence_identity()
             .as_str()
-            .to_string())
+            .to_string()
     }
 
     pub(crate) fn admits_snapshot(&self, candidate: &WorthQuerySnapshotIdentity) -> bool {

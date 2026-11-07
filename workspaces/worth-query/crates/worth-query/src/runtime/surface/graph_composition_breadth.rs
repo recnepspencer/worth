@@ -17,7 +17,7 @@ impl WorthQueryGraphCompositionBreadth {
         component_count: usize,
         symbolic_entity_declaration_count: usize,
         symbolic_relation_declaration_count: usize,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let breadth_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
                 .field_shape(
@@ -33,17 +33,17 @@ impl WorthQueryGraphCompositionBreadth {
                     WorthQueryEvidenceTag::new("symbolic_relations"),
                     symbolic_relation_declaration_count,
                 )
-                .seal()?;
-        Ok(Self {
+                .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens");
+        Self {
             component_count,
             symbolic_entity_declaration_count,
             symbolic_relation_declaration_count,
             breadth_digest,
-        })
+        }
     }
 
-    pub(crate) fn empty() -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(0, 0, 0)?)
+    pub(crate) fn empty() -> Self {
+        Self::new(0, 0, 0)
     }
 
     pub fn component_count(&self) -> usize {

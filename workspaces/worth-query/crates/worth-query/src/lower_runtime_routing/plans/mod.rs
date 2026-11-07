@@ -47,7 +47,7 @@ impl WorthQueryLowerRuntimeRoutePlan {
     pub(crate) fn new(
         eligibility: WorthQueryLowerRuntimeCapabilityEligibility,
         route_subject: WorthQueryLowerRuntimeRouteSubjectIdentity,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let route_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeRoutePlan)
                 .field_evidence_identity(
@@ -58,12 +58,12 @@ impl WorthQueryLowerRuntimeRoutePlan {
                     WorthQueryEvidenceTag::new("route_subject"),
                     route_subject.evidence_identity(),
                 )
-                .seal()?;
-        Ok(Self {
+                .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens");
+        Self {
             eligibility,
             route_subject,
             route_identity,
-        })
+        }
     }
 
     pub fn eligibility(&self) -> &WorthQueryLowerRuntimeCapabilityEligibility {
@@ -119,7 +119,7 @@ mod tests {
                 "test-route",
                 &detail_identity,
             )?,
-        )?;
+        );
 
         assert_eq!(
             plan.route_subject().evidence_identity().scope(),

@@ -71,7 +71,7 @@ impl QuerySubscriptionDiagnosticBundleError {
             )
             .field_evidence_identity(
                 crate::evidence_identity::WorthQueryEvidenceTag::new("counters"),
-                &counters.evidence_identity()?,
+                &counters.evidence_identity(),
             )
             .field_value_sequence(
                 crate::evidence_identity::WorthQueryEvidenceTag::new("evidence"),

@@ -52,7 +52,7 @@ impl SelfDescribingEffectEnvelope {
         let structural_delta_identities = structural_delta_identities(receipt);
         let trace_identity = receipt.decision_trace().decision_trace_identity().clone();
         let integrity_identity = receipt.integrity_markers().integrity_identity().clone();
-        let sources = EffectEnvelopeSourceRefs::from_receipt(receipt)?;
+        let sources = EffectEnvelopeSourceRefs::from_receipt(receipt);
         let transition_rules = receipt.transition_rules()?;
         let performance_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)

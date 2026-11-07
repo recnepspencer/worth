@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 #[path = "routing_aspects.rs"]
 mod routing_aspects;
 
@@ -155,10 +156,7 @@ pub(in crate::runtime) fn route_effect_deliveries(
     receipt: &WorthQueryMutationReceipt,
     affected_live_view_targets: &[WorthQueryLiveArtifactTarget],
     affected_derived_view_targets: &[WorthQueryDerivedMaterializationTarget],
-) -> Result<
-    WorthQueryEffectRouteResult,
-    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<WorthQueryEffectRouteResult, IdentityDerivationDenial> {
     let mut candidates: BTreeSet<WorthQueryEffectTarget> = BTreeSet::new();
     candidates.extend(effect_index.live_candidates(affected_live_view_targets.iter()));
     candidates.extend(effect_index.computed_candidates(affected_derived_view_targets.iter()));
@@ -190,7 +188,7 @@ pub(in crate::runtime) fn route_effect_deliveries(
                 effect.declaration.trigger().source_name(),
                 effect.declaration.trigger().source_kind(),
                 reason,
-            )?;
+            );
             effect.record_delivery(suppressed);
             effect.counters.suppressed += 1;
             result.suppressed_effect_count += 1;
@@ -212,7 +210,7 @@ pub(in crate::runtime) fn route_effect_deliveries(
                         trigger.source_kind,
                         trigger.aspect_touches,
                         payload,
-                    )?;
+                    );
                     effect.record_delivery(delivery);
                     effect.counters.delivered += 1;
                     result.delivered_effect_count += 1;
@@ -225,7 +223,7 @@ pub(in crate::runtime) fn route_effect_deliveries(
                         trigger.source_kind,
                         trigger.aspect_touches,
                         payload,
-                    )?;
+                    );
                     effect.record_delivery(delivery);
                     effect.counters.pending_write_intents += 1;
                     result.pending_write_intent_count += 1;
@@ -237,7 +235,7 @@ pub(in crate::runtime) fn route_effect_deliveries(
                             trigger.source,
                             trigger.source_kind,
                             "derive-only effects are admitted by policy but not executable as runtime deliveries",
-                        )?;
+                        );
                     effect.record_delivery(delivery);
                     effect.counters.suppressed += 1;
                     result.suppressed_effect_count += 1;
@@ -250,7 +248,7 @@ pub(in crate::runtime) fn route_effect_deliveries(
                     trigger.source,
                     trigger.source_kind,
                     reason,
-                )?;
+                );
                 effect.record_delivery(delivery);
                 effect.counters.suppressed += 1;
                 result.suppressed_effect_count += 1;
@@ -263,7 +261,7 @@ pub(in crate::runtime) fn route_effect_deliveries(
                     trigger.source_kind,
                     trigger.aspect_touches,
                     reason,
-                )?;
+                );
                 effect.record_delivery(delivery);
                 effect.counters.expression_failures += 1;
                 result.expression_failure_count += 1;

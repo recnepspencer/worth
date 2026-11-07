@@ -64,9 +64,8 @@ pub(in crate::subscription) fn diagnostic_trace_identity<'a>(
 
 pub(in crate::subscription) fn diagnostic_selection_context_selected_identity(
     equivalence_identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "query_subscription_diagnostic_selection_context_v1",
@@ -76,8 +75,7 @@ pub(in crate::subscription) fn diagnostic_selection_context_selected_identity(
                 WorthQueryEvidenceTag::new("equivalence"),
                 equivalence_identity,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 pub(in crate::subscription) fn diagnostic_selection_context_denied_identity(

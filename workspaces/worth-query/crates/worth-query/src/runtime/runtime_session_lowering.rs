@@ -155,7 +155,7 @@ fn lower_runtime_live_subscription_session(
             "signal_strategy",
             admission.signal_strategy_identity(),
         )?,
-        activation: prepare_subscription_activation(admission)?,
+        activation: prepare_subscription_activation(admission),
     })
 }
 

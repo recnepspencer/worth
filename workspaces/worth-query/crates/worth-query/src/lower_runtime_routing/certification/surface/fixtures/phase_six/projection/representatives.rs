@@ -192,7 +192,7 @@ fn readmission_projection_row(
     let handoff = WorthQueryLowerRuntimeReadmissionReceipt::new(
         eligibility.clone(),
         &retained_evidence_identity,
-    )?;
+    );
     let boundary_receipt =
         WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_readmission_receipt(&handoff)?;
     let envelope = WorthQueryLowerRuntimeBoundaryEnvelope::from_readmission_receipt(

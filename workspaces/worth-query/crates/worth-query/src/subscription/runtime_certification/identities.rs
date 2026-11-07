@@ -210,9 +210,8 @@ pub(super) fn coverage_width_identity(
     admitted_row_count: usize,
     hostile_row_count: usize,
     covered_variation_axis_count: usize,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "query_subscription_certification_coverage_width_v1",
@@ -229,8 +228,7 @@ pub(super) fn coverage_width_identity(
                 WorthQueryEvidenceTag::new("covered_variation_axes"),
                 covered_variation_axis_count,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 pub(super) fn coverage_receipt_identity(
@@ -292,9 +290,8 @@ pub(super) fn runtime_certification_bundle_identity(
     hostile_coverage_identity: &WorthQueryEvidenceIdentity,
     coverage_receipt_identity: &WorthQueryEvidenceIdentity,
     counter_identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "query_subscription_runtime_certification_bundle_v1",
@@ -329,15 +326,13 @@ pub(super) fn runtime_certification_bundle_identity(
                 coverage_receipt_identity,
             )
             .field_evidence_identity(WorthQueryEvidenceTag::new("counters"), counter_identity)
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }
 
 pub(super) fn runtime_certification_counter_identity(
     counters: &QuerySubscriptionRuntimeCertificationCounters,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "query_subscription_runtime_certification_counters_v1",
@@ -366,6 +361,5 @@ pub(super) fn runtime_certification_counter_identity(
                 WorthQueryEvidenceTag::new("family_coverage_matrix_scan_debt_count"),
                 counters.family_coverage_matrix_scan_debt_count() as usize,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
 }

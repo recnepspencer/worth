@@ -21,16 +21,16 @@ impl WorthQueryUnifiedInspectionReceipt {
         target_label: WorthQueryGenericInspectionRequestLabel,
         inspection: &WorthQueryInspection,
         snapshot_identity: WorthQuerySnapshotIdentity,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let snapshot_evidence_identity = snapshot_identity.evidence_identity();
-        Ok(Self {
+        Self {
             target_label,
             result_digest: inspection_result_digest(inspection),
             snapshot_identity,
             snapshot_evidence_identity,
             decision_trace_envelope: None,
             execution_provenance: None,
-        })
+        }
     }
 
     pub fn target_label(&self) -> &str {

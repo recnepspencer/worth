@@ -90,8 +90,8 @@ pub(in crate::runtime::inspection::causal) fn compose_causal_performance_scale_s
     bridge_envelope_slope_identity: &CausalInspectionPerformanceSlopeIdentity,
     materialization_slope_identity: &CausalInspectionPerformanceSlopeIdentity,
     artifact_serialization_slope_identity: &CausalInspectionPerformanceSlopeIdentity,
-) -> Result<CausalInspectionPerformanceScaleSlopeIdentity, IdentityDerivationDenial> {
-    Ok(worth_query_evidence_identity(
+) -> CausalInspectionPerformanceScaleSlopeIdentity {
+    worth_query_evidence_identity(
         WorthQueryEvidenceScope::CausalInspectionPerformanceScaleSlope,
     )
     .field_evidence_identity(
@@ -118,8 +118,8 @@ pub(in crate::runtime::inspection::causal) fn compose_causal_performance_scale_s
         WorthQueryEvidenceTag::new("serialization"),
         artifact_serialization_slope_identity.evidence_identity(),
     )
-    .seal()?
-    .into())
+    .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
+    .into()
 }
 
 pub(in crate::runtime::inspection::causal) fn compose_causal_performance_certification_identity(
@@ -135,8 +135,8 @@ pub(in crate::runtime::inspection::causal) fn compose_causal_performance_certifi
     materialization_slope_identity: &CausalInspectionPerformanceSlopeIdentity,
     artifact_serialization_slope_identity: &CausalInspectionPerformanceSlopeIdentity,
     scale_slope_digest_part_count: usize,
-) -> Result<CausalInspectionPerformanceCertificationIdentity, IdentityDerivationDenial> {
-    Ok(worth_query_evidence_identity(
+) -> CausalInspectionPerformanceCertificationIdentity {
+    worth_query_evidence_identity(
         WorthQueryEvidenceScope::CausalInspectionPerformanceCertificationBundle,
     )
     .field_evidence_identity(
@@ -187,6 +187,6 @@ pub(in crate::runtime::inspection::causal) fn compose_causal_performance_certifi
         WorthQueryEvidenceTag::new("parts"),
         scale_slope_digest_part_count,
     )
-    .seal()?
-    .into())
+    .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
+    .into()
 }

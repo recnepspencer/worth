@@ -193,8 +193,7 @@ impl WorthQueryIntentDenialInspection {
         Ok(self
             .snapshot_identity
             .as_ref()
-            .map(WorthQuerySnapshotIdentity::evidence_identity)
-            .transpose()?)
+            .map(WorthQuerySnapshotIdentity::evidence_identity))
     }
 
     pub fn denial_digest(&self) -> &str {

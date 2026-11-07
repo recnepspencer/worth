@@ -17,16 +17,16 @@ impl SubscriptionFanoutPlan {
     pub(super) fn new(
         lane_digest: ActiveSubscriptionLaneDigest,
         affected_consumer_attachment_width: u64,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let fanout_plan_identity = subscription_fanout_plan_identity(
             lane_digest.evidence_identity(),
             affected_consumer_attachment_width,
-        )?;
-        Ok(Self {
+        );
+        Self {
             lane_digest,
             affected_consumer_attachment_width,
             fanout_plan_identity,
-        })
+        }
     }
 
     pub(crate) fn lane_digest(&self) -> &ActiveSubscriptionLaneDigest {
@@ -51,22 +51,19 @@ pub struct SubscriptionFanoutReport {
 }
 
 impl SubscriptionFanoutReport {
-    pub(super) fn new(
-        plan: SubscriptionFanoutPlan,
-        shared_lane_count: u64,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    pub(super) fn new(plan: SubscriptionFanoutPlan, shared_lane_count: u64) -> Self {
         let fanout_width = plan.affected_consumer_attachment_width();
         let report_identity = subscription_fanout_report_identity(
             plan.evidence_identity(),
             shared_lane_count,
             fanout_width,
-        )?;
-        Ok(Self {
+        );
+        Self {
             plan,
             shared_lane_count,
             fanout_width,
             report_identity,
-        })
+        }
     }
 
     pub fn plan(&self) -> &SubscriptionFanoutPlan {

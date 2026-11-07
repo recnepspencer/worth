@@ -46,8 +46,7 @@ impl WorthQueryInstalledCorrespondenceObservation {
 
     pub(crate) fn into_engine_comparison(
         self,
-    ) -> Result<crate::identity_evolution::CorrespondenceIdentityComparison, IdentityDerivationDenial>
-    {
+    ) -> crate::identity_evolution::CorrespondenceIdentityComparison {
         let identities = match &self {
             Self::AdvisoryCandidatePair { subject, candidate }
             | Self::AmbiguousCandidatePair { subject, candidate }
@@ -59,7 +58,7 @@ impl WorthQueryInstalledCorrespondenceObservation {
                 candidate.evidence_identity().as_str().to_owned(),
             ),
         };
-        Ok(match self {
+        match self {
             Self::AdvisoryCandidatePair { .. } => {
                 crate::identity_evolution::CorrespondenceIdentityComparison::advisory_between(
                     identities.0,
@@ -78,6 +77,6 @@ impl WorthQueryInstalledCorrespondenceObservation {
                     identities.1,
                 )
             }
-        })
+        }
     }
 }

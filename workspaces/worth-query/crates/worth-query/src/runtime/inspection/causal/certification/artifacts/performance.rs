@@ -217,7 +217,7 @@ impl CausalInspectionPerformanceCertificationBundle {
             &bridge_envelope_slope_identity,
             &materialization_slope_identity,
             &artifact_serialization_slope_identity,
-        )?;
+        );
         let scale_slope_digest_part_count = 3;
         let performance_certification_identity = compose_causal_performance_certification_identity(
             &small.snapshot_identity,
@@ -232,7 +232,7 @@ impl CausalInspectionPerformanceCertificationBundle {
             &materialization_slope_identity,
             &artifact_serialization_slope_identity,
             scale_slope_digest_part_count,
-        )?;
+        );
         Ok(Self {
             small_snapshot_digest: small.snapshot_digest().to_string(),
             medium_snapshot_digest: medium.snapshot_digest().to_string(),

@@ -51,8 +51,8 @@ pub(super) fn preview_certification_evidence(
             }
 
             Ok(PreviewCertificationEvidence {
-                preview_isolation_identity: lifecycle_absent_preview_isolation_identity()?,
-                preview_residue_identity: lifecycle_absent_preview_residue_identity()?,
+                preview_isolation_identity: lifecycle_absent_preview_isolation_identity(),
+                preview_residue_identity: lifecycle_absent_preview_residue_identity(),
                 counter_identities: Vec::new(),
                 support_identities: vec![WorthQueryEvidenceIdentity::compose(
                     crate::evidence_identity::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
@@ -62,7 +62,7 @@ pub(super) fn preview_certification_evidence(
                     "subscription_preview_support_absent_v1",
                 )
                 .seal()],
-                performance_receipt_identity: lifecycle_absent_performance_receipt_identity()?,
+                performance_receipt_identity: lifecycle_absent_performance_receipt_identity(),
             })?
         }
         SubscriptionLifecyclePreviewCertification::Discard {
@@ -264,7 +264,7 @@ pub(super) fn preview_certification_evidence(
                     promotion_handoff
                         .authoritative_active_lane_digest()
                         .evidence_identity(),
-                )?,
+                ),
                 counter_identities: vec![
                     lifecycle_labeled_counter_identity(
                         "preview_isolation",
