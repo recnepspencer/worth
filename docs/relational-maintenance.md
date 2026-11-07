@@ -76,3 +76,13 @@ rejects a dropped route or a corrupted carried state. Its growth assertion
 compares charged work across independent model, history and unrelated-routing
 axes with headroom, rather than pinning exact counts. Each adopter supplies
 real owner inputs and its actual cold implementation.
+Inspection can call `facade::inspection::observe_maintenance_work(maximum, operation)`
+around just the measured operation. It returns bounded `{ phase, charged_work,
+accounted }` observations from actual original-request Execution meters.
+`root_admission` encloses canonical root preparation, regions and digest work;
+`kind_commitment` identifies the first adopter. Future owners use
+`ChangeWork::run_phase(execution, "owner_phase", operation)` for the same seam.
+Totals are inclusive: nested phases overlap their enclosing phase, so use the
+request report for whole-operation work. Native-only rows have `accounted: false`.
+The production inspection recorder is thread-local, isolated under nested
+captures, bounded by the requested maximum, and cleared on return or unwind.

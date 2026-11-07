@@ -13,6 +13,20 @@ pub struct ChangeWork<'scope> {
     prepare: &'scope mut dyn FnMut(u64, u64) -> Result<(), MaintenanceRefusal>,
 }
 impl ChangeWork<'_> {
+    /// Attribute the adopter's real nested Execution charges to a named phase.
+    /// Inspection observes it only inside `observe_maintenance_work`.
+    pub fn run_phase<T, E: From<MaintenanceRefusal>>(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        phase: &'static str,
+        operation: impl FnOnce(&mut ChangeWork<'_>) -> Result<T, E>,
+    ) -> Result<T, E> {
+        crate::execution::phase_observation::run(
+            execution,
+            phase,
+            || Self::run(execution, operation),
+            |cause| MaintenanceRefusal::Execution(cause).into(),
+        )
+    }
     pub fn prepare(&mut self, units: u64, bytes: u64) -> Result<(), MaintenanceRefusal> {
         (self.prepare)(units, bytes)
     }

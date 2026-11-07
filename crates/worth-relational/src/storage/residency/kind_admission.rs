@@ -55,7 +55,7 @@ pub(super) fn update(
 ) -> Result<Arc<RegionKindIndexes>, RegionContentFailure> {
     let id = partition.partition_id;
     let mut owner = maintained::KindMaintainer::new(execution, partition, previous);
-    let result = ChangeWork::run(execution, |work| match change {
+    let result = ChangeWork::run_phase(execution, "kind_commitment", |work| match change {
         Some(change) => crate::storage::substrate::maintenance::apply_change(
             &mut owner,
             Some(prior),
