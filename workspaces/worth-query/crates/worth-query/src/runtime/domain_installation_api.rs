@@ -228,7 +228,8 @@ impl WorthQueryRuntime {
     ) -> WorthQueryDomainExecutionIndexRebuildReport {
         let report = self
             .domain_installation_registry
-            .destroy_and_rebuild_execution_index();
+            .destroy_and_rebuild_execution_index()
+            .expect("positive fixture identity fits canonical digest bounds");
         self.execution_runtime
             .replace_rebuilt_installation(self.domain_installation_registry.retain_portable_index())
             .expect("a deterministic installed-index rebuild must preserve execution identity");

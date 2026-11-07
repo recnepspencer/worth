@@ -155,7 +155,8 @@ fn missing_evidence_digest(family: CausalEvidenceFamily) -> String {
                 )),
             )
             .expect("fixture digest must fit")],
-        ),
+        )
+        .expect("positive fixture identity fits canonical digest bounds"),
         CausalInspectionReason::ChangedResult,
     )
     .expect("missing-evidence fixture should anchor");

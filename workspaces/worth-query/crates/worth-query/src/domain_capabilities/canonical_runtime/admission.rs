@@ -129,6 +129,7 @@ pub fn materialize_runtime_admission_support_traceability_row(
                 domain_contribution
                     .target()
                     .binding_identity()
+                    .expect("positive fixture identity fits canonical digest bounds")
                     .as_str()
                     .to_string(),
             ),

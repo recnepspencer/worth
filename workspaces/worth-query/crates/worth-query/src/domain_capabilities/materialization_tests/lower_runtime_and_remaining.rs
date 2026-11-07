@@ -28,8 +28,10 @@ fn lower_runtime_support_report_preserves_requested_richness_and_current_provena
             WorthQuerySupportContributionPosture::DeclarationTraceability,
             "runtime.boundary.traceability",
             "lower runtime support derives from reconstructed boundary evidence",
-        ),
-    )?;
+        )
+        .expect("positive fixture identity fits canonical digest bounds"),
+    )?
+    .expect("positive fixture identity fits canonical digest bounds");
 
     let report = materialize_support_traceability_support_report(
         ready,
@@ -74,7 +76,8 @@ fn lower_runtime_support_report_preserves_requested_richness_and_current_provena
                 WorthQuerySupportContributionPosture::DeclarationTraceability,
                 "runtime.boundary.traceability",
                 "lower runtime support derives from reconstructed boundary evidence",
-            ),
+            )
+            .expect("positive fixture identity fits canonical digest bounds"),
         )?,
         forensic_support_profile(),
     )

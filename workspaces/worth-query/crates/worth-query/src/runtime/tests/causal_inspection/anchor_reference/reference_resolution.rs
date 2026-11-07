@@ -94,7 +94,8 @@ fn evidence_reference_resolution_consumes_anchor_and_emits_sealed_reference_set(
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         "signal-invalidation-reference",
                     ),
-                ),
+                )
+                .expect("positive fixture identity fits canonical digest bounds"),
             ],
         ),
         CausalInspectionReason::ChangedResult,

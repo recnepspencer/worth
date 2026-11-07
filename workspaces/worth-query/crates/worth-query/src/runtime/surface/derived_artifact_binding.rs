@@ -2,7 +2,6 @@ use super::{
     WorthQueryDerivedMaterializationBundle, WorthQueryDerivedMaterializationResult,
     WorthQueryDerivedMaterializationTarget,
 };
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -147,6 +146,7 @@ fn terminal_target_view_names(targets: &[WorthQueryDerivedMaterializationTarget]
 
 #[cfg(test)]
 mod tests {
+    use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
     use std::collections::BTreeMap;
 
     use worth_foundational::facade::{AspectValue, CanonicalFieldPath, FieldKey, InternedString};

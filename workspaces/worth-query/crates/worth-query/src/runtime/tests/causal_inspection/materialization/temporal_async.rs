@@ -280,7 +280,8 @@ fn admitted_mixed_cause_suppression_materialization_retains_suppression_identity
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "signal-evaluation:mixed-suppressed",
                 ),
-            ),
+            )
+            .expect("positive fixture identity fits canonical digest bounds"),
         ],
         &[
             CausalEvidenceFamily::BridgeRoute,

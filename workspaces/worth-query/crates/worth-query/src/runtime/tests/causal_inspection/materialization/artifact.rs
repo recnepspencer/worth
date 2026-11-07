@@ -328,6 +328,7 @@ fn admitted_materialization_rejects_wrong_bridge_summary_kind() {
         CausalInspectionMaterializationPolicy::OfflineInterpretableArtifact,
     )
     .unwrap_err();
+    let error=match error { worth_query_execution::facade::causal_inspection::CausalInspectionConstructionStop::Materialization(denial)=>denial, other=>panic!("expected a semantic denial, got {other:?}"), };
 
     assert_eq!(
         error.kind(),

@@ -1,4 +1,3 @@
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
@@ -150,6 +149,7 @@ fn classify_row_change(
 
 #[cfg(test)]
 mod tests {
+    use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
     use std::collections::BTreeMap;
 
     use super::assemble_query_shaped_row_changes;

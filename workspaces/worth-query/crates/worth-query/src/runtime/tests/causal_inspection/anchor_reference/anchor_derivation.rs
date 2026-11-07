@@ -95,7 +95,8 @@ fn anchor_counters_are_exact_and_width_bound_to_carried_reference_families() {
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "bridge-route-a",
                 ),
-            ),
+            )
+            .expect("positive fixture identity fits canonical digest bounds"),
         ],
     );
 

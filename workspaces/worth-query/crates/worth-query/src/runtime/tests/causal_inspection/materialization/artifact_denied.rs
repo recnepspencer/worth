@@ -138,6 +138,12 @@ fn denied_query_causal_artifact_carries_bridge_denial_posture_and_counters() {
         .diagnostics()
         .assemble_causal_explanation_envelope(bridge_request)
         .expect_err("bridge envelope must require route evidence");
+    let bridge_denial = match bridge_denial {
+        worth_runtime_bridge::facade::BridgeCausalEnvelopeConstructionStop::Denied(denial) => {
+            denial
+        }
+        other => panic!("expected a semantic denial, got {other:?}"),
+    };
 
     assert_eq!(
         bridge_denial.kind(),

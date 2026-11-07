@@ -273,6 +273,7 @@ fn reference_index_record_denies_owner_mismatch_and_seals_fixture_reference_labe
         ),
     )
     .unwrap_err();
+    let owner_mismatch=match owner_mismatch { worth_query_execution::facade::causal_inspection::CausalInspectionConstructionStop::ReferenceIndex(denial)=>denial, other=>panic!("expected a semantic denial, got {other:?}"), };
 
     assert_eq!(
         owner_mismatch.kind(),

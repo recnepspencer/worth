@@ -62,7 +62,8 @@ fn equivalent_support_meaning_materializes_same_traceability_digest(
                     WorthQuerySupportContributionPosture::DeclarationTraceability,
                     "spatial.traceability",
                     "query admission support is declaration-scoped",
-                ),
+                )
+                .expect("positive fixture identity fits canonical digest bounds"),
             )?,
         )?,
     )?);
@@ -91,7 +92,8 @@ fn support_traceability_digest_changes_when_admitted_plan_scope_changes(
                     WorthQuerySupportContributionPosture::DeclarationSupport,
                     "spatial.traceability",
                     "support stays attached to the admitted plan",
-                ),
+                )
+                .expect("positive fixture identity fits canonical digest bounds"),
             )?,
         )?,
     )?);
@@ -108,7 +110,8 @@ fn support_traceability_digest_changes_when_admitted_plan_scope_changes(
                     WorthQuerySupportContributionPosture::DeclarationSupport,
                     "spatial.traceability",
                     "support stays attached to the admitted plan",
-                ),
+                )
+                .expect("positive fixture identity fits canonical digest bounds"),
             )?,
         )?,
     )?);

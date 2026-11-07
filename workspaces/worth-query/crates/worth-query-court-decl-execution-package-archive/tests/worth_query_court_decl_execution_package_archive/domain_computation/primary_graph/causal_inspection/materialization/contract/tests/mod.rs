@@ -38,6 +38,7 @@ fn real_native_envelope_requires_fresh_admission_under_both_legacy_paths_and_pol
             );
             let error = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::materialization::validate_bridge_summary(&admission, &anchor, kind, &envelope)
                 .unwrap_err();
+let error=match error { worth_query_execution::facade::causal_inspection::CausalInspectionConstructionStop::Materialization(denial)=>denial, other=>panic!("expected a semantic denial, got {other:?}"), };
             assert_eq!(
                 error.kind(),
                 CausalInspectionMaterializationErrorKind::NativeInspectionAdmissionRequired
@@ -48,6 +49,7 @@ fn real_native_envelope_requires_fresh_admission_under_both_legacy_paths_and_pol
             ] {
                 let error =
                     validate_materialization_contract(&query, &[], &envelope, policy).unwrap_err();
+let error=match error { worth_query_execution::facade::causal_inspection::CausalInspectionConstructionStop::Materialization(denial)=>denial, other=>panic!("expected a semantic denial, got {other:?}"), };
                 assert_eq!(
                     error.kind(),
                     CausalInspectionMaterializationErrorKind::NativeInspectionAdmissionRequired
@@ -85,6 +87,7 @@ fn query_observation_reporting_requires_fresh_admission_under_both_legacy_paths_
         .unwrap();
         let error = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::materialization::validate_bridge_summary(&admission, &anchor, kind, &envelope)
             .unwrap_err();
+        let error=match error { worth_query_execution::facade::causal_inspection::CausalInspectionConstructionStop::Materialization(denial)=>denial, other=>panic!("expected a semantic denial, got {other:?}"), };
         assert_eq!(
             error.kind(),
             CausalInspectionMaterializationErrorKind::NativeInspectionAdmissionRequired
@@ -95,6 +98,7 @@ fn query_observation_reporting_requires_fresh_admission_under_both_legacy_paths_
         ] {
             let error =
                 validate_materialization_contract(&query, &[], &envelope, policy).unwrap_err();
+            let error=match error { worth_query_execution::facade::causal_inspection::CausalInspectionConstructionStop::Materialization(denial)=>denial, other=>panic!("expected a semantic denial, got {other:?}"), };
             assert_eq!(
                 error.kind(),
                 CausalInspectionMaterializationErrorKind::NativeInspectionAdmissionRequired

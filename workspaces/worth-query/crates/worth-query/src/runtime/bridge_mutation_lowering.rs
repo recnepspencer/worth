@@ -1,4 +1,3 @@
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_runtime_bridge::facade::{
     BridgeContinuityAuthoritativeIdentity, BridgeContinuityMutationBundle,
     BridgeContinuityOutcomeClass, BridgeContinuityResolvedTargetIdentity,
@@ -198,6 +197,7 @@ fn continuity_target_collection(value: &str) -> Option<BridgeContinuityTargetCol
 #[cfg(test)]
 mod tests {
     use super::{bridge_continuity_mutation_bundle, bridge_naming_mutation_bundle};
+    use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
     use crate::memory_workspace::WorthQueryEntityIdentity;
     use crate::runtime::{
         WorthQueryContinuityMutationEvidence, WorthQueryContinuityMutationIntent,

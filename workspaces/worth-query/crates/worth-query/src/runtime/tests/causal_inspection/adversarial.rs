@@ -65,6 +65,7 @@ fn reason_outcome_matrix_denies_every_mismatched_pair() {
                 );
             } else {
                 let error = result.expect_err("mismatched reason/outcome should deny");
+                let error=match error { worth_query_execution::facade::causal_inspection::CausalInspectionConstructionStop::Anchor(denial)=>denial, other=>panic!("expected a semantic denial, got {other:?}"), };
                 assert_eq!(
                     error.kind(),
                     CausalObservationAnchorErrorKind::InspectionReasonOutcomeMismatch

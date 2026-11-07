@@ -34,7 +34,8 @@ fn retained_temporal_evidence_projects_same_explanation_for_all_retained_and_exp
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "signal-invalidation:temporal-request-parity",
                 ),
-            ),
+            )
+            .expect("positive fixture identity fits canonical digest bounds"),
         ],
     )
     .expect("fixture digest must fit");

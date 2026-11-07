@@ -118,7 +118,8 @@ fn state_snapshot_with_optional_postures_recomposes_exactly() {
             )
             .expect("fixture digest must fit"),
         ),
-    );
+    )
+    .expect("positive fixture identity fits canonical digest bounds");
     let snapshot = WorthQueryRuntimeStateSnapshot::ready(
         runtime_state_snapshot_basis_label_identity(
             &crate::runtime::evidence_identities::runtime_state_snapshot_test_subject_identity(
@@ -140,7 +141,8 @@ fn state_snapshot_with_optional_postures_recomposes_exactly() {
     .expect("fixture digest must fit")
     .with_async_result_state(async_result_state)
     .expect("fixture digest must fit")
-    .with_remask_posture(remask_posture);
+    .with_remask_posture(remask_posture)
+    .expect("positive fixture identity fits canonical digest bounds");
 
     assert_canonical_evidence_identity_token(
         snapshot.state_digest().terminal_projection_for_reporting(),

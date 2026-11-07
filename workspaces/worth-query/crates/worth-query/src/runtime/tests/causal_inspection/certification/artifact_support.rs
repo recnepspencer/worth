@@ -201,7 +201,8 @@ fn reference_set_for(
                 )
                 .expect("fixture digest must fit"),
             ],
-        ),
+        )
+        .expect("positive fixture identity fits canonical digest bounds"),
         reason,
     )
     .expect("fixture receipt should anchor");

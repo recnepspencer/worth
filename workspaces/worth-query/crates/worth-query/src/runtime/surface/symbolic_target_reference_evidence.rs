@@ -104,7 +104,8 @@ impl WorthQuerySymbolicTargetReferenceEvidence {
             family:
                 crate::runtime::WorthQuerySymbolicTargetReferenceFamily::SameBatchDeclaredTarget,
             outcome: WorthQuerySymbolicTargetReferenceOutcome::SameBatchSymbolicTarget,
-            symbol: WorthQueryMutationSymbolIdentity::new("symbolic-target-reference", symbol),
+            symbol: WorthQueryMutationSymbolIdentity::new("symbolic-target-reference", symbol)
+                .expect("positive fixture identity fits canonical digest bounds"),
             resolved_entity_identity,
             target_collection: target_collection.map(|collection| {
                 WorthQueryMutationTargetCollectionIdentity::new("symbolic-target", collection)

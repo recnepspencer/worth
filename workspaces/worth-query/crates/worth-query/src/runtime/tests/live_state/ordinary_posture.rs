@@ -231,7 +231,9 @@ fn runtime_compact_posture_keeps_basis_sensitive_denied_async_state_typed_on_sca
         posture.basis_posture(),
         WorthQueryOrdinaryRuntimeBasisPostureKind::BasisDrift
     );
-    assert_ne!(basis_digest, drifted_basis).expect("fixture digest must fit");
+    assert_ne!(basis_digest, drifted_basis)
+        .expect("positive fixture identity fits canonical digest bounds")
+        .expect("fixture digest must fit");
     assert_eq!(
         posture.support_evidence_digest(),
         view.subscription_installation()

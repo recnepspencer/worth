@@ -2,7 +2,6 @@ use super::{
     WorthQueryDerivedArtifactBinding, WorthQueryDerivedMaterializationTarget,
     WorthQueryRetainedFieldPath, WorthQueryRetainedScalarFactSet,
 };
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::hash_parts;
 use crate::runtime::computed::WorthQueryDerivedViewHandle;
 use crate::runtime::WorthQueryRuntimeError;
@@ -194,6 +193,7 @@ fn verify_scalar_alignment_between_fact_sets(
 
 #[cfg(test)]
 mod tests {
+    use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
     use std::collections::BTreeMap;
 
     use worth_foundational::facade::{AspectValue, CanonicalFieldPath, FieldKey};

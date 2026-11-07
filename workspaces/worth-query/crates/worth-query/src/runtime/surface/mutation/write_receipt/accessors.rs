@@ -339,6 +339,7 @@ impl WorthQueryWriteReceipt {
                     symbol,
                     target_entity_identity.clone().unwrap_or_else(|| {
                         crate::memory_workspace::admit_authored_entity_label("resolved-target:test")
+                            .expect("positive fixture identity fits canonical digest bounds")
                     }),
                     target_collection,
                 )

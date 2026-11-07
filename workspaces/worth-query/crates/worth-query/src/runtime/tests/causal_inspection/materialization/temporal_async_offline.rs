@@ -122,7 +122,8 @@ fn offline_temporal_async_diagnostics_preserve_remask_replay_resume_and_stale_co
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "bridge-continuity:offline-resume-mismatch",
                 ),
-            ),
+            )
+            .expect("positive fixture identity fits canonical digest bounds"),
         ],
         &[
             CausalEvidenceFamily::BridgeReplay,

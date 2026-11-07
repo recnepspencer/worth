@@ -110,7 +110,8 @@ pub(crate) fn inspect_merge_conflicts(
                 merge_class_shape.class,
                 merge_class_admission.as_str(),
                 row.row_digest(),
-            );
+            )
+            .expect("positive fixture identity fits canonical digest bounds");
             ConflictInspectionRow {
                 workflow_basis_digest: declaration.binding().basis_for_reporting().to_string(),
                 merge_class,

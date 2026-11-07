@@ -1,4 +1,3 @@
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_foundational::facade::{
     AspectValue, AspectValuePosture, CanonicalBigInt, CanonicalDate, CanonicalDecimal,
     CanonicalF32, CanonicalF64, CanonicalRational, CanonicalTime, CanonicalTimestamp,
@@ -160,6 +159,7 @@ impl ConsumedFieldValueFact {
 
 #[cfg(test)]
 mod tests {
+    use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
     use worth_foundational::facade::{
         AspectValue, AspectValuePosture, CanonicalBigInt, CanonicalDate, CanonicalDecimal,
         CanonicalF32, CanonicalF64, CanonicalRational, CanonicalTime, CanonicalTimestamp,

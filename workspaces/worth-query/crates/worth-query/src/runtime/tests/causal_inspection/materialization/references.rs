@@ -52,7 +52,8 @@ pub(in crate::runtime::tests::causal_inspection) fn changed_reference_set(
                 )
                 .expect("fixture digest must fit"),
             ],
-        ),
+        )
+        .expect("positive fixture identity fits canonical digest bounds"),
         CausalInspectionReason::ChangedResult,
     )
     .expect("changed receipt should anchor");
@@ -99,7 +100,8 @@ pub(in crate::runtime::tests::causal_inspection) fn replay_reference_set_with_si
                 )
                 .expect("fixture digest must fit"),
             ],
-        ),
+        )
+        .expect("positive fixture identity fits canonical digest bounds"),
         CausalInspectionReason::HistoricalReplayResult,
     )
     .expect("replay receipt should anchor");

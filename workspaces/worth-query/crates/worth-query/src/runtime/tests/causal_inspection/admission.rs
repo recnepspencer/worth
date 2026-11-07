@@ -227,6 +227,7 @@ fn causal_inspection_request_denies_target_and_unresolved_family_mismatches() {
         &[CausalEvidenceFamily::BridgeRoute],
     )
     .unwrap_err();
+    let target_mismatch=match target_mismatch { worth_query_execution::facade::causal_inspection::CausalInspectionConstructionStop::Request(denial)=>denial, other=>panic!("expected a semantic denial, got {other:?}"), };
 
     assert_eq!(
         target_mismatch.kind(),
@@ -242,6 +243,7 @@ fn causal_inspection_request_denies_target_and_unresolved_family_mismatches() {
         &[CausalEvidenceFamily::SignalEvaluation],
     )
     .unwrap_err();
+    let missing_family=match missing_family { worth_query_execution::facade::causal_inspection::CausalInspectionConstructionStop::Request(denial)=>denial, other=>panic!("expected a semantic denial, got {other:?}"), };
 
     assert_eq!(
         missing_family.kind(),

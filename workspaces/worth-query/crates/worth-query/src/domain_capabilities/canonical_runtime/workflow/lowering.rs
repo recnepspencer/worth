@@ -33,7 +33,12 @@ where
     T: WorthQueryWorkflowDeclarationMaterializationTarget,
 {
     let target_kind = contribution.payload().target().kind();
-    let target_identity = contribution.payload().target().target_identity().clone();
+    let target_identity = contribution
+        .payload()
+        .target()
+        .target_identity()
+        .clone()
+        .expect("positive fixture identity fits canonical digest bounds");
     let request_identity = contribution.payload().request_identity().clone();
     let lowering = match extract_workflow_lowering_semantics(
         "mutation workflow lowering",
@@ -53,7 +58,9 @@ where
             ))
         }
     };
-    let declaration = match materialize_query_workflow_declaration(contribution) {
+    let declaration = match materialize_query_workflow_declaration(contribution)
+        .expect("positive fixture identity fits canonical digest bounds")
+    {
         TransitionOutcome::Success(declaration) => declaration,
         TransitionOutcome::Denied(denial) => return TransitionOutcome::Denied(denial),
         TransitionOutcome::Stale(stale) => return TransitionOutcome::Stale(stale),
@@ -74,6 +81,7 @@ where
                     target_identity,
                     error,
                 )
+                .expect("positive fixture identity fits canonical digest bounds")
             },
             TransitionOutcome::Success,
         )
@@ -87,7 +95,12 @@ where
     T: WorthQueryWorkflowDeclarationMaterializationTarget,
 {
     let target_kind = contribution.payload().target().kind();
-    let target_identity = contribution.payload().target().target_identity().clone();
+    let target_identity = contribution
+        .payload()
+        .target()
+        .target_identity()
+        .clone()
+        .expect("positive fixture identity fits canonical digest bounds");
     let request_identity = contribution.payload().request_identity().clone();
     let lowering = match extract_workflow_lowering_semantics(
         "merge workflow lowering",
@@ -107,7 +120,9 @@ where
             ))
         }
     };
-    let declaration = match materialize_query_workflow_declaration(contribution) {
+    let declaration = match materialize_query_workflow_declaration(contribution)
+        .expect("positive fixture identity fits canonical digest bounds")
+    {
         TransitionOutcome::Success(declaration) => declaration,
         TransitionOutcome::Denied(denial) => return TransitionOutcome::Denied(denial),
         TransitionOutcome::Stale(stale) => return TransitionOutcome::Stale(stale),
@@ -127,6 +142,7 @@ where
                 target_identity,
                 error,
             )
+            .expect("positive fixture identity fits canonical digest bounds")
         },
         TransitionOutcome::Success,
     )
@@ -140,7 +156,12 @@ where
     T: WorthQueryWorkflowDeclarationMaterializationTarget,
 {
     let target_kind = contribution.payload().target().kind();
-    let target_identity = contribution.payload().target().target_identity().clone();
+    let target_identity = contribution
+        .payload()
+        .target()
+        .target_identity()
+        .clone()
+        .expect("positive fixture identity fits canonical digest bounds");
     let request_identity = contribution.payload().request_identity().clone();
     let lowering = match extract_workflow_lowering_semantics(
         "writeback workflow lowering",
@@ -160,7 +181,9 @@ where
             ))
         }
     };
-    let declaration = match materialize_query_workflow_declaration(contribution) {
+    let declaration = match materialize_query_workflow_declaration(contribution)
+        .expect("positive fixture identity fits canonical digest bounds")
+    {
         TransitionOutcome::Success(declaration) => declaration,
         TransitionOutcome::Denied(denial) => return TransitionOutcome::Denied(denial),
         TransitionOutcome::Stale(stale) => return TransitionOutcome::Stale(stale),
@@ -180,6 +203,7 @@ where
                 target_identity,
                 error,
             )
+            .expect("positive fixture identity fits canonical digest bounds")
         },
         TransitionOutcome::Success,
     )

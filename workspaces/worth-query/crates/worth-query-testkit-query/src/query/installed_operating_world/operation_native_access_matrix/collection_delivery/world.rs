@@ -172,7 +172,8 @@ impl CollectionDeliveryWorld {
         };
         let outcome = self
             .consumer
-            .plan_patch(request_execution, &admitted, &self.workspace);
+            .plan_patch(request_execution, &admitted, &self.workspace)
+            .expect("positive fixture identity fits canonical digest bounds");
         let domain::WorthQueryCollectionDeliveryOutcome::NoDelivery(denial) = outcome else {
             panic!("out-of-window change invented a collection patch")
         };
