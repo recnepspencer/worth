@@ -118,16 +118,13 @@ pub(super) fn check(
             .is_err(),
         "one retired cascade cannot be restored twice"
     );
-    let view = runtime
-        .read_truth()
-        .project_observation(&basis.observation())
-        .unwrap();
+    let view = pinned.project_read();
     let mut names = std::collections::BTreeMap::new();
     for record in &application {
         if let RecordRef::Entity(id) = record {
             let name = view
                 .read_exact_entity_state(execution, *id, |_, state| {
-                    text(state.unwrap(), "name", pinned.symbols())
+                    text(state.unwrap(), "name", &pinned.symbols())
                 })
                 .unwrap()
                 .unwrap();
@@ -155,7 +152,7 @@ pub(super) fn check(
             let ends = view
                 .read_exact_relation_state(execution, *id, |metadata, state| {
                     assert_eq!(
-                        text(state.unwrap(), "label", pinned.symbols()),
+                        text(state.unwrap(), "label", &pinned.symbols()),
                         "source association"
                     );
                     let name = |id| {

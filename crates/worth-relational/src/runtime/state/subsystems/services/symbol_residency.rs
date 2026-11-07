@@ -23,12 +23,12 @@ mod tests;
 #[derive(Debug)]
 pub(super) struct RuntimeSymbolResidency {
     regions: Mutex<HashSet<crate::storage::residency::RelationalRegionSymbolAdmissionIdentity>>,
-    by_id: Vec<RelationalCheckpointPage>,
-    by_value: Vec<RelationalCheckpointSymbolBucket>,
+    by_id: Arc<[RelationalCheckpointPage]>,
+    by_value: Arc<[RelationalCheckpointSymbolBucket]>,
     source: Arc<dyn RelationalDurableColdSource>,
     _placement: crate::durability::medium::RelationalDurableMemberCustody,
     pages: Mutex<
-        BTreeMap<
+        crate::storage::substrate::SharedMap<
             RelationalDurableMemberLocator,
             Result<SymbolPageShape, RelationalStorageUnavailable>,
         >,
@@ -79,11 +79,11 @@ impl RuntimeSymbolResidency {
             })?;
         Ok(Self {
             regions: Mutex::new(HashSet::new()),
-            by_id,
-            by_value,
+            by_id: by_id.into(),
+            by_value: by_value.into(),
             source,
             _placement: placement,
-            pages: Mutex::new(BTreeMap::new()),
+            pages: Mutex::new(Default::default()),
         })
     }
 

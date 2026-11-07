@@ -10,7 +10,7 @@ pub(super) fn entity(
     id: EntityId,
 ) -> Option<EntityReadRecord> {
     let root = source.selected_root()?;
-    let partition = root.get_partition(id.partition_id)?;
+    let partition = source.selected_storage()?.get_partition(id.partition_id)?;
     let registry = root.schema_authority().registry();
     let record = if source.is_exact_basis() {
         materialization::materialize_current_authoritative_entity_record(
@@ -36,7 +36,7 @@ pub(super) fn relation(
     id: RelationId,
 ) -> Option<RelationReadRecord> {
     let root = source.selected_root()?;
-    let partition = root.get_partition(id.partition_id)?;
+    let partition = source.selected_storage()?.get_partition(id.partition_id)?;
     let registry = root.schema_authority().registry();
     let record = if source.is_exact_basis() {
         materialization::materialize_current_authoritative_relation_record(

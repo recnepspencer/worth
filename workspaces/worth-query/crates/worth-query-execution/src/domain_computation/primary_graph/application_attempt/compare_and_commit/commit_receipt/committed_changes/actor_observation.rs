@@ -117,14 +117,8 @@ impl WorthQueryApplicationCommittedChanges {
                             invalid("committed approval symbol index is unavailable")
                         }
                     })?;
-                let encoded = pin
-                    .symbols()
-                    .retained_text(worth_relational::facade::symbols::Symbol(symbol.0))
-                    .ok_or_else(|| {
-                        invalid(
-                            "committed approval request Symbol is absent from pinned dictionary",
-                        )
-                    })?;
+                pin.with_symbol_text(execution, worth_relational::facade::symbols::Symbol(symbol.0), |encoded| {
+                let encoded = encoded.ok_or_else(|| invalid("committed approval request Symbol is absent from pinned dictionary"))?;
                 if !encoded.is_managed() {
                     return Err(invalid(
                         "committed approval request Symbol lacks native managed custody",
@@ -144,6 +138,7 @@ impl WorthQueryApplicationCommittedChanges {
                         Decode::Actor(cause) => *cause,
                     })?;
                 Ok(())
+                }).map_err(|cause| Denial::relational_read_stopped(cause, "committed approval symbols"))?
             })
     }
 }

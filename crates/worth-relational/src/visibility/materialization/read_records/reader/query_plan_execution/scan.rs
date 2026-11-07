@@ -8,6 +8,15 @@ impl RelationalPinnedRead {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> QueryReadResult {
         let basis = &self.basis;
+        if let Some(partitions) = query_partition_scope(&plan.packet.scope) {
+            basis
+                .demand_regions_full(execution, partitions.iter().copied())
+                .map_err(|cause| QueryReadExecutionStop::ReadRequest(cause.into()))?;
+        } else {
+            basis
+                .demand_regions_full(execution, basis.root().partition_ids_iter())
+                .map_err(|cause| QueryReadExecutionStop::ReadRequest(cause.into()))?;
+        }
         let declared_bytes = super::super::query_preparation_extent::declared_bytes(
             &plan.packet,
             basis.root().region_count(),
@@ -18,7 +27,7 @@ impl RelationalPinnedRead {
                     if query_has_explicit_partition_scope(&plan.packet.scope) {
                         (Vec::new(), Vec::new())
                     } else {
-                        leased_scan_partitions(basis.root(), budget)?
+                        leased_scan_partitions(basis.root(), basis, budget)?
                     };
                 prepare_scan_packets(&plan.packet, &entities, &relations, budget)
             })?;
@@ -61,38 +70,41 @@ impl RelationalPinnedRead {
 }
 
 fn query_has_explicit_partition_scope(scope: &QueryScope) -> bool {
-    matches!(
-        scope,
+    query_partition_scope(scope).is_some()
+}
+fn query_partition_scope(scope: &QueryScope) -> Option<&[crate::identity::data::PartitionId]> {
+    match scope {
         QueryScope::EntityKindScan {
-            partition_scope: Some(_),
-            ..
-        } | QueryScope::RelationKindScan {
-            partition_scope: Some(_),
-            ..
-        } | QueryScope::EntityFieldEquals {
-            partition_scope: Some(_),
-            ..
-        } | QueryScope::RelationFieldEquals {
-            partition_scope: Some(_),
-            ..
-        } | QueryScope::EntityFieldAnyOf {
-            partition_scope: Some(_),
-            ..
-        } | QueryScope::RelationFieldAnyOf {
-            partition_scope: Some(_),
-            ..
-        } | QueryScope::AspectFilteredEntities {
-            partition_scope: Some(_),
-            ..
-        } | QueryScope::AspectFilteredRelations {
-            partition_scope: Some(_),
-            ..
+            partition_scope, ..
         }
-    )
+        | QueryScope::RelationKindScan {
+            partition_scope, ..
+        }
+        | QueryScope::EntityFieldEquals {
+            partition_scope, ..
+        }
+        | QueryScope::RelationFieldEquals {
+            partition_scope, ..
+        }
+        | QueryScope::EntityFieldAnyOf {
+            partition_scope, ..
+        }
+        | QueryScope::RelationFieldAnyOf {
+            partition_scope, ..
+        }
+        | QueryScope::AspectFilteredEntities {
+            partition_scope, ..
+        }
+        | QueryScope::AspectFilteredRelations {
+            partition_scope, ..
+        } => partition_scope.as_deref(),
+        _ => None,
+    }
 }
 
 fn leased_scan_partitions(
     root: &crate::branch::RelationalBranchRoot,
+    state: &dyn PartitionAccess,
     budget: &mut QueryPreparationBudget<'_, '_, '_>,
 ) -> Result<
     (
@@ -108,7 +120,7 @@ fn leased_scan_partitions(
     root.try_for_each_partition_id(
         |partition_id| -> Result<(), worth_execution::MapKernelFailure<()>> {
             budget.checkpoint(1)?;
-            let Some(partition) = root.get_partition(partition_id) else {
+            let Some(partition) = state.get_partition(partition_id) else {
                 return Ok(());
             };
             let entity_present = partition.entity_arena.live_bitset.count_ones() > 0;

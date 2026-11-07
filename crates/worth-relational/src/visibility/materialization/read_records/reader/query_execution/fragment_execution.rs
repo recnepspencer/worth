@@ -21,7 +21,22 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_expl
     ),
     QueryReadExecutionStop,
 > {
-    let state_access: &(dyn PartitionAccess + Sync) = basis.root().as_ref();
+    // Explicit targets define the complete region footprint before dispatch.
+    // The pin itself carries no promise of global Full residency.
+    for packet in &packets {
+        if let PacketizedQueryWork::ExplicitTargets(targets) = packet {
+            basis
+                .demand_regions_full(
+                    execution,
+                    targets.iter().map(|target| match target {
+                        crate::transactions::data::RecordRef::Entity(id) => id.partition_id,
+                        crate::transactions::data::RecordRef::Relation(id) => id.partition_id,
+                    }),
+                )
+                .map_err(|cause| QueryReadExecutionStop::ReadRequest(cause.into()))?;
+        }
+    }
+    let state_access: &(dyn PartitionAccess + Sync) = basis;
     let registry = basis.root().schema_authority().registry();
     let version_id = basis.version_id();
     execute_leased_query_packets(
@@ -31,7 +46,6 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_expl
         |packet, ordinal, ceiling, context| {
             execute_leased_explicit_fragment(
                 reader,
-                basis.basis(),
                 state_access,
                 registry,
                 version_id,

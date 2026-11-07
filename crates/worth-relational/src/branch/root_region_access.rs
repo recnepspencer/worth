@@ -37,6 +37,25 @@ impl RelationalBranchRoot {
             .transpose()
     }
 
+    pub(crate) fn accepted_full_region(&self, id: PartitionId) -> Option<&PartitionState> {
+        self.regions.get(id)?.partition.accepted_full_partition()
+    }
+    pub(crate) fn demand_region_full(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: PartitionId,
+    ) -> Result<
+        Option<
+            crate::storage::residency::RelationalResidencyLease<crate::storage::residency::Full>,
+        >,
+        crate::storage::residency::RelationalResidencyDemandFailure,
+    > {
+        self.regions
+            .get(id)
+            .map(|region| region.partition.demand_full(execution, 1 << 30))
+            .transpose()
+    }
+
     pub(crate) fn accepted_head_region_view(
         &self,
         id: PartitionId,
@@ -182,6 +201,8 @@ impl RelationalBranchRoot {
         symbols: &crate::runtime::RuntimeSymbolTable,
         partitions: impl IntoIterator<Item = PartitionId>,
     ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        crate::execution::check_request(execution)
+            .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request)?;
         for partition in partitions {
             if let Some(region) = self.regions.get(partition) {
                 region

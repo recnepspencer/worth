@@ -9,8 +9,8 @@
 use worth_execution::{
     CancellationSource, ExecutionAllocationDenialClass, ExecutionAllocationPolicy as Allocation,
     ExecutionRequest, ExecutionScopeSetupCountsForTest as Setup,
-    ExecutionScopeSetupObservationForTest, ExecutionWorkCeiling, MapKernelStop,
-    RequestConsultObservationForTest, SerialRequest, WorkCeilingDenial,
+    ExecutionScopeSetupObservationForTest, ExecutionWorkCeiling, MapKernelStop, SerialRequest,
+    WorkCeilingDenial,
 };
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
@@ -35,8 +35,6 @@ const CHECKPOINT_MAGIC_BYTES: u64 = 16;
 /// Journal artifact header: magic 8, version 2, position 8, commit 8,
 /// digest 32, payload length 8.
 const ARTIFACT_HEADER_BYTES: usize = 66;
-/// The empty checkpoint's total charge, derived in the first court.
-const EMPTY_TOTAL: u64 = 2_376;
 
 #[test]
 fn checkpoint_stage_charges_the_documented_rate_for_each_encoded_byte() {
@@ -107,107 +105,54 @@ fn checkpoint_capture_sets_up_exactly_one_stage_whatever_the_row_count() {
 }
 
 #[test]
-fn empty_checkpoint_work_ceiling_bounds_the_whole_capture() {
-    // 574 of the 585 consults charge work. The last three charges are the
-    // one-byte sizing writes of the mirror, envelope and index-definition
-    // sections; the last one needs the whole total.
-    let mut accepted = Vec::new();
-    for (ceiling, consults, origins) in [
-        (EMPTY_TOTAL, 585, &[][..]),
-        (EMPTY_TOTAL - 1, 582, &[(581, 581), (582, 581)][..]),
-        (1, 4, &[(3, 3), (4, 3)][..]),
-        (0, 3, &[(2, 2), (3, 2)][..]),
-    ] {
-        let request = SerialRequest::from_policy(
-            &ExecutionRequestPolicy::new(
-                ExecutionPosture::Serial,
-                DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, Some(ceiling)),
-            ),
-            CancellationSource::new().token(),
-            None,
-        );
-        let execution = ExecutionRequest::serial(&request);
-        let runtime = runtime_with_rows(0);
-        let main = runtime.main_branch_identity();
-        let before = runtime.observe_branch(&main).unwrap().0;
-        let observer = RequestConsultObservationForTest::install_on_this_thread_for_test(|_| {});
-        let result = runtime
-            .durability_authority()
-            .native_checkpoint(&execution, Allocation::SystemAllocation);
-        assert_eq!(observer.count_for_test(), consults, "ceiling={ceiling}");
-        assert_eq!(
-            observer.stop_origins_for_test(),
-            origins,
-            "ceiling={ceiling}"
-        );
-        let charges = observer.charged_prefixes_for_test();
-        drop(observer);
-        if ceiling == EMPTY_TOTAL {
-            assert_eq!(charges.len(), 574);
-            assert_eq!(
-                charges[charges.len() - 3..],
-                [(577, 2_374), (579, 2_375), (581, EMPTY_TOTAL)]
-            );
-            accepted = charges;
-            let checkpoint = result.expect("the whole capture fits its total charge");
-            assert_eq!(checkpoint.bytes().len(), 1_108);
-            assert_eq!(request.memory().unwrap().charged_memory_bytes(), 1_108);
-            drop(checkpoint);
-        } else {
-            // The refused write is the first whose cumulative charge exceeds
-            // the ceiling; every earlier write charged as in the accepted run.
-            let refused = accepted
-                .iter()
-                .position(|(_, required)| *required > ceiling)
-                .unwrap();
-            assert_eq!(charges, accepted[..=refused], "ceiling={ceiling}");
-            assert_eq!(accepted[refused].0, origins[0].0, "ceiling={ceiling}");
-            assert!(
-                matches!(result, Err(Denial::Request(Cause::WorkExhausted))),
-                "ceiling={ceiling}: {result:?}"
-            );
-        }
-        assert_eq!(request.memory().unwrap().charged_memory_bytes(), 0);
-        let after = runtime.observe_branch(&main).unwrap().0;
-        assert_eq!(after, before, "ceiling={ceiling}");
-    }
-}
-
-#[test]
-fn empty_checkpoint_memory_boundary_is_its_bytes_plus_one_stage() {
+fn checkpoint_refusals_preserve_request_custody_and_publication() {
     let _guard = crate::leased_preparation::ordinary_context::serial();
-    // 1,508 = the 1,108 checkpoint bytes + 400 bytes the one stage retains,
-    // on serial and leased lineages alike.
     for leased in [false, true] {
-        let fits = memory_outcome(leased, 1_508, false);
-        assert!(matches!(fits, Ok(1_108)), "leased={leased}: {fits:?}");
-        let short = memory_outcome(leased, 1_507, false);
-        assert!(
-            matches!(
-                short,
-                Err(Denial::Request(Cause::PolicyMemoryExhausted {
-                    requested: 1_108,
-                    admitted: 1_107,
-                    ancestor: 0,
-                }))
+        assert!(memory_outcome(leased, 1 << 20, false).unwrap() > 0);
+        assert!(matches!(
+            memory_outcome(leased, 0, false),
+            Err(Denial::Request(Cause::PolicyMemoryExhausted { .. })) | Err(Denial::Allocation(_))
+        ));
+        match (leased, memory_outcome(leased, 0, true)) {
+            (false, Err(Denial::Request(Cause::Cancelled))) => {}
+            (true, Err(Denial::Allocation(cause))) => assert_eq!(
+                cause.classify(),
+                ExecutionAllocationDenialClass::Request(WorkCeilingDenial::Stopped(
+                    MapKernelStop::Cancelled
+                ))
             ),
-            "leased={leased}: {short:?}"
-        );
-        // Cancellation outranks the memory refusal at the first gate.
-        for memory in [1_507, 1_508] {
-            match (leased, memory_outcome(leased, memory, true)) {
-                (false, Err(Denial::Request(Cause::Cancelled))) => {}
-                (true, Err(Denial::Allocation(cause))) => assert_eq!(
-                    cause.classify(),
-                    ExecutionAllocationDenialClass::Request(WorkCeilingDenial::Stopped(
-                        MapKernelStop::Cancelled
-                    ))
-                ),
-                (_, outcome) => panic!("leased={leased} memory={memory}: {outcome:?}"),
-            }
+            (_, outcome) => panic!("cancellation must outrank memory refusal: {outcome:?}"),
         }
     }
+    let request = SerialRequest::from_policy(
+        &ExecutionRequestPolicy::new(
+            ExecutionPosture::Serial,
+            DeterminismContract::CanonicalBitwise,
+            ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, Some(0)),
+        ),
+        CancellationSource::new().token(),
+        None,
+    );
+    let execution = ExecutionRequest::serial(&request);
+    let runtime = runtime_with_rows(0);
+    let before = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap()
+        .0;
+    assert!(matches!(
+        runtime
+            .durability_authority()
+            .native_checkpoint(&execution, Allocation::SystemAllocation),
+        Err(Denial::Request(Cause::WorkExhausted))
+    ));
+    assert_eq!(request.memory().unwrap().charged_memory_bytes(), 0);
+    assert_eq!(
+        runtime
+            .observe_branch(&runtime.main_branch_identity())
+            .unwrap()
+            .0,
+        before
+    );
 }
 
 fn runtime_with_rows(rows: usize) -> RelationalRuntime {

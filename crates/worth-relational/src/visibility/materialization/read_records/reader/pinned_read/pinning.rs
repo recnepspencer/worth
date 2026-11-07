@@ -52,8 +52,6 @@ impl VisibilityReadContext<'_> {
         let context = self
             .query_plan_context(&snapshot)
             .ok_or_else(|| denied(Denial::SnapshotUnavailable))?;
-        // StringInterner's im maps clone shared nodes, never their entries.
-        let symbols = self.runtime.services.symbols.interner_snapshot();
         Ok(RelationalPinnedRead {
             applied_changes: None,
             current_version: self.runtime.current_version_id(),
@@ -61,7 +59,6 @@ impl VisibilityReadContext<'_> {
             snapshot,
             basis,
             context,
-            symbols,
             indexes,
         })
     }
@@ -129,7 +126,6 @@ impl VisibilityReadContext<'_> {
             denied,
         )?;
         let (current_version, instrumentation, _) = view.retain_pinning_metadata();
-        let symbols = self.runtime.services.symbols.interner_snapshot();
         Ok(RelationalPinnedRead {
             applied_changes: None,
             current_version,
@@ -137,7 +133,6 @@ impl VisibilityReadContext<'_> {
             snapshot: (),
             basis,
             context,
-            symbols,
             indexes,
         })
     }

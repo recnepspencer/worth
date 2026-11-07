@@ -170,7 +170,8 @@ pub(super) fn truth(runtime: &RelationalRuntime, execution: &ExecutionRequest<'_
                 text(
                     e.authoritative_aspect_state.as_ref().unwrap(),
                     "name",
-                    pin.symbols(),
+                    &pin,
+                    execution,
                 ),
             )
         })
@@ -199,7 +200,8 @@ pub(super) fn truth(runtime: &RelationalRuntime, execution: &ExecutionRequest<'_
                 text(
                     r.authoritative_aspect_state.as_ref().unwrap(),
                     "label",
-                    pin.symbols(),
+                    &pin,
+                    execution,
                 ),
             )
         })
@@ -216,7 +218,8 @@ pub(super) fn truth(runtime: &RelationalRuntime, execution: &ExecutionRequest<'_
 fn text(
     state: &worth_foundational::facade::AuthoritativeRecordAspectState,
     key: &str,
-    symbols: &worth_relational::facade::symbols::StringInterner,
+    pin: &worth_relational::facade::runtime::RelationalPinnedRead,
+    execution: &ExecutionRequest<'_, '_>,
 ) -> String {
     use worth_foundational::facade::{AspectKey, AspectValue, ContractValidatedAspectValueView};
     let ContractValidatedAspectValueView::Scalar(AspectValue::String(value)) =
@@ -226,9 +229,12 @@ fn text(
     };
     match value {
         worth_foundational::facade::InternedString::Raw(value) => value.clone(),
-        worth_foundational::facade::InternedString::Symbol(symbol) => symbols
-            .resolve(worth_relational::facade::symbols::Symbol(symbol.0))
-            .unwrap()
-            .to_owned(),
+        worth_foundational::facade::InternedString::Symbol(symbol) => pin
+            .with_symbol_text(
+                execution,
+                worth_relational::facade::symbols::Symbol(symbol.0),
+                |text| text.unwrap().as_str().to_owned(),
+            )
+            .unwrap(),
     }
 }

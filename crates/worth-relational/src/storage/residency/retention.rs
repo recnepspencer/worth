@@ -185,6 +185,12 @@ impl RelationalRegionRetention {
             })
     }
 
+    /// The root retains this exact Full lease; accepted read capabilities can
+    /// keep using its immutable bytes after a later fresh demand finds damage.
+    pub(crate) fn accepted_full_partition(&self) -> Option<&PartitionState> {
+        self.full.get().map(|lease| lease.full_view().partition())
+    }
+
     /// Clone custody already accepted by this immutable root, without a fresh
     /// admission decision. A cold cell alone supplies no witness here.
     pub(crate) fn accepted_head_lease(&self) -> Option<RelationalResidencyLease<super::Head>> {

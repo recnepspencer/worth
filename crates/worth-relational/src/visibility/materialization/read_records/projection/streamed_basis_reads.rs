@@ -24,6 +24,10 @@ pub(crate) trait ProjectionRecordSource {
     ) -> Result<(), crate::execution::RelationalExecutionDenialCause>;
 
     fn selected_root(&self) -> Option<&std::sync::Arc<crate::branch::RelationalBranchRoot>>;
+    fn selected_storage(&self) -> Option<&dyn PartitionAccess> {
+        self.selected_root()
+            .map(|root| root.as_ref() as &dyn PartitionAccess)
+    }
     fn is_exact_basis(&self) -> bool;
     fn version_id(&self) -> crate::identity::data::VersionId;
     fn selected_schema_authority(
@@ -86,7 +90,10 @@ pub(crate) trait ProjectionRecordSource {
         let Some(root) = self.selected_root() else {
             return Ok(());
         };
-        let Some(partition) = root.get_partition(partition_id) else {
+        let Some(partition) = self
+            .selected_storage()
+            .and_then(|storage| storage.get_partition(partition_id))
+        else {
             return Ok(());
         };
         let mut iterator_bytes = 0;
@@ -172,7 +179,10 @@ pub(crate) trait ProjectionRecordSource {
         let Some(root) = self.selected_root() else {
             return Ok(());
         };
-        let Some(partition) = root.get_partition(partition_id) else {
+        let Some(partition) = self
+            .selected_storage()
+            .and_then(|storage| storage.get_partition(partition_id))
+        else {
             return Ok(());
         };
         let mut iterator_bytes = 0;
@@ -353,16 +363,16 @@ pub(crate) trait ProjectionRecordSource {
     }
 
     fn candidate_entity_bytes_for_id(&self, entity_id: EntityId) -> u64 {
-        self.selected_root()
-            .and_then(|root| root.get_partition(entity_id.partition_id))
+        self.selected_storage()
+            .and_then(|storage| storage.get_partition(entity_id.partition_id))
             .map_or(0, |partition| {
                 self.candidate_entity_bytes(partition, entity_id.slot_index())
             })
     }
 
     fn candidate_relation_bytes_for_id(&self, relation_id: RelationId) -> u64 {
-        self.selected_root()
-            .and_then(|root| root.get_partition(relation_id.partition_id))
+        self.selected_storage()
+            .and_then(|storage| storage.get_partition(relation_id.partition_id))
             .map_or(0, |partition| {
                 self.candidate_relation_bytes(partition, relation_id.slot_index())
             })

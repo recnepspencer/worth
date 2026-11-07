@@ -280,10 +280,7 @@ fn cascade_retires_and_restores_only_the_complete_live_membership() {
         .unwrap();
     release_test_commit_snapshot(&runtime, &restored);
     let selected = basis(&runtime);
-    let view = runtime
-        .read_truth()
-        .project_observation(&selected.observation())
-        .unwrap();
+    let view = pinned.project_read();
     let mut names = std::collections::BTreeMap::new();
     for record in &restored_application {
         let RecordRef::Entity(id) = record else {
@@ -291,7 +288,7 @@ fn cascade_retires_and_restores_only_the_complete_live_membership() {
         };
         let name = view
             .read_exact_entity_state(execution, *id, |_, state| {
-                super::restoration::text(state.unwrap(), "name", pinned.symbols())
+                super::restoration::text(state.unwrap(), "name", &pinned.symbols())
             })
             .unwrap()
             .unwrap();

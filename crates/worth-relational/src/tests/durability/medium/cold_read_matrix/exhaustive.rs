@@ -20,7 +20,9 @@ fn residency_failure_matrix_full_read_subjects_cover_every_door_and_class() {
                     .filter(|member| fixture.targets.contains(member))
                     .count();
                 fixture.inject(cause);
-                if door.is_current_projection_scan() && !matches!(subject, ReadSubject::RegionHead)
+                if door.is_lazy_capability_pin()
+                    || (door.is_current_projection_scan()
+                        && !matches!(subject, ReadSubject::RegionHead))
                 {
                     fixture.run(door, execution).unwrap_or_else(|failure| {
                         panic!("current scan touched {subject:?}: {failure:?}")
@@ -35,7 +37,7 @@ fn residency_failure_matrix_full_read_subjects_cover_every_door_and_class() {
                             .filter(|member| fixture.targets.contains(member))
                             .count(),
                         target_reads_before,
-                        "current scans open no additional historical member"
+                        "lazy pins open no members; current scans open no historical member"
                     );
                     if let Some(symbol) = fixture.expected_symbol {
                         assert!(fixture

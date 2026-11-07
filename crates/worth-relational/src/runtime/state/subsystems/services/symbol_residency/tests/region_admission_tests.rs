@@ -50,3 +50,52 @@ fn region_symbol_admission_is_retryable_and_owned_by_each_fork() {
     );
     assert!(fork.with_read(|symbols| symbols.retained_text(symbol).is_some()));
 }
+
+#[test]
+fn dictionary_snapshot_shares_directory_and_page_owners_without_sharing_later_edits() {
+    let (table, directory, _, all) = dictionary();
+    let parent_pages = RuntimeSymbolResidency::new(
+        directory.manifest.symbols.clone(),
+        directory.manifest.symbol_buckets.clone(),
+        directory.source.clone(),
+    )
+    .unwrap();
+    let original = crate::test_execution_policy::serial_request();
+    let request = worth_execution::ExecutionRequest::serial(&original);
+    parent_pages
+        .demand_ids(
+            &table,
+            &request,
+            [
+                all.entries.first().unwrap().0,
+                all.entries.last().unwrap().0,
+            ],
+        )
+        .unwrap();
+    let fork = table.detached_owner_snapshot();
+    let (fork_pages, _) = parent_pages.detached_with_owner(|| table.interner_snapshot());
+    assert!(Arc::ptr_eq(&parent_pages.by_id, &fork_pages.by_id));
+    assert!(Arc::ptr_eq(&parent_pages.by_value, &fork_pages.by_value));
+    {
+        let parent = parent_pages.pages.lock().unwrap();
+        let detached = fork_pages.pages.lock().unwrap();
+        assert_eq!(parent.len(), detached.len());
+        for (member, accepted) in parent.iter() {
+            assert!(
+                std::ptr::eq(accepted, detached.get(member).unwrap()),
+                "a detached page result must retain the same persistent value owner"
+            );
+        }
+    }
+    table.with_write(|symbols| symbols.intern("after-read-snapshot").unwrap());
+    assert!(fork.with_read(|symbols| symbols.symbol("after-read-snapshot").is_none()));
+    for symbol in [
+        all.entries.first().unwrap().0,
+        all.entries.last().unwrap().0,
+    ] {
+        assert_eq!(
+            fork.with_read(|symbols| symbols.resolve(symbol).map(str::to_owned)),
+            table.with_read(|symbols| symbols.resolve(symbol).map(str::to_owned))
+        );
+    }
+}

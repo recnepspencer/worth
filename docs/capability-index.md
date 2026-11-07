@@ -167,6 +167,13 @@ custody and this runtime's aspect-name meanings, performs no source read, and
 returns a typed cold-pin refusal. `RelationalPinnedEntityMetadata` exposes current
 kind, aspect revision and retirement only; historical reads require Full custody.
 
+Native exact read capabilities retain the selected root and an isolated persistent
+dictionary; creating a pin performs no region or symbol-page I/O. Each read
+admits its reached regions under the original request. `RelationalPinnedRead::symbols()`
+returns an owned persistent snapshot of the meanings admitted so far. For a cold
+symbol, use `with_symbol_text(request, symbol, inspect)` to borrow its native
+text after admitting only the required page; preserve typed storage refusals.
+
 Native conditional observation owners borrow the genuine computed effect through
 `BridgeConditionalCausalObservation::computed_evaluation()` and its observed
 before/after Signal versions. The original Signal verdict, suppression reason

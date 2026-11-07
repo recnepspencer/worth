@@ -2891,6 +2891,8 @@ A stopped read is not a missing record or a stale index. Entity resolution
 separates `Stopped(cause)` from `Refused(kind)`; handle the typed stop instead
 of retrying it as absence. A pinned read checks the live request when the pin
 is acquired and holds the selected root and index payload for later reads.
+Later reads check the original request and admit only their reached regions; a
+cold-source failure remains a typed read refusal.
 
 Zero memory reports a policy `MemoryLimit { requested, admitted: 0, level }`
 at every placement, including its requested bytes.

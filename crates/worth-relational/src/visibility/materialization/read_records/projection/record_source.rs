@@ -19,6 +19,14 @@ impl super::ProjectionRecordSource for VisibilityProjectionView {
     fn selected_root(&self) -> Option<&std::sync::Arc<crate::branch::RelationalBranchRoot>> {
         self.selected_root()
     }
+    fn selected_storage(&self) -> Option<&dyn crate::storage::overlay::PartitionAccess> {
+        if let Some(resident) = &self.resident {
+            Some(resident)
+        } else {
+            self.selected_root()
+                .map(|root| root.as_ref() as &dyn crate::storage::overlay::PartitionAccess)
+        }
+    }
     fn is_exact_basis(&self) -> bool {
         self.is_exact_basis()
     }
