@@ -176,7 +176,7 @@ impl WorthQueryHistoryOutputIntent {
                     current, Some(truth.selected()), request, &principal, authority.producer_invocation(), &mut native,
                 ),
             }.map_err(Stop::Admission)?;
-            permission.require_history_principal(authority.producer_invocation()).map_err(Stop::Admission)?;
+            permission.require_current_principal(authority.producer_invocation().read_control()).map_err(Stop::Admission)?;
             let plan = runtime.finish_prepared_application_query_permission(&execution, permission).map_err(Stop::Admission)?;
             if read {
             let reader = crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess::new(

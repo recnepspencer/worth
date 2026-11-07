@@ -193,7 +193,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
         })?;
         if let Some(history) = &self.history {
             permission
-                .require_history_principal(history.invocation)
+                .require_current_principal(history.invocation.read_control())
                 .map_err(|cause| {
                     self.record_history_refusal(Stop::Preparation {
                         phase: SourceQueryPreparationPhase::Permission,

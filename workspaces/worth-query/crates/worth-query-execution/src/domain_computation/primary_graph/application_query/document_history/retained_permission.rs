@@ -133,7 +133,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             historical.as_ref().map(|_| history),
             |permission| {
                 permission
-                    .require_history_principal(history)
+                    .require_current_principal(history.read_control())
                     .map_err(FreshQueryPermissionStop::Query)?;
                 permission
                     .require_original_scope(observed)

@@ -131,7 +131,7 @@ where
     runtime
         .with_fresh_retained_query_permission(execution, installed, Some(validated_principal), external_principal, retained, control.as_ref().unwrap_or(shared).selected(), control.as_ref().map(|_| shared.selected()), controls, invocation.history_control(), |permission| {
                 if let Some(history) = invocation.history_control() {
-                    permission.require_history_principal(history)
+                    permission.require_current_principal(history.read_control())
                         .map_err(|stop| query_admission_denied(Binding::IDENTITY, stop))?;
                     permission.require_original_scope(retained)
                         .map_err(|stop| query_admission_denied(Binding::IDENTITY, stop))?;
