@@ -131,3 +131,30 @@ fn application_limits_for_world(
         worth_query_host::facade::primary_graph::SignalConditionalEvaluationBudget::development(),
     )
 }
+
+// Existing consumer population setup grant, kept exactly at20B. No public
+// pre-capture work quote exists; this is not a newly observed charge peak.
+#[cfg(test)]
+pub(super) const POPULATION_BOOTSTRAP_POLICY: worth_foundational::ExecutionRequestPolicy =
+    worth_foundational::ExecutionRequestPolicy::new(
+        worth_foundational::ExecutionPosture::Serial,
+        worth_foundational::DeterminismContract::CanonicalBitwise,
+        worth_foundational::ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            None,
+            Some(20_000_000_000),
+        ),
+    );
+
+#[cfg(test)]
+pub(super) fn checkpoint_capture_request(
+) -> worth_query_host::facade::runtime::ExecutionResourceLease<'static> {
+    worth_query_host::facade::runtime::ExecutionResourceLease::serial(
+        worth_query_host::facade::runtime::LeaseRequest {
+            policy: POPULATION_BOOTSTRAP_POLICY,
+            cancellation: worth_query_host::facade::runtime::CancellationToken::new(),
+            deadline: None,
+        },
+    )
+    .expect("the capture owns its original finite setup request")
+}

@@ -103,15 +103,7 @@ pub(super) fn install_growth(
     geometry: geometry::Configuration,
     clock: worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock,
 ) -> Host {
-    let policy = worth_foundational::ExecutionRequestPolicy::new(
-        worth_foundational::ExecutionPosture::Serial,
-        worth_foundational::DeterminismContract::CanonicalBitwise,
-        worth_foundational::ExecutionBudget::new(
-            std::num::NonZeroUsize::MIN,
-            None,
-            Some(20_000_000_000),
-        ),
-    );
+    let policy = super::super::super::resources::POPULATION_BOOTSTRAP_POLICY;
     install_configured_with_limits(
         prefix,
         rules,

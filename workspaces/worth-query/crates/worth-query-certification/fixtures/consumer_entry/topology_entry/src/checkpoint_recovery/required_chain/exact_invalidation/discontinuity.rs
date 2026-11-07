@@ -17,8 +17,9 @@ fn settled_checkpoint(
         court.demand_ring(rings, index, "before the checkpoint");
     }
     drop((principal, scope));
+    let capture = crate::checkpoint_recovery::support::checkpoint_capture_request();
     application
-        .with_host_advancement(|host_phase| {
+        .with_funded_host_advancement(CapturePolicy::Execution(&capture), |host_phase| {
             application
                 .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
                 .unwrap()

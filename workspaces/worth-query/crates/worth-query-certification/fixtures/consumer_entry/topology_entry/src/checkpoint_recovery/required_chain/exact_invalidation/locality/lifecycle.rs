@@ -67,8 +67,11 @@ mod serial {
             for index in 0..rings.len() {
                 court.demand_ring(&mut rings, index, "publication before capture");
             }
+            let capture = crate::checkpoint_recovery::support::checkpoint_capture_request();
             application
-            .with_host_advancement(|phase| {
+            .with_funded_host_advancement(
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::Execution(&capture),
+                |phase| {
                 application.capture_application_checkpoint(
                     &phase,
                     worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation,
