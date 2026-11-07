@@ -1,4 +1,6 @@
 use super::*;
+#[path = "checkpoint_substrate_identity.rs"]
+mod checkpoint_substrate_identity;
 use crate::durability::data::RecoveryFailureClass;
 use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 use crate::facade::mvcc::WorkerIntentBatch;
@@ -7,6 +9,7 @@ use crate::history::data::BranchId;
 use crate::identity::data::KindId;
 use crate::identity::data::PartitionId;
 use crate::tests::support::*;
+use checkpoint_substrate_identity::{shares_first_generation, shares_partition_generation};
 
 #[test]
 fn equal_exact_root_reuses_the_readmitted_partition_substrate() {
@@ -25,8 +28,13 @@ fn equal_exact_root_reuses_the_readmitted_partition_substrate() {
 
     let mut restored = durable_runtime_with_test_schema();
     let mut work = crate::durability::data::CheckpointRestoreWork::default();
-    let roots = restore_branch_root_images(&mut restored, &checkpoint, &mut work).unwrap();
-    let mirror = prepare_partitions(&mut restored, &checkpoint, &roots, &mut work).unwrap();
+    let roots =
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            restore_branch_root_images(lane, execution, &mut restored, &checkpoint, &mut work)
+        })
+        .unwrap();
+    let mirror =
+        prepare_partitions(execution, &mut restored, &checkpoint, &roots, &mut work).unwrap();
     let root = roots.partitions.get(&committed.commit.commit_id).unwrap();
     assert!(shares_first_generation(&mirror, root));
 }
@@ -193,8 +201,13 @@ fn divergent_sibling_is_not_reused_as_the_storage_mirror() {
 
     let mut restored = durable_runtime_with_test_schema();
     let mut work = crate::durability::data::CheckpointRestoreWork::default();
-    let roots = restore_branch_root_images(&mut restored, &checkpoint, &mut work).unwrap();
-    let mirror = prepare_partitions(&mut restored, &checkpoint, &roots, &mut work).unwrap();
+    let roots =
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            restore_branch_root_images(lane, execution, &mut restored, &checkpoint, &mut work)
+        })
+        .unwrap();
+    let mirror =
+        prepare_partitions(execution, &mut restored, &checkpoint, &roots, &mut work).unwrap();
     let main_root = roots.partitions.get(&main_commit.commit.commit_id).unwrap();
     let sibling_root = roots
         .partitions
@@ -277,8 +290,13 @@ fn divergent_mirror_partition_rebuilds_cross_partition_adjacency_after_reuse() {
 
     let mut restored = durable_runtime_with_test_schema();
     let mut work = crate::durability::data::CheckpointRestoreWork::default();
-    let roots = restore_branch_root_images(&mut restored, &checkpoint, &mut work).unwrap();
-    let mirror = prepare_partitions(&mut restored, &checkpoint, &roots, &mut work).unwrap();
+    let roots =
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            restore_branch_root_images(lane, execution, &mut restored, &checkpoint, &mut work)
+        })
+        .unwrap();
+    let mirror =
+        prepare_partitions(execution, &mut restored, &checkpoint, &roots, &mut work).unwrap();
     let root_commit = checkpoint.branch_roots[0].commit_id;
     let root = roots.partitions.get(&root_commit).unwrap();
     assert!(!shares_partition_generation(
@@ -360,28 +378,16 @@ fn equal_image_cannot_bypass_global_contract_readmission() {
 
     let mut restored = durable_runtime_with_test_schema();
     let mut work = crate::durability::data::CheckpointRestoreWork::default();
-    let roots = restore_branch_root_images(&mut restored, &checkpoint, &mut work).unwrap();
-    let error = prepare_partitions(&mut restored, &checkpoint, &roots, &mut work).unwrap_err();
+    let roots =
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            restore_branch_root_images(lane, execution, &mut restored, &checkpoint, &mut work)
+        })
+        .unwrap();
+    let error =
+        prepare_partitions(execution, &mut restored, &checkpoint, &roots, &mut work).unwrap_err();
+    let RelationalRecoveryStop::Durability(error) = error else {
+        panic!("contract corruption must remain a durability refusal: {error:?}");
+    };
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("aspect readmission denied"));
-}
-
-fn shares_first_generation(
-    left: &partition_images::RestoredPartitions,
-    right: &partition_images::RestoredPartitions,
-) -> bool {
-    shares_partition_generation(left, right, PartitionId::main())
-}
-
-fn shares_partition_generation(
-    left: &partition_images::RestoredPartitions,
-    right: &partition_images::RestoredPartitions,
-    partition_id: PartitionId,
-) -> bool {
-    let left = left.get(&partition_id).unwrap();
-    let right = right.get(&partition_id).unwrap();
-    std::ptr::eq(
-        left.entity_arena.generations.get(0).unwrap(),
-        right.entity_arena.generations.get(0).unwrap(),
-    )
 }

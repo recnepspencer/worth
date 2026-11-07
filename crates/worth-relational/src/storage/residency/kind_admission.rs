@@ -22,21 +22,35 @@ pub(super) fn reconstruct(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     partition: &PartitionState,
 ) -> Result<Arc<RegionKindIndexes>, super::RelationalResidencyDemandFailure> {
+    recover(lane, execution, partition.partition_id, |checkpoint, _| {
+        RegionKindIndexes::capture_controlled(lane, partition, checkpoint).map(Arc::new)
+    })
+}
+
+/// Composite reconstruction doors share the original-request projection driver.
+pub(super) fn recover<T>(
+    lane: &ReconstructionLane<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    partition: crate::identity::data::PartitionId,
+    operation: impl FnOnce(
+        &mut kind_projection::ProjectionCheckpoint<'_>,
+        &mut kind_projection::ProjectionRetention<'_>,
+    ) -> Result<T, Cause>,
+) -> Result<T, super::RelationalResidencyDemandFailure> {
     use super::RelationalResidencyDemandFailure as Failure;
-    lane.recover(execution, |lane, work| {
+    lane.recover(execution, |_, work| {
         maintained::controlled(
             execution,
             &mut |units, bytes| work.prepare(units, bytes),
-            &mut |checkpoint, _| RegionKindIndexes::capture_controlled(lane, partition, checkpoint),
+            operation,
         )
     })
-    .map(Arc::new)
     .map_err(|error| match error {
         maintained::KindMaintenanceError::Admission(MaintenanceRefusal::Execution(cause)) => {
             Failure::Request(cause)
         }
         other => Failure::StorageUnavailable(crate::storage::data::RelationalStorageUnavailable {
-            subject: crate::storage::data::RelationalStorageSubject::Region(partition.partition_id),
+            subject: crate::storage::data::RelationalStorageSubject::Region(partition),
             cause: match other {
                 maintained::KindMaintenanceError::Storage(cause) => cause,
                 _ => Cause::SourceUnavailable,

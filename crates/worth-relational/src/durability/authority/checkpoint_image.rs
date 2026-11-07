@@ -68,13 +68,21 @@ impl CapturedCheckpointBasis {
         } = branch_root_images(branch_roots, execution)?;
         let mirror_partitions = partitions.materialize_owned_partitions()?;
         let mirror_kind_images =
-            crate::storage::residency::CheckpointRegionKindImages::capture(&mirror_partitions)
-                .map_err(|cause| {
-                    DurabilityError::new(
-                        RecoveryFailureClass::CorruptCheckpoint,
-                        format!("mirror kind capture: {cause:?}"),
+            crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
+                |lane| {
+                    crate::storage::residency::CheckpointRegionKindImages::capture(
+                        lane,
+                        execution,
+                        &mirror_partitions,
                     )
-                })?;
+                },
+            )
+            .map_err(|cause| {
+                crate::durability::checkpoints::kind_reconstruction::stop(
+                    "mirror kind capture",
+                    cause,
+                )
+            })?;
         let mirror_schema_digest = mirror_schema_authority
             .as_ref()
             .map(crate::durability::data::DurableBranchRootSchemaImage::capture)
@@ -158,13 +166,21 @@ fn branch_root_images(
             let partitions = root.partitions()?;
             root_kind_images.insert(
                 root.commit_id(),
-                crate::storage::residency::CheckpointRegionKindImages::capture(&partitions)
-                    .map_err(|cause| {
-                        DurabilityError::new(
-                            RecoveryFailureClass::CorruptCheckpoint,
-                            format!("root kind capture: {cause:?}"),
+                crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
+                    |lane| {
+                        crate::storage::residency::CheckpointRegionKindImages::capture(
+                            lane,
+                            execution,
+                            &partitions,
                         )
-                    })?,
+                    },
+                )
+                .map_err(|cause| {
+                    crate::durability::checkpoints::kind_reconstruction::stop(
+                        "root kind capture",
+                        cause,
+                    )
+                })?,
             );
             let partition_images = partitions
                 .iter()

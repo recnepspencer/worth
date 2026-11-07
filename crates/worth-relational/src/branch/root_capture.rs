@@ -11,6 +11,8 @@ use super::{
 };
 
 pub(super) fn build_initial_regions(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     issuer: &RelationalBranchRootIdentityIssuer,
     root_id: u64,
     partitions: &BTreeMap<PartitionId, PartitionState>,
@@ -23,6 +25,8 @@ pub(super) fn build_initial_regions(
     RelationalBranchRootCaptureDenial,
 > {
     build_initial_regions_owned(
+        lane,
+        execution,
         issuer,
         root_id,
         partitions
@@ -33,6 +37,8 @@ pub(super) fn build_initial_regions(
 }
 
 pub(super) fn build_initial_regions_owned(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     issuer: &RelationalBranchRootIdentityIssuer,
     root_id: u64,
     partitions: impl IntoIterator<Item = (PartitionId, PartitionState)>,
@@ -49,6 +55,8 @@ pub(super) fn build_initial_regions_owned(
     let mut content_values_hashed = 0_u64;
     for (partition_id, partition) in partitions {
         let region = Arc::new(RelationalRootRegion::new(
+            lane,
+            execution,
             root_id,
             issuer.issue_region_id()?,
             partition,
@@ -125,9 +133,15 @@ pub(super) fn build_incremental_regions(
                 change.map(Arc::as_ref),
             )
         } else {
-            crate::storage::residency::PreparedResidentRegion::initial(
-                overlay.clone(),
-                &symbols.interner_snapshot(),
+            crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
+                |lane| {
+                    crate::storage::residency::PreparedResidentRegion::initial(
+                        lane,
+                        execution,
+                        overlay.clone(),
+                        &symbols.interner_snapshot(),
+                    )
+                },
             )
         }
         .map_err(|failure| super::super::root_region::capture_failure(partition_id, failure))?;

@@ -144,11 +144,17 @@ fn prepare_regions(
         )?,
         _ => {
             let projected = published_delta.projected_partitions_from_access(partitions);
-            capture::build_initial_regions(
-                issuer,
-                root_id,
-                &projected,
-                &symbols.interner_snapshot(),
+            crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
+                |lane| {
+                    capture::build_initial_regions(
+                        lane,
+                        execution,
+                        issuer,
+                        root_id,
+                        &projected,
+                        &symbols.interner_snapshot(),
+                    )
+                },
             )?
         }
     };

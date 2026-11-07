@@ -50,6 +50,7 @@ pub(super) fn read_damaged(
             let runtime = base.native_for_test().committed_runtime_for_test().unwrap();
             assert!(
                 runtime.corrupt_snapshot_field_for_test(
+                    base.execution_for_test(),
                     base.snapshot_for_test(),
                     entity,
                     locator,

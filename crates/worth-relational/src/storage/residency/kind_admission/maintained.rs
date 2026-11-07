@@ -55,7 +55,7 @@ impl<'a, 'request, 'lease> KindMaintainer<'a, 'request, 'lease> {
         controlled(
             self.execution,
             &mut |units, bytes| work.prepare(units, bytes),
-            &mut |checkpoint, retain| {
+            |checkpoint, retain| {
                 kind_incremental::update_value(
                     self.partition,
                     self.previous,
@@ -101,7 +101,7 @@ impl Maintained for KindMaintainer<'_, '_, '_> {
         controlled(
             self.execution,
             &mut |units, bytes| work.prepare(units, bytes),
-            &mut |checkpoint, retain| {
+            |checkpoint, retain| {
                 super::normalize_value(lane, self.partition, checkpoint, retain)?;
                 RegionKindIndexes::capture_controlled(lane, self.partition, checkpoint)
             },
@@ -118,14 +118,14 @@ impl Maintained for KindMaintainer<'_, '_, '_> {
     }
 }
 
-pub(super) fn controlled(
+pub(super) fn controlled<T>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     prepare: &mut dyn FnMut(u64, u64) -> Result<(), MaintenanceRefusal>,
-    operation: &mut dyn FnMut(
+    operation: impl FnOnce(
         &mut ProjectionCheckpoint<'_>,
         &mut ProjectionRetention<'_>,
-    ) -> Result<RegionKindIndexes, Cause>,
-) -> Result<RegionKindIndexes, KindMaintenanceError> {
+    ) -> Result<T, Cause>,
+) -> Result<T, KindMaintenanceError> {
     let first_stop = std::cell::RefCell::new(None);
     let mut checkpoint = |units, bytes| {
         if first_stop.borrow().is_some() {

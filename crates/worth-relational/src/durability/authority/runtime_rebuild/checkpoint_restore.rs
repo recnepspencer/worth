@@ -84,14 +84,18 @@ fn prepare_checkpoint_state(
     validate_checkpoint_lineage_artifact(checkpoint)?;
     let symbols = prepare_symbols(restored, checkpoint)?;
     let record_identity = prepare_record_identity(checkpoint)?;
-    let branch_root_images = restore_branch_root_images(restored, checkpoint, work)?;
+    let branch_root_images =
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            restore_branch_root_images(lane, execution, restored, checkpoint, work)
+        })?;
     recovered_schema_meaning::check_current_schema_meaning(
         execution,
         checkpoint,
         &branch_root_images,
         &restored.config.schema.registry,
     )?;
-    let partitions = prepare_partitions(restored, checkpoint, &branch_root_images, work)?;
+    let partitions =
+        prepare_partitions(execution, restored, checkpoint, &branch_root_images, work)?;
     let history = prepare_history(
         execution,
         restored,
@@ -130,6 +134,7 @@ fn prepare_symbols(
 }
 
 fn prepare_partitions(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
     branch_roots: &branch_root_images::RestoredBranchRootImages,
@@ -139,18 +144,22 @@ fn prepare_partitions(
         crate::identity::data::PartitionId,
         crate::storage::overlay::PartitionState,
     >,
-    DurabilityError,
+    RelationalRecoveryStop,
 > {
     let aspect_contracts = crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog::readmit(
         &checkpoint.aspect_contracts,
     )?;
-    partition_images::restore_partition_mirror(
-        checkpoint,
-        branch_roots,
-        &restored.schema_contract_runtime.aspect_contract_plans,
-        &aspect_contracts,
-        work,
-    )
+    crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+        partition_images::restore_partition_mirror(
+            lane,
+            execution,
+            checkpoint,
+            branch_roots,
+            &restored.schema_contract_runtime.aspect_contract_plans,
+            &aspect_contracts,
+            work,
+        )
+    })
 }
 
 fn prepare_lineage(

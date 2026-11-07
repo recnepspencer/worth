@@ -114,7 +114,15 @@ pub(super) fn region_with_history() -> RegionFixture {
     let schema_digest = crate::durability::data::DurableBranchRootSchemaImage::capture(&schema)
         .unwrap()
         .carrier_digest();
-    let members = capture_region_members(partition, &commitment, &schema, schema_digest).unwrap();
+    let members = capture_region_members(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        execution,
+        partition,
+        &commitment,
+        &schema,
+        schema_digest,
+    )
+    .unwrap();
     let source = Arc::new(CountedSource {
         history: members.history.0,
         members: BTreeMap::from([members.head.clone(), members.history.clone()]),

@@ -100,3 +100,10 @@ retained history of one relation while keeping the measured endpoint edit
 fixed. It uses `assert_change_bounded`; timings remain telemetry. A full
 rebuild inserted after the production kind update fails this court, even
 though the isolated incremental engine itself remains unchanged.
+
+Composite initial-region and checkpoint image/member capture doors also require
+both a `ReconstructionLane` and the original `ExecutionRequest`. They do not mint
+lanes. Their projection traversals run through `lane.recover` and the same
+controlled admission engine as cold kind reconstruction; request refusals remain
+typed request failures. Only the no-predecessor publication branches, explicit
+checkpoint import/export, and closed corruption recorders mint at those callers.

@@ -170,6 +170,8 @@ fn capture_preserves_a_cold_basis_and_full_admission_replaces_it_with_complete_r
     let head = region_load::load_head(&fixture.cold, execution, 1 << 24).unwrap();
     let symbols = fixture.cold.symbols.interner_snapshot();
     let layered = capture_region_members(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        execution,
         &head.partition,
         head.commitment.as_ref().unwrap(),
         &fixture.cold.schema,
@@ -205,6 +207,8 @@ fn capture_preserves_a_cold_basis_and_full_admission_replaces_it_with_complete_r
     let (commitment, _) =
         PartitionContentCommitment::capture(&full.partition, &symbols, None).unwrap();
     let captured = capture_region_members(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        execution,
         &full.partition,
         &commitment,
         &fixture.cold.schema,

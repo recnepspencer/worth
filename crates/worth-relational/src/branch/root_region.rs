@@ -26,13 +26,15 @@ pub(crate) struct RelationalRootRegion {
 
 impl RelationalRootRegion {
     pub(super) fn new(
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         creation_root_id: u64,
         id: u64,
         partition: PartitionState,
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<Self, RelationalBranchRootCaptureDenial> {
         let partition_id = partition.partition_id;
-        let prepared = PreparedResidentRegion::initial(partition, symbols)
+        let prepared = PreparedResidentRegion::initial(lane, execution, partition, symbols)
             .map_err(|failure| capture_failure(partition_id, failure))?;
         Ok(Self::from_prepared(creation_root_id, id, prepared))
     }

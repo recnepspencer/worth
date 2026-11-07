@@ -28,7 +28,12 @@ fn an_owned_head_promotes_without_a_checkpoint_and_keeps_its_old_observation() {
         .expect("fixture slot is materialized");
     let symbols = candidate_symbols.interner_snapshot();
     assert!(matches!(
-        PreparedResidentRegion::initial(partial.clone(), &symbols),
+        PreparedResidentRegion::initial(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            execution,
+            partial.clone(),
+            &symbols
+        ),
         Err(RegionContentFailure::Content(
             crate::storage::overlay::PartitionContentDigestError::InvalidHistoryCoverage
         ))

@@ -94,6 +94,31 @@ mod tests {
         }
     }
     #[test]
+    fn composite_reconstruction_helpers_are_not_constructor_boundaries() {
+        for helper in [
+            "region_initialization",
+            "checkpoint_kind_images",
+            "region_capture",
+        ] {
+            let path = format!("crates/worth-relational/src/storage/residency/{helper}.rs");
+            let input = Inputs::fixture(
+                &[
+                    (DEFINITION, "pub fn enter_reconstruction() {}"),
+                    (COLD, ""),
+                    (&path, "ReconstructionLane::enter_reconstruction(|_| ());"),
+                    (
+                        "tools/boundary-check/config/reconstruction-callers.txt",
+                        include_str!("../../config/reconstruction-callers.txt"),
+                    ),
+                ],
+                "",
+            );
+            assert!(check(&input)
+                .iter()
+                .any(|error| error.code == Code::Reconstruction && error.subject == path));
+        }
+    }
+    #[test]
     fn exact_trust_boundaries_can_mint_without_granting_their_crate() {
         assert!(check(&fixture(
             COLD,

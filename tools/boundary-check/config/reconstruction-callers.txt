@@ -4,11 +4,21 @@ crates/worth-relational/src/storage/residency/region_load.rs
 crates/worth-relational/src/storage/residency/resident_history.rs
 crates/worth-relational/src/storage/residency/history_fold.rs
 # Checkpoint export verification and checkpoint image import.
-crates/worth-relational/src/storage/residency/region_capture.rs
-crates/worth-relational/src/storage/residency/checkpoint_kind_images.rs
-# The first image of a new region has no maintained predecessor.
-crates/worth-relational/src/storage/residency/region_initialization.rs
+crates/worth-relational/src/storage/residency/checkpoint_capture.rs
+crates/worth-relational/src/durability/authority/checkpoint_image.rs
+crates/worth-relational/src/durability/log/native_checkpoint_codec/expanded_checkpoint.rs
+crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore.rs
+# Closed corruption recorders rebuild an untrusted image, never admitted state.
+crates/worth-relational/src/durability/data/native_checkpoint/roster_corruption.rs
+crates/worth-relational/src/runtime/state/runtime_state/court_doors_for_test.rs
+# Initial publication mints only in the no-prior-root or no-prior-region branch.
+crates/worth-relational/src/branch/root_capture.rs
+crates/worth-relational/src/branch/root_capture_preparation.rs
+# Readmit a fully authenticated checkpoint root.
+crates/worth-relational/src/branch/root_readmission/region_binding.rs
 # Generic certification oracle; never a production fallback.
+crates/worth-relational/src/durability/log/native_checkpoint_codec/checkpoint_encoding.rs
+crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore_tests.rs
 crates/worth-testkit-relational/src/maintenance.rs
 # Verified schema transition, explicit recovery, and transported index checks.
 crates/worth-relational/src/indexes/authority/maintenance/schema_transition.rs

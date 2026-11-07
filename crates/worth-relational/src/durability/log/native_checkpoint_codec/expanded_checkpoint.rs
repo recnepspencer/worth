@@ -292,8 +292,12 @@ fn expand_regions(
             Ok(lease.into_owned_partition())
         })
         .collect::<Result<Vec<_>, RelationalRecoveryStop>>()?;
-    let kinds = crate::storage::residency::CheckpointRegionKindImages::capture(&admitted)
-        .map_err(|cause| corrupt(format!("expanded kind projection: {cause:?}")))?;
+    let kinds =
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            crate::storage::residency::CheckpointRegionKindImages::capture(
+                lane, execution, &admitted,
+            )
+        })?;
     let images = admitted
         .into_iter()
         .map(|partition| {

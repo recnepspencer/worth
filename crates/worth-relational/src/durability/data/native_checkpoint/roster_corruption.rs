@@ -116,7 +116,9 @@ impl RelationalNativeCheckpoint {
                     .repoint_current_claims_for_test(&root.partition_images, storage.member_link);
             }
         }
-        commitments::rebind(&mut checkpoint)?;
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            commitments::rebind(lane, execution, &mut checkpoint)
+        })?;
         let mut answer = None;
         let handoff = execution.run_native_with_checkpoint(|stage| {
             let mut control = codec::CheckpointEncodingControl::Original {
@@ -125,8 +127,9 @@ impl RelationalNativeCheckpoint {
             };
             answer = Some((|| {
                 let policy = execution.allocation_policy();
-                let captured =
-                    codec::CapturedManifest::capture_expanded(&checkpoint, policy, &mut control)?;
+                let captured = crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| codec::CapturedManifest::capture_expanded(
+                    lane, execution, &checkpoint, policy, &mut control,
+                ))?;
                 let (bytes, sections, members, _) =
                     codec::encode_captured(captured, policy, placement, &mut control)?;
                 Ok::<_, RelationalNativeCheckpointCaptureDenial>((bytes, sections, members))

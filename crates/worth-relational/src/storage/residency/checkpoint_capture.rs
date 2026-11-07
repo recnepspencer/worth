@@ -128,8 +128,7 @@ impl RelationalRegionResidency {
                             }
                         })?;
                 let captured =
-                    super::capture_region_members(partition, &commitment, schema, schema_digest)
-                        .map_err(|cause| self.capture_failure(cause))?;
+                    crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| super::capture_region_members(lane, execution, partition, &commitment, schema, schema_digest))?;
                 if full.is_none()
                     && super::history_capture_bound::needs_consolidation(
                         &captured.history_members,

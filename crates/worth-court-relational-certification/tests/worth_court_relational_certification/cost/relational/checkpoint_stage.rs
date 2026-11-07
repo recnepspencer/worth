@@ -1,22 +1,16 @@
-//! One checkpoint capture is one stage of its original request.
-//!
-//! The control owner documents the rate: one work unit per byte produced by
-//! each serializer pass (sizing and emission are each charged), per payload
-//! byte hashed and per byte copied; zero-work boundaries are free. Every
-//! oracle below is derived from encoded byte counts read independently of the
-//! charging code: the checkpoint length, its reported sections, the journal
-//! artifact payloads and a MessagePack walk of the embedded envelopes.
+//! Checkpoint trust boundaries preserve exact data and fund cold verification.
+//! Cold-region scopes may grow with the images being verified; ordinary commit
+//! growth is guarded separately through the real SDK root-admission court.
 use worth_execution::{
     CancellationSource, ExecutionAllocationDenialClass, ExecutionAllocationPolicy as Allocation,
-    ExecutionRequest, ExecutionScopeSetupCountsForTest as Setup,
-    ExecutionScopeSetupObservationForTest, ExecutionWorkCeiling, MapKernelStop, SerialRequest,
+    ExecutionRequest, ExecutionScopeSetupObservationForTest, MapKernelStop, SerialRequest,
     WorkCeilingDenial,
 };
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
 use worth_relational::facade::{
-    durability::{NativeCheckpointSectionBytes, RelationalNativeCheckpointCaptureDenial as Denial},
+    durability::RelationalNativeCheckpointCaptureDenial as Denial,
     identity::{KindId, PartitionId},
     runtime::RelationalRuntime,
     symbols::ClientKey,
@@ -30,77 +24,88 @@ use worth_testkit_relational::aspect_storage::{
 };
 use worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request;
 
-/// `WORTH-REL-CHK20\n`: the prefix is emitted but not sized.
-const CHECKPOINT_MAGIC_BYTES: u64 = 16;
-/// Journal artifact header: magic 8, version 2, position 8, commit 8,
-/// digest 32, payload length 8.
-const ARTIFACT_HEADER_BYTES: usize = 66;
-
 #[test]
-fn checkpoint_stage_charges_the_documented_rate_for_each_encoded_byte() {
-    // Compare the invoice to actual encoded bytes. Digest bytes have variable
-    // MessagePack widths, so a new commitment encoding must not require a
-    // replacement table of frozen byte or work totals.
+fn checkpoint_reconstruction_preserves_complete_identity_and_data() {
     for rows in [0, 8, 64] {
         let request = serial_request();
         let execution = ExecutionRequest::serial(&request);
         let runtime = runtime_with_rows(rows);
-        let journal: usize = runtime
-            .durability()
-            .canonical_commit_artifacts(execution.allocation_policy())
-            .map(|artifact| artifact.unwrap().as_bytes().len() - ARTIFACT_HEADER_BYTES)
-            .sum();
-        let (checkpoint, report) = ExecutionWorkCeiling::new(None)
-            .run_serial(&request, || {
-                runtime
-                    .durability_authority()
-                    .native_checkpoint(&execution, Allocation::SystemAllocation)
-                    .unwrap()
-            })
+        let before = runtime
+            .durability_authority()
+            .checkpoint(&execution)
             .unwrap();
-        let bytes = checkpoint.bytes().len();
-        let NativeCheckpointSectionBytes {
-            total,
-            envelopes,
-            branch_roots,
-            branch_cells,
-            partition_mirror,
-            derived_indexes,
-            framing_and_metadata,
-        } = checkpoint.captured_sections().unwrap();
-        let classified =
-            envelopes + branch_roots + branch_cells + partition_mirror + derived_indexes;
-        assert_eq!(total, bytes);
-        assert_eq!(classified + framing_and_metadata, bytes);
-        let embedded: usize = embedded_envelope_lengths(checkpoint.bytes()).iter().sum();
-        let derived = 2 * bytes as u64 - CHECKPOINT_MAGIC_BYTES
-            + classified as u64
-            + journal as u64
-            + 2 * embedded as u64;
-        assert_eq!(report.charged_work(), derived, "rows={rows}");
-        drop(checkpoint);
+        let checkpoint = runtime
+            .durability_authority()
+            .native_checkpoint(&execution, execution.allocation_policy())
+            .unwrap();
+        let after = runtime
+            .durability_authority()
+            .checkpoint(&execution)
+            .unwrap();
+        // Export may not change any source identity, data, envelope or derived
+        // commitment. This is the complete portable image, including private fields.
+        assert_eq!(before, after, "source changed during export: rows={rows}");
+        let mut restored = AspectSchemaFixture::default().build_runtime();
+        restored
+            .durability_recovery()
+            .restore_native_checkpoint(&execution, &checkpoint)
+            .unwrap();
+        let reopened = restored
+            .durability_authority()
+            .checkpoint(&execution)
+            .unwrap();
+        // Cold import mints fresh runtime affinity, while the actual arena
+        // identities, values, MVCC history and selected commit remain exact.
+        assert_eq!(
+            before.partition_images, reopened.partition_images,
+            "rows={rows}"
+        );
+        assert_eq!(before.coverage, reopened.coverage);
+        assert_eq!(before.symbol_table, reopened.symbol_table);
+        assert_eq!(before.aspect_contracts, reopened.aspect_contracts);
+        assert_eq!(before.lineage, reopened.lineage);
+        assert_eq!(before.index_definitions, reopened.index_definitions);
+        drop((before, after, reopened, checkpoint, runtime, restored));
         assert_eq!(request.memory().unwrap().charged_memory_bytes(), 0);
     }
 }
 
 #[test]
-fn checkpoint_capture_sets_up_exactly_one_stage_whatever_the_row_count() {
-    for rows in [0, 8, 64] {
+fn checkpoint_reconstruction_scope_growth_is_linear_in_cold_input() {
+    // The unchanged fixture grows current records and retained publication
+    // metadata together. Cold admission may grow with that input, but must not
+    // repeat whole-population scope preparation for every record.
+    let capture = |rows| {
         let request = serial_request();
         let execution = ExecutionRequest::serial(&request);
         let runtime = runtime_with_rows(rows);
         let observer = ExecutionScopeSetupObservationForTest::install_on_this_thread_for_test();
         let checkpoint = runtime
             .durability_authority()
-            .native_checkpoint(&execution, Allocation::SystemAllocation)
+            .native_checkpoint(&execution, execution.allocation_policy())
             .unwrap();
-        let expected = Setup {
-            stage_setups: 1,
-            limit_derivations: 1,
-            admissions: 1,
-        };
-        assert_eq!(observer.counts_for_test(), expected, "rows={rows}");
+        let counts = observer.counts_for_test();
         drop(checkpoint);
+        counts
+    };
+    let (base, doubled) = (capture(32), capture(64));
+    for (name, first, second) in [
+        ("stage setups", base.stage_setups, doubled.stage_setups),
+        (
+            "limit derivations",
+            base.limit_derivations,
+            doubled.limit_derivations,
+        ),
+        ("admissions", base.admissions, doubled.admissions),
+    ] {
+        assert!(
+            first > 0,
+            "cold export must use its original request: {name}"
+        );
+        assert!(
+            (second as u128) * 2 < (first as u128) * 5,
+            "{name}: cold scope work outgrows cold input: {first}->{second}"
+        );
     }
 }
 
@@ -177,78 +182,6 @@ fn runtime_with_rows(rows: usize) -> RelationalRuntime {
         transaction.commit(&execution, &runtime).unwrap();
     }
     runtime
-}
-
-/// Independent MessagePack walk: the byte length of each embedded envelope.
-fn embedded_envelope_lengths(checkpoint: &[u8]) -> Vec<usize> {
-    fn int(bytes: &[u8], at: &mut usize, width: usize) -> usize {
-        let value = bytes[*at..*at + width]
-            .iter()
-            .fold(0_usize, |sum, byte| (sum << 8) | usize::from(*byte));
-        *at += width;
-        value
-    }
-    fn length(bytes: &[u8], at: &mut usize) -> (u8, usize) {
-        let tag = bytes[*at];
-        *at += 1;
-        match tag {
-            0x80..=0x8f => (b'm', usize::from(tag & 0x0f)),
-            0x90..=0x9f => (b'a', usize::from(tag & 0x0f)),
-            0xa0..=0xbf => (b's', usize::from(tag & 0x1f)),
-            0xc4 => (b'b', int(bytes, at, 1)),
-            0xc5 => (b'b', int(bytes, at, 2)),
-            0xc6 => (b'b', int(bytes, at, 4)),
-            0xd9 => (b's', int(bytes, at, 1)),
-            0xda => (b's', int(bytes, at, 2)),
-            0xdb => (b's', int(bytes, at, 4)),
-            0xdc => (b'a', int(bytes, at, 2)),
-            0xdd => (b'a', int(bytes, at, 4)),
-            0xde => (b'm', int(bytes, at, 2)),
-            0xdf => (b'm', int(bytes, at, 4)),
-            0xc7 => (b'b', int(bytes, at, 1) + 1),
-            0xc8 => (b'b', int(bytes, at, 2) + 1),
-            0xc9 => (b'b', int(bytes, at, 4) + 1),
-            0x00..=0x7f | 0xe0..=0xff | 0xc0 | 0xc2 | 0xc3 => (b'b', 0),
-            0xcc | 0xd0 => (b'b', 1),
-            0xcd | 0xd1 => (b'b', 2),
-            0xca | 0xce | 0xd2 => (b'b', 4),
-            0xcb | 0xcf | 0xd3 => (b'b', 8),
-            0xd4..=0xd8 => (b'b', 1 + (1 << (tag - 0xd4))),
-            tag => panic!("unexpected MessagePack tag {tag:#x}"),
-        }
-    }
-    fn skip(bytes: &[u8], at: &mut usize) {
-        match length(bytes, at) {
-            (b'm', pairs) => (0..pairs * 2).for_each(|_| skip(bytes, at)),
-            (b'a', items) => (0..items).for_each(|_| skip(bytes, at)),
-            (_, len) => *at += len,
-        }
-    }
-    let mut at = CHECKPOINT_MAGIC_BYTES as usize;
-    let (b'm', fields) = length(checkpoint, &mut at) else {
-        panic!("checkpoint wire is a named map")
-    };
-    for _ in 0..fields {
-        let (b's', key) = length(checkpoint, &mut at) else {
-            panic!("named field")
-        };
-        let name = &checkpoint[at..at + key];
-        at += key;
-        if name == b"envelopes" {
-            let (b'a', items) = length(checkpoint, &mut at) else {
-                panic!("envelope array")
-            };
-            return (0..items)
-                .map(|_| {
-                    let (_, len) = length(checkpoint, &mut at);
-                    at += len;
-                    len
-                })
-                .collect();
-        }
-        skip(checkpoint, &mut at);
-    }
-    panic!("checkpoint wire lacks envelopes")
 }
 
 /// The checkpoint length or its refusal; every retained byte is released.

@@ -180,9 +180,13 @@ pub(super) fn encode_layer(
     source: &Arc<CountedSource>,
     partition: &PartitionState,
 ) -> (RelationalColdRegion, Arc<CountedSource>) {
+    let request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&request);
     let symbols = cold.symbols.interner_snapshot();
     let (commitment, _) = PartitionContentCommitment::capture_layered(partition, &symbols).unwrap();
     let captured = capture_region_members(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        execution,
         partition,
         &commitment,
         &cold.schema,

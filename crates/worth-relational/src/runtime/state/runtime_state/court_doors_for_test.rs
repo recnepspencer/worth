@@ -10,6 +10,7 @@ impl RelationalRuntime {
     #[doc(hidden)]
     pub fn corrupt_snapshot_field_for_test(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &SnapshotHandle,
         entity: EntityId,
         locator: &AspectFieldLocator,
@@ -26,10 +27,18 @@ impl RelationalRuntime {
             return false;
         };
         let root = self.services.symbols.with_read(|symbols| {
-            binding
-                .basis
-                .root()
-                .corrupt_field_image_for_test(entity, locator, replacement, symbols)
+            crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
+                |lane| {
+                    binding.basis.root().corrupt_field_image_for_test(
+                        lane,
+                        execution,
+                        entity,
+                        locator,
+                        replacement,
+                        symbols,
+                    )
+                },
+            )
         });
         let Some(root) = root else { return false };
         let basis = crate::visibility::snapshot_states::VisibilitySnapshotBasis::from_applied_root(

@@ -18,88 +18,113 @@ pub(crate) struct CapturedRegionMembers {
 }
 
 pub(crate) fn capture_region_members(
+    lane: &ReconstructionLane<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     partition: &PartitionState,
     commitment: &PartitionContentCommitment,
     schema: &RelationalBranchRootSchemaAuthority,
     schema_carrier_digest: [u8; 32],
-) -> Result<CapturedRegionMembers, Cause> {
-    ReconstructionLane::enter_reconstruction(|lane| {
-        let mut normalized = partition.clone();
-        super::rebuild_region_history_kind_buckets(lane, &mut normalized)?;
-        let partition = &normalized;
-        let contracts =
-            CheckpointAspectContractCatalog::from_contracts(schema.retained_aspect_contracts())
-                .map_err(|_| Cause::Damaged)?;
-        let mut checkpoint_partition = partition.clone();
-        checkpoint_partition.clear_runtime_pin_counters();
-        let mut image = partition_to_image_with_contracts(
-            checkpoint_partition,
-            schema.aspect_plans(),
-            &contracts,
-        )
-        .map_err(|_| Cause::Damaged)?;
-        let history = RegionHistoryImage {
-            kind_projection: super::kind_projection::capture(
-                lane,
-                partition,
-                AdjacencyKindBasis::Historical,
-            )?,
-            adjacency_kinds: capture_kinds(&partition.adjacency, AdjacencyKindBasis::Historical),
-            reverse_adjacency_kinds: capture_kinds(
-                &partition.reverse_adjacency,
-                AdjacencyKindBasis::Historical,
-            ),
-            entities: super::history_capture::split_rows(
-                &partition.entity_arena,
-                &mut image.entity_arena.metadata_history,
-            )?,
-            relations: super::history_capture::split_rows(
-                &partition.relation_arena,
-                &mut image.relation_arena.metadata_history,
-            )?,
-        };
-        let head = RegionHeadImage {
-            kind_projection: super::kind_projection::capture(
-                lane,
-                partition,
-                AdjacencyKindBasis::Current,
-            )?,
-            history_kind_projection: history.kind_projection.clone(),
-            partition: image,
-            history_frontiers: commitment
-                .history_frontiers(partition)
-                .ok_or(Cause::Damaged)?,
-            adjacency_kinds: capture_kinds(&partition.adjacency, AdjacencyKindBasis::Current),
-            reverse_adjacency_kinds: capture_kinds(
-                &partition.reverse_adjacency,
-                AdjacencyKindBasis::Current,
-            ),
-        };
-        let bases = history.direct_bases();
-        let history = RelationalRegionImage::encode(
-            partition.partition_id,
-            schema_carrier_digest,
-            RelationalRegionImageKind::History,
-            &history,
-        )?;
-        let history_members = super::history_capture::directory(partition, history.0, bases)?;
-        Ok(CapturedRegionMembers {
-            directory: super::RegionRecordDirectory::capture(lane, partition, &mut |_, _| Ok(()))
-                .map_err(|_| Cause::IntegrityMismatch)?,
-            history_members,
-            kind_authority: super::RelationalRegionKindCommitment {
-                head: super::kind_commitment::digest(lane, &head.kind_projection)?,
-                history: super::kind_commitment::digest(lane, &head.history_kind_projection)?,
-            },
-            head: RelationalRegionImage::encode(
+) -> Result<CapturedRegionMembers, super::RelationalResidencyDemandFailure> {
+    super::kind_admission::recover(
+        lane,
+        execution,
+        partition.partition_id,
+        |checkpoint, retain| {
+            let mut normalized = partition.clone();
+            super::kind_admission::normalize_value(lane, &mut normalized, checkpoint, retain)?;
+            let partition = &normalized;
+            let contracts =
+                CheckpointAspectContractCatalog::from_contracts(schema.retained_aspect_contracts())
+                    .map_err(|_| Cause::Damaged)?;
+            let mut checkpoint_partition = partition.clone();
+            checkpoint_partition.clear_runtime_pin_counters();
+            let mut image = partition_to_image_with_contracts(
+                checkpoint_partition,
+                schema.aspect_plans(),
+                &contracts,
+            )
+            .map_err(|_| Cause::Damaged)?;
+            let history = RegionHistoryImage {
+                kind_projection: super::kind_projection::capture_controlled(
+                    lane,
+                    partition,
+                    AdjacencyKindBasis::Historical,
+                    checkpoint,
+                )?,
+                adjacency_kinds: capture_kinds(
+                    &partition.adjacency,
+                    AdjacencyKindBasis::Historical,
+                ),
+                reverse_adjacency_kinds: capture_kinds(
+                    &partition.reverse_adjacency,
+                    AdjacencyKindBasis::Historical,
+                ),
+                entities: super::history_capture::split_rows(
+                    &partition.entity_arena,
+                    &mut image.entity_arena.metadata_history,
+                )?,
+                relations: super::history_capture::split_rows(
+                    &partition.relation_arena,
+                    &mut image.relation_arena.metadata_history,
+                )?,
+            };
+            let head = RegionHeadImage {
+                kind_projection: super::kind_projection::capture_controlled(
+                    lane,
+                    partition,
+                    AdjacencyKindBasis::Current,
+                    checkpoint,
+                )?,
+                history_kind_projection: history.kind_projection.clone(),
+                partition: image,
+                history_frontiers: commitment
+                    .history_frontiers(partition)
+                    .ok_or(Cause::Damaged)?,
+                adjacency_kinds: capture_kinds(&partition.adjacency, AdjacencyKindBasis::Current),
+                reverse_adjacency_kinds: capture_kinds(
+                    &partition.reverse_adjacency,
+                    AdjacencyKindBasis::Current,
+                ),
+            };
+            let bases = history.direct_bases();
+            let history = RelationalRegionImage::encode(
                 partition.partition_id,
                 schema_carrier_digest,
-                RelationalRegionImageKind::Head,
-                &head,
-            )?,
-            history,
-        })
-    })
+                RelationalRegionImageKind::History,
+                &history,
+            )?;
+            let history_members = super::history_capture::directory(partition, history.0, bases)?;
+            let directory =
+                super::RegionRecordDirectory::capture(lane, partition, &mut |units, bytes| {
+                    checkpoint(units, bytes).map_err(|_| super::RecordDirectoryError::Corrupt)
+                })
+                .map_err(|_| Cause::IntegrityMismatch)?;
+            let kind_authority = super::RelationalRegionKindCommitment {
+                head: super::kind_commitment::digest_controlled(
+                    lane,
+                    &head.kind_projection,
+                    checkpoint,
+                )?,
+                history: super::kind_commitment::digest_controlled(
+                    lane,
+                    &head.history_kind_projection,
+                    checkpoint,
+                )?,
+            };
+            Ok(CapturedRegionMembers {
+                directory,
+                history_members,
+                kind_authority,
+                head: RelationalRegionImage::encode(
+                    partition.partition_id,
+                    schema_carrier_digest,
+                    RelationalRegionImageKind::Head,
+                    &head,
+                )?,
+                history,
+            })
+        },
+    )
 }
 
 pub(super) fn capture_kinds(

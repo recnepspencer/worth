@@ -17,6 +17,8 @@ pub(super) struct RestoredBranchRootImages {
 }
 
 pub(super) fn restore_branch_root_images(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
     work: &mut CheckpointRestoreWork,
@@ -75,8 +77,13 @@ pub(super) fn restore_branch_root_images(
             .root_kind_images
             .get(&image.commit_id)
             .ok_or_else(|| corrupt_checkpoint("root kind images missing".into()))?
-            .restore(&mut restored_partitions)
-            .map_err(|cause| corrupt_checkpoint(format!("root kind reconstruction: {cause:?}")))?;
+            .restore(lane, execution, &mut restored_partitions)
+            .map_err(|cause| {
+                crate::durability::checkpoints::kind_reconstruction::stop(
+                    "root kind reconstruction",
+                    cause,
+                )
+            })?;
         if partitions
             .insert(image.commit_id, restored_partitions)
             .is_some()

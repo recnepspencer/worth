@@ -2,7 +2,11 @@
 use crate::{branch::*, durability::data::*};
 use worth_foundational::facade::FoundationalBranchTarget;
 
-pub(super) fn rebind(checkpoint: &mut DurableCheckpoint) -> Result<(), RelationalRecoveryStop> {
+pub(super) fn rebind(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    checkpoint: &mut DurableCheckpoint,
+) -> Result<(), RelationalRecoveryStop> {
     let mut symbols = crate::symbols::data::StringInterner::default();
     symbols.restore_snapshot(checkpoint.symbol_table.clone());
     for root in &checkpoint.branch_roots {
@@ -40,10 +44,22 @@ pub(super) fn rebind(checkpoint: &mut DurableCheckpoint) -> Result<(), Relationa
             .root_kind_images
             .get(&root.commit_id)
             .ok_or_else(|| invalid("missing original kind authority"))?
-            .restore(&mut partitions)
-            .map_err(|cause| invalid(format!("{cause:?}")))?;
-        let truth = RelationalBranchRoot::reconstruct_storage_root_for_test(partitions, &symbols)
-            .map_err(|cause| invalid(format!("{cause:?}")))?;
+            .restore(lane, execution, &mut partitions)
+            .map_err(|cause| {
+                crate::durability::checkpoints::kind_reconstruction::stop(
+                    "kind reconstruction",
+                    cause,
+                )
+            })?;
+        let truth = RelationalBranchRoot::reconstruct_storage_root_for_test(
+            lane, execution, partitions, &symbols,
+        )
+        .map_err(|cause| match cause {
+            RelationalBranchRootCaptureDenial::Execution(cause) => {
+                RelationalRecoveryStop::Request(cause)
+            }
+            other => invalid(format!("{other:?}")).into(),
+        })?;
         let original = checkpoint
             .commit_descriptors
             .get(&root.commit_id)

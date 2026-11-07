@@ -21,11 +21,14 @@ mod region_binding;
 impl RelationalBranchRoot {
     /// Closed corruption recorders use the same content owner as publication.
     pub(crate) fn reconstruct_storage_root_for_test(
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         partitions: BTreeMap<PartitionId, PartitionState>,
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<[u8; 32], RelationalBranchRootCaptureDenial> {
         let issuer = RelationalBranchRootIdentityIssuer::default();
-        let (regions, _) = capture::build_initial_regions_owned(&issuer, 0, partitions, symbols)?;
+        let (regions, _) =
+            capture::build_initial_regions_owned(lane, execution, &issuer, 0, partitions, symbols)?;
         Ok(axes::storage_root_for(&regions).0)
     }
     /// Recovery can replace a reconstructed envelope with its durable

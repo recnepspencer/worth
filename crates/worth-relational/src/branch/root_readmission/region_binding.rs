@@ -50,7 +50,13 @@ impl RelationalBranchRoot {
             .map(|partition| partition.relation_arena.slot_count())
             .sum();
         let (regions, publication_cost) =
-            capture::build_initial_regions_owned(issuer, root_id, partitions, symbols)?;
+            crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
+                |lane| {
+                    capture::build_initial_regions_owned(
+                        lane, execution, issuer, root_id, partitions, symbols,
+                    )
+                },
+            )?;
         Self::bind_readmitted_regions(
             ReadmittedRegionSet {
                 root_id,
