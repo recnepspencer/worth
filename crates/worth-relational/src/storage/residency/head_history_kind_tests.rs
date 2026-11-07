@@ -152,9 +152,12 @@ fn adopting_a_different_head_carries_its_owned_historical_projection_with_the_re
     assert_eq!(source.history_reads.load(Ordering::SeqCst), 0);
     let symbols = fixture.cold.symbols.interner_snapshot();
     let (commitment, _) = PartitionContentCommitment::capture_layered(&partial, &symbols).unwrap();
+    let kind_indexes =
+        Arc::new(super::super::kind_incremental::RegionKindIndexes::capture(&partial).unwrap());
     let owned = RelationalRegionResidency::resident_head(
         partial,
         commitment,
+        kind_indexes,
         fixture.cold.schema.clone(),
         &fixture.cold.symbols,
     );

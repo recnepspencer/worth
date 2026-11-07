@@ -1,5 +1,4 @@
 mod adjacency;
-mod digest_index;
 mod head_commitment;
 #[cfg(test)]
 #[path = "partition_content/tests.rs"]
@@ -20,6 +19,12 @@ pub(crate) enum PartitionContentDigestError {
     InvalidHistoryCoverage,
     AllocationAccountingOverflow,
     Encoding,
+}
+
+impl From<crate::storage::substrate::DigestIndexError> for PartitionContentDigestError {
+    fn from(_: crate::storage::substrate::DigestIndexError) -> Self {
+        Self::InvalidHistoryCoverage
+    }
 }
 
 /// Derived, destroyable commitment acceleration. Exact storage identities and

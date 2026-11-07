@@ -1,5 +1,6 @@
 //! Reuse a record's history tree only while its omitted prefix is unchanged.
-use super::{digest_index::DigestIndex, hash_value, PartitionContentDigestError};
+use super::{hash_value, PartitionContentDigestError};
+use crate::storage::substrate::DigestIndex;
 use crate::storage::substrate::{RecordArena, RecordHistoryPrefix, RecordKind, SharedColumn};
 
 pub(super) fn update<K: RecordKind>(
@@ -66,7 +67,7 @@ where
             }
         };
         if let Err(denial) = history.set(offset + index as u128, digest) {
-            failure = Some(denial);
+            failure = Some(denial.into());
         }
         hashed += u64::from(value.is_some());
     });

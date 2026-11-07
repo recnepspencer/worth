@@ -4,6 +4,7 @@ use crate::identity::data::{KindId, RelationId, VersionId};
 use crate::storage::substrate::SharedMap;
 mod allocation;
 mod ids;
+mod kind_delta;
 pub(crate) use ids::AdjacencyIds;
 pub(crate) type HistoricalKindCustody = crate::storage::substrate::StorageAllocation<
     std::sync::Mutex<worth_execution::ExecutionMemoryReservation>,
@@ -127,6 +128,10 @@ impl AdjacencySet {
         let entries = self.entries_mut();
         entries.historical_by_kind = None;
         entries.historical_kind_custody = custody;
+    }
+
+    pub(crate) fn set_historical_kind_custody(&mut self, custody: Option<HistoricalKindCustody>) {
+        self.entries_mut().historical_kind_custody = custody;
     }
 
     pub(crate) fn historical_kind_custody(&self) -> Option<&HistoricalKindCustody> {

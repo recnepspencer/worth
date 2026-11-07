@@ -3,7 +3,6 @@
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use crate::storage::partition::RegionRelationProjection;
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct RelationalRegionKindCommitment {
@@ -19,46 +18,9 @@ pub(super) fn digest_controlled(
     projection: &[RegionRelationProjection],
     checkpoint: &mut super::kind_projection::ProjectionCheckpoint<'_>,
 ) -> Result<[u8; 32], Cause> {
-    let mut hash = Sha256::new();
-    hash.update(b"worth.relational.region-kind-authority.v2\0");
-    // Stream the same MessagePack representation; no unbounded serialized Vec.
-    let mut writer = ProjectionHashWriter {
-        hash: &mut hash,
-        checkpoint,
-        stopped: None,
-    };
-    let encoded = projection.serialize(&mut rmp_serde::Serializer::new(&mut writer));
-    if let Some(cause) = writer.stopped {
-        return Err(cause);
-    }
-    encoded.map_err(|_| Cause::Damaged)?;
-    Ok(hash.finalize().into())
-}
-
-struct ProjectionHashWriter<'borrow, 'control> {
-    hash: &'borrow mut Sha256,
-    checkpoint: &'borrow mut super::kind_projection::ProjectionCheckpoint<'control>,
-    stopped: Option<Cause>,
-}
-impl std::io::Write for ProjectionHashWriter<'_, '_> {
-    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
-        for chunk in bytes.chunks(4096) {
-            if self.stopped.is_some() {
-                return Err(std::io::Error::other(
-                    "projection admission already stopped",
-                ));
-            }
-            if let Err(cause) = (self.checkpoint)(chunk.len() as u64, 0) {
-                self.stopped = Some(cause);
-                return Err(std::io::Error::other("projection admission stopped"));
-            }
-            self.hash.update(chunk);
-        }
-        Ok(bytes.len())
-    }
-    fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
-    }
+    // cost-lane: reconstruction. Ordinary publication edits the carried tree.
+    checkpoint(1, 0)?;
+    super::kind_index::KindIndex::rebuild(projection, checkpoint).map(|index| index.digest())
 }
 
 pub(super) fn verify(
@@ -71,6 +33,7 @@ pub(super) fn verify(
     Ok(())
 }
 
+#[cfg(test)]
 impl RelationalRegionKindCommitment {
     pub(crate) fn capture(
         partition: &crate::storage::overlay::PartitionState,

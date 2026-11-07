@@ -176,8 +176,8 @@ fn content_stored_authoritative_field_byte_corruption_refuses_at_physical_integr
         .iter()
         .find_map(|member| match member {
             RelationalCheckpointMember::New { bytes, .. }
-                if bytes.starts_with(b"WORTH-REL-REG6\n")
-                    && bytes.get(b"WORTH-REL-REG6\n".len() + 38) == Some(&0)
+                if bytes.starts_with(b"WORTH-REL-REG7\n")
+                    && bytes.get(b"WORTH-REL-REG7\n".len() + 38) == Some(&0)
                     && bytes.windows(field.len()).any(|word| word == field) =>
             {
                 Some(bytes)

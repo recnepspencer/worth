@@ -59,6 +59,7 @@ fn an_owned_head_promotes_without_a_checkpoint_and_keeps_its_old_observation() {
         &journal,
         fixture.cold.schema.clone(),
         &candidate_symbols,
+        None,
     )
     .unwrap();
     assert_eq!(prepared.kind_commitment, fixture.cold.kind_authority);
@@ -141,6 +142,7 @@ fn owned_head_base_damage_is_sticky_and_never_invalidates_an_accepted_view() {
     let head = RelationalRegionResidency::resident_head(
         original.partition.clone(),
         original.commitment.clone().unwrap(),
+        original.kind_indexes.clone().unwrap(),
         fixture.cold.schema.clone(),
         &fixture.cold.symbols,
     );
@@ -186,6 +188,7 @@ fn head_content_inspection_hashes_its_suffix_without_loading_the_base_or_trustin
     let owned = RelationalRegionResidency::resident_head(
         partial,
         original.commitment.clone().unwrap(),
+        original.kind_indexes.clone().unwrap(),
         fixture.cold.schema.clone(),
         &fixture.cold.symbols,
     );

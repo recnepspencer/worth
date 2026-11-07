@@ -49,15 +49,20 @@ impl PreparedResidentRegion {
         let inventory = partition.allocation_inventory();
         let unavailable_records = partition.entity_arena.lifecycle_counts().unavailable
             + partition.relation_arena.lifecycle_counts().unavailable;
-        let kind_commitment = RelationalRegionKindCommitment::capture(&partition)
-            .map_err(|_| RegionContentFailure::Adjacency)?;
+        let kind_indexes = Arc::new(
+            super::kind_incremental::RegionKindIndexes::capture(&partition)
+                .map_err(|_| RegionContentFailure::Adjacency)?,
+        );
+        let kind_commitment = kind_indexes.commitment();
         let entity_slots = partition.entity_arena.slot_count();
         let relation_slots = partition.relation_arena.slot_count();
         let content_digest = commitment.digest(partition.partition_id);
         Ok(Self {
             partition_id: partition.partition_id,
             retention: RelationalRegionRetention::from_lease(RelationalRegionResidency::resident(
-                partition, commitment,
+                partition,
+                commitment,
+                kind_indexes,
             )),
             inventory,
             content_digest,
@@ -78,6 +83,7 @@ impl PreparedResidentRegion {
         journal: &PartitionMutationJournal,
         schema: Arc<RelationalBranchRootSchemaAuthority>,
         symbols: &RuntimeSymbolTable,
+        change: Option<&crate::storage::substrate::maintenance::CommitChange>,
     ) -> Result<Self, RegionContentFailure> {
         let absent = || {
             RegionContentFailure::Storage(RelationalStorageUnavailable {
@@ -93,19 +99,20 @@ impl PreparedResidentRegion {
         let prior_commitment = previous.commitment.as_ref().ok_or_else(absent)?;
         let mut partition = previous.partition.clone();
         let copied_truth_bytes = partition.merge_overlay_from_owned(&mut overlay.clone(), journal);
-        let kind_commitment = if journal.adjacency_slots.is_empty()
-            && journal.reverse_adjacency_slots.is_empty()
-            && journal.relation_slots.is_empty()
-        {
-            // Historical kind meaning includes locally owned relation rows
-            // and history, even when no endpoint incidence changes. Reuse
-            // requires all three inputs to be unchanged; scalar entity edits
-            // still preserve authenticated Head history and peer claims.
-            partition.clear_runtime_pin_counters();
-            basis.kind_commitment
-        } else {
-            super::kind_admission::normalize(execution, &mut partition)?
-        };
+        let prior_kind = previous.kind_indexes.as_ref().ok_or_else(absent)?;
+        if prior_kind.commitment() != basis.kind_commitment {
+            return Err(RegionContentFailure::Adjacency);
+        }
+        let kind_indexes = super::kind_admission::update(
+            execution,
+            &mut partition,
+            &previous.partition,
+            prior_kind,
+            journal,
+            change,
+        )?;
+        let kind_commitment = kind_indexes.commitment();
+        partition.clear_runtime_pin_counters();
         let (commitment, content_values_hashed) = PartitionContentCommitment::capture(
             &partition,
             &symbols.interner_snapshot(),
@@ -144,11 +151,17 @@ impl PreparedResidentRegion {
         let partition_id = partition.partition_id;
         let retention = if omitted {
             RelationalRegionRetention::from_head_lease(RelationalRegionResidency::resident_head(
-                partition, commitment, schema, symbols,
+                partition,
+                commitment,
+                kind_indexes,
+                schema,
+                symbols,
             ))
         } else {
             RelationalRegionRetention::from_lease(RelationalRegionResidency::resident(
-                partition, commitment,
+                partition,
+                commitment,
+                kind_indexes,
             ))
         };
         Ok(Self {
