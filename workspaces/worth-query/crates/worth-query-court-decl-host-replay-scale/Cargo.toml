@@ -1,0 +1,25 @@
+[package]
+name = "worth-query-court-decl-host-replay-scale"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[dev-dependencies]
+worth-execution = { path = "../../../../crates/worth-execution" }
+worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-relational = { path = "../../../../crates/worth-relational" }
+worth-query-decl = { path = "../worth-query-decl" }
+worth-query-host = { path = "../worth-query-host" }
+worth-query-replay = { path = "../worth-query-replay" }
+worth-query-testkit-document-retention = { path = "../worth-query-testkit-document-retention" }
+worth-testkit-relational = { path = "../../../../crates/worth-testkit-relational" }
+
+[[test]]
+name = "worth_query_court_decl_host_replay_scale"
+path = "tests/worth_query_court_decl_host_replay_scale.rs"
+
+[lints]
+workspace = true

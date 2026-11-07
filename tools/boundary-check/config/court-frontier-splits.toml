@@ -280,3 +280,10 @@ frontier = ["worth-query-decl", "worth-query-host"]
 area = "native-fragments"
 owners = ["native_fragments"]
 delegates = []
+
+[[splits]]
+court = "worth-query-court-decl-host-replay-scale"
+frontier = ["worth-query-decl", "worth-query-host", "worth-query-replay"]
+area = "scale"
+owners = ["cost"]
+delegates = []

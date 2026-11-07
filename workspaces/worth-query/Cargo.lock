@@ -893,6 +893,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-query-court-decl-host-replay-scale"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-decl",
+ "worth-query-host",
+ "worth-query-replay",
+ "worth-query-testkit-document-retention",
+ "worth-relational",
+ "worth-testkit-relational",
+]
+
+[[package]]
 name = "worth-query-court-execution"
 version = "0.1.0"
 dependencies = [
