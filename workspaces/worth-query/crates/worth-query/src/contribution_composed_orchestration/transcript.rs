@@ -131,8 +131,8 @@ pub(crate) fn orchestrate_declaration_with_contributions_on_handle<
     let declaration = match lower_declaration(handle, declaration_input) {
         Ok(value) => value,
         Err(outcome) => {
-            let linked = linked_artifacts_from_outcome(&outcome);
-            let contribution_digest = contribution_digest_from_outcome(&outcome);
+            let linked = linked_artifacts_from_outcome(&outcome)?;
+            let contribution_digest = contribution_digest_from_outcome(&outcome)?;
             return Ok(WorthQueryContributionComposedOrchestrationTranscript::new(
                 request_descriptor_value,
                 request_digest_value,

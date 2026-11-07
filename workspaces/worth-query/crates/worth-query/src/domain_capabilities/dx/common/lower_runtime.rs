@@ -205,7 +205,7 @@ impl WorthQueryLowerRuntimeExplanationContribution {
         self,
     ) -> Result<WorthQueryExplanationInspectionReview, WorthQueryDomainCapabilityMaterializationError>
     {
-        self.try_review().into_result()
+        self.try_review()?.into_result()
     }
 
     pub fn try_materialize_artifact(
@@ -237,7 +237,7 @@ impl WorthQueryLowerRuntimeExplanationContribution {
     pub fn materialize_artifact(
         self,
     ) -> Result<QueryCausalInspectionArtifact, WorthQueryDomainCapabilityMaterializationError> {
-        self.try_materialize_artifact().into_result()
+        self.try_materialize_artifact()?.into_result()
     }
 
     fn posture(&self) -> WorthQueryExplanationContributionPosture {

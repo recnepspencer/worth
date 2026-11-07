@@ -139,11 +139,11 @@ impl WorthQueryPreviewCloseoutEvidence {
                 )
                 .field_evidence_identity(
                     WorthQueryEvidenceTag::new("preview_basis_snapshot_identity"),
-                    &preview_basis_snapshot_identity.evidence_identity()?,
+                    &preview_basis_snapshot_identity.evidence_identity(),
                 )
                 .field_evidence_identity(
                     WorthQueryEvidenceTag::new("target_basis_snapshot_identity"),
-                    &target_basis_snapshot_identity.evidence_identity()?,
+                    &target_basis_snapshot_identity.evidence_identity(),
                 )
                 .field_usize(
                     WorthQueryEvidenceTag::new("preview_binding_count"),

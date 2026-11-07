@@ -71,7 +71,7 @@ impl<D: 'static> WorthQueryInstalledDomainLiveContinuation<D> {
             return Ok(WorthQueryInstalledDomainLiveResumeOutcome::AuthorityStopped(self, drift));
         }
         let receipt = self.receipt;
-        Ok(match self.continuation.resume(workspace) {
+        Ok(match self.continuation.resume(workspace)? {
             WorthQueryManagedLiveResumeOutcome::Resumed(completion) => {
                 let resume_receipt = completion.receipt().clone();
                 let execution_receipt = receipt.derive(

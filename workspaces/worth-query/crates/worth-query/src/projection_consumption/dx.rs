@@ -25,6 +25,7 @@ use super::ConsumedProjectionFactSet;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ProjectionFactConsumptionPathError {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     Declaration(ProjectionConsumptionDeclarationError),
     Extraction(ProjectionFactExtractionError),
 }
@@ -347,12 +348,12 @@ fn consume_attempt_from_declaration(
         &MaterializedProjectionContract,
     ) -> Result<ConsumedProjectionFactSet, ProjectionFactExtractionError>,
 ) -> Result<ProjectionFactConsumptionAttempt, ProjectionFactConsumptionPathError> {
-    match evaluate_projection_consumption_eligibility(&declaration) {
+    match evaluate_projection_consumption_eligibility(&declaration)? {
         ProjectionConsumptionEligibility::Admitted(admitted) => {
-            let contract = admitted.bind_contract();
+            let contract = admitted.bind_contract()?;
             let facts =
                 extract(&contract).map_err(ProjectionFactConsumptionPathError::Extraction)?;
-            let receipt = facts.issue_receipt();
+            let receipt = facts.issue_receipt()?;
             Ok(ProjectionFactConsumptionAttempt::Admitted(
                 CompletedProjectionFactConsumption {
                     declaration,
@@ -363,10 +364,10 @@ fn consume_attempt_from_declaration(
             ))
         }
         ProjectionConsumptionEligibility::AdmittedWithWarnings(admitted, warnings) => {
-            let contract = admitted.bind_contract();
+            let contract = admitted.bind_contract()?;
             let facts =
                 extract(&contract).map_err(ProjectionFactConsumptionPathError::Extraction)?;
-            let receipt = facts.issue_receipt();
+            let receipt = facts.issue_receipt()?;
             Ok(ProjectionFactConsumptionAttempt::AdmittedWithWarnings(
                 CompletedProjectionFactConsumption {
                     declaration,
@@ -386,5 +387,11 @@ fn consume_attempt_from_declaration(
         ProjectionConsumptionEligibility::SourceMismatch(mismatch) => {
             Ok(ProjectionFactConsumptionAttempt::SourceMismatch(mismatch))
         }
+    }
+}
+
+impl From<IdentityDerivationDenial> for ProjectionFactConsumptionPathError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
     }
 }

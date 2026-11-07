@@ -55,8 +55,8 @@ impl WorthQueryInstalledCorrespondenceObservation {
                 subject,
                 rejected_candidate: candidate,
             } => (
-                subject.evidence_identity()?.as_str().to_owned(),
-                candidate.evidence_identity()?.as_str().to_owned(),
+                subject.evidence_identity().as_str().to_owned(),
+                candidate.evidence_identity().as_str().to_owned(),
             ),
         };
         Ok(match self {

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::execution::{ExecutionError, ExecutionResultEnvelope};
 use crate::identity::{ResultDigest, ValidatedQueryDigest};
 use crate::preview::binding::{
@@ -78,6 +79,7 @@ pub enum PreviewExecutionFailureClass {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PreviewExecutionError {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     ExecutionFailure(ExecutionError),
     EvaluationClassMismatch {
         expected: &'static str,
@@ -338,5 +340,11 @@ impl PromotionEligiblePreviewExecutionEnvelope {
 
     pub(crate) fn as_preview_execution(&self) -> &PreviewExecutionEnvelope {
         &self.inner
+    }
+}
+
+impl From<IdentityDerivationDenial> for PreviewExecutionError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
     }
 }

@@ -247,7 +247,7 @@ impl ProjectionConsumptionSource {
             basis_digest: Some(
                 binding
                     .snapshot_identity()
-                    .evidence_identity()?
+                    .evidence_identity()
                     .as_str()
                     .to_string(),
             ),
@@ -275,7 +275,7 @@ impl ProjectionConsumptionSource {
             basis_digest: Some(
                 binding
                     .snapshot_identity()
-                    .evidence_identity()?
+                    .evidence_identity()
                     .as_str()
                     .to_string(),
             ),
@@ -294,7 +294,7 @@ fn snapshot_identity_digest(
     snapshot_identity: &TruthSnapshotIdentity,
 ) -> Result<String, IdentityDerivationDenial> {
     Ok(snapshot_identity_authority(snapshot_identity)
-        .evidence_identity()?
+        .evidence_identity()
         .as_str()
         .to_string())
 }

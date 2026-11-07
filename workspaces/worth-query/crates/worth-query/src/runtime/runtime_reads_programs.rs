@@ -181,7 +181,7 @@ impl WorthQueryRuntime {
         Ok(self
             .backend
             .current_snapshot_identity(execution)
-            .admit_runtime_backend_authority()?)
+            .admit_runtime_backend_authority())
     }
 
     pub fn install_program(

@@ -59,27 +59,25 @@ pub struct WorthQueryDomainRebindDenial {
 }
 
 impl WorthQueryDomainRebindDenial {
-    pub(crate) fn domain_not_installed(
-        prior: &WorthQueryInstalledDomainAuthorityWitness,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+    pub(crate) fn domain_not_installed(prior: &WorthQueryInstalledDomainAuthorityWitness) -> Self {
+        Self::new(
             WorthQueryDomainRebindDenialKind::DomainNotInstalled,
             WorthQueryDomainRebindNextAction::InstallDomainPackage,
             prior.package_identity().clone(),
             None,
-        )?)
+        )
     }
 
     pub(crate) fn package_meaning_changed(
         prior: &WorthQueryInstalledDomainAuthorityWitness,
         current: &WorthQueryInstalledDomainAuthority,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+    ) -> Self {
+        Self::new(
             WorthQueryDomainRebindDenialKind::PackageMeaningChanged,
             WorthQueryDomainRebindNextAction::ReconcilePackageMeaning,
             prior.package_identity().clone(),
             Some(current.package_identity().clone()),
-        )?)
+        )
     }
 
     fn new(
@@ -87,7 +85,7 @@ impl WorthQueryDomainRebindDenial {
         next_action: WorthQueryDomainRebindNextAction,
         prior_package_identity: WorthQueryDomainPackageIdentity,
         current_package_identity: Option<WorthQueryDomainPackageIdentity>,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let counters = WorthQueryInstalledDomainExecutionDriftCounters::denied_before_work();
         let mut denial_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::InstalledDomainRebind)
@@ -125,15 +123,15 @@ impl WorthQueryDomainRebindDenial {
                 current_package_identity.evidence_identity(),
             );
         }
-        let denial_identity = denial_identity.seal()?;
-        Ok(Self {
+        let denial_identity = denial_identity.seal().expect("fixed rebind grammar: enum labels, three counters and at most two sealed package identities");
+        Self {
             kind,
             next_action,
             prior_package_identity,
             current_package_identity,
             counters,
             denial_identity,
-        })
+        }
     }
 
     pub fn kind(&self) -> WorthQueryDomainRebindDenialKind {

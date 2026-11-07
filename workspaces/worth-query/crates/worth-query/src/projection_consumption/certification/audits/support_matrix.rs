@@ -158,22 +158,28 @@ pub fn projection_consumption_support_matrix(
     let rows = ProjectionConsumptionCertifiedSourceSurface::all()
         .iter()
         .copied()
-        .flat_map(matrix_rows_for_surface)
+        .map(matrix_rows_for_surface)
+        .collect::<Result<Vec<_>, _>>()?
+        .into_iter()
+        .flatten()
         .collect::<Vec<_>>();
     let matrix_digest = compose_digest_sequence(
         "projection_consumption_support_matrix_v1",
         "row",
         rows.iter().map(|row| row.row_digest().to_string()),
     )?;
-    let support_traceability_digest =
-        compose_support_traceability_digest(rows.iter().map(|row| {
-            compose_support_traceability_row_digest(
-                row.admission_rule(),
-                row.hostile_neighbor(),
-                row.certification_lane(),
-                row.structural_proof().as_str(),
-            )
-        }))?;
+    let support_traceability_digest = compose_support_traceability_digest(
+        rows.iter()
+            .map(|row| {
+                compose_support_traceability_row_digest(
+                    row.admission_rule(),
+                    row.hostile_neighbor(),
+                    row.certification_lane(),
+                    row.structural_proof().as_str(),
+                )
+            })
+            .collect::<Result<Vec<_>, _>>()?,
+    )?;
     Ok(ProjectionConsumptionSupportMatrix {
         rows,
         matrix_digest,
@@ -214,7 +220,7 @@ fn matrix_rows_for_surface(
         .iter()
         .copied()
         .map(|fact_kind| matrix_row(surface, &source, fact_kind))
-        .collect())
+        .collect::<Result<Vec<_>, _>>()?)
 }
 
 fn matrix_row(

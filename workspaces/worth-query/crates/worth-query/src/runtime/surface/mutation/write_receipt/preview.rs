@@ -60,7 +60,7 @@ impl WorthQueryWriteReceipt {
             target_entity_identity
                 .as_ref()
                 .or(Some(&delta.entity_identity)),
-            target_collection_identity.as_ref()?,
+            target_collection_identity.as_ref(),
         )?;
         let continuity_mutation_evidence = continuity_mutation_evidence(
             None,
@@ -69,7 +69,7 @@ impl WorthQueryWriteReceipt {
             target_entity_identity
                 .as_ref()
                 .or(Some(&delta.entity_identity)),
-            target_collection_identity.as_ref()?,
+            target_collection_identity.as_ref(),
         )?;
         Ok(Self {
             inner,

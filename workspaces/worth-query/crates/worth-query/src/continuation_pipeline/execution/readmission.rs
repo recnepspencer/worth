@@ -247,10 +247,10 @@ fn basis_witness_from_binding(
                 }
             };
             let selector_identity =
-                continuation_readmission_basis_identity(kind, request.selector().digest());
+                continuation_readmission_basis_identity(kind, request.selector().digest())?;
             WorthQueryPreparedContinuationBasisWitness::new(
                 kind,
-                selector_identity.clone()?,
+                selector_identity.clone(),
                 Some(continuation_readmission_lower_runtime_binding_identity(
                     request.selector().digest(),
                 )?),
@@ -301,14 +301,13 @@ fn basis_witness_from_binding(
             let basis_kind = basis_kind_for_truth_context(bridge_request.truth_context());
             WorthQueryPreparedContinuationBasisWitness::new(
                 basis_kind,
-                continuation_readmission_basis_identity(basis_kind, request.authority_digest()),
+                continuation_readmission_basis_identity(basis_kind, request.authority_digest())?,
                 Some(continuation_readmission_lower_runtime_binding_identity(
                     request.authority_digest(),
                 )?),
-                request
-                    .child_basis_digests()
-                    .first()
-                    .map(|digest| continuation_readmission_source_basis_identity(digest.as_ref())),
+                request.child_basis_digests().first().map(|digest| {
+                    continuation_readmission_source_basis_identity(digest.as_ref())
+                })?,
             )
         }
         WorthQueryDeclarationBridgeBinding::WritebackPreparation(request) => {
@@ -333,7 +332,7 @@ fn bridge_commit_evidence_identity(
     let commit_id = identity
         .relational_commit_id()
         .expect("continuation readmission commit identity must carry relational payload");
-    Ok(WorthQueryCommitIdentity::from_relational_commit_id(commit_id).evidence_identity()?)
+    Ok(WorthQueryCommitIdentity::from_relational_commit_id(commit_id).evidence_identity())
 }
 
 fn bridge_snapshot_evidence_identity(
@@ -342,7 +341,7 @@ fn bridge_snapshot_evidence_identity(
     let parts = identity
         .relational_snapshot_parts()
         .expect("continuation readmission snapshot identity must carry relational payload");
-    Ok(WorthQuerySnapshotIdentity::from_relational_snapshot(parts).evidence_identity()?)
+    Ok(WorthQuerySnapshotIdentity::from_relational_snapshot(parts).evidence_identity())
 }
 
 fn authority_witness_from_binding(

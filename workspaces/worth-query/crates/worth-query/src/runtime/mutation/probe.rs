@@ -118,7 +118,7 @@ impl WorthQueryExistingTruthProbeDenial {
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("resolved"),
-                &binding.resolved_target_identity().evidence_identity()?,
+                &binding.resolved_target_identity().evidence_identity(),
             )
             .optional_evidence_identity(
                 WorthQueryEvidenceTag::new("collection"),

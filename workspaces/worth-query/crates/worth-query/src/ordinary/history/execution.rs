@@ -80,7 +80,7 @@ impl WorthQueryHistoricalRequest {
         };
 
         let basis = resolve_runtime_historical_snapshot_basis(
-            self.context.snapshot_identity().evidence_identity()?,
+            self.context.snapshot_identity().evidence_identity(),
             schema_basis,
             self.context.workspace_name(),
         )?;

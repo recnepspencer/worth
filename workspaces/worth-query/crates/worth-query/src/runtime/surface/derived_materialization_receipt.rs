@@ -24,7 +24,7 @@ impl WorthQueryDerivedMaterializationReceipt {
         evidence: &WorthQueryComputedInspectionEvidence,
         snapshot_identity: WorthQuerySnapshotIdentity,
     ) -> Result<Self, IdentityDerivationDenial> {
-        let snapshot_evidence_identity = snapshot_identity.evidence_identity()?;
+        let snapshot_evidence_identity = snapshot_identity.evidence_identity();
         Ok(Self {
             view_name: evidence.name().to_string(),
             dependency_digest: evidence.dependency_digest().to_string(),

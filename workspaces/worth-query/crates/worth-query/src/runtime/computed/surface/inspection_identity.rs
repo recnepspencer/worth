@@ -182,12 +182,12 @@ pub(super) fn derived_patch_inspection_identity(
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("commit"),
-                &patch.commit_identity().evidence_identity()?,
+                &patch.commit_identity().evidence_identity(),
             );
     if let Some(entity) = patch.entity_identity() {
         encoder = encoder.field_evidence_identity(
             WorthQueryEvidenceTag::new("entity"),
-            &entity.evidence_identity()?,
+            &entity.evidence_identity(),
         );
     }
     if let Some(reason) = patch.reason() {

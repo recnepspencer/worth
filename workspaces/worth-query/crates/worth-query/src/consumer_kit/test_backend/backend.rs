@@ -167,10 +167,10 @@ impl WorthQueryRuntimeBackend for WorthQueryInMemoryTestBackend {
         _schema_view: &QuerySchemaView,
     ) -> Result<LiveViewDeclarationAdmissionBoundaryReceipt, WorthQueryWorkspaceError> {
         self.ensure_live_request_target(request)?;
-        let admission = LiveViewDeclarationAdmissionReceipt::from_request(name, request);
+        let admission = LiveViewDeclarationAdmissionReceipt::from_request(name, request)?;
         Ok(LiveViewDeclarationAdmissionBoundaryReceipt::from_request(
             name, request, admission,
-        ))
+        )?)
     }
 
     fn declare_live_view(
@@ -182,7 +182,7 @@ impl WorthQueryRuntimeBackend for WorthQueryInMemoryTestBackend {
         self.ensure_live_request_target(&request)?;
         let live_target = WorthQueryLiveArtifactTarget::from_view_name(name.clone());
         self.live_views
-            .insert(live_target, request.target_collection_identity());
+            .insert(live_target, request.target_collection_identity()?);
         Ok(WorthQueryLiveViewHandle::new(name))
     }
 
@@ -291,9 +291,9 @@ impl WorthQueryRuntimeBackend for WorthQueryInMemoryTestBackend {
         Ok(SubscriptionActivationReceipt::from_activation(
             view_name,
             activation,
-            runtime_subscription_support_evidence_identity("consumer-kit-in-memory-test-backend"),
+            runtime_subscription_support_evidence_identity("consumer-kit-in-memory-test-backend")?,
             self.remask_projection.clone(),
-        ))
+        )?)
     }
 
     fn admit_preview_basis(
@@ -309,8 +309,8 @@ impl WorthQueryRuntimeBackend for WorthQueryInMemoryTestBackend {
             [WorthQueryBasisAdmissionEvidenceRow::tagged(
                 "preview-basis-admission",
                 "consumer-kit-in-memory-test-backend",
-            )],
-        ))
+            )?],
+        )?)
     }
 
     fn inspect_write_receipt(

@@ -78,11 +78,11 @@ impl WorthQueryPreviewPromotionDenialEvidence {
                 )
                 .field_evidence_identity(
                     WorthQueryEvidenceTag::new("basis_snapshot_identity"),
-                    &basis_snapshot_identity.evidence_identity()?,
+                    &basis_snapshot_identity.evidence_identity(),
                 )
                 .field_evidence_identity(
                     WorthQueryEvidenceTag::new("promotion_snapshot_identity"),
-                    &promotion_snapshot_identity.evidence_identity()?,
+                    &promotion_snapshot_identity.evidence_identity(),
                 )
                 .field_value_sequence(
                     WorthQueryEvidenceTag::new("basis_evidence_row"),

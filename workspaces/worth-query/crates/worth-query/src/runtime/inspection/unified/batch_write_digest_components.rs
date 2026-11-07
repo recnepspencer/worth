@@ -64,15 +64,18 @@ fn component_artifact_identity(
         .target_evidence()
         .declared()
         .entity_identity()
-        .map(|identity| identity.evidence_identity());
+        .map(|identity| identity.evidence_identity())
+        .transpose()?;
     let target_resolved_entity_identity = component
         .target_evidence()
         .resolved()
         .entity_identity()
-        .map(|identity| identity.evidence_identity());
+        .map(|identity| identity.evidence_identity())
+        .transpose()?;
     let existing_truth_resolved_target_identity = component
         .existing_truth_binding_evidence()
-        .map(|evidence| evidence.resolved_target_identity().evidence_identity());
+        .map(|evidence| evidence.resolved_target_identity().evidence_identity())
+        .transpose()?;
     let entity_identities = component
         .entity_identities()
         .iter()
@@ -84,7 +87,7 @@ fn component_artifact_identity(
             .field_shape(WorthQueryEvidenceTag::new("family"), component.family())
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("commit_identity"),
-                &component.commit_identity().evidence_identity()?,
+                &component.commit_identity().evidence_identity(),
             )
             .field_shape(
                 WorthQueryEvidenceTag::new("target_declared_class"),
@@ -104,7 +107,7 @@ fn component_artifact_identity(
             )
             .optional_evidence_identity(
                 WorthQueryEvidenceTag::new("target_declared_entity_identity"),
-                target_declared_entity_identity.as_ref()?,
+                target_declared_entity_identity.as_ref(),
             )
             .field_shape(
                 WorthQueryEvidenceTag::new("target_resolved_class"),
@@ -124,7 +127,7 @@ fn component_artifact_identity(
             )
             .optional_evidence_identity(
                 WorthQueryEvidenceTag::new("target_resolved_entity_identity"),
-                target_resolved_entity_identity.as_ref()?,
+                target_resolved_entity_identity.as_ref(),
             )
             .optional_evidence_identity(
                 WorthQueryEvidenceTag::new("existing_assertion_verification_digest"),
@@ -146,7 +149,7 @@ fn component_artifact_identity(
             )
             .optional_evidence_identity(
                 WorthQueryEvidenceTag::new("existing_truth_resolved_target_identity"),
-                existing_truth_resolved_target_identity.as_ref()?,
+                existing_truth_resolved_target_identity.as_ref(),
             )
             .optional_evidence_identity(
                 WorthQueryEvidenceTag::new("existing_truth_target_collection"),

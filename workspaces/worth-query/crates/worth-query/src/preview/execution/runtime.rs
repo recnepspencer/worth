@@ -20,7 +20,7 @@ fn execute_preview_session_plan(
 ) -> Result<PreviewExecutionEnvelope, PreviewExecutionError> {
     let execution = execute_preflight_bundle(binding.preflight())
         .map_err(PreviewExecutionError::ExecutionFailure)?;
-    let comparison_eligibility = derive_preview_comparison_eligibility(binding);
+    let comparison_eligibility = derive_preview_comparison_eligibility(binding)?;
     let workflow_foundation = admit_preview_workflow_foundation(binding)
         .expect("preview execution should admit the comparison-basis workflow foundation");
     let binding_tuple = binding.basis().binding_tuple();
@@ -43,7 +43,7 @@ fn execute_preview_session_plan(
                 execution.report().result_digest().as_str(),
                 comparison_eligibility.digest(),
                 workflow_foundation.artifact().artifact_for_reporting(),
-            ),
+            )?,
         binding_digest: binding_tuple.digest().to_string(),
         basis_digest: execution.report().basis_digest().as_str().to_string(),
         preview_session_identity: binding_tuple.preview_session_identity().clone(),

@@ -40,7 +40,7 @@ impl WorthQueryIntentExecutionFailureEvidence {
         decision_trace_envelope: WorthQueryIntentDecisionTraceEnvelope,
     ) -> Result<Self, IdentityDerivationDenial> {
         let snapshot_identity = execution.mutation_receipt().snapshot_identity.clone();
-        let snapshot_evidence_identity = snapshot_identity.evidence_identity()?;
+        let snapshot_evidence_identity = snapshot_identity.evidence_identity();
         let invariant_evidence = execution.invariant_evidence().to_vec();
         let failure_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::IntentExecutionFailureEvidence)
@@ -192,7 +192,7 @@ impl WorthQueryIntentExecutionFailureEvidence {
     pub fn snapshot_evidence_identity(
         &self,
     ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(self.snapshot_identity.evidence_identity()?)
+        Ok(self.snapshot_identity.evidence_identity())
     }
 
     pub fn execution_provenance(&self) -> &WorthQueryIntentExecutionProvenance {

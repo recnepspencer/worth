@@ -102,7 +102,7 @@ impl WorthQuerySupportSnapshotRow {
         &self,
         schema_version: WorthQuerySupportSnapshotSchemaVersion,
     ) -> Result<(), WorthQuerySupportSnapshotError> {
-        let rebuilt = support_snapshot_row_identity(schema_version, self)
+        let rebuilt = support_snapshot_row_identity(schema_version, self)?
             .terminal_projection_for_reporting()
             .to_string();
         if rebuilt == self.snapshot_row_digest {

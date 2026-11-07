@@ -23,7 +23,7 @@ impl WorthQueryHistoricalContext {
     pub(crate) fn basis_label(&self) -> Result<String, IdentityDerivationDenial> {
         Ok(self
             .snapshot_identity
-            .evidence_identity()?
+            .evidence_identity()
             .as_str()
             .to_string())
     }

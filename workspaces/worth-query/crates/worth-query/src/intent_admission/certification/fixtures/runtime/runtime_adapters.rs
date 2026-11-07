@@ -34,7 +34,7 @@ impl WorthQueryRuntimeSubscriptionActivationAdapter for CertificationSubscriptio
         view_name: &str,
         activation: &SubscriptionActivationInput,
     ) -> Result<SubscriptionActivationBoundaryReceipt, WorthQueryWorkspaceError> {
-        let receipt = self.build_subscription_activation_receipt(view_name, activation);
+        let receipt = self.build_subscription_activation_receipt(view_name, activation)?;
         Ok(self.build_subscription_activation_boundary_receipt(view_name, activation, receipt))
     }
 }
@@ -53,7 +53,7 @@ impl WorthQueryRuntimePreviewBasisAdapter for CertificationPreviewBasis {
             label.clone(),
             effect_policy,
             WorthQueryBasisAdmissionEvidenceRow::rows_from_values(["certification-preview-basis"]),
-        ))
+        )?)
     }
 }
 

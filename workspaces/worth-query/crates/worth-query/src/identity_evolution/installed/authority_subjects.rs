@@ -31,7 +31,7 @@ impl InstalledIdentityEvolutionOutcome {
         }
         Ok(self
             .continuity
-            .as_ref()?
+            .as_ref()
             .successor_authoritative_identities()
             .get(ordinal)
             .map(crate::runtime::WorthQueryMutationAuthorityIdentity::evidence_identity)

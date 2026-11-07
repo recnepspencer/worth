@@ -104,7 +104,7 @@ impl WorthQuerySupportSnapshot {
     }
 
     pub(crate) fn rebuild_digest(&self) -> Result<String, WorthQuerySupportSnapshotError> {
-        let schema_identity = self.schema_version.identity();
+        let schema_identity = self.schema_version.identity()?;
         let actual_schema_identity = schema_identity.terminal_projection_for_reporting();
         if self.schema_identity != actual_schema_identity {
             return Err(WorthQuerySupportSnapshotError::with_expected_found(
@@ -123,7 +123,7 @@ impl WorthQuerySupportSnapshot {
             &self.backend_posture,
             &self.source_matrix_digest,
             self.rows.iter(),
-        )
+        )?
         .terminal_projection_for_reporting()
         .to_string())
     }

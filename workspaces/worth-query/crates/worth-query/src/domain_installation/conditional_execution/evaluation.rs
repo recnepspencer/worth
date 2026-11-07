@@ -1,4 +1,5 @@
 use crate::basis_lifecycle::BasisOperationLane;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::reentry::admit_conditional_decision;
 use super::{
@@ -7,6 +8,7 @@ use super::{
 };
 
 pub(crate) enum WorthQueryConditionalEvaluationStop {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     Deferred(Vec<WorthQueryConditionalProvenance>),
     Failed {
         kind: crate::domain_installation::WorthQueryConditionalExecutionDenialKind,
@@ -216,5 +218,11 @@ fn location_matches(
             WorthQueryConditionalEvaluationScope::WorkflowStage(expected),
         ) => installed == expected,
         _ => false,
+    }
+}
+
+impl From<IdentityDerivationDenial> for WorthQueryConditionalEvaluationStop {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
     }
 }

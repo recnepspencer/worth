@@ -300,7 +300,7 @@ impl WorthQueryDerivedArtifactBinding {
                     self,
                     result_shape,
                     authorized_projection,
-                ),
+                )?,
             )
             .build()
     }
@@ -319,7 +319,7 @@ impl WorthQueryLiveArtifactBinding {
                     self,
                     result_shape_identity,
                     authorized_projection,
-                ),
+                )?,
             )
             .build()
     }

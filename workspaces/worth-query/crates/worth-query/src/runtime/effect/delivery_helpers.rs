@@ -9,7 +9,7 @@ use crate::runtime::WorthQueryAspectTouch;
 pub(super) fn effect_trigger_commit_evidence_identity(
     commit_identity: &WorthQueryCommitIdentity,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    let commit_evidence_identity = commit_identity.evidence_identity()?;
+    let commit_evidence_identity = commit_identity.evidence_identity();
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::EffectTriggerCommitIdentity)
             .field_evidence_identity(

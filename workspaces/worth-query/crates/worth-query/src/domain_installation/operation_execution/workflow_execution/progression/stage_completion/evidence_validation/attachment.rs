@@ -41,7 +41,7 @@ impl WorthQueryWorkflowDomainEvidenceAttachment {
             basis_identity: run.bound.basis_identity().to_owned(),
             execution_snapshot_identity: input
                 .execution_snapshot
-                .evidence_identity()?
+                .evidence_identity()
                 .as_str()
                 .to_owned(),
             contract: run.bound.workflow_stage_domain_evidence_contract(stage),

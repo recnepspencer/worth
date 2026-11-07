@@ -243,7 +243,7 @@ impl WorthQueryRuntimePublicSupportMatrix {
             "must-close-shared-read-context-pinning-boundary-before-journal-and-certification-phases",
             true,
             true,
-            Some(shared_read_pinning_boundary_closure_contract_digest()),
+            Some(shared_read_pinning_boundary_closure_contract_digest()?),
         )?);
 
         rows.push(WorthQueryRuntimePublicSupportMatrixRow::new(
@@ -255,7 +255,7 @@ impl WorthQueryRuntimePublicSupportMatrix {
             "must-derive-milestone-closure-from-phase-local-postures",
             true,
             true,
-            Some(milestone_nine_seven_derived_closure_contract_digest()),
+            Some(milestone_nine_seven_derived_closure_contract_digest()?),
         )?);
 
         let stable_row_count = rows

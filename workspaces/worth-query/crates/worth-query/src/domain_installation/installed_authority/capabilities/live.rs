@@ -148,7 +148,7 @@ impl<D: 'static> WorthQueryInstalledDomainLiveHandle<D> {
             WorthQueryInstalledDomainExecutionReceipt::label_identity(
                 "live-read-result",
                 result.receipt().result_digest(),
-            ),
+            )?,
         );
         Ok(WorthQueryInstalledDomainLiveRead { result, receipt })
     }
@@ -190,7 +190,7 @@ impl<D: 'static> WorthQueryInstalledDomainLiveHandle<D> {
             receipt: self.receipt.derive(
                 WorthQueryInstalledDomainCapabilityKind::LiveDelivery,
                 operational,
-            ),
+            )?,
         })
     }
 
@@ -226,7 +226,7 @@ impl<D: 'static> WorthQueryInstalledDomainLiveHandle<D> {
             );
         }
         let receipt = self.receipt;
-        Ok(match self.handle.checkpoint(workspace) {
+        Ok(match self.handle.checkpoint(workspace)? {
             WorthQueryManagedLiveCheckpointOutcome::Checkpointed(completion) => {
                 let operational = completion.checkpoint().continuation_identity().clone();
                 WorthQueryInstalledDomainLiveCheckpointOutcome::Checkpointed(
@@ -305,6 +305,7 @@ impl<D: 'static> WorthQueryInstalledDomainLiveHandle<D> {
 }
 
 pub enum WorthQueryInstalledDomainLiveOperationError {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     Authority(WorthQueryInstalledDomainCapabilityStop<WorthQueryInstalledDomainExecutionDrift>),
     Runtime(WorthQueryInstalledDomainCapabilityStop<WorthQueryRuntimeError>),
 }
@@ -350,5 +351,11 @@ impl<D> WorthQueryInstalledDomainHandle<D> {
             declaration,
             marker: PhantomData,
         })
+    }
+}
+
+impl From<IdentityDerivationDenial> for WorthQueryInstalledDomainLiveOperationError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
     }
 }

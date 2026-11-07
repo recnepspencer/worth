@@ -1,15 +1,13 @@
 use super::super::delivery::WorthQueryRuntimeRetainedDelivery;
 use super::delivery::WorthQueryRuntimeDownstreamDeliveryParts;
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 pub(crate) fn project_downstream_delivery(
     contract: &WorthQueryRuntimeDownstreamDeliveryContract,
     state: &WorthQueryRuntimeLiveSubscriptionState,
-) -> Result<
-    Option<WorthQueryRuntimeDownstreamDelivery>,
-    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
-> {
-    let delivery = state.last_delivery.as_ref()?;
+) -> Result<Option<WorthQueryRuntimeDownstreamDelivery>, IdentityDerivationDenial> {
+    let delivery = state.last_delivery.as_ref();
     let delivery_class = classify_delivery(delivery, state.async_result_state.as_ref());
     let support_posture = classify_support_posture(state.remask_posture.as_ref());
     let mixed_cause_identity = matches!(

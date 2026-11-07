@@ -323,8 +323,8 @@ fn lineage_correspondence(
     };
     Ok(resolve_correspondence(
         CorrespondenceEvaluationRequest::lineage_only(
-            left_row.identity().evidence_identity()?.as_str(),
-            right_row.identity().evidence_identity()?.as_str(),
+            left_row.identity().evidence_identity().as_str(),
+            right_row.identity().evidence_identity().as_str(),
             StructuralCandidateDiscoveryPlan::IndexBackedBounded,
             1,
         ),

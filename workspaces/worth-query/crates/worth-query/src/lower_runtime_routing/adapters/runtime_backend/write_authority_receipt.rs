@@ -56,7 +56,7 @@ impl WriteAuthorityExecutionReceipt {
             WRITE_AUTHORITY_CAPABILITY_LABEL,
             subject_identity,
         )?;
-        let commit_evidence_identity = mutation_receipt.commit_identity.evidence_identity()?;
+        let commit_evidence_identity = mutation_receipt.commit_identity.evidence_identity();
         let retained_evidence_identity =
             WorthQueryLowerRuntimeRetainedEvidenceIdentity::from_evidence_identity(
                 "write-authority-commit",
@@ -131,7 +131,7 @@ impl WriteAuthorityExecutionReceipt {
         ) {
             return Ok(Some(message));
         }
-        let commit_evidence_identity = self.mutation_receipt.commit_identity.evidence_identity()?;
+        let commit_evidence_identity = self.mutation_receipt.commit_identity.evidence_identity();
         let retained_evidence_identity =
             WorthQueryLowerRuntimeRetainedEvidenceIdentity::from_evidence_identity(
                 "write-authority-commit",

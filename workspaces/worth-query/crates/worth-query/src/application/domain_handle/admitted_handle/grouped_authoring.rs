@@ -71,7 +71,7 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     where
         I: WorthQueryDeclarationInput<D> + Clone,
     {
-        match self.orchestrate_grouped_checked(declaration) {
+        match self.orchestrate_grouped_checked(declaration)? {
             WorthQueryGroupedOrchestrationChecked::Bound(value) => Ok(value),
             WorthQueryGroupedOrchestrationChecked::MemberStopped(stop) => {
                 Err(WorthQueryGroupedOrchestrationStop::MemberStopped(stop))

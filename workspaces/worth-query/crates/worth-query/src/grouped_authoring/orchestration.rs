@@ -200,6 +200,7 @@ pub enum WorthQueryGroupedOrchestrationStop<
     D: WorthQueryDomainEntryMarker,
     I: WorthQueryDeclarationInput<D>,
 > {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     MemberStopped(WorthQueryGroupedMemberOrchestrationStop<D, I>),
     WrongWorld(WorthQueryGroupedOrchestrationAlignmentStop<D, I>),
     WrongHandle(WorthQueryGroupedOrchestrationAlignmentStop<D, I>),
@@ -303,4 +304,12 @@ pub(crate) fn worth_query_grouped_orchestration_proof_on_handle<
         member_transcripts,
         checked,
     ))
+}
+
+impl<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>
+    From<IdentityDerivationDenial> for WorthQueryGroupedOrchestrationStop<D, I>
+{
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
+    }
 }

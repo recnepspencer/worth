@@ -35,7 +35,7 @@ impl WorthQueryWorkflowValue {
                 WorthQueryWorkflowSemanticValue::EntityIdentity(value.clone())
             }
             Self::CurrentEntityIdentity(value) => WorthQueryWorkflowSemanticValue::EntityIdentity(
-                value.evidence_identity()?.as_str().to_owned(),
+                value.evidence_identity().as_str().to_owned(),
             ),
             Self::Projection(completion) => WorthQueryWorkflowSemanticValue::Projection {
                 canonical_query_identity: completion

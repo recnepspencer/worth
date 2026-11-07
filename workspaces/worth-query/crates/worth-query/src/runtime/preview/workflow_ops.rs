@@ -70,11 +70,11 @@ impl<'a> WorthQueryPreviewSession<'a> {
                 )
                 .field_evidence_identity(
                     WorthQueryEvidenceTag::new("basis_snapshot_identity"),
-                    &self.basis_snapshot_identity.evidence_identity()?,
+                    &self.basis_snapshot_identity.evidence_identity(),
                 )
                 .field_evidence_identity(
                     WorthQueryEvidenceTag::new("promotion_snapshot_identity"),
-                    &promotion_snapshot_identity.evidence_identity()?,
+                    &promotion_snapshot_identity.evidence_identity(),
                 )
                 .field_usize(
                     WorthQueryEvidenceTag::new("crossed_authoritative_residue_count"),

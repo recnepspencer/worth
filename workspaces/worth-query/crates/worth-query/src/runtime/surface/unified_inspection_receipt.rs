@@ -22,7 +22,7 @@ impl WorthQueryUnifiedInspectionReceipt {
         inspection: &WorthQueryInspection,
         snapshot_identity: WorthQuerySnapshotIdentity,
     ) -> Result<Self, IdentityDerivationDenial> {
-        let snapshot_evidence_identity = snapshot_identity.evidence_identity()?;
+        let snapshot_evidence_identity = snapshot_identity.evidence_identity();
         Ok(Self {
             target_label,
             result_digest: inspection_result_digest(inspection),

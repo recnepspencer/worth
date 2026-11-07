@@ -162,7 +162,7 @@ pub(super) fn certified_admitted_intent_fixture(
             let mut runtime = certification_runtime(execution);
             let plan = plan.clone();
             let handoff = plan.clone().into_execution_handoff();
-            let authoritative_handoff = match handoff.clone() {
+            let authoritative_handoff = match handoff.clone()? {
                 Some(crate::intent_admission::WorthQueryAdmittedIntentExecutionHandoff::Authoritative(
                     handoff,
                 )) => handoff,

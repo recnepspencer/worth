@@ -116,7 +116,7 @@ impl WorthQueryPublishedDerivedArtifactHandle {
                 .as_ref()
                 .map(|binding| binding.binding_identity().clone()),
             snapshot_identity: self.snapshot_identity().clone(),
-            snapshot_evidence_identity: self.snapshot_identity().evidence_identity()?,
+            snapshot_evidence_identity: self.snapshot_identity().evidence_identity(),
             async_result_state: self.async_result_state.clone(),
         })
     }
@@ -160,7 +160,7 @@ impl WorthQuerySharedReadBasisInspection {
         Ok(Self {
             generation_ordinal: generation.ordinal(),
             snapshot_identity: generation.snapshot_identity().clone(),
-            snapshot_evidence_identity: generation.snapshot_identity().evidence_identity()?,
+            snapshot_evidence_identity: generation.snapshot_identity().evidence_identity(),
         })
     }
 

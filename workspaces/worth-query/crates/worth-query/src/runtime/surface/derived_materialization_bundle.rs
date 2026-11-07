@@ -59,7 +59,7 @@ impl WorthQueryDerivedMaterializationBundle {
             WorthQueryDerivedMaterializationResult,
         >,
     ) -> Result<Self, IdentityDerivationDenial> {
-        let snapshot_evidence_identity = snapshot_identity.evidence_identity()?;
+        let snapshot_evidence_identity = snapshot_identity.evidence_identity();
         let bundle_digest = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::DerivedMaterializationBundle,
         )

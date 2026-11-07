@@ -174,7 +174,7 @@ impl WorthQueryDirectDomainEvidenceAttachment {
             basis_identity: completion.bound.basis_identity().to_owned(),
             execution_snapshot_identity: completion
                 .snapshot
-                .evidence_identity()?
+                .evidence_identity()
                 .as_str()
                 .to_owned(),
             contract: completion.bound.direct_domain_evidence_contract(),

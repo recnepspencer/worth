@@ -25,7 +25,7 @@ impl ProjectionSourceBasisAuthority {
     {
         Ok(match &self.kind {
             ProjectionSourceBasisAuthorityKind::RuntimeSnapshot(identity) => {
-                Some(identity.evidence_identity()?.canonical_digest().clone())
+                Some(identity.evidence_identity().canonical_digest().clone())
             }
             ProjectionSourceBasisAuthorityKind::Certification(identity) => {
                 Some(identity.canonical_digest().clone())
@@ -53,7 +53,7 @@ impl ProjectionSourceBasisAuthority {
     pub fn terminal_projection_for_reporting(&self) -> Result<String, IdentityDerivationDenial> {
         Ok(match &self.kind {
             ProjectionSourceBasisAuthorityKind::RuntimeSnapshot(identity) => {
-                identity.evidence_identity()?.as_str().to_string()
+                identity.evidence_identity().as_str().to_string()
             }
             ProjectionSourceBasisAuthorityKind::QueryContext { basis_digest, .. } => {
                 basis_digest.clone()

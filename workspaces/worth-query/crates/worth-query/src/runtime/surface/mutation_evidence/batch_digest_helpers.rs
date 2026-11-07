@@ -192,7 +192,7 @@ fn symbolic_target_reference_identity(
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("resolved_entity"),
-                &reference.resolved_entity_identity().evidence_identity()?,
+                &reference.resolved_entity_identity().evidence_identity(),
             );
     if let Some(collection) = reference.target_collection() {
         identity = identity.field_evidence_identity(
@@ -226,7 +226,7 @@ fn symbolic_aspect_resolution_identity(
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("resolved_entity"),
-                &resolution.resolved_entity_identity().evidence_identity()?,
+                &resolution.resolved_entity_identity().evidence_identity(),
             );
     if let Some(collection) = resolution.target_collection() {
         identity = identity.field_evidence_identity(
@@ -283,7 +283,7 @@ fn continuity_mutation_identity(
     if let Some(resolved) = continuity.resolved_target_entity_identity() {
         identity = identity.field_evidence_identity(
             WorthQueryEvidenceTag::new("resolved_entity"),
-            &resolved.evidence_identity()?,
+            &resolved.evidence_identity(),
         );
     }
     if let Some(collection) = continuity.target_collection() {
@@ -328,7 +328,7 @@ fn naming_mutation_identity(
     if let Some(resolved) = naming.resolved_target_entity_identity() {
         identity = identity.field_evidence_identity(
             WorthQueryEvidenceTag::new("resolved_entity"),
-            &resolved.evidence_identity()?,
+            &resolved.evidence_identity(),
         );
     }
     if let Some(collection) = naming.target_collection() {
@@ -363,7 +363,7 @@ fn target_component_identity(
     if let Some(entity) = component.declared().entity_identity() {
         identity = identity.field_evidence_identity(
             WorthQueryEvidenceTag::new("declared_entity"),
-            &entity.evidence_identity()?,
+            &entity.evidence_identity(),
         );
     }
     if let Some(collection) = component.resolved().collection() {
@@ -375,7 +375,7 @@ fn target_component_identity(
     if let Some(entity) = component.resolved().entity_identity() {
         identity = identity.field_evidence_identity(
             WorthQueryEvidenceTag::new("resolved_entity"),
-            &entity.evidence_identity()?,
+            &entity.evidence_identity(),
         );
     }
     Ok(identity.seal()?)

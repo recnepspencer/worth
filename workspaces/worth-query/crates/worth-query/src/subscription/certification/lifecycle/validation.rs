@@ -82,8 +82,8 @@ pub(super) fn validate_lifecycle_sources(
                 validation_role_evidence_identity(
                     "lane_admission",
                     active_admission.admission_identity(),
-                ),
-                validation_role_evidence_identity("admission", admission.evidence_identity()),
+                )?,
+                validation_role_evidence_identity("admission", admission.evidence_identity())?,
             ],
         ));
     }
@@ -130,8 +130,8 @@ pub(super) fn validate_lifecycle_sources(
                 validation_role_evidence_identity(
                     "lowering_delta",
                     lowering_report.maintenance_delta_identity(),
-                ),
-                validation_role_evidence_identity("delta", maintenance_delta.evidence_identity()),
+                )?,
+                validation_role_evidence_identity("delta", maintenance_delta.evidence_identity())?,
             ],
         ));
     }
@@ -164,27 +164,27 @@ pub(super) fn validate_lifecycle_sources(
                 validation_role_evidence_identity(
                     "packet_attachment",
                     work_packet.attachment_digest().evidence_identity(),
-                ),
+                )?,
                 validation_role_evidence_identity(
                     "attachment",
                     attachment.attachment_digest().evidence_identity(),
-                ),
+                )?,
                 validation_role_evidence_identity(
                     "packet_delta",
                     work_packet.maintenance_delta().evidence_identity(),
-                ),
+                )?,
                 validation_role_evidence_identity(
                     "delta",
                     maintenance_delta.evidence_identity(),
-                ),
+                )?,
                 validation_role_evidence_identity(
                     "packet_lowering",
                     work_packet.lowering_report().evidence_identity(),
-                ),
+                )?,
                 validation_role_evidence_identity(
                     "lowering",
                     lowering_report.evidence_identity(),
-                ),
+                )?,
             ],
         ));
     }
@@ -214,18 +214,18 @@ pub(super) fn validate_lifecycle_sources(
                 validation_role_evidence_identity(
                     "batch_attachment",
                     delivery_batch.attachment_digest().evidence_identity(),
-                ),
+                )?,
                 validation_role_evidence_identity(
                     "attachment",
                     attachment.attachment_digest().evidence_identity(),
-                ),
+                )?,
                 validation_role_evidence_identity(
                     "receipt_attachment",
                     delivery_batch
                         .receipt()
                         .attachment_digest()
                         .evidence_identity(),
-                ),
+                )?,
             ],
         ));
     }
@@ -305,11 +305,11 @@ pub(super) fn validate_lifecycle_sources(
                 validation_role_evidence_identity(
                     "closeout_attachment",
                     lifecycle_closeout.attachment_digest().evidence_identity(),
-                ),
+                )?,
                 validation_role_evidence_identity(
                     "attachment",
                     attachment.attachment_digest().evidence_identity(),
-                ),
+                )?,
             ],
         ));
     }

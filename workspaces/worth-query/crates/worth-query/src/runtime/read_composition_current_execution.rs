@@ -85,7 +85,7 @@ fn materialize_current_read_input(
     read_graph: &WorthQueryReadGraph,
 ) -> Result<WorthQueryCurrentReadMaterialization, WorthQueryReadDenial> {
     let admitted = admit_current_read_execution(execution, runtime, read_graph)?;
-    let snapshot_evidence_identity = admitted.snapshot_identity.evidence_identity()?;
+    let snapshot_evidence_identity = admitted.snapshot_identity.evidence_identity();
     let mut graph_read_access_recorder =
         WorthQueryGraphReadAccessExecutionRecorder::entered_executor();
     let (rows, maintenance_source_rows, records_examined_count) =

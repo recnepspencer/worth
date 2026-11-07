@@ -22,7 +22,7 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     {
         Ok(worth_query_declaration_progression_recipe(
             legal,
-            self.retained_world_basis()?,
+            self.retained_world_basis(),
         ))
     }
 

@@ -192,7 +192,7 @@ fn current_context_for_family(
     let identity = ResolvedSnapshotIdentity::new(
         BasisAuthorityFamily::Runtime,
         None,
-        snapshot_identity.evidence_identity()?,
+        snapshot_identity.evidence_identity(),
         family.read_graph().schema_basis().clone(),
         SnapshotLineageClass::CurrentHead,
     );

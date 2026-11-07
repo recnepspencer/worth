@@ -140,7 +140,7 @@ fn retained_assertion_verification_digest(
     )
     .field_evidence_identity(
         WorthQueryEvidenceTag::new("snapshot_identity"),
-        &snapshot_identity.evidence_identity()?,
+        &snapshot_identity.evidence_identity(),
     )
     .optional_evidence_identity(
         WorthQueryEvidenceTag::new("declared_aspect_value_digest"),

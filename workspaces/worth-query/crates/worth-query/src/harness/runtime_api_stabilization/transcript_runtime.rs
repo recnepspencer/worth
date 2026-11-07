@@ -339,7 +339,7 @@ impl WorthQueryRuntimePreviewBasisAdapter for TranscriptPreviewBasis {
             label.clone(),
             effect_policy,
             WorthQueryBasisAdmissionEvidenceRow::rows_from_values(["transcript-preview-basis"]),
-        ))
+        )?)
     }
 }
 

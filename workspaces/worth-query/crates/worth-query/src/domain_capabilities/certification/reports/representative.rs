@@ -369,7 +369,7 @@ pub(crate) fn worth_query_domain_capability_representative_report_in(
             .decision_support_traceability_digest()
             .to_string(),
         public_boundary_digest,
-        failure_digest: denial.failure_for_reporting().to_string(),
+        failure_digest: denial.failure_for_reporting()?.to_string(),
         contribution_width: worth_query_domain_capability_public_surface_inventory()
             .rows()
             .len(),

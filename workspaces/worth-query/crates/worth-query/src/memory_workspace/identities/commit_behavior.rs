@@ -20,15 +20,13 @@ impl WorthQueryCommitIdentity {
         }
     }
 
-    pub fn evidence_identity(
-        &self,
-    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(match &self.inner {
+    pub fn evidence_identity(&self) -> WorthQueryEvidenceIdentity {
+        match &self.inner {
             WorthQueryCommitIdentityInner::Absent => WorthQueryEvidenceIdentity::compose(
                 WorthQueryEvidenceScope::WriteReceiptCommitIdentity,
             )
             .field_shape(WorthQueryEvidenceTag::new("commit_state"), "absent")
-            .seal()?,
+            .seal().expect("bounded record identity grammar: literals, primitive record coordinates, or already sealed identity tokens"),
             WorthQueryCommitIdentityInner::RelationalBridge { bridge_identity } => {
                 let commit_id = bridge_identity
                     .relational_commit_id()
@@ -40,30 +38,27 @@ impl WorthQueryCommitIdentity {
                     WorthQueryEvidenceTag::new("relational_commit_id"),
                     commit_id as usize,
                 )
-                .seal()?
+                .seal().expect("bounded record identity grammar: literals, primitive record coordinates, or already sealed identity tokens")
             }
             WorthQueryCommitIdentityInner::Preview { evidence_identity } => {
                 evidence_identity.clone()
             }
-        })
+        }
     }
 
-    pub fn bridge_admission_evidence(
-        &self,
-    ) -> Result<BridgeIdentityEvidence, IdentityDerivationDenial> {
-        Ok(match &self.inner {
+    pub fn bridge_admission_evidence(&self) -> BridgeIdentityEvidence {
+        match &self.inner {
             WorthQueryCommitIdentityInner::RelationalBridge { bridge_identity } => {
                 bridge_identity.bridge_admission_evidence()
             }
-            _ => self.evidence_identity()?.bridge_evidence_identity(),
-        })
+            _ => self.evidence_identity().bridge_evidence_identity(),
+        }
     }
 
-    pub fn terminal_projection_for_reporting(&self) -> Result<String, IdentityDerivationDenial> {
-        Ok(self
-            .evidence_identity()?
+    pub fn terminal_projection_for_reporting(&self) -> String {
+        self.evidence_identity()
             .terminal_projection_for_reporting()
-            .to_string())
+            .to_string()
     }
 
     pub fn is_same_current_identity_as(&self, candidate: &Self) -> bool {
@@ -74,17 +69,15 @@ impl WorthQueryCommitIdentity {
         self._authority.is_some()
     }
 
-    pub(crate) fn admit_runtime_write_authority(
-        mut self,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    pub(crate) fn admit_runtime_write_authority(mut self) -> Self {
         if self._authority.is_none() {
-            let basis = self.evidence_identity()?;
+            let basis = self.evidence_identity();
             self._authority = Some(admit_foundational_authority_identity(
                 Arc::<str>::from(basis.terminal_projection_for_reporting()),
                 query_receipt_admission_authority(),
             ));
         }
-        Ok(self)
+        self
     }
 
     pub(crate) fn relational_commit_id(&self) -> Option<u64> {

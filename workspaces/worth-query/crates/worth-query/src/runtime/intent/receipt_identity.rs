@@ -22,15 +22,18 @@ pub(super) fn authoritative_intent_receipt_identity(
         "authoritative-receipt-invariant-evidence",
         execution.invariant_evidence(),
     );
-    let effect_trigger_identity = declaration.effect_trigger().map(|trigger| {
-        worth_query_evidence_identity(WorthQueryEvidenceScope::AuthoritativeIntentReceipt)
-            .field_shape(
-                WorthQueryEvidenceTag::new("role"),
-                "authoritative-receipt-effect-trigger",
-            )
-            .field_value(WorthQueryEvidenceTag::new("digest"), trigger.digest())
-            .seal()
-    });
+    let effect_trigger_identity = declaration
+        .effect_trigger()
+        .map(|trigger| {
+            worth_query_evidence_identity(WorthQueryEvidenceScope::AuthoritativeIntentReceipt)
+                .field_shape(
+                    WorthQueryEvidenceTag::new("role"),
+                    "authoritative-receipt-effect-trigger",
+                )
+                .field_value(WorthQueryEvidenceTag::new("digest"), trigger.digest())
+                .seal()
+        })
+        .transpose()?;
     let affected_live_view_identities = receipt_value_identities(
         "authoritative-receipt-affected-live-view",
         &write_receipt.terminal_affected_live_view_ids_projection(),
@@ -84,7 +87,7 @@ pub(super) fn authoritative_intent_receipt_identity(
             )
             .optional_evidence_identity(
                 WorthQueryEvidenceTag::new("effect_trigger_digest"),
-                effect_trigger_identity.as_ref()?,
+                effect_trigger_identity.as_ref(),
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("commit_evidence_identity"),

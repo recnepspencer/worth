@@ -215,11 +215,11 @@ pub(super) fn batch_receipt_surface(
         eligibility_counter_digest: hash_parts(&["batch-eligibility-counters".to_string()]),
         lowering_counter_digest: receipt
             .delivery_counters()
-            .counter_for_reporting()
+            .counter_for_reporting()?
             .to_string(),
         execution_counter_digest: receipt
             .delivery_counters()
-            .counter_for_reporting()
+            .counter_for_reporting()?
             .to_string(),
         envelope_counter_digest: envelope
             .sources()
@@ -238,7 +238,7 @@ fn scalar_surface_evidence(
     let raw_digest = raw_effect_intent_digest(&raw);
     let normalized =
         normalize_raw_effect_intent(basis, raw).expect("closeout receipt surface should normalize");
-    let normalization_counter_digest = normalized.counters().counter_for_reporting().to_string();
+    let normalization_counter_digest = normalized.counters().counter_for_reporting()?.to_string();
     let eligibility = match evaluate_effect_eligibility(normalized.clone())? {
         EffectEligibilityOutcome::Admitted(eligibility) => eligibility,
         other => panic!("expected admitted closeout surface, got {other:?}"),
@@ -247,7 +247,7 @@ fn scalar_surface_evidence(
         .decision_trace()
         .trace_for_reporting()
         .to_string();
-    let eligibility_counter_digest = eligibility.counters().counter_for_reporting().to_string();
+    let eligibility_counter_digest = eligibility.counters().counter_for_reporting()?.to_string();
     let admitted = admit_effect_intent(eligibility)?;
     let scoped_plan = scope_admitted_effect_plan(admitted)?;
     let query_digest = normalized
@@ -287,7 +287,7 @@ fn scalar_surface_evidence(
     let lowered = scoped_plan
         .lower()
         .expect("closeout receipt surface should lower");
-    let lowering_counter_digest = lowered.counters().counter_for_reporting().to_string();
+    let lowering_counter_digest = lowered.counters().counter_for_reporting()?.to_string();
     let lowered_digest = lowered
         .lowered_effect_execution_plan_for_reporting()
         .to_string();
@@ -340,7 +340,7 @@ fn scalar_surface_evidence(
         lowering_counter_digest,
         execution_counter_digest: receipt
             .delivery_counters()
-            .counter_for_reporting()
+            .counter_for_reporting()?
             .to_string(),
         envelope_counter_digest: envelope
             .sources()

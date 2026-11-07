@@ -161,6 +161,7 @@ impl ResolvedSnapshotIdentity {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum BasisResolutionError {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     UnsupportedBasisKind,
     ResolutionIdentityMismatch,
 }
@@ -223,7 +224,7 @@ pub fn resolve_snapshot_basis(
         intent,
         identity,
         resolution_mode,
-    ))
+    )?)
 }
 
 pub(crate) fn resolve_runtime_current_snapshot_basis(
@@ -324,4 +325,10 @@ pub fn preflight_execution_basis(
         plan,
         basis,
     })
+}
+
+impl From<IdentityDerivationDenial> for BasisResolutionError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
+    }
 }

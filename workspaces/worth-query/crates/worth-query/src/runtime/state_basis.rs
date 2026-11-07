@@ -12,6 +12,7 @@ use crate::basis_lifecycle::{
     ScopedMutationPreparationBasis, ScopedObservationBasis, ScopedPreviewCloseoutBasis,
     ScopedReplayBasis, ScopedSubscriptionActivationBasis, ScopedSubscriptionDeclarationBasis,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -27,15 +28,15 @@ impl WorthQueryRuntimeStateTarget for &WorthQueryAdmittedWorldBasis {
             .validate_installed_domain_authority(self.installed_authority())
             .map_err(WorthQueryRuntimeError::InstalledDomainAuthorityDenied)?;
         Ok(WorthQueryRuntimeStateSnapshot::ready(
-            runtime_state_snapshot_basis_label_identity(self.basis_lifecycle_support_identity()),
-            runtime_state_snapshot_result_shape_label_identity(self.handle_identity()),
+            runtime_state_snapshot_basis_label_identity(self.basis_lifecycle_support_identity())?,
+            runtime_state_snapshot_result_shape_label_identity(self.handle_identity())?,
             WorthQueryAuthorityLane::AuthoritativeTruth,
             format!(
                 "retained admitted world basis `{}` is ready with basis lifecycle support `{}`",
                 self.domain_key(),
                 self.basis_lifecycle_support_for_reporting()
             ),
-        ))
+        )?)
     }
 }
 
@@ -47,7 +48,7 @@ macro_rules! impl_scoped_basis_state_target {
                 _execution: &worth_execution::ExecutionRequest<'_, '_>,
                 _runtime: &WorthQueryRuntime,
             ) -> Result<WorthQueryRuntimeStateSnapshot, WorthQueryRuntimeError> {
-                Ok(scoped_basis_snapshot(self, $label))
+                Ok(scoped_basis_snapshot(self, $label)?)
             }
         }
     };
@@ -74,10 +75,7 @@ impl_scoped_basis_state_target!(ScopedPreviewCloseoutBasis, "scoped preview-clos
 fn scoped_basis_snapshot(
     basis: &impl ScopedBasisProof,
     label: &str,
-) -> Result<
-    WorthQueryRuntimeStateSnapshot,
-    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<WorthQueryRuntimeStateSnapshot, IdentityDerivationDenial> {
     Ok(WorthQueryRuntimeStateSnapshot::ready(
         runtime_state_snapshot_basis_label_identity(&scoped_identity(
             "scoped_basis",
@@ -99,10 +97,7 @@ fn scoped_basis_snapshot(
 fn scoped_identity(
     family: &'static str,
     digest: &str,
-) -> Result<
-    WorthQueryEvidenceIdentity,
-    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_shape(WorthQueryEvidenceTag::new("identity_family"), family)

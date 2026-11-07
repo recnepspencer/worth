@@ -108,7 +108,7 @@ impl ExtractedWriteReceiptFacts {
                     .successor_authoritative_identities()
                     .iter()
                     .map(|identity| ConsumedContinuityAuthorityIdentity::new(identity.as_str()))
-                    .collect(),
+                    .collect::<Result<Vec<_>, _>>()?,
                 continuity.resolved_target_entity_identity().cloned(),
                 continuity
                     .target_collection()

@@ -121,7 +121,7 @@ impl WorthQueryRuntime {
             );
         let snapshot_evidence_identity = self
             .current_snapshot_identity_with_request(execution)?
-            .evidence_identity()?;
+            .evidence_identity();
         let execution_provenance =
             WorthQueryIntentExecutionProvenance::for_shared_execution_typed_parts(
                 binding.family(),

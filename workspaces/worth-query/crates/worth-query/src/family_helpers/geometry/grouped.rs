@@ -273,7 +273,7 @@ where
     I::Family: WorthQueryGeometryNeighborhoodHelperFamily<D>
         + WorthQueryDeclarationSupportsNeighborhoodGrouping<D>,
 {
-    match orchestrate_local_neighborhood_for_active_face_selection_checked(handle, declaration) {
+    match orchestrate_local_neighborhood_for_active_face_selection_checked(handle, declaration)? {
         WorthQueryGroupedOrchestrationChecked::Bound(value) => Ok(value),
         WorthQueryGroupedOrchestrationChecked::MemberStopped(stop) => {
             Err(WorthQueryGroupedOrchestrationStop::MemberStopped(stop))

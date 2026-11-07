@@ -279,7 +279,7 @@ impl WorthQueryWriteReceipt {
         reference: &WorthQuerySymbolicTargetReference,
         resolved_entity_identity: WorthQueryEntityIdentity,
         resolved_collection: Option<WorthQueryMutationTargetCollectionIdentity>,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         self.symbolic_target_reference_evidence =
             Some(WorthQuerySymbolicTargetReferenceEvidence::from_reference(
                 reference,
@@ -302,7 +302,7 @@ impl WorthQueryWriteReceipt {
         continuity: Option<crate::runtime::WorthQueryContinuityMutationEvidence>,
     ) -> Result<Self, IdentityDerivationDenial> {
         let commit_evidence_identity =
-            super::write_receipt_commit_evidence_identity(&commit_identity);
+            super::write_receipt_commit_evidence_identity(&commit_identity)?;
         let committed_truth_identity = super::write_receipt_committed_truth_identity(
             &WorthQueryMutationReceipt::from_authoritative_parts(
                 commit_identity.clone(),
@@ -312,7 +312,7 @@ impl WorthQueryWriteReceipt {
         )?;
         let journal_position = WorthQueryJournalPosition::from_commit_identity(&commit_identity);
         let snapshot_evidence_identity =
-            super::write_receipt_snapshot_evidence_identity(&snapshot_identity);
+            super::write_receipt_snapshot_evidence_identity(&snapshot_identity)?;
         Ok(Self {
             inner: WorthQueryMutationReceipt::from_authoritative_parts(
                 commit_identity,

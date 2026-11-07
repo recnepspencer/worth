@@ -138,7 +138,7 @@ pub(super) fn synthetic_existing_assertion_receipt(
     )
     .field_evidence_identity(
         crate::evidence_identity::WorthQueryEvidenceTag::new("snapshot_identity"),
-        &snapshot_identity.evidence_identity()?,
+        &snapshot_identity.evidence_identity(),
     )
     .optional_evidence_identity(
         crate::evidence_identity::WorthQueryEvidenceTag::new("aspect_digest"),

@@ -9,6 +9,7 @@ use crate::contribution_composed_orchestration::{
     WorthQueryContributionComposedOrchestrationOutcome,
     WorthQueryContributionComposedOrchestrationTranscript,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::recovery_boundary::foundational::{
     diagnostic_context_for_stop_kind, support_context_for_stale_basis,
 };
@@ -25,18 +26,18 @@ pub fn worth_query_recovery_brief_from_contribution_composed_checked<
     I: WorthQueryDeclarationInput<D>,
 >(
     checked: WorthQueryContributionComposedOrchestrationChecked<D, I>,
-) -> Option<WorthQueryRecoveryBrief> {
+) -> Result<Option<WorthQueryRecoveryBrief>, IdentityDerivationDenial> {
     let explanation = contribution_checked_explanation(
         &checked,
         WorthQueryRecoveryEvidenceStrength::CheckedRetained,
     );
-    worth_query_recovery_brief_from_ordinary_outcome(
-        &ordinary_outcome_from_contribution_composed_checked(checked),
+    Ok(worth_query_recovery_brief_from_ordinary_outcome(
+        &ordinary_outcome_from_contribution_composed_checked(checked)?,
     )
     .map(|brief| {
         let merged = merge_contribution_explanation(&brief, explanation);
         brief.with_explanation(merged)
-    })
+    }))
 }
 
 pub fn worth_query_recovery_brief_from_contribution_composed_proof<
@@ -44,16 +45,16 @@ pub fn worth_query_recovery_brief_from_contribution_composed_proof<
     I: WorthQueryDeclarationInput<D>,
 >(
     proof: WorthQueryContributionComposedOrchestrationTranscript<D, I>,
-) -> Option<WorthQueryRecoveryBrief> {
+) -> Result<Option<WorthQueryRecoveryBrief>, IdentityDerivationDenial> {
     let explanation =
         contribution_proof_explanation(&proof, WorthQueryRecoveryEvidenceStrength::ProofRetained);
-    worth_query_recovery_brief_from_ordinary_outcome(
-        &ordinary_outcome_from_contribution_composed_checked(proof.into_checked()),
+    Ok(worth_query_recovery_brief_from_ordinary_outcome(
+        &ordinary_outcome_from_contribution_composed_checked(proof.into_checked())?,
     )
     .map(|brief| {
         let merged = merge_contribution_explanation(&brief, explanation);
         brief.with_explanation(merged)
-    })
+    }))
 }
 
 fn merge_contribution_explanation(

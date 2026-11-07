@@ -53,13 +53,15 @@ pub(super) fn effect_inspection_digests(
         pending_expression_failure_count,
         pending_write_intent_count,
     )?;
-    let latest_phase_identity = latest_phase_evidence.map(effect_phase_inspection_identity);
+    let latest_phase_identity = latest_phase_evidence
+        .map(effect_phase_inspection_identity)
+        .transpose()?;
     let inspection_identity = inspection_identity(
         latest_delivery_family,
         feedback_graph,
         &declaration_identity,
         &pending_delivery_identity,
-        latest_phase_identity.as_ref()?,
+        latest_phase_identity.as_ref(),
     )?;
 
     Ok(EffectInspectionDigestSet {

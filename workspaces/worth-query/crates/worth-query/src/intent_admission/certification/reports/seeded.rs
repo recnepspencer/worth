@@ -91,7 +91,7 @@ pub fn worth_query_intent_admission_seeded_certification_report(
             .collect::<Vec<_>>(),
     );
     let stable_replay = seed_row(execution, 17)?;
-    let changed_seed = seed_row(execution, 30);
+    let changed_seed = seed_row(execution, 30)?;
     let seed_replay_digest = hash_parts(&[
         "worth_query_intent_admission_seed_replay_v1".to_string(),
         format!("primary:{}", rows[0].replay_digest),
@@ -142,7 +142,7 @@ fn executed_artifact_digest(
     seed: u64,
 ) -> Result<String, IdentityDerivationDenial> {
     Ok(match seed % 5 {
-        0 => certified_failure_intent_fixture(execution).failure_digest,
+        0 => certified_failure_intent_fixture(execution)?.failure_digest,
         1 => certified_admitted_intent_fixture(execution)?
             .receipt
             .receipt_digest()

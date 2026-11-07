@@ -308,7 +308,7 @@ impl WorthQueryRuntime {
                 result.receipt().result_digest(),
                 "derived-view-materialization",
             );
-        let snapshot_evidence_identity = snapshot_identity.evidence_identity()?;
+        let snapshot_evidence_identity = snapshot_identity.evidence_identity();
         let execution_provenance =
             WorthQueryIntentExecutionProvenance::for_shared_execution_typed_parts(
                 binding.family(),
@@ -350,7 +350,7 @@ impl WorthQueryRuntime {
                 result.receipt().result_digest(),
                 "derived-view-inspection",
             );
-        let snapshot_evidence_identity = snapshot_identity.evidence_identity()?;
+        let snapshot_evidence_identity = snapshot_identity.evidence_identity();
         let execution_provenance =
             WorthQueryIntentExecutionProvenance::for_shared_execution_typed_parts(
                 binding.family(),

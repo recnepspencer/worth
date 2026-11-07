@@ -156,7 +156,7 @@ impl WorthQueryContinuityRuntimeSemantics {
             .iter()
             .enumerate()
             .map(|(index, label)| continuity_successor_authoritative_identity(index, label))
-            .collect();
+            .collect::<Result<Vec<_>, _>>()?;
         Ok(Self {
             family,
             outcome_class,

@@ -89,26 +89,21 @@ impl WorthQueryEntityIdentity {
             .filter(|parts| parts.kind() == RelationalBridgeRecordIdentityKind::Entity)
     }
 
-    pub fn evidence_identity(
-        &self,
-    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(match &self.inner {
+    pub fn evidence_identity(&self) -> WorthQueryEvidenceIdentity {
+        match &self.inner {
             WorthQueryEntityIdentityInner::RelationalRecord { relational_record } => {
-                entity_evidence_from_relational_record(*relational_record)?
+                entity_evidence_from_relational_record(*relational_record)
             }
             WorthQueryEntityIdentityInner::Preview { evidence_identity } => {
                 evidence_identity.clone()
             }
-        })
+        }
     }
 
-    pub(crate) fn terminal_projection_for_reporting(
-        &self,
-    ) -> Result<String, IdentityDerivationDenial> {
-        Ok(self
-            .evidence_identity()?
+    pub(crate) fn terminal_projection_for_reporting(&self) -> String {
+        self.evidence_identity()
             .terminal_projection_for_reporting()
-            .to_string())
+            .to_string()
     }
 
     pub fn is_same_current_identity_as(&self, candidate: &Self) -> bool {
@@ -119,27 +114,21 @@ impl WorthQueryEntityIdentity {
         self._authority.is_some()
     }
 
-    pub(crate) fn admit_runtime_write_authority(
-        mut self,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    pub(crate) fn admit_runtime_write_authority(mut self) -> Self {
         if self._authority.is_none() {
-            let basis = self.evidence_identity()?;
+            let basis = self.evidence_identity();
             self._authority = Some(admit_foundational_authority_identity(
                 Arc::<str>::from(basis.terminal_projection_for_reporting()),
                 query_receipt_admission_authority(),
             ));
         }
-        Ok(self)
+        self
     }
 
-    pub(crate) fn compare_for_candidate_index(
-        &self,
-        candidate: &Self,
-    ) -> Result<std::cmp::Ordering, IdentityDerivationDenial> {
-        Ok(self
-            .evidence_identity()?
-            .compare_same_scheme(&candidate.evidence_identity()?)
-            .unwrap_or(std::cmp::Ordering::Equal))
+    pub(crate) fn compare_for_candidate_index(&self, candidate: &Self) -> std::cmp::Ordering {
+        self.evidence_identity()
+            .compare_same_scheme(&candidate.evidence_identity())
+            .unwrap_or(std::cmp::Ordering::Equal)
     }
 }
 
@@ -181,26 +170,24 @@ impl std::hash::Hash for WorthQueryEntityIdentity {
 
 fn entity_evidence_from_relational_record(
     relational_record: RelationalBridgeRecordIdentityParts,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+) -> WorthQueryEvidenceIdentity {
     let kind = match relational_record.kind() {
         RelationalBridgeRecordIdentityKind::Entity => "entity",
         RelationalBridgeRecordIdentityKind::Relation => "relation",
     };
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WriteReceiptEntityIdentity)
-            .field_shape(WorthQueryEvidenceTag::new("record_kind"), kind)
-            .field_usize(
-                WorthQueryEvidenceTag::new("partition_id"),
-                relational_record.partition_id() as usize,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("local_slot"),
-                relational_record.local_slot() as usize,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("generation"),
-                relational_record.generation() as usize,
-            )
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WriteReceiptEntityIdentity)
+        .field_shape(WorthQueryEvidenceTag::new("record_kind"), kind)
+        .field_usize(
+            WorthQueryEvidenceTag::new("partition_id"),
+            relational_record.partition_id() as usize,
+        )
+        .field_usize(
+            WorthQueryEvidenceTag::new("local_slot"),
+            relational_record.local_slot() as usize,
+        )
+        .field_usize(
+            WorthQueryEvidenceTag::new("generation"),
+            relational_record.generation() as usize,
+        )
+        .seal().expect("bounded record identity grammar: literals, primitive record coordinates, or already sealed identity tokens")
 }

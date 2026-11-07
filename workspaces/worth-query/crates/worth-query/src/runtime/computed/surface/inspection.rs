@@ -79,7 +79,7 @@ impl WorthQueryComputedInspectionEvidence {
             .patches
             .iter()
             .map(|patch| derived_patch_inspection_identity(view.declaration.name(), patch))
-            .collect();
+            .collect::<Result<Vec<_>, _>>()?;
         let pending_patch_identity = computed_pending_patch_inspection_identity(
             view.declaration.name(),
             pending_patch_count,

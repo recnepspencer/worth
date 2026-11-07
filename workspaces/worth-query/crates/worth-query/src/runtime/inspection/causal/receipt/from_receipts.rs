@@ -69,7 +69,7 @@ impl QueryObservationReceipt {
                 )?,
             ));
         }
-        let snapshot_identity = inspection.snapshot_identity().evidence_identity()?;
+        let snapshot_identity = inspection.snapshot_identity().evidence_identity();
         let target_identity = inspection
             .target_entity_identity()
             .or_else(|| inspection.declared_entity_identity())
@@ -110,7 +110,7 @@ impl QueryObservationReceipt {
         inspection: &WorthQueryIntentReceiptInspection,
         inspection_basis: crate::basis_lifecycle::ScopedInspectionBasis,
     ) -> Result<Self, IdentityDerivationDenial> {
-        let snapshot_identity = inspection.snapshot_identity().evidence_identity()?;
+        let snapshot_identity = inspection.snapshot_identity().evidence_identity();
         let commit_identity = inspection.commit_identity().evidence_identity();
         let outcome = if inspection.produced_mutation_digest().is_some() {
             CausalObservationOutcome::Changed

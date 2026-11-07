@@ -165,14 +165,14 @@ impl<T> WorthQueryRuntimeStateTarget for &WorthQueryDerivedViewHandle<T> {
     ) -> Result<WorthQueryRuntimeStateSnapshot, WorthQueryRuntimeError> {
         let inspection = runtime.inspect_derived_view(execution, self)?;
         Ok(WorthQueryRuntimeStateSnapshot::ready(
-            inspection.dependency_identity(),
-            inspection.materialization_identity(),
+            inspection.dependency_identity()?,
+            inspection.materialization_identity()?,
             inspection.authority_lane(),
             format!(
                 "sync runtime-backed computed view `{}` is ready through retained materialization evidence",
                 inspection.name()
             ),
-        ))
+        )?)
     }
 }
 
@@ -182,7 +182,7 @@ impl WorthQueryRuntimeStateTarget for WorthQueryRuntimeFacadeFamily {
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryRuntime,
     ) -> Result<WorthQueryRuntimeStateSnapshot, WorthQueryRuntimeError> {
-        let contract = runtime.public_api_contract();
+        let contract = runtime.public_api_contract()?;
         let row = contract.family(self).ok_or_else(|| {
             WorthQueryRuntimeError::UnsupportedFacadeFamily(
                 WorthQueryRuntimeSupportDenial::unsupported(
@@ -203,36 +203,36 @@ impl WorthQueryRuntimeStateTarget for WorthQueryRuntimeFacadeFamily {
             }
         });
         let result_shape_identity =
-            runtime_state_snapshot_result_shape_facade_family_identity(self);
+            runtime_state_snapshot_result_shape_facade_family_identity(self)?;
         match row.status() {
             WorthQueryRuntimeFamilySupportStatus::Supported => {
                 Ok(WorthQueryRuntimeStateSnapshot::ready(
-                    runtime_state_snapshot_basis_label_identity(row.contract_identity()),
+                    runtime_state_snapshot_basis_label_identity(row.contract_identity())?,
                     result_shape_identity,
                     row.authority_lanes()
                         .first()
                         .copied()
                         .unwrap_or(WorthQueryAuthorityLane::AuthoritativeTruth),
                     explanation,
-                ))
+                )?)
             }
             WorthQueryRuntimeFamilySupportStatus::DeferredDebt => {
                 Ok(WorthQueryRuntimeStateSnapshot::deferred(
                     WorthQueryRuntimeStateKind::Pending,
-                    runtime_state_snapshot_basis_label_identity(row.contract_identity()),
+                    runtime_state_snapshot_basis_label_identity(row.contract_identity())?,
                     result_shape_identity,
                     deferred_authority_lane(self),
                     explanation,
-                ))
+                )?)
             }
             WorthQueryRuntimeFamilySupportStatus::Unsupported => {
                 Ok(WorthQueryRuntimeStateSnapshot::deferred(
                     WorthQueryRuntimeStateKind::Unsupported,
-                    runtime_state_snapshot_basis_label_identity(row.contract_identity()),
+                    runtime_state_snapshot_basis_label_identity(row.contract_identity())?,
                     result_shape_identity,
                     deferred_authority_lane(self),
                     explanation,
-                ))
+                )?)
             }
         }
     }
@@ -245,7 +245,7 @@ impl WorthQueryRuntimeStateTarget for &WorthQueryWriteReceipt {
         _runtime: &WorthQueryRuntime,
     ) -> Result<WorthQueryRuntimeStateSnapshot, WorthQueryRuntimeError> {
         let result_shape_identity =
-            runtime_state_snapshot_result_shape_write_receipt_identity(self);
+            runtime_state_snapshot_result_shape_write_receipt_identity(self)?;
         let commit_evidence_identity = self.commit_evidence_identity().clone();
         Ok(WorthQueryRuntimeStateSnapshot::ready(
             commit_evidence_identity,
@@ -257,7 +257,7 @@ impl WorthQueryRuntimeStateTarget for &WorthQueryWriteReceipt {
                 self.mutation_family(),
                 self.basis_lane()
             ),
-        ))
+        )?)
     }
 }
 
@@ -268,8 +268,8 @@ impl WorthQueryRuntimeStateTarget for &WorthQueryBatchWriteReceipt {
         _runtime: &WorthQueryRuntime,
     ) -> Result<WorthQueryRuntimeStateSnapshot, WorthQueryRuntimeError> {
         Ok(WorthQueryRuntimeStateSnapshot::ready(
-            runtime_state_snapshot_basis_label_identity(self.batch_identity()),
-            runtime_state_snapshot_result_shape_batch_write_receipt_identity(self),
+            runtime_state_snapshot_basis_label_identity(self.batch_identity())?,
+            runtime_state_snapshot_result_shape_batch_write_receipt_identity(self)?,
             self.authority_lane(),
             format!(
                 "batch write receipt `{}` is ready with {} component writes over `{}` basis lane",
@@ -277,7 +277,7 @@ impl WorthQueryRuntimeStateTarget for &WorthQueryBatchWriteReceipt {
                 self.write_count(),
                 self.basis_lane()
             ),
-        ))
+        )?)
     }
 }
 

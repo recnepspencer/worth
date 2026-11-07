@@ -16,8 +16,9 @@ pub(super) fn semantic_evidence_identity(
         Some(evidence) => append_continuity_semantics(identity, evidence),
         None => identity,
     };
-    let lifecycle_identity =
-        lifecycle_target.map(crate::memory_workspace::WorthQueryEntityIdentity::evidence_identity);
+    let lifecycle_identity = lifecycle_target
+        .map(crate::memory_workspace::WorthQueryEntityIdentity::evidence_identity)
+        .transpose()?;
     let establishing_target_identities = establishing_entity_targets
         .iter()
         .map(crate::memory_workspace::WorthQueryEntityIdentity::evidence_identity)
@@ -29,7 +30,7 @@ pub(super) fn semantic_evidence_identity(
         )
         .optional_evidence_identity(
             crate::evidence_identity::WorthQueryEvidenceTag::new("lifecycle_target"),
-            lifecycle_identity.as_ref()?,
+            lifecycle_identity.as_ref(),
         )
         .seal()?)
 }
@@ -104,7 +105,7 @@ fn engine_matches_lifecycle_target(
     artifact: &IdentityEvolutionExecutionArtifact,
     target: &crate::memory_workspace::WorthQueryEntityIdentity,
 ) -> Result<bool, IdentityDerivationDenial> {
-    let evidence = target.evidence_identity()?;
+    let evidence = target.evidence_identity();
     Ok(match artifact.family() {
         IdentityEvolutionExecutionFamily::GeneratedIdentity => artifact
             .result_bundle()

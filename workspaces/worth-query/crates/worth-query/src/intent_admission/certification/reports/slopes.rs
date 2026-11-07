@@ -105,7 +105,7 @@ pub fn worth_query_intent_admission_slope_report(
     let admitted = certified_admitted_intent_fixture(execution)?;
     let advisory = certified_advisory_intent_fixture()?;
     let violation = certified_violation_intent_fixture()?;
-    let failure = certified_failure_intent_fixture(execution);
+    let failure = certified_failure_intent_fixture(execution)?;
     let read = certified_read_intent_fixture(execution);
     let family_inventory = worth_query_intent_admission_family_inventory();
     let coverage_inventory = worth_query_intent_admission_coverage_inventory();

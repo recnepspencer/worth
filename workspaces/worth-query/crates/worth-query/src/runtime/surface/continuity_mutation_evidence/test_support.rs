@@ -33,7 +33,7 @@ impl WorthQueryContinuityMutationEvidence {
             prior_authoritative_identity: WorthQueryMutationAuthorityIdentity::new(
                 "continuity-prior",
                 prior_authoritative_identity,
-            ),
+            )?,
             successor_authoritative_identities: successor_authoritative_identities
                 .into_iter()
                 .map(|identity| {

@@ -69,8 +69,8 @@ impl WorthQueryRuntime {
         if current == Some(WorthQueryRuntimeAsyncResultStateKind::Superseded) {
             return retained_terminal_batch(runtime_provenance, view, state);
         }
-        let basis = binding.current_basis_identity();
-        let checkpoint = binding.current_generation_identity();
+        let basis = binding.current_basis_identity()?;
+        let checkpoint = binding.current_generation_identity()?;
         let binding_identity = binding.binding_identity().clone();
         let causality =
             worth_query_evidence_identity(WorthQueryEvidenceScope::RuntimeStateSnapshot)
@@ -187,8 +187,8 @@ impl WorthQueryRuntime {
                 format!("live view `{}` is no longer pending", view.name()),
             ));
         }
-        let basis = binding.current_basis_identity();
-        let checkpoint = binding.current_generation_identity();
+        let basis = binding.current_basis_identity()?;
+        let checkpoint = binding.current_generation_identity()?;
         let binding_identity = binding.binding_identity().clone();
         let causality =
             worth_query_evidence_identity(WorthQueryEvidenceScope::RuntimeStateSnapshot)
@@ -247,8 +247,8 @@ fn retained_terminal_batch<T>(
         runtime_provenance,
         view.name(),
         binding.binding_identity().clone(),
-        binding.current_basis_identity(),
-        binding.current_generation_identity(),
+        binding.current_basis_identity()?,
+        binding.current_generation_identity()?,
         state.remask_posture.clone(),
         vec![retained],
         0,

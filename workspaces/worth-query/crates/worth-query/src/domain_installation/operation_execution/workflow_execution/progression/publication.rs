@@ -134,7 +134,7 @@ impl<D, O, F, L: BasisOperationLane> WorthQueryPublishedWorkflow<D, O, F, L> {
     ) -> Result<bool, IdentityDerivationDenial> {
         Ok(self
             .publication_subjects_by_evidence_identity
-            .get(subject.evidence_identity()?.as_str())
+            .get(subject.evidence_identity().as_str())
             == Some(subject))
     }
     pub fn consume(

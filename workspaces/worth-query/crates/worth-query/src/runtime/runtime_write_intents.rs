@@ -130,7 +130,7 @@ fn review_request_detail(
 ) -> Result<String, IdentityDerivationDenial> {
     Ok(match command.declared_entity_identity_ref() {
         Some(identity) => identity
-            .evidence_identity()?
+            .evidence_identity()
             .reporting_projection()
             .to_string(),
         None => command

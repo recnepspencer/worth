@@ -16,7 +16,7 @@ pub(crate) fn derive_evidence_report_identities(
     report_name: &str,
     fields: &[EvidenceReportField],
 ) -> Result<EvidenceReportIdentities, IdentityDerivationDenial> {
-    let field_inventory_identities = derive_field_inventory_identities(fields);
+    let field_inventory_identities = derive_field_inventory_identities(fields)?;
     let participating_inventory_identities =
         select_participating_inventory_identities(fields, &field_inventory_identities);
     let field_inventory_identity = derive_report_field_inventory_identity(
@@ -30,7 +30,7 @@ pub(crate) fn derive_evidence_report_identities(
         report_name,
         &participating_inventory_identities,
     )?;
-    let participating_value_identities = derive_participating_field_value_identities(fields);
+    let participating_value_identities = derive_participating_field_value_identities(fields)?;
     let report_identity = derive_report_value_identity(
         scope,
         report_name,
@@ -47,7 +47,7 @@ pub(crate) fn derive_evidence_report_identities(
 
 fn derive_field_inventory_identities(
     fields: &[EvidenceReportField],
-) -> Vec<WorthQueryEvidenceIdentity> {
+) -> Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
     fields
         .iter()
         .map(derive_field_inventory_or_diagnostic_identity)
@@ -114,7 +114,7 @@ fn derive_report_digest_participation_identity(
 
 fn derive_participating_field_value_identities(
     fields: &[EvidenceReportField],
-) -> Vec<WorthQueryEvidenceIdentity> {
+) -> Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
     fields
         .iter()
         .filter(|field| field.participation().participates_in_report_identity())

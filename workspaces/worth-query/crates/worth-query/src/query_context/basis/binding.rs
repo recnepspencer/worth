@@ -248,7 +248,7 @@ impl AdmittedQueryBasisContext {
                 == &ResolvedHistoricalPathClass::ResolvedRetainedSnapshotPath
             && snapshot.matches_admitted_historical_projection(
                 admission.requested_path().basis_identity(),
-            )?)
+            ))
     }
 
     pub(crate) fn binding(&self) -> &QueryBasisContextBinding {

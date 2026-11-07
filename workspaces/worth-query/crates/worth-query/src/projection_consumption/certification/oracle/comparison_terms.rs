@@ -158,7 +158,7 @@ fn compose_oracle_entity_identity_entry(
     source_row: &str,
     entity_identity: &WorthQueryEntityIdentity,
 ) -> Result<String, IdentityDerivationDenial> {
-    let evidence_identity = entity_identity.evidence_identity()?;
+    let evidence_identity = entity_identity.evidence_identity();
     Ok(seal(
         certification_scope_encoder("projection_consumption_oracle_entity_identity_entry_v1")
             .field_shape(WorthQueryEvidenceTag::new("source_row"), source_row)

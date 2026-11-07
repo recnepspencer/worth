@@ -200,17 +200,21 @@ pub(crate) fn authoritative_mutation_input_identity(
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let declared_entity_identity = command
         .declared_entity_identity_ref()
-        .map(|identity| identity.evidence_identity());
+        .map(|identity| identity.evidence_identity())
+        .transpose()?;
     let declared_collection_identity = command.declared_collection_identity();
-    let aspect_value_identity = command_declared_aspect_value_digest(command).map(|digest| {
-        worth_query_evidence_identity(WorthQueryEvidenceScope::AuthoritativeMutationIntentSeed)
-            .field_shape(WorthQueryEvidenceTag::new("role"), "declared-aspect-values")
-            .field_value(WorthQueryEvidenceTag::new("digest"), digest)
-            .seal()
-    });
+    let aspect_value_identity = command_declared_aspect_value_digest(command)
+        .map(|digest| {
+            worth_query_evidence_identity(WorthQueryEvidenceScope::AuthoritativeMutationIntentSeed)
+                .field_shape(WorthQueryEvidenceTag::new("role"), "declared-aspect-values")
+                .field_value(WorthQueryEvidenceTag::new("digest"), digest)
+                .seal()
+        })
+        .transpose()?;
     let symbolic_target = command
         .symbolic_target_reference()
-        .map(symbolic_target_reference_identity);
+        .map(symbolic_target_reference_identity)
+        .transpose()?;
     let symbolic_aspects = command
         .symbolic_aspect_references()
         .iter()
@@ -242,7 +246,7 @@ pub(crate) fn authoritative_mutation_input_identity(
             )
             .optional_evidence_identity(
                 WorthQueryEvidenceTag::new("declared_entity_identity"),
-                declared_entity_identity.as_ref()?,
+                declared_entity_identity.as_ref(),
             )
             .optional_evidence_identity(
                 WorthQueryEvidenceTag::new("existing_truth_binding"),
@@ -256,11 +260,11 @@ pub(crate) fn authoritative_mutation_input_identity(
             )
             .optional_evidence_identity(
                 WorthQueryEvidenceTag::new("aspect_values"),
-                aspect_value_identity.as_ref()?,
+                aspect_value_identity.as_ref(),
             )
             .optional_evidence_identity(
                 WorthQueryEvidenceTag::new("symbolic_target"),
-                symbolic_target.as_ref()?,
+                symbolic_target.as_ref(),
             )
             .field_evidence_identity_sequence(
                 WorthQueryEvidenceTag::new("symbolic_aspects"),
@@ -272,11 +276,11 @@ pub(crate) fn authoritative_mutation_input_identity(
             )
             .optional_evidence_identity(
                 WorthQueryEvidenceTag::new("naming"),
-                naming_identity.as_ref()?,
+                naming_identity.as_ref(),
             )
             .optional_evidence_identity(
                 WorthQueryEvidenceTag::new("continuity"),
-                continuity_identity.as_ref()?,
+                continuity_identity.as_ref(),
             );
     if let Some(identity_evidence) = declared_entity_identity {
         identity = identity.field_evidence_identity(

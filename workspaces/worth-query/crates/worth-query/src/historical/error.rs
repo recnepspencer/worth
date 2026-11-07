@@ -3,6 +3,7 @@ use super::cost::HistoricalPathCostPosture;
 use super::path_classes::{
     AdmittedHistoricalPathClass, RequestedHistoricalPathClass, ResolvedHistoricalPathClass,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum HistoricalEvaluationFailureClass {
@@ -17,6 +18,7 @@ pub enum HistoricalEvaluationFailureClass {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum HistoricalEvaluationError {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     UnsupportedHistoricalPathRequest {
         requested_path_class: RequestedHistoricalPathClass,
         reason: &'static str,
@@ -165,5 +167,11 @@ impl HistoricalEvaluationError {
                 HistoricalPathCostPosture::HistoricalPathDeniedByUnsupportedPath
             }
         }
+    }
+}
+
+impl From<IdentityDerivationDenial> for HistoricalEvaluationError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
     }
 }

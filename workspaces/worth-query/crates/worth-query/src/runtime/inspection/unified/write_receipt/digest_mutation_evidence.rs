@@ -18,16 +18,20 @@ pub(super) fn append_mutation_evidence_fields(
 ) -> Result<WorthQueryEvidenceIdentityEncoder, IdentityDerivationDenial> {
     let symbolic_target_resolved_entity_identity = symbolic_target_reference_evidence
         .map(WorthQuerySymbolicTargetReferenceEvidence::resolved_entity_identity)
-        .map(|identity| identity.evidence_identity());
+        .map(|identity| identity.evidence_identity())
+        .transpose()?;
     let naming_resolved_target_entity_identity = naming_mutation_evidence
         .and_then(WorthQueryNamingMutationEvidence::resolved_target_entity_identity)
-        .map(|identity| identity.evidence_identity());
+        .map(|identity| identity.evidence_identity())
+        .transpose()?;
     let continuity_resolved_target_entity_identity = continuity_mutation_evidence
         .and_then(WorthQueryContinuityMutationEvidence::resolved_target_entity_identity)
-        .map(|identity| identity.evidence_identity());
+        .map(|identity| identity.evidence_identity())
+        .transpose()?;
     let existing_truth_resolved_entity_identity = existing_truth_binding_evidence
         .map(WorthQueryExistingTruthBindingEvidence::resolved_entity_identity)
-        .map(|identity| identity.evidence_identity());
+        .map(|identity| identity.evidence_identity())
+        .transpose()?;
     let successor_authoritative_identities = continuity_mutation_evidence
         .map(|evidence| evidence.successor_authoritative_identities().to_vec())
         .unwrap_or_default();
@@ -49,7 +53,7 @@ pub(super) fn append_mutation_evidence_fields(
         )
         .optional_evidence_identity(
             WorthQueryEvidenceTag::new("existing_truth_resolved_entity_identity"),
-            existing_truth_resolved_entity_identity.as_ref()?,
+            existing_truth_resolved_entity_identity.as_ref(),
         )
         .optional_evidence_identity(
             WorthQueryEvidenceTag::new("existing_truth_target_collection"),
@@ -71,7 +75,7 @@ pub(super) fn append_mutation_evidence_fields(
         )
         .optional_evidence_identity(
             WorthQueryEvidenceTag::new("symbolic_target_resolved_entity_identity"),
-            symbolic_target_resolved_entity_identity.as_ref()?,
+            symbolic_target_resolved_entity_identity.as_ref(),
         )
         .optional_evidence_identity(
             WorthQueryEvidenceTag::new("symbolic_target_collection"),
@@ -103,7 +107,7 @@ pub(super) fn append_mutation_evidence_fields(
         )
         .optional_evidence_identity(
             WorthQueryEvidenceTag::new("naming_resolved_target_entity_identity"),
-            naming_resolved_target_entity_identity.as_ref()?,
+            naming_resolved_target_entity_identity.as_ref(),
         )
         .optional_evidence_identity(
             WorthQueryEvidenceTag::new("naming_target_collection"),
@@ -143,7 +147,7 @@ pub(super) fn append_mutation_evidence_fields(
         )
         .optional_evidence_identity(
             WorthQueryEvidenceTag::new("continuity_resolved_target_entity_identity"),
-            continuity_resolved_target_entity_identity.as_ref()?,
+            continuity_resolved_target_entity_identity.as_ref(),
         )
         .optional_evidence_identity(
             WorthQueryEvidenceTag::new("continuity_target_collection"),

@@ -85,15 +85,15 @@ impl BridgeExecutionOracle {
             .receipt_digest()
             .ok_or_else(|| incomplete_bridge_record_error("receipt", record.digest()))?;
         let execution_record_identity =
-            bridge_observation_execution_record_subject_identity(record.digest());
+            bridge_observation_execution_record_subject_identity(record.digest())?;
         let oracle = Self::new(
             execution_record_identity,
-            bridge_observation_outcome_subject_identity(outcome_digest),
+            bridge_observation_outcome_subject_identity(outcome_digest)?,
             record
                 .outcome_class()
                 .ok_or_else(|| incomplete_bridge_record_error("outcome_class", record.digest()))?,
-            bridge_observation_request_subject_identity(request_digest),
-            bridge_observation_receipt_subject_identity(receipt_digest),
+            bridge_observation_request_subject_identity(request_digest)?,
+            bridge_observation_receipt_subject_identity(receipt_digest)?,
         )?;
         Ok(match record.execution_receipt_digest() {
             Some(execution_receipt_digest) => oracle.with_execution_receipt_subject_identity(

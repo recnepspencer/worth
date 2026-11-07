@@ -120,145 +120,159 @@ pub fn projection_consumption_slope_report(
         counter_snapshot,
         declaration_slope_digest: compose_slope_digest(
             "declaration",
-            (1..=3).map(|scale| {
-                let lifecycle = control_row_set_lifecycle(scale);
-                (
-                    scale,
-                    vec![
-                        (
-                            "declared",
-                            lifecycle
-                                .facts()
-                                .counters()
-                                .declared_fact_family_count()
-                                .to_string(),
-                        ),
-                        (
-                            "declaration",
-                            lifecycle.declaration().declaration_digest().to_string(),
-                        ),
-                    ],
-                )
-            }),
+            (1..=3)
+                .map(|scale| {
+                    let lifecycle = control_row_set_lifecycle(scale)?;
+                    Ok((
+                        scale,
+                        vec![
+                            (
+                                "declared",
+                                lifecycle
+                                    .facts()
+                                    .counters()
+                                    .declared_fact_family_count()
+                                    .to_string(),
+                            ),
+                            (
+                                "declaration",
+                                lifecycle.declaration().declaration_digest().to_string(),
+                            ),
+                        ],
+                    ))
+                })
+                .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?,
         )?,
         eligibility_slope_digest: compose_slope_digest(
             "eligibility",
-            (1..=3).map(|scale| {
-                let lifecycle = control_row_set_lifecycle(scale);
-                (
-                    scale,
-                    vec![
-                        (
-                            "admitted",
-                            lifecycle
-                                .facts()
-                                .counters()
-                                .admitted_fact_family_count()
-                                .to_string(),
-                        ),
-                        (
-                            "eligibility",
-                            lifecycle.contract().eligibility_digest().to_string(),
-                        ),
-                    ],
-                )
-            }),
+            (1..=3)
+                .map(|scale| {
+                    let lifecycle = control_row_set_lifecycle(scale)?;
+                    Ok((
+                        scale,
+                        vec![
+                            (
+                                "admitted",
+                                lifecycle
+                                    .facts()
+                                    .counters()
+                                    .admitted_fact_family_count()
+                                    .to_string(),
+                            ),
+                            (
+                                "eligibility",
+                                lifecycle.contract().eligibility_digest().to_string(),
+                            ),
+                        ],
+                    ))
+                })
+                .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?,
         )?,
         contract_binding_slope_digest: compose_slope_digest(
             "contract_binding",
-            (1..=3).map(|scale| {
-                let lifecycle = control_row_set_lifecycle(scale);
-                (
-                    scale,
-                    vec![
-                        (
-                            "contract",
-                            lifecycle.contract().contract_digest().to_string(),
-                        ),
-                        (
-                            "query",
-                            lifecycle
-                                .contract()
-                                .query_digest()
-                                .unwrap_or("none")
-                                .to_string(),
-                        ),
-                    ],
-                )
-            }),
+            (1..=3)
+                .map(|scale| {
+                    let lifecycle = control_row_set_lifecycle(scale)?;
+                    Ok((
+                        scale,
+                        vec![
+                            (
+                                "contract",
+                                lifecycle.contract().contract_digest().to_string(),
+                            ),
+                            (
+                                "query",
+                                lifecycle
+                                    .contract()
+                                    .query_digest()
+                                    .unwrap_or("none")
+                                    .to_string(),
+                            ),
+                        ],
+                    ))
+                })
+                .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?,
         )?,
         fact_extraction_slope_digest: compose_slope_digest(
             "fact_extraction",
-            (1..=3).map(|scale| {
-                let lifecycle = control_row_set_lifecycle(scale);
-                let counters = lifecycle.facts().counters();
-                (
-                    scale,
-                    vec![
-                        ("extracted", counters.extracted_fact_count().to_string()),
-                        (
-                            "row_width",
-                            counters.source_row_width_consumed().to_string(),
-                        ),
-                    ],
-                )
-            }),
+            (1..=3)
+                .map(|scale| {
+                    let lifecycle = control_row_set_lifecycle(scale)?;
+                    let counters = lifecycle.facts().counters();
+                    Ok((
+                        scale,
+                        vec![
+                            ("extracted", counters.extracted_fact_count().to_string()),
+                            (
+                                "row_width",
+                                counters.source_row_width_consumed().to_string(),
+                            ),
+                        ],
+                    ))
+                })
+                .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?,
         )?,
         receipt_materialization_slope_digest: compose_slope_digest(
             "receipt_materialization",
-            (1..=3).map(|scale| {
-                let lifecycle = control_row_set_lifecycle(scale);
-                (
-                    scale,
-                    vec![
-                        ("receipt", lifecycle.receipt().receipt_digest().to_string()),
-                        (
-                            "extracted",
-                            lifecycle.receipt().extracted_fact_count().to_string(),
-                        ),
-                    ],
-                )
-            }),
+            (1..=3)
+                .map(|scale| {
+                    let lifecycle = control_row_set_lifecycle(scale)?;
+                    Ok((
+                        scale,
+                        vec![
+                            ("receipt", lifecycle.receipt().receipt_digest().to_string()),
+                            (
+                                "extracted",
+                                lifecycle.receipt().extracted_fact_count().to_string(),
+                            ),
+                        ],
+                    ))
+                })
+                .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?,
         )?,
         envelope_materialization_slope_digest: compose_slope_digest(
             "envelope_materialization",
-            (1..=3).map(|scale| {
-                let lifecycle = control_row_set_lifecycle(scale);
-                (
-                    scale,
-                    vec![
-                        (
-                            "envelope",
-                            lifecycle.envelope().envelope_digest().to_string(),
-                        ),
-                        (
-                            "authority_reopen",
-                            lifecycle.envelope().authority_reopen_count().to_string(),
-                        ),
-                    ],
-                )
-            }),
+            (1..=3)
+                .map(|scale| {
+                    let lifecycle = control_row_set_lifecycle(scale)?;
+                    Ok((
+                        scale,
+                        vec![
+                            (
+                                "envelope",
+                                lifecycle.envelope().envelope_digest().to_string(),
+                            ),
+                            (
+                                "authority_reopen",
+                                lifecycle.envelope().authority_reopen_count().to_string(),
+                            ),
+                        ],
+                    ))
+                })
+                .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?,
         )?,
         support_lookup_slope_digest: compose_slope_digest(
             "support_lookup",
-            (1..=3).map(|scale| {
-                let row_set = certification_row_set(scale);
-                let support = discover_projection_consumption_support(
-                    &ProjectionConsumptionSource::from_relational_row_set(&row_set),
-                );
-                (
-                    scale,
-                    vec![
-                        ("support_width", support.rows().len().to_string()),
-                        (
-                            "support_digest",
-                            compose_support_matrix_support_width_digest(
-                                support.rows().iter().map(|row| row.support_digest()),
+            (1..=3)
+                .map(|scale| {
+                    let row_set = certification_row_set(scale);
+                    let support = discover_projection_consumption_support(
+                        &ProjectionConsumptionSource::from_relational_row_set(&row_set),
+                    )?;
+                    Ok((
+                        scale,
+                        vec![
+                            ("support_width", support.rows().len().to_string()),
+                            (
+                                "support_digest",
+                                compose_support_matrix_support_width_digest(
+                                    support.rows().iter().map(|row| row.support_digest()),
+                                )?,
                             ),
-                        ),
-                    ],
-                )
-            })?,
+                        ],
+                    ))
+                })
+                .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?,
         )?,
     })
 }

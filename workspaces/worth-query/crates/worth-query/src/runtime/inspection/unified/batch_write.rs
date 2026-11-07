@@ -68,10 +68,9 @@ impl WorthQueryBatchWriteReceiptInspection {
                 basis_lane: receipt.basis_lane().as_str(),
                 batch_digest: receipt.batch_identity(),
                 graph_composition_breadth: &graph_composition_breadth,
-                graph_composition_lifecycle_outcomes: graph_composition_lifecycle_outcomes
-                    .as_ref()?,
+                graph_composition_lifecycle_outcomes: graph_composition_lifecycle_outcomes.as_ref(),
                 graph_composition_program: graph_composition_program.as_ref(),
-                graph_composition_evidence: graph_composition_evidence.as_ref()?,
+                graph_composition_evidence: graph_composition_evidence.as_ref(),
                 batch_mutation_evidence: &batch_mutation_evidence,
                 commit_identities: &commit_identities,
                 journal_position_identities: &journal_position_identities,

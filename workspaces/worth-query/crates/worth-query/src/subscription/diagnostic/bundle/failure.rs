@@ -197,7 +197,7 @@ impl QuerySubscriptionDiagnosticFailure {
             error.failure_identity().clone(),
             error.failure_identity().clone(),
             error.denial_kind().as_str(),
-            error.failure_identity(),
+            error.failure_identity()?,
         )?)
     }
 

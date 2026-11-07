@@ -31,7 +31,7 @@ pub trait WorthQueryRuntimeSignalSinkAdapter {
         Ok(SignalInvalidationBoundaryReceipt::from_mutation_receipt(
             receipt,
             routing_receipt,
-        ))
+        )?)
     }
 
     fn route_write_receipt(

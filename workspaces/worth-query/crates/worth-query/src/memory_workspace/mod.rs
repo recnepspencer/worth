@@ -224,13 +224,13 @@ impl WorthQueryMutationReceipt {
         ) {
             return Ok(self);
         }
-        self.commit_identity = self.commit_identity.admit_runtime_write_authority()?;
-        self.snapshot_identity = self.snapshot_identity.admit_runtime_backend_authority()?;
+        self.commit_identity = self.commit_identity.admit_runtime_write_authority();
+        self.snapshot_identity = self.snapshot_identity.admit_runtime_backend_authority();
         for delta in &mut self.deltas {
             delta.entity_identity = delta
                 .entity_identity
                 .clone()
-                .admit_runtime_write_authority()?;
+                .admit_runtime_write_authority();
         }
         Ok(self)
     }

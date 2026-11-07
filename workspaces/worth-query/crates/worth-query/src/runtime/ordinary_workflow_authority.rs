@@ -327,7 +327,7 @@ impl WorthQueryRuntime {
                 )
                 .field_evidence_identity(
                     WorthQueryEvidenceTag::new("snapshot"),
-                    &snapshot_identity.evidence_identity()?,
+                    &snapshot_identity.evidence_identity(),
                 );
         if let Some(label) = session_label.as_ref() {
             identity = identity.field_value(

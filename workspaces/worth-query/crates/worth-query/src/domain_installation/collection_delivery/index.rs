@@ -66,7 +66,7 @@ impl WorthQueryCollectionMaintenanceIndex {
             .collect::<BTreeMap<_, _>>();
         let maintenance_targets = maintenance_targets(&request, &grouping_fields);
         for entity in entities {
-            let source_identity = entity.identity().terminal_projection_for_reporting()?;
+            let source_identity = entity.identity().terminal_projection_for_reporting();
             let handle = handles_by_source
                 .get(source_identity.as_str())
                 .expect("validated collection identity facts must retain every execution row");

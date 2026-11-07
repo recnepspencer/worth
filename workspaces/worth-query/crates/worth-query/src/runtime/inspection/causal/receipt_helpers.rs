@@ -69,7 +69,7 @@ pub(super) fn causal_evidence_reference_identity_digest(
 pub(super) fn write_observation_query_identity(
     inspection: &WorthQueryWriteReceiptInspection,
 ) -> Result<CausalObservationQueryIdentity, IdentityDerivationDenial> {
-    let snapshot_identity = inspection.snapshot_identity().evidence_identity()?;
+    let snapshot_identity = inspection.snapshot_identity().evidence_identity();
     let mut encoder =
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::CausalObservationQuery)
             .field_shape(WorthQueryEvidenceTag::new("family"), "write_receipt")

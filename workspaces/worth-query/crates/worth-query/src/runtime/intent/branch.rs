@@ -75,7 +75,7 @@ impl WorthQueryBranchIntentReceipt {
                 )
                 .field_evidence_identity(
                     WorthQueryEvidenceTag::new("basis_snapshot_identity"),
-                    &basis_snapshot_identity.evidence_identity()?,
+                    &basis_snapshot_identity.evidence_identity(),
                 )
                 .seal()?;
         let receipt_identity =

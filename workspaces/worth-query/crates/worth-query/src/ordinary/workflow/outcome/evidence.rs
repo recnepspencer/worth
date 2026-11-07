@@ -53,7 +53,7 @@ impl WorthQueryPromotionEligibility {
         )
         .field_evidence_identity(
             WorthQueryEvidenceTag::new("snapshot"),
-            &snapshot_identity.evidence_identity()?,
+            &snapshot_identity.evidence_identity(),
         )
         .seal()?;
         Ok(Self {

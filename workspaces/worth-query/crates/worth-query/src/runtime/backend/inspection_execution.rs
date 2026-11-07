@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQueryWorkspaceError;
 use crate::runtime::CausalInspectionMaterializationError;
 
@@ -9,6 +10,7 @@ pub enum WorthQueryBackendInspectionErrorKind {
 
 #[derive(Debug)]
 pub enum WorthQueryBackendInspectionError {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     Unavailable(WorthQueryWorkspaceError),
     Materialization(CausalInspectionMaterializationError),
 }
@@ -36,5 +38,11 @@ impl WorthQueryBackendInspectionError {
 impl From<CausalInspectionMaterializationError> for WorthQueryBackendInspectionError {
     fn from(error: CausalInspectionMaterializationError) -> Self {
         Self::Materialization(error)
+    }
+}
+
+impl From<IdentityDerivationDenial> for WorthQueryBackendInspectionError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
     }
 }

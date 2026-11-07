@@ -96,7 +96,7 @@ impl WorthQueryContinuationExecutionReadmissionStop {
     pub(crate) fn new(
         kind: WorthQueryContinuationExecutionReadmissionStopKind,
         reason: impl Into<String>,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let next_action = next_action_for(kind);
         let counters =
             WorthQueryContinuationExecutionReadmissionCounters::denied_before_later_work();
@@ -122,14 +122,14 @@ impl WorthQueryContinuationExecutionReadmissionStop {
             WorthQueryEvidenceTag::new("execution_attempts"),
             counters.execution_attempts().to_string(),
         )
-        .seal()?;
-        Ok(Self {
+        .seal().expect("fixed readmission stop grammar: enum labels and three primitive counters; reason is not digest material");
+        Self {
             kind,
             next_action,
             counters,
             reason,
             stop_identity,
-        })
+        }
     }
 
     pub const fn kind(&self) -> WorthQueryContinuationExecutionReadmissionStopKind {

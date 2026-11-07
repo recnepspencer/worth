@@ -295,7 +295,7 @@ fn existing_truth_binding_identity(
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("resolved"),
-                &resolved_target_identity.evidence_identity()?,
+                &resolved_target_identity.evidence_identity(),
             )
             .optional_evidence_identity(
                 WorthQueryEvidenceTag::new("collection"),

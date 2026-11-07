@@ -95,7 +95,7 @@ impl WorthQueryLiveArtifactBundle {
         snapshot_identity: WorthQuerySnapshotIdentity,
         reads: BTreeMap<WorthQueryLiveArtifactTarget, WorthQueryLiveReadResult>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        let snapshot_evidence_identity = snapshot_identity.evidence_identity()?;
+        let snapshot_evidence_identity = snapshot_identity.evidence_identity();
         let bundle_digest =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LiveArtifactBundle)
                 .field_evidence_identity(

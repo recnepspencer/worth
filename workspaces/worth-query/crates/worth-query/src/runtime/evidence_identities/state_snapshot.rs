@@ -54,7 +54,8 @@ pub(in crate::runtime) fn runtime_state_snapshot_result_shape_write_receipt_iden
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let declared_entity_identity = receipt
         .declared_entity_identity()
-        .map(|identity| identity.evidence_identity());
+        .map(|identity| identity.evidence_identity())
+        .transpose()?;
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_shape(
@@ -75,7 +76,7 @@ pub(in crate::runtime) fn runtime_state_snapshot_result_shape_write_receipt_iden
             )
             .optional_evidence_identity(
                 WorthQueryEvidenceTag::new("declared_entity_identity"),
-                declared_entity_identity.as_ref()?,
+                declared_entity_identity.as_ref(),
             )
             .seal()?,
     )

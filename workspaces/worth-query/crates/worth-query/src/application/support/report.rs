@@ -192,8 +192,7 @@ impl WorthQuerySupportReport {
         let query_composition_support_profile = support_matrix
             .descriptor(WorthQueryCapabilityFamily::QueryComposition)
             .filter(|descriptor| descriptor.status() == WorthQueryCapabilityStatus::Admitted)
-            .map(|_| runtime_backed_query_composition_support_profile())
-            .transpose()?;
+            .map(|_| runtime_backed_query_composition_support_profile());
         let query_context_support_profile = support_matrix
             .descriptor(WorthQueryCapabilityFamily::QueryContext)
             .filter(|descriptor| descriptor.status() == WorthQueryCapabilityStatus::Admitted)
@@ -202,8 +201,7 @@ impl WorthQuerySupportReport {
         let identity_evolution_support_profile = support_matrix
             .descriptor(WorthQueryCapabilityFamily::IdentityEvolution)
             .filter(|descriptor| descriptor.status() == WorthQueryCapabilityStatus::Admitted)
-            .map(|_| runtime_backed_direct_identity_evolution_support_profile())
-            .transpose()?;
+            .map(|_| runtime_backed_direct_identity_evolution_support_profile());
         let validated_config_digest = config.validated_digest().to_string();
         let counters = WorthQuerySupportReportCounters::generated_once();
         let report_identity =
@@ -262,8 +260,7 @@ impl WorthQuerySupportReport {
                     WorthQueryEvidenceTag::new("query_context_profile_digest"),
                     query_context_support_profile
                         .as_ref()
-                        .map(WorthQueryQueryContextSupportProfile::profile_digest)
-                        .transpose()?,
+                        .map(WorthQueryQueryContextSupportProfile::profile_digest),
                 )
                 .optional_value(
                     WorthQueryEvidenceTag::new("identity_evolution_profile_digest"),

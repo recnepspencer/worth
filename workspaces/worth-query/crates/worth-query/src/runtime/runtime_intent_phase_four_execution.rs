@@ -199,7 +199,7 @@ fn authoritative_execution_provenance(
     let snapshot_identity = execution
         .mutation_receipt()
         .snapshot_identity
-        .evidence_identity()?;
+        .evidence_identity();
     Ok(
         WorthQueryIntentExecutionProvenance::for_shared_execution_typed_parts(
             binding.family(),
@@ -221,7 +221,7 @@ fn effect_execution_provenance(
     let snapshot_identity = execution
         .mutation_receipt()
         .snapshot_identity
-        .evidence_identity()?;
+        .evidence_identity();
     Ok(
         WorthQueryIntentExecutionProvenance::for_shared_execution_typed_parts(
             binding.family(),

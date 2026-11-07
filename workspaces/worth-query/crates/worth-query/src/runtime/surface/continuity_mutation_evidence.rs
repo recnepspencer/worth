@@ -102,7 +102,7 @@ impl WorthQueryContinuityMutationEvidence {
                 outcome: outcome_class.as_str(),
                 prior: &prior_authoritative_identity,
                 successors: &successor_authoritative_identities,
-                basis_binding: basis_binding_digest.as_ref()?,
+                basis_binding: basis_binding_digest.as_ref(),
                 resolved_target: resolved_target_entity_identity.as_ref(),
                 target_collection: target_collection.as_ref()?,
             })?;
@@ -154,7 +154,7 @@ impl WorthQueryContinuityMutationEvidence {
                 outcome: intent.outcome_class().as_str(),
                 prior: &prior_authoritative_identity,
                 successors: &successor_authoritative_identities,
-                basis_binding: basis_binding_digest.as_ref()?,
+                basis_binding: basis_binding_digest.as_ref(),
                 resolved_target: resolved_target_entity_identity,
                 target_collection: target_collection.as_ref(),
             })?;

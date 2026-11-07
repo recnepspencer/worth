@@ -31,7 +31,7 @@ pub(crate) fn lower_policy_resolution(
                 policy,
                 source_record,
                 requested_path_class,
-            ))
+            )?)
         }
         BridgeTruthViewPolicyResolution::Rejected(rejection) => Err(
             HistoricalEvaluationError::UnsupportedHistoricalPathRequest {
@@ -129,7 +129,7 @@ pub(crate) fn lower_materialization_from_decision_log(
                 .declaration_identity()
                 .bridge_admission_evidence()
                 .terminal_projection_for_reporting(),
-        ),
+        )?,
         decision_log.materialization_path(),
     )
 }
@@ -146,7 +146,7 @@ pub(crate) fn lower_materialization_from_artifact(
                 .declaration_identity()
                 .bridge_admission_evidence()
                 .terminal_projection_for_reporting(),
-        ),
+        )?,
         artifact.materialization_path(),
     )
 }

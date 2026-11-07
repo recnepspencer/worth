@@ -37,7 +37,7 @@ impl WorthQueryLiveReadReceipt {
         materialized_fact_posture: Option<ProjectionMaterializedFactPosture>,
         rows: &[crate::memory_workspace::WorthQueryEntity],
     ) -> Result<Self, IdentityDerivationDenial> {
-        let snapshot_evidence_identity = snapshot_identity.evidence_identity()?;
+        let snapshot_evidence_identity = snapshot_identity.evidence_identity();
         Ok(Self {
             view_name: installation.view_name().to_string(),
             installation_digest: installation.installation_projection().label().to_string(),

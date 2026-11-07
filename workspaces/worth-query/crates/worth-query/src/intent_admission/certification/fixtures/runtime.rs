@@ -200,7 +200,7 @@ impl WorthQueryRuntimeSchemaAdapter for CertificationSchemaAdapter {
         request: &DeclarativeLiveQueryRequest,
         _schema_view: &QuerySchemaView,
     ) -> Result<LiveViewDeclarationAdmissionBoundaryReceipt, WorthQueryWorkspaceError> {
-        let receipt = self.build_live_view_declaration_admission_receipt(name, request);
+        let receipt = self.build_live_view_declaration_admission_receipt(name, request)?;
         Ok(self.build_live_view_declaration_boundary_receipt(name, request, receipt))
     }
 }
@@ -219,7 +219,7 @@ impl WorthQueryRuntimeSourceAdapter for CertificationSourceAdapter {
     ) -> Result<WorthQueryLiveViewHandle, WorthQueryWorkspaceError> {
         let live_target = WorthQueryLiveArtifactTarget::from_view_name(name.clone());
         self.live_views
-            .insert(live_target, request.target_collection_identity());
+            .insert(live_target, request.target_collection_identity()?);
         Ok(WorthQueryLiveViewHandle::new(name))
     }
 

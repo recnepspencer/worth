@@ -3,13 +3,13 @@ use super::*;
 pub(super) fn write_receipt_commit_evidence_identity(
     commit_identity: &WorthQueryCommitIdentity,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(commit_identity.evidence_identity()?)
+    Ok(commit_identity.evidence_identity())
 }
 
 pub(super) fn write_receipt_snapshot_evidence_identity(
     snapshot_identity: &WorthQuerySnapshotIdentity,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(snapshot_identity.evidence_identity()?)
+    Ok(snapshot_identity.evidence_identity())
 }
 
 pub(super) fn write_receipt_committed_truth_identity(
@@ -34,7 +34,7 @@ pub(super) fn write_receipt_committed_truth_identity(
         )
         .field_evidence_identity(
             crate::evidence_identity::WorthQueryEvidenceTag::new("committed_write_identity"),
-            &receipt.commit_identity.evidence_identity()?,
+            &receipt.commit_identity.evidence_identity(),
         )
         .field_value_sequence(
             crate::evidence_identity::WorthQueryEvidenceTag::new("committed_delta_descriptor"),
