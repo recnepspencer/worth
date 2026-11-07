@@ -64,12 +64,17 @@ fn install_request(
         }
         if !historical {
             for (_, adjacency) in table.iter() {
-                let ids: BTreeSet<_> = adjacency.current_ids().iter().copied().collect();
-                let indexed: BTreeSet<_> = adjacency
-                    .checkpoint_kind_memberships(basis)
-                    .into_iter()
-                    .flat_map(|(_, ids)| ids)
-                    .collect();
+                let mut ids = BTreeSet::new();
+                for &id in adjacency.current_ids() {
+                    checkpoint(1 + 11 * (ids.len() + 1).ilog2() as u64, 0)?;
+                    ids.insert(id);
+                }
+                let mut indexed = BTreeSet::new();
+                for (_, id) in adjacency.kind_memberships(basis) {
+                    checkpoint(1 + 11 * (indexed.len() + 1).ilog2() as u64, 0)?;
+                    indexed.insert(id);
+                }
+                checkpoint(ids.len() as u64, 0)?;
                 if ids != indexed {
                     return Err(Cause::IntegrityMismatch);
                 }

@@ -69,9 +69,11 @@ pub(in crate::durability::checkpoints) fn readmit_state_using(
             )?;
         }
     }
-    admission.charge(add(retained, scratch)?)?;
+    // Fixed Extra construction executes even when no aspect state exists.
+    admission.charge(owner_bytes)?;
     let memory = admission.reserve(retained)?;
     let _scratch = admission.reserve(scratch)?;
+    super::readmission_work::state(state.as_ref(), contracts, admission)?;
     Ok((readmit_state(state, contracts)?, memory))
 }
 

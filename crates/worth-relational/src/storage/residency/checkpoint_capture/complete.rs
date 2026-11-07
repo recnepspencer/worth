@@ -84,12 +84,42 @@ impl RelationalRegionResidency {
         symbols: &dyn crate::symbols::data::SymbolTextLookup,
     ) -> Result<CapturedCompleteRegion, RelationalRecoveryStop> {
         let region = lease.resident_region();
+        let computed;
+        let commitment = match region.commitment.as_ref() {
+            Some(commitment) => commitment,
+            None => {
+                computed = PartitionContentCommitment::capture_full_for_request(
+                    &region.partition,
+                    symbols,
+                    request,
+                )
+                .map_err(|cause| match cause {
+                    PartitionContentDigestError::Request(cause) => {
+                        RelationalRecoveryStop::Request(cause)
+                    }
+                    PartitionContentDigestError::UnresolvedContentSymbol(symbol) => {
+                        RelationalStorageUnavailable {
+                            subject: RelationalStorageSubject::Symbols {
+                                first: symbol,
+                                last: symbol,
+                            },
+                            cause: Cause::SourceUnavailable,
+                        }
+                        .into()
+                    }
+                    PartitionContentDigestError::InvalidHistoryCoverage
+                    | PartitionContentDigestError::Encoding
+                    | PartitionContentDigestError::AllocationAccountingOverflow => {
+                        self.capture_failure(Cause::IntegrityMismatch).into()
+                    }
+                })?
+                .0;
+                &computed
+            }
+        };
         let captured = super::super::region_capture::complete::capture(
             &region.partition,
-            region
-                .commitment
-                .as_ref()
-                .ok_or_else(|| self.capture_failure(Cause::SourceUnavailable))?,
+            commitment,
             schema,
             schema_digest,
             symbols,
@@ -99,11 +129,7 @@ impl RelationalRegionResidency {
         let leaf = RelationalCheckpointRegion {
             kind_authority: captured.kind_authority,
             partition_id: partition.partition_id,
-            content_digest: region
-                .commitment
-                .as_ref()
-                .unwrap()
-                .digest(partition.partition_id),
+            content_digest: commitment.digest(partition.partition_id),
             entity_slots: partition.entity_arena.slot_count(),
             relation_slots: partition.relation_arena.slot_count(),
             unavailable_records: partition.entity_arena.lifecycle_counts().unavailable

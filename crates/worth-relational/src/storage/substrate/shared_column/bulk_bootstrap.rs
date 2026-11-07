@@ -11,6 +11,7 @@ struct Level<T: StoredValue> {
 }
 impl<T: StoredValue> Level<T> {
     fn allocate(count: usize, request: Option<&ExecutionRequest<'_, '_>>) -> Result<Self, Cause> {
+        charge(request, bytes::<Arc<ColumnNode<T>>>(count)?)?;
         let memory = crate::storage::substrate::node_memory::reserve(
             request,
             crate::storage::substrate::node_memory::array::<Arc<ColumnNode<T>>>(count),
@@ -37,6 +38,7 @@ impl<T: StoredValue> SharedColumn<T> {
         values: Vec<T::Value>,
         request: Option<&ExecutionRequest<'_, '_>>,
     ) -> Result<Self, Cause> {
+        charge(request, bytes::<T::Value>(values.len())?)?;
         Self::dense_carriers_using(values.into_iter().map(T::from_value), request)
     }
     pub(crate) fn from_dense_carriers(values: Vec<T>) -> Self {
@@ -63,6 +65,11 @@ impl<T: StoredValue> SharedColumn<T> {
         let mut input = values;
         let mut level = Level::allocate(len.div_ceil(PAGE_LEN), request)?;
         while input.len() != 0 {
+            let work = Arc::<ColumnNode<T>>::layout_bytes()
+                .checked_add(bytes::<Option<T>>(PAGE_LEN)?)
+                .and_then(|n| n.checked_add(bytes::<T>(input.len().min(PAGE_LEN)).ok()?))
+                .ok_or(Cause::ChargedBytesOverflow)?;
+            charge(request, work)?;
             let mut page = ColumnNode::allocate(0, request)?;
             let node = Arc::get_mut(&mut page).expect("new page is uniquely owned");
             let ColumnStorage::Page(rows) = &mut node.storage else {
@@ -81,6 +88,13 @@ impl<T: StoredValue> SharedColumn<T> {
             let Level { values, memory } = level;
             let mut children = values.into_iter();
             while let Some(left) = children.next() {
+                // The initial branch and its final counters/children both initialize.
+                charge(
+                    request,
+                    Arc::<ColumnNode<T>>::layout_bytes()
+                        .checked_add(bytes::<ColumnNode<T>>(1)?)
+                        .ok_or(Cause::ChargedBytesOverflow)?,
+                )?;
                 let mut parent = ColumnNode::allocated_branch(Some(left), request)?;
                 let node = Arc::get_mut(&mut parent).expect("new parent is uniquely owned");
                 let right = children.next();
@@ -110,5 +124,24 @@ impl<T: StoredValue> SharedColumn<T> {
             len,
             default: None,
         })
+    }
+}
+
+fn bytes<T>(count: usize) -> Result<u64, Cause> {
+    crate::storage::substrate::node_memory::array::<T>(count).ok_or(Cause::ChargedBytesOverflow)
+}
+fn charge(request: Option<&ExecutionRequest<'_, '_>>, units: u64) -> Result<(), Cause> {
+    let Some(request) = request else {
+        return Ok(());
+    };
+    let mut outcome = None;
+    let scope = request.run_native_with_checkpoint(|context| {
+        outcome = Some(crate::execution::request_stage::checkpoint(context, units));
+    });
+    match (scope, outcome) {
+        (_, Some(Err(cause))) => Err(worth_execution::WorkCeilingDenial::Stopped(cause).into()),
+        (Err(cause), _) => Err(cause.into()),
+        (Ok(_), Some(Ok(()))) => Ok(()),
+        (Ok(_), None) => unreachable!("completed dense work admission executes its callback"),
     }
 }

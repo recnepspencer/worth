@@ -1,3 +1,4 @@
+mod head_validation;
 pub(super) mod materialization_funding;
 use crate::identity::data::PartitionId;
 use materialization_funding as funding;
@@ -44,15 +45,20 @@ pub(super) fn load_head(
     .map_err(|cause| unavailable(cold, cause))?;
     let quote = funding::region_image::head(funding::Raw(frame.payload), contract_bound, execution)
         .map_err(|cause| funding::at_region(cause, cold.partition_id))?;
-    funding::work(execution, funding::sum(quote.wire, quote.native)?)?;
+    // Capacity quotes reserve backing; decoding pays for the bytes it visits.
+    funding::work(execution, frame.payload.len() as u64)?;
     let memory = funding::MaterializationFunding::admit(quote, execution)?;
     let (mut partition, frontiers, mut historical) = (|| -> Result<_, Failure> {
         let head: RegionHeadImage =
             rmp_serde::from_slice(frame.payload).map_err(|_| unavailable(cold, Cause::Damaged))?;
-        super::kind_commitment::verify(&head.kind_projection, cold.kind_authority.head)
-            .map_err(|cause| unavailable(cold, cause))?;
-        super::kind_commitment::verify(&head.history_kind_projection, cold.kind_authority.history)
-            .map_err(|cause| unavailable(cold, cause))?;
+        head_validation::verify_kind(&head.kind_projection, cold.kind_authority.head, execution)
+            .map_err(|cause| funding::at_region(cause, cold.partition_id))?;
+        head_validation::verify_kind(
+            &head.history_kind_projection,
+            cold.kind_authority.history,
+            execution,
+        )
+        .map_err(|cause| funding::at_region(cause, cold.partition_id))?;
         if head.partition.partition_id != cold.partition_id {
             return Err(unavailable(cold, Cause::Damaged).into());
         }
@@ -77,13 +83,13 @@ pub(super) fn load_head(
             AdjacencyKindBasis::Current,
             execution,
         )?;
-        verify_buckets(
+        head_validation::verify_buckets(
             &partition,
             &head.adjacency_kinds,
             &head.reverse_adjacency_kinds,
-            AdjacencyKindBasis::Current,
+            execution,
         )
-        .map_err(|cause| unavailable(cold, cause))?;
+        .map_err(|cause| funding::at_region(cause, cold.partition_id))?;
         super::kind_projection::rebuild_head_history_for_request(
             &mut partition,
             &head.history_kind_projection,
@@ -91,6 +97,7 @@ pub(super) fn load_head(
         )?;
         let mut historical = BTreeMap::<usize, Vec<_>>::new();
         for claim in head.history_kind_projection {
+            funding::work(execution, 1 + 11 * (historical.len() + 1).ilog2() as u64)?;
             if claim.relation.partition_id == cold.partition_id {
                 historical
                     .entry(claim.relation.slot_index())
@@ -100,8 +107,10 @@ pub(super) fn load_head(
         }
         Ok((partition, head.history_frontiers, historical))
     })()?;
-    cold.symbols
-        .demand_symbol_ids(execution, super::required_symbols::collect(&partition))?;
+    cold.symbols.demand_symbol_ids(
+        execution,
+        super::required_symbols::collect_for_request(&partition, execution)?,
+    )?;
     let symbols = cold.symbols.interner_snapshot();
     let commitment = PartitionContentCommitment::capture_head_for_request(
         &partition, &symbols, &frontiers, execution,
@@ -226,8 +235,10 @@ pub(super) fn load_full(
         .map_err(|cause| unavailable(cold, cause))?;
         Ok((partition, retained))
     })()?;
-    cold.symbols
-        .demand_symbol_ids(execution, super::required_symbols::collect(&partition))?;
+    cold.symbols.demand_symbol_ids(
+        execution,
+        super::required_symbols::collect_for_request(&partition, execution)?,
+    )?;
     let symbols = cold.symbols.interner_snapshot();
     let (commitment, _) =
         PartitionContentCommitment::capture_full_for_request(&partition, &symbols, execution)

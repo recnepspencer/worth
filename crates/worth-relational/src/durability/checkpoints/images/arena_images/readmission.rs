@@ -147,6 +147,7 @@ pub(super) fn arena<K: CheckpointArenaKind>(
             admission.charge(1)?;
             let kind = K::meta_kind_from_image(&value);
             K::plan(catalog, kind).ok_or_else(|| missing_plan(kind))?;
+            admission.charge(StorageAllocation::<K::Meta>::layout_bytes())?;
             row.push(StorageAllocation::new(K::meta_from_image_using(
                 value, contracts, admission,
             )?));
@@ -207,7 +208,9 @@ pub(super) fn arena<K: CheckpointArenaKind>(
                 .checked_add(value.capacity() as u64)
                 .ok_or(Cause::ChargedBytesOverflow)?;
         }
-        admission.charge(bytes)?;
+        admission.charge(StorageAllocation::<
+            std::collections::BTreeMap<crate::symbols::data::Symbol, String>,
+        >::layout_bytes())?;
         diagnostics.push(StorageAllocation::from_reserved(
             row,
             admission.reserve(bytes)?,

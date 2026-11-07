@@ -58,13 +58,17 @@ fn drive(
         execution: request,
         stopped: std::cell::Cell::new(None),
     };
-    let result = operation(&funding, &mut |_, _| {
+    let result = operation(&funding, &mut |units, _| {
         if funding.stopped.get().is_some() {
             return Err(Cause::SourceUnavailable);
         }
-        match request.consult() {
+        match crate::storage::residency::region_load::materialization_funding::work(request, units)
+        {
             Ok(()) => Ok(()),
-            Err(cause) => Err(funding.stop(cause.into())),
+            Err(Failure::Request(cause)) => Err(funding.stop(cause)),
+            Err(Failure::Content(_) | Failure::StorageUnavailable(_)) => {
+                unreachable!("work admission has only request outcomes")
+            }
         }
     });
     if let Some(cause) = funding.stopped.get() {
