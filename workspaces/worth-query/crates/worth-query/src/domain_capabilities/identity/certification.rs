@@ -170,7 +170,7 @@ pub(crate) fn compose_certification_bundle_digest(
     let output_entries = outputs
         .into_iter()
         .map(|(name, value)| compose_certification_bundle_output_entry_digest(name, value.as_ref()))
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     Ok(compose_certification_sequence_digest(
         "domain_capability_certification_bundle_v1",
         "output",

@@ -74,9 +74,8 @@ pub(super) fn bridge_parity_receipt_identity(
     parity_class: QuerySubscriptionBridgeParityClass,
     comparison_width_identity: &WorthQueryEvidenceIdentity,
     semantic_rebuild_count: usize,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "query_subscription_bridge_parity_receipt_v1",
@@ -97,8 +96,7 @@ pub(super) fn bridge_parity_receipt_identity(
                 WorthQueryEvidenceTag::new("semantic_rebuild_count"),
                 semantic_rebuild_count,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 #[cfg(test)]
@@ -108,9 +106,8 @@ pub(super) fn bridge_parity_comparison_identity(
     bridge_declaration_identity: &WorthQueryEvidenceIdentity,
     witness_identity: &WorthQueryEvidenceIdentity,
     activation_identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "query_subscription_bridge_parity_comparison_v1",
@@ -132,8 +129,7 @@ pub(super) fn bridge_parity_comparison_identity(
                 WorthQueryEvidenceTag::new("activation"),
                 activation_identity,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 #[cfg(test)]

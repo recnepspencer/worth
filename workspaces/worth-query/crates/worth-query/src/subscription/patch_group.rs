@@ -74,13 +74,13 @@ impl QueryPatchGroup {
         kind: QueryPatchGroupKind,
         source_identity: &WorthQueryEvidenceIdentity,
         width: u64,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        let patch_group_identity = patch_group_identity(kind, source_identity, width)?;
-        Ok(Self {
+    ) -> Self {
+        let patch_group_identity = patch_group_identity(kind, source_identity, width);
+        Self {
             kind,
             width,
             patch_group_identity,
-        })
+        }
     }
 
     pub fn kind(&self) -> QueryPatchGroupKind {

@@ -165,10 +165,8 @@ pub(super) fn lower_runtime_envelope(
             )
             .seal()?,
         )?;
-    let boundary = WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(
-        &route,
-        &retained_evidence,
-    )?;
+    let boundary =
+        WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(&route, &retained_evidence);
 
     Ok(WorthQueryLowerRuntimeBoundaryEnvelope::from_route_plan(
         WorthQueryLowerRuntimeSeamKey::SignalInvalidationRouting,

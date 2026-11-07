@@ -153,7 +153,7 @@ pub(in crate::runtime) fn execute_runtime_basis_context_read_graph(
         receipt_snapshot_identity,
         &context_execution,
         &rows,
-    )?;
+    );
     let product = match maintenance_source_rows {
         Some(source_rows) => WorthQueryReadResult::new_with_source_rows(rows, source_rows, receipt),
         None => WorthQueryReadResult::new(rows, receipt),
@@ -233,7 +233,7 @@ fn context_allows_runtime_materialization(
     Ok(match context.family() {
         QueryContextFamily::CurrentBranchHead => true,
         QueryContextFamily::HistoricalSnapshot => {
-            context.admits_runtime_snapshot(runtime_snapshot_identity)?
+            context.admits_runtime_snapshot(runtime_snapshot_identity)
         }
         QueryContextFamily::BranchHead
         | QueryContextFamily::HistoricalCommit

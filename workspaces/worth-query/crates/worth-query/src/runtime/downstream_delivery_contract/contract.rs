@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryRuntimeDownstreamDeliveryClass {
@@ -49,13 +50,13 @@ pub struct WorthQueryRuntimeDownstreamDeliveryContract {
 impl WorthQueryRuntimeDownstreamDeliveryContract {
     pub fn from_support_profile(
         profile: &WorthQueryRuntimeSupportProfile,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         Ok(Self::from_backend_posture(profile.posture())?)
     }
 
     pub fn from_backend_posture(
         backend_posture: WorthQueryRuntimeBackendPosture,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let support = worth_query_lower_runtime_support_matrix();
         let runtime_resume = support
             .support_for(WorthQueryLowerRuntimeSeamKey::BasisReadmissionFromSubscriptionEvidence)
@@ -82,7 +83,7 @@ impl WorthQueryRuntimeDownstreamDeliveryContract {
             &runtime_resume_support_identity,
             durable_resume_support_status,
             &durable_resume_support_identity,
-        )?;
+        );
         Ok(Self {
             backend_posture,
             runtime_resume_support_status,

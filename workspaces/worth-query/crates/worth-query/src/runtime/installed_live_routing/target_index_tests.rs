@@ -2,7 +2,7 @@ use super::*;
 use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[test]
-fn relevance_index_returns_only_exact_installed_targets() {
+fn relevance_index_returns_only_exact_installed_targets() -> Result<(), IdentityDerivationDenial> {
     let mut index = WorthQueryInstalledLiveTargetIndex::default();
     for ordinal in 0..64 {
         index.register(
@@ -18,13 +18,16 @@ fn relevance_index_returns_only_exact_installed_targets() {
 
     let expected = BTreeSet::from([first, second]);
     assert_eq!(
-        index.affected_targets(&mutation("identity")).targets,
+        index.affected_targets(&mutation("identity")?).targets,
         expected
     );
+
+    Ok(())
 }
 
 #[test]
-fn canonical_parent_path_selects_descendant_dependency_without_sibling_scan() {
+fn canonical_parent_path_selects_descendant_dependency_without_sibling_scan(
+) -> Result<(), IdentityDerivationDenial> {
     let mut index = WorthQueryInstalledLiveTargetIndex::default();
     let target = WorthQueryLiveArtifactTarget::from_view_name("nested-city");
     let mut nested = selector("profile", "city");
@@ -36,13 +39,17 @@ fn canonical_parent_path_selects_descendant_dependency_without_sibling_scan() {
     index.register(target.clone(), "Vertex".into(), nested);
 
     assert_eq!(
-        index.affected_targets(&path_mutation(&["address"])).targets,
+        index
+            .affected_targets(&path_mutation(&["address"])?)
+            .targets,
         BTreeSet::from([target])
     );
     assert!(index
-        .affected_targets(&path_mutation(&["address", "postal"]))
+        .affected_targets(&path_mutation(&["address", "postal"])?)
         .targets
         .is_empty());
+
+    Ok(())
 }
 
 fn selector(

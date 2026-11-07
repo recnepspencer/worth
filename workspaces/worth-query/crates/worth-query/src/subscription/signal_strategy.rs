@@ -26,9 +26,7 @@ pub struct QuerySubscriptionSignalStrategyRequest {
 }
 
 impl QuerySubscriptionSignalStrategyRequest {
-    pub(super) fn for_bridge_family(
-        family: &BridgeSubscriptionDeclarationFamilyKind,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    pub(super) fn for_bridge_family(family: &BridgeSubscriptionDeclarationFamilyKind) -> Self {
         let request_kind = match family {
             BridgeSubscriptionDeclarationFamilyKind::DetailExact => {
                 QuerySubscriptionSignalStrategyRequestKind::ExactDetailSignals
@@ -37,11 +35,11 @@ impl QuerySubscriptionSignalStrategyRequest {
                 QuerySubscriptionSignalStrategyRequestKind::CollectionMembershipSignals
             }
         };
-        let evidence_identity = signal_strategy_request_identity(&request_kind)?;
-        Ok(Self {
+        let evidence_identity = signal_strategy_request_identity(&request_kind);
+        Self {
             request_kind,
             evidence_identity,
-        })
+        }
     }
 
     pub fn request_kind(&self) -> &QuerySubscriptionSignalStrategyRequestKind {

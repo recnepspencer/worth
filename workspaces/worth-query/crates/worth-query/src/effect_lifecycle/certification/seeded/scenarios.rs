@@ -44,14 +44,14 @@ pub(super) fn seeded_rows(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     seed: u64,
     scenario_count: usize,
-) -> Vec<EffectLifecycleSeededCertificationRow> {
+) -> Result<Vec<EffectLifecycleSeededCertificationRow>, IdentityDerivationDenial> {
     let mut stepper = SeedStepper::new(seed);
-    (0..scenario_count)
+    Ok((0..scenario_count)
         .map(|index| {
             let template = ScenarioTemplate::from_index(((seed as usize) + index) % TEMPLATE_COUNT);
             materialize_row(execution, template, index, &mut stepper)
         })
-        .collect()
+        .collect::<Result<Vec<_>, _>>()?)
 }
 
 fn materialize_row(

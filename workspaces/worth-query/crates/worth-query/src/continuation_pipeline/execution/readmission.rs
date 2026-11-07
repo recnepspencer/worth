@@ -263,7 +263,7 @@ fn basis_witness_from_binding(
                             .selector()
                             .commit_identity()
                             .map(bridge_commit_evidence_identity)
-                    })?,
+                    }),
             )
         }
         WorthQueryDeclarationBridgeBinding::PreviewSession(request) => {
@@ -305,9 +305,11 @@ fn basis_witness_from_binding(
                 Some(continuation_readmission_lower_runtime_binding_identity(
                     request.authority_digest(),
                 )?),
-                request.child_basis_digests().first().map(|digest| {
-                    continuation_readmission_source_basis_identity(digest.as_ref())
-                })?,
+                request
+                    .child_basis_digests()
+                    .first()
+                    .map(|digest| continuation_readmission_source_basis_identity(digest.as_ref()))
+                    .transpose()?,
             )
         }
         WorthQueryDeclarationBridgeBinding::WritebackPreparation(request) => {

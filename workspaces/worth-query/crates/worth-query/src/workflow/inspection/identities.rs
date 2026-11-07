@@ -65,9 +65,8 @@ pub(super) fn conflict_scope_identity(
 pub(super) fn post_merge_scope_identity(
     declaration: &QueryWorkflowDeclaration,
     outcome: &WorkflowAuthorityOutcomeArtifact,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowContextBinding)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowContextBinding)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "workflow_post_merge_scope_v1",
@@ -84,33 +83,29 @@ pub(super) fn post_merge_scope_identity(
                 WorthQueryEvidenceTag::new("family"),
                 outcome.family().as_str(),
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 pub(super) fn workflow_authority_request_identity(
     family: WorkflowAuthorityOutcomeFamily,
     request_identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "workflow_authority_request_v1",
             )
             .field_shape(WorthQueryEvidenceTag::new("family"), family.as_str())
             .field_evidence_identity(WorthQueryEvidenceTag::new("request"), request_identity)
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 pub(super) fn workflow_authoritative_outcome_identity(
     declaration: &QueryWorkflowDeclaration,
     family: &WorkflowAuthorityOutcomeFamily,
     authority_request_identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "workflow_authoritative_outcome_v1",
@@ -132,15 +127,13 @@ pub(super) fn workflow_authoritative_outcome_identity(
                 WorthQueryEvidenceTag::new("basis"),
                 declaration.binding().basis_identity(),
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 pub(super) fn delivery_or_failure_identity(
     outcome: &WorkflowAuthorityOutcomeArtifact,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowContextBinding)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowContextBinding)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "workflow_delivery_or_failure_v1",
@@ -157,16 +150,14 @@ pub(super) fn delivery_or_failure_identity(
                 WorthQueryEvidenceTag::new("budget"),
                 outcome.budget_outcome().as_str(),
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 pub(super) fn workflow_replay_bundle_identity(
     outcome: &WorkflowAuthorityOutcomeArtifact,
     delivery_or_failure_identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowContextBinding)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowContextBinding)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "workflow_replay_bundle_v1",
@@ -203,6 +194,5 @@ pub(super) fn workflow_replay_bundle_identity(
                 WorthQueryEvidenceTag::new("delivery"),
                 delivery_or_failure_identity,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }

@@ -105,7 +105,7 @@ fn compose_aftermath_runtime_semantics_identity(
         .requested_facts()
         .requested()
         .map(compose_fact_request_entry_digest)
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     Ok(domain_capability_scope_encoder(
         "worth_query_domain_capability_aftermath_runtime_semantics_v2",
     )

@@ -32,7 +32,7 @@ impl SubscriptionContinuationReport {
             ActiveDeliveryDensityPosture::SparseDelta,
             super::super::active_budget::ActiveSubscriptionAllocationPosture::PatchScratch,
             evidence.evidence_identity(),
-        )?;
+        );
         let report_identity = WorthQueryEvidenceIdentity::compose(
             crate::evidence_identity::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
         )

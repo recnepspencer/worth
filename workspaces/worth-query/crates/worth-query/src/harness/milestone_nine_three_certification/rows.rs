@@ -210,7 +210,7 @@ pub(super) fn rejection_rows() -> Result<
             "uncertified-family-support-overclaim-forbidden",
             MilestoneNineThreePerturbationClass::UncertifiedFamilySupportOverclaimForbidden,
             &detail,
-            denied_support_failure(&detail),
+            denied_support_failure(&detail)?,
             &detail,
         ),
         rejection_row(
@@ -247,14 +247,14 @@ pub(super) fn rejection_rows() -> Result<
             "diagnostic-bundle-missing-hostile-row-forbidden",
             MilestoneNineThreePerturbationClass::DiagnosticBundleMissingHostileRowForbidden,
             &detail,
-            denied_runtime_certification_failure(&detail),
+            denied_runtime_certification_failure(&detail)?,
             &detail,
         ),
         rejection_row(
             "runtime-certification-cross-family-row-mix-forbidden",
             MilestoneNineThreePerturbationClass::RuntimeCertificationCrossFamilyRowMixForbidden,
             &detail,
-            denied_cross_family_scope_failure(&detail, &collection),
+            denied_cross_family_scope_failure(&detail, &collection)?,
             &detail,
         ),
         rejection_row(

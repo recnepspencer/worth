@@ -61,7 +61,7 @@ fn mutation_lowering_materializer_builds_runtime_lowered_declaration(
             .runtime_snapshot_identity()
             .map(|identity| identity.evidence_identity()),
         Some(
-            crate::memory_workspace::admit_external_snapshot_label("runtime-snapshot:42",)
+            crate::memory_workspace::admit_external_snapshot_label("runtime-snapshot:42",)?
                 .evidence_identity()
         )
     );

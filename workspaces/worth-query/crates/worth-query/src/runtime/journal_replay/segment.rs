@@ -40,7 +40,7 @@ impl WorthQueryJournalSegmentIdentity {
     pub(in crate::runtime) fn from_committed_bounds(
         start_position: u64,
         end_position: u64,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Self {
         let segment_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::JournalSegmentIdentity)
                 .field_value(
@@ -51,12 +51,12 @@ impl WorthQueryJournalSegmentIdentity {
                     WorthQueryEvidenceTag::new("journal_segment_end"),
                     end_position.to_string(),
                 )
-                .seal()?;
-        Ok(Self {
+                .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens");
+        Self {
             start_position,
             end_position,
             segment_identity,
-        })
+        }
     }
 
     pub fn start_position_for_reporting(&self) -> u64 {

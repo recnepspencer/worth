@@ -17,7 +17,7 @@ use crate::workflow::{
 };
 use worth_relational::facade::history::BranchId;
 
-pub(super) fn merge_lowering_lane() -> Result<WorkflowCertificationLane, IdentityDerivationDenial> {
+pub(super) fn merge_lowering_lane() -> WorkflowCertificationLane {
     let preflight = execution_preflights::direct_runtime_preflight();
     let binding = bind_workflow_context(WorkflowBindingSource::RuntimePreflight(&preflight))
         .expect("runtime binding should admit");
@@ -40,8 +40,8 @@ pub(super) fn merge_lowering_lane() -> Result<WorkflowCertificationLane, Identit
         ),
     )
     .expect("merge lowering should succeed");
-    let outcome = shape_merge_authority_outcome(&lowered)?;
-    let replay = build_workflow_replay_bundle(&outcome)?;
+    let outcome = shape_merge_authority_outcome(&lowered);
+    let replay = build_workflow_replay_bundle(&outcome);
 
     let mut lane = WorkflowCertificationLane::from_declaration(&declaration);
     lane.lowered_request_digest = Some(lowered.lowering_for_reporting().to_string());
@@ -61,11 +61,10 @@ pub(super) fn merge_lowering_lane() -> Result<WorkflowCertificationLane, Identit
         Some(lowered.counters().workflow_executor_rediscovery_count());
     lane.replay_executor_rediscovery_count =
         Some(replay.counters().workflow_executor_rediscovery_count());
-    Ok(lane)
+    lane
 }
 
-pub(super) fn writeback_lowering_lane(
-) -> Result<WorkflowCertificationLane, IdentityDerivationDenial> {
+pub(super) fn writeback_lowering_lane() -> WorkflowCertificationLane {
     let preflight = execution_preflights::direct_runtime_preflight();
     let binding = bind_workflow_context(WorkflowBindingSource::RuntimePreflight(&preflight))
         .expect("runtime binding should admit");
@@ -85,8 +84,8 @@ pub(super) fn writeback_lowering_lane(
         WritebackLoweringInput::projected_state_diff(),
     )
     .expect("writeback lowering should succeed");
-    let outcome = crate::workflow::shape_writeback_authority_outcome(&lowered)?;
-    let replay = build_workflow_replay_bundle(&outcome)?;
+    let outcome = crate::workflow::shape_writeback_authority_outcome(&lowered);
+    let replay = build_workflow_replay_bundle(&outcome);
 
     let mut lane = WorkflowCertificationLane::from_declaration(&declaration);
     lane.lowered_request_digest = Some(lowered.lowering_for_reporting().to_string());
@@ -106,7 +105,7 @@ pub(super) fn writeback_lowering_lane(
         Some(lowered.counters().workflow_executor_rediscovery_count());
     lane.replay_executor_rediscovery_count =
         Some(replay.counters().workflow_executor_rediscovery_count());
-    Ok(lane)
+    lane
 }
 
 pub(super) fn preview_merge_lowering_lane() -> WorkflowCertificationLane {

@@ -78,7 +78,7 @@ impl WriteAuthorityExecutionReceipt {
             WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan_with_retained_evidence_identity(
                 &route_plan,
                 &retained_evidence_identity,
-            )?;
+            );
         let boundary_envelope =
             WorthQueryLowerRuntimeBoundaryEnvelope::from_route_plan_with_retained_evidence_identity(
                 WorthQueryLowerRuntimeSeamKey::WriteAuthorityBackendExecution,

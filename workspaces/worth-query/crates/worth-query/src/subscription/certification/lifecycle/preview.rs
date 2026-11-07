@@ -143,11 +143,11 @@ pub(super) fn preview_certification_evidence(
                     lifecycle_labeled_counter_identity(
                         "preview_isolation",
                         &isolation.counters().evidence_identity(),
-                    ),
+                    )?,
                     lifecycle_labeled_counter_identity(
                         "preview_discard",
                         &discard_closeout.counters().evidence_identity(),
-                    ),
+                    )?,
                 ],
                 support_identities: vec![
                     WorthQueryEvidenceIdentity::compose(
@@ -269,11 +269,11 @@ pub(super) fn preview_certification_evidence(
                     lifecycle_labeled_counter_identity(
                         "preview_isolation",
                         &isolation.counters().evidence_identity(),
-                    ),
+                    )?,
                     lifecycle_labeled_counter_identity(
                         "preview_promotion",
                         &promotion_handoff.counters().evidence_identity(),
-                    ),
+                    )?,
                 ],
                 support_identities: vec![
                     WorthQueryEvidenceIdentity::compose(

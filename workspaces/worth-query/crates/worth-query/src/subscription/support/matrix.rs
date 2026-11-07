@@ -67,7 +67,7 @@ impl QuerySubscriptionSupportMatrix {
         profile: Option<&QuerySubscriptionSupportProfile>,
         subject: &QuerySubscriptionSupportSubject,
     ) -> Result<Self, IdentityDerivationDenial> {
-        let capability_digest = SubscriptionFamilyCapabilityDigest::for_family(family)?;
+        let capability_digest = SubscriptionFamilyCapabilityDigest::for_family(family);
         let coverage = SupportCoverageStage::for_subject(subject);
         let rows = QuerySubscriptionSupportClass::all()
             .into_iter()

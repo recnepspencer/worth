@@ -59,7 +59,7 @@ pub(crate) fn representative_execute_read_family_in_basis_context_row(
     let mut workspace =
         certification_workspace(execution, "lower-runtime-execute-read-family-basis");
     let family = certification_read_family(&mut workspace, "lower-runtime-basis-family");
-    let snapshot_identity = workspace.snapshot_identity_with_request(execution)?;
+    let snapshot_identity = workspace.snapshot_identity_with_request(execution);
     let snapshot_evidence_identity = snapshot_identity.evidence_identity();
     let context = branch_context_for_family(
         &family,
@@ -97,7 +97,7 @@ pub(crate) fn representative_runtime_basis_context_read_graph_row(
 ) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let mut workspace = certification_workspace(execution, "lower-runtime-runtime-basis-read");
     let family = certification_read_family(&mut workspace, "lower-runtime-runtime-basis-family");
-    let snapshot_identity = workspace.snapshot_identity_with_request(execution)?;
+    let snapshot_identity = workspace.snapshot_identity_with_request(execution);
     let snapshot_evidence_identity = snapshot_identity.evidence_identity();
     let context = branch_context_for_family(
         &family,
@@ -150,7 +150,7 @@ fn route_planned_read_row(
     let boundary_receipt = WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(
         &route_plan,
         &retained_evidence_identity,
-    )?;
+    );
     let envelope = WorthQueryLowerRuntimeBoundaryEnvelope::from_route_plan(
         seam_key,
         &route_plan,

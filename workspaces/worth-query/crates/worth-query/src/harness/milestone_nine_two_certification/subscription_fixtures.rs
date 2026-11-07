@@ -22,7 +22,7 @@ pub(super) fn activation_for(
     construction_source: QuerySubscriptionConstructionSource,
 ) -> Result<SubscriptionActivationInput, IdentityDerivationDenial> {
     let live = LiveQueryAdmissionArtifact::for_test(live_family, view_family, construction_source)?;
-    Ok(activation_from_live(live)?)
+    Ok(activation_from_live(live))
 }
 
 pub(super) fn activation_with_context(
@@ -39,17 +39,17 @@ pub(super) fn activation_with_context(
         Some("relationship-proof".to_string()),
         crate::subscription::QuerySubscriptionRelationshipProofPosture::Admitted,
     )?;
-    Ok(activation_from_live(live)?)
+    Ok(activation_from_live(live))
 }
 
 pub(super) fn activation_from_live(
     live: LiveQueryAdmissionArtifact,
-) -> Result<SubscriptionActivationInput, IdentityDerivationDenial> {
+) -> SubscriptionActivationInput {
     let selection = select_query_subscription_family(live, work_budget()).unwrap();
     let declaration = declare_query_subscription(selection, slice_budget()).unwrap();
     let lowering = lower_query_subscription_to_bridge(declaration, lowering_budget()).unwrap();
     let admission = admit_query_subscription(lowering, admission_budget()).unwrap();
-    Ok(prepare_subscription_activation(admission))
+    prepare_subscription_activation(admission)
 }
 
 pub(super) fn active_attachment(

@@ -54,7 +54,7 @@ fn workflow_materializer_builds_preview_and_runtime_declarations(
             .runtime_snapshot_identity()
             .map(|identity| identity.evidence_identity()),
         Some(
-            crate::memory_workspace::admit_external_snapshot_label("runtime-snapshot:42",)
+            crate::memory_workspace::admit_external_snapshot_label("runtime-snapshot:42",)?
                 .evidence_identity()
         )
     );
@@ -119,7 +119,7 @@ fn workflow_materializer_accepts_admitted_plan_targets() -> Result<(), IdentityD
             .runtime_snapshot_identity()
             .map(|identity| identity.evidence_identity()),
         Some(
-            crate::memory_workspace::admit_external_snapshot_label("runtime-snapshot:77",)
+            crate::memory_workspace::admit_external_snapshot_label("runtime-snapshot:77",)?
                 .evidence_identity()
         )
     );

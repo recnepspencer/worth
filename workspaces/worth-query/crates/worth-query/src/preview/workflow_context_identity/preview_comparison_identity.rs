@@ -61,7 +61,7 @@ pub(in crate::preview) fn compose_preview_comparison_eligibility_digest(
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("canonical_query"),
-                &workflow_canonical_query_digest_evidence(canonical_query_digest)?,
+                &workflow_canonical_query_digest_evidence(canonical_query_digest),
             )
             .field_shape(
                 WorthQueryEvidenceTag::new("canonical_result_shape"),
@@ -108,12 +108,12 @@ pub(in crate::preview) fn compose_preview_comparison_candidate_digest(
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("validated_query"),
-                &workflow_validated_query_digest_evidence(validated_query_digest)?,
+                &workflow_validated_query_digest_evidence(validated_query_digest),
             )
             .field_shape(WorthQueryEvidenceTag::new("result"), result_digest.as_str())
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("canonical_query"),
-                &workflow_canonical_query_digest_evidence(canonical_query_digest)?,
+                &workflow_canonical_query_digest_evidence(canonical_query_digest),
             )
             .field_shape(
                 WorthQueryEvidenceTag::new("canonical_result_shape"),

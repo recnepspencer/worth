@@ -93,7 +93,7 @@ impl WorthQueryRuntime {
             &causality,
             &basis,
             &checkpoint,
-        )?;
+        );
         state.async_result_state = Some(superseded.clone());
         let remask_posture = state.remask_posture.clone();
         Ok(WorthQueryAsyncResultTransitionBatch::admitted(
@@ -203,7 +203,7 @@ impl WorthQueryRuntime {
                 )
                 .seal()?;
         let terminal =
-            WorthQueryRuntimeAsyncResultState::new(terminal_kind, &causality, &basis, &checkpoint)?;
+            WorthQueryRuntimeAsyncResultState::new(terminal_kind, &causality, &basis, &checkpoint);
         state.async_result_state = Some(terminal.clone());
         let remask_posture = state.remask_posture.clone();
         Ok(WorthQueryAsyncResultTransitionBatch::admitted(

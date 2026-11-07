@@ -108,7 +108,7 @@ fn aggregate_route_artifacts(
     let boundary_receipt = WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(
         &route_plan,
         &retained_evidence,
-    )?;
+    );
     let envelope = WorthQueryLowerRuntimeBoundaryEnvelope::from_route_plan(
         seam_key,
         &route_plan,
@@ -262,7 +262,7 @@ fn live_aggregate_fixture() -> Result<LiveAggregateFixture, IdentityDerivationDe
             "live_view",
             &crate::runtime::live_subscription_view_shape_source_identity(
                 session.live_view().lowering().family(),
-            )?,
+            ),
         )?,
         session.canonical().result_shape().digest().clone(),
         subscription_family,

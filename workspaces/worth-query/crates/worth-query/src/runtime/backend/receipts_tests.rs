@@ -51,7 +51,8 @@ fn signal_invalidation_routing_receipt_rejects_authority_less_receipt(
 }
 
 #[test]
-fn signal_invalidation_routing_receipt_summarizes_authoritative_delta() {
+fn signal_invalidation_routing_receipt_summarizes_authoritative_delta(
+) -> Result<(), IdentityDerivationDenial> {
     let command_entity_identity = relational_entity_identity(1);
     let command = WorthQueryWriteCommand::UpdateAspects {
         entity_identity: command_entity_identity.clone(),
@@ -96,7 +97,7 @@ fn signal_invalidation_routing_receipt_summarizes_authoritative_delta() {
             command_entity_identity,
             WorthQueryMutationKind::Updated,
             vec![title_value_touch(), status_value_touch()],
-        )],
+        )?],
         bridge_authority,
     )
     .admit_runtime_write_authority();
@@ -112,6 +113,8 @@ fn signal_invalidation_routing_receipt_summarizes_authoritative_delta() {
         WorthQueryEvidenceScope::SignalInvalidationRoutingReceipt
     );
     assert!(!routed.receipt_identity().as_str().is_empty());
+
+    Ok(())
 }
 
 #[test]

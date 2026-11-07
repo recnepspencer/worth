@@ -180,7 +180,7 @@ pub(crate) fn command_declared_aspect_value_identity(
                     aspect.aspect_touch(),
                     aspect.clears_existing_value(),
                     aspect.terminal_digest_material(),
-                ),
+                )?,
             ])?));
         }
         WorthQueryWriteCommand::DeleteAspects { .. }

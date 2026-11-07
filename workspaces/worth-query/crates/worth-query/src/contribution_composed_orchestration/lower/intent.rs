@@ -35,8 +35,8 @@ pub(crate) fn process_contributions(
     contributions: Vec<WorthQueryContributionIntent>,
     materialization_policy: WorthQueryContributionComposedMaterializationPolicy,
     linked_artifacts: WorthQueryBindingLinkedArtifacts,
-) -> Vec<WorthQueryContributionComposedIntentResult> {
-    contributions
+) -> Result<Vec<WorthQueryContributionComposedIntentResult>, IdentityDerivationDenial> {
+    Ok(contributions
         .into_iter()
         .enumerate()
         .map(|(order_index, value)| {
@@ -49,7 +49,7 @@ pub(crate) fn process_contributions(
                 linked_artifacts.clone(),
             )
         })
-        .collect()
+        .collect::<Result<Vec<_>, _>>()?)
 }
 
 fn process_intent(

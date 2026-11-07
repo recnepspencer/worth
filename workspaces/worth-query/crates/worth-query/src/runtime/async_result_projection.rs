@@ -54,7 +54,7 @@ fn project_live_async_result_state(
         projection.causality_identity(),
         basis_identity,
         checkpoint_identity,
-    )?;
+    );
     state.async_result_state = Some(async_result_state.clone());
     Ok(async_result_state)
 }

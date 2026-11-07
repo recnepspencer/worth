@@ -70,9 +70,9 @@ impl<'a> WorthQueryPreviewSession<'a> {
         runtime: &'a mut WorthQueryRuntime,
         effect_policy: WorthQueryEffectPolicy,
         basis_admission: WorthQueryPreviewBasisAdmission,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let basis_snapshot_identity = runtime.current_snapshot_identity_with_request(execution);
-        Ok(Self {
+        Self {
             label,
             runtime,
             effect_policy,
@@ -85,6 +85,6 @@ impl<'a> WorthQueryPreviewSession<'a> {
             intent_receipts: Vec::new(),
             promoted: false,
             discarded: false,
-        })
+        }
     }
 }

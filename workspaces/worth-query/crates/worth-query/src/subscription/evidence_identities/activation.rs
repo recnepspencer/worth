@@ -142,9 +142,8 @@ pub(in crate::subscription) fn basis_binding_request_identity(
 
 pub(in crate::subscription) fn signal_strategy_request_identity(
     request_kind: &QuerySubscriptionSignalStrategyRequestKind,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "query_subscription_signal_strategy_request_v1",
@@ -153,8 +152,7 @@ pub(in crate::subscription) fn signal_strategy_request_identity(
                 WorthQueryEvidenceTag::new("request_kind"),
                 request_kind.as_str(),
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 pub(in crate::subscription) fn bridge_lowering_plan_identity(

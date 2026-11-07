@@ -100,7 +100,7 @@ impl WorthQueryRuntime {
                 projection.causality_identity(),
                 &basis,
                 &checkpoint,
-            )?);
+            ));
         }
         let binding_identity = binding.binding_identity().clone();
         let state = self

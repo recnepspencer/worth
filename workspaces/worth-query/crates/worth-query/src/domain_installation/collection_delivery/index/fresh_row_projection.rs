@@ -20,7 +20,7 @@ impl WorthQueryCollectionMaintenanceIndex {
         replacement_targets: &[WorthQueryCollectionMaintenanceTarget],
         fresh_rows: &[WorthQueryEntity],
         counters: &mut WorthQueryCollectionDeliveryCounters,
-    ) -> Result<WorthQueryCollectionIndexPreview, IdentityDerivationDenial> {
+    ) -> WorthQueryCollectionIndexPreview {
         let fresh = fresh_rows
             .iter()
             .map(|row| (row.identity(), row))
@@ -39,7 +39,7 @@ impl WorthQueryCollectionMaintenanceIndex {
                 prior.entity.clone().replace_native_values(replacements)
             }))
         });
-        Ok(self.preview_delta(window, affected, keys, delta, counters))
+        self.preview_delta(window, affected, keys, delta, counters)
     }
 }
 

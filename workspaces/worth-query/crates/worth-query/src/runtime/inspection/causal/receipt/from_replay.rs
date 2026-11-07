@@ -32,7 +32,7 @@ impl QueryObservationReceipt {
             outcome: CausalObservationOutcome::Replayed,
             evidence_identities: vec![CausalObservationEvidenceIdentity::new(
                 CausalEvidenceFamily::QueryInspection,
-                read_observation_result_reference_digest(receipt, &snapshot_evidence_identity),
+                read_observation_result_reference_digest(receipt, &snapshot_evidence_identity)?,
             )],
         })?)
     }
@@ -76,8 +76,8 @@ impl QueryObservationReceipt {
                 CausalEvidenceFamily::QueryInspection,
                 causal_evidence_reference_identity_digest(
                     CausalEvidenceFamily::QueryInspection,
-                    &fixture_component_identity(label, "evidence_reference", "query_inspection"),
-                ),
+                    &fixture_component_identity(label, "evidence_reference", "query_inspection")?,
+                )?,
             )],
         })?)
     }

@@ -144,9 +144,8 @@ pub(super) fn batch_naming_mutation_digest(
 
 fn existing_truth_assertion_identity(
     assertion: &WorthQueryExistingTruthAssertionEvidence,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
+) -> WorthQueryEvidenceIdentity {
+    worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
             .field_shape(
                 WorthQueryEvidenceTag::new("role"),
                 "existing-truth-assertion",
@@ -171,8 +170,7 @@ fn existing_truth_assertion_identity(
                 WorthQueryEvidenceTag::new("verified_precondition"),
                 assertion.verified_precondition_evidence_digest(),
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 fn symbolic_target_reference_identity(

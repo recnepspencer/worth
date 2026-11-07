@@ -161,7 +161,7 @@ pub(super) fn host_override_denial_row(
     );
     let normalized = normalize_raw_effect_intent(&basis, raw).expect("mutation should normalize");
     let admitted = match evaluate_effect_eligibility(normalized)? {
-        EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility)?,
+        EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         other => panic!("expected admitted mutation, got {other:?}"),
     };
     let denial = scope_admitted_effect_plan(admitted)?
@@ -209,7 +209,7 @@ pub(super) fn stale_after_admission_row(
     );
     let normalized = normalize_raw_effect_intent(&basis, raw).expect("mutation should normalize");
     let admitted = match evaluate_effect_eligibility(normalized)? {
-        EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility)?,
+        EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         other => panic!("expected admitted mutation, got {other:?}"),
     };
     create_entity(
@@ -271,7 +271,7 @@ pub(super) fn stale_after_lowering_row(
             )
             .expect("mutation should normalize"),
         )? {
-            EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility)?,
+            EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
             other => panic!("expected admitted mutation, got {other:?}"),
         },
     )?

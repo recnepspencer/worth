@@ -149,10 +149,8 @@ impl ProjectionConsumptionSource {
         }
     }
 
-    pub fn from_relational_row_set(
-        row_set: &RelationalAuthoritativeRowSetArtifact,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self {
+    pub fn from_relational_row_set(row_set: &RelationalAuthoritativeRowSetArtifact) -> Self {
+        Self {
             source_reference_identities: Vec::new(),
             family: ProjectionSourceFamily::RelationalRowSet,
             capability_profile: ProjectionSourceCapabilityProfile::RelationalRowSet,
@@ -165,13 +163,13 @@ impl ProjectionConsumptionSource {
             result_shape_digest: None,
             source_identity: ProjectionSourceIdentity::artifact(row_set.digest().as_str()),
             materialized_fact_posture: None,
-        })
+        }
     }
 
     pub fn from_relational_grouped_projection(
         grouped_projection: &RelationalGroupedProjectionArtifact,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             source_reference_identities: Vec::new(),
             family: ProjectionSourceFamily::RelationalGroupedProjection,
             capability_profile: ProjectionSourceCapabilityProfile::RelationalGroupedProjection,
@@ -188,13 +186,11 @@ impl ProjectionConsumptionSource {
                 grouped_projection.digest().as_str(),
             ),
             materialized_fact_posture: None,
-        })
+        }
     }
 
-    pub fn from_bridge_truth_view_row_set(
-        row_set: &BridgeMaterializedRowSetArtifact,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self {
+    pub fn from_bridge_truth_view_row_set(row_set: &BridgeMaterializedRowSetArtifact) -> Self {
+        Self {
             source_reference_identities: Vec::new(),
             family: ProjectionSourceFamily::BridgeTruthViewRowSet,
             capability_profile: ProjectionSourceCapabilityProfile::BridgeTruthViewRowSet,
@@ -207,13 +203,13 @@ impl ProjectionConsumptionSource {
             result_shape_digest: None,
             source_identity: ProjectionSourceIdentity::artifact(row_set.digest().as_str()),
             materialized_fact_posture: None,
-        })
+        }
     }
 
     pub fn from_bridge_grouped_truth_view(
         grouped_truth_view: &BridgeGroupedTruthViewArtifact,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             source_reference_identities: Vec::new(),
             family: ProjectionSourceFamily::BridgeGroupedTruthView,
             capability_profile: ProjectionSourceCapabilityProfile::BridgeGroupedTruthView,
@@ -230,7 +226,7 @@ impl ProjectionConsumptionSource {
                 grouped_truth_view.digest().as_str(),
             ),
             materialized_fact_posture: None,
-        })
+        }
     }
 
     pub fn from_retained_derived_artifact_binding(

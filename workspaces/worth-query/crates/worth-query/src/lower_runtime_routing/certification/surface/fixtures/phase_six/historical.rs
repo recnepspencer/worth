@@ -139,7 +139,7 @@ pub(crate) fn representative_historical_bridge_lowering_row(
     let boundary_receipt = WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(
         &route_plan,
         &retained_evidence_identity,
-    )?;
+    );
     let envelope = WorthQueryLowerRuntimeBoundaryEnvelope::from_route_plan(
         WorthQueryLowerRuntimeSeamKey::HistoricalBridgeLowering,
         &route_plan,

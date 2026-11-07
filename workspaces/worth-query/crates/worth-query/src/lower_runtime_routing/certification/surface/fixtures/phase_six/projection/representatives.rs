@@ -85,7 +85,7 @@ pub(crate) fn representative_projection_relational_row(
         grouped_projection_contract("status", "identity.id", "status.lane"),
     )
     .expect("relational projection fixture should group row set");
-    let source = ProjectionConsumptionSource::from_relational_grouped_projection(&grouped)?;
+    let source = ProjectionConsumptionSource::from_relational_grouped_projection(&grouped);
 
     Ok(readmission_projection_row(
         WorthQueryLowerRuntimeSeamKey::ProjectionSourceIntakeFromRelationalArtifacts,
@@ -143,7 +143,7 @@ pub(crate) fn representative_projection_bridge_row(
         },
     )
     .expect("bridge projection fixture should group truth view");
-    let source = ProjectionConsumptionSource::from_bridge_grouped_truth_view(&grouped)?;
+    let source = ProjectionConsumptionSource::from_bridge_grouped_truth_view(&grouped);
 
     Ok(readmission_projection_row(
         WorthQueryLowerRuntimeSeamKey::ProjectionSourceIntakeFromBridgeArtifacts,
@@ -194,7 +194,7 @@ fn readmission_projection_row(
         &retained_evidence_identity,
     );
     let boundary_receipt =
-        WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_readmission_receipt(&handoff)?;
+        WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_readmission_receipt(&handoff);
     let envelope = WorthQueryLowerRuntimeBoundaryEnvelope::from_readmission_receipt(
         seam_key,
         &handoff,

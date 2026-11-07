@@ -33,12 +33,9 @@ impl QuerySubscriptionSupportCounters {
 
     pub fn counter_projection(
         &self,
-    ) -> Result<
-        QueryProjectionIdentity<String, QuerySubscriptionIdentityKind>,
-        IdentityDerivationDenial,
-    > {
+    ) -> QueryProjectionIdentity<String, QuerySubscriptionIdentityKind> {
         let identity = self.evidence_identity();
-        Ok(subscription_evidence_projection(&identity))
+        subscription_evidence_projection(&identity)
     }
 
     pub fn support_report_request_count(&self) -> u64 {

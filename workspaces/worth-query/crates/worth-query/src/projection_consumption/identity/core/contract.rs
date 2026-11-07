@@ -110,11 +110,11 @@ pub(crate) fn compose_materialized_projection_contract_digest(
         .source_reference_identities()
         .iter()
         .map(compose_projection_source_reference_entry_digest)
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     let fact_family_entries = fact_families
         .iter()
         .map(compose_bound_fact_family_entry_digest)
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     Ok(seal(
         encoder
             .field_value_sequence(

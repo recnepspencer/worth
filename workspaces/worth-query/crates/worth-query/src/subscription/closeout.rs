@@ -198,7 +198,7 @@ impl SubscriptionLifecycleCloseout {
         }
         let source_identity = request.source_identity();
         let support_profile =
-            QuerySubscriptionSupportProfile::active_runtime_admitted(&source_identity)?;
+            QuerySubscriptionSupportProfile::active_runtime_admitted(&source_identity);
         let active_lane_digest = request.lane_digest().clone();
         let attachment_digest = request.attachment_digest().clone();
         let future_selection = request.future_selection().clone();
@@ -211,7 +211,7 @@ impl SubscriptionLifecycleCloseout {
             ActiveDeliveryDensityPosture::SparseDelta,
             ActiveSubscriptionAllocationPosture::LifecycleArena,
             &source_identity,
-        )?;
+        );
         counters.subscription_performance_receipt_count = 1;
         counters.subscription_budget_consumption_width = performance_receipt.consumed_width();
         counters.subscription_budget_remaining_width = performance_receipt.remaining_width();

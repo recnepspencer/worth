@@ -31,12 +31,12 @@ pub(in super::super) fn derive_read_touch_rows(
     collection: &str,
     verbs: impl IntoIterator<Item = WorthQueryGraphTouchReadVerb>,
     shape: &WorthQueryGraphReadTouchShape,
-) -> Vec<WorthQueryGraphTouchDescriptorRow> {
-    verbs
+) -> Result<Vec<WorthQueryGraphTouchDescriptorRow>, IdentityDerivationDenial> {
+    Ok(verbs
         .into_iter()
         .enumerate()
         .map(|(component_index, verb)| read_touch_row(collection, component_index, verb, shape))
-        .collect()
+        .collect::<Result<Vec<_>, _>>()?)
 }
 
 fn read_touch_row(

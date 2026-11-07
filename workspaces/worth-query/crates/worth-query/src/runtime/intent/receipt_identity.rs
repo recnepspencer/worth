@@ -176,8 +176,8 @@ pub(super) fn authoritative_intent_receipt_identity(
 fn receipt_value_identities(
     role: &'static str,
     values: &[String],
-) -> Vec<WorthQueryEvidenceIdentity> {
-    values
+) -> Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
+    Ok(values
         .iter()
         .map(|value| {
             worth_query_evidence_identity(WorthQueryEvidenceScope::AuthoritativeIntentReceipt)
@@ -185,7 +185,7 @@ fn receipt_value_identities(
                 .field_value(WorthQueryEvidenceTag::new("value"), value)
                 .seal()
         })
-        .collect()
+        .collect::<Result<Vec<_>, _>>()?)
 }
 
 pub(super) fn effect_intent_receipt_identity(

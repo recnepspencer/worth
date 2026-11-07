@@ -217,8 +217,8 @@ fn assemble(
     right: WorthQueryReadResult,
     pair: WorthQueryComparisonBasisPairEvidence,
     counters: WorthQueryComparisonJourneyCounters,
-) -> Result<WorthQueryComparisonOutcome, IdentityDerivationDenial> {
-    Ok(match intent {
+) -> WorthQueryComparisonOutcome {
+    match intent {
         super::WorthQueryComparisonIntent::Diff => complete_diff(left, right, pair, counters),
         super::WorthQueryComparisonIntent::StructuralCorrespondence => {
             structural_correspondence(left, right, candidate_budget, pair, counters)
@@ -226,7 +226,7 @@ fn assemble(
         super::WorthQueryComparisonIntent::Lineage => {
             lineage_correspondence(left, right, pair, counters)
         }
-    })
+    }
 }
 
 fn complete_diff(

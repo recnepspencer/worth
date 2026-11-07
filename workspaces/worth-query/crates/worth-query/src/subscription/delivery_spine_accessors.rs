@@ -47,7 +47,7 @@ impl QuerySubscriptionDeliveryIntent {
         QueryProjectionIdentity<String, QuerySubscriptionIdentityKind>,
         IdentityDerivationDenial,
     > {
-        Ok(subscription_evidence_projection(&self.evidence_identity()?))
+        Ok(subscription_evidence_projection(&self.evidence_identity()))
     }
 }
 

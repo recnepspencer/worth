@@ -77,7 +77,7 @@ impl<D: 'static> WorthQueryInstalledDomainLiveContinuation<D> {
                 let execution_receipt = receipt.derive(
                     WorthQueryInstalledDomainCapabilityKind::LiveResume,
                     resume_receipt.resume_identity().clone(),
-                )?;
+                );
                 WorthQueryInstalledDomainLiveResumeOutcome::Resumed(
                     WorthQueryInstalledDomainLiveResumeCompletion {
                         handle: WorthQueryInstalledDomainLiveHandle {
@@ -211,7 +211,7 @@ pub(super) fn close_outcome<D>(
             let execution_receipt = receipt.derive(
                 WorthQueryInstalledDomainCapabilityKind::LiveClose,
                 close_receipt.closeout_identity().clone(),
-            )?;
+            );
             WorthQueryInstalledDomainLiveCloseOutcome::Closed(
                 WorthQueryInstalledDomainLiveCloseReceipt {
                     close_receipt,

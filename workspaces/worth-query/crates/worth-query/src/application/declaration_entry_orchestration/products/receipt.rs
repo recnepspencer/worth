@@ -34,7 +34,7 @@ pub(crate) fn worth_query_declaration_receipt_orchestration_from_progressed_on_h
         handle,
         progressed,
         route_intent,
-    )? {
+    ) {
         WorthQueryDeclarationReceiptChecked::Issued(receipt) => Ok(receipt),
         other => Err(receipt_terminal_from_checked(other)),
     }
@@ -48,22 +48,20 @@ pub(crate) fn worth_query_checked_declaration_receipt_orchestration_from_progres
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     progressed: WorthQueryAdmittedDeclarationProgression<D, I>,
     route_intent: Option<WorthQueryDeclarationRouteIntent>,
-) -> Result<WorthQueryDeclarationReceiptChecked<D, I>, IdentityDerivationDenial> {
-    Ok(
-        match worth_query_lower_declaration_entry_product_orchestration_from_progressed_on_handle(
-            handle,
-            progressed,
-            WorthQueryDeclarationEntryOrchestrationExposureLevel::Checked,
-            WorthQueryDeclarationEntryOrchestrationArtifactPolicy::CheckedOutcomeOnly,
-            WorthQueryDeclarationEntryOrchestrationProduct::Receipt,
-            route_intent,
-        )
-        .checked
-        {
-            WorthQueryDeclarationEntryProductChecked::Receipt(checked) => checked,
-            _ => panic!("receipt orchestration must project the receipt product"),
-        },
+) -> WorthQueryDeclarationReceiptChecked<D, I> {
+    match worth_query_lower_declaration_entry_product_orchestration_from_progressed_on_handle(
+        handle,
+        progressed,
+        WorthQueryDeclarationEntryOrchestrationExposureLevel::Checked,
+        WorthQueryDeclarationEntryOrchestrationArtifactPolicy::CheckedOutcomeOnly,
+        WorthQueryDeclarationEntryOrchestrationProduct::Receipt,
+        route_intent,
     )
+    .checked
+    {
+        WorthQueryDeclarationEntryProductChecked::Receipt(checked) => checked,
+        _ => panic!("receipt orchestration must project the receipt product"),
+    }
 }
 
 pub(crate) fn worth_query_declaration_receipt_orchestration_from_progressed_proof_on_handle<
@@ -74,7 +72,7 @@ pub(crate) fn worth_query_declaration_receipt_orchestration_from_progressed_proo
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     progressed: WorthQueryAdmittedDeclarationProgression<D, I>,
     route_intent: Option<WorthQueryDeclarationRouteIntent>,
-) -> Result<WorthQueryDeclarationReceiptOrchestrationTranscript<D, I>, IdentityDerivationDenial> {
+) -> WorthQueryDeclarationReceiptOrchestrationTranscript<D, I> {
     let lowered =
         worth_query_lower_declaration_entry_product_orchestration_from_progressed_on_handle(
             handle,
@@ -89,10 +87,10 @@ pub(crate) fn worth_query_declaration_receipt_orchestration_from_progressed_proo
         _ => panic!("receipt orchestration proof must project the receipt product"),
     };
     let outcome_identity = receipt_orchestration_identity(&checked);
-    Ok(WorthQueryDeclarationReceiptOrchestrationTranscript::new(
+    WorthQueryDeclarationReceiptOrchestrationTranscript::new(
         lowered.plan,
         checked,
         lowered.step_records,
         outcome_identity,
-    ))
+    )
 }

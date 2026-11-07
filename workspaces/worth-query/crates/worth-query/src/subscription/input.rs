@@ -122,9 +122,9 @@ impl LiveQueryAdmissionArtifact {
             .map(crate::identity::collection_plan_evidence_identity)
             .unwrap_or_else(lifecycle_context_collection_absent_identity)?;
         let relevance_identity =
-            live_relevance_identity(descriptor.family(), &query_identity, &plan_identity)?;
+            live_relevance_identity(descriptor.family(), &query_identity, &plan_identity);
         let delivery_intent_identity =
-            live_delivery_intent_projection_identity(descriptor.family())?;
+            live_delivery_intent_projection_identity(descriptor.family());
         let policy_context_identity = lifecycle_context_policy_identity("none")?;
         let tenant_context_identity = lifecycle_context_tenant_basis_identity("none")?;
         let relationship_proof_context_identity =

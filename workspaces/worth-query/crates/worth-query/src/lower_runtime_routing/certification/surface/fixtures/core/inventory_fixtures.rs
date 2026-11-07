@@ -53,7 +53,7 @@ pub(crate) fn synthetic_inventory_row(
             let boundary_receipt = WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(
                 &plan,
                 &retained_evidence,
-            )?;
+            );
             let envelope = WorthQueryLowerRuntimeBoundaryEnvelope::from_route_plan(
                 row.seam_key(),
                 &plan,
@@ -85,7 +85,7 @@ pub(crate) fn synthetic_inventory_row(
                 &retained_evidence,
             );
             let boundary_receipt =
-                WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_readmission_receipt(&handoff)?;
+                WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_readmission_receipt(&handoff);
             let envelope = WorthQueryLowerRuntimeBoundaryEnvelope::from_readmission_receipt(
                 row.seam_key(),
                 &handoff,

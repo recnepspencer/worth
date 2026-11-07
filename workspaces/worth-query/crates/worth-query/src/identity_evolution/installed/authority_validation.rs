@@ -89,23 +89,23 @@ pub(super) fn engine_matches_authority(
     artifact: &IdentityEvolutionExecutionArtifact,
     continuity: Option<&WorthQueryContinuityMutationEvidence>,
     lifecycle_target: Option<&crate::memory_workspace::WorthQueryEntityIdentity>,
-) -> Result<bool, IdentityDerivationDenial> {
+) -> bool {
     if let Some(target) = lifecycle_target {
-        return Ok(engine_matches_lifecycle_target(artifact, target)?);
+        return engine_matches_lifecycle_target(artifact, target);
     }
     let Some(continuity) = continuity else {
-        return Ok(engine_matches_comparison_outcome(artifact));
+        return engine_matches_comparison_outcome(artifact);
     };
-    Ok(continuity_shape_matches(artifact, continuity)
-        && continuity_successors_match(artifact, continuity))
+    continuity_shape_matches(artifact, continuity)
+        && continuity_successors_match(artifact, continuity)
 }
 
 fn engine_matches_lifecycle_target(
     artifact: &IdentityEvolutionExecutionArtifact,
     target: &crate::memory_workspace::WorthQueryEntityIdentity,
-) -> Result<bool, IdentityDerivationDenial> {
+) -> bool {
     let evidence = target.evidence_identity();
-    Ok(match artifact.family() {
+    match artifact.family() {
         IdentityEvolutionExecutionFamily::GeneratedIdentity => artifact
             .result_bundle()
             .as_generated_identity()
@@ -115,7 +115,7 @@ fn engine_matches_lifecycle_target(
             .as_retired_identity()
             .is_some_and(|result| result.authoritative_identity() == evidence.as_str()),
         _ => false,
-    })
+    }
 }
 
 fn engine_matches_comparison_outcome(artifact: &IdentityEvolutionExecutionArtifact) -> bool {

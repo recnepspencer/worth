@@ -161,7 +161,7 @@ impl<D> WorthQueryInstalledDomainReadCompletion<D> {
             self.receipt.declaration_identity().clone(),
             self.receipt.basis_identity().clone(),
             self.receipt.operational_identity().clone(),
-        )?;
+        );
         Ok(WorthQueryInstalledDomainProjectionOutcome {
             outcome,
             receipt,

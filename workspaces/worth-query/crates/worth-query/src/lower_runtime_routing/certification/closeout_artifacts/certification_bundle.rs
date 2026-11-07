@@ -123,7 +123,7 @@ pub fn certify_lower_runtime_routing(
         ),
         certification_row(
             WorthQueryLowerRuntimeCertificationLane::FormerSpecialistSeamClosure,
-            former_specialist_closure_digest(),
+            former_specialist_closure_digest()?,
             "frontier and bridge writeback specialist seams are adapter-classified and absent from the gap registry".to_string(),
             counter_digest(&["checked_seams:2".to_string()]),
             None,

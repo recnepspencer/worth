@@ -248,7 +248,7 @@ fn scalar_surface_evidence(
         .trace_for_reporting()
         .to_string();
     let eligibility_counter_digest = eligibility.counters().counter_for_reporting().to_string();
-    let admitted = admit_effect_intent(eligibility)?;
+    let admitted = admit_effect_intent(eligibility);
     let scoped_plan = scope_admitted_effect_plan(admitted)?;
     let query_digest = normalized
         .workflow_binding()

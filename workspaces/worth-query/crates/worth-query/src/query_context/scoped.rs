@@ -107,8 +107,8 @@ impl ScopedQueryBasisContext {
     pub(crate) fn admits_runtime_snapshot(
         &self,
         snapshot: &crate::memory_workspace::WorthQuerySnapshotIdentity,
-    ) -> Result<bool, IdentityDerivationDenial> {
-        Ok(self.context().admits_runtime_snapshot(snapshot))
+    ) -> bool {
+        self.context().admits_runtime_snapshot(snapshot)
     }
 
     pub fn cost_class(&self) -> &QueryContextCostClass {

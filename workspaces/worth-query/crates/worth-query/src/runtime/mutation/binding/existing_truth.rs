@@ -205,7 +205,7 @@ impl WorthQueryExistingTruthTargetBinding {
             &self.authoritative_identity,
             &self.resolved_target_identity,
             self.target_collection.as_ref(),
-        )?;
+        );
         Ok(self)
     }
 
@@ -263,7 +263,7 @@ impl WorthQueryExistingTruthTargetBinding {
             &authoritative_identity,
             &resolved_target_identity,
             target_collection.as_ref(),
-        )?;
+        );
         Ok(Self {
             family,
             authoritative_identity,
@@ -279,9 +279,8 @@ fn existing_truth_binding_identity(
     authoritative_identity: &WorthQueryMutationAuthorityIdentity,
     resolved_target_identity: &WorthQueryEntityIdentity,
     target_collection: Option<&WorthQueryMutationTargetCollectionIdentity>,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
+) -> WorthQueryEvidenceIdentity {
+    worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
             .field_shape(WorthQueryEvidenceTag::new("role"), "existing-truth-binding")
             .field_shape(WorthQueryEvidenceTag::new("family"), family.as_str())
             .field_shape(
@@ -303,8 +302,7 @@ fn existing_truth_binding_identity(
                     crate::runtime::WorthQueryMutationTargetCollectionIdentity::evidence_identity,
                 ),
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 fn normalize_non_empty(value: String, message: &str) -> Result<String, WorthQueryWorkspaceError> {

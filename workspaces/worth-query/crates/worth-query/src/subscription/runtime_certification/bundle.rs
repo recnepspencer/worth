@@ -74,20 +74,20 @@ impl CertificationCoverageReceipt {
         family_coverage_index_lookup_count: usize,
         covered_row_width: SubscriptionCertificationCoverageWidth,
         uncovered_variation_width: usize,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let receipt_identity = coverage_receipt_identity(
             coverage_resolution_posture,
             family_coverage_index_lookup_count,
             covered_row_width.width_identity(),
             uncovered_variation_width,
-        )?;
-        Ok(Self {
+        );
+        Self {
             coverage_resolution_posture,
             family_coverage_index_lookup_count,
             covered_row_width,
             uncovered_variation_width,
             receipt_identity,
-        })
+        }
     }
 
     pub fn coverage_resolution_posture(&self) -> &CoverageResolutionPosture {

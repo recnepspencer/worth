@@ -50,7 +50,7 @@ impl<D> WorthQueryInstalledDomainMutationDeclaration<D> {
     ) -> Result<WorthQueryInstalledDomainWorkflowDeclaration<D>, IdentityDerivationDenial> {
         Ok(WorthQueryInstalledDomainWorkflowDeclaration::new(
             self.witness,
-            declare_workflow(label, self.declaration)?,
+            declare_workflow(label, self.declaration),
         ))
     }
 }

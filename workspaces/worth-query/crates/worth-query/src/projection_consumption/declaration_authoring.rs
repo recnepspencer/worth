@@ -72,88 +72,86 @@ impl ProjectionConsumptionAuthoringSurface {
         row_set: &RelationalAuthoritativeRowSetArtifact,
         result_shape_digest: &str,
         authorized_projection: &AuthorizedProjectionArtifact,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self {
-            source: ProjectionConsumptionSource::from_relational_row_set(row_set)?,
+    ) -> Self {
+        Self {
+            source: ProjectionConsumptionSource::from_relational_row_set(row_set),
             binding: ProjectionConsumptionBindingContext::from_result_shape_digest(
                 result_shape_digest,
                 authorized_projection,
             ),
-        })
+        }
     }
 
     pub fn from_relational_grouped_projection(
         grouped_projection: &RelationalGroupedProjectionArtifact,
         result_shape_digest: &str,
         authorized_projection: &AuthorizedProjectionArtifact,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             source: ProjectionConsumptionSource::from_relational_grouped_projection(
                 grouped_projection,
-            )?,
+            ),
             binding: ProjectionConsumptionBindingContext::from_result_shape_digest(
                 result_shape_digest,
                 authorized_projection,
             ),
-        })
+        }
     }
 
     pub fn from_bridge_truth_view_row_set(
         row_set: &BridgeMaterializedRowSetArtifact,
         result_shape_digest: &str,
         authorized_projection: &AuthorizedProjectionArtifact,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self {
-            source: ProjectionConsumptionSource::from_bridge_truth_view_row_set(row_set)?,
+    ) -> Self {
+        Self {
+            source: ProjectionConsumptionSource::from_bridge_truth_view_row_set(row_set),
             binding: ProjectionConsumptionBindingContext::from_result_shape_digest(
                 result_shape_digest,
                 authorized_projection,
             ),
-        })
+        }
     }
 
     pub fn from_bridge_grouped_truth_view(
         grouped_truth_view: &BridgeGroupedTruthViewArtifact,
         result_shape_digest: &str,
         authorized_projection: &AuthorizedProjectionArtifact,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self {
-            source: ProjectionConsumptionSource::from_bridge_grouped_truth_view(
-                grouped_truth_view,
-            )?,
+    ) -> Self {
+        Self {
+            source: ProjectionConsumptionSource::from_bridge_grouped_truth_view(grouped_truth_view),
             binding: ProjectionConsumptionBindingContext::from_result_shape_digest(
                 result_shape_digest,
                 authorized_projection,
             ),
-        })
+        }
     }
 
     pub fn from_retained_derived_artifact_binding(
         binding: &WorthQueryDerivedArtifactBinding,
         result_shape: &CanonicalResultShapeArtifact,
         authorized_projection: &AuthorizedProjectionArtifact,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             source: ProjectionConsumptionSource::from_retained_derived_artifact_binding(binding),
             binding: ProjectionConsumptionBindingContext::from_authorized_projection(
                 result_shape,
                 authorized_projection,
             ),
-        })
+        }
     }
 
     pub fn from_live_artifact_binding(
         binding: &WorthQueryLiveArtifactBinding,
         result_shape_identity: &crate::evidence_identity::WorthQueryEvidenceIdentity,
         authorized_projection: &AuthorizedProjectionArtifact,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             source: ProjectionConsumptionSource::from_live_artifact_binding(binding),
             binding: ProjectionConsumptionBindingContext::from_result_shape_identity(
                 result_shape_identity,
                 authorized_projection,
             ),
-        })
+        }
     }
 
     pub fn source(&self) -> &ProjectionConsumptionSource {
@@ -300,7 +298,7 @@ impl WorthQueryDerivedArtifactBinding {
                     self,
                     result_shape,
                     authorized_projection,
-                )?,
+                ),
             )
             .build()
     }
@@ -319,7 +317,7 @@ impl WorthQueryLiveArtifactBinding {
                     self,
                     result_shape_identity,
                     authorized_projection,
-                )?,
+                ),
             )
             .build()
     }

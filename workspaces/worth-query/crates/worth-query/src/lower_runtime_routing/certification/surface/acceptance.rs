@@ -99,7 +99,7 @@ pub fn worth_query_lower_runtime_acceptance_suite(
     Ok(WorthQueryLowerRuntimeAcceptanceSuite::new(vec![
         WorthQueryLowerRuntimeAcceptanceRow::new(
             WorthQueryLowerRuntimeAcceptanceLane::Control,
-            control_digest(&surface),
+            control_digest(&surface)?,
             format!(
                 "crossings={} requests={} route_plans={} receipts={} envelopes={} concrete={} synthetic={} required_concrete_seams={} synthetic_tail_digest={} synthetic_tail={}",
                 worth_query_lower_runtime_crossing_inventory().rows().len(),

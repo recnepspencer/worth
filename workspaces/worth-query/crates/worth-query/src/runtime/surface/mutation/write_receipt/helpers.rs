@@ -123,10 +123,7 @@ pub(super) fn assertion_evidence(
     Ok(Some(
         WorthQueryExistingTruthAssertionEvidence::retained_assertion(
             declared_aspect_operations.len(),
-            retained_assertion_verification_digest(
-                snapshot_identity,
-                declared_aspect_value_digest,
-            )?,
+            retained_assertion_verification_digest(snapshot_identity, declared_aspect_value_digest),
         ),
     ))
 }
@@ -134,8 +131,8 @@ pub(super) fn assertion_evidence(
 fn retained_assertion_verification_digest(
     snapshot_identity: &WorthQuerySnapshotIdentity,
     declared_aspect_value_digest: Option<&WorthQueryEvidenceIdentity>,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(worth_query_evidence_identity(
+) -> WorthQueryEvidenceIdentity {
+    worth_query_evidence_identity(
         WorthQueryEvidenceScope::RetainedExistingTruthAssertionEvidence,
     )
     .field_evidence_identity(
@@ -150,7 +147,7 @@ fn retained_assertion_verification_digest(
         WorthQueryEvidenceTag::new("mode"),
         WorthQueryExistingTruthAssertionMode::RetainedAuthoritativeAssertion.as_str(),
     )
-    .seal()?)
+    .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 pub(super) fn target_evidence_from_receipt(

@@ -95,16 +95,14 @@ pub(in crate::subscription) fn lifecycle_context_collection_absent_identity(
 
 pub(in crate::subscription) fn lifecycle_subscription_family_identity(
     family: &QuerySubscriptionFamily,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "subscription_lifecycle_family_v1",
             )
             .field_shape(WorthQueryEvidenceTag::new("family"), family.as_str())
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 pub(in crate::subscription) fn lifecycle_subscription_equivalence_identity(

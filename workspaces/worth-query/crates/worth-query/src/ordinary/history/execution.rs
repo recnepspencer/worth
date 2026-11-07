@@ -41,7 +41,7 @@ impl WorthQueryHistoricalRequest {
         if self.context.workspace_name() != workspace.name()
             || !self
                 .context
-                .admits_snapshot(&workspace.snapshot_identity_with_request(execution)?)
+                .admits_snapshot(&workspace.snapshot_identity_with_request(execution))
         {
             return Ok(stopped(
                 WorthQueryHistoricalStopSource::StaleContext,

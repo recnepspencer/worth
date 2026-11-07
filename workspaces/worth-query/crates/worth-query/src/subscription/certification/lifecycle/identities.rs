@@ -25,8 +25,8 @@ fn lifecycle_counter_identities(
     preview_counter_identities: &[WorthQueryEvidenceIdentity],
 ) -> Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
     let mut identities = vec![
-        lifecycle_labeled_counter_identity("admission", admission_counters),
-        lifecycle_labeled_counter_identity("active", active_counters),
+        lifecycle_labeled_counter_identity("admission", admission_counters)?,
+        lifecycle_labeled_counter_identity("active", active_counters)?,
         lifecycle_labeled_counter_identity(
             "frontier",
             &WorthQueryEvidenceIdentity::compose(
@@ -45,9 +45,9 @@ fn lifecycle_counter_identities(
                 frontier.acknowledged_sequence().get() as usize,
             )
             .seal(),
-        ),
-        lifecycle_labeled_counter_identity("batch", batch_counters),
-        lifecycle_labeled_counter_identity("closeout", closeout_counters),
+        )?,
+        lifecycle_labeled_counter_identity("batch", batch_counters)?,
+        lifecycle_labeled_counter_identity("closeout", closeout_counters)?,
     ];
     if let Some(report_identity) = continuation_report_identity {
         identities.push(lifecycle_labeled_counter_identity(

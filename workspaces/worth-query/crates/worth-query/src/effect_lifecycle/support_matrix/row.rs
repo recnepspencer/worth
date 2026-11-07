@@ -113,10 +113,8 @@ impl EffectLifecycleSupportRow {
         support_deferred_neighbors(self.effect_family)
     }
 
-    pub fn deferred_contract(
-        &self,
-    ) -> Result<Option<EffectDeferredSupportContract>, IdentityDerivationDenial> {
-        Ok(deferred_support_contract(self.cause)?)
+    pub fn deferred_contract(&self) -> Option<EffectDeferredSupportContract> {
+        deferred_support_contract(self.cause)
     }
 
     pub fn row_identity(&self) -> &WorthQueryEvidenceIdentity {

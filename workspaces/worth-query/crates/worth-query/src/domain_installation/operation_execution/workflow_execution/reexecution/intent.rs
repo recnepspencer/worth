@@ -61,8 +61,8 @@ impl WorthQueryWorkflowIntentValue {
     pub(crate) fn semantically_matches(
         &self,
         value: &super::WorthQueryWorkflowSemanticValue,
-    ) -> Result<bool, IdentityDerivationDenial> {
-        Ok(match self {
+    ) -> bool {
+        match self {
             Self::PredecessorArtifact { .. } | Self::PredecessorArtifactLease { .. } => {
                 matches!(
                     value,
@@ -72,7 +72,7 @@ impl WorthQueryWorkflowIntentValue {
             _ => self
                 .runtime_value()
                 .is_some_and(|runtime| runtime.semantic_value() == *value),
-        })
+        }
     }
 }
 

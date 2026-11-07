@@ -21,9 +21,8 @@ impl WorthQueryWorkspace {
     pub(crate) fn snapshot_identity_with_request(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<WorthQuerySnapshotIdentity, IdentityDerivationDenial> {
-        Ok(self
-            .runtime
-            .current_snapshot_identity_with_request(execution))
+    ) -> WorthQuerySnapshotIdentity {
+        self.runtime
+            .current_snapshot_identity_with_request(execution)
     }
 }

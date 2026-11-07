@@ -113,9 +113,7 @@ impl WorthQueryWorkspace {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &super::WorthQueryOrdinaryAuthorityAdmission,
     ) -> Result<super::WorthQueryOrdinaryAuthorityDrift, IdentityDerivationDenial> {
-        Ok(self
-            .runtime
-            .ordinary_authority_drift(execution, admission)?)
+        Ok(self.runtime.ordinary_authority_drift(execution, admission))
     }
 
     pub(crate) fn validate_ordinary_merge_authority(

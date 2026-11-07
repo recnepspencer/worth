@@ -123,20 +123,20 @@ impl ConsumedProjectionAuthorityComplexityEvidence {
 pub(super) fn complexity_evidence(
 ) -> Result<ConsumedProjectionAuthorityComplexityEvidence, IdentityDerivationDenial> {
     let rows = vec![
-        requirement_width_row(),
-        fact_width_row(),
+        requirement_width_row()?,
+        fact_width_row()?,
         irrelevant_growth_row(
             ConsumedProjectionAuthorityComplexityAxis::UnrelatedWorkspaceGrowth,
             &[0, 32, 128],
-        ),
+        )?,
         irrelevant_growth_row(
             ConsumedProjectionAuthorityComplexityAxis::HistoricalBasisGrowth,
             &[0, 16, 64],
-        ),
+        )?,
         irrelevant_growth_row(
             ConsumedProjectionAuthorityComplexityAxis::ConsumerGraphGrowth,
             &[0, 64, 256],
-        ),
+        )?,
     ];
     let evidence_digest = compose_digest_sequence(
         "consumed_projection_authority_complexity_evidence_v2",

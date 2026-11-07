@@ -7,8 +7,8 @@ use crate::runtime::WorthQueryWriteCommand;
 
 pub(super) fn metadata_identities(
     command: &WorthQueryWriteCommand,
-) -> Vec<WorthQueryEvidenceIdentity> {
-    command
+) -> Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
+    Ok(command
         .mutation_metadata_ref()
         .into_iter()
         .flat_map(|metadata| metadata.entries())
@@ -22,7 +22,7 @@ pub(super) fn metadata_identities(
                 )
                 .seal()
         })
-        .collect()
+        .collect::<Result<Vec<_>, _>>()?)
 }
 
 pub(super) fn naming_identity(

@@ -129,33 +129,33 @@ impl WorthQueryLowerRuntimeBoundaryExecutionReceipt {
     pub(crate) fn from_route_plan(
         plan: &WorthQueryLowerRuntimeRoutePlan,
         retained_evidence_identity: &WorthQueryLowerRuntimeRetainedEvidenceIdentity,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+    ) -> Self {
+        Self::new(
             WorthQueryLowerRuntimeBoundaryExecutionKind::RoutePlan,
             plan.eligibility().request().request_identity(),
             plan.eligibility().eligibility_identity(),
             plan.route_identity(),
             retained_evidence_identity,
-        )?)
+        )
     }
 
     pub(crate) fn from_route_plan_with_retained_evidence_identity(
         plan: &WorthQueryLowerRuntimeRoutePlan,
         retained_evidence_identity: &WorthQueryLowerRuntimeRetainedEvidenceIdentity,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::from_route_plan(plan, retained_evidence_identity)?)
+    ) -> Self {
+        Self::from_route_plan(plan, retained_evidence_identity)
     }
 
     pub(crate) fn from_readmission_receipt(
         receipt: &WorthQueryLowerRuntimeReadmissionReceipt,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+    ) -> Self {
+        Self::new(
             WorthQueryLowerRuntimeBoundaryExecutionKind::ReadmissionHandoff,
             receipt.eligibility().request().request_identity(),
             receipt.eligibility().eligibility_identity(),
             receipt.handoff_identity(),
             receipt.retained_evidence_identity(),
-        )?)
+        )
     }
 
     fn new(
@@ -164,7 +164,7 @@ impl WorthQueryLowerRuntimeBoundaryExecutionReceipt {
         eligibility_identity: &WorthQueryEvidenceIdentity,
         route_or_handoff_identity: &WorthQueryEvidenceIdentity,
         retained_evidence_identity: &WorthQueryLowerRuntimeRetainedEvidenceIdentity,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let boundary_execution_identity = worth_query_evidence_identity(
             WorthQueryEvidenceScope::LowerRuntimeBoundaryExecutionReceipt,
         )
@@ -182,15 +182,15 @@ impl WorthQueryLowerRuntimeBoundaryExecutionReceipt {
             WorthQueryEvidenceTag::new("retained_evidence"),
             retained_evidence_identity.evidence_identity(),
         )
-        .seal()?;
-        Ok(Self {
+        .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens");
+        Self {
             kind,
             request_identity: request_identity.clone(),
             eligibility_identity: eligibility_identity.clone(),
             route_or_handoff_identity: route_or_handoff_identity.clone(),
             retained_evidence_identity: retained_evidence_identity.clone(),
             boundary_execution_identity,
-        })
+        }
     }
 
     pub fn kind(&self) -> WorthQueryLowerRuntimeBoundaryExecutionKind {
@@ -338,7 +338,7 @@ mod tests {
         let boundary = WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(
             &plan,
             &retained_evidence,
-        )?;
+        );
 
         assert_eq!(
             boundary.request_identity(),

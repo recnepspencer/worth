@@ -27,12 +27,12 @@ impl WorthQueryWriteReceipt {
         command: &WorthQueryWriteCommand,
         snapshot_identity: WorthQuerySnapshotIdentity,
     ) -> Result<Self, IdentityDerivationDenial> {
-        let preview_identity = preview_write_receipt_identity(label, sequence)?;
+        let preview_identity = preview_write_receipt_identity(label, sequence);
         let commit_identity = WorthQueryCommitIdentity::preview(preview_identity.clone());
         let commit_evidence_identity =
             super::write_receipt_commit_evidence_identity(&commit_identity);
         let journal_position =
-            WorthQueryJournalPosition::preview(preview_identity.clone(), sequence as u64)?;
+            WorthQueryJournalPosition::preview(preview_identity.clone(), sequence as u64);
         let snapshot_evidence_identity =
             super::write_receipt_snapshot_evidence_identity(&snapshot_identity);
         let delta = preview_receipt_delta(command, &preview_identity)?;
@@ -272,16 +272,14 @@ pub(super) fn preview_receipt_delta(
 fn preview_write_receipt_identity(
     label: &WorthQuerySessionLabel,
     sequence: usize,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::PreviewWriteReceiptIdentity)
+) -> WorthQueryEvidenceIdentity {
+    worth_query_evidence_identity(WorthQueryEvidenceScope::PreviewWriteReceiptIdentity)
             .field_value(
                 WorthQueryEvidenceTag::new("session_label_identity"),
                 label.identity_digest().as_str(),
             )
             .field_usize(WorthQueryEvidenceTag::new("sequence"), sequence)
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 fn preview_target_entity_identity(

@@ -81,10 +81,10 @@ pub(crate) fn representative_write_authority_row(
         representative_snapshot_identity("snapshot-route-write-7")?,
         vec![WorthQueryMutationDelta::from_touched_aspects(
             "Task",
-            representative_entity_identity("task-7"),
+            representative_entity_identity("task-7")?,
             WorthQueryMutationKind::Deleted,
             vec![status_value_touch()],
-        )],
+        )?],
     );
     let execution = WriteAuthorityExecutionReceipt::from_command(&command, mutation_receipt)?;
     Ok(RepresentativeArtifacts {
@@ -152,7 +152,7 @@ pub(crate) fn representative_signal_invalidation_row(
             representative_task_identity,
             WorthQueryMutationKind::Updated,
             vec![status_value_touch(), priority_value_touch()],
-        )],
+        )?],
         bridge_authority,
     )
     .admit_runtime_write_authority();
@@ -301,7 +301,7 @@ pub(crate) fn representative_live_view_source_row(
     let boundary_receipt = WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(
         &route_plan,
         &retained_evidence,
-    )?;
+    );
     let envelope = WorthQueryLowerRuntimeBoundaryEnvelope::from_route_plan(
         WorthQueryLowerRuntimeSeamKey::LiveViewSourceDeclaration,
         &route_plan,
@@ -379,7 +379,7 @@ pub(crate) fn representative_preview_basis_row(
     let handoff =
         WorthQueryLowerRuntimeReadmissionReceipt::new(eligibility.clone(), &retained_evidence);
     let boundary_receipt =
-        WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_readmission_receipt(&handoff)?;
+        WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_readmission_receipt(&handoff);
     let envelope = WorthQueryLowerRuntimeBoundaryEnvelope::from_readmission_receipt(
         WorthQueryLowerRuntimeSeamKey::PreviewBasisAdmission,
         &handoff,

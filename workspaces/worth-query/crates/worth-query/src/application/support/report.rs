@@ -173,19 +173,19 @@ impl WorthQuerySupportReport {
         let section_postures = vec![
             WorthQuerySupportSectionPosture::from_resolution(
                 config.resolve_section(WorthQueryConfigSectionFamily::Query),
-            ),
+            )?,
             WorthQuerySupportSectionPosture::from_resolution(
                 config.resolve_section(WorthQueryConfigSectionFamily::Relational),
-            ),
+            )?,
             WorthQuerySupportSectionPosture::from_resolution(
                 config.resolve_section(WorthQueryConfigSectionFamily::Signal),
-            ),
+            )?,
             WorthQuerySupportSectionPosture::from_resolution(
                 config.resolve_section(WorthQueryConfigSectionFamily::RuntimeBridge),
-            ),
+            )?,
             WorthQuerySupportSectionPosture::from_resolution(
                 config.resolve_section(WorthQueryConfigSectionFamily::Store),
-            ),
+            )?,
         ]
         .into_iter()
         .collect::<Result<Vec<_>, _>>()?;

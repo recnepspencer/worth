@@ -167,7 +167,7 @@ impl WorthQueryRuntime {
             )
         })?;
         let eligibility = admitted_eligibility(evaluate_effect_eligibility(normalized)?)?;
-        let admitted = admit_effect_intent(eligibility)?;
+        let admitted = admit_effect_intent(eligibility);
         let admitted_effect_identity = admitted.admitted_identity().clone();
         let lowered = scope_admitted_effect_plan(admitted)?
             .lower()

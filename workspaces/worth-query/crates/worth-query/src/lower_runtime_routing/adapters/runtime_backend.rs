@@ -65,7 +65,7 @@ impl LiveViewDeclarationAdmissionBoundaryReceipt {
         let boundary_execution_receipt =
             WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_readmission_receipt(
                 &readmission_receipt,
-            )?;
+            );
         let boundary_envelope = WorthQueryLowerRuntimeBoundaryEnvelope::from_readmission_receipt(
             WorthQueryLowerRuntimeSeamKey::LiveViewSchemaAdmission,
             &readmission_receipt,
@@ -168,7 +168,7 @@ impl SignalInvalidationBoundaryReceipt {
             WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan_with_retained_evidence_identity(
                 &route_plan,
                 &retained_evidence_identity,
-            )?;
+            );
         let boundary_envelope =
             WorthQueryLowerRuntimeBoundaryEnvelope::from_route_plan_with_retained_evidence_identity(
                 WorthQueryLowerRuntimeSeamKey::SignalInvalidationRouting,
@@ -273,7 +273,7 @@ impl SubscriptionActivationBoundaryReceipt {
             WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan_with_retained_evidence_identity(
                 &route_plan,
                 &retained_evidence_identity,
-            )?;
+            );
         let boundary_envelope =
             WorthQueryLowerRuntimeBoundaryEnvelope::from_route_plan_with_retained_evidence_identity(
                 WorthQueryLowerRuntimeSeamKey::SubscriptionActivation,

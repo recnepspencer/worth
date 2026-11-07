@@ -175,7 +175,7 @@ mod tests {
         let readmission =
             WorthQueryLowerRuntimeReadmissionReceipt::new(eligibility, &retained_evidence);
         let boundary =
-            WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_readmission_receipt(&readmission)?;
+            WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_readmission_receipt(&readmission);
         let envelope = crate::lower_runtime_routing::WorthQueryLowerRuntimeBoundaryEnvelope::from_readmission_receipt(
             WorthQueryLowerRuntimeSeamKey::LiveViewSchemaAdmission,
             &readmission,
@@ -247,7 +247,7 @@ mod tests {
         let boundary = WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(
             &route,
             &retained_evidence,
-        )?;
+        );
         let envelope =
             crate::lower_runtime_routing::WorthQueryLowerRuntimeBoundaryEnvelope::from_route_plan(
                 WorthQueryLowerRuntimeSeamKey::SignalInvalidationRouting,

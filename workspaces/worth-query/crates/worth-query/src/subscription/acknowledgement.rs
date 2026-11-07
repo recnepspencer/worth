@@ -31,20 +31,12 @@ pub struct SubscriptionAcknowledgementFrontier {
 }
 
 impl SubscriptionAcknowledgementFrontier {
-    pub(super) fn initial(
-        attachment_digest: SubscriptionConsumerAttachmentDigest,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
-            attachment_digest,
-            QueryDeliverySequence::initial(),
-        ))
+    pub(super) fn initial(attachment_digest: SubscriptionConsumerAttachmentDigest) -> Self {
+        Self::new(attachment_digest, QueryDeliverySequence::initial())
     }
 
-    pub(super) fn advance(
-        &self,
-        sequence: QueryDeliverySequence,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(self.attachment_digest.clone(), sequence))
+    pub(super) fn advance(&self, sequence: QueryDeliverySequence) -> Self {
+        Self::new(self.attachment_digest.clone(), sequence)
     }
 
     fn new(

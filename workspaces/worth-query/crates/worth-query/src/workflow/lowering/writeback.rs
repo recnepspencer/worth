@@ -292,10 +292,8 @@ fn writeback_causality_identity(
     .seal()?)
 }
 
-fn writeback_basis_identity(
-    declaration: &QueryWorkflowDeclaration,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(WorthQueryEvidenceIdentity::compose(
+fn writeback_basis_identity(declaration: &QueryWorkflowDeclaration) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(
         WorthQueryEvidenceScope::RuntimeBridgeWritebackAuthority,
     )
     .field_shape(WorthQueryEvidenceTag::new("role"), "writeback_basis")
@@ -307,7 +305,7 @@ fn writeback_basis_identity(
         WorthQueryEvidenceTag::new("basis"),
         declaration.binding().basis_identity(),
     )
-    .seal()?)
+    .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 fn writeback_lowering_identity(

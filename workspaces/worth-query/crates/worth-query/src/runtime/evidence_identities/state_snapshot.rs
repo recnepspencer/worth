@@ -30,9 +30,8 @@ pub(crate) fn runtime_state_snapshot_result_shape_label_identity(
 
 pub(in crate::runtime) fn runtime_state_snapshot_result_shape_facade_family_identity(
     facade_family: WorthQueryRuntimeFacadeFamily,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+) -> WorthQueryEvidenceIdentity {
+    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "worth_query_runtime_state_snapshot_result_shape_facade_family_v1",
@@ -41,8 +40,7 @@ pub(in crate::runtime) fn runtime_state_snapshot_result_shape_facade_family_iden
                 WorthQueryEvidenceTag::new("facade_family"),
                 facade_family.as_str(),
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 pub(in crate::runtime) fn runtime_state_snapshot_result_shape_write_receipt_identity(

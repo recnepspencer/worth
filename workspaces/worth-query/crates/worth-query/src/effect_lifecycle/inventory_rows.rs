@@ -1,4 +1,5 @@
 use crate::basis_lifecycle::BasisFamily;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::inventory::{
     EffectLifecycleFamilyInventoryRow, EffectLifecycleFamilyKey, EffectLifecyclePublicSurfaceRow,
@@ -8,8 +9,9 @@ use super::inventory::{
 use super::planning::EffectAuthorityOwner;
 use super::support_matrix::EffectSupportPosture;
 
-pub(super) fn effect_lifecycle_family_rows() -> Vec<EffectLifecycleFamilyInventoryRow> {
-    vec![
+pub(super) fn effect_lifecycle_family_rows(
+) -> Result<Vec<EffectLifecycleFamilyInventoryRow>, IdentityDerivationDenial> {
+    Ok(vec![
         EffectLifecycleFamilyInventoryRow::new(
             EffectLifecycleFamilyKey::Mutation,
             EffectAuthorityOwner::WorthRelational,
@@ -23,7 +25,7 @@ pub(super) fn effect_lifecycle_family_rows() -> Vec<EffectLifecycleFamilyInvento
             EffectReceiptArtifactKind::WorthQueryIntentExecution,
             EffectSupportPosture::Denied,
             EffectSupportPosture::Unsupported,
-        ),
+        )?,
         EffectLifecycleFamilyInventoryRow::new(
             EffectLifecycleFamilyKey::Merge,
             EffectAuthorityOwner::WorthRelational,
@@ -32,7 +34,7 @@ pub(super) fn effect_lifecycle_family_rows() -> Vec<EffectLifecycleFamilyInvento
             EffectReceiptArtifactKind::WorthQueryIntentExecution,
             EffectSupportPosture::Denied,
             EffectSupportPosture::Unsupported,
-        ),
+        )?,
         EffectLifecycleFamilyInventoryRow::new(
             EffectLifecycleFamilyKey::Writeback,
             EffectAuthorityOwner::WorthRuntimeBridge,
@@ -46,7 +48,7 @@ pub(super) fn effect_lifecycle_family_rows() -> Vec<EffectLifecycleFamilyInvento
             EffectReceiptArtifactKind::WorthQueryWriteReceipt,
             EffectSupportPosture::Denied,
             EffectSupportPosture::Deferred,
-        ),
+        )?,
         EffectLifecycleFamilyInventoryRow::new(
             EffectLifecycleFamilyKey::OrderedBatch,
             EffectAuthorityOwner::WorthRelational,
@@ -60,12 +62,13 @@ pub(super) fn effect_lifecycle_family_rows() -> Vec<EffectLifecycleFamilyInvento
             EffectReceiptArtifactKind::WorthQueryBatchWriteReceipt,
             EffectSupportPosture::Denied,
             EffectSupportPosture::Unsupported,
-        ),
-    ]
+        )?,
+    ])
 }
 
-pub(super) fn effect_lifecycle_public_surface_rows() -> Vec<EffectLifecyclePublicSurfaceRow> {
-    vec![
+pub(super) fn effect_lifecycle_public_surface_rows(
+) -> Result<Vec<EffectLifecyclePublicSurfaceRow>, IdentityDerivationDenial> {
+    Ok(vec![
         EffectLifecyclePublicSurfaceRow::new(
             EffectPublicSurfaceKind::CommonPathIntentAuthoring,
             Some(
@@ -74,7 +77,7 @@ pub(super) fn effect_lifecycle_public_surface_rows() -> Vec<EffectLifecyclePubli
             Some(EffectReceiptArtifactKind::WorthQueryIntentExecution),
             EffectPublicSurfaceAvailability::Implemented,
             true,
-        ),
+        )?,
         EffectLifecyclePublicSurfaceRow::new(
             EffectPublicSurfaceKind::WritebackCommonPath,
             Some(
@@ -83,35 +86,35 @@ pub(super) fn effect_lifecycle_public_surface_rows() -> Vec<EffectLifecyclePubli
             Some(EffectReceiptArtifactKind::WorthQueryWriteReceipt),
             EffectPublicSurfaceAvailability::Implemented,
             true,
-        ),
+        )?,
         EffectLifecyclePublicSurfaceRow::new(
             EffectPublicSurfaceKind::InspectableLoweredPlan,
             Some("scope_admitted_effect_plan(...).lower()"),
             Some(EffectReceiptArtifactKind::WorthQueryIntentExecution),
             EffectPublicSurfaceAvailability::Implemented,
             true,
-        ),
+        )?,
         EffectLifecyclePublicSurfaceRow::new(
             EffectPublicSurfaceKind::SupportDiscovery,
             Some("discover_effect_lifecycle_support(...)"),
             None,
             EffectPublicSurfaceAvailability::Implemented,
             true,
-        ),
+        )?,
         EffectLifecyclePublicSurfaceRow::new(
             EffectPublicSurfaceKind::DenialOrRebind,
             Some("evaluate_effect_eligibility(...)"),
             None,
             EffectPublicSurfaceAvailability::Implemented,
             true,
-        ),
+        )?,
         EffectLifecyclePublicSurfaceRow::new(
             EffectPublicSurfaceKind::BatchExecution,
             Some("effect_batch().using_basis(...).admit().lower().execute()"),
             Some(EffectReceiptArtifactKind::WorthQueryBatchWriteReceipt),
             EffectPublicSurfaceAvailability::Implemented,
             true,
-        ),
+        )?,
         EffectLifecyclePublicSurfaceRow::new(
             EffectPublicSurfaceKind::DiagnosticsEnvelope,
             Some(
@@ -120,20 +123,20 @@ pub(super) fn effect_lifecycle_public_surface_rows() -> Vec<EffectLifecyclePubli
             Some(EffectReceiptArtifactKind::SelfDescribingEffectEnvelope),
             EffectPublicSurfaceAvailability::Implemented,
             true,
-        ),
+        )?,
         EffectLifecyclePublicSurfaceRow::new(
             EffectPublicSurfaceKind::ProductionCertification,
             Some("certify_effect_execution_pipeline()"),
             None,
             EffectPublicSurfaceAvailability::Implemented,
             true,
-        ),
+        )?,
         EffectLifecyclePublicSurfaceRow::new(
             EffectPublicSurfaceKind::HiddenLowerRuntimeTypes,
             None,
             None,
             EffectPublicSurfaceAvailability::Implemented,
             true,
-        ),
-    ]
+        )?,
+    ])
 }

@@ -50,7 +50,7 @@ impl RelevantLiveSubscriptionDeltaRoute<'_> {
             self.delta_kind,
             self.state,
             patch_width,
-        )?;
+        );
         let live_graph_read_maintenance = live_graph_read_maintenance_receipt(
             &view_name,
             self.state,
@@ -146,18 +146,16 @@ fn admitted_subscription_maintenance_delta(
     delta_kind: QuerySubscriptionMaintenanceDeltaKind,
     state: &WorthQueryRuntimeLiveSubscriptionState,
     patch_width: u64,
-) -> Result<QuerySubscriptionMaintenanceDelta, IdentityDerivationDenial> {
+) -> QuerySubscriptionMaintenanceDelta {
     let commit_evidence = receipt.commit_identity.evidence_identity();
     let entity_evidence = delta.entity_identity.evidence_identity();
-    Ok(
-        QuerySubscriptionMaintenanceDelta::admitted_with_typed_scope(
-            delta_kind,
-            state.active_lane_handle.lane_digest().clone(),
-            &commit_evidence,
-            delta.target_collection_identity().evidence_identity(),
-            &entity_evidence,
-            MaintenanceDeltaWidth::measured(patch_width),
-        )?,
+    QuerySubscriptionMaintenanceDelta::admitted_with_typed_scope(
+        delta_kind,
+        state.active_lane_handle.lane_digest().clone(),
+        &commit_evidence,
+        delta.target_collection_identity().evidence_identity(),
+        &entity_evidence,
+        MaintenanceDeltaWidth::measured(patch_width),
     )
 }
 

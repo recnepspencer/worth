@@ -144,7 +144,7 @@ fn async_result_state_for_shared_read_entry(
         )?),
         &snapshot_identity.evidence_identity(),
         &shared_read_generation_identity(snapshot_identity),
-    )?))
+    )))
 }
 
 fn unpublished_async_result_state(
@@ -159,7 +159,7 @@ fn unpublished_async_result_state(
         )?),
         &snapshot_identity.evidence_identity(),
         &shared_read_generation_identity(snapshot_identity),
-    )?)
+    ))
 }
 
 fn shared_read_generation_identity(

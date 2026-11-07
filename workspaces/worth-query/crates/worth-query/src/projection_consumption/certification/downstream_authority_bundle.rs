@@ -128,28 +128,28 @@ pub fn certify_consumed_projection_authority(
                 "authority={}",
                 admitted.evidence().source_identity_projection()
             ),
-        ),
+        )?,
         row(
             ConsumedProjectionAuthorityCertificationLane::DeterministicReplay,
             admitted.structurally_equivalent(&replay),
             format!("receipt={}", admitted.receipt().receipt_digest()),
-        ),
+        )?,
         row(
             ConsumedProjectionAuthorityCertificationLane::TypedDenial,
             denial.counters().authority_constructions() == 0,
             format!("denial={:?}", denial.kind()),
-        ),
+        )?,
         row(
             ConsumedProjectionAuthorityCertificationLane::AuthorityProductSupport,
             support_matrix.rows().len()
                 == super::ProjectionConsumptionCertifiedSourceSurface::all().len(),
             format!("matrix={}", support_matrix.matrix_digest()),
-        ),
+        )?,
         row(
             ConsumedProjectionAuthorityCertificationLane::ExactComplexity,
             complexity.satisfied(),
             format!("slopes={}", complexity.evidence_digest()),
-        ),
+        )?,
     ];
     let bundle_digest = compose_digest_sequence(
         "consumed_projection_authority_certification_bundle_v1",

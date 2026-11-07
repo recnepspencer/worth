@@ -59,9 +59,8 @@ pub(super) fn runtime_async_result_state_identity(
     causality_identity: &WorthQueryEvidenceIdentity,
     basis_identity: &WorthQueryEvidenceIdentity,
     checkpoint_identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::RuntimeStateSnapshot)
+) -> WorthQueryEvidenceIdentity {
+    worth_query_evidence_identity(WorthQueryEvidenceScope::RuntimeStateSnapshot)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "worth_query_runtime_async_result_state_v1",
@@ -73,8 +72,7 @@ pub(super) fn runtime_async_result_state_identity(
                 WorthQueryEvidenceTag::new("checkpoint"),
                 checkpoint_identity,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 #[cfg(test)]

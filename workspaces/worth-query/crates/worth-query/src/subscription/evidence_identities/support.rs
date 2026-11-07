@@ -5,16 +5,14 @@ use crate::evidence_identity::{WorthQueryEvidenceIdentity, WorthQueryEvidenceTag
 
 pub(in crate::subscription) fn subscription_family_capability_identity(
     family: &QuerySubscriptionFamily,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "query_subscription_family_capability_digest_v1",
             )
             .field_shape(WorthQueryEvidenceTag::new("family"), family.as_str())
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 pub(in crate::subscription) fn support_subject_identity(

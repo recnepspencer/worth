@@ -29,7 +29,8 @@ pub(super) fn construct_installed_domain_records(
     generation_lease: &WorthQueryDomainInstallationGenerationLease,
     execution_index: &WorthQueryInstalledDomainExecutionIndex,
     portable_index: &worth_query_installation::facade::WorthQueryInstalledPackageIndex,
-) -> (Vec<WorthQueryInstalledDomainRecord>, HashMap<TypeId, usize>) {
+) -> Result<(Vec<WorthQueryInstalledDomainRecord>, HashMap<TypeId, usize>), IdentityDerivationDenial>
+{
     let mut records_by_marker_type = HashMap::new();
     let records = artifacts
         .into_iter()
@@ -45,8 +46,8 @@ pub(super) fn construct_installed_domain_records(
                 portable_index,
             )
         })
-        .collect();
-    (records, records_by_marker_type)
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok((records, records_by_marker_type))
 }
 
 fn construct_installed_domain_record(

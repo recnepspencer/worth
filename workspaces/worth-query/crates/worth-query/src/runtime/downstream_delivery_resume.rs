@@ -42,20 +42,20 @@ impl WorthQueryRuntimeDownstreamResumePosture {
         required_basis_identity: Option<WorthQueryEvidenceIdentity>,
         support_posture: WorthQueryLowerRuntimeSupportPosture,
         support_identity: WorthQueryEvidenceIdentity,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let posture_identity = runtime_downstream_resume_posture_identity(
             kind,
             required_basis_identity.as_ref(),
             support_posture,
             &support_identity,
-        )?;
-        Ok(Self {
+        );
+        Self {
             kind,
             required_basis_identity,
             support_posture,
             support_identity,
             posture_identity,
-        })
+        }
     }
 
     pub fn kind(&self) -> WorthQueryRuntimeDownstreamResumePostureKind {
@@ -178,7 +178,7 @@ mod tests {
             None,
             support.posture(),
             support_identity,
-        )?;
+        );
         assert_eq!(posture.support_identity(), posture.support_identity());
 
         Ok(())

@@ -55,7 +55,7 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         Ok(
             worth_query_checked_declaration_route_orchestration_from_progressed_on_handle(
                 self, progressed, None,
-            )?,
+            ),
         )
     }
 
@@ -69,7 +69,7 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         Ok(
             worth_query_declaration_route_orchestration_from_progressed_proof_on_handle(
                 self, progressed, None,
-            )?,
+            ),
         )
     }
 
@@ -96,7 +96,7 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         Ok(
             worth_query_checked_declaration_receipt_orchestration_from_progressed_on_handle(
                 self, progressed, None,
-            )?,
+            ),
         )
     }
 
@@ -110,7 +110,7 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         Ok(
             worth_query_declaration_receipt_orchestration_from_progressed_proof_on_handle(
                 self, progressed, None,
-            )?,
+            ),
         )
     }
 
@@ -152,7 +152,7 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         Ok(
             worth_query_checked_declaration_envelope_orchestration_from_progressed_on_handle(
                 self, progressed, None,
-            )?,
+            ),
         )
     }
 
@@ -166,7 +166,7 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         Ok(
             worth_query_declaration_envelope_orchestration_from_progressed_proof_on_handle(
                 self, progressed, None,
-            )?,
+            ),
         )
     }
 
@@ -184,7 +184,7 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
                 self,
                 progressed,
                 Some(intent),
-            )?,
+            ),
         )
     }
 }

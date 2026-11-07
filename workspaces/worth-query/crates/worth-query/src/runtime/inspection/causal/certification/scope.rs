@@ -43,17 +43,14 @@ impl CausalInspectionHostileRow {
     fn from_artifact(
         lane: CausalInspectionCertificationLane,
         artifact: &QueryCausalInspectionArtifact,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
-            lane,
-            artifact.artifact_identity().evidence_identity(),
-        )?)
+    ) -> Self {
+        Self::new(lane, artifact.artifact_identity().evidence_identity())
     }
 
     fn new(
         lane: CausalInspectionCertificationLane,
         evidence_identity: &WorthQueryEvidenceIdentity,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let row_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalInspectionCertificationFailureEvidence,
         )
@@ -63,10 +60,10 @@ impl CausalInspectionHostileRow {
         )
         .field_shape(WorthQueryEvidenceTag::new("lane"), lane.as_str())
         .field_evidence_identity(WorthQueryEvidenceTag::new("evidence"), evidence_identity)
-        .seal()?;
-        Ok(Self {
+        .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens");
+        Self {
             row_digest: row_identity.as_str().to_string(),
-        })
+        }
     }
 
     fn from_terminal_digest(
@@ -218,15 +215,15 @@ fn build_certification_hostile_rows(
     let changed_row = CausalInspectionHostileRow::from_artifact(
         CausalInspectionCertificationLane::ChangedResult,
         changed_artifact,
-    )?;
+    );
     let redaction_row = CausalInspectionHostileRow::from_artifact(
         CausalInspectionCertificationLane::PolicyRedacted,
         redacted_artifact,
-    )?;
+    );
     let denied_row = CausalInspectionHostileRow::from_artifact(
         CausalInspectionCertificationLane::DeniedResult,
         denied_artifact,
-    )?;
+    );
     let missing_evidence_row = CausalInspectionHostileRow::from_terminal_digest(
         CausalInspectionCertificationLane::MissingEvidence,
         missing_evidence_failure_digest,

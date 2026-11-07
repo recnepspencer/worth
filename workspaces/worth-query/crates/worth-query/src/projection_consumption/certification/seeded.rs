@@ -287,7 +287,7 @@ mod tests {
         let changed = seed_row(19)?;
         assert_eq!(first, replay);
         assert_ne!(first.row_digest(), changed.row_digest());
-        assert_ne!(seed_row(18).row_digest(), seed_row(23).row_digest());
+        assert_ne!(seed_row(18)?.row_digest(), seed_row(23)?.row_digest());
 
         Ok(())
     }

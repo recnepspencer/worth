@@ -236,9 +236,8 @@ pub(super) fn coverage_receipt_identity(
     family_coverage_index_lookup_count: usize,
     covered_row_width: &WorthQueryEvidenceIdentity,
     uncovered_variation_width: usize,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "query_subscription_certification_coverage_receipt_v1",
@@ -259,8 +258,7 @@ pub(super) fn coverage_receipt_identity(
                 WorthQueryEvidenceTag::new("uncovered_variation_width"),
                 uncovered_variation_width,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 pub(super) fn hostile_coverage_identity(

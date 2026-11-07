@@ -72,37 +72,31 @@ pub struct QuerySubscriptionSupportProfile {
 }
 
 impl QuerySubscriptionSupportProfile {
-    pub(crate) fn admitted(
-        source_identity: &WorthQueryEvidenceIdentity,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+    pub(crate) fn admitted(source_identity: &WorthQueryEvidenceIdentity) -> Self {
+        Self::new(
             QuerySubscriptionRuntimeBackedSupport::Admitted,
             QuerySubscriptionActiveLifecycleSupport::Admitted,
             QuerySubscriptionLifecycleCloseoutSupport::Admitted,
             source_identity,
-        )?)
+        )
     }
 
-    pub(crate) fn denied(
-        source_identity: &WorthQueryEvidenceIdentity,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+    pub(crate) fn denied(source_identity: &WorthQueryEvidenceIdentity) -> Self {
+        Self::new(
             QuerySubscriptionRuntimeBackedSupport::Denied,
             QuerySubscriptionActiveLifecycleSupport::Denied,
             QuerySubscriptionLifecycleCloseoutSupport::Denied,
             source_identity,
-        )?)
+        )
     }
 
-    pub(crate) fn active_runtime_admitted(
-        source_identity: &WorthQueryEvidenceIdentity,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+    pub(crate) fn active_runtime_admitted(source_identity: &WorthQueryEvidenceIdentity) -> Self {
+        Self::new(
             QuerySubscriptionRuntimeBackedSupport::Admitted,
             QuerySubscriptionActiveLifecycleSupport::Admitted,
             QuerySubscriptionLifecycleCloseoutSupport::Admitted,
             source_identity,
-        )?)
+        )
     }
 
     fn new(
@@ -110,7 +104,7 @@ impl QuerySubscriptionSupportProfile {
         active_lifecycle_support: QuerySubscriptionActiveLifecycleSupport,
         lifecycle_closeout_support: QuerySubscriptionLifecycleCloseoutSupport,
         source_identity: &WorthQueryEvidenceIdentity,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let durable_support = QuerySubscriptionDurableSupport::ExplicitDebt;
         let profile_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::SubscriptionActivationReceipt,
@@ -136,15 +130,15 @@ impl QuerySubscriptionSupportProfile {
             durable_support.as_str(),
         )
         .field_evidence_identity(WorthQueryEvidenceTag::new("source"), source_identity)
-        .seal()?;
-        Ok(Self {
+        .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens");
+        Self {
             runtime_backed_support,
             active_lifecycle_support,
             lifecycle_closeout_support,
             durable_support,
             source_identity: source_identity.clone(),
             profile_identity,
-        })
+        }
     }
 
     pub fn runtime_backed_support(&self) -> &QuerySubscriptionRuntimeBackedSupport {

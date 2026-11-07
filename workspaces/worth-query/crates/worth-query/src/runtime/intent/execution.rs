@@ -33,11 +33,9 @@ pub struct WorthQueryIntentExecution {
 }
 
 impl WorthQueryIntentExecution {
-    pub(in crate::runtime) fn admit_runtime_authority(
-        mut self,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    pub(in crate::runtime) fn admit_runtime_authority(mut self) -> Self {
         self.mutation_receipt = self.mutation_receipt.admit_runtime_write_authority();
-        Ok(self)
+        self
     }
 
     pub fn admitted(

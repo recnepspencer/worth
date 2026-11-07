@@ -79,7 +79,7 @@ pub(crate) fn compose_certified_source_digest(
         .map(|identity| {
             compose_certified_source_reference_entry_digest(identity.label(), identity.identity())
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     Ok(seal(
         certification_scope_encoder("projection_consumption_certified_source_v1")
             .field_shape(
@@ -193,7 +193,7 @@ pub(crate) fn compose_certification_bundle_digest(
     let output_entries = outputs
         .into_iter()
         .map(|(name, value)| compose_certification_bundle_output_entry_digest(name, value.as_ref()))
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     Ok(seal(
         certification_scope_encoder("projection_consumption_certification_bundle_v1")
             .field_value_sequence(WorthQueryEvidenceTag::new("row"), row_entries)

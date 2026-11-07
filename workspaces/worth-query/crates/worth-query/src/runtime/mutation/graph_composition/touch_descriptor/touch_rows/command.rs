@@ -12,20 +12,20 @@ use super::{WorthQueryGraphTouchDescriptorRow, WorthQueryGraphTouchDescriptorRow
 pub(in super::super) fn derive_command_touch_rows(
     program: &WorthQueryGraphCompositionProgram,
     commands: &[WorthQueryWriteCommand],
-) -> Vec<WorthQueryGraphTouchDescriptorRow> {
+) -> Result<Vec<WorthQueryGraphTouchDescriptorRow>, IdentityDerivationDenial> {
     let steps_by_component = program
         .steps()
         .iter()
         .map(|step| (step.component_index(), step))
         .collect::<BTreeMap<_, _>>();
-    commands
+    Ok(commands
         .iter()
         .enumerate()
         .map(|(component_index, command)| {
             let step = steps_by_component.get(&component_index).copied();
             row_from_command(component_index, command, step)
         })
-        .collect()
+        .collect::<Result<Vec<_>, _>>()?)
 }
 
 fn row_from_command(

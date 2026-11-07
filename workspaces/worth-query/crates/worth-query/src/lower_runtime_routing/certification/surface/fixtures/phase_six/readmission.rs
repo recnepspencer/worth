@@ -95,7 +95,7 @@ pub(crate) fn representative_subscription_continuity_row(
     let boundary_receipt = WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(
         &route_plan,
         &retained_evidence,
-    )?;
+    );
     let envelope = WorthQueryLowerRuntimeBoundaryEnvelope::from_route_plan(
         WorthQueryLowerRuntimeSeamKey::SubscriptionContinuity,
         &route_plan,
@@ -293,7 +293,7 @@ fn readmission_row(
         &retained_evidence_identity,
     );
     let boundary_receipt =
-        WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_readmission_receipt(&readmission)?;
+        WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_readmission_receipt(&readmission);
     let envelope = WorthQueryLowerRuntimeBoundaryEnvelope::from_readmission_receipt(
         seam_key,
         &readmission,

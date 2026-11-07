@@ -52,7 +52,7 @@ impl WorthQueryRuntime {
             self,
             options.effect_policy(),
             basis_admission,
-        )?)
+        ))
     }
 
     pub(in crate::runtime) fn open_preview_with_admitted_basis<'a>(
@@ -70,7 +70,7 @@ impl WorthQueryRuntime {
             self,
             effect_policy,
             basis_admission,
-        )?)
+        ))
     }
 
     pub fn support_profile(&self) -> WorthQueryRuntimeSupportProfile {

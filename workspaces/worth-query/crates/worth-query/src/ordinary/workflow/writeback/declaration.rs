@@ -82,9 +82,7 @@ pub fn projected_state_diff() -> WorthQueryWritebackTrigger {
     WorthQueryWritebackTrigger::ProjectedStateDiff
 }
 
-pub fn declare_writeback(
-    trigger: WorthQueryWritebackTrigger,
-) -> Result<WorthQueryWritebackDeclaration, IdentityDerivationDenial> {
+pub fn declare_writeback(trigger: WorthQueryWritebackTrigger) -> WorthQueryWritebackDeclaration {
     let identity = WorthQueryWritebackDeclarationIdentity {
         identity: WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::WorkflowMutationLowering,
@@ -97,11 +95,11 @@ pub fn declare_writeback(
             WorthQueryEvidenceTag::new("family"),
             trigger.family().as_str(),
         )
-        .seal()?,
+        .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens"),
     };
-    Ok(WorthQueryWritebackDeclaration {
+    WorthQueryWritebackDeclaration {
         identity,
         trigger,
         inspection_policy: WorthQueryOrdinaryInspectionPolicy::OperationalOnly,
-    })
+    }
 }

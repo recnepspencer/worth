@@ -24,9 +24,8 @@ pub(in crate::subscription) fn subscription_performance_receipt_source_identity(
     lane_identity: &WorthQueryEvidenceIdentity,
     consumer_identity: &WorthQueryEvidenceIdentity,
     backpressure_policy: &DeliveryBackpressurePolicy,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "subscription_performance_receipt_source_v1",
@@ -37,8 +36,7 @@ pub(in crate::subscription) fn subscription_performance_receipt_source_identity(
                 WorthQueryEvidenceTag::new("backpressure"),
                 backpressure_policy.as_str(),
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 #[cfg(test)]

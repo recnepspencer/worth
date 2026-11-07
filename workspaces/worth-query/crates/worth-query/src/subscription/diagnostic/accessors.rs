@@ -15,11 +15,8 @@ use super::trace::{QuerySubscriptionDiagnosticStageTrace, QuerySubscriptionDiagn
 impl QuerySubscriptionDiagnosticCounters {
     pub fn counter_projection(
         &self,
-    ) -> Result<
-        QueryProjectionIdentity<String, QuerySubscriptionIdentityKind>,
-        IdentityDerivationDenial,
-    > {
-        Ok(subscription_evidence_projection(&self.evidence_identity()))
+    ) -> QueryProjectionIdentity<String, QuerySubscriptionIdentityKind> {
+        subscription_evidence_projection(&self.evidence_identity())
     }
 }
 

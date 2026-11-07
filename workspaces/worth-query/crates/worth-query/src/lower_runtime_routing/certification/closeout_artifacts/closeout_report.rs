@@ -282,7 +282,7 @@ mod tests {
         let report = worth_query_lower_runtime_closeout_report(request_execution)?;
 
         assert_eq!(
-            worth_query_lower_runtime_closeout_report_digest(request_execution),
+            worth_query_lower_runtime_closeout_report_digest(request_execution)?,
             report.report_digest()
         );
         assert_ne!(

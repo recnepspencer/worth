@@ -127,37 +127,37 @@ impl EffectReceiptTransitionRules {
                 EffectReceiptTransitionPosture::Implemented,
                 "the receipt is the canonical operational artifact for post-execution inspection",
                 None,
-            ),
+            )?,
             EffectReceiptTransitionRule::new(
                 EffectReceiptTransitionKind::DeriveEnvelope,
                 EffectReceiptTransitionPosture::Implemented,
                 "the self-describing envelope derives directly from the receipt",
                 None,
-            ),
+            )?,
             EffectReceiptTransitionRule::new(
                 EffectReceiptTransitionKind::MaterializeDiagnostics,
                 EffectReceiptTransitionPosture::Implemented,
                 "diagnostics materialization derives from receipt and envelope evidence",
                 None,
-            ),
+            )?,
             EffectReceiptTransitionRule::new(
                 EffectReceiptTransitionKind::ProjectMaterializedFacts,
                 EffectReceiptTransitionPosture::Deferred,
                 "projection fact receipts remain owned by milestone 9.3.4",
                 None,
-            ),
+            )?,
             EffectReceiptTransitionRule::new(
                 EffectReceiptTransitionKind::ReplayExecution,
                 EffectReceiptTransitionPosture::Deferred,
                 "durable effect replay remains deferred to later store-backed milestones",
                 Some(EffectDeferredNeighborFamily::DurableReplayAndRestartStableEnvelope),
-            ),
+            )?,
             EffectReceiptTransitionRule::new(
                 EffectReceiptTransitionKind::ExportPortableReceipt,
                 EffectReceiptTransitionPosture::Deferred,
                 "portable receipt import/export remains deferred to later store-backed milestones",
                 Some(EffectDeferredNeighborFamily::StoreBackedExecutionParity),
-            ),
+            )?,
         ];
         let rule_identities = rules
             .iter()

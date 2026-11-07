@@ -100,7 +100,7 @@ fn preview_workflow_artifact_materializer_builds_preview_artifacts(
             "request-preview",
             "eligibility-preview",
             "decision-preview",
-        )
+        )?
         .binding_identity()
         .as_str()
     );

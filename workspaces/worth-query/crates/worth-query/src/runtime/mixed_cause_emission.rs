@@ -43,7 +43,7 @@ pub(crate) fn emit_mixed_cause_live_subscription_delivery(
         QueryPatchGroupKind::MixedCauseDeliveryGroup,
         mixed_cause_delivery.mixed_cause_identity(),
         delivery_window.ordered_causes().len().max(1) as u64,
-    )?;
+    );
     let window = open_query_delivery_window(
         active_subscriptions,
         &state.consumer_attachment,

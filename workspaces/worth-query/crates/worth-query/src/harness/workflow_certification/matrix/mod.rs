@@ -22,7 +22,7 @@ pub struct MilestoneFivePointFiveWorkflowCertificationAdapter;
 impl MilestoneFivePointFiveWorkflowCertificationAdapter {
     pub fn workflow_declaration_taxonomy_and_context_binding_test(
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<WorkflowCertificationMatrix, IdentityDerivationDenial> {
+    ) -> WorkflowCertificationMatrix {
         let runtime_conflict = runtime_conflict_lane();
         let runtime_merge =
             runtime_merge_lane(crate::workflow::WorkflowBudgetClass::AuthorityTargetBounded);
@@ -30,14 +30,14 @@ impl MilestoneFivePointFiveWorkflowCertificationAdapter {
             runtime_merge_lane(crate::workflow::WorkflowBudgetClass::InspectionBounded);
         let runtime_mutation = runtime_mutation_lane();
         let preview_foundation = preview_foundation_lane();
-        let merge_lowering = merge_lowering_lane()?;
-        let writeback_lowering = writeback_lowering_lane()?;
+        let merge_lowering = merge_lowering_lane();
+        let writeback_lowering = writeback_lowering_lane();
         let conflict_inspection = conflict_inspection_lane(request_execution);
         let denied_conflict_inspection = denied_conflict_inspection_lane(request_execution);
-        let post_merge_inspection = post_merge_inspection_lane()?;
+        let post_merge_inspection = post_merge_inspection_lane();
         let preview_merge_lowering = preview_merge_lowering_lane();
 
-        Ok(WorkflowCertificationMatrix {
+        WorkflowCertificationMatrix {
             suite_name: "Query Workflow Lowering And Writeback Boundary Test",
             rows: WORKFLOW_CANONICAL_ROW_SPECS
                 .iter()
@@ -62,6 +62,6 @@ impl MilestoneFivePointFiveWorkflowCertificationAdapter {
                 .iter()
                 .map(rejection_row)
                 .collect(),
-        })
+        }
     }
 }

@@ -131,7 +131,7 @@ fn lower_runtime_live_subscription_session(
         canonical_query_digest: session.canonical().query().digest().clone(),
         live_view_identity: live_subscription_source_identity(
             "live_view",
-            &live_subscription_view_shape_source_identity(view_family)?,
+            &live_subscription_view_shape_source_identity(view_family),
         )?,
         canonical_result_shape_digest: session.canonical().result_shape().digest().clone(),
         subscription_family,

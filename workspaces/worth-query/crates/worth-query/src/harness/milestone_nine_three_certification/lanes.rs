@@ -119,7 +119,7 @@ pub(super) fn lane_for(
             .unwrap();
             let (continued_window, report) =
                 apply_active_subscription_continuation(&mut runtime, window, evidence).unwrap();
-            let (delta, _) = lower_subscription_continuation_report(&report)?;
+            let (delta, _) = lower_subscription_continuation_report(&report);
             let (delta, lowering_report, _) =
                 lower_query_subscription_maintenance_delta(delta).unwrap();
             continuation_report = Some(report);
@@ -155,7 +155,7 @@ pub(super) fn lane_for(
             PreviewResidueWidth::measured(0),
             PreviewResidueWidth::measured(1),
             PreviewResidueWidth::measured(1),
-        )?;
+        );
         let discard = discard_preview_subscription(isolation.clone(), residue.clone()).unwrap();
         preview_isolation = Some(isolation);
         preview_residue = Some(residue);

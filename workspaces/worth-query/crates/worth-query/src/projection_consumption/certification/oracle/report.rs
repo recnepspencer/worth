@@ -114,7 +114,7 @@ pub fn projection_consumption_oracle_report(
                 "contract_digest",
                 "semantic_fact_digest",
             ],
-        ),
+        )?,
         manifest_row(
             ProjectionConsumptionOracleLane::HostileLane,
             "grouped_worth_membership_and_endpoint_hostile",
@@ -129,7 +129,7 @@ pub fn projection_consumption_oracle_report(
                 "semantic_fact_digest",
                 "counter_snapshot",
             ],
-        ),
+        )?,
         manifest_row(
             ProjectionConsumptionOracleLane::ParityLane,
             "equivalent_row_set_replay_parity",
@@ -145,19 +145,19 @@ pub fn projection_consumption_oracle_report(
                 "fact_set_digest",
                 "receipt_digest",
             ],
-        ),
+        )?,
     ];
     let comparison_rows = vec![
         comparison_row(
             ProjectionConsumptionOracleLane::ControlLane,
-            row_set_control_expected_digest(2),
-            row_set_control_actual_digest(control.facts()),
-        ),
+            row_set_control_expected_digest(2)?,
+            row_set_control_actual_digest(control.facts())?,
+        )?,
         comparison_row(
             ProjectionConsumptionOracleLane::HostileLane,
-            grouped_worth_expected_digest(3),
-            grouped_worth_actual_digest(grouped.facts()),
-        ),
+            grouped_worth_expected_digest(3)?,
+            grouped_worth_actual_digest(grouped.facts())?,
+        )?,
         comparison_row(
             ProjectionConsumptionOracleLane::ParityLane,
             compose_oracle_parity_lane_digest(
@@ -165,14 +165,14 @@ pub fn projection_consumption_oracle_report(
                 control.contract().contract_digest(),
                 control.facts().fact_set_digest(),
                 control.receipt().receipt_digest(),
-            ),
+            )?,
             compose_oracle_parity_lane_digest(
                 parity.declaration().declaration_digest(),
                 parity.contract().contract_digest(),
                 parity.facts().fact_set_digest(),
                 parity.receipt().receipt_digest(),
-            ),
-        ),
+            )?,
+        )?,
     ];
     let manifest_digest = compose_digest_sequence(
         "projection_consumption_oracle_manifest_v1",

@@ -23,7 +23,7 @@ impl SubscriptionPerformanceReceipt {
         density_posture: ActiveDeliveryDensityPosture,
         allocation_posture: ActiveSubscriptionAllocationPosture,
         source_identity: &WorthQueryEvidenceIdentity,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let remaining_width = budgeted_width.saturating_sub(consumed_width);
         let performance_receipt_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::SubscriptionActivationReceipt,
@@ -53,15 +53,15 @@ impl SubscriptionPerformanceReceipt {
             WorthQueryEvidenceTag::new("allocation"),
             allocation_posture.as_str(),
         )
-        .seal()?;
-        Ok(Self {
+        .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens");
+        Self {
             consumed_width,
             budgeted_width,
             remaining_width,
             density_posture,
             allocation_posture,
             performance_receipt_identity,
-        })
+        }
     }
 
     pub fn consumed_width(&self) -> u64 {

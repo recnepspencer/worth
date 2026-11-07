@@ -41,6 +41,6 @@ pub fn at(
 ) -> Result<WorthQueryHistoricalContext, IdentityDerivationDenial> {
     Ok(WorthQueryHistoricalContext {
         workspace_name: workspace.name().to_string(),
-        snapshot_identity: workspace.snapshot_identity_with_request(execution)?,
+        snapshot_identity: workspace.snapshot_identity_with_request(execution),
     })
 }

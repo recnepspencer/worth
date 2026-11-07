@@ -236,8 +236,8 @@ impl WorthQueryRuntime {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &WorthQueryOrdinaryAuthorityAdmission,
-    ) -> Result<WorthQueryOrdinaryAuthorityDrift, IdentityDerivationDenial> {
-        Ok(if admission.runtime_identity != self.authority_identity {
+    ) -> WorthQueryOrdinaryAuthorityDrift {
+        if admission.runtime_identity != self.authority_identity {
             WorthQueryOrdinaryAuthorityDrift::ForeignOwner
         } else if !admission
             .snapshot_identity
@@ -246,7 +246,7 @@ impl WorthQueryRuntime {
             WorthQueryOrdinaryAuthorityDrift::StaleSnapshot
         } else {
             WorthQueryOrdinaryAuthorityDrift::Current
-        })
+        }
     }
 
     pub(crate) fn validate_ordinary_merge_authority(

@@ -42,7 +42,7 @@ pub(super) fn trace_from_stage_evidence(
         .map(QuerySubscriptionDiagnosticStageTrace::from_evidence)
         .collect::<Result<Vec<_>, _>>()?;
     let counters = QuerySubscriptionDiagnosticCounters::trace_emitted(stage_traces.len() as u64);
-    let counter_snapshot = counters.counter_projection()?.label().to_string();
+    let counter_snapshot = counters.counter_projection().label().to_string();
     let stage_trace_refs: Vec<&WorthQueryEvidenceIdentity> = stage_traces
         .iter()
         .map(|trace| trace.stage_trace_identity())

@@ -288,7 +288,8 @@ mod tests {
     }
 
     #[test]
-    fn predicate_and_ordering_dependencies_route_when_projection_omits_them() {
+    fn predicate_and_ordering_dependencies_route_when_projection_omits_them(
+    ) -> Result<(), IdentityDerivationDenial> {
         let target = WorthQueryLiveArtifactTarget::from_view_name("filtered-and-ordered");
         let request = request("Vertex", "identity", "id")
             .where_equal(DeclarativeEqualityFilter::new(
@@ -303,16 +304,18 @@ mod tests {
 
         assert_eq!(
             index
-                .affected_targets(&field_mutation("Vertex", "status", &["state"]))
+                .affected_targets(&field_mutation("Vertex", "status", &["state"])?)
                 .targets,
             BTreeSet::from([target.clone()])
         );
         assert_eq!(
             index
-                .affected_targets(&field_mutation("Vertex", "ranking", &["position"]))
+                .affected_targets(&field_mutation("Vertex", "ranking", &["position"])?)
                 .targets,
             BTreeSet::from([target])
         );
+
+        Ok(())
     }
 
     fn request(collection: &str, aspect: &str, field: &str) -> DeclarativeLiveQueryRequest {

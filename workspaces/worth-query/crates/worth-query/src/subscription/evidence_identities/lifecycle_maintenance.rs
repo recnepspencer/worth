@@ -14,9 +14,8 @@ pub(in crate::subscription) fn lifecycle_delivery_window_identity(
     allocation_scope_width: u64,
     allocation_posture: ActiveSubscriptionAllocationPosture,
     backpressure_policy: DeliveryBackpressurePolicy,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "query_delivery_window_v1",
@@ -47,8 +46,7 @@ pub(in crate::subscription) fn lifecycle_delivery_window_identity(
                 WorthQueryEvidenceTag::new("backpressure"),
                 backpressure_policy.as_str(),
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 pub(in crate::subscription) fn lifecycle_maintenance_delta_identity(
@@ -56,9 +54,8 @@ pub(in crate::subscription) fn lifecycle_maintenance_delta_identity(
     lane_identity: &WorthQueryEvidenceIdentity,
     scope_identity: &WorthQueryEvidenceIdentity,
     width: u64,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "query_subscription_maintenance_delta_v1",
@@ -67,8 +64,7 @@ pub(in crate::subscription) fn lifecycle_maintenance_delta_identity(
             .field_evidence_identity(WorthQueryEvidenceTag::new("lane"), lane_identity)
             .field_evidence_identity(WorthQueryEvidenceTag::new("scope"), scope_identity)
             .field_usize(WorthQueryEvidenceTag::new("width"), width as usize)
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 pub(in crate::subscription) fn lifecycle_maintenance_delta_scope_identity(
@@ -92,9 +88,8 @@ pub(in crate::subscription) fn lifecycle_maintenance_delta_identity_typed(
     collection_identity: &WorthQueryEvidenceIdentity,
     entity_identity: &WorthQueryEvidenceIdentity,
     width: u64,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "query_subscription_maintenance_delta_v1",
@@ -108,6 +103,5 @@ pub(in crate::subscription) fn lifecycle_maintenance_delta_identity_typed(
             )
             .field_evidence_identity(WorthQueryEvidenceTag::new("entity"), entity_identity)
             .field_usize(WorthQueryEvidenceTag::new("width"), width as usize)
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }

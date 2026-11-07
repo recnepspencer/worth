@@ -1,5 +1,6 @@
 use super::WorthQueryRuntimeStateKind;
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::evidence_identities::runtime_remask_posture_identity;
 use crate::evidence_identity::{
@@ -143,7 +144,7 @@ impl WorthQueryRuntimeRemaskPosture {
         tenant_schema_digest: impl Into<String>,
         relationship_proof_digest: impl Into<String>,
         schema_context_digest: impl Into<String>,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let policy_digest = policy_digest.into();
         let tenant_truth_digest = tenant_truth_digest.into();
         let tenant_schema_digest = tenant_schema_digest.into();
@@ -171,7 +172,7 @@ impl WorthQueryRuntimeRemaskPosture {
             &tenant_schema_identity,
             &relationship_proof_identity,
             &schema_context_identity,
-        )?;
+        );
         Ok(Self {
             disposition_kind,
             reason_kind,
@@ -190,7 +191,7 @@ impl WorthQueryRuntimeRemaskPosture {
         projection: &WorthQueryRuntimeRemaskProjection,
         support_identity: &WorthQueryEvidenceIdentity,
         basis_identity: &WorthQueryEvidenceIdentity,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         Ok(Self::new(
             projection.disposition_kind,
             projection.reason_kind,
@@ -280,10 +281,7 @@ impl WorthQueryRuntimeRemaskPosture {
 fn remask_drift_label_identity(
     identity_family: &str,
     digest: &str,
-) -> Result<
-    WorthQueryEvidenceIdentity,
-    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_shape(

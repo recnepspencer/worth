@@ -6,6 +6,7 @@ use super::follow_on::{
     WorthQueryEffectWriteAdjacentTrigger, WorthQueryEffectWriteAdjacentTriggerClass,
 };
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::WorthQueryAspectTouch;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -177,7 +178,7 @@ impl WorthQueryEffectDeclaration {
         name: impl Into<String>,
         trigger: WorthQueryEffectTrigger,
         target: impl Into<String>,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let name = name.into();
         Ok(Self {
             write_adjacent_trigger: WorthQueryEffectWriteAdjacentTrigger::ordinary(&name)?,
@@ -195,7 +196,7 @@ impl WorthQueryEffectDeclaration {
         name: impl Into<String>,
         trigger: WorthQueryEffectTrigger,
         intent: impl Into<String>,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let name = name.into();
         Ok(Self {
             write_adjacent_trigger: WorthQueryEffectWriteAdjacentTrigger::ordinary(&name)?,
@@ -237,10 +238,10 @@ impl WorthQueryEffectDeclaration {
         mut self,
         class: WorthQueryEffectWriteAdjacentTriggerClass,
         origin_identity: WorthQueryEvidenceIdentity,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Self {
         self.write_adjacent_trigger =
-            WorthQueryEffectWriteAdjacentTrigger::new(class, origin_identity)?;
-        Ok(self)
+            WorthQueryEffectWriteAdjacentTrigger::new(class, origin_identity);
+        self
     }
     pub fn name(&self) -> &str {
         &self.name

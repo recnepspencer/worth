@@ -29,7 +29,7 @@ pub(in crate::runtime) fn execute_runtime_current_read_graph(
         &materialized.execution,
         &materialized.rows,
         materialized.records_examined_count,
-    )?
+    )
     .with_materialized_fact_posture(materialized.fact_posture);
     Ok(WorthQueryExecutedReadProduct {
         graph_read_access_execution_counters: materialized.graph_read_access_counters,
@@ -61,7 +61,7 @@ pub(in crate::runtime) fn execute_runtime_current_count_graph(
         materialized.records_examined_count,
         materialized.rows.len(),
         count,
-    )?
+    )
     .with_materialized_fact_posture(materialized.fact_posture);
     Ok(WorthQueryExecutedReadProduct {
         graph_read_access_execution_counters: materialized.graph_read_access_counters,

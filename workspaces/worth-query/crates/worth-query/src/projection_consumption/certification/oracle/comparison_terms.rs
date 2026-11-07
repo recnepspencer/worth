@@ -51,7 +51,7 @@ pub(super) fn row_set_control_expected_digest(
                 ),
             ]
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     Ok(compose_certification_sequence_digest(
         "projection_consumption_oracle_row_set_control_expected_v1",
         "entry",
@@ -75,7 +75,7 @@ pub(super) fn row_set_control_actual_digest(
                 &canonical_consumed_native_value(fact.native_value()),
             )
         }))
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     Ok(compose_certification_sequence_digest(
         "projection_consumption_oracle_row_set_control_actual_v1",
         "entry",
@@ -108,7 +108,7 @@ pub(super) fn grouped_worth_expected_digest(
                 ),
             ]
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     Ok(compose_certification_sequence_digest(
         "projection_consumption_oracle_grouped_worth_expected_v1",
         "entry",
@@ -146,7 +146,7 @@ pub(super) fn grouped_worth_actual_digest(
                 fact.view_local_identity(),
             )
         }))
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     Ok(compose_certification_sequence_digest(
         "projection_consumption_oracle_grouped_worth_actual_v1",
         "entry",

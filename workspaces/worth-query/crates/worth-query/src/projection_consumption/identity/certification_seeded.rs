@@ -37,7 +37,7 @@ pub(crate) fn compose_seeded_row_digest(
     let choices = generator_choices
         .iter()
         .map(|(class, choice)| compose_seeded_generator_choice_entry_digest(class, choice))
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     Ok(seal(
         certification_scope_encoder("projection_consumption_seeded_row_v2")
             .field_shape(WorthQueryEvidenceTag::new("seed"), seed.to_string())

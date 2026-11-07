@@ -96,24 +96,24 @@ impl WorthQueryWorkflowDeclaration {
 pub fn declare(
     label: WorthQuerySessionLabel,
     mutation: WorthQueryMutationDeclaration,
-) -> Result<WorthQueryWorkflowDeclaration, IdentityDerivationDenial> {
+) -> WorthQueryWorkflowDeclaration {
     let family = WorthQueryWorkflowFamily::PreviewPromotion;
     let inspection_policy = mutation.inspection_policy();
-    Ok(WorthQueryWorkflowDeclaration {
-        identity: workflow_identity(family, &label, &mutation)?,
+    WorthQueryWorkflowDeclaration {
+        identity: workflow_identity(family, &label, &mutation),
         family,
         label,
         mutation,
         inspection_policy,
-    })
+    }
 }
 
 fn workflow_identity(
     family: WorthQueryWorkflowFamily,
     label: &WorthQuerySessionLabel,
     mutation: &WorthQueryMutationDeclaration,
-) -> Result<WorthQueryWorkflowDeclarationIdentity, IdentityDerivationDenial> {
-    Ok(WorthQueryWorkflowDeclarationIdentity {
+) -> WorthQueryWorkflowDeclarationIdentity {
+    WorthQueryWorkflowDeclarationIdentity {
         identity: WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::WorkflowMutationLowering,
         )
@@ -130,6 +130,6 @@ fn workflow_identity(
             WorthQueryEvidenceTag::new("mutation"),
             mutation.identity().evidence_identity(),
         )
-        .seal()?,
-    })
+        .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens"),
+    }
 }

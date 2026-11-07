@@ -113,31 +113,31 @@ impl ProjectionConsumptionTransitionRules {
                 ProjectionConsumptionTransitionPosture::Implemented,
                 "the receipt is the canonical operational artifact for consumed-fact inspection",
                 None,
-            ),
+            )?,
             ProjectionConsumptionTransitionRule::new(
                 ProjectionConsumptionTransitionKind::DeriveEnvelope,
                 ProjectionConsumptionTransitionPosture::Implemented,
                 "the self-describing projection-consumption envelope derives directly from the receipt",
                 None,
-            ),
+            )?,
             ProjectionConsumptionTransitionRule::new(
                 ProjectionConsumptionTransitionKind::DiscoverSupport,
                 ProjectionConsumptionTransitionPosture::Implemented,
                 "the receipt exposes support posture and deferred-neighbor summary for downstream inspection",
                 None,
-            ),
+            )?,
             ProjectionConsumptionTransitionRule::new(
                 ProjectionConsumptionTransitionKind::ReloadPersistedReceipt,
                 ProjectionConsumptionTransitionPosture::Deferred,
                 "durable receipt reload remains deferred to later store-backed milestones",
                 Some(ProjectionConsumptionDeferredNeighborFamily::DurableReceiptReloadAndStoreParity),
-            ),
+            )?,
             ProjectionConsumptionTransitionRule::new(
                 ProjectionConsumptionTransitionKind::ExportPortableReceipt,
                 ProjectionConsumptionTransitionPosture::Deferred,
                 "portable receipt export remains deferred to later store-backed milestones",
                 Some(ProjectionConsumptionDeferredNeighborFamily::PortableReceiptExport),
-            ),
+            )?,
         ];
         let rules_digest = compose_transition_rules_digest(
             &rules

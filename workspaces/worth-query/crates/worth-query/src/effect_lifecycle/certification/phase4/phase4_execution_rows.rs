@@ -56,7 +56,7 @@ pub(super) fn branch_mutation_execution_row(
     let support = discover_effect_lifecycle_support(basis.family(), EffectFamily::Mutation)?;
     let normalized = normalize_raw_effect_intent(&basis, raw).expect("mutation should normalize");
     let admitted = match evaluate_effect_eligibility(normalized)? {
-        EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility)?,
+        EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         other => panic!("expected admitted mutation, got {other:?}"),
     };
     let executed = scope_admitted_effect_plan(admitted)?
@@ -122,7 +122,7 @@ pub(super) fn relational_merge_execution_row(
     let support = discover_effect_lifecycle_support(basis.family(), EffectFamily::Merge)?;
     let normalized = normalize_raw_effect_intent(&basis, raw).expect("merge should normalize");
     let admitted = match evaluate_effect_eligibility(normalized)? {
-        EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility)?,
+        EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         other => panic!("expected admitted merge, got {other:?}"),
     };
     let executed = scope_admitted_effect_plan(admitted)?
@@ -166,7 +166,7 @@ pub(super) fn bridge_writeback_execution_row(
     let support = discover_effect_lifecycle_support(basis.family(), EffectFamily::Writeback)?;
     let normalized = normalize_raw_effect_intent(&basis, raw).expect("writeback should normalize");
     let admitted = match evaluate_effect_eligibility(normalized)? {
-        EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility)?,
+        EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         other => panic!("expected admitted writeback, got {other:?}"),
     };
     let executed = scope_admitted_effect_plan(admitted)?
@@ -289,7 +289,7 @@ pub(super) fn relational_oracle_row(
             )
             .expect("mutation should normalize"),
         )? {
-            EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility)?,
+            EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
             other => panic!("expected admitted mutation, got {other:?}"),
         },
     )?
@@ -349,7 +349,7 @@ pub(super) fn bridge_oracle_row(
             )
             .expect("writeback should normalize"),
         )? {
-            EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility)?,
+            EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
             other => panic!("expected admitted writeback, got {other:?}"),
         },
     )?

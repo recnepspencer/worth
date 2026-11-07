@@ -149,7 +149,7 @@ impl<D: 'static> WorthQueryInstalledDomainLiveHandle<D> {
                 "live-read-result",
                 result.receipt().result_digest(),
             )?,
-        )?;
+        );
         Ok(WorthQueryInstalledDomainLiveRead { result, receipt })
     }
 
@@ -162,7 +162,7 @@ impl<D: 'static> WorthQueryInstalledDomainLiveHandle<D> {
         let receipt = self.receipt.derive(
             WorthQueryInstalledDomainCapabilityKind::Projection,
             read.receipt().operational_identity().clone(),
-        )?;
+        );
         Ok(WorthQueryInstalledDomainProjectionOutcome::from_outcome(
             outcome, receipt,
         ))
@@ -190,7 +190,7 @@ impl<D: 'static> WorthQueryInstalledDomainLiveHandle<D> {
             receipt: self.receipt.derive(
                 WorthQueryInstalledDomainCapabilityKind::LiveDelivery,
                 operational,
-            )?,
+            ),
         })
     }
 
@@ -235,7 +235,7 @@ impl<D: 'static> WorthQueryInstalledDomainLiveHandle<D> {
                         receipt: receipt.derive(
                             WorthQueryInstalledDomainCapabilityKind::LiveCheckpoint,
                             operational,
-                        )?,
+                        ),
                         marker: PhantomData,
                     },
                 )

@@ -59,11 +59,8 @@ pub struct QuerySubscriptionBridgeParityCounters {
 impl QuerySubscriptionBridgeParityCounters {
     pub fn counter_projection(
         &self,
-    ) -> Result<
-        QueryProjectionIdentity<String, QuerySubscriptionIdentityKind>,
-        IdentityDerivationDenial,
-    > {
-        Ok(subscription_evidence_projection(&self.counter_identity()))
+    ) -> QueryProjectionIdentity<String, QuerySubscriptionIdentityKind> {
+        subscription_evidence_projection(&self.counter_identity())
     }
 
     pub fn counter_identity(&self) -> WorthQueryEvidenceIdentity {
@@ -188,7 +185,7 @@ impl BridgeParityReceipt {
             parity_class,
             comparison_width.width_identity(),
             semantic_rebuild_count,
-        )?;
+        );
         Ok(Self {
             witness_assembly_posture,
             parity_class,

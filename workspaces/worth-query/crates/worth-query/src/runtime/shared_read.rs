@@ -184,10 +184,8 @@ impl WorthQuerySharedReadContext {
         self.lease.generation().snapshot_identity()
     }
 
-    pub fn inspect_basis(
-        &self,
-    ) -> Result<WorthQuerySharedReadBasisInspection, IdentityDerivationDenial> {
-        Ok(WorthQuerySharedReadBasisInspection::from_lease(&self.lease))
+    pub fn inspect_basis(&self) -> WorthQuerySharedReadBasisInspection {
+        WorthQuerySharedReadBasisInspection::from_lease(&self.lease)
     }
 
     pub fn published_derived_artifact<T>(

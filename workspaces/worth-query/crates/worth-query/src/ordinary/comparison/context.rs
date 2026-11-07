@@ -63,7 +63,7 @@ impl WorthQueryCapturedBranchComparisonBasis {
             && self
                 .runtime_basis
                 .snapshot()
-                .is_same_current_identity_as(&workspace.snapshot_identity_with_request(execution)?))
+                .is_same_current_identity_as(&workspace.snapshot_identity_with_request(execution)))
     }
 }
 
@@ -74,7 +74,7 @@ impl WorthQueryCapturedComparisonBasis {
     ) -> Result<Self, IdentityDerivationDenial> {
         Ok(Self {
             workspace_name: workspace.name().to_string(),
-            snapshot: workspace.snapshot_identity_with_request(execution)?,
+            snapshot: workspace.snapshot_identity_with_request(execution),
         })
     }
 
@@ -94,7 +94,7 @@ impl WorthQueryCapturedComparisonBasis {
         Ok(self.workspace_name == workspace.name()
             && self
                 .snapshot
-                .is_same_current_identity_as(&workspace.snapshot_identity_with_request(execution)?))
+                .is_same_current_identity_as(&workspace.snapshot_identity_with_request(execution)))
     }
 }
 

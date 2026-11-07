@@ -18,7 +18,7 @@ impl WorthQueryReadReceipt {
         records_examined_count: usize,
         input_row_count: usize,
         count: u64,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let execution_counters = execution
             .counters()
             .clone()
@@ -60,7 +60,7 @@ impl WorthQueryReadReceipt {
         )
         .as_str()
         .to_string();
-        Ok(Self::from_parts(
+        Self::from_parts(
             read_graph,
             execution.report().basis_digest().as_str(),
             snapshot_identity,
@@ -69,7 +69,7 @@ impl WorthQueryReadReceipt {
             execution_counters.execution_fallback_taken_count(),
             breadth,
             result_digest,
-        ))
+        )
     }
 
     pub(in crate::runtime) fn from_materialized_rows(
@@ -78,7 +78,7 @@ impl WorthQueryReadReceipt {
         execution: &crate::execution::ExecutionResultEnvelope,
         rows: &[WorthQueryEntity],
         records_examined_count: usize,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let execution_counters = execution
             .counters()
             .clone()
@@ -90,7 +90,7 @@ impl WorthQueryReadReceipt {
         )
         .as_str()
         .to_string();
-        Ok(Self::from_parts(
+        Self::from_parts(
             read_graph,
             execution.report().basis_digest().as_str(),
             snapshot_identity,
@@ -130,7 +130,7 @@ impl WorthQueryReadReceipt {
                 execution_rollup_input_count: execution_counters.rollup_input_count(),
             },
             result_digest,
-        ))
+        )
     }
 
     pub(in crate::runtime) fn from_query_context_execution(
@@ -138,7 +138,7 @@ impl WorthQueryReadReceipt {
         snapshot_identity: WorthQuerySnapshotIdentity,
         context_execution: &QueryContextExecutionArtifact,
         rows: &[WorthQueryEntity],
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let result_digest = materialized_result_digest(
             context_execution.query_digest(),
             context_execution.basis_digest(),
@@ -189,7 +189,7 @@ impl WorthQueryReadReceipt {
             result_digest,
         );
         receipt.materialized_fact_posture = context_execution.materialized_fact_posture().cloned();
-        Ok(receipt)
+        receipt
     }
 
     fn from_parts(

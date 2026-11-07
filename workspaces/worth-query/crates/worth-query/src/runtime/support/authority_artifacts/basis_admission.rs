@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -16,7 +17,7 @@ impl WorthQueryBasisAdmissionEvidenceRow {
     pub fn tagged(
         kind: &'static str,
         value: impl Into<String>,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let value = value.into();
         let row_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::BasisAdmissionEvidenceRow)
@@ -32,15 +33,17 @@ impl WorthQueryBasisAdmissionEvidenceRow {
 
     pub fn support_profile_token(
         token: impl Into<String>,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         Ok(Self::tagged("support-profile-evidence", token)?)
     }
 
-    pub fn rows_from_values(values: impl IntoIterator<Item = impl Into<String>>) -> Vec<Self> {
-        values
+    pub fn rows_from_values(
+        values: impl IntoIterator<Item = impl Into<String>>,
+    ) -> Result<Vec<Self>, IdentityDerivationDenial> {
+        Ok(values
             .into_iter()
             .map(|value| Self::tagged("basis-admission-evidence", value))
-            .collect()
+            .collect::<Result<Vec<_>, _>>()?)
     }
 
     pub fn kind(&self) -> &'static str {
@@ -71,7 +74,7 @@ impl WorthQueryPreviewBasisAdmission {
         label: WorthQuerySessionLabel,
         effect_policy: WorthQueryEffectPolicy,
         evidence_rows: impl IntoIterator<Item = WorthQueryBasisAdmissionEvidenceRow>,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let evidence_rows = evidence_rows.into_iter().collect::<Vec<_>>();
         let authority_lane = WorthQueryAuthorityLane::PreviewTruth;
         let admission_identity = basis_admission_identity(
@@ -145,7 +148,7 @@ impl WorthQueryBranchBasisAdmission {
         label: WorthQuerySessionLabel,
         effect_policy: WorthQueryEffectPolicy,
         evidence_rows: impl IntoIterator<Item = WorthQueryBasisAdmissionEvidenceRow>,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let evidence_rows = evidence_rows.into_iter().collect::<Vec<_>>();
         let authority_lane = WorthQueryAuthorityLane::BranchLocalTruth;
         let admission_identity = basis_admission_identity(
@@ -210,10 +213,7 @@ fn basis_admission_identity(
     effect_policy: WorthQueryEffectPolicy,
     authority_lane: WorthQueryAuthorityLane,
     evidence_rows: &[WorthQueryBasisAdmissionEvidenceRow],
-) -> Result<
-    WorthQueryEvidenceIdentity,
-    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     Ok(worth_query_evidence_identity(scope)
         .field_value(
             WorthQueryEvidenceTag::new("session_label_identity"),

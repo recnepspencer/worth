@@ -275,7 +275,7 @@ impl WorthQueryRuntimeAsyncResultState {
         causality_identity: &WorthQueryEvidenceIdentity,
         basis_identity: &WorthQueryEvidenceIdentity,
         checkpoint_identity: &WorthQueryEvidenceIdentity,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let causality_identity = causality_identity.clone();
         let basis_identity = basis_identity.clone();
         let checkpoint_identity = checkpoint_identity.clone();
@@ -284,14 +284,14 @@ impl WorthQueryRuntimeAsyncResultState {
             &causality_identity,
             &basis_identity,
             &checkpoint_identity,
-        )?;
-        Ok(Self {
+        );
+        Self {
             kind,
             causality_identity,
             basis_identity,
             checkpoint_identity,
             result_state_identity,
-        })
+        }
     }
 
     pub fn kind(&self) -> WorthQueryRuntimeAsyncResultStateKind {

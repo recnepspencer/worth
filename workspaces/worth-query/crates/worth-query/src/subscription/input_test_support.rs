@@ -104,8 +104,8 @@ impl LiveQueryAdmissionArtifact {
         let collection_identity =
             crate::identity::collection_plan_evidence_identity(&collection_digest)?;
         let relevance_identity =
-            live_relevance_identity(&live_family, &query_identity, &plan_identity)?;
-        let delivery_intent_identity = live_delivery_intent_projection_identity(&live_family)?;
+            live_relevance_identity(&live_family, &query_identity, &plan_identity);
+        let delivery_intent_identity = live_delivery_intent_projection_identity(&live_family);
         let policy_context_identity =
             lifecycle_context_policy_identity(policy_label.as_deref().unwrap_or("none"))?;
         let tenant_context_identity =

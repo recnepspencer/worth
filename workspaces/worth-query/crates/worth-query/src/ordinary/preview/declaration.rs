@@ -35,15 +35,15 @@ impl WorthQueryReadOnlyPreviewDeclaration {
     pub fn with_mutation(
         self,
         mutation: WorthQueryMutationDeclaration,
-    ) -> Result<WorthQueryPromotionEligiblePreviewDeclaration, IdentityDerivationDenial> {
-        let workflow = workflow::declare(self.label, mutation)?;
-        Ok(WorthQueryPromotionEligiblePreviewDeclaration {
+    ) -> WorthQueryPromotionEligiblePreviewDeclaration {
+        let workflow = workflow::declare(self.label, mutation);
+        WorthQueryPromotionEligiblePreviewDeclaration {
             workflow: if self.inspection_policy == WorthQueryOrdinaryInspectionPolicy::Rich {
                 workflow.with_rich_inspection()
             } else {
                 workflow
             },
-        })
+        }
     }
 }
 

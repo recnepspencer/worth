@@ -98,7 +98,7 @@ pub(super) fn preview_residue_rejection(
         PreviewResidueWidth::measured(0),
         PreviewResidueWidth::measured(1),
         PreviewResidueWidth::measured(0),
-    )?;
+    );
     let error = discard_preview_subscription(isolation, residue).unwrap_err();
     Ok(rejection(
         MilestoneNineTwoFailureClass::PreviewIsolationDenied,

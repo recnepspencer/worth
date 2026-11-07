@@ -178,7 +178,7 @@ fn prepare_maintenance_delta(
         .unwrap();
         let (window, report) =
             apply_active_subscription_continuation(runtime, window, evidence).unwrap();
-        let (delta, counters) = lower_subscription_continuation_report(&report)?;
+        let (delta, counters) = lower_subscription_continuation_report(&report);
         (
             window,
             delta,

@@ -203,7 +203,7 @@ impl WorthQueryRuntimeStateTarget for WorthQueryRuntimeFacadeFamily {
             }
         });
         let result_shape_identity =
-            runtime_state_snapshot_result_shape_facade_family_identity(self)?;
+            runtime_state_snapshot_result_shape_facade_family_identity(self);
         match row.status() {
             WorthQueryRuntimeFamilySupportStatus::Supported => {
                 Ok(WorthQueryRuntimeStateSnapshot::ready(

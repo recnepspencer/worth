@@ -106,7 +106,7 @@ pub fn projection_consumption_proof_shape_audit(
             "unscoped source or draft artifact",
             CompileFailFixture,
             DeclarationConstructorPrivate,
-        ),
+        )?,
         row(
             NonAdmittedPromotion,
             "denied/deferred/source-mismatch artifact bound into a contract",
@@ -114,7 +114,7 @@ pub fn projection_consumption_proof_shape_audit(
             "non-admitted eligibility artifact",
             CompileFailFixture,
             NonAdmittedCannotBindContract,
-        ),
+        )?,
         row(
             RawSourceBypass,
             "row-like source artifact treated as consumed facts directly",
@@ -122,7 +122,7 @@ pub fn projection_consumption_proof_shape_audit(
             "raw source artifact",
             CompileFailBoundary,
             RawSourceHasNoConsumedFactAccessors,
-        ),
+        )?,
         row(
             GenericExtractionShortcut,
             "generic extract() over source-specific extraction contract",
@@ -130,7 +130,7 @@ pub fn projection_consumption_proof_shape_audit(
             "generic extraction shortcut",
             CompileFailFixture,
             ContractHasNoGenericExtract,
-        ),
+        )?,
         row(
             WorthdOperationalArtifact,
             "caller-minted fact set, receipt, or envelope",
@@ -138,7 +138,7 @@ pub fn projection_consumption_proof_shape_audit(
             "Worthd operational artifact",
             CompileFailFixture,
             ReceiptConstructorPrivate,
-        ),
+        )?,
         row(
             WorthdCertificationArtifact,
             "caller-minted certification bundle",
@@ -146,7 +146,7 @@ pub fn projection_consumption_proof_shape_audit(
             "Worthd certification artifact",
             CompileFailFixture,
             CertificationBundleConstructorPrivate,
-        ),
+        )?,
     ];
     let proof_shape_digest = compose_digest_sequence(
         "projection_consumption_proof_shape_audit_v1",

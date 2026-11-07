@@ -16,13 +16,16 @@ use super::{
 
 pub(super) fn canonical_rows(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> Vec<
-    CanonicalCertificationRow<
-        RuntimeApiStabilizationPerturbationClass,
-        RuntimeApiStabilizationBundle,
+) -> Result<
+    Vec<
+        CanonicalCertificationRow<
+            RuntimeApiStabilizationPerturbationClass,
+            RuntimeApiStabilizationBundle,
+        >,
     >,
+    IdentityDerivationDenial,
 > {
-    vec![
+    Ok(vec![
         canonical_row(
             request_execution,
             "workflow-editor-golden-transcript",
@@ -37,7 +40,7 @@ pub(super) fn canonical_rows(
                 "inspect",
             ],
             9,
-        ),
+        )?,
         canonical_row(
             request_execution,
             "geometry-kernel-golden-transcript",
@@ -51,7 +54,7 @@ pub(super) fn canonical_rows(
                 "inspect",
             ],
             8,
-        ),
+        )?,
         canonical_row(
             request_execution,
             "table-spreadsheet-golden-transcript",
@@ -65,36 +68,39 @@ pub(super) fn canonical_rows(
                 "batched-intent",
             ],
             8,
-        ),
-        adversarial_composed_row(request_execution),
-    ]
+        )?,
+        adversarial_composed_row(request_execution)?,
+    ])
 }
 
 pub(super) fn rejection_rows(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> Vec<
-    RejectionCertificationRow<
-        RuntimeApiStabilizationPerturbationClass,
-        RuntimeApiStabilizationBundle,
-        RuntimeApiStabilizationRejectionBundle,
+) -> Result<
+    Vec<
+        RejectionCertificationRow<
+            RuntimeApiStabilizationPerturbationClass,
+            RuntimeApiStabilizationBundle,
+            RuntimeApiStabilizationRejectionBundle,
+        >,
     >,
+    IdentityDerivationDenial,
 > {
-    vec![
+    Ok(vec![
         rejection_row(
             request_execution,
             "store-backed-parity-deferred-gate",
             RuntimeApiStabilizationPerturbationClass::StoreBackedParityDeferredGate,
             WorthQueryRuntimeFacadeFamily::StoreBackedExecution,
             RuntimeApiStabilizationFailureClass::DeferredStoreDurableGate,
-        ),
+        )?,
         rejection_row(
             request_execution,
             "durable-restart-deferred-gate",
             RuntimeApiStabilizationPerturbationClass::DurableRestartDeferredGate,
             WorthQueryRuntimeFacadeFamily::DurableArtifacts,
             RuntimeApiStabilizationFailureClass::DeferredStoreDurableGate,
-        ),
-    ]
+        )?,
+    ])
 }
 
 fn canonical_row(

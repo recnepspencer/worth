@@ -118,7 +118,7 @@ impl ExecutedEffectPlan {
         Ok(EffectExecutionOracleVerification::bridge(
             self.effect_execution_identity(),
             oracle,
-        )?)
+        ))
     }
 }
 

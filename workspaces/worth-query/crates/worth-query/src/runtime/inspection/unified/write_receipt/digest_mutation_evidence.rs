@@ -15,7 +15,7 @@ pub(super) fn append_mutation_evidence_fields(
     continuity_mutation_evidence: Option<&WorthQueryContinuityMutationEvidence>,
     causality_evidence: Option<&WorthQueryMutationCausalityEvidence>,
     provenance_evidence: Option<&WorthQueryMutationProvenanceEvidence>,
-) -> Result<WorthQueryEvidenceIdentityEncoder, IdentityDerivationDenial> {
+) -> WorthQueryEvidenceIdentityEncoder {
     let symbolic_target_resolved_entity_identity = symbolic_target_reference_evidence
         .map(WorthQuerySymbolicTargetReferenceEvidence::resolved_entity_identity)
         .map(|identity| identity.evidence_identity());
@@ -36,7 +36,7 @@ pub(super) fn append_mutation_evidence_fields(
     let provenance_failure_class = provenance_evidence
         .and_then(|evidence| evidence.failure_class().map(|value| format!("{value:?}")));
 
-    Ok(encoder
+    encoder
         .optional_shape(
             WorthQueryEvidenceTag::new("existing_truth_family"),
             existing_truth_binding_evidence.map(|evidence| evidence.family().as_str()),
@@ -266,7 +266,7 @@ pub(super) fn append_mutation_evidence_fields(
         .optional_shape(
             WorthQueryEvidenceTag::new("provenance_failure_class"),
             provenance_failure_class.as_deref(),
-        ))
+        )
 }
 
 fn continuity_outcome_label(evidence: &WorthQueryContinuityMutationEvidence) -> &'static str {

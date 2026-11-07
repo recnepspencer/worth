@@ -351,9 +351,8 @@ fn live_subscription_input_identity(
 
 pub(crate) fn live_subscription_view_shape_source_identity(
     family: crate::view_shape_live::LiveViewShapeFamily,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "runtime_live_subscription_view_shape_source_v1",
@@ -364,8 +363,7 @@ pub(crate) fn live_subscription_view_shape_source_identity(
                 WorthQueryEvidenceTag::new("underlying"),
                 family.underlying_live_family().as_str(),
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 pub(crate) fn live_subscription_source_identity(

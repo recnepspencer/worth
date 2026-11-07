@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -37,9 +38,7 @@ pub struct WorthQueryEffectWriteAdjacentTrigger {
 }
 
 impl WorthQueryEffectWriteAdjacentTrigger {
-    pub fn ordinary(
-        effect_name: &str,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    pub fn ordinary(effect_name: &str) -> Result<Self, IdentityDerivationDenial> {
         let origin_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceiptPhase)
                 .field_shape(
@@ -51,13 +50,13 @@ impl WorthQueryEffectWriteAdjacentTrigger {
         Ok(Self::new(
             WorthQueryEffectWriteAdjacentTriggerClass::OrdinaryEffect,
             origin_identity,
-        )?)
+        ))
     }
 
     pub fn new(
         class: WorthQueryEffectWriteAdjacentTriggerClass,
         origin_identity: WorthQueryEvidenceIdentity,
-    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    ) -> Self {
         let identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceiptPhase)
                 .field_shape(
@@ -66,12 +65,12 @@ impl WorthQueryEffectWriteAdjacentTrigger {
                 )
                 .field_shape(WorthQueryEvidenceTag::new("class"), class.as_str())
                 .field_evidence_identity(WorthQueryEvidenceTag::new("origin"), &origin_identity)
-                .seal()?;
-        Ok(Self {
+                .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens");
+        Self {
             class,
             origin_identity,
             identity,
-        })
+        }
     }
 
     pub fn class(&self) -> WorthQueryEffectWriteAdjacentTriggerClass {

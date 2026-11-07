@@ -188,7 +188,7 @@ pub(super) fn denied_support_failure(
 pub(super) fn denied_bridge_parity_failure(
     detail: &CertifiedLaneArtifacts,
     foreign: &CertifiedLaneArtifacts,
-) -> Result<MilestoneNineThreeRejectionBundle, IdentityDerivationDenial> {
+) -> MilestoneNineThreeRejectionBundle {
     let activation = prepare_subscription_activation(foreign.admission.clone());
     let error = explain_query_subscription_bridge_parity(
         &foreign.declaration,
@@ -198,7 +198,7 @@ pub(super) fn denied_bridge_parity_failure(
     )
     .unwrap_err();
 
-    Ok(MilestoneNineThreeRejectionBundle {
+    MilestoneNineThreeRejectionBundle {
         failure_class: MilestoneNineThreeFailureClass::BridgeParityDenied,
         failure_kind: error.failure().failure_kind().as_str().to_string(),
         failure_digest: error.failure().failure_projection().label().to_string(),
@@ -207,7 +207,7 @@ pub(super) fn denied_bridge_parity_failure(
         compile_fail_boundary_digest: compile_fail_boundary_digest(&[
             "subscription_bridge_parity_mismatched_declaration_forbidden.rs",
         ]),
-    })
+    }
 }
 
 pub(super) fn denied_runtime_certification_failure(

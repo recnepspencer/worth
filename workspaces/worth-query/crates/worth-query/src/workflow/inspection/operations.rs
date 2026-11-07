@@ -155,38 +155,38 @@ pub(crate) fn inspect_merge_conflicts(
 
 pub fn shape_mutation_authority_outcome(
     declaration: &LoweredMutationIntentDeclaration,
-) -> Result<WorkflowAuthorityOutcomeArtifact, IdentityDerivationDenial> {
-    Ok(shape_authority_outcome(
+) -> WorkflowAuthorityOutcomeArtifact {
+    shape_authority_outcome(
         declaration.declaration(),
         WorkflowAuthorityOutcomeFamily::MutationLoweringAdmitted,
         declaration.lowering_identity(),
         declaration.counters().clone(),
         1,
-    )?)
+    )
 }
 
 pub fn shape_merge_authority_outcome(
     declaration: &LoweredMergeWorkflowDeclaration,
-) -> Result<WorkflowAuthorityOutcomeArtifact, IdentityDerivationDenial> {
-    Ok(shape_authority_outcome(
+) -> WorkflowAuthorityOutcomeArtifact {
+    shape_authority_outcome(
         declaration.declaration(),
         WorkflowAuthorityOutcomeFamily::MergeLoweringAdmitted,
         declaration.lowering_identity(),
         declaration.counters().clone(),
         1,
-    )?)
+    )
 }
 
 pub fn shape_writeback_authority_outcome(
     declaration: &QueryWritebackDeclaration,
-) -> Result<WorkflowAuthorityOutcomeArtifact, IdentityDerivationDenial> {
-    Ok(shape_authority_outcome(
+) -> WorkflowAuthorityOutcomeArtifact {
+    shape_authority_outcome(
         declaration.declaration(),
         WorkflowAuthorityOutcomeFamily::WritebackLoweringAdmitted,
         declaration.lowering_identity(),
         declaration.counters().clone(),
         1,
-    )?)
+    )
 }
 
 #[cfg(test)]
@@ -275,13 +275,13 @@ pub(crate) fn inspect_post_merge_outcome(
 
 pub fn build_workflow_replay_bundle(
     outcome: &WorkflowAuthorityOutcomeArtifact,
-) -> Result<WorkflowReplayBundle, IdentityDerivationDenial> {
-    let delivery_or_failure_identity = delivery_or_failure_identity(outcome)?;
-    let bundle_identity = workflow_replay_bundle_identity(outcome, &delivery_or_failure_identity)?;
+) -> WorkflowReplayBundle {
+    let delivery_or_failure_identity = delivery_or_failure_identity(outcome);
+    let bundle_identity = workflow_replay_bundle_identity(outcome, &delivery_or_failure_identity);
 
     let counters = outcome.counters().with_replay_bundle_issued();
 
-    Ok(WorkflowReplayBundle {
+    WorkflowReplayBundle {
         bundle_identity,
         query_identity: outcome.source_query_identity().clone(),
         plan_identity: outcome.source_plan_identity().clone(),
@@ -292,7 +292,7 @@ pub fn build_workflow_replay_bundle(
         authoritative_outcome_identity: outcome.authoritative_outcome_identity().clone(),
         delivery_or_failure_identity,
         counters,
-    })
+    }
 }
 
 fn shape_authority_outcome(
@@ -301,13 +301,13 @@ fn shape_authority_outcome(
     request_identity: &WorthQueryEvidenceIdentity,
     counters: WorkflowLoweringCounters,
     realized_width: usize,
-) -> Result<WorkflowAuthorityOutcomeArtifact, IdentityDerivationDenial> {
+) -> WorkflowAuthorityOutcomeArtifact {
     let authority_request_identity =
-        workflow_authority_request_identity(family.clone(), request_identity)?;
+        workflow_authority_request_identity(family.clone(), request_identity);
     let authoritative_outcome_identity =
-        workflow_authoritative_outcome_identity(declaration, &family, &authority_request_identity)?;
+        workflow_authoritative_outcome_identity(declaration, &family, &authority_request_identity);
 
-    Ok(WorkflowAuthorityOutcomeArtifact {
+    WorkflowAuthorityOutcomeArtifact {
         family,
         authority_target_family: declaration.report().authority_target_family().clone(),
         source_query_identity: declaration.binding().query_identity().clone(),
@@ -331,5 +331,5 @@ fn shape_authority_outcome(
         explicit_rebind: None,
         realized_width,
         counters,
-    })
+    }
 }

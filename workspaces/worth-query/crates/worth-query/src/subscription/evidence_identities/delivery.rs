@@ -10,9 +10,8 @@ pub(in crate::subscription) fn live_relevance_identity(
     live_family: &LiveQueryFamily,
     query_identity: &WorthQueryEvidenceIdentity,
     plan_identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "live_relevance_v1",
@@ -23,8 +22,7 @@ pub(in crate::subscription) fn live_relevance_identity(
             )
             .field_evidence_identity(WorthQueryEvidenceTag::new("query"), query_identity)
             .field_evidence_identity(WorthQueryEvidenceTag::new("plan"), plan_identity)
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 pub(in crate::subscription) fn slice_intent_identity(
@@ -48,9 +46,8 @@ pub(in crate::subscription) fn patch_group_identity(
     kind: QueryPatchGroupKind,
     source_identity: &WorthQueryEvidenceIdentity,
     width: u64,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "query_patch_group_v1",
@@ -58,8 +55,7 @@ pub(in crate::subscription) fn patch_group_identity(
             .field_shape(WorthQueryEvidenceTag::new("kind"), kind.as_str())
             .field_evidence_identity(WorthQueryEvidenceTag::new("source"), source_identity)
             .field_usize(WorthQueryEvidenceTag::new("width"), width as usize)
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 pub(in crate::subscription) fn delivery_cause_evidence_label_identity(
@@ -79,24 +75,21 @@ pub(in crate::subscription) fn delivery_cause_evidence_label_identity(
 pub(in crate::subscription) fn delivery_cause_identity(
     kind: QuerySubscriptionDeliveryCauseKind,
     evidence_identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "query_subscription_delivery_cause_v1",
             )
             .field_shape(WorthQueryEvidenceTag::new("kind"), kind.as_str())
             .field_evidence_identity(WorthQueryEvidenceTag::new("evidence"), evidence_identity)
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 pub(in crate::subscription) fn live_delivery_intent_projection_identity(
     live_family: &LiveQueryFamily,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "live_delivery_intent_v1",
@@ -105,8 +98,7 @@ pub(in crate::subscription) fn live_delivery_intent_projection_identity(
                 WorthQueryEvidenceTag::new("live_family"),
                 live_family.as_str(),
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 pub(in crate::subscription) fn subscription_fanout_plan_identity(

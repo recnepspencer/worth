@@ -102,15 +102,15 @@ impl WorthQueryInstalledDomainExecutionReceipt {
         declaration_identity: WorthQueryEvidenceIdentity,
         basis_identity: WorthQueryEvidenceIdentity,
         operational_identity: WorthQueryEvidenceIdentity,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new_with_managed_live_resource(
+    ) -> Self {
+        Self::new_with_managed_live_resource(
             installed_authority,
             capability,
             declaration_identity,
             basis_identity,
             operational_identity,
             None,
-        )?)
+        )
     }
 
     pub(crate) fn new_managed_live(
@@ -120,15 +120,15 @@ impl WorthQueryInstalledDomainExecutionReceipt {
         basis_identity: WorthQueryEvidenceIdentity,
         operational_identity: WorthQueryEvidenceIdentity,
         managed_live_resource_identity: WorthQueryEvidenceIdentity,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new_with_managed_live_resource(
+    ) -> Self {
+        Self::new_with_managed_live_resource(
             installed_authority,
             capability,
             declaration_identity,
             basis_identity,
             operational_identity,
             Some(managed_live_resource_identity),
-        )?)
+        )
     }
 
     fn new_with_managed_live_resource(
@@ -138,7 +138,7 @@ impl WorthQueryInstalledDomainExecutionReceipt {
         basis_identity: WorthQueryEvidenceIdentity,
         operational_identity: WorthQueryEvidenceIdentity,
         managed_live_resource_identity: Option<WorthQueryEvidenceIdentity>,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let receipt_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::InstalledDomainExecution)
                 .field_shape(
@@ -162,8 +162,8 @@ impl WorthQueryInstalledDomainExecutionReceipt {
                     WorthQueryEvidenceTag::new("managed_live_resource"),
                     managed_live_resource_identity.as_ref(),
                 )
-                .seal()?;
-        Ok(Self {
+                .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens");
+        Self {
             installed_authority,
             capability,
             declaration_identity,
@@ -171,7 +171,7 @@ impl WorthQueryInstalledDomainExecutionReceipt {
             operational_identity,
             managed_live_resource_identity,
             receipt_identity,
-        })
+        }
     }
 
     pub(crate) fn label_identity(
@@ -190,15 +190,15 @@ impl WorthQueryInstalledDomainExecutionReceipt {
         &self,
         capability: WorthQueryInstalledDomainCapabilityKind,
         operational_identity: WorthQueryEvidenceIdentity,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new_with_managed_live_resource(
+    ) -> Self {
+        Self::new_with_managed_live_resource(
             self.installed_authority.clone(),
             capability,
             self.declaration_identity.clone(),
             self.basis_identity.clone(),
             operational_identity,
             self.managed_live_resource_identity.clone(),
-        )?)
+        )
     }
 
     pub fn installed_authority(&self) -> &WorthQueryInstalledDomainAuthorityWitness {

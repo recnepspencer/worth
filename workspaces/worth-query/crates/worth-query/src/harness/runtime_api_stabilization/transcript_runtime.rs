@@ -291,7 +291,7 @@ fn transcript_intent_mutation_receipt(
             entity_identity,
             WorthQueryMutationKind::Updated,
             vec![touch],
-        )],
+        )?],
         bridge_authority,
     ))
 }

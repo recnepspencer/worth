@@ -81,7 +81,7 @@ pub(super) fn preview_discard_lane(
         PreviewResidueWidth::measured(0),
         PreviewResidueWidth::measured(1),
         PreviewResidueWidth::measured(1),
-    )?;
+    );
     let isolation = admit_preview_subscription_isolation(
         &evidence.acknowledged_attachment,
         "preview-epoch",
@@ -196,7 +196,7 @@ pub(super) fn preview_promotion_lane(
         PreviewResidueWidth::measured(0),
         PreviewResidueWidth::measured(1),
         PreviewResidueWidth::measured(0),
-    )?;
+    );
     let isolation = admit_preview_subscription_isolation(
         &evidence.acknowledged_attachment,
         "preview-epoch-promotion",

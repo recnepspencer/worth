@@ -148,8 +148,8 @@ pub fn measure_preview_subscription_residue(
     authoritative_writeback_width: PreviewResidueWidth,
     temporary_execution_width: PreviewResidueWidth,
     temporary_diagnostics_width: PreviewResidueWidth,
-) -> Result<PreviewSubscriptionResidueReport, IdentityDerivationDenial> {
-    Ok(PreviewSubscriptionResidueReport::new(
+) -> PreviewSubscriptionResidueReport {
+    PreviewSubscriptionResidueReport::new(
         authoritative_routing_width,
         authoritative_checkpoint_width,
         authoritative_replay_width,
@@ -157,5 +157,5 @@ pub fn measure_preview_subscription_residue(
         authoritative_writeback_width,
         temporary_execution_width,
         temporary_diagnostics_width,
-    ))
+    )
 }

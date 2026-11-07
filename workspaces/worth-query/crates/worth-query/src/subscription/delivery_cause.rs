@@ -52,13 +52,11 @@ pub struct QuerySubscriptionDeliveryCause {
 }
 
 impl QuerySubscriptionDeliveryCause {
-    pub fn relational_patch(
-        evidence_identity: &WorthQueryEvidenceIdentity,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+    pub fn relational_patch(evidence_identity: &WorthQueryEvidenceIdentity) -> Self {
+        Self::new(
             QuerySubscriptionDeliveryCauseKind::RelationalPatch,
             evidence_identity,
-        )?)
+        )
     }
 
     pub fn time_only(
@@ -72,27 +70,27 @@ impl QuerySubscriptionDeliveryCause {
         Ok(Self::new(
             kind,
             &delivery_cause_evidence_label_identity(evidence_label.as_ref())?,
-        )?)
+        ))
     }
     #[cfg(test)]
     pub(crate) fn classified(
         kind: QuerySubscriptionDeliveryCauseKind,
         evidence_identity: &WorthQueryEvidenceIdentity,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(kind, evidence_identity)?)
+        Ok(Self::new(kind, evidence_identity))
     }
 
     fn new(
         kind: QuerySubscriptionDeliveryCauseKind,
         evidence_identity: &WorthQueryEvidenceIdentity,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let evidence_identity = evidence_identity.clone();
-        let delivery_cause_identity = delivery_cause_identity(kind, &evidence_identity)?;
-        Ok(Self {
+        let delivery_cause_identity = delivery_cause_identity(kind, &evidence_identity);
+        Self {
             kind,
             evidence_identity,
             delivery_cause_identity,
-        })
+        }
     }
 
     pub fn kind(&self) -> QuerySubscriptionDeliveryCauseKind {

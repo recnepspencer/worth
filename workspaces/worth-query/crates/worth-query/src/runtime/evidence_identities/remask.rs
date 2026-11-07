@@ -10,12 +10,8 @@ pub(in crate::runtime) fn runtime_remask_posture_identity(
     tenant_schema_identity: &WorthQueryEvidenceIdentity,
     relationship_proof_identity: &WorthQueryEvidenceIdentity,
     schema_context_identity: &WorthQueryEvidenceIdentity,
-) -> Result<
-    WorthQueryEvidenceIdentity,
-    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
-> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+) -> WorthQueryEvidenceIdentity {
+    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "worth_query_runtime_remask_posture_v1",
@@ -44,8 +40,7 @@ pub(in crate::runtime) fn runtime_remask_posture_identity(
                 WorthQueryEvidenceTag::new("schema_context"),
                 schema_context_identity,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 pub(in crate::runtime) fn runtime_downstream_resume_posture_identity(
@@ -53,12 +48,8 @@ pub(in crate::runtime) fn runtime_downstream_resume_posture_identity(
     required_basis_identity: Option<&WorthQueryEvidenceIdentity>,
     support_posture: WorthQueryLowerRuntimeSupportPosture,
     support_identity: &WorthQueryEvidenceIdentity,
-) -> Result<
-    WorthQueryEvidenceIdentity,
-    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
-> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+) -> WorthQueryEvidenceIdentity {
+    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "worth_query_runtime_downstream_resume_posture_v2",
@@ -73,6 +64,5 @@ pub(in crate::runtime) fn runtime_downstream_resume_posture_identity(
                 support_posture.as_str(),
             )
             .field_evidence_identity(WorthQueryEvidenceTag::new("support"), support_identity)
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }

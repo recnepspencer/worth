@@ -38,7 +38,7 @@ impl EffectExecutionOracleVerification {
         execution_subject_identity: &WorthQueryEvidenceIdentity,
         oracle: &RelationalExecutionOracle,
         component_count: usize,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let verification_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
                 .field_shape(
@@ -61,21 +61,21 @@ impl EffectExecutionOracleVerification {
                     WorthQueryEvidenceTag::new("component_count"),
                     component_count,
                 )
-                .seal()?;
-        Ok(Self {
+                .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens");
+        Self {
             verification_kind,
             execution_subject_identity: execution_subject_identity.clone(),
             relational_oracle_identity: Some(oracle.relational_oracle_identity().clone()),
             bridge_oracle_identity: None,
             verification_identity,
             component_count,
-        })
+        }
     }
 
     pub(crate) fn bridge(
         execution_subject_identity: &WorthQueryEvidenceIdentity,
         oracle: &BridgeExecutionOracle,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let verification_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
                 .field_shape(
@@ -95,15 +95,15 @@ impl EffectExecutionOracleVerification {
                     oracle.bridge_oracle_identity(),
                 )
                 .field_usize(WorthQueryEvidenceTag::new("component_count"), 1)
-                .seal()?;
-        Ok(Self {
+                .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens");
+        Self {
             verification_kind: EffectExecutionOracleVerificationKind::Writeback,
             execution_subject_identity: execution_subject_identity.clone(),
             relational_oracle_identity: None,
             bridge_oracle_identity: Some(oracle.bridge_oracle_identity().clone()),
             verification_identity,
             component_count: 1,
-        })
+        }
     }
 
     pub fn verification_kind(&self) -> EffectExecutionOracleVerificationKind {

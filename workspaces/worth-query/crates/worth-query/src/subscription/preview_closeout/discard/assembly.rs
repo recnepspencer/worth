@@ -28,7 +28,7 @@ impl PreviewSubscriptionDiscardCloseout {
             ActiveDeliveryDensityPosture::SparseDelta,
             ActiveSubscriptionAllocationPosture::LifecycleArena,
             isolation.attachment_digest().evidence_identity(),
-        )?;
+        );
         counters.subscription_performance_receipt_count = 1;
         counters.subscription_budget_consumption_width = performance_receipt.consumed_width();
         counters.subscription_budget_remaining_width = performance_receipt.remaining_width();

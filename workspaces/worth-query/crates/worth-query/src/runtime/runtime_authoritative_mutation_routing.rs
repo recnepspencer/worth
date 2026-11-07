@@ -253,7 +253,7 @@ impl WorthQueryRuntime {
             receipt,
             &affected_live_view_targets,
             &affected_derived_view_targets,
-        )?;
+        );
         Ok(WorthQueryRoutedMutationSummary {
             affected_live_view_targets,
             affected_derived_view_targets,

@@ -65,7 +65,7 @@ impl InstalledIdentityEvolutionOutcome {
         lifecycle_target: Option<crate::memory_workspace::WorthQueryEntityIdentity>,
         binding: InstalledIdentityEvolutionBinding<'_>,
     ) -> Result<Option<Self>, IdentityDerivationDenial> {
-        if !engine_matches_authority(&artifact, continuity.as_ref(), lifecycle_target.as_ref())? {
+        if !engine_matches_authority(&artifact, continuity.as_ref(), lifecycle_target.as_ref()) {
             return Ok(None);
         }
         let semantic_evidence = semantic_evidence_identity(

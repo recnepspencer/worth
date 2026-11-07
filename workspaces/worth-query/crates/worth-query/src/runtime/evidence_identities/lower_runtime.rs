@@ -83,9 +83,8 @@ pub(in crate::runtime) fn runtime_downstream_delivery_contract_identity(
     runtime_resume_support_identity: &WorthQueryEvidenceIdentity,
     durable_resume_support_status: WorthQueryLowerRuntimeSupportPosture,
     durable_resume_support_identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+) -> WorthQueryEvidenceIdentity {
+    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
                 "worth_query_runtime_downstream_delivery_contract_v1",
@@ -110,6 +109,5 @@ pub(in crate::runtime) fn runtime_downstream_delivery_contract_identity(
                 WorthQueryEvidenceTag::new("durable_resume_support"),
                 durable_resume_support_identity,
             )
-            .seal()?,
-    )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }

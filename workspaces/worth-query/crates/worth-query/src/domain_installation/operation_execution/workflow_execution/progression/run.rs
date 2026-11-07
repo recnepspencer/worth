@@ -125,7 +125,7 @@ where
     ) -> Result<WorthQueryWorkflowStartOutcome<D, O, F, L>, IdentityDerivationDenial> {
         let mut counters = WorthQueryWorkflowRunCounters::default();
         let operation_resource_evidence = self.resource_attempt.evidence().clone();
-        let snapshot = workspace.snapshot_identity_with_request(&execution)?;
+        let snapshot = workspace.snapshot_identity_with_request(&execution);
         let artifact_authority = match self.resource_attempt.begin_managed_workflow_artifacts() {
             Ok(authority) => authority,
             Err(denial) => {

@@ -143,12 +143,12 @@ pub fn projection_consumption_forbidden_fallback_audit(
 
 fn rows_for_surface(
     ordinary_surface: ProjectionConsumptionOrdinaryPathSurface,
-) -> Vec<ProjectionConsumptionForbiddenFallbackAuditRow> {
-    ProjectionConsumptionForbiddenFallbackSeam::all()
+) -> Result<Vec<ProjectionConsumptionForbiddenFallbackAuditRow>, IdentityDerivationDenial> {
+    Ok(ProjectionConsumptionForbiddenFallbackSeam::all()
         .iter()
         .copied()
         .map(|forbidden_seam| row(ordinary_surface, forbidden_seam))
-        .collect()
+        .collect::<Result<Vec<_>, _>>()?)
 }
 
 fn row(

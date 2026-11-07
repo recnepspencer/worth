@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::BTreeSet;
 
 use worth_foundational::facade::PortableRecordAspectPatch;
@@ -216,7 +217,7 @@ impl WorthQueryMemoryWorkspace {
         changed: &BTreeSet<worth_relational::facade::identity::EntityId>,
         commit_identity: &WorthQueryCommitIdentity,
         snapshot_identity: &super::WorthQuerySnapshotIdentity,
-    ) -> WorthQueryMutationReceipt {
+    ) -> Result<WorthQueryMutationReceipt, IdentityDerivationDenial> {
         let entity = mutation
             .entity
             .expect("insert identities were admitted above");
@@ -225,7 +226,7 @@ impl WorthQueryMemoryWorkspace {
         let deltas =
             if changed.contains(&entity_id) || mutation.kind == WorthQueryMutationKind::Deleted {
                 vec![WorthQueryMutationDelta::from_collection_identity(
-                    self.mutation_delta_collection_identity(),
+                    self.mutation_delta_collection_identity()?,
                     entity,
                     mutation.kind,
                     mutation.touches,
@@ -233,12 +234,12 @@ impl WorthQueryMemoryWorkspace {
             } else {
                 Vec::new()
             };
-        WorthQueryMutationReceipt {
+        Ok(WorthQueryMutationReceipt {
             commit_identity: commit_identity.clone(),
             snapshot_identity: snapshot_identity.clone(),
             deltas,
             bridge_authority: None,
-        }
+        })
     }
 }
 

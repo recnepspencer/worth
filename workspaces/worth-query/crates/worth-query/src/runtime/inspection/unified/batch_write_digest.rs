@@ -353,8 +353,8 @@ pub(super) fn build_batch_write_receipt_inspection_digest(
 fn evidence_value_identities(
     role: &'static str,
     values: &[String],
-) -> Vec<WorthQueryEvidenceIdentity> {
-    values
+) -> Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
+    Ok(values
         .iter()
         .map(|value| {
             worth_query_evidence_identity(
@@ -364,14 +364,14 @@ fn evidence_value_identities(
             .field_value(WorthQueryEvidenceTag::new("value"), value)
             .seal()
         })
-        .collect()
+        .collect::<Result<Vec<_>, _>>()?)
 }
 
 fn terminal_touch_projection_identities(
     role: &'static str,
     touches: &[WorthQueryAspectTouch],
-) -> Vec<WorthQueryEvidenceIdentity> {
-    touches
+) -> Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
+    Ok(touches
         .iter()
         .map(|touch| {
             worth_query_evidence_identity(
@@ -384,5 +384,5 @@ fn terminal_touch_projection_identities(
             )
             .seal()
         })
-        .collect()
+        .collect::<Result<Vec<_>, _>>()?)
 }

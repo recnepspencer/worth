@@ -49,7 +49,7 @@ impl SubscriptionLifecycleCertificationContext {
         selection: &QuerySubscriptionFamilySelection,
     ) -> Result<Self, IdentityDerivationDenial> {
         let subscription_family_identity =
-            lifecycle_subscription_family_identity(selection.family())?;
+            lifecycle_subscription_family_identity(selection.family());
         let subscription_equivalence_identity =
             lifecycle_subscription_equivalence_identity(selection.equivalence_basis());
         let query_scope_identity = lifecycle_context_query_identity(live)?;

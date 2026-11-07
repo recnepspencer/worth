@@ -57,7 +57,7 @@ impl PreviewSubscriptionPromotionHandoff {
             ActiveDeliveryDensityPosture::SparseDelta,
             super::super::active_budget::ActiveSubscriptionAllocationPosture::LifecycleArena,
             isolation.attachment_digest().evidence_identity(),
-        )?;
+        );
         let rebinding_identity = preview_promotion_rebinding_identity(
             isolation.basis_binding_identity(),
             authoritative_lane.basis_binding_identity(),

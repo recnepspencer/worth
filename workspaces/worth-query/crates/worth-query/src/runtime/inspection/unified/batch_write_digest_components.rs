@@ -8,18 +8,18 @@ use crate::runtime::{WorthQueryAspectTouch, WorthQueryGraphCompositionResolution
 
 pub(super) fn component_artifact_identities(
     components: &[WorthQueryBatchWriteComponentInspection],
-) -> Vec<WorthQueryEvidenceIdentity> {
-    components
+) -> Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
+    Ok(components
         .iter()
         .enumerate()
         .map(|(index, component)| component_artifact_identity(index, component))
-        .collect()
+        .collect::<Result<Vec<_>, _>>()?)
 }
 
 pub(super) fn graph_resolution_identities(
     resolution_map: &WorthQueryGraphCompositionResolutionMap,
-) -> Vec<WorthQueryEvidenceIdentity> {
-    resolution_map
+) -> Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
+    Ok(resolution_map
         .entries()
         .iter()
         .map(|entry| {
@@ -51,7 +51,7 @@ pub(super) fn graph_resolution_identities(
                 )
                 .seal()
         })
-        .collect()
+        .collect::<Result<Vec<_>, _>>()?)
 }
 
 fn component_artifact_identity(
@@ -222,8 +222,8 @@ fn component_artifact_identity(
 fn evidence_value_identities(
     role: &'static str,
     values: &[String],
-) -> Vec<WorthQueryEvidenceIdentity> {
-    values
+) -> Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
+    Ok(values
         .iter()
         .map(|value| {
             worth_query_evidence_identity(
@@ -233,14 +233,14 @@ fn evidence_value_identities(
             .field_value(WorthQueryEvidenceTag::new("value"), value)
             .seal()
         })
-        .collect()
+        .collect::<Result<Vec<_>, _>>()?)
 }
 
 fn terminal_touch_projection_identities(
     role: &'static str,
     touches: &[WorthQueryAspectTouch],
-) -> Vec<WorthQueryEvidenceIdentity> {
-    touches
+) -> Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
+    Ok(touches
         .iter()
         .map(|touch| {
             worth_query_evidence_identity(
@@ -253,13 +253,13 @@ fn terminal_touch_projection_identities(
             )
             .seal()
         })
-        .collect()
+        .collect::<Result<Vec<_>, _>>()?)
 }
 
 fn symbolic_aspect_resolution_identities(
     component: &WorthQueryBatchWriteComponentInspection,
-) -> Vec<WorthQueryEvidenceIdentity> {
-    component
+) -> Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
+    Ok(component
         .symbolic_aspect_resolution_evidence()
         .iter()
         .map(|evidence| {
@@ -286,13 +286,13 @@ fn symbolic_aspect_resolution_identities(
             )
             .seal()
         })
-        .collect()
+        .collect::<Result<Vec<_>, _>>()?)
 }
 
 fn declared_aspect_operation_identities(
     component: &WorthQueryBatchWriteComponentInspection,
-) -> Vec<WorthQueryEvidenceIdentity> {
-    component
+) -> Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
+    Ok(component
         .declared_aspect_operations()
         .iter()
         .map(|operation| {
@@ -309,5 +309,5 @@ fn declared_aspect_operation_identities(
             )
             .seal()
         })
-        .collect()
+        .collect::<Result<Vec<_>, _>>()?)
 }

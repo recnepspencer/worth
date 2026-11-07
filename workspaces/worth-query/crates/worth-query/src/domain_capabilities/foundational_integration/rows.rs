@@ -80,7 +80,7 @@ where
             ),
         ),
         FoundationalDiagnosticRow::Support(FoundationalDiagnosticSupportRow::new(
-            diagnostic_support_code(payload.semantic_code()),
+            diagnostic_support_code(payload.semantic_code())?,
             scope.clone(),
             severity_for_support(outcome_kind),
             subject.clone(),
@@ -94,7 +94,7 @@ where
     ];
     let standard_rows = vec![FoundationalDiagnosticRow::ProvenanceReady(
         FoundationalDiagnosticProvenanceReadyRow::new(
-            diagnostic_provenance_code(payload.semantic_code()),
+            diagnostic_provenance_code(payload.semantic_code())?,
             scope.clone(),
             FoundationalDiagnosticSeverity::Info,
             subject.clone(),
@@ -110,7 +110,7 @@ where
     )];
     let forensic_rows = vec![FoundationalDiagnosticRow::Support(
         FoundationalDiagnosticSupportRow::new(
-            diagnostic_trace_code(payload.semantic_code()),
+            diagnostic_trace_code(payload.semantic_code())?,
             scope.clone(),
             FoundationalDiagnosticSeverity::Info,
             subject.clone(),

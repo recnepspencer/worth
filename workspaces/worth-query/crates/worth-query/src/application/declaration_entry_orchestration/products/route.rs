@@ -37,7 +37,7 @@ pub(crate) fn worth_query_declaration_route_orchestration_from_progressed_on_han
         handle,
         progressed,
         route_intent,
-    )? {
+    ) {
         WorthQueryDeclarationRoutePlanChecked::Planned(plan) => Ok(plan),
         other => Err(route_terminal_from_checked(other)),
     }
@@ -51,22 +51,20 @@ pub(crate) fn worth_query_checked_declaration_route_orchestration_from_progresse
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     progressed: WorthQueryAdmittedDeclarationProgression<D, I>,
     route_intent: Option<WorthQueryDeclarationRouteIntent>,
-) -> Result<WorthQueryDeclarationRoutePlanChecked<D, I>, IdentityDerivationDenial> {
-    Ok(
-        match worth_query_lower_declaration_entry_product_orchestration_from_progressed_on_handle(
-            handle,
-            progressed,
-            WorthQueryDeclarationEntryOrchestrationExposureLevel::Checked,
-            WorthQueryDeclarationEntryOrchestrationArtifactPolicy::CheckedOutcomeOnly,
-            WorthQueryDeclarationEntryOrchestrationProduct::RoutePlan,
-            route_intent,
-        )
-        .checked
-        {
-            WorthQueryDeclarationEntryProductChecked::RoutePlan(checked) => checked,
-            _ => panic!("route orchestration must project the route product"),
-        },
+) -> WorthQueryDeclarationRoutePlanChecked<D, I> {
+    match worth_query_lower_declaration_entry_product_orchestration_from_progressed_on_handle(
+        handle,
+        progressed,
+        WorthQueryDeclarationEntryOrchestrationExposureLevel::Checked,
+        WorthQueryDeclarationEntryOrchestrationArtifactPolicy::CheckedOutcomeOnly,
+        WorthQueryDeclarationEntryOrchestrationProduct::RoutePlan,
+        route_intent,
     )
+    .checked
+    {
+        WorthQueryDeclarationEntryProductChecked::RoutePlan(checked) => checked,
+        _ => panic!("route orchestration must project the route product"),
+    }
 }
 
 pub(crate) fn worth_query_declaration_route_orchestration_from_progressed_proof_on_handle<
@@ -77,7 +75,7 @@ pub(crate) fn worth_query_declaration_route_orchestration_from_progressed_proof_
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     progressed: WorthQueryAdmittedDeclarationProgression<D, I>,
     route_intent: Option<WorthQueryDeclarationRouteIntent>,
-) -> Result<WorthQueryDeclarationRouteOrchestrationTranscript<D, I>, IdentityDerivationDenial> {
+) -> WorthQueryDeclarationRouteOrchestrationTranscript<D, I> {
     let lowered =
         worth_query_lower_declaration_entry_product_orchestration_from_progressed_on_handle(
             handle,
@@ -92,10 +90,10 @@ pub(crate) fn worth_query_declaration_route_orchestration_from_progressed_proof_
         _ => panic!("route orchestration proof must project the route product"),
     };
     let outcome_identity = route_orchestration_identity(&checked);
-    Ok(WorthQueryDeclarationRouteOrchestrationTranscript::new(
+    WorthQueryDeclarationRouteOrchestrationTranscript::new(
         lowered.plan,
         checked,
         lowered.step_records,
         outcome_identity,
-    ))
+    )
 }
