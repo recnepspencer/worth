@@ -40,6 +40,17 @@ pub(crate) fn verify_checkpoint_index_bases(
     bases: &[IndexBasisCheckpoint],
     projections: &CheckpointIndexProjections,
 ) -> Result<(), RelationalRecoveryStop> {
+    crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+        verify_in_reconstruction(lane, execution, indexes, bases, projections)
+    })
+}
+fn verify_in_reconstruction(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    indexes: &IndexingState,
+    bases: &[IndexBasisCheckpoint],
+    projections: &CheckpointIndexProjections,
+) -> Result<(), RelationalRecoveryStop> {
     let lease = match execution.allocation_policy() {
         worth_execution::ExecutionAllocationPolicy::Execution(lease) => Some(lease),
         worth_execution::ExecutionAllocationPolicy::SystemAllocation => None,
@@ -68,6 +79,7 @@ pub(crate) fn verify_checkpoint_index_bases(
                 .definition(*index)
                 .ok_or_else(|| corrupt("index basis definition is unavailable"))?;
             let mut expected = super::execute_index_packets(
+                lane,
                 execution,
                 &source,
                 super::plan_index_packets(vec![definition.as_ref().clone()]),

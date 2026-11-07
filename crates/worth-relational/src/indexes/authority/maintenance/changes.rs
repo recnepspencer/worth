@@ -42,6 +42,7 @@ impl ChangedRecords {
     }
 
     pub(super) fn cold(
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         view: &IndexRootView,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         work: &mut MaintenanceWork,

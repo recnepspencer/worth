@@ -33,7 +33,11 @@ impl BasisSelections {
                     generation.applicability.version_id,
                 )
                 .map_or(0, |basis| {
-                    basis.entries.len().saturating_add(basis.empty.len())
+                    basis
+                        .state
+                        .entries
+                        .len()
+                        .saturating_add(basis.state.empty.len())
                 })
                 .saturating_add(generations.len())
             })
@@ -84,9 +88,10 @@ impl super::PreparedIndexBasisSelection {
     ) -> Result<(), crate::indexes::data::SelectedIndexGenerationAdmissionStop<Stop>> {
         use crate::indexes::data::SelectedIndexGenerationAdmissionStop as Refusal;
         let (units, bytes) = super::payment::inner(
-            self.entries
+            self.state
+                .entries
                 .len()
-                .saturating_add(self.empty.len())
+                .saturating_add(self.state.empty.len())
                 .saturating_add(changes),
         )
         .ok_or(Refusal::AccountingOverflow)?;

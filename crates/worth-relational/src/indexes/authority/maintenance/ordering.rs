@@ -160,3 +160,29 @@ fn row(
         }),
     )
 }
+
+pub(super) fn project_row(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    view: &IndexRootView,
+    id: RelationId,
+    contract: (
+        KindId,
+        RelatedEntityEndpoint,
+        KindId,
+        &[RelatedEntityOrderingField],
+    ),
+    work: &mut MaintenanceWork,
+) -> Result<Option<(EntityId, RelatedEntityOrderingEntry)>, Denial> {
+    row(
+        execution,
+        Some(view),
+        id,
+        &OrderingContract {
+            relation_kind: contract.0,
+            parent_endpoint: contract.1,
+            child_kind: contract.2,
+            ordering: contract.3,
+        },
+        work,
+    )
+}

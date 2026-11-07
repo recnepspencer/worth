@@ -1,9 +1,7 @@
 //! Native pipeline entrance: authentic roots and their one sealed shared change.
 use super::{
-    candidate_publication::{CandidateIndexPreparation, PreparedCandidateIndexPublication},
-    owner::IndexMaintenanceOwner,
-    request_payment,
-    root_view::IndexRootView,
+    candidate_publication::PreparedCandidateIndexPublication, owner::IndexMaintenanceOwner,
+    request_payment, root_view::IndexRootView,
 };
 use crate::branch::RelationalBranchRoot;
 use crate::indexes::data::{
@@ -24,30 +22,29 @@ impl IndexDefinitionReadBinding {
         successor: &Arc<RelationalBranchRoot>,
         change: &Arc<CommitChange>,
     ) -> Result<Option<PreparedCandidateIndexPublication>, DerivedIndexMaintenanceDenial> {
-        if change.schema_changed() && predecessor.commit_id().is_some() {
-            return crate::storage::substrate::maintenance::ReconstructionLane::recover(
-                execution,
-                |lane, _| {
-                    self.prepare_index_publication(
-                        execution,
-                        predecessor,
-                        successor,
-                        change,
-                        Some(lane),
-                    )
-                },
-            );
-        }
-        self.prepare_index_publication(execution, predecessor, successor, change, None)
+        crate::storage::substrate::maintenance::ChangeWork::run_phase(
+            execution,
+            "index_maintenance",
+            |_| {
+                if change.schema_changed() && predecessor.commit_id().is_some() {
+                    self.prepare_schema_transition(execution, predecessor, successor, change)
+                } else {
+                    self.prepare_index_publication(execution, predecessor, successor, change, None)
+                }
+            },
+        )
     }
 
-    fn prepare_index_publication(
+    pub(super) fn prepare_index_publication(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         predecessor: &Arc<RelationalBranchRoot>,
         successor: &Arc<RelationalBranchRoot>,
         change: &Arc<CommitChange>,
-        reconstruction: Option<&crate::storage::substrate::maintenance::ReconstructionLane<'_>>,
+        mut reconstruction: Option<(
+            &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+            &mut crate::storage::substrate::maintenance::ReconstructionWork<'_, '_>,
+        )>,
     ) -> Result<Option<PreparedCandidateIndexPublication>, DerivedIndexMaintenanceDenial> {
         crate::execution::check_request(execution).map_err(|cause| {
             DerivedIndexMaintenanceDenial {
@@ -111,18 +108,48 @@ impl IndexDefinitionReadBinding {
                 work.defer_publication();
                 let before = IndexRootView::new(Arc::clone(predecessor));
                 let after = IndexRootView::new(Arc::clone(successor));
-                let refresh = owner.prepare_refresh(
+                let routes = indexes
+                    .definition_read_binding()
+                    .snapshot()
+                    .routing(successor.schema_authority().schema_version())
+                    .ok_or(Denial::ColdReconstructionRequired)?;
+                let inputs = if reconstruction.is_some() {
+                    None
+                } else {
+                    Some(owner.refresh_inputs(execution, &request, Some(&before), &after, work)?)
+                };
+                let previous = inputs
+                    .as_ref()
+                    .and_then(|inputs| inputs.inherited.as_ref())
+                    .map(|basis| basis.selection_state());
+                let mut maintainer = super::maintained_selection::IndexSelectionMaintainer {
+                    owner: &owner,
                     execution,
-                    &request,
-                    if reconstruction.is_some() {
-                        None
-                    } else {
-                        Some(&before)
-                    },
-                    &after,
-                    work,
-                )?;
-                CandidateIndexPreparation::prepare(&indexes, successor, refresh, work)
+                    before: &before,
+                    after: &after,
+                    request: &request,
+                    native: work,
+                    routes,
+                    inputs,
+                    prepared: None,
+                };
+                let state = if let Some((lane, cold_work)) = reconstruction.as_mut() {
+                    crate::storage::substrate::maintenance::Maintained::cold(
+                        &mut maintainer,
+                        lane,
+                        cold_work,
+                    )?
+                } else {
+                    crate::storage::substrate::maintenance::ChangeWork::run(execution, |shared| {
+                        crate::storage::substrate::maintenance::apply_change(
+                            &mut maintainer,
+                            previous.as_ref(),
+                            change,
+                            shared,
+                        )
+                    })?
+                };
+                maintainer.finish(state)
             },
         )?;
         let (prepared, funding) = prepared.into_funded_parts();

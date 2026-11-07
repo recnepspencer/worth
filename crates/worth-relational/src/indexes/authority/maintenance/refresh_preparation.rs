@@ -9,6 +9,17 @@ impl super::owner::IndexMaintenanceOwner<'_> {
         after: &root_view::IndexRootView,
         work: &mut MaintenanceWork,
     ) -> Result<PreparedRefresh, DerivedIndexMaintenanceDenialKind> {
+        self.prepare_refresh_with_inputs(execution, request, before, after, work, None)
+    }
+    pub(super) fn prepare_refresh_with_inputs(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        request: &DerivedIndexBuildRequest,
+        before: Option<&root_view::IndexRootView>,
+        after: &root_view::IndexRootView,
+        work: &mut MaintenanceWork,
+        inputs: Option<super::refresh_inputs::RootMaintenanceInputs>,
+    ) -> Result<PreparedRefresh, DerivedIndexMaintenanceDenialKind> {
         let root = after.root();
         let schema_version = root.schema_authority().schema_version();
         let authoring = root
@@ -34,15 +45,16 @@ impl super::owner::IndexMaintenanceOwner<'_> {
         let mut prepared = Vec::new();
         let mut pending_fields = Vec::new();
         let mut reused = Vec::new();
-        let mut cold_changes = None;
-        let mut cold_routing = None;
         let mut patch_routing = None;
         let super::refresh_inputs::RootMaintenanceInputs {
             mut basis,
             inherited,
             mut patch_changes,
             requested,
-        } = self.refresh_inputs(execution, request, before, after, work)?;
+        } = match inputs {
+            Some(inputs) => inputs,
+            None => self.refresh_inputs(execution, request, before, after, work)?,
+        };
         for index_id in requested {
             let compatible_before = before.filter(|view| {
                 Some(view.root().schema_authority().schema_version()) == Some(schema_version)
@@ -141,7 +153,7 @@ impl super::owner::IndexMaintenanceOwner<'_> {
                     })?;
                 }
                 work.grow_vec(&mut prepared)?;
-                prepared.push((index_id, empty_entries(&definition.kind)));
+                prepared.push((index_id, empty_entries(&definition.kind, work)?));
                 continue;
             }
             let previous = prior.clone();
@@ -160,39 +172,14 @@ impl super::owner::IndexMaintenanceOwner<'_> {
                 )
             } else if empty_before && before.is_some() {
                 (
-                    empty_entries(&definition.kind),
+                    empty_entries(&definition.kind, work)?,
                     patch_changes
                         .as_ref()
                         .ok_or(DerivedIndexMaintenanceDenialKind::BeforeRootMismatch)?,
                     before,
                 )
             } else {
-                if work.prohibits_population_reconstruction() {
-                    return Err(DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired);
-                }
-                if cold_changes.is_none() {
-                    cold_changes = Some(changes::ChangedRecords::cold(after, execution, work)?);
-                }
-                match &definition.kind {
-                    DerivedIndexKind::EntityField { .. } => {
-                        super::persistent_allocation::prepare_empty_map::<
-                            crate::storage::data::AuthoritativeFieldComparisonKey,
-                            crate::identity::data::EntityId,
-                        >(work)?
-                    }
-                    DerivedIndexKind::RelationField { .. } => {
-                        super::persistent_allocation::prepare_empty_map::<
-                            crate::storage::data::AuthoritativeFieldComparisonKey,
-                            crate::identity::data::RelationId,
-                        >(work)?
-                    }
-                    _ => {}
-                }
-                (
-                    empty_entries(&definition.kind),
-                    cold_changes.as_ref().unwrap(/* Proof: The preceding branch tests this Option as Some and does not mutate it before this borrow. */ ),
-                    None,
-                )
+                return Err(DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired);
             };
             match (&definition.kind, entries) {
                 (
@@ -226,11 +213,7 @@ impl super::owner::IndexMaintenanceOwner<'_> {
                     });
                 }
                 (_, mut entries) => {
-                    let routing = if old.is_some() {
-                        &mut patch_routing
-                    } else {
-                        &mut cold_routing
-                    };
+                    let routing = &mut patch_routing;
                     if routing.is_none() {
                         *routing = Some(change_routing::ChangeRouting::classify(
                             execution, changes, old, after, work,
@@ -266,7 +249,7 @@ impl super::owner::IndexMaintenanceOwner<'_> {
                 &mut pending_fields,
                 &routing,
                 patch_changes.as_ref(),
-                cold_changes.as_ref(),
+                None,
                 before,
                 after,
                 work,

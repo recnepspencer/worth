@@ -45,10 +45,14 @@ impl PreparedCandidateIndexPublication {
 }
 
 impl CandidateIndexPreparation {
+    pub(super) fn selection_state(&self) -> Option<Arc<crate::runtime::IndexSelectionState>> {
+        self.publication.selection_state()
+    }
+
     pub(super) fn prepare(
         indexes: &crate::runtime::IndexingSubsystem,
         prepared_root: &Arc<RelationalBranchRoot>,
-        prepared: PreparedRefresh,
+        mut prepared: PreparedRefresh,
         work: &mut MaintenanceWork,
     ) -> Result<Self, Denial> {
         work.charge(prepared.entries.len())?;
@@ -62,7 +66,7 @@ impl CandidateIndexPreparation {
         let generation_ids = indexes
             .reserve_generation_ids(prepared.entries.len())
             .ok_or(Denial::GenerationIdentityExhausted)?;
-        let generations = prepared
+        let generations: Vec<DerivedIndexGeneration> = prepared
             .entries
             .into_iter()
             .zip(generation_ids)
@@ -70,6 +74,21 @@ impl CandidateIndexPreparation {
                 prepared_generation(&prepared.publication, generation_id, index_id, entries)
             })
             .collect();
+        if let Some(basis) = &mut prepared.basis {
+            for generation in &generations {
+                let width = generation.source_branch_id.0.len()
+                    + generation.applicability.branch_id.0.len();
+                work.prepare(
+                    width as u64 + 1,
+                    (width
+                        + std::mem::size_of::<DerivedIndexGeneration>()
+                        + 2 * std::mem::size_of::<usize>()) as u64,
+                )?;
+                basis.replace_admitted(Arc::new(generation.clone()), &mut |units, bytes| {
+                    work.prepare(units, bytes)
+                })?;
+            }
+        }
         let publication = indexes
             .prepare_generation_batch(generations, prepared.basis, |units, bytes| {
                 work.prepare(units, bytes)

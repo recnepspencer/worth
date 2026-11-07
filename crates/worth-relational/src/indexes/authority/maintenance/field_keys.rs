@@ -75,9 +75,10 @@ pub(super) fn relation(
     if !matches!(
         slot.lifecycle(),
         RecordLifecycleState::Live | RecordLifecycleState::RetainedDanglingForAudit
-    ) || slot
-        .retired_at()
-        .is_some_and(|version| version <= view.version_id())
+    ) || (slot.lifecycle() == RecordLifecycleState::Live
+        && slot
+            .retired_at()
+            .is_some_and(|version| version <= view.version_id()))
         || (!id.generation.is_zero() && slot.generation() != id.generation_value())
         || slot.extra().endpoints.is_none()
     {

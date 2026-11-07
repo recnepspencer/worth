@@ -7,7 +7,7 @@ use crate::indexes::data::{
 };
 
 impl IndexAuthority<'_> {
-    /// Reconstructs only selected field indexes on the original request's work and memory payer.
+    /// Maintains only selected field indexes on the original request's work and memory payer.
     /// Reuses exact native generations, including a fork authoring root. Population reconstruction
     /// is refused; the complete selected batch publishes atomically or not at all.
     pub fn refresh_field_indexes_for_basis(
@@ -30,12 +30,8 @@ impl IndexAuthority<'_> {
         })
     }
 
-    /// Reconstructs selected field indexes through the native maintenance owner
-    /// on the caller's preparation authority. Other index kinds are explicitly
-    /// unavailable in this contract; the ordinary maintenance API supports them.
-    /// A zero cold-record allowance requires an existing exact or authentic fork
-    /// generation; it refuses before population reconstruction. A positive cold
-    /// allowance explicitly admits bounded reconstruction on this same payer.
+    /// Maintains selected field indexes through the original preparation payer.
+    /// Missing predecessor state refuses, independently of the cold-record budget.
     /// The first caller refusal remains sticky and intact.
     pub fn refresh_field_indexes_for_basis_admitted<Stop>(
         &self,
@@ -57,9 +53,7 @@ impl IndexAuthority<'_> {
                 })
             };
             let mut work = MaintenanceWork::admitted(budget, &mut relay);
-            if budget.maximum_cold_record_slots == Some(0) {
-                work.restrict_to_field_indexes();
-            }
+            work.restrict_to_field_indexes();
             let prepared = self
                 .prepare_basis_refresh(&request, basis, None, &mut work, execution)
                 .map_err(|kind| work.deny(kind))?;

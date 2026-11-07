@@ -94,3 +94,17 @@ impl From<crate::storage::substrate::maintenance::MaintenanceRefusal>
         }
     }
 }
+
+impl From<crate::storage::substrate::maintenance::MaintenanceRefusal>
+    for DerivedIndexMaintenanceDenialKind
+{
+    fn from(cause: crate::storage::substrate::maintenance::MaintenanceRefusal) -> Self {
+        use crate::storage::substrate::maintenance::MaintenanceRefusal as Refusal;
+        match cause {
+            Refusal::Execution(cause) => Self::Execution(cause),
+            Refusal::MissingPredecessor | Refusal::UnavailableChange => {
+                Self::ColdReconstructionRequired
+            }
+        }
+    }
+}

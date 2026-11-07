@@ -27,9 +27,6 @@ pub(super) fn refresh(
 ) -> Result<bool, Denial> {
     let previous = match index.legs() {
         Some(legs) => legs.as_ref().clone(),
-        None if before.is_none() && !work.prohibits_population_reconstruction() => {
-            JoinLegsState::default()
-        }
         None => return Err(Denial::ColdReconstructionRequired),
     };
     let mut next = previous.clone();
@@ -169,7 +166,7 @@ fn row(
         .map(|(left, right)| RelationJoinEntry::new(shared, left, right)))
 }
 
-fn coordinate(
+pub(super) fn coordinate(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     after: &IndexRootView,
     metadata: Option<record_metadata::RelationMetadata>,

@@ -4,8 +4,38 @@ use crate::indexes::data::{
     DerivedIndexDefinition, DerivedIndexEntries, DerivedIndexKind,
     DerivedIndexMaintenanceDenialKind,
 };
-pub(super) fn empty_entries(kind: &DerivedIndexKind) -> DerivedIndexEntries {
+pub(super) fn empty_entries(
+    kind: &DerivedIndexKind,
+    work: &mut MaintenanceWork,
+) -> Result<DerivedIndexEntries, DerivedIndexMaintenanceDenialKind> {
+    use super::persistent_allocation::prepare_empty_map;
+    use crate::identity::data::{EntityId, RelationId};
+    use crate::indexes::data::{RelatedEntityOrderingEntry, RelationJoinEntry, RelationJoinKey};
+    use crate::storage::data::AuthoritativeFieldComparisonKey as Key;
     match kind {
+        DerivedIndexKind::EntityField { .. } => prepare_empty_map::<Key, EntityId>(work)?,
+        DerivedIndexKind::RelationField { .. } => prepare_empty_map::<Key, RelationId>(work)?,
+        DerivedIndexKind::RelatedEntityOrdering { .. } => {
+            prepare_empty_map::<EntityId, RelatedEntityOrderingEntry>(work)?
+        }
+        DerivedIndexKind::RelationJoin(_) => {
+            prepare_empty_map::<RelationJoinKey, RelationJoinEntry>(work)?;
+            let bytes = super::cold_projection::funding::tree_bytes::<(
+                EntityId,
+                im::OrdMap<EntityId, im::OrdSet<RelationId>>,
+            )>(0)?
+                + super::cold_projection::funding::tree_bytes::<(RelationId, (EntityId, EntityId))>(
+                    0,
+                )?;
+            work.prepare(
+                4,
+                bytes * 2
+                    + (std::mem::size_of::<crate::indexes::data::JoinLegsState>()
+                        + 2 * std::mem::size_of::<usize>()) as u64,
+            )?;
+        }
+    }
+    Ok(match kind {
         DerivedIndexKind::EntityField { .. } => {
             DerivedIndexEntries::EntityField(Default::default())
         }
@@ -21,7 +51,7 @@ pub(super) fn empty_entries(kind: &DerivedIndexKind) -> DerivedIndexEntries {
                 Default::default(),
             ))
         }
-    }
+    })
 }
 
 pub(super) fn update_entries(

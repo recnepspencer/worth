@@ -71,10 +71,6 @@ impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
     pub(super) fn reserve_generation_publications(&mut self, count: usize) {
         self.counts.generation_publications_reserved = count;
     }
-    pub(super) fn prohibits_population_reconstruction(&self) -> bool {
-        self.restriction != MaintenanceRestriction::Unrestricted
-    }
-
     pub(super) fn search_is_prepared(&self) -> bool {
         self.prepares_allocations()
     }

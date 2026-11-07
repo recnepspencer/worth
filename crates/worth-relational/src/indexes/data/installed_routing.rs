@@ -7,6 +7,7 @@ use worth_foundational::facade::{AspectFieldLocator, AspectKey, FieldKey};
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct InstalledIndexRouting {
+    maintenance: BTreeSet<crate::storage::substrate::maintenance::MaintenanceRoute>,
     entities: BTreeMap<KindId, Vec<DerivedIndexId>>,
     relations: BTreeMap<KindId, Vec<DerivedIndexId>>,
     entity_fields: BTreeMap<KindId, Vec<AspectFieldLocator>>,
@@ -22,7 +23,12 @@ impl InstalledIndexRouting {
     ) -> Self {
         let mut routing = Self::default();
         let mut fields: BTreeMap<KindId, BTreeSet<AspectFieldLocator>> = BTreeMap::new();
+        use crate::storage::substrate::maintenance::MaintenanceRoute as Route;
         for definition in definitions {
+            routing
+                .maintenance
+                .insert(Route::Index(definition.index_id));
+            routing.maintenance.insert(Route::Schema);
             match &definition.kind {
                 DerivedIndexKind::EntityField { field_locator } => {
                     for plan in plans.entity_plans.values() {
@@ -78,6 +84,10 @@ impl InstalledIndexRouting {
                     ordering,
                     ..
                 } => {
+                    routing.maintenance.insert(Route::EntityKind(*child_kind));
+                    routing
+                        .maintenance
+                        .insert(Route::RelationKind(*relation_kind));
                     routing
                         .entity_topology
                         .entry(*child_kind)
@@ -113,6 +123,7 @@ impl InstalledIndexRouting {
                         join.left().external_entity_kind(),
                         join.right().external_entity_kind(),
                     ] {
+                        routing.maintenance.insert(Route::EntityKind(kind));
                         routing
                             .entity_topology
                             .entry(kind)
@@ -125,6 +136,9 @@ impl InstalledIndexRouting {
                             .push(definition.index_id);
                     }
                     for leg in [join.left(), join.right()] {
+                        routing
+                            .maintenance
+                            .insert(Route::RelationKind(leg.relation_kind()));
                         routing
                             .relation_topology
                             .entry(leg.relation_kind())
@@ -154,6 +168,11 @@ impl InstalledIndexRouting {
         routing
     }
 
+    pub(crate) fn maintenance_routes(
+        &self,
+    ) -> &BTreeSet<crate::storage::substrate::maintenance::MaintenanceRoute> {
+        &self.maintenance
+    }
     pub(crate) fn entities(&self, kind: KindId) -> &[DerivedIndexId] {
         self.entities.get(&kind).map_or(&[], Vec::as_slice)
     }
@@ -178,6 +197,17 @@ impl InstalledIndexRouting {
         locator: &AspectFieldLocator,
         index: DerivedIndexId,
     ) {
+        use crate::storage::substrate::maintenance::MaintenanceRoute as Route;
+        self.maintenance.insert(if entity {
+            Route::EntityKind(kind)
+        } else {
+            Route::RelationKind(kind)
+        });
+        self.maintenance.insert(Route::Field {
+            kind,
+            aspect: locator.aspect().aspect_key().clone(),
+            path: locator.field_path().clone(),
+        });
         if let [field] = locator.field_path().fields() {
             self.fields
                 .entry((

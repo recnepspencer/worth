@@ -15,9 +15,11 @@ mod commit_build;
 mod diagnostics;
 mod discard;
 mod maintenance;
+mod recovery_build;
 pub(crate) use maintenance::candidate::PreparedCandidateIndexPublication;
 #[cfg(test)]
 pub(crate) use maintenance::charge_rendezvous::at_next_charges;
+pub(crate) use maintenance::PreparedForkIndexSelection;
 mod packet_planning;
 
 use crate::history::data::CommitId;

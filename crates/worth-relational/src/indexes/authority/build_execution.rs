@@ -66,6 +66,7 @@ pub(super) fn record_index_preparation_strategy_counters(
 }
 
 pub(super) fn execute_index_packets(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_>,
     packets: Vec<IndexPreparationPacket>,
@@ -89,10 +90,11 @@ pub(super) fn execute_index_packets(
             value: packet,
         })
         .collect();
-    execute_index_inputs(execution, projection, inputs, lease, work_budget)
+    execute_index_inputs(lane, execution, projection, inputs, lease, work_budget)
 }
 
 pub(super) fn execute_index_inputs(
+    _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_>,
     inputs: Vec<ReadOnlyPacket<IndexPreparationPacket>>,

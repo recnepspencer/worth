@@ -10,6 +10,12 @@ pub(crate) struct PreparedGenerationBatch {
     basis: Option<super::PreparedIndexBasisSelection>,
 }
 impl PreparedGenerationBatch {
+    pub(crate) fn selection_state(&self) -> Option<std::sync::Arc<super::IndexSelectionState>> {
+        self.basis
+            .as_ref()
+            .map(super::PreparedIndexBasisSelection::selection_state)
+    }
+
     pub(crate) fn publish(mut self) {
         let mut state = self.catalog.write();
         for generation in self.generations {

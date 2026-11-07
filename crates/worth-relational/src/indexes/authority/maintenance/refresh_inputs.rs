@@ -30,12 +30,31 @@ impl super::owner::IndexMaintenanceOwner<'_> {
                         request.source_commit_id,
                         after.version_id(),
                         schema_version,
-                        &envelope.branch_context,
+                        &request.branch_id,
                         envelope.commit.commit_id,
                         before.version_id(),
                         work.publication_is_deferred(),
                         &mut |units, bytes| work.prepare(units, bytes),
                     )
+                    .or_else(|stop| {
+                        if stop == DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired
+                            && envelope.branch_context != request.branch_id
+                        {
+                            self.indexes.prepare_basis_selection(
+                                &request.branch_id,
+                                request.source_commit_id,
+                                after.version_id(),
+                                schema_version,
+                                &envelope.branch_context,
+                                envelope.commit.commit_id,
+                                before.version_id(),
+                                work.publication_is_deferred(),
+                                &mut |units, bytes| work.prepare(units, bytes),
+                            )
+                        } else {
+                            Err(stop)
+                        }
+                    })
                     .map(Some)
                     .or_else(|stop| {
                         if stop == DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired {

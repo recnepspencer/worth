@@ -39,8 +39,8 @@ pub use history::{
     RelationalCanonicalPositionAdmissionDenial, RelationalPatchPositionReservationCounters,
 };
 pub(crate) use indexing::{
-    IndexCatalogCoverage, IndexDefinitionCatalog, IndexDefinitionReadBinding, IndexingState,
-    IndexingSubsystem, PreparedGenerationBatch, PreparedIndexBasisSelection,
+    IndexCatalogCoverage, IndexDefinitionCatalog, IndexDefinitionReadBinding, IndexSelectionState,
+    IndexingState, IndexingSubsystem, PreparedGenerationBatch, PreparedIndexBasisSelection,
 };
 pub(crate) use lineage::{
     LineageState, LineageSubsystem, ResidentLineageEventPage, ResidentLineageNode,

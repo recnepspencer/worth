@@ -82,7 +82,7 @@ impl RelationalForkPort {
         Option<crate::mvcc::PreparedManagedIndexSourceFork>,
     ) {
         let InstallableForkTarget {
-            prepared: target,
+            prepared: mut target,
             materialization_cost,
             basis,
         } = installable;
@@ -94,6 +94,9 @@ impl RelationalForkPort {
         let target_identity = target.target_cell.identity().clone();
         if let Some(managed) = &target.managed_source {
             managed.installed();
+        }
+        if let Some(indexes) = target.indexes.take() {
+            indexes.publish();
         }
         self.owner
             .install_target(target.reservation, target.target_cell);

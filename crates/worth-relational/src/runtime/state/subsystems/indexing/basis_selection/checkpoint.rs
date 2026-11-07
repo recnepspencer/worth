@@ -40,8 +40,9 @@ impl IndexingState {
                 commit: basis.commit,
                 version: basis.version,
                 schema: basis.schema,
-                empty: basis.empty.iter().copied().collect(),
+                empty: basis.state.empty.iter().copied().collect(),
                 bindings: basis
+                    .state
                     .entries
                     .iter()
                     .map(|(index, generation)| (*index, generation.generation_id))
@@ -83,8 +84,7 @@ impl IndexingState {
             commit: basis.commit,
             version: basis.version,
             schema: basis.schema,
-            entries,
-            empty,
+            state: std::sync::Arc::new(super::super::IndexSelectionState { entries, empty }),
         };
         self.bases.install(restored);
         Ok(())

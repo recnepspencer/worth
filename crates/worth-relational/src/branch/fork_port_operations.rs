@@ -309,7 +309,7 @@ impl RelationalForkPort {
             })
             .transpose()?;
         pause_before_install();
-        let prepared = self
+        let mut prepared = self
             .prepare_fork_target(
                 execution,
                 reservation,
@@ -318,6 +318,15 @@ impl RelationalForkPort {
                 &mut lookup_cleanup,
             )
             .map_err(denied)?;
+        prepared.indexes = self
+            .indexes
+            .prepare_fork_selection(
+                execution,
+                validated.descriptor.source_branch(),
+                prepared.reservation.branch_id(),
+                &validated.source_root,
+            )
+            .map_err(|stop| denied(RelationalForkDenial::IndexPreparation(Box::new(stop))))?;
         let mut installable = Some(
             self.prepare_installation(prepared, return_basis)
                 .map_err(denied)?,

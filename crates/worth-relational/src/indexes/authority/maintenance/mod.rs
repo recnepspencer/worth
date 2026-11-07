@@ -3,6 +3,8 @@ mod affected_indexes;
 mod basis;
 mod basis_currency;
 mod branch_seed;
+mod fork_selection;
+pub(crate) use fork_selection::PreparedForkIndexSelection;
 pub(super) mod candidate;
 mod change_routing;
 mod changes;
@@ -26,12 +28,16 @@ use publication::PreparedRefresh;
 mod candidate_publication;
 #[cfg(test)]
 pub(crate) mod charge_rendezvous;
+mod cold_projection;
+mod maintained_selection;
 mod owner;
 mod pipeline_preparation;
 mod reads;
 mod record_metadata;
+mod recovery;
 mod request_payment;
 mod root_view;
+mod schema_transition;
 #[cfg(test)]
 pub(crate) use request_payment::last_allocation_bytes;
 mod work;
@@ -43,66 +49,9 @@ use crate::snapshots::data::SnapshotHandle;
 use work::MaintenanceWork;
 
 impl IndexAuthority<'_> {
-    /// Explicit bounded reconstruction for a committed version that is no
-    /// longer a live branch head. Retention selects its actual immutable root;
-    /// the root's envelope must match the requested commit and branch.
-    pub fn reconstruct_for_commit(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        request: DerivedIndexBuildRequest,
-        budget: DerivedIndexMaintenanceBudget,
-    ) -> Result<DerivedIndexMaintenanceOutcome, DerivedIndexMaintenanceDenial> {
-        let (prepared, counts) = request_payment::run(execution, budget, |work| {
-            work.charge(request.index_ids.len())?;
-            let recorded = self
-                .runtime
-                .history
-                .recorded_commit_envelope(request.source_commit_id)
-                .ok_or(DerivedIndexMaintenanceDenialKind::CommitMismatch)?;
-            if recorded.branch_context != request.branch_id {
-                return Err(DerivedIndexMaintenanceDenialKind::CommitMismatch);
-            }
-            let projection = self
-                .runtime
-                .read_truth()
-                .try_project_retained_commit(
-                    request.source_commit_id,
-                    request.branch_id.clone(),
-                    recorded.commit.version_id,
-                )
-                .map_err(DerivedIndexMaintenanceDenialKind::Basis)?;
-            let root = projection
-                .selected_root()
-                .ok_or(DerivedIndexMaintenanceDenialKind::CommitMismatch)?;
-            if root.commit_id() != Some(request.source_commit_id)
-                || root
-                    .canonical_envelope()
-                    .is_none_or(|envelope| envelope.branch_context != request.branch_id)
-            {
-                return Err(DerivedIndexMaintenanceDenialKind::CommitMismatch);
-            }
-            self.runtime.indexes.install_routing(
-                root.schema_authority().schema_version(),
-                root.schema_authority().aspect_plans(),
-            );
-            let prepared = self.maintenance().prepare_refresh(
-                execution,
-                &request,
-                None,
-                &root_view::IndexRootView::from_projection(&projection)?,
-                work,
-            )?;
-            prepared.publish_admitted(self.runtime, work)
-        })?;
-        Ok(DerivedIndexMaintenanceOutcome {
-            generations: prepared.value,
-            work: counts,
-        })
-    }
-
     /// Refresh one exact published basis. The optional before snapshot enables
     /// patch-local maintenance only when the canonical pre-commit root matches.
-    /// Missing generations/snapshots require the explicit cold budget. All work
+    /// Missing predecessor generations refuse regardless of the cold budget. All work
     /// is prepared before any generation is published; denial publishes none.
     pub fn refresh_for_basis(
         &self,
@@ -157,17 +106,6 @@ impl IndexAuthority<'_> {
             .transpose()?;
         work.prepare(branch.0.len().min(request.branch_id.0.len()) as u64 + 1, 0)?;
         basis::validate(request, &observation, before.as_ref(), &after)?;
-        if work.budget.maximum_cold_record_slots != Some(0)
-            && !work.prohibits_population_reconstruction()
-        {
-            if let Some(root) = after.selected_root() {
-                // cost-lane: explicit recovery/schema transition, never ordinary.
-                self.runtime.indexes.install_routing(
-                    root.schema_authority().schema_version(),
-                    root.schema_authority().aspect_plans(),
-                );
-            }
-        }
         let after = root_view::IndexRootView::from_projection(&after)?;
         let before = before
             .as_ref()
