@@ -82,6 +82,11 @@ pub fn verify(
         "indexed_lookup_work",
         report.charged_work(),
     );
+    sample.record(
+        Phase::ReadAdmission,
+        "indexed_entries_examined",
+        indexed.examined_entry_count() as u64,
+    );
     assert_eq!(indexed.candidate_entity_ids(), &[edited]);
     // Independent whole-state oracle is outside all measured intervals.
     let cold = runtime
@@ -89,7 +94,15 @@ pub fn verify(
         .execute_query_plan(plan, execution)
         .unwrap()
         .unwrap();
-    assert_eq!(cold.outcome.result.entities.len(), 1);
+    assert_eq!(
+        cold.outcome
+            .result
+            .entities
+            .iter()
+            .map(|record| record.entity_id)
+            .collect::<Vec<_>>(),
+        indexed.candidate_entity_ids()
+    );
     let warm: Vec<_> = indexes
         .iter()
         .map(|index| {

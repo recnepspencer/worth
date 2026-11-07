@@ -14,6 +14,7 @@ pub enum Phase {
     SnapshotOpen,
     HistoryRecord,
     Navigation,
+    OwnerDefined(&'static str),
 }
 
 /// The court's consumption interface for the pending owner-issued phase seam.
@@ -90,5 +91,34 @@ impl Sample {
         for observation in source.phase_work() {
             self.record(observation.phase, "charged_work", observation.charged_work);
         }
+    }
+}
+
+impl PhaseWorkSource for worth_relational::facade::inspection::MaintenanceWorkObservation {
+    fn phase_work(&self) -> Vec<PhaseWork> {
+        assert_eq!(self.omitted_phases, 0, "phase evidence must be complete");
+        let mut totals = BTreeMap::<Phase, u64>::new();
+        for row in &self.phases {
+            assert!(row.accounted, "unaccounted owner phase: {}", row.phase);
+            let phase = match row.phase {
+                "root_admission" => Phase::RootAdmission,
+                "kind_commitment" => Phase::KindCommitment,
+                other => Phase::OwnerDefined(other),
+            };
+            *totals.entry(phase).or_default() += row.charged_work;
+        }
+        for required in [Phase::RootAdmission, Phase::KindCommitment] {
+            assert!(
+                totals.contains_key(&required),
+                "missing owner phase: {required:?}"
+            );
+        }
+        totals
+            .into_iter()
+            .map(|(phase, charged_work)| PhaseWork {
+                phase,
+                charged_work,
+            })
+            .collect()
     }
 }

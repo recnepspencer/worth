@@ -35,6 +35,7 @@ struct World {
     relation: RelationId,
     indexes: Vec<DerivedIndexId>,
     head: CommitResult,
+    history_pin: worth_relational::facade::snapshots::SnapshotHandle,
 }
 
 impl World {
@@ -112,17 +113,25 @@ impl World {
         )));
         let mut head = commit(&runtime, execution, batch);
         let relation = head.created_relation(&first.unwrap()).unwrap();
-        for i in 0..d.history {
-            let next = commit(
-                &runtime,
-                execution,
-                update(entities[2], &format!("history-{i}")),
-            );
-            release_test_commit_snapshot(&runtime, &head);
-            head = next;
-        }
-        // This explicit initial cold build is fixture setup, outside every
-        // observed ordinary interval. Every measured edit has a real predecessor.
+        let history_relation = head
+            .created_relation(&CreatedRelationRef {
+                partition_id: PartitionId(1),
+                kind_id: KindId(2),
+                client_key: ClientKey::raw("edge-2"),
+                source: EntityReference::Existing(entities[2]),
+                target: EntityReference::Existing(entities[3]),
+            })
+            .unwrap();
+        let (_, initial) = runtime
+            .observe_branch(&runtime.main_branch_identity())
+            .unwrap();
+        let history_pin = runtime
+            .snapshots()
+            .snapshot_for_observation(&initial.observation())
+            .unwrap();
+        // One explicit cold initialization at the setup trust boundary. The
+        // history below follows the ordinary indexed commit path, so H grows
+        // the real generation catalog as well as canonical record history.
         let built = runtime
             .index_authority()
             .build_for_commit(execution, build_request(&indexes, &head));
@@ -130,12 +139,31 @@ impl World {
             built.failed_indexes.is_empty(),
             "initial index build: {built:?}"
         );
+        for i in 0..d.history {
+            let next = indexed_commit(
+                &runtime,
+                execution,
+                update(entities[2], &format!("history-{i}")).push(MutationIntent::Relation(
+                    RelationMutationIntent::UpdateEndpoints(UpdateRelationEndpointsIntent {
+                        relation_id: history_relation,
+                        kind_id: KindId(2),
+                        source: EntityReference::Existing(entities[2]),
+                        target: EntityReference::Existing(entities[if i % 2 == 0 { 5 } else { 3 }]),
+                    }),
+                )),
+                &indexes,
+                &head,
+            );
+            release_test_commit_snapshot(&runtime, &head);
+            head = next;
+        }
         Self {
             runtime,
             entities,
             relation,
             indexes,
             head,
+            history_pin,
         }
     }
 
@@ -210,29 +238,11 @@ impl World {
         );
         release_test_commit_snapshot(&self.runtime, &self.head);
         release_test_commit_snapshot(&self.runtime, &result);
+        self.runtime
+            .snapshots()
+            .release_snapshot(&self.history_pin)
+            .unwrap();
         sample
-    }
-}
-
-impl PhaseWorkSource for MaintenanceWorkObservation {
-    fn phase_work(&self) -> Vec<PhaseWork> {
-        assert_eq!(self.omitted_phases, 0, "phase evidence must be complete");
-        [
-            ("root_admission", Phase::RootAdmission),
-            ("kind_commitment", Phase::KindCommitment),
-        ]
-        .map(|(name, phase)| {
-            let rows: Vec<_> = self.phases.iter().filter(|row| row.phase == name).collect();
-            assert!(
-                !rows.is_empty() && rows.iter().all(|row| row.accounted),
-                "missing accounted {name}: {self:?}"
-            );
-            PhaseWork {
-                phase,
-                charged_work: rows.iter().map(|row| row.charged_work).sum(),
-            }
-        })
-        .into()
     }
 }
 
@@ -254,6 +264,43 @@ fn update(entity_id: EntityId, value: &str) -> WorkerIntentBatch {
             fields: schema::patch("name", value),
         }),
     ))
+}
+fn indexed_commit(
+    runtime: &RelationalRuntime,
+    execution: &ExecutionRequest<'_, '_>,
+    batch: WorkerIntentBatch,
+    indexes: &[DerivedIndexId],
+    before: &CommitResult,
+) -> CommitResult {
+    let mut transaction = begin_main_transaction(runtime);
+    transaction
+        .push_batch(batch, execution.allocation_policy())
+        .unwrap();
+    let mut candidate = runtime
+        .prepare_branch_transaction(execution, transaction)
+        .unwrap();
+    runtime
+        .index_authority()
+        .prepare_incremental_indexes_for_candidate(
+            &mut candidate,
+            indexes,
+            &before.snapshot,
+            DerivedIndexMaintenanceBudget {
+                maximum_work_units: None,
+                maximum_cold_record_slots: Some(0),
+                maximum_derived_rows: None,
+            },
+            execution,
+        )
+        .unwrap();
+    let worth_relational::facade::mvcc::RelationalPublicationOutcome::Performed(performed) =
+        runtime
+            .publication_port()
+            .compare_and_publish(execution, candidate)
+    else {
+        panic!("indexed history must publish")
+    };
+    runtime.settle_performed_publication(performed).unwrap()
 }
 fn build_request(indexes: &[DerivedIndexId], head: &CommitResult) -> DerivedIndexBuildRequest {
     DerivedIndexBuildRequest {

@@ -58,6 +58,7 @@ fn an_injected_whole_state_loop_is_caught_for_each_phase_and_axis() {
         Phase::SnapshotOpen,
         Phase::HistoryRecord,
         Phase::Navigation,
+        Phase::OwnerDefined("injected_owner_phase"),
     ] {
         for axis in [Axis::Model, Axis::History, Axis::Installed] {
             let samples = base.points().map(|dimensions| {

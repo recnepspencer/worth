@@ -15,8 +15,8 @@ cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-cour
 
 Cargo supplies the repository's configured test-thread stack. Direct binary
 execution must supply the same `RUST_MIN_STACK=67108864` environment. The
-deterministic work assertions are independent of elapsed time. On the lane's
-macOS arm64 machine the complete court takes approximately 12 seconds.
+deterministic work assertions are independent of elapsed time. Runtime samples
+are telemetry retained in the qualification logs.
 
 ## Specimens
 
@@ -29,8 +29,11 @@ between samples. There are no exact-work-count assertions.
 - **Native:** two populated entity partitions, a distinct bystander kind,
   relation history, field indexes and a populated relation join. The edit
   changes one scalar on the last entity and retargets one relation. K is the
-  number of unrelated field/index definitions. H prior scalar edits affect an
-  unrelated entity. The fixed read performs one indexed lookup and one record
+  number of unrelated field/index definitions. H prior commits edit an
+  unrelated entity and retarget another relation, maintaining real index
+  generations on every commit. One genuine old snapshot remains open to keep
+  the history horizon honest; the builder does not silently reclaim H away.
+  The fixed read performs one indexed lookup and one record
   read. Maintained index contents are compared with independent cold builds;
   the indexed lookup is checked against an authoritative storage query.
 - **Application:** the existing public document-retention app, genuine
@@ -38,7 +41,8 @@ between samples. There are no exact-work-count assertions.
   N documents and K unrelated program revisions. H recorded edits include
   periodic undo/redo, plus unrelated-record writes on the main branch. The
   measured operation records one fixed edit, reads the selected document,
-  reads one history page and performs one undo. The receipt supplies touched
+  reads one history page near the tail through a genuine positioned cursor,
+  and performs one undo. The receipt supplies touched
   records and World supplies actual commit growth.
 
 Native generation initialization is an explicit cold fixture operation. Every
@@ -57,7 +61,7 @@ reconstruction. The ordinary fixture does not checkpoint per edit.
 | Index maintenance | Execution report and native entry-edit/record-read counts |
 | Invariant passes | Native scan/phase events and Query state-load/execution counts |
 | Rebase | Query retained-resolution count; this does not measure all rebase work |
-| Read admission | Execution reports for the indexed, point, document and history-page reads; Query readmission count |
+| Read admission | Execution reports for the indexed, point, document and history-page reads; examined index entries; Query readmission count |
 | Snapshot open | Execution report around the actual snapshot door |
 | History record | Execution report around the public edit/advance/finish lifecycle |
 | Navigation | Execution report around a real public undo |
@@ -73,7 +77,8 @@ work, checkpoint/restore growth, or fixture shapes it does not exercise.
 
 `observation::PhaseWorkSource` is the court's `{ phase, charged_work }`
 consumption interface. The P1 adapter consumes owner observations without
-minting authority or assigning synthetic prices. Future owner scopes can
+minting authority or assigning synthetic prices. Newly observed owner phase
+names are retained and compared automatically. Future owner scopes can
 provide the same interface.
 
 ## Ratchet registry
@@ -97,3 +102,13 @@ It checks every phase and every axis, rejects the loop through both the growth
 comparison and registry admission, and accepts the corresponding fixed-change
 operation. It does not pretend that this tests instrumentation inside every
 production phase; owner-specific mutations still belong to the fixing lanes.
+
+## Qualification limitation
+
+The ordinary Query suites currently refuse on clean `origin/master` as well
+as this branch: `worth-query-court-execution/tests/compile_fail.rs` launches
+Cargo inside a test, contrary to the governed compiler-prebuild boundary.
+There is no registered Query prebuild path for that fixture. Consequently the
+required full Query runtime test diff remains unmeasured. The focused scale
+court, workspace builds and static checks are separate evidence, not a
+replacement for that missing qualification.

@@ -52,15 +52,18 @@ fn measure(d: Dimensions) -> Sample {
                 .unwrap()
         })
         .unwrap();
-    let ((document, step, touched), report) = execution
+    let (((document, step, touched), phases), report) = execution
         .run(ExecutionWorkCeiling::new(None), |_| {
-            history::edit(&app, document, 5, 9999)
+            worth_relational::facade::inspection::observe_maintenance_work(64, || {
+                history::edit(&app, document, 5, 9999)
+            })
         })
         .unwrap();
     let after = app
         .with_host_advancement(|phase| app.observe_certification_cost(&phase, &before).unwrap())
         .unwrap();
     let mut sample = Sample::new(d);
+    sample.observe_phase_work(&phases);
     sample.record(Phase::HistoryRecord, "charged_work", report.charged_work());
     record(&mut sample, after.application_work());
     sample.commits = (after.world_history_after().installed_commits()
@@ -81,6 +84,25 @@ fn measure(d: Dimensions) -> Sample {
         report.charged_work(),
     );
     drop(read);
+    // Obtain a genuine positioned cursor outside the measured read. The
+    // operation under test seeks near the tail, rather than always asking
+    // for the first page, which could hide a walk from history's beginning.
+    let preceding = document
+        .history_page(
+            &request,
+            WorthQueryHistoryPageLimits {
+                maximum_entries: std::num::NonZeroUsize::new(d.history).unwrap(),
+                maximum_examined_entries: std::num::NonZeroUsize::new(d.history).unwrap(),
+                maximum_owned_bytes: std::num::NonZeroUsize::new(1024 * 1024).unwrap(),
+            },
+            None,
+        )
+        .unwrap();
+    let cursor = preceding
+        .continuation()
+        .expect("position before retained history tail")
+        .clone();
+    drop(preceding);
     let (_, report) = execution
         .run(ExecutionWorkCeiling::new(None), |_| {
             let page = document
@@ -91,10 +113,10 @@ fn measure(d: Dimensions) -> Sample {
                         maximum_examined_entries: std::num::NonZeroUsize::MIN,
                         maximum_owned_bytes: std::num::NonZeroUsize::new(16384).unwrap(),
                     },
-                    None,
+                    Some(&cursor),
                 )
                 .unwrap();
-            assert!(!page.rows().is_empty());
+            assert_eq!(page.rows()[0].step().id(), step.parent().unwrap());
         })
         .unwrap();
     sample.record(
@@ -108,7 +130,10 @@ fn measure(d: Dimensions) -> Sample {
         })
         .unwrap();
     sample.record(Phase::Navigation, "undo_work", report.charged_work());
-    assert_ne!(document.current_step(&request).unwrap().id(), step.id());
+    assert_eq!(
+        document.current_step(&request).unwrap().id(),
+        step.parent().unwrap()
+    );
     app.with_host_advancement(|phase| document.close(&phase).unwrap())
         .unwrap();
     sample

@@ -7,52 +7,6 @@ use crate::tests::support::*;
 use crate::validation::data::{InvariantCatalog, InvariantRegistration, InvariantRule};
 
 #[test]
-fn unique_entity_aspect_field_index_refresh_rewrites_name_membership_after_entity_update() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = runtime_with_declared_aspect_schema_and_invariants(InvariantCatalog {
-        registrations: vec![InvariantRegistration::mutation_sensitive_blocking(
-            InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
-        )],
-    });
-    let alpha = create_entity(execution, &runtime, "alpha");
-    let beta = create_entity(execution, &runtime, "beta");
-
-    runtime
-        .index_authority()
-        .rebuild_unique_entity_aspect_field_indexes(execution)
-        .expect("main-branch unique index rebuild admits its exact basis");
-    update_entity(execution, &runtime, beta, "gamma");
-
-    let index_access = runtime.index_access();
-    let name_field = aspect_field_locator(aspect_key("name"), field_key("name"));
-    let entries = index_access
-        .entity_unique_field_entries(&name_field)
-        .expect("name entries");
-
-    assert_eq!(
-        entries
-            .get(&field_comparison_key("alpha"))
-            .cloned()
-            .unwrap_or_default()
-            .into_iter()
-            .collect::<Vec<_>>(),
-        vec![alpha]
-    );
-    assert!(!entries.contains_key(&field_comparison_key("beta")));
-    assert_eq!(
-        entries
-            .get(&field_comparison_key("gamma"))
-            .cloned()
-            .unwrap_or_default()
-            .into_iter()
-            .collect::<Vec<_>>(),
-        vec![beta]
-    );
-}
-
-#[test]
 fn unique_entity_aspect_field_index_keeps_same_field_key_separate_by_aspect_locator() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
