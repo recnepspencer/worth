@@ -3,7 +3,7 @@ use super::super::super::support::*;
 pub(in super::super) fn assert_canonical_evidence_identity_token(token: impl AsRef<str>) {
     let token = token.as_ref();
     assert!(
-        token.starts_with("worth.query.evidence-identity.v1:sha256:"),
+        token.starts_with("worth.query.evidence-identity.v1:sha256-canonical-v2:"),
         "expected canonical evidence identity token, got {token}"
     );
 }

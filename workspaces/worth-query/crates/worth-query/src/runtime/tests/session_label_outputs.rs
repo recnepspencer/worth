@@ -260,7 +260,8 @@ fn canonical_session_label_intake_outputs_are_non_empty_and_stable() {
     runtime
         .preview(request_execution, render_collision_left.clone())
         .expect("left render-collision label should admit")
-        .discard();
+        .discard()
+        .expect("fixture digest must fit");
     let render_collision_outcome = runtime
         .preview(request_execution, render_collision_right.clone())
         .expect("right render-collision label should admit")

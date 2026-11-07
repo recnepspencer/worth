@@ -221,11 +221,13 @@ fn workspace_entrypoints_preserve_typed_session_label_identity_and_collision_pos
     workspace
         .preview(request_execution, render_collision_left.clone())
         .expect("workspace should admit left render-collision label")
-        .discard();
+        .discard()
+        .expect("fixture digest must fit");
     workspace
         .preview(request_execution, render_collision_right.clone())
         .expect("workspace should admit right render-collision label")
-        .discard();
+        .discard()
+        .expect("fixture digest must fit");
     assert_eq!(
         render_collision_left.display(),
         render_collision_right.display()
@@ -247,7 +249,8 @@ fn equivalent_preview_session_label_replay_stops_with_typed_collision_class() {
     runtime
         .preview(request_execution, label.clone())
         .expect("first preview label admission should succeed")
-        .discard();
+        .discard()
+        .expect("fixture digest must fit");
 
     let error = match runtime.preview(request_execution, label.clone()) {
         Ok(_) => panic!("re-admitting equivalent preview label should collide"),
@@ -271,11 +274,13 @@ fn session_label_collision_is_scoped_per_family_and_not_by_rendered_display() {
     runtime
         .preview(request_execution, preview_label.clone())
         .expect("first preview label should admit")
-        .discard();
+        .discard()
+        .expect("fixture digest must fit");
     runtime
         .preview(request_execution, render_collision.clone())
         .expect("display-colliding but identity-distinct preview label should admit")
-        .discard();
+        .discard()
+        .expect("fixture digest must fit");
     runtime
         .branch(request_execution, preview_label.clone())
         .expect("branch family should admit same identity independently");

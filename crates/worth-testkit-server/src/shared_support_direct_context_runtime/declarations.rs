@@ -221,7 +221,7 @@ impl WorthQueryRuntimeBackend for RemaskRuntimeBackend {
                         worth_query::facade::foundation::QueryExternalIdentityToken::new(
                             std::sync::Arc::from("user-1"),
                         ),
-                    ),
+                    ).expect("fixture digest must fit"),
                     std::collections::BTreeMap::from([
                         (
                             field_path("identity.id"),
@@ -313,8 +313,8 @@ impl WorthQueryRuntimeSchemaAdapter for DirectContextSchemaAdapter {
         request: &DeclarativeLiveQueryRequest,
         _schema_view: &QuerySchemaView,
     ) -> Result<LiveViewDeclarationAdmissionBoundaryReceipt, WorthQueryWorkspaceError> {
-        let admission = self.build_live_view_declaration_admission_receipt(name, request);
-        Ok(self.build_live_view_declaration_boundary_receipt(name, request, admission))
+        let admission = self.build_live_view_declaration_admission_receipt(name, request)?;
+        Ok(self.build_live_view_declaration_boundary_receipt(name, request, admission)?)
     }
 }
 
@@ -327,6 +327,7 @@ impl WorthQueryRuntimeSubscriptionActivationAdapter for DirectContextRemaskActiv
         worth_query::facade::runtime::runtime_subscription_support_evidence_identity(
             "direct-context-remask-support",
         )
+        .expect("fixture digest must fit")
     }
 
     fn remask_projection(
@@ -345,8 +346,8 @@ impl WorthQueryRuntimeSubscriptionActivationAdapter for DirectContextRemaskActiv
         worth_query::facade::runtime::SubscriptionActivationBoundaryReceipt,
         WorthQueryWorkspaceError,
     > {
-        let receipt = self.build_subscription_activation_receipt(view_name, activation);
-        Ok(self.build_subscription_activation_boundary_receipt(view_name, activation, receipt))
+        let receipt = self.build_subscription_activation_receipt(view_name, activation)?;
+        Ok(self.build_subscription_activation_boundary_receipt(view_name, activation, receipt)?)
     }
 }
 

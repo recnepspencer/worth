@@ -116,11 +116,13 @@ fn session_label_identity_holds_under_collision_pressure() {
     runtime
         .preview(request_execution, preview_label.clone())
         .expect("first preview label should admit")
-        .discard();
+        .discard()
+        .expect("fixture digest must fit");
     runtime
         .preview(request_execution, render_collision.clone())
         .expect("display-colliding but identity-distinct preview label should admit")
-        .discard();
+        .discard()
+        .expect("fixture digest must fit");
     runtime
         .branch(request_execution, preview_label.clone())
         .expect("branch family should admit same identity independently");

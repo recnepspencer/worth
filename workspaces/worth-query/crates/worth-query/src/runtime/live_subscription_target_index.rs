@@ -256,23 +256,33 @@ mod tests {
     ) -> Result<(), IdentityDerivationDenial> {
         let mut index = WorthQueryLiveSubscriptionTargetIndex::default();
         for ordinal in 0..64 {
-            index.register(
-                WorthQueryLiveArtifactTarget::from_view_name(format!("other-{ordinal}")),
-                &request("Other", "noise", "value"),
-            );
-            index.register(
-                WorthQueryLiveArtifactTarget::from_view_name(format!("vertex-noise-{ordinal}")),
-                &request("Vertex", "noise", "value"),
-            );
-            index.register(
-                WorthQueryLiveArtifactTarget::from_view_name(format!("vertex-name-{ordinal}")),
-                &request("Vertex", "identity", "name"),
-            );
+            index
+                .register(
+                    WorthQueryLiveArtifactTarget::from_view_name(format!("other-{ordinal}")),
+                    &request("Other", "noise", "value"),
+                )
+                .expect("fixture digest must fit");
+            index
+                .register(
+                    WorthQueryLiveArtifactTarget::from_view_name(format!("vertex-noise-{ordinal}")),
+                    &request("Vertex", "noise", "value"),
+                )
+                .expect("fixture digest must fit");
+            index
+                .register(
+                    WorthQueryLiveArtifactTarget::from_view_name(format!("vertex-name-{ordinal}")),
+                    &request("Vertex", "identity", "name"),
+                )
+                .expect("fixture digest must fit");
         }
         let first = WorthQueryLiveArtifactTarget::from_view_name("affected-first");
         let second = WorthQueryLiveArtifactTarget::from_view_name("affected-second");
-        index.register(first.clone(), &request("Vertex", "identity", "id"));
-        index.register(second.clone(), &request("Vertex", "identity", "id"));
+        index
+            .register(first.clone(), &request("Vertex", "identity", "id"))
+            .expect("fixture digest must fit");
+        index
+            .register(second.clone(), &request("Vertex", "identity", "id"))
+            .expect("fixture digest must fit");
 
         let affected = index
             .affected_targets(&field_mutation("Vertex", "identity", &["id"])?)
@@ -300,7 +310,9 @@ mod tests {
                 "ranking", "position",
             )));
         let mut index = WorthQueryLiveSubscriptionTargetIndex::default();
-        index.register(target.clone(), &request);
+        index
+            .register(target.clone(), &request)
+            .expect("fixture digest must fit");
 
         assert_eq!(
             index
