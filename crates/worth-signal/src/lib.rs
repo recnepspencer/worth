@@ -141,6 +141,7 @@ mod branch;
 mod clock;
 mod data;
 pub mod diagnostics;
+mod durability;
 pub mod easy;
 mod logic;
 pub(crate) mod observation;

@@ -1,4 +1,5 @@
 //! Fast integration courts.
+mod authored_image;
 mod bulk_read_currentness;
 #[allow(unused_imports)]
 use crate::branch_bases_example;

@@ -7,6 +7,7 @@ use super::{NodeDefinitionData, NodeEntry};
 impl NodeEntry {
     pub(crate) fn to_checkpoint_image(&self) -> CheckpointNodeImage {
         CheckpointNodeImage::from_parts(super::super::checkpoint_image::CheckpointNodeImageParts {
+            declared_dependencies: self.definition.declared_dependencies.clone(),
             state: self.hot.state,
             dirty_aspects: self.hot.dirty_aspects,
             dirty_partition_scopes: self
@@ -53,6 +54,7 @@ impl NodeEntry {
             image.aspect_versions.into_storage_parts();
         let mut entry = Self {
             definition: NodeDefinitionData {
+                declared_dependencies: image.declared_dependencies,
                 tombstoned: image.tombstoned,
                 conditional_contract_generation: image.conditional_contract_generation,
                 conditional_contract_occurrence: image.conditional_contract_occurrence,

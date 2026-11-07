@@ -11,6 +11,9 @@ use crate::data::node::NodeEvaluationConfig;
 /// A partition activates its retained definitions and restores the prior lane on exit.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub(crate) struct NodeDefinitionData {
+    /// Declared edges are source; evaluated topology is a disposable projection.
+    #[serde(default)]
+    pub(crate) declared_dependencies: Option<crate::data::dependency::CanonicalDependencies>,
     #[serde(default)]
     pub(crate) tombstoned: bool,
     #[serde(default)]
@@ -25,12 +28,15 @@ impl RetainedStorageMeasurement for NodeDefinitionData {
     fn retained_heap_charge(&self, work: &mut Preparation) -> Result<Charge, Denial> {
         work.visit()?;
         let Self {
+            declared_dependencies,
             tombstoned: _,
             conditional_contract_generation: _,
             conditional_contract_occurrence: _,
             eval_config,
         } = self;
-        eval_config.retained_heap_charge(work)
+        eval_config
+            .retained_heap_charge(work)?
+            .checked_add(declared_dependencies.retained_heap_charge(work)?)
     }
 }
 

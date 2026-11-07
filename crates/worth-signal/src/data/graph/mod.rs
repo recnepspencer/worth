@@ -1,3 +1,4 @@
+mod authored_image;
 mod compaction;
 mod construction;
 mod diagnostics_access;

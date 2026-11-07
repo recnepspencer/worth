@@ -222,6 +222,29 @@ acquiring genuine basis retention. Decoding the recipe or matching a folded
 definition basis grants no admission. General authored graph durability remains
 outside this narrow seed contract.
 
+### Authored graph image
+
+`SignalGraph::capture_authored_image` emits the declaration section through
+`facade::durability::SignalAuthoredImage`. It records node-slot generations and
+allocation order, node configuration, conditional definition coordinates and
+declared static dependency edges. Evaluation-discovered edges remain separate
+from those declarations. Values, aspect and dirty versions, dependency snapshots,
+pending causes, traces, telemetry, resources and temporal runtime state are absent.
+
+The current-format-only binary frame uses `WSIGAUTH`, protocol version 1, the
+aspect storage profile, a payload length and SHA-256 integrity. Integer fields
+are little-endian; strings are length-prefixed UTF-8. Unknown versions, mismatched
+profiles, invalid fields, changed checksums and incorrect lengths refuse with
+typed causes. Capture and byte admission use the original execution request's
+owned byte backing. The maximum frame size is 64 MiB.
+
+`SignalAuthoredImage::readmit_bytes` admits descriptive bytes only. It grants no
+branch basis, lowering capability or publication permission. Installed condition
+and comparator roles carry no graph-instance identity. Their operational bindings
+must be reconstructed by owner admission with the installed program and Bridge's
+definition section. This graph section alone does not enable authored Home reopen;
+the attached-Home seed contract above still applies.
+
 ## One Continuous Story
 
 The flagship story looks like this:
