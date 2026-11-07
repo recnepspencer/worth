@@ -43,19 +43,21 @@ fn live_nested_decode_requires_original_funding_before_receipt_and_cause_handoff
     assert_eq!(opaque::ignored_refusals(), 0);
     publish(&narrow, 78_003);
     use worth_query_host::facade::declaration::application_schema::ApplicationScalarValueBinding;
-    let worth_foundational::facade::AspectValue::String(
-        worth_foundational::facade::InternedString::Raw(wire),
-    ) = super::binding::NestedBinding::encode(&opaque::SwallowingValue(super::value())).unwrap()
+    let worth_foundational::facade::AspectValue::String(wire) =
+        super::binding::NestedBinding::encode(&opaque::SwallowingValue(super::value())).unwrap()
     else {
         panic!("the installed canonical binding has a string carrier");
     };
-    // The actual public bill includes the last canonical wire comparison.
-    // Sixteen 256-byte nested tags dominate the admitted seed itself. Removing
-    // that comparison and half a wire reaches this seed, after read one, rather
-    // than underfunding the unrelated source publication. Assertions qualify it.
+    let wire = wire
+        .raw_text()
+        .expect("canonical string carrier is textual");
+    // The carried seal removes the final canonical comparison. The admitted
+    // seed still parses sixteen 256-byte tags. Removing half a wire from the
+    // real funded bill reaches that seed after the first read; assertions below
+    // require a genuine swallowed callback refusal and no delivered receipt.
     let work = funded
         .charged_work()
-        .checked_sub(u64::try_from(wire.len() * 3 / 2).unwrap())
+        .checked_sub(u64::try_from(wire.len() / 2).unwrap())
         .expect("a genuine live delivery funds more than its last decoder tail");
     reset();
     let (denied, _) = native::next(&narrow, &mut live, work);

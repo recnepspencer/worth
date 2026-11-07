@@ -95,16 +95,16 @@ fn retained_snapshot_multi_read_vetoes_swallowed_refusal_and_retries_at_original
             assert_eq!(opaque::ignored_refusals(), 0);
 
             let worth_foundational::facade::AspectValue::String(
-                worth_foundational::facade::InternedString::Raw(wire),
+                wire,
             ) = super::binding::NestedBinding::encode(&opaque::SwallowingValue(super::value())).unwrap()
             else { panic!("the installed canonical value uses a string carrier"); };
-            // The real native bill ends with the decoder's wire.len() canonical
-            // comparison. Removing that plus half a wire reaches the last seed:
-            // its sixteen 256-byte tags alone exceed this remaining tail.
-            // Independent assertions below require the first read and a genuine
-            // swallowed seed refusal, rather than accepting a lookup stop.
+            let wire = wire.raw_text().expect("canonical string carrier is textual");
+            // The carried seal removes the canonical comparison. Subtract only
+            // half a wire from the real native bill to reach the final nested
+            // seed; independent assertions require the first read and a genuine
+            // swallowed callback refusal rather than accepting a lookup stop.
             let narrow_work = report.charged_work()
-                .checked_sub(u64::try_from(wire.len() * 3 / 2).unwrap()).unwrap();
+                .checked_sub(u64::try_from(wire.len() / 2).unwrap()).unwrap();
             // The later cancellation cannot replace the seed's first refusal.
             let (refused, first, returned, _) = run(narrow_work, true);
             let refused = refused.expect_err("swallowed second decode cannot publish output");
