@@ -232,7 +232,8 @@ fn preview_comparison_eligibility_uses_collection_shape_contracts() {
     )
     .expect("ordered collection preview should bind");
 
-    let artifact = derive_preview_comparison_eligibility(&binding);
+    let artifact =
+        derive_preview_comparison_eligibility(&binding).expect("fixture digest must fit");
 
     assert_eq!(artifact.result_family(), "ordinary_collection");
     assert_eq!(

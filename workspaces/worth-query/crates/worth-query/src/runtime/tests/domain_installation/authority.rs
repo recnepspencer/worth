@@ -21,6 +21,7 @@ fn handle_bound_contribution_matches_internal_oracle_and_retains_installed_witne
         "WORTH.tests.installed-domain.accepts",
         "the installed domain accepts this declaration",
     )
+    .expect("fixture digest must fit")
     .bind_to_installed_target(target.clone());
     let worth_proof::TransitionOutcome::Success(eligible) =
         evaluate_requested_domain_capability_contribution(requested)
@@ -37,7 +38,7 @@ fn handle_bound_contribution_matches_internal_oracle_and_retains_installed_witne
     else {
         panic!("installed contribution oracle must be ready")
     };
-    let oracle = materialize_canonical_admission_artifact(ready);
+    let oracle = materialize_canonical_admission_artifact(ready).expect("fixture digest must fit");
     assert_eq!(
         materialized.materialization_identity(),
         oracle.materialization_identity()
@@ -85,7 +86,8 @@ fn contribution_authority_denies_foreign_targets_and_uninstalled_categories_firs
         .unwrap()
         .supports_capability("")
         .because("authority is checked before semantic content")
-        .try_materialize();
+        .try_materialize()
+        .expect("fixture digest must fit");
     assert_eq!(
         policy_denial.denial().unwrap().kind(),
         WorthQueryDomainCapabilityProgressionDenialKind::ContributionCategoryNotInstalled
@@ -148,6 +150,7 @@ fn generation_turnover_denies_each_query_owned_contribution_transition() {
         "WORTH.tests.installed-domain.stale-before-admission",
         "generation turnover must invalidate an eligible contribution",
     )
+    .expect("fixture digest must fit")
     .bind_to_installed_target(admission_target);
     let worth_proof::TransitionOutcome::Success(eligible) =
         evaluate_requested_domain_capability_contribution(admission_requested)
@@ -178,6 +181,7 @@ fn generation_turnover_denies_each_query_owned_contribution_transition() {
         "WORTH.tests.installed-domain.stale-before-preparation",
         "generation turnover must invalidate an admitted contribution",
     )
+    .expect("fixture digest must fit")
     .bind_to_installed_target(preparation_target.clone());
     let worth_proof::TransitionOutcome::Success(eligible) =
         evaluate_requested_domain_capability_contribution(preparation_requested)
@@ -224,6 +228,7 @@ fn contribution_target_mismatch_requires_rebind_without_a_ready_successor() {
         "WORTH.tests.installed-domain.rebind",
         "target identity is exact",
     )
+    .expect("fixture digest must fit")
     .bind_to_installed_target(bound_target);
     let worth_proof::TransitionOutcome::Success(eligible) =
         evaluate_requested_domain_capability_contribution(requested)

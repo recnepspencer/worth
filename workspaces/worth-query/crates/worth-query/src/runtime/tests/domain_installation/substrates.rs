@@ -107,7 +107,9 @@ fn installed_package_compiles_every_semantic_family_before_runtime_publication()
         handle.package_identity().as_str()
     );
 
-    let rebuild = runtime.verify_domain_execution_index_rebuild();
+    let rebuild = runtime
+        .verify_domain_execution_index_rebuild()
+        .expect("fixture digest must fit");
     assert!(rebuild.is_equivalent());
     assert_eq!(rebuild.invariant_count(), 1);
     assert_eq!(rebuild.operation_count(), 1);

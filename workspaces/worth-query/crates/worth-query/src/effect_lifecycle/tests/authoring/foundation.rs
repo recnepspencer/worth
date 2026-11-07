@@ -81,7 +81,8 @@ fn preview_writeback_authoring_is_real_and_returns_typed_rebind() {
     .expect("preview writeback should normalize");
 
     let discovery =
-        discover_effect_lifecycle_support(BasisFamily::Preview, EffectFamily::Writeback);
+        discover_effect_lifecycle_support(BasisFamily::Preview, EffectFamily::Writeback)
+            .expect("fixture digest must fit");
     let rebind = match evaluate_effect_eligibility(normalized) {
         EffectEligibilityOutcome::RebindRequired(rebind) => rebind,
         other => panic!("expected rebind-required effect, got {other:?}"),
@@ -120,7 +121,8 @@ fn preview_mutation_authoring_is_real_and_returns_typed_rebind() {
     )
     .expect("preview mutation should normalize");
 
-    let discovery = discover_effect_lifecycle_support(BasisFamily::Preview, EffectFamily::Mutation);
+    let discovery = discover_effect_lifecycle_support(BasisFamily::Preview, EffectFamily::Mutation)
+        .expect("fixture digest must fit");
     let rebind = match evaluate_effect_eligibility(normalized) {
         EffectEligibilityOutcome::RebindRequired(rebind) => rebind,
         other => panic!("expected rebind-required effect, got {other:?}"),
@@ -165,7 +167,8 @@ fn tenant_scoped_merge_denies_with_same_support_width_as_discovery() {
     .expect("merge effect should normalize");
 
     let discovery =
-        discover_effect_lifecycle_support(BasisFamily::TenantScoped, EffectFamily::Merge);
+        discover_effect_lifecycle_support(BasisFamily::TenantScoped, EffectFamily::Merge)
+            .expect("fixture digest must fit");
     let denial = match evaluate_effect_eligibility(normalized) {
         EffectEligibilityOutcome::Denied(denial) => denial,
         other => panic!("expected denied effect, got {other:?}"),

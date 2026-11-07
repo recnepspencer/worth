@@ -137,6 +137,7 @@ fn foreign_workspace_resume_stops_without_consuming_recovery_authority() {
     assert!(closed(resumed.into_handle().close(&mut owner)).lane_terminal());
 }
 
+#[path = "live_continuation/policy_drift_requires_authority_rebind_before_resume.rs"]
 mod policy_drift_requires_authority_rebind_before_resume;
 
 #[test]

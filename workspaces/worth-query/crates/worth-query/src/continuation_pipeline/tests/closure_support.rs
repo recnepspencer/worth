@@ -51,7 +51,8 @@ pub(crate) fn runtime_backed_continuation_closure_summary(
     };
     let replay_checked =
         drifted_readmission_handle_in(&historical_workspace, "main", ReadmissionDrift::Replay)
-            .execute_prepared_continuation_checked(historical_prepared);
+            .execute_prepared_continuation_checked(historical_prepared)
+            .expect("fixture digest must fit");
     let replay_brief =
         worth_query_recovery_brief_from_continuation_execution_checked(replay_checked)
             .expect("replay drift should yield a recovery brief");
@@ -71,7 +72,8 @@ pub(crate) fn runtime_backed_continuation_closure_summary(
         "main",
         ReadmissionDrift::PreviewCrossedResidue,
     )
-    .execute_prepared_continuation_checked(preview_prepared);
+    .execute_prepared_continuation_checked(preview_prepared)
+    .expect("fixture digest must fit");
     let preview_brief =
         worth_query_recovery_brief_from_continuation_execution_checked(preview_checked)
             .expect("preview-crossed residue should yield a recovery brief");

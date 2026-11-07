@@ -80,7 +80,8 @@ fn journal_identity_certification_closes_only_with_real_inventory_and_schedule_e
         inventory.clone(),
         schedule.clone(),
         replay.clone(),
-    );
+    )
+    .expect("fixture digest must fit");
 
     assert!(certification.closed());
     assert!(!certification.artifact_digest().is_empty());
@@ -93,6 +94,7 @@ fn journal_identity_certification_closes_only_with_real_inventory_and_schedule_e
         schedule.clone(),
         replay.clone()
     )
+    .expect("fixture digest must fit")
     .closed());
     assert!(!WorthQueryJournalIdentityCertification::from_evidence(
         inventory.clone(),
@@ -102,19 +104,22 @@ fn journal_identity_certification_closes_only_with_real_inventory_and_schedule_e
         ),
         replay.clone()
     )
+    .expect("fixture digest must fit")
     .closed());
     assert!(!WorthQueryJournalIdentityCertification::from_evidence(
         inventory,
         schedule,
         replay.with_gap_for_sabotage()
     )
+    .expect("fixture digest must fit")
     .closed());
     let truth_mismatch = WorthQueryJournalIdentityCertification::from_evidence(
         journal_identity_inventory_evidence(),
         WorthQueryJournalIdentityScheduleEvidence::derive(&first_schedule, &second_schedule),
         super::super::journal_identity_support::journal_replay_surface_evidence(request_execution)
             .with_truth_mismatch_for_sabotage(),
-    );
+    )
+    .expect("fixture digest must fit");
     assert_eq!(
         truth_mismatch.posture(),
         WorthQueryJournalIdentityBoundaryPosture::Partial

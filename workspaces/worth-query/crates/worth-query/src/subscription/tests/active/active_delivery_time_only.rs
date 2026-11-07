@@ -9,7 +9,8 @@ fn emit_time_only(
     evidence_digest: &str,
 ) -> QueryDeliveryBatch {
     let window = open_query_delivery_window(runtime, attachment, delivery_budget(1, 1)).unwrap();
-    let cause = QuerySubscriptionDeliveryCause::time_only(cause_kind, evidence_digest);
+    let cause = QuerySubscriptionDeliveryCause::time_only(cause_kind, evidence_digest)
+        .expect("fixture digest must fit");
     emit_query_time_only_delivery_batch(runtime, window, cause).unwrap()
 }
 
@@ -73,7 +74,8 @@ fn time_only_and_relational_delivery_batches_keep_distinct_cause_identity() {
         acknowledged.lane_digest().clone(),
         "task:membership",
         MaintenanceDeltaWidth::measured(1),
-    );
+    )
+    .expect("fixture digest must fit");
     let (delta, lowering_report, _) = lower_query_subscription_maintenance_delta(delta).unwrap();
     let window =
         open_query_delivery_window(&mut runtime, &acknowledged, delivery_budget(1, 1)).unwrap();

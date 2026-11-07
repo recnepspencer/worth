@@ -370,6 +370,7 @@ fn parity_digest_changes_when_intentionally_different_route_families_are_compare
     );
 }
 
+#[path = "tests/proof_shape_and_slope_surfaces_stay_exported.rs"]
 mod proof_shape_and_slope_surfaces_stay_exported;
 
 #[test]

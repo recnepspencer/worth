@@ -16,6 +16,7 @@ use crate::runtime::{WorthQueryAspectTouch, WorthQueryAuthoredAspectValue};
 use crate::session_label::WorthQuerySessionLabel;
 use crate::tenant_basis::{SchemaVariantSnapshot, TenantBasisEpoch, TenantBindingSnapshot};
 
+#[path = "journey/installed_read_projection_and_receipts_carry_one_authority_witness.rs"]
 mod installed_read_projection_and_receipts_carry_one_authority_witness;
 
 #[test]

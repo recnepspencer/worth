@@ -74,7 +74,8 @@ fn ordinary_workflow_matches_explicit_lower_runtime_orchestration_identities() {
         .clone();
     let outcome = declaration
         .using(context)
-        .run(request_execution, &mut ordinary_workspace);
+        .run(request_execution, &mut ordinary_workspace)
+        .expect("fixture digest must fit");
     let completion = outcome
         .completed()
         .expect("ordinary workflow should complete");
@@ -121,7 +122,8 @@ fn diagnostic_policy_changes_only_inspection_materialization() {
         .expect("context should admit");
     let minimal = minimal_declaration
         .using(minimal_context)
-        .run(request_execution, &mut minimal_workspace);
+        .run(request_execution, &mut minimal_workspace)
+        .expect("fixture digest must fit");
     let minimal = minimal.completed().expect("workflow should complete");
 
     let mut rich_workspace = stateful_bridge_task_runtime(request_execution)
@@ -131,7 +133,8 @@ fn diagnostic_policy_changes_only_inspection_materialization() {
         preview(request_execution, &rich_workspace, session_label).expect("context should admit");
     let rich = rich_declaration
         .using(rich_context)
-        .run(request_execution, &mut rich_workspace);
+        .run(request_execution, &mut rich_workspace)
+        .expect("fixture digest must fit");
     let rich = rich.completed().expect("workflow should complete");
 
     assert_eq!(
@@ -165,7 +168,8 @@ fn cross_session_denial_does_no_lower_runtime_work_and_leaves_no_label_residue()
         preview(request_execution, &workspace, wrong_label).expect("context should admit");
     let stopped = declare(declaration_label.clone(), mutation("cross-session"))
         .using(wrong_context)
-        .run(request_execution, &mut workspace);
+        .run(request_execution, &mut workspace)
+        .expect("fixture digest must fit");
     let stop = stopped.stop().expect("session mismatch should stop");
     assert_eq!(stop.source(), WorthQueryWorkflowStopSource::CrossSession);
     assert_eq!(
@@ -179,7 +183,8 @@ fn cross_session_denial_does_no_lower_runtime_work_and_leaves_no_label_residue()
         .expect("context should admit");
     let retry = declare(declaration_label, mutation("cross-session-retry"))
         .using(matching)
-        .run(request_execution, &mut workspace);
+        .run(request_execution, &mut workspace)
+        .expect("fixture digest must fit");
     assert!(
         retry.completed().is_some(),
         "same label must remain available"
@@ -202,7 +207,8 @@ fn foreign_authority_and_stale_preview_deny_before_session_open() {
         .expect("right should open");
     let foreign = declare(foreign_label, mutation("foreign"))
         .using(foreign_context)
-        .run(request_execution, &mut right);
+        .run(request_execution, &mut right)
+        .expect("fixture digest must fit");
     let stop = foreign.stop().expect("foreign authority should stop");
     assert_eq!(
         stop.source(),
@@ -228,7 +234,8 @@ fn foreign_authority_and_stale_preview_deny_before_session_open() {
         .expect("authoritative mutation should advance basis");
     let stale = declare(stale_label, mutation("stale"))
         .using(stale_context)
-        .run(request_execution, &mut right);
+        .run(request_execution, &mut right)
+        .expect("fixture digest must fit");
     let stop = stale.stop().expect("stale preview should stop");
     assert_eq!(stop.source(), WorthQueryWorkflowStopSource::StalePreview);
     assert_eq!(

@@ -337,6 +337,7 @@ fn relational_snapshot_read(
     )
 }
 
+#[path = "extraction/write_receipt_extraction_rejects_source_identity_mismatch.rs"]
 mod write_receipt_extraction_rejects_source_identity_mismatch;
 
 #[test]

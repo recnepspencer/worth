@@ -44,7 +44,8 @@ fn mutation_lowering_materializer_builds_runtime_lowered_declaration(
             )
             .expect("name patch should build"),
         )?
-        .bind_to_declaration_target(declaration_target("intent-workflow-mutation")),
+        .bind_to_declaration_target(declaration_target("intent-workflow-mutation"))
+        .expect("fixture digest must fit"),
     )?));
 
     assert_eq!(
@@ -88,7 +89,8 @@ fn merge_lowering_materializer_builds_preview_bound_lowering(
             "request-merge",
             "eligibility-merge",
             "decision-merge",
-        )?),
+        )?)
+        .expect("fixture digest must fit"),
     )?));
 
     assert_eq!(
@@ -122,7 +124,7 @@ fn writeback_lowering_materializer_builds_bridge_writeback_declaration(
                 "runtime-snapshot:58",
             )?,
         )?
-        .bind_to_declaration_target(declaration_target("intent-workflow-writeback")),
+        .bind_to_declaration_target(declaration_target("intent-workflow-writeback")).expect("fixture digest must fit"),
     )?));
 
     assert_eq!(
@@ -229,7 +231,8 @@ fn discard_required_writeback_lowering_preserves_preview_stale_posture(
                 "preview-session:91",
             ),
         )?
-        .bind_to_declaration_target(target.clone()),
+        .bind_to_declaration_target(target.clone())
+        .expect("fixture digest must fit"),
     )?);
 
     match stale {

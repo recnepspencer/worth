@@ -11,7 +11,8 @@ fn runtime_surface_evidence_identities_resist_joined_string_folklore_collisions(
             "alpha",
             "beta|gamma",
         ]),
-    );
+    )
+    .expect("fixture digest must fit");
     let right = crate::runtime::WorthQueryPreviewBasisAdmission::new(
         &authority,
         test_session_label("preview"),
@@ -20,7 +21,8 @@ fn runtime_surface_evidence_identities_resist_joined_string_folklore_collisions(
             "basis|alpha",
             "beta|gamma",
         ]),
-    );
+    )
+    .expect("fixture digest must fit");
     let branch = crate::runtime::WorthQueryBranchBasisAdmission::new(
         &authority,
         test_session_label("preview|basis"),
@@ -29,7 +31,8 @@ fn runtime_surface_evidence_identities_resist_joined_string_folklore_collisions(
             "alpha",
             "beta|gamma",
         ]),
-    );
+    )
+    .expect("fixture digest must fit");
 
     assert_ne!(left.admission_identity(), right.admission_identity());
     assert_ne!(left.admission_identity(), branch.admission_identity());

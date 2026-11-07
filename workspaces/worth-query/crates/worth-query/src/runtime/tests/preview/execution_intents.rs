@@ -78,14 +78,25 @@ fn preview_local_intent_is_policy_admitted_without_authoritative_execution() {
         0,
         "preview-local intent admission must not execute authoritative intent authority"
     );
-    assert_eq!(outcome.pending_write_intent_residue_count(), 1);
     assert_eq!(
         outcome
+            .expect("fixture digest must fit")
+            .pending_write_intent_residue_count(),
+        1
+    );
+    assert_eq!(
+        outcome
+            .expect("fixture digest must fit")
             .closeout_evidence()
             .class_count(WorthQueryPreviewResidueClass::PendingWriteIntent),
         1
     );
-    assert_eq!(outcome.authoritative_residue_count(), 0);
+    assert_eq!(
+        outcome
+            .expect("fixture digest must fit")
+            .authoritative_residue_count(),
+        0
+    );
 
     let receipt_inspection = runtime
         .inspect_preview_intent_receipt(request_execution, &receipt)
@@ -131,7 +142,10 @@ fn preview_local_intent_is_policy_admitted_without_authoritative_execution() {
     );
 
     let outcome_inspection = runtime
-        .inspect_preview_outcome(request_execution, &outcome)
+        .inspect_preview_outcome(
+            request_execution,
+            &outcome.expect("fixture digest must fit"),
+        )
         .expect("preview outcome inspection should succeed");
     assert_eq!(outcome_inspection.subscription_residue_count(), 0);
     assert_eq!(outcome_inspection.derived_runtime_residue_count(), 0);

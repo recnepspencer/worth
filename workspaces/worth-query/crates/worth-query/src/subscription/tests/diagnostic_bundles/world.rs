@@ -38,9 +38,15 @@ pub(super) fn runtime_artifacts_for_with_basis(
         view_family,
         QuerySubscriptionConstructionSource::FacadeLive,
         basis_posture,
-    );
-    let selection = select_query_subscription_family(live.clone(), roomy_budget()).unwrap();
-    let context = SubscriptionLifecycleCertificationContext::from_live_selection(&live, &selection);
+    )
+    .expect("fixture digest must fit");
+    let selection = select_query_subscription_family(
+        live.clone().expect("fixture digest must fit"),
+        roomy_budget(),
+    )
+    .unwrap();
+    let context = SubscriptionLifecycleCertificationContext::from_live_selection(&live, &selection)
+        .expect("fixture digest must fit");
     let declaration = declare_query_subscription(selection.clone(), roomy_slice_budget()).unwrap();
     let lowering =
         lower_query_subscription_to_bridge(declaration.clone(), roomy_lowering_budget()).unwrap();
@@ -55,17 +61,20 @@ pub(super) fn runtime_artifacts_for_with_basis(
             QuerySubscriptionScaleFixtureSize::Small,
             10 + continuation_width,
             &activation,
-        ),
+        )
+        .expect("fixture digest must fit"),
         QuerySubscriptionScaleCounterSnapshot::from_activation(
             QuerySubscriptionScaleFixtureSize::Medium,
             (10 + continuation_width) * 10,
             &activation,
-        ),
+        )
+        .expect("fixture digest must fit"),
         QuerySubscriptionScaleCounterSnapshot::from_activation(
             QuerySubscriptionScaleFixtureSize::Large,
             (10 + continuation_width) * 100,
             &activation,
-        ),
+        )
+        .expect("fixture digest must fit"),
     )
     .unwrap();
 
@@ -84,7 +93,8 @@ pub(super) fn runtime_artifacts_for_with_basis(
     let attachment = attach_subscription_consumer(
         &mut runtime,
         &handle,
-        SubscriptionConsumerAttachmentRequest::admitted("diagnostic-bundle", "cursor"),
+        SubscriptionConsumerAttachmentRequest::admitted("diagnostic-bundle", "cursor")
+            .expect("fixture digest must fit"),
         SubscriptionConsumerAttachmentBudget::admitted(
             ActiveFanoutWidth::measured(1),
             ConsumerDeliveryPacingWidth::measured(1),

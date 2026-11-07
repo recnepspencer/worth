@@ -55,7 +55,8 @@ fn offline_temporal_async_diagnostics_preserve_remask_replay_resume_and_stale_co
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "query-inspection:offline-remask",
                 ),
-            ),
+            )
+            .expect("fixture digest must fit"),
             CausalObservationEvidenceIdentity::new(
                 CausalEvidenceFamily::BridgePreview,
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
@@ -74,7 +75,8 @@ fn offline_temporal_async_diagnostics_preserve_remask_replay_resume_and_stale_co
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "query-inspection:offline-replay-drift",
                 ),
-            ),
+            )
+            .expect("fixture digest must fit"),
             CausalObservationEvidenceIdentity::new(
                 CausalEvidenceFamily::BridgeReplay,
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
@@ -93,7 +95,8 @@ fn offline_temporal_async_diagnostics_preserve_remask_replay_resume_and_stale_co
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "query-inspection:offline-resume-mismatch",
                 ),
-            ),
+            )
+            .expect("fixture digest must fit"),
             CausalObservationEvidenceIdentity::new(
                 CausalEvidenceFamily::BridgeReplay,
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
@@ -128,7 +131,8 @@ fn offline_temporal_async_diagnostics_preserve_remask_replay_resume_and_stale_co
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "query-inspection:offline-stale-completion",
                 ),
-            ),
+            )
+            .expect("fixture digest must fit"),
             CausalObservationEvidenceIdentity::new(
                 CausalEvidenceFamily::SignalEvaluation,
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(

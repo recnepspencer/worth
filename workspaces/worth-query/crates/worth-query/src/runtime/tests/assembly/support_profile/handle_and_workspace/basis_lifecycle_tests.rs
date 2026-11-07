@@ -3,26 +3,32 @@ use super::*;
 #[test]
 fn runtime_state_snapshot_is_digest_bound_to_basis_shape_lane_and_state() {
     let ready = WorthQueryRuntimeStateSnapshot::ready(
-        runtime_state_snapshot_basis_label_identity(&runtime_state_snapshot_test_subject_identity(
-            "basis:current",
-        )),
+        runtime_state_snapshot_basis_label_identity(
+            &runtime_state_snapshot_test_subject_identity("basis:current")
+                .expect("fixture digest must fit"),
+        ),
         runtime_state_snapshot_result_shape_label_identity(
-            &runtime_state_snapshot_test_subject_identity("shape:table"),
+            &runtime_state_snapshot_test_subject_identity("shape:table")
+                .expect("fixture digest must fit"),
         ),
         WorthQueryAuthorityLane::AuthoritativeTruth,
         "sync runtime-backed rows are ready",
-    );
+    )
+    .expect("fixture digest must fit");
     let pending = WorthQueryRuntimeStateSnapshot::deferred(
         WorthQueryRuntimeStateKind::Pending,
-        runtime_state_snapshot_basis_label_identity(&runtime_state_snapshot_test_subject_identity(
-            "basis:current",
-        )),
+        runtime_state_snapshot_basis_label_identity(
+            &runtime_state_snapshot_test_subject_identity("basis:current")
+                .expect("fixture digest must fit"),
+        ),
         runtime_state_snapshot_result_shape_label_identity(
-            &runtime_state_snapshot_test_subject_identity("shape:table"),
+            &runtime_state_snapshot_test_subject_identity("shape:table")
+                .expect("fixture digest must fit"),
         ),
         WorthQueryAuthorityLane::BridgeExternalState,
         "async/resource family is deferred",
-    );
+    )
+    .expect("fixture digest must fit");
 
     assert_ne!(ready.state_digest(), pending.state_digest());
     assert!(pending.explanation().contains("deferred"));

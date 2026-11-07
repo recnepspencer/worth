@@ -106,11 +106,13 @@ fn batch_existing_targets_preserve_component_and_aggregate_binding_evidence() {
     assert_eq!(
         receipt
             .batch_mutation_evidence()
+            .expect("fixture digest must fit")
             .existing_truth_binding_count(),
         2
     );
     assert!(receipt
         .batch_mutation_evidence()
+        .expect("fixture digest must fit")
         .aggregate_existing_truth_binding_digest()
         .is_some());
 
@@ -144,6 +146,7 @@ fn batch_existing_targets_preserve_component_and_aggregate_binding_evidence() {
                     .aggregate_existing_truth_binding_digest(),
                 receipt
                     .batch_mutation_evidence()
+                    .expect("fixture digest must fit")
                     .aggregate_existing_truth_binding_digest()
             );
         }
@@ -238,7 +241,9 @@ fn mixed_existing_and_symbolic_batch_preserves_aggregate_session_digests() {
         })
         .expect("mixed existing/symbolic batch should execute");
 
-    let batch_evidence = receipt.batch_mutation_evidence();
+    let batch_evidence = receipt
+        .batch_mutation_evidence()
+        .expect("fixture digest must fit");
     assert_eq!(batch_evidence.existing_truth_binding_count(), 1);
     assert_eq!(batch_evidence.symbolic_target_reference_count(), 1);
     assert!(batch_evidence

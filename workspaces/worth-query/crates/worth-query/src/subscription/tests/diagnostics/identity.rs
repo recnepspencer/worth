@@ -43,7 +43,8 @@ fn relationship_proof_drift_denies_before_declaration_or_bridge_lowering() {
         None,
         QuerySubscriptionConstructionSource::SavedExactReuse,
         QuerySubscriptionRelationshipProofPosture::Drifted,
-    );
+    )
+    .expect("fixture digest must fit");
 
     let error = select_query_subscription_family(live, roomy_budget()).unwrap_err();
 
@@ -52,7 +53,7 @@ fn relationship_proof_drift_denies_before_declaration_or_bridge_lowering() {
         &QuerySubscriptionFamilySelectionFailureClass::RelationshipProofAdmissionDrift
     );
     assert_eq!(
-        error.diagnostic().stage(),
+        error.diagnostic().expect("fixture digest must fit").stage(),
         &QuerySubscriptionDiagnosticStage::RelationshipProofDrift
     );
     assert_eq!(error.counters().family_selection_count(), 0);
@@ -63,9 +64,19 @@ fn relationship_proof_drift_denies_before_declaration_or_bridge_lowering() {
     assert_eq!(error.counters().bridge_lowering_count(), 0);
     assert_eq!(error.counters().relationship_proof_drift_denial_count(), 1);
     assert_eq!(
-        error.diagnostic().counter_projection().label().as_str(),
+        error
+            .diagnostic()
+            .expect("fixture digest must fit")
+            .counter_projection()
+            .label()
+            .as_str(),
         error.counters().counter_projection().label()
     );
     assert!(error.message().contains("relationship proof posture"));
-    assert!(!error.diagnostic().source_projection().label().is_empty());
+    assert!(!error
+        .diagnostic()
+        .expect("fixture digest must fit")
+        .source_projection()
+        .label()
+        .is_empty());
 }

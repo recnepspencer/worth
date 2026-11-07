@@ -37,7 +37,8 @@ impl WorthQueryDerivedViewMaintainer for HostileCertificationMaintainer {
             crate::memory_workspace::admit_external_commit_label(format!(
                 "hostile-certification-refresh-{}",
                 next + 1
-            )),
+            ))
+            .expect("fixture digest must fit"),
             [test_aspect_touch("title.value")],
             WorthQueryDerivedPatchPayload::from_retained_row(retained_row),
             format!("hostile-certification-publication-{}", next + 1),

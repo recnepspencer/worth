@@ -32,7 +32,8 @@ fn anchors_cover_changed_suppressed_denied_preview_and_replay_observations() {
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         format!("query-inspection-{}", outcome.as_str()),
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::BridgeRoute,
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
@@ -71,7 +72,8 @@ fn anchor_counters_are_exact_and_width_bound_to_carried_reference_families() {
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "query-inspection-a",
                 ),
-            ),
+            )
+            .expect("fixture digest must fit"),
             CausalObservationEvidenceIdentity::new(
                 CausalEvidenceFamily::QueryInspection,
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
@@ -133,7 +135,8 @@ fn anchor_derivation_seals_empty_fixture_labels_into_typed_reference_digests() {
         vec![CausalObservationEvidenceIdentity::new(
             CausalEvidenceFamily::BridgeRoute,
             crate::runtime::tests::causal_inspection::causal_test_reference_digest(""),
-        )],
+        )
+        .expect("fixture digest must fit")],
     );
 
     let anchor = anchor_causal_observation(receipt, CausalInspectionReason::ChangedResult)
@@ -153,7 +156,8 @@ fn anchor_derivation_denies_inspection_reason_outcome_mismatch() {
             crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                 "denied-inspection",
             ),
-        )],
+        )
+        .expect("fixture digest must fit")],
     );
 
     let error =

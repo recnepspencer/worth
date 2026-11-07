@@ -20,7 +20,9 @@ fn intent_execution_routing_stop_class_preserves_stage_evidence_and_source() {
     let handoff = runtime
         .admit_authoritative_intent_for_execution(declaration.clone())
         .expect("authoritative handoff should admit");
-    let binding = runtime.prepare_authoritative_intent_execution_binding(handoff.clone());
+    let binding = runtime
+        .prepare_authoritative_intent_execution_binding(handoff.clone())
+        .expect("fixture digest must fit");
     let execution = runtime
         .backend
         .execute_intent(request_execution, binding.declaration())
@@ -40,7 +42,8 @@ fn intent_execution_routing_stop_class_preserves_stage_evidence_and_source() {
             binding.binding_digest(),
             execution.outcome_digest(),
             &snapshot_evidence_identity,
-        );
+        )
+        .expect("fixture digest must fit");
     let decision_trace_envelope = WorthQueryIntentDecisionTraceEnvelope::for_admitted_execution(
         &admitted_handoff,
         &execution,
@@ -48,7 +51,9 @@ fn intent_execution_routing_stop_class_preserves_stage_evidence_and_source() {
     let error = runtime.intent_execution_routing_error(
         &declaration,
         &execution,
-        execution_provenance.clone(),
+        execution_provenance
+            .clone()
+            .expect("fixture digest must fit"),
         decision_trace_envelope.clone(),
         WorthQueryRuntimeError::LiveSubscriptionInstallation {
             view_name: "tasks.phase-three-routing-stop-class".to_string(),

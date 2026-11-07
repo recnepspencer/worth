@@ -21,7 +21,8 @@ fn temporal_async_reason_helpers_materialize_bridge_backed_explanations() {
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         "query-inspection:dx-temporal-wake",
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::BridgeRoute,
                     routed.route_identity().bridge_admission_evidence(),
@@ -33,7 +34,8 @@ fn temporal_async_reason_helpers_materialize_bridge_backed_explanations() {
                     ),
                 ),
             ],
-        ),
+        )
+        .expect("fixture digest must fit"),
     )
     .why_temporal_wake()
     .reference_only()
@@ -50,7 +52,8 @@ fn temporal_async_reason_helpers_materialize_bridge_backed_explanations() {
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         "query-inspection:dx-async-completion",
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::BridgeRoute,
                     routed.route_identity().bridge_admission_evidence(),
@@ -62,7 +65,8 @@ fn temporal_async_reason_helpers_materialize_bridge_backed_explanations() {
                     ),
                 ),
             ],
-        ),
+        )
+        .expect("fixture digest must fit"),
     )
     .why_async_completion()
     .reference_only()

@@ -17,7 +17,8 @@ use super::support::{
 #[test]
 fn deferred_support_discovery_exposes_exact_contract_for_store_backed_writeback() {
     let support =
-        discover_effect_lifecycle_support(BasisFamily::StoreBacked, EffectFamily::Writeback);
+        discover_effect_lifecycle_support(BasisFamily::StoreBacked, EffectFamily::Writeback)
+            .expect("fixture digest must fit");
     let contract = support
         .deferred_contract()
         .expect("store-backed writeback should expose deferred contract");
@@ -38,7 +39,8 @@ fn deferred_support_discovery_exposes_exact_contract_for_store_backed_writeback(
 #[test]
 fn deferred_support_discovery_exposes_exact_contract_for_durable_writeback() {
     let support =
-        discover_effect_lifecycle_support(BasisFamily::DurableReload, EffectFamily::Writeback);
+        discover_effect_lifecycle_support(BasisFamily::DurableReload, EffectFamily::Writeback)
+            .expect("fixture digest must fit");
     let contract = support
         .deferred_contract()
         .expect("durable writeback should expose deferred contract");
@@ -67,7 +69,8 @@ fn deferred_effect_eligibility_matches_support_contract_and_zero_residue() {
     )
     .expect("store-backed writeback should normalize");
     let support =
-        discover_effect_lifecycle_support(BasisFamily::StoreBacked, EffectFamily::Writeback);
+        discover_effect_lifecycle_support(BasisFamily::StoreBacked, EffectFamily::Writeback)
+            .expect("fixture digest must fit");
 
     let deferred = match evaluate_effect_eligibility(normalized) {
         EffectEligibilityOutcome::Deferred(deferred) => deferred,

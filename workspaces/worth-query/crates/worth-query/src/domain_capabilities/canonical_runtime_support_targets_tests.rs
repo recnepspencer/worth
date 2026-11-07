@@ -16,7 +16,8 @@ fn declaration_support_traceability_materializer_builds_real_declaration_artifac
                 "intent.scope.traceability",
                 "support stays attached to the authored declaration",
             )?
-            .bind_to_declaration_target(declaration_target("intent-support")),
+            .bind_to_declaration_target(declaration_target("intent-support"))
+            .expect("fixture digest must fit"),
         )?)?,
     );
 
@@ -56,7 +57,8 @@ fn lower_runtime_support_traceability_materializer_builds_real_boundary_artifact
                 "boundary.scope.support",
                 "support stays attached to the lower runtime seam",
             )?
-            .bind_to_lower_runtime_boundary_target(lower_runtime_target("boundary-support")?),
+            .bind_to_lower_runtime_boundary_target(lower_runtime_target("boundary-support")?)
+            .expect("fixture digest must fit"),
         )?,
     )?);
 
@@ -139,7 +141,8 @@ fn equivalent_declaration_support_meaning_materializes_same_artifact_digest(
                 "intent.scope.support",
                 "support stays scoped to a declaration binding",
             )?
-            .bind_to_declaration_target(declaration_target("intent-support")),
+            .bind_to_declaration_target(declaration_target("intent-support"))
+            .expect("fixture digest must fit"),
         )?)?,
     );
     let direct = success(
@@ -212,7 +215,8 @@ fn equivalent_lower_runtime_support_meaning_materializes_same_artifact_digest(
                 "boundary.scope.traceability",
                 "support stays scoped to a lower-runtime binding",
             )?
-            .bind_to_lower_runtime_boundary_target(lower_runtime_target("boundary-support")?),
+            .bind_to_lower_runtime_boundary_target(lower_runtime_target("boundary-support")?)
+            .expect("fixture digest must fit"),
         )?,
     )?);
     let direct = success(materialize_lower_runtime_support_traceability_artifact(

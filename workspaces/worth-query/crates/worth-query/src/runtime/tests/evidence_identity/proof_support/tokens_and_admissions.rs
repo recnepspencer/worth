@@ -33,6 +33,7 @@ pub(in super::super) fn compose_basis_admission_identity(
             evidence_rows.iter().map(|row| row.row_digest().as_str()),
         )
         .seal()
+        .expect("fixture digest must fit")
 }
 
 pub(in super::super) fn compose_receipt_identity(
@@ -47,6 +48,7 @@ pub(in super::super) fn compose_receipt_identity(
         )
         .field_shape(crate::WorthQueryEvidenceTag::new("posture"), posture)
         .seal()
+        .expect("fixture digest must fit")
 }
 
 pub(in super::super) fn compose_denial_evidence_identity(
@@ -125,4 +127,5 @@ pub(in super::super) fn compose_denial_evidence_identity(
                 .map(WorthQueryIntentDecisionTraceEnvelope::trace_digest),
         )
         .seal()
+        .expect("fixture digest must fit")
 }

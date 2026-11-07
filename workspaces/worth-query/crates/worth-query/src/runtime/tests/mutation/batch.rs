@@ -356,4 +356,5 @@ fn preview_batch_stages_multiple_aspect_native_writes_in_preview_lane() {
     assert_eq!(outcome.authoritative_residue_count(), 0);
 }
 
+#[path = "batch/preview_batch_uses_batch_target_evidence_without_authority_bundles.rs"]
 mod preview_batch_uses_batch_target_evidence_without_authority_bundles;

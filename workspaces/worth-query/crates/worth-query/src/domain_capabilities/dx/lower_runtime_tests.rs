@@ -52,7 +52,8 @@ fn common_lower_runtime_support_lane_matches_proof_lane_materialization(
         "worth.spatial.routing.signal_invalidation",
         "lower-runtime routing narrows the supported authority seam",
     )?
-    .bind_to_installed_target(target);
+    .bind_to_installed_target(target)
+    .expect("fixture digest must fit");
     let proof_admitted = success(admit_eligible_domain_capability_contribution(success(
         evaluate_requested_domain_capability_contribution(proof_requested),
     )));
@@ -113,7 +114,8 @@ fn common_lower_runtime_explanation_artifact_matches_proof_lane_materialization(
             CausalInspectionRedactionPolicy::PreserveDetail,
             CausalInspectionMaterializationPolicy::OfflineInterpretableArtifact,
         )?
-        .bind_to_installed_target(target);
+        .bind_to_installed_target(target)
+        .expect("fixture digest must fit");
     let proof_admitted = success(admit_eligible_domain_capability_contribution(success(
         evaluate_requested_domain_capability_contribution(proof_requested),
     )));
@@ -302,15 +304,18 @@ fn materialize_invariant_denial_from_source<S>(
 where
     S: crate::runtime::WorthQueryLowerRuntimeBoundaryEnvelopeSource + ?Sized,
 {
-    let requested = graph_invariant_denial_authoring()?.for_lower_runtime_boundary_source(source);
+    let requested = graph_invariant_denial_authoring()?
+        .for_lower_runtime_boundary_source(source)
+        .expect("fixture digest must fit");
     Ok(materialize_invariant_denial(requested)?)
 }
 
 fn materialize_invariant_denial_from_envelope(
     envelope: &WorthQueryLowerRuntimeBoundaryEnvelope,
 ) -> Result<WorthQueryGraphCompositionDomainInvariantDenial, IdentityDerivationDenial> {
-    let requested =
-        graph_invariant_denial_authoring()?.for_lower_runtime_boundary_envelope(envelope);
+    let requested = graph_invariant_denial_authoring()?
+        .for_lower_runtime_boundary_envelope(envelope)
+        .expect("fixture digest must fit");
     Ok(materialize_invariant_denial(requested)?)
 }
 

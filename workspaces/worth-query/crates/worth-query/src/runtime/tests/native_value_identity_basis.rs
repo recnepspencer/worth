@@ -148,6 +148,7 @@ fn fact_set(fact: ConsumedFieldValueFact) -> ConsumedProjectionFactSet {
             relation_endpoints: Vec::new(),
         },
     )
+    .expect("fixture digest must fit")
 }
 
 fn contract() -> crate::projection_consumption::MaterializedProjectionContract {
@@ -175,7 +176,7 @@ fn contract() -> crate::projection_consumption::MaterializedProjectionContract {
     else {
         panic!("native identity fixture must admit")
     };
-    bind_materialized_projection_contract(&admitted)
+    bind_materialized_projection_contract(&admitted).expect("fixture digest must fit")
 }
 
 fn retained_path() -> WorthQueryRetainedFieldPath {

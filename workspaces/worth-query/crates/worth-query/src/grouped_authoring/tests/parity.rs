@@ -219,7 +219,8 @@ fn grouped_contribution_helper_matches_generic_grouped_lowering() {
             WorthQuerySupportContributionAuthoring::declaration_support(
                 "support.shared",
                 "shared grouped support",
-            ),
+            )
+            .expect("fixture digest must fit"),
         )
         .with_member_contribution(
             1,
@@ -227,7 +228,8 @@ fn grouped_contribution_helper_matches_generic_grouped_lowering() {
                 WorthQueryExplanationContributionAuthoring::explains_fallback(
                     "explain.member",
                     "member-local fallback explanation",
-                ),
+                )
+                .expect("fixture digest must fit"),
             ),
         );
     let generic_input = handle
@@ -238,7 +240,8 @@ fn grouped_contribution_helper_matches_generic_grouped_lowering() {
             WorthQuerySupportContributionAuthoring::declaration_support(
                 "support.shared",
                 "shared grouped support",
-            ),
+            )
+            .expect("fixture digest must fit"),
         )
         .with_member_contribution(
             1,
@@ -246,7 +249,8 @@ fn grouped_contribution_helper_matches_generic_grouped_lowering() {
                 WorthQueryExplanationContributionAuthoring::explains_fallback(
                     "explain.member",
                     "member-local fallback explanation",
-                ),
+                )
+                .expect("fixture digest must fit"),
             ),
         );
 

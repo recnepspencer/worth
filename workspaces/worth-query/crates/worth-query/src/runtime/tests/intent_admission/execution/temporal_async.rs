@@ -25,6 +25,7 @@ fn effect_triggered_async_completion_receipt_preserves_write_adjacent_trigger_cl
                 WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title.value"])),
                 "strategy.intent.reconcile",
             )
+            .expect("fixture digest must fit")
             .with_write_adjacent_trigger(
                 WorthQueryEffectWriteAdjacentTriggerClass::AsyncCompletion,
                 origin_identity.clone(),
@@ -36,7 +37,8 @@ fn effect_triggered_async_completion_receipt_preserves_write_adjacent_trigger_cl
         .write(
             request_execution,
             test_update_string_aspect_command(
-                crate::memory_workspace::admit_authored_entity_label("task-1"),
+                crate::memory_workspace::admit_authored_entity_label("task-1")
+                    .expect("fixture digest must fit"),
                 "title.value",
                 "title from async completion",
             ),
@@ -100,6 +102,7 @@ fn consumed_pending_write_intent_cannot_admit_a_second_authority_path() {
                 WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title.value"])),
                 "strategy.intent.reconcile",
             )
+            .expect("fixture digest must fit")
             .with_write_adjacent_trigger(
                 WorthQueryEffectWriteAdjacentTriggerClass::ReplayDrift,
                 origin_identity,
@@ -111,7 +114,8 @@ fn consumed_pending_write_intent_cannot_admit_a_second_authority_path() {
         .write(
             request_execution,
             test_update_string_aspect_command(
-                crate::memory_workspace::admit_authored_entity_label("task-1"),
+                crate::memory_workspace::admit_authored_entity_label("task-1")
+                    .expect("fixture digest must fit"),
                 "title.value",
                 "title from replay drift",
             ),
@@ -125,8 +129,10 @@ fn consumed_pending_write_intent_cannot_admit_a_second_authority_path() {
             "effect.intent.input.v1",
         )
         .expect("initial effect-triggered handoff should admit");
-    let binding = runtime.prepare_effect_intent_execution_binding(handoff, &pending_delivery);
-    let duplicate_binding = binding.clone();
+    let binding = runtime
+        .prepare_effect_intent_execution_binding(handoff, &pending_delivery)
+        .expect("fixture digest must fit");
+    let duplicate_binding = binding.clone().expect("fixture digest must fit");
 
     runtime
         .execute_effect_intent_execution_binding(request_execution, binding)

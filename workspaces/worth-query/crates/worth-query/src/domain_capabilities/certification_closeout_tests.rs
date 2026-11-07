@@ -62,18 +62,21 @@ fn certification_bundle_preserves_support_scope_and_posture_distinction(
                 "worth.spatial.traceability.edge_split",
                 "declaration-scoped support remains declaration scoped",
             )?
-            .bind_to_installed_target(declaration_target),
+            .bind_to_installed_target(declaration_target)
+            .expect("fixture digest must fit"),
         )?)?,
     );
-    let admitted_plan_support = success(materialize_intent_admission_support_traceability_report(
-        admitted_ready(
+    let admitted_plan_support = success(
+        materialize_intent_admission_support_traceability_report(admitted_ready(
             WorthQuerySupportContributionAuthoring::declaration_support(
                 "worth.spatial.support.runtime_floor",
                 "runtime floor remains explicitly supported",
             )?
-            .bind_to_installed_target(admitted_plan_target),
-        )?,
-    ));
+            .bind_to_installed_target(admitted_plan_target)
+            .expect("fixture digest must fit"),
+        )?)
+        .expect("fixture digest must fit"),
+    );
 
     assert_eq!(traceability.intent_name(), declaration.name());
     assert_ne!(
@@ -126,7 +129,8 @@ fn certification_bundle_matches_admission_continuity_and_aftermath_outputs(
             "worth.spatial.admission.routing_gap",
             "runtime routing still needs clarification",
         )?
-        .bind_to_installed_target(admitted_plan_target.clone()),
+        .bind_to_installed_target(admitted_plan_target.clone())
+        .expect("fixture digest must fit"),
     )?));
     assert_eq!(admission, admission_proof);
     assert_eq!(
@@ -148,7 +152,8 @@ fn certification_bundle_matches_admission_continuity_and_aftermath_outputs(
             "worth.spatial.continuity.edge_split",
             "edge split preserves one authoritative successor",
         )?
-        .bind_to_installed_target(admitted_plan_target),
+        .bind_to_installed_target(admitted_plan_target)
+        .expect("fixture digest must fit"),
     )?)?);
     assert_eq!(continuity, continuity_proof);
     assert_eq!(
@@ -187,7 +192,7 @@ fn certification_bundle_matches_admission_continuity_and_aftermath_outputs(
             crate::projection_consumption::ProjectMaterializedFacts::declare()
                 .display_field_path(crate::projection_consumption::projection_fact_field_path_from_segments([worth_foundational::facade::FieldKey::new("field").expect("projection fact field segment should admit"), worth_foundational::facade::FieldKey::new("visible").expect("projection fact field segment should admit")])),
         )?
-        .bind_to_installed_target(projection_plan_target),
+        .bind_to_installed_target(projection_plan_target).expect("fixture digest must fit"),
     )?)?);
     assert_eq!(aftermath, aftermath_proof);
     assert_eq!(
@@ -216,7 +221,8 @@ fn certification_bundle_boundary_and_failure_outputs_track_live_surfaces(
             "worth.spatial.support.failure",
             "",
         )?
-        .bind_to_installed_target(target),
+        .bind_to_installed_target(target)
+        .expect("fixture digest must fit"),
     ) {
         TransitionOutcome::Denied(denial) => denial,
         _ => panic!("expected typed denial"),

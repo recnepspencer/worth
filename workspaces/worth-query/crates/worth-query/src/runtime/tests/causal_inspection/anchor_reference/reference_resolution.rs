@@ -73,7 +73,8 @@ fn evidence_reference_resolution_consumes_anchor_and_emits_sealed_reference_set(
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         "query-inspection-reference",
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::RelationalAuthority,
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
@@ -158,7 +159,8 @@ fn evidence_reference_resolution_denies_requested_family_missing_from_anchor() {
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "query-denial-reference",
                 ),
-            )],
+            )
+            .expect("fixture digest must fit")],
         ),
         CausalInspectionReason::DeniedResult,
     )
@@ -206,7 +208,8 @@ fn evidence_reference_resolution_defaults_to_anchor_carried_families() {
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         "replay-query-inspection-reference",
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::BridgeReplay,
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(

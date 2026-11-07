@@ -261,12 +261,10 @@ fn relational_oracle_rejects_independent_commit_mismatch() {
         .expect("mutation should execute");
 
     let denial = executed
-        .verify_against_relational_oracle(&RelationalExecutionOracle::new(
-            "branch-a",
-            999_999,
-            999_999,
-            vec![111_111],
-        ))
+        .verify_against_relational_oracle(
+            &RelationalExecutionOracle::new("branch-a", 999_999, 999_999, vec![111_111])
+                .expect("fixture digest must fit"),
+        )
         .expect_err("mismatched relational oracle should deny");
 
     assert_eq!(
@@ -292,13 +290,20 @@ fn bridge_oracle_rejects_independent_receipt_mismatch() {
         .expect("writeback artifact should be present");
 
     let denial = executed
-        .verify_against_bridge_oracle(&BridgeExecutionOracle::new(
-            bridge_observation_execution_record_subject_identity("bridge-record:qa"),
-            bridge_observation_outcome_subject_identity(outcome.digest()),
-            outcome.outcome_class(),
-            bridge_observation_request_subject_identity(receipt.request_digest()),
-            bridge_observation_receipt_subject_identity("bridge-receipt-mismatch"),
-        ))
+        .verify_against_bridge_oracle(
+            &BridgeExecutionOracle::new(
+                bridge_observation_execution_record_subject_identity("bridge-record:qa")
+                    .expect("fixture digest must fit"),
+                bridge_observation_outcome_subject_identity(outcome.digest())
+                    .expect("fixture digest must fit"),
+                outcome.outcome_class(),
+                bridge_observation_request_subject_identity(receipt.request_digest())
+                    .expect("fixture digest must fit"),
+                bridge_observation_receipt_subject_identity("bridge-receipt-mismatch")
+                    .expect("fixture digest must fit"),
+            )
+            .expect("fixture digest must fit"),
+        )
         .expect_err("mismatched bridge oracle should deny");
 
     assert_eq!(
@@ -309,12 +314,17 @@ fn bridge_oracle_rejects_independent_receipt_mismatch() {
     let execution_receipt_denial = executed
         .verify_against_bridge_oracle(
             &BridgeExecutionOracle::new(
-                bridge_observation_execution_record_subject_identity("bridge-record:qa"),
-                bridge_observation_outcome_subject_identity(outcome.digest()),
+                bridge_observation_execution_record_subject_identity("bridge-record:qa")
+                    .expect("fixture digest must fit"),
+                bridge_observation_outcome_subject_identity(outcome.digest())
+                    .expect("fixture digest must fit"),
                 outcome.outcome_class(),
-                bridge_observation_request_subject_identity(receipt.request_digest()),
-                bridge_observation_receipt_subject_identity(receipt.digest()),
+                bridge_observation_request_subject_identity(receipt.request_digest())
+                    .expect("fixture digest must fit"),
+                bridge_observation_receipt_subject_identity(receipt.digest())
+                    .expect("fixture digest must fit"),
             )
+            .expect("fixture digest must fit")
             .with_execution_receipt_subject_identity(
                 bridge_observation_execution_receipt_subject_identity(
                     "bridge-execution-receipt-mismatch",

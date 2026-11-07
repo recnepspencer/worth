@@ -39,14 +39,17 @@ fn strategy_intent_commit_routes_query_delivery_and_returns_canonical_receipt() 
         )
         .expect("computed should declare");
     let delivery_effect = runtime
-        .declare_effect::<WorthQueryUnrefinedLiveShape>(WorthQueryEffectDeclaration::deliver(
-            "ui.intent",
-            WorthQueryEffectTrigger::computed_view(
-                &computed,
-                test_aspect_touches(["title.summary"]),
-            ),
-            "ui.intent",
-        ))
+        .declare_effect::<WorthQueryUnrefinedLiveShape>(
+            WorthQueryEffectDeclaration::deliver(
+                "ui.intent",
+                WorthQueryEffectTrigger::computed_view(
+                    &computed,
+                    test_aspect_touches(["title.summary"]),
+                ),
+                "ui.intent",
+            )
+            .expect("fixture digest must fit"),
+        )
         .expect("effect should declare");
 
     let receipt = runtime
@@ -184,14 +187,17 @@ fn intent_receipt_inspection_explains_strategy_lanes_and_delivery_counters() {
         )
         .expect("computed should declare");
     runtime
-        .declare_effect::<WorthQueryUnrefinedLiveShape>(WorthQueryEffectDeclaration::deliver(
-            "ui.intent-inspection",
-            WorthQueryEffectTrigger::computed_view(
-                &computed,
-                test_aspect_touches(["title.summary"]),
-            ),
-            "ui.intent-inspection",
-        ))
+        .declare_effect::<WorthQueryUnrefinedLiveShape>(
+            WorthQueryEffectDeclaration::deliver(
+                "ui.intent-inspection",
+                WorthQueryEffectTrigger::computed_view(
+                    &computed,
+                    test_aspect_touches(["title.summary"]),
+                ),
+                "ui.intent-inspection",
+            )
+            .expect("fixture digest must fit"),
+        )
         .expect("effect should declare");
 
     let receipt = runtime

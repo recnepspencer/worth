@@ -13,7 +13,8 @@ fn changed_anchor_with_route_signal_and_inspection() -> CausalObservationAnchor 
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         "indexed-query-inspection-reference",
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::BridgeRoute,
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
@@ -54,7 +55,8 @@ fn indexed_evidence_reference_resolution_uses_index_records_without_scan_fallbac
             ),
         )
         .unwrap(),
-    ]);
+    ])
+    .expect("fixture digest must fit");
 
     let resolution = resolve_indexed_causal_evidence_references(
         anchor,
@@ -116,7 +118,8 @@ fn indexed_reference_resolution_denies_missing_index_record_for_anchor_carried_f
             "indexed-query-inspection-reference",
         ),
     )
-    .unwrap()]);
+    .unwrap()])
+    .expect("fixture digest must fit");
 
     let resolution = resolve_indexed_causal_evidence_references(
         anchor,
@@ -172,7 +175,8 @@ fn indexed_reference_resolution_ignores_unrelated_retained_index_records() {
             ),
         )
         .unwrap(),
-    ]);
+    ])
+    .expect("fixture digest must fit");
 
     let resolution = resolve_indexed_causal_evidence_references(
         anchor,
@@ -227,7 +231,8 @@ fn indexed_reference_resolution_lookup_cost_follows_anchor_reference_width_not_r
                 .unwrap(),
             );
         }
-        let index = causal_evidence_reference_index(index_records);
+        let index =
+            causal_evidence_reference_index(index_records).expect("fixture digest must fit");
 
         let resolution = resolve_indexed_causal_evidence_references(
             anchor,

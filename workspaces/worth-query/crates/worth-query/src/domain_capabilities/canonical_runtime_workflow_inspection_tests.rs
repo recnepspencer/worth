@@ -40,7 +40,8 @@ fn workflow_conflict_inspection_materializer_builds_query_conflict_artifact(
             lowered_merge,
             source_addition_inspection_artifact(request_execution),
         )?
-        .bind_to_declaration_target(declaration_target("intent-workflow-conflict-inspection")),
+        .bind_to_declaration_target(declaration_target("intent-workflow-conflict-inspection"))
+        .expect("fixture digest must fit"),
     )?));
 
     assert_eq!(artifact.family().as_str(), "merge_workflow_narrow");
@@ -65,7 +66,7 @@ fn workflow_post_merge_inspection_materializer_builds_query_post_merge_artifact(
             "request-post-merge",
             "eligibility-post-merge",
             "decision-post-merge",
-        )?),
+        )?).expect("fixture digest must fit"),
     )?));
 
     assert_eq!(artifact.family().as_str(), "authoritative_outcome_narrow");
@@ -94,7 +95,8 @@ fn workflow_conflict_inspection_materializer_builds_preview_promotion_artifact(
         )?
         .bind_to_declaration_target(declaration_target(
             "intent-workflow-preview-conflict-inspection",
-        )),
+        ))
+        .expect("fixture digest must fit"),
     )?));
 
     assert_eq!(artifact.family().as_str(), "merge_workflow_narrow");
@@ -115,7 +117,7 @@ fn workflow_post_merge_inspection_materializer_builds_writeback_artifact(
         )?
         .bind_to_declaration_target(declaration_target(
             "intent-workflow-post-merge-writeback-inspection",
-        )),
+        )).expect("fixture digest must fit"),
     )?));
 
     assert_eq!(artifact.family().as_str(), "authoritative_outcome_narrow");

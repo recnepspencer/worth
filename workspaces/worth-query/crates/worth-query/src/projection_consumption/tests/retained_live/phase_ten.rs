@@ -13,7 +13,9 @@ use super::support::{
 fn retained_binding_support_is_first_class_and_family_specific() {
     let binding = retained_binding();
 
-    let support = binding.discover_projection_fact_consumption_support();
+    let support = binding
+        .discover_projection_fact_consumption_support()
+        .expect("fixture digest must fit");
 
     assert_eq!(
         support.source_family(),
@@ -133,7 +135,9 @@ fn live_binding_eligibility_admits_honest_fact_families() {
 fn live_binding_support_reports_live_family_not_legacy_escape_hatch() {
     let binding = live_binding();
 
-    let support = binding.discover_projection_fact_consumption_support();
+    let support = binding
+        .discover_projection_fact_consumption_support()
+        .expect("fixture digest must fit");
 
     assert_eq!(
         support.source_family(),

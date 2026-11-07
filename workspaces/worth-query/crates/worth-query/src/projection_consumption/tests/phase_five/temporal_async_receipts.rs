@@ -26,6 +26,7 @@ fn temporal_async_posture(
         support_digest,
         Some(format!("runtime-origin:{lower_declaration_digest}")),
     )
+    .expect("fixture digest must fit")
 }
 
 fn read_result_with_posture(
@@ -36,7 +37,8 @@ fn read_result_with_posture(
 ) -> WorthQueryReadResult {
     WorthQueryReadResult::test_only(
         vec![entity_from_projection(
-            crate::memory_workspace::admit_authored_entity_label("task-1"),
+            crate::memory_workspace::admit_authored_entity_label("task-1")
+                .expect("fixture digest must fit"),
             [
                 ("profile.display_name", text_value("Task One")),
                 ("metrics.priority", int_value(1)),
@@ -49,6 +51,7 @@ fn read_result_with_posture(
             "result:test",
             WorthQueryReadExecutionEngine::QueryRuntimeCurrent,
         )
+        .expect("fixture digest must fit")
         .test_only_with_materialized_fact_posture(temporal_async_posture(
             kind,
             lower_declaration_digest,

@@ -335,4 +335,5 @@ fn preview_write_routes_bound_live_computed_and_redirected_effect_without_author
         .is_empty());
 }
 
+#[path = "execution_bindings/preview_sandboxed_write_intent_execution_stays_separate_from_delivery_residue.rs"]
 mod preview_sandboxed_write_intent_execution_stays_separate_from_delivery_residue;

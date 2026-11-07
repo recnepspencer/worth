@@ -8,7 +8,8 @@ pub(super) fn table_declaration() -> QuerySubscriptionDeclarationArtifact {
         LiveQueryFamily::OrderedCollection,
         Some(LiveViewShapeFamily::Table),
         QuerySubscriptionConstructionSource::Direct,
-    );
+    )
+    .expect("fixture digest must fit");
     let selection = select_query_subscription_family(live, roomy_budget()).unwrap();
     declare_query_subscription(selection, roomy_slice_budget()).unwrap()
 }
@@ -33,12 +34,13 @@ pub(super) fn certified_subscription_identity(
         None,
         QuerySubscriptionConstructionSource::SavedExactReuse,
         QuerySubscriptionBasisPosture::CurrentHead,
-        QuerySubscriptionFutureSelection::ordinary(),
+        QuerySubscriptionFutureSelection::ordinary().expect("fixture digest must fit"),
         Some(policy.to_string()),
         Some(tenant.to_string()),
         Some(proof.to_string()),
         QuerySubscriptionRelationshipProofPosture::Admitted,
-    );
+    )
+    .expect("fixture digest must fit");
     let selection = select_query_subscription_family(live, roomy_budget()).unwrap();
     let declaration = declare_query_subscription(selection, roomy_slice_budget()).unwrap();
     let declaration_digest = declaration.declaration_projection().label().to_string();

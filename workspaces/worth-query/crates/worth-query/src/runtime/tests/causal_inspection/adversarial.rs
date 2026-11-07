@@ -96,7 +96,10 @@ fn common_path_missing_evidence_matrix_fails_before_admission() {
             .expect_err("missing requested evidence should fail before admission");
 
         assert_eq!(error.kind(), CausalInspectionPlanErrorKind::MissingEvidence);
-        assert!(!error.failure_digest().is_empty());
+        assert!(!error
+            .failure_digest()
+            .expect("fixture digest must fit")
+            .is_empty());
     }
 }
 
@@ -177,13 +180,15 @@ fn redaction_and_materialization_policy_matrix_preserves_causal_identity() {
                         crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                             "query-inspection",
                         ),
-                    ),
+                    )
+                    .expect("fixture digest must fit"),
                     CausalObservationEvidenceIdentity::new(
                         CausalEvidenceFamily::BridgeRoute,
                         route_identity.clone(),
                     ),
                 ],
-            );
+            )
+            .expect("fixture digest must fit");
             let plan = crate::runtime::tests::causal_inspection::inspect_fixture(receipt)
                 .why_changed()
                 .reference_only()
@@ -242,4 +247,5 @@ fn receipt_with_evidence(
             })
             .collect(),
     )
+    .expect("fixture digest must fit")
 }

@@ -76,7 +76,8 @@ impl RuntimeHostileCertificationCounters {
             crate::WorthQueryEvidenceTag::new("delivery_residue_count"),
             delivery_residue_count,
         )
-        .seal();
+        .seal()
+        .expect("fixture digest must fit");
         Self {
             committed_read_hot_path_lock_count,
             shared_read_mint_row_clone_count,
@@ -200,7 +201,8 @@ impl RuntimeHostileCertificationArtifact {
             crate::WorthQueryEvidenceTag::new("counter_digest"),
             counters.digest().terminal_projection_for_reporting(),
         )
-        .seal();
+        .seal()
+        .expect("fixture digest must fit");
         Self {
             receipt_digests,
             reader_result_digests,
@@ -248,6 +250,7 @@ pub(in crate::runtime::tests) fn hostile_write_receipt_digest(
         receipt.declared_aspect_value_digest().unwrap_or("none"),
     )
     .seal()
+    .expect("fixture digest must fit")
     .terminal_projection_for_reporting()
     .to_string()
 }
@@ -294,6 +297,7 @@ pub(in crate::runtime::tests) fn hostile_published_artifact_digest(
         consumed_title.unwrap_or("none"),
     )
     .seal()
+    .expect("fixture digest must fit")
     .terminal_projection_for_reporting()
     .to_string()
 }
@@ -373,26 +377,6 @@ pub(in crate::runtime::tests) fn hostile_consume_title_attempt(
         .expect("projection consumption should remain on the typed artifact lane")
 }
 
-fn hostile_projection_artifacts() -> (CanonicalResultShapeArtifact, AuthorizedProjectionArtifact) {
-    let query = RawAuthoredQuery::detail_builder(RootEntityKey::new("task").unwrap())
-        .project(AspectFieldSelector::new("title", "value").unwrap())
-        .build()
-        .unwrap();
-    let result_shape = RawAuthoredResultShape::detail_builder()
-        .field(AuthoredResultShapeField::new("title", "value", "title.value").unwrap())
-        .build()
-        .unwrap();
-    let canonical = GuidedAuthoringPath::canonicalize_detail(query, result_shape).unwrap();
-    let authorized_projection = derive_authorized_projection(
-        canonical.query(),
-        canonical.result_shape(),
-        "policy:test",
-        "schema:test",
-        &PolicyAspectMask::allow_all(),
-        &PolicyInfluenceSet::none(),
-        8,
-        8,
-    )
-    .unwrap();
-    (canonical.result_shape().clone(), authorized_projection)
-}
+#[path = "hostile_certification/hostile_projection_artifacts.rs"]
+mod hostile_projection_artifacts;
+pub use hostile_projection_artifacts::hostile_projection_artifacts;

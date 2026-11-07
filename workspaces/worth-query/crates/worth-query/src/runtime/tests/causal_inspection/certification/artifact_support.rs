@@ -169,7 +169,8 @@ pub(super) fn denied_artifact_and_missing_evidence(
         None,
         CausalInspectionRedactionPolicy::PreserveDetail,
         CausalInspectionMaterializationPolicy::OfflineInterpretableArtifact,
-    );
+    )
+    .expect("fixture digest must fit");
     (artifact, denial.failure_digest().to_string())
 }
 
@@ -187,7 +188,8 @@ fn reference_set_for(
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         format!("query-inspection:{}", outcome.as_str()),
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::BridgeRoute,
                     route_identity.bridge_admission_evidence(),

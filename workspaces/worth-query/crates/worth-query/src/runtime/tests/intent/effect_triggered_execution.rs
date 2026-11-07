@@ -20,18 +20,22 @@ fn effect_triggered_pending_write_intent_executes_through_intent_authority_once(
         )
         .expect("live should declare");
     let effect = runtime
-        .declare_effect::<WorthQueryUnrefinedLiveShape>(WorthQueryEffectDeclaration::write_intent(
-            "effects.reconcile-title",
-            WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title.value"])),
-            "strategy.intent.reconcile",
-        ))
+        .declare_effect::<WorthQueryUnrefinedLiveShape>(
+            WorthQueryEffectDeclaration::write_intent(
+                "effects.reconcile-title",
+                WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title.value"])),
+                "strategy.intent.reconcile",
+            )
+            .expect("fixture digest must fit"),
+        )
         .expect("write-intent effect should declare");
 
     let write = runtime
         .write(
             request_execution,
             test_update_string_aspect_command(
-                crate::memory_workspace::admit_authored_entity_label("task-1"),
+                crate::memory_workspace::admit_authored_entity_label("task-1")
+                    .expect("fixture digest must fit"),
                 "title.value",
                 "title from write",
             ),

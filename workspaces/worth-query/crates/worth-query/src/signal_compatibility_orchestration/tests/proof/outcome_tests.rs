@@ -6,8 +6,9 @@ fn proof_stops_at_compatibility_when_no_bridge_request_is_supplied() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let handle = proof_handle(request_execution, "main");
-    let proof =
-        handle.orchestrate_signal_compatibility_proof(orchestration_input(&handle, "face-a"));
+    let proof = handle
+        .orchestrate_signal_compatibility_proof(orchestration_input(&handle, "face-a"))
+        .expect("fixture digest must fit");
 
     assert_eq!(
         proof.request().request_kind(),

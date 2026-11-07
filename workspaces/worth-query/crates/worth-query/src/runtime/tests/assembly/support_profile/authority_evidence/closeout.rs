@@ -9,7 +9,9 @@ fn runtime_public_authority_evidence_closeout_matches_certified_support_surface(
         .workspace("task.authority-evidence-closeout")
         .expect("task runtime should open a named workspace");
     let support = workspace.public_authoritative_mutation_evidence_support();
-    let closeout = workspace.public_authoritative_mutation_evidence_closeout();
+    let closeout = workspace
+        .public_authoritative_mutation_evidence_closeout()
+        .expect("fixture digest must fit");
 
     assert_eq!(
         closeout.backend_posture(),
@@ -18,7 +20,11 @@ fn runtime_public_authority_evidence_closeout_matches_certified_support_surface(
     assert_eq!(closeout.query_support_digest(), support.support_digest());
     assert_eq!(
         closeout.support_matrix_digest(),
-        workspace.public_support_matrix().matrix_digest().as_str()
+        workspace
+            .public_support_matrix()
+            .expect("fixture digest must fit")
+            .matrix_digest()
+            .as_str()
     );
     assert!(closeout
         .safe_to_build_now()

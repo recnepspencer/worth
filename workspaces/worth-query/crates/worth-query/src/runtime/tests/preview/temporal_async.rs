@@ -32,7 +32,8 @@ fn install_temporal_async_and_mixed_residue(
             &WorthQueryRuntimeAsyncResultProjection::completion_state(
                 BridgeAsyncCompletionState::Admitted(BridgeAsyncCompletionClass::Fulfilled),
                 "preview:async-current",
-            ),
+            )
+            .expect("fixture digest must fit"),
             &basis_digest,
             &generation_digest,
         )
@@ -123,7 +124,8 @@ fn preview_discard_closeout_tracks_temporal_async_and_mixed_residue_parity() {
         preview.use_view(&async_view);
         preview.use_view(&mixed_view);
         preview.discard()
-    };
+    }
+    .expect("fixture digest must fit");
 
     let closeout = outcome.closeout_evidence();
     assert_eq!(closeout.temporal_wake_residue_count(), 1);
@@ -202,7 +204,8 @@ fn preview_discard_retains_crossed_preview_completion_residue_typed() {
             .expect("preview session should admit");
         preview.use_view(&view);
         preview.discard()
-    };
+    }
+    .expect("fixture digest must fit");
 
     let closeout = outcome.closeout_evidence();
     assert_eq!(closeout.crossed_authoritative_residue_count(), 1);

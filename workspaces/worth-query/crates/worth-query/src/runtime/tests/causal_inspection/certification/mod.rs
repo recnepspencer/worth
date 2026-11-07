@@ -306,6 +306,7 @@ fn causal_inspection_certification_rejects_mislabeled_missing_evidence() {
     ));
 }
 
+#[path = "causal_inspection_certification_rejects_mislabeled_failure_row.rs"]
 mod causal_inspection_certification_rejects_mislabeled_failure_row;
 
 #[test]

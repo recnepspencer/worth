@@ -173,16 +173,19 @@ fn historical_execution_artifact_preserves_requested_admitted_and_resolved_path_
         1,
         1,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let capability = HistoricalCapabilityDescriptor::retained_snapshot_for_test(
         "history:snapshot-1",
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let admission = admit_historical_evaluation_path(request, capability)
         .expect("retained history should admit");
     let resolved = resolve_historical_materialization_path(
         admission.clone(),
-        HistoricalMaterializationDescriptor::retained_snapshot_for_test("history:snapshot-1"),
+        HistoricalMaterializationDescriptor::retained_snapshot_for_test("history:snapshot-1")
+            .expect("fixture digest must fit"),
     )
     .expect("retained history should resolve");
     let metadata = materialization_metadata_from_resolved(resolved);

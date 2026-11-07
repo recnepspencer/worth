@@ -15,7 +15,8 @@ fn read_execution_eligibility_admits_runtime_current_route() {
         )
         .expect("read request should build");
     let eligibility =
-        crate::intent_admission::WorthQueryIntentAdmissionEligibility::from_request(request);
+        crate::intent_admission::WorthQueryIntentAdmissionEligibility::from_request(request)
+            .expect("fixture digest must fit");
 
     assert_eq!(
         eligibility.support_posture(),
@@ -65,7 +66,8 @@ fn read_execution_basis_context_mismatch_stops_as_violation() {
         .expect("basis-context request should build");
     let eligibility = crate::intent_admission::WorthQueryIntentAdmissionEligibility::from_request(
         request.clone(),
-    );
+    )
+    .expect("fixture digest must fit");
     let decision = admit_runtime_intent_request(request);
 
     assert_eq!(

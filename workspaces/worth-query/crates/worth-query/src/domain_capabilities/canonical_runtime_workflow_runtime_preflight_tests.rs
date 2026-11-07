@@ -22,7 +22,7 @@ fn workflow_runtime_preflight_materializer_preserves_real_preflight_query_and_ba
             "domain workflow should reuse the real runtime preflight binding",
             preflight.clone(),
         )?
-        .bind_to_declaration_target(declaration_target("intent-workflow-runtime-preflight")),
+        .bind_to_declaration_target(declaration_target("intent-workflow-runtime-preflight")).expect("fixture digest must fit"),
     )?)?);
 
     assert_ne!(
@@ -71,7 +71,7 @@ fn workflow_runtime_preflight_materializer_is_stronger_than_snapshot_only_surrog
             "real runtime preflight should preserve full query and basis identity",
             preflight.clone(),
         )?
-        .bind_to_declaration_target(declaration_target("intent-workflow-runtime-real")),
+        .bind_to_declaration_target(declaration_target("intent-workflow-runtime-real")).expect("fixture digest must fit"),
     )?)?);
     let surrogate = success(materialize_query_workflow_declaration(ready(
         WorthQueryWorkflowContributionAuthoring::confirmation_required_query_inspection(
@@ -79,7 +79,8 @@ fn workflow_runtime_preflight_materializer_is_stronger_than_snapshot_only_surrog
             "snapshot-token-only workflow semantics remain a weaker surrogate path",
             crate::memory_workspace::WorthQuerySnapshotIdentity::preview(snapshot_evidence),
         )?
-        .bind_to_declaration_target(declaration_target("intent-workflow-runtime-synthetic")),
+        .bind_to_declaration_target(declaration_target("intent-workflow-runtime-synthetic"))
+        .expect("fixture digest must fit"),
     )?)?);
 
     assert_ne!(
@@ -132,7 +133,7 @@ fn workflow_runtime_preflight_lowering_from_bundle_preserves_real_runtime_author
             )
             .expect("name patch should build"),
         )?
-        .bind_to_declaration_target(declaration_target("intent-workflow-runtime-lowering")),
+        .bind_to_declaration_target(declaration_target("intent-workflow-runtime-lowering")).expect("fixture digest must fit"),
     )?));
 
     assert_eq!(
@@ -167,7 +168,7 @@ fn workflow_runtime_preflight_materializer_keeps_scope_distinct_across_targets(
             "real runtime preflight bindings must stay scoped by contribution target",
             preflight.clone(),
         )?
-        .bind_to_declaration_target(declaration_target("intent-workflow-runtime-left")),
+        .bind_to_declaration_target(declaration_target("intent-workflow-runtime-left")).expect("fixture digest must fit"),
     )?)?);
     let right = success(materialize_query_workflow_declaration(ready(
         WorthQueryWorkflowContributionAuthoring::confirmation_required_query_inspection_from_preflight(
@@ -175,7 +176,7 @@ fn workflow_runtime_preflight_materializer_keeps_scope_distinct_across_targets(
             "real runtime preflight bindings must stay scoped by contribution target",
             preflight.clone(),
         )?
-        .bind_to_declaration_target(declaration_target("intent-workflow-runtime-right")),
+        .bind_to_declaration_target(declaration_target("intent-workflow-runtime-right")).expect("fixture digest must fit"),
     )?)?);
 
     assert_eq!(

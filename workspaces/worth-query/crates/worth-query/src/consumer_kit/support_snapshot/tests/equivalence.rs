@@ -8,7 +8,7 @@ use super::live_support_matrix;
 #[test]
 fn support_snapshot_matches_live_matrix_row_for_row_and_digest_for_digest() {
     let matrix = live_support_matrix();
-    let snapshot = project_support_snapshot(&matrix);
+    let snapshot = project_support_snapshot(&matrix).expect("fixture digest must fit");
 
     assert_eq!(
         snapshot.source_matrix_digest(),
@@ -55,7 +55,7 @@ fn support_snapshot_matches_live_matrix_row_for_row_and_digest_for_digest() {
 #[test]
 fn loaded_support_snapshot_still_compares_to_the_live_matrix() {
     let matrix = live_support_matrix();
-    let snapshot = project_support_snapshot(&matrix);
+    let snapshot = project_support_snapshot(&matrix).expect("fixture digest must fit");
     let terminal_json_document = snapshot
         .to_canonical_terminal_json_document()
         .expect("snapshot JSON should encode");

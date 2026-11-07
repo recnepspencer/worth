@@ -56,7 +56,8 @@ fn journal_segment_replay_returns_receipts_schedule_and_artifact_digest() {
             .journal_replay_diagnostics()
             .counter_snapshot()
             .clone(),
-    );
+    )
+    .expect("fixture digest must fit");
     assert_eq!(
         outcome.truth_reconstruction_identity().as_str(),
         replay_evidence.replay_truth_digest()
@@ -215,7 +216,9 @@ fn journal_replay_surface_is_admitted_by_runtime_support_profile() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let workspace = replay_workspace(request_execution, "tasks.journal-replay.support-profile");
-    let contract = workspace.public_api_contract();
+    let contract = workspace
+        .public_api_contract()
+        .expect("fixture digest must fit");
     let row = contract
         .family(WorthQueryRuntimeFacadeFamily::Replay)
         .expect("replay facade support row should exist");

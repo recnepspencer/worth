@@ -12,8 +12,12 @@ pub(super) fn unsupported_intent_rejection(
     let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("aspect-api.intent-denial")
         .expect("workspace should open");
-    let report = workspace.public_mutation_surface_report();
-    let closeout = workspace.public_aspect_api_finalization_closeout();
+    let report = workspace
+        .public_mutation_surface_report()
+        .expect("fixture digest must fit");
+    let closeout = workspace
+        .public_aspect_api_finalization_closeout()
+        .expect("fixture digest must fit");
     let error = workspace
         .intent(
             request_execution,
@@ -38,6 +42,7 @@ pub(super) fn unsupported_intent_rejection(
                 ]),
                 support_matrix_digest: workspace
                     .public_support_matrix()
+                    .expect("fixture digest must fit")
                     .matrix_digest()
                     .terminal_projection_for_reporting()
                     .to_string(),

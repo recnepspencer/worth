@@ -131,12 +131,15 @@ fn admission_local_support_and_support_traceability_rows_stay_distinct(
             "same support detail through shared runtime family",
         )?)?,
     ));
-    let support_row = success(materialize_intent_admission_support_traceability_row(
-        ready_support(WorthQuerySupportContributionAuthoring::declaration_support(
-            "spatial.shared.support",
-            "same support detail through shared runtime family",
-        )?)?,
-    ));
+    let support_row = success(
+        materialize_intent_admission_support_traceability_row(ready_support(
+            WorthQuerySupportContributionAuthoring::declaration_support(
+                "spatial.shared.support",
+                "same support detail through shared runtime family",
+            )?,
+        )?)
+        .expect("fixture digest must fit"),
+    );
 
     assert_eq!(admission_row.support_detail(), support_row.support_detail());
     assert_eq!(admission_row.family(), support_row.family());
@@ -181,7 +184,8 @@ fn continuity_runtime_materializer_builds_continuity_evidence(
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("binding"),
-                &WorthQueryBindingTargetWitness::binding_identity(&expected_binding_target),
+                &WorthQueryBindingTargetWitness::binding_identity(&expected_binding_target)
+                    .expect("fixture digest must fit"),
             )
             .seal()?;
     let expected_basis_binding_digest = WorthQueryMutationEvidenceDigest::source_identity(
@@ -272,9 +276,11 @@ fn ready_admission(
     >,
     IdentityDerivationDenial,
 > {
-    Ok(ready(authoring.bind_to_admitted_plan_target(
-        admitted_plan_target("plan-admission")?,
-    ))?)
+    Ok(ready(
+        authoring
+            .bind_to_admitted_plan_target(admitted_plan_target("plan-admission")?)
+            .expect("fixture digest must fit"),
+    )?)
 }
 
 fn ready_support(
@@ -285,9 +291,11 @@ fn ready_support(
     >,
     IdentityDerivationDenial,
 > {
-    Ok(ready(authoring.bind_to_admitted_plan_target(
-        admitted_plan_target("plan-admission")?,
-    ))?)
+    Ok(ready(
+        authoring
+            .bind_to_admitted_plan_target(admitted_plan_target("plan-admission")?)
+            .expect("fixture digest must fit"),
+    )?)
 }
 
 fn ready_continuity(

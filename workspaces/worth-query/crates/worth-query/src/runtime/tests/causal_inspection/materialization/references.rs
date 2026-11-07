@@ -44,7 +44,8 @@ pub(in crate::runtime::tests::causal_inspection) fn changed_reference_set(
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         "query-inspection:phase5",
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::BridgeRoute,
                     route_identity.bridge_admission_evidence(),
@@ -81,7 +82,8 @@ pub(in crate::runtime::tests::causal_inspection) fn replay_reference_set_with_si
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         "query-inspection:replay-materialization",
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::BridgeRoute,
                     route_identity.bridge_admission_evidence(),

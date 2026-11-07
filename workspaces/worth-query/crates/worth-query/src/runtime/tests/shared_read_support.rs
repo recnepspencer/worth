@@ -47,7 +47,8 @@ impl WorthQueryDerivedViewMaintainer for SharedReadPublishingMaintainer {
                     view.name(),
                     crate::memory_workspace::admit_external_commit_label(format!(
                         "shared-read-refresh-{next}"
-                    )),
+                    ))
+                    .expect("fixture digest must fit"),
                     test_aspect_touches(["title.value"]),
                     WorthQueryDerivedPatchPayload::from_retained_row(published_title_retained_row(
                         title,
@@ -61,7 +62,8 @@ impl WorthQueryDerivedViewMaintainer for SharedReadPublishingMaintainer {
                     view.name(),
                     crate::memory_workspace::admit_external_commit_label(format!(
                         "shared-read-empty-{next}"
-                    )),
+                    ))
+                    .expect("fixture digest must fit"),
                     test_aspect_touches(["title.value"]),
                     WorthQueryDerivedPatchPayload::empty(),
                     format!("shared-read-empty-publication-{next}"),
@@ -77,7 +79,8 @@ impl WorthQueryDerivedViewMaintainer for SharedReadPublishingMaintainer {
                     view.name(),
                     crate::memory_workspace::admit_external_commit_label(format!(
                         "shared-read-sequenced-{next}"
-                    )),
+                    ))
+                    .expect("fixture digest must fit"),
                     test_aspect_touches(["title.value"]),
                     WorthQueryDerivedPatchPayload::from_retained_row(published_title_retained_row(
                         title,
@@ -91,8 +94,10 @@ impl WorthQueryDerivedViewMaintainer for SharedReadPublishingMaintainer {
                     view.name(),
                     crate::memory_workspace::admit_external_commit_label(format!(
                         "shared-read-stale-{next}"
-                    )),
-                    crate::memory_workspace::admit_authored_entity_label(format!("entity-{next}")),
+                    ))
+                    .expect("fixture digest must fit"),
+                    crate::memory_workspace::admit_authored_entity_label(format!("entity-{next}"))
+                        .expect("fixture digest must fit"),
                     test_aspect_touches(["title.value"]),
                     WorthQueryDerivedPatchPayload::from_retained_row(published_title_retained_row(
                         title,

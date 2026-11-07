@@ -4,7 +4,7 @@ use crate::projection_consumption::{
 
 #[test]
 fn closeout_bundle_emits_full_surface() {
-    let bundle = certify_projection_consumption_closeout_core();
+    let bundle = certify_projection_consumption_closeout_core().expect("fixture digest must fit");
     for lane in [
         ProjectionConsumptionCertificationLane::SupportMatrixSurface,
         ProjectionConsumptionCertificationLane::PublicBoundarySurface,
@@ -23,7 +23,7 @@ fn closeout_bundle_emits_full_surface() {
 
 #[test]
 fn closeout_bundle_emits_all_spec_required_outputs() {
-    let bundle = certify_projection_consumption_closeout_core();
+    let bundle = certify_projection_consumption_closeout_core().expect("fixture digest must fit");
     for output in [
         "query_digest",
         "result_shape_digest",

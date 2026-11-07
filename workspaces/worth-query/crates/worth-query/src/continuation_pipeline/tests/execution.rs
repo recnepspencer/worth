@@ -168,7 +168,8 @@ fn continuation_ordinary_outcome_keeps_new_execution_denials_visible() {
 
     match crate::continuation_pipeline::ordinary_outcome_from_execution_checked(
         drifted_readmission_handle_in(&workspace, "main", ReadmissionDrift::AuthorityMismatch)
-            .execute_prepared_continuation_checked(prepared),
+            .execute_prepared_continuation_checked(prepared)
+            .expect("fixture digest must fit"),
     ) {
         WorthQueryOrdinaryOutcome::AuthorityMismatch(posture) => {
             assert_eq!(
@@ -199,7 +200,8 @@ fn continuation_ordinary_outcome_keeps_execution_drift_topology_visible() {
 
     match crate::continuation_pipeline::ordinary_outcome_from_execution_checked(
         drifted_readmission_handle_in(&workspace, "main", ReadmissionDrift::AsyncRequest)
-            .execute_prepared_continuation_checked(prepared),
+            .execute_prepared_continuation_checked(prepared)
+            .expect("fixture digest must fit"),
     ) {
         WorthQueryOrdinaryOutcome::RebindRequired(posture) => {
             assert_eq!(

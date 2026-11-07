@@ -178,6 +178,7 @@ fn denied_bundle_requires_query_and_basis_digest_overrides() {
     );
 }
 
+#[path = "tests/correspondence_denied_bundle_stays_pathless.rs"]
 mod correspondence_denied_bundle_stays_pathless;
 
 fn success_envelope_for(
