@@ -21,6 +21,13 @@ pub(super) fn replay_envelope_effect(
     restored: &mut RelationalRuntime,
     positioned: &crate::history::data::PositionedCanonicalCommit,
 ) -> Result<(), RelationalRecoveryStop> {
+    // Replay is the untrusted-input entrance. Admit its existing checkpoint
+    // image once, with the registered cold parity check, before native apply.
+    restored
+        .indexes
+        .definition_read_binding()
+        .demand_checkpoint_image(execution)
+        .map_err(RelationalRecoveryStop::from)?;
     let envelope = positioned.envelope();
     if envelope.authority_kind() == CanonicalCommitAuthorityKind::BranchReferenceMovement
         || is_metadata_only_merge_commit(envelope)

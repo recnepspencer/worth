@@ -6,7 +6,8 @@ fn residency_failure_matrix_merge_planning_preserves_versioned_footprints() {
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     for subject in Subject::ALL {
         for (cause, sticky) in FAILURES {
-            let fixture = recovered_shape(execution, matches!(subject, Subject::Symbols));
+            let fixture =
+                recovered_configuration(execution, matches!(subject, Subject::Symbols), false);
             let targets = subject.targets(&fixture);
             assert!(
                 !targets.is_empty(),
@@ -111,7 +112,12 @@ fn residency_failure_matrix_merge_planning_preserves_versioned_footprints() {
                     .read_snapshot(&outcome.commit.snapshot, execution)
                     .unwrap()
                     .unwrap();
-                assert_merge_records(actual.entities(), &fixture.expected);
+                assert_merge_records(
+                    actual.entities(),
+                    &fixture.expected,
+                    fixture.expected_merge_version,
+                    outcome.commit.version_id,
+                );
             }
         }
     }

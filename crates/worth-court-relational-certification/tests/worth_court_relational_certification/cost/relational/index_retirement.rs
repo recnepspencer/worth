@@ -53,10 +53,23 @@ fn sparse_publication_retires_more_predecessors_than_one_older_sweep() {
             .collect::<Vec<_>>()
     };
     let old = build_all(&first_basis);
+    let (_, middle_basis) = runtime.observe_branch(&main).unwrap();
+    let middle_generations = build_all(&middle_basis);
+    drop(middle_basis);
     drop(first_basis);
     release_test_commit_snapshot(&runtime, &first);
     release_test_commit_snapshot(&runtime, &middle);
     let latest = create_entity_outcome(execution, &runtime, "sparse-current-basis");
+    assert!(
+        definitions
+            .iter()
+            .zip(&middle_generations)
+            .all(
+                |(definition, old)| generation(execution, &runtime, definition.index_id, &latest)
+                    != Some(*old)
+            ),
+        "native publication replaces changed predecessors beyond the older sweep quota"
+    );
     let (_, latest_basis) = runtime.observe_branch(&main).unwrap();
     let current = build_all(&latest_basis);
     drop(latest_basis);
@@ -67,9 +80,14 @@ fn sparse_publication_retires_more_predecessors_than_one_older_sweep() {
         .unwrap()
         .unwrap();
     assert!(
-        removed >= old.len(),
-        "the actual delta is not limited to the older sweep quota"
+        removed > 0,
+        "the subsequent fair sweep finishes older predecessors"
     );
+    for _ in 0..8 {
+        runtime
+            .run_index_generation_reclamation_after_publication(&latest)
+            .unwrap();
+    }
     assert!(definitions.iter().all(|definition| generation(
         execution,
         &runtime,

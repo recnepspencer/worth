@@ -37,6 +37,17 @@ fn native_merge_touches_only_changed_revision_and_both_index_membership_keys() {
             branch_scoped: true,
         })
         .expect("index fixture has identity capacity");
+    let basis = crate::tests::support::test_owner_main_basis(&runtime).unwrap();
+    let built = runtime.index_authority().build_for_basis(
+        execution,
+        crate::facade::indexes::DerivedIndexBuildRequest {
+            source_commit_id: basis.observation().commit_id().unwrap(),
+            branch_id: BranchId("main".into()),
+            index_ids: vec![index.index_id],
+        },
+        &basis,
+    );
+    assert!(built.failed_indexes.is_empty());
     create_branch_from_main(&runtime, "feature");
     let mut source = crate::tests::support::test_owner_begin_transaction_for_branch(
         &runtime,

@@ -11,7 +11,8 @@ use crate::indexes::data::{
     DerivedIndexKind,
 };
 struct Fixture {
-    index: DerivedIndexId,
+    index: Option<DerivedIndexId>,
+    expected_merge_version: crate::identity::data::VersionId,
     expected_index_keys: Vec<crate::storage::data::AuthoritativeFieldComparisonKey>,
     runtime: crate::runtime::RelationalRuntime,
     source: Arc<MemberSource>,
@@ -28,6 +29,13 @@ fn recovered(execution: &worth_execution::ExecutionRequest<'_, '_>) -> Fixture {
 fn recovered_shape(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     symbols: bool,
+) -> Fixture {
+    recovered_configuration(execution, symbols, true)
+}
+fn recovered_configuration(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    symbols: bool,
+    indexed: bool,
 ) -> Fixture {
     let producer = durable_runtime_with_test_schema();
     let symbol = if symbols {
@@ -67,28 +75,32 @@ fn recovered_shape(
     );
     release_test_commit_snapshot(&producer, &created);
     let member = create_entity(execution, &producer, "member-before");
-    let index = producer
-        .index_authority()
-        .register(DerivedIndexDefinition {
-            index_id: DerivedIndexId(0),
-            name: "merge-matrix-name".into(),
-            branch_scoped: true,
-            kind: DerivedIndexKind::EntityField {
-                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-            },
-        })
-        .expect("index fixture has identity capacity")
-        .index_id;
+    let index = indexed.then(|| {
+        producer
+            .index_authority()
+            .register(DerivedIndexDefinition {
+                index_id: DerivedIndexId(0),
+                name: "merge-matrix-name".into(),
+                branch_scoped: true,
+                kind: DerivedIndexKind::EntityField {
+                    field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+                },
+            })
+            .expect("index fixture has identity capacity")
+            .index_id
+    });
     let branch = BranchId("main".into());
-    let built = producer.index_authority().build_for_commit(
-        execution,
-        DerivedIndexBuildRequest {
-            source_commit_id: producer.history().branch_head(&branch).unwrap().commit_id,
-            branch_id: branch.clone(),
-            index_ids: vec![index],
-        },
-    );
-    assert!(built.failed_indexes.is_empty());
+    if let Some(index) = index {
+        let built = producer.index_authority().build_for_commit(
+            execution,
+            DerivedIndexBuildRequest {
+                source_commit_id: producer.history().branch_head(&branch).unwrap().commit_id,
+                branch_id: branch.clone(),
+                index_ids: vec![index],
+            },
+        );
+        assert!(built.failed_indexes.is_empty());
+    }
     let reference = producer.fork().unwrap();
     let candidate = reference
         .prepare_merge_execution(execution, request())
@@ -96,6 +108,7 @@ fn recovered_shape(
     let merged = reference
         .execute_prepared_merge(execution, candidate)
         .unwrap();
+    let expected_merge_version = merged.commit.version_id;
     let view = reference
         .read_truth()
         .read_snapshot(&merged.commit.snapshot, execution)
@@ -106,25 +119,29 @@ fn recovered_shape(
         .iter()
         .map(|record| (record.entity_id, record.clone()))
         .collect();
-    let rebuilt = reference.index_authority().build_for_commit(
-        execution,
-        DerivedIndexBuildRequest {
-            source_commit_id: merged.commit.commit.commit_id,
-            branch_id: branch.clone(),
-            index_ids: vec![index],
-        },
-    );
-    assert!(rebuilt.failed_indexes.is_empty());
-    let generation = reference
-        .index_access()
-        .read_latest_generation(execution, index, &branch)
-        .unwrap()
-        .unwrap();
-    let DerivedIndexEntries::EntityField(entries) = &generation.entries else {
-        panic!("actual entity index");
+    let expected_index_keys = if let Some(index) = index {
+        let rebuilt = reference.index_authority().build_for_commit(
+            execution,
+            DerivedIndexBuildRequest {
+                source_commit_id: merged.commit.commit.commit_id,
+                branch_id: branch.clone(),
+                index_ids: vec![index],
+            },
+        );
+        assert!(rebuilt.failed_indexes.is_empty());
+        let generation = reference
+            .index_access()
+            .read_latest_generation(execution, index, &branch)
+            .unwrap()
+            .unwrap();
+        let DerivedIndexEntries::EntityField(entries) = &generation.entries else {
+            panic!("actual entity index");
+        };
+        assert!(!entries.is_empty());
+        entries.keys().cloned().collect()
+    } else {
+        Vec::new()
     };
-    assert!(!entries.is_empty());
-    let expected_index_keys = entries.keys().cloned().collect();
     let (recovery, source, _) = checkpoint_fixture(execution, producer, member, false);
     #[derive(serde::Deserialize)]
     struct Input {
@@ -186,6 +203,7 @@ fn recovered_shape(
     Fixture {
         index,
         expected_index_keys,
+        expected_merge_version,
         runtime,
         source,
         manifest,
@@ -255,12 +273,27 @@ fn independent_merge_executes_from_a_real_cold_checkpoint() {
         runtime,
         source,
         expected,
+        expected_merge_version,
         ..
     } = recovered(execution);
     let prepared = runtime
         .prepare_merge_execution(execution, request())
         .unwrap();
     assert!(source.reads.load(Ordering::Relaxed) > 0);
+    let index = runtime.index_access().definitions_snapshot()[0].index_id;
+    let (_, basis) = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    let recovered = runtime.index_authority().build_for_basis(
+        execution,
+        DerivedIndexBuildRequest {
+            source_commit_id: basis.observation().commit_id().unwrap(),
+            branch_id: BranchId("main".into()),
+            index_ids: vec![index],
+        },
+        &basis,
+    );
+    assert!(recovered.failed_indexes.is_empty(), "{recovered:?}");
     let outcome = runtime.execute_prepared_merge(execution, prepared).unwrap();
     assert_eq!(outcome.structural_summary.adopted_source_record_count, 1);
     assert_eq!(changed_entities(&outcome.commit).len(), 1);
@@ -274,7 +307,12 @@ fn independent_merge_executes_from_a_real_cold_checkpoint() {
         3,
         "main retains its own records and the adopted feature record"
     );
-    assert_merge_records(view.entities(), &expected);
+    assert_merge_records(
+        view.entities(),
+        &expected,
+        expected_merge_version,
+        outcome.commit.version_id,
+    );
 }
 
 #[path = "cold_merge_member_matrix.rs"]
@@ -286,6 +324,8 @@ fn assert_merge_records(
         crate::identity::data::EntityId,
         crate::storage::data::EntityReadRecord,
     >,
+    expected_merge_version: crate::identity::data::VersionId,
+    actual_merge_version: crate::identity::data::VersionId,
 ) {
     assert_eq!(actual.len(), expected.len());
     // Abandoned preparation rounds may burn identities. Compare immutable
@@ -302,7 +342,12 @@ fn assert_merge_records(
             .expect("each record has the memory reference's value");
         assert_eq!(row.kind, counterpart.kind);
         assert_eq!(row.lifecycle, counterpart.lifecycle);
-        assert_eq!(row.created_at_version, counterpart.created_at_version);
+        let expected_creation = if counterpart.created_at_version == expected_merge_version {
+            actual_merge_version
+        } else {
+            counterpart.created_at_version
+        };
+        assert_eq!(row.created_at_version, expected_creation);
         assert_eq!(row.retired_at_version, counterpart.retired_at_version);
         assert_eq!(row.lineage_id.is_some(), counterpart.lineage_id.is_some());
     }

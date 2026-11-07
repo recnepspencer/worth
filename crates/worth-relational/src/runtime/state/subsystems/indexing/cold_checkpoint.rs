@@ -91,6 +91,10 @@ impl DeferredIndexImage {
                     crate::durability::data::RelationalRecoveryStop::Content(cause) => {
                         Failure::Content(cause)
                     }
+                    crate::durability::data::RelationalRecoveryStop::Durability(error) => error
+                        .storage_unavailable
+                        .map(Failure::StorageUnavailable)
+                        .unwrap_or_else(|| Failure::StorageUnavailable(refusal(Cause::Damaged))),
                     _ => Failure::StorageUnavailable(refusal(Cause::Damaged)),
                 })?;
             }

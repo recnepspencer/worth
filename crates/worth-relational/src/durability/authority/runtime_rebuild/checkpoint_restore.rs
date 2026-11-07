@@ -48,6 +48,9 @@ pub(super) fn restore_checkpoint_state(
         restored
             .indexes
             .install_cold_checkpoint(directory, restored)?;
+        restored
+            .index_authority()
+            .recover_installed_index_routing(execution)?;
         super::unshared_state(restored)?
             .durability
             .push_checkpoint(checkpoint);
@@ -55,6 +58,9 @@ pub(super) fn restore_checkpoint_state(
     }
     let prepared = prepare_checkpoint_state(execution, restored, &checkpoint, work)?;
     install_checkpoint_state(super::unshared_state(restored)?, prepared);
+    restored
+        .index_authority()
+        .recover_installed_index_routing(execution)?;
     if let Some(artifact) = &checkpoint.derived_index_checkpoint {
         crate::indexes::verify_checkpoint_index_bases(
             execution,

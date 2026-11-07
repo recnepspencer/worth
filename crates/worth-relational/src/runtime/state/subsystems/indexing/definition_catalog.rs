@@ -222,6 +222,10 @@ mod tests {
         let mut added = old.entity_kinds.get(&KindId(1)).unwrap().clone();
         added.kind_id = KindId(91);
         added.kind_name = "new-index-covered-kind".into();
+        added
+            .aspect_contract_declarations
+            .identity_declarations
+            .clear();
         let new = old.clone().register_entity_kind(added).unwrap();
         assert_eq!(
             old.primary_schema_version_id(),
