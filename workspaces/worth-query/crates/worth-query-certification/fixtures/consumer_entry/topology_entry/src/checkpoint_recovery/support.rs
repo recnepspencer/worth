@@ -1,6 +1,5 @@
 mod bootstrap_funding;
 mod execution_policy;
-pub(super) use execution_policy::checkpoint_capture_request;
 pub(super) mod observation;
 use std::sync::{
     atomic::{AtomicBool, AtomicUsize},
