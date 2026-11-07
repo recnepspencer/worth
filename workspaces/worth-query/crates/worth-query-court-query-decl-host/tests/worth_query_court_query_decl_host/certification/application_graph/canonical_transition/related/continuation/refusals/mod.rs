@@ -23,15 +23,17 @@ fn changed_codec_continuation_swallowed_refusal_and_original_cancellation_never_
     let (funded, report) = native::resume(&original, token, &request_scope(), 8_000_000);
     assert!(funded.unwrap().continuation().is_none());
     assert_eq!(output::ignored_refusals(), 0);
-    let worth_foundational::facade::AspectValue::String(
-        worth_foundational::facade::InternedString::Raw(wire),
-    ) = output::DerivedBinding::encode(&output::calculate(&journey::heavy())).unwrap()
+    let worth_foundational::facade::AspectValue::String(wire) =
+        output::DerivedBinding::encode(&output::calculate(&journey::heavy())).unwrap()
     else {
         panic!("canonical carrier is a string")
     };
+    let wire = wire
+        .raw_text()
+        .expect("canonical string carrier is textual");
     let narrow = report
         .charged_work()
-        .checked_sub(u64::try_from(wire.len() * 3 / 2).unwrap())
+        .checked_sub(u64::try_from(wire.len() / 2).unwrap())
         .unwrap();
     projection::reset();
     output::reset_decodes();

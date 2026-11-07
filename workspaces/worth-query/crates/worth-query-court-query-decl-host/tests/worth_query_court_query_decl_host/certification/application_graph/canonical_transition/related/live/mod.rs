@@ -75,16 +75,18 @@ fn changed_codec_live_swallowed_refusal_and_cancelled_domain_error_cannot_ack() 
         funded.close(),
         WorthQueryApplicationLiveCloseOutcome::Completed(_)
     ));
-    let worth_foundational::facade::AspectValue::String(
-        worth_foundational::facade::InternedString::Raw(wire),
-    ) = successor::output::DerivedBinding::encode(&successor::output::calculate(&journey::heavy()))
-        .unwrap()
+    let worth_foundational::facade::AspectValue::String(wire) =
+        successor::output::DerivedBinding::encode(&successor::output::calculate(&journey::heavy()))
+            .unwrap()
     else {
         panic!("canonical value is a string carrier")
     };
+    let wire = wire
+        .raw_text()
+        .expect("canonical string carrier is textual");
     let narrow = report
         .charged_work()
-        .checked_sub(u64::try_from(wire.len() * 3 / 2).unwrap())
+        .checked_sub(u64::try_from(wire.len() / 2).unwrap())
         .unwrap();
     let mut limited = successor::live_native::open(&target);
     publish_target(&target, 180312);

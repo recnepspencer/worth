@@ -96,14 +96,15 @@ fn changed_codec_retained_snapshot_keeps_original_pin_and_latched_completion() {
             assert_eq!(output::literals(&b.unwrap()).1, 96);
             assert_eq!(output::ignored_refusals(), 0);
             let worth_foundational::facade::AspectValue::String(
-                worth_foundational::facade::InternedString::Raw(wire),
+                wire,
             ) = output::DerivedBinding::encode(&output::calculate(&journey::heavy())).unwrap()
             else {
                 panic!("canonical carrier")
             };
-            let narrow = report
+            let wire = wire.raw_text().expect("canonical string carrier is textual");
+let narrow = report
                 .charged_work()
-                .checked_sub(u64::try_from(wire.len() * 3 / 2).unwrap())
+                .checked_sub(u64::try_from(wire.len() / 2).unwrap())
                 .unwrap();
             let (denied, first, returned, _) = run(narrow, true);
             assert!(first && returned);

@@ -196,15 +196,16 @@ pub fn reconstruct(host: &host::Host, expected: i64, exercise_stops: bool) -> Re
             if exercise_stops {
                 view.discard();
                 let worth_foundational::facade::AspectValue::String(
-                    worth_foundational::facade::InternedString::Raw(wire),
+                    wire,
                 ) = output::DerivedBinding::encode(&output::calculate(&super::heavy_value()))
                     .unwrap()
                 else {
                     panic!("real canonical carrier")
                 };
-                let narrow = funded
+                let wire = wire.raw_text().expect("canonical string carrier is textual");
+let narrow = funded
                     .charged_work()
-                    .checked_sub(u64::try_from(wire.len() * 3 / 2).unwrap())
+                    .checked_sub(u64::try_from(wire.len() / 2).unwrap())
                     .unwrap();
                 let (refused, projected, _) = run(narrow, false);
                 let Err(WorthQueryManagedDerivedViewDenial::ReadDenied{denial,..})=refused else {panic!("late admitted pair decode must retain its precise native read denial: {refused:?}")};

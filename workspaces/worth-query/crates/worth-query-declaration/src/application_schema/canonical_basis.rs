@@ -144,9 +144,9 @@ impl ApplicationSchemaCanonicalBasis {
     ) {
         for entry in source.payload().entries() {
             let name = match entry.locus() {
-                CanonicalBasisLocus::Named(worth_foundational::facade::InternedString::Raw(
-                    name,
-                )) => name,
+                CanonicalBasisLocus::Named(name) => name
+                    .raw_text()
+                    .expect("application schema embeds named text loci"),
                 _ => unreachable!("application schema embeds named raw canonical loci"),
             };
             let locus = format!("{locus_prefix}.{name}");
