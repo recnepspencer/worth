@@ -27,7 +27,9 @@ pub use home_transition_plan::{
 pub use home_transition_target::{
     HomeProgramTransitionCatalogDigest, HomeProgramTransitionTargetMeaning,
 };
+mod signal_identity;
 mod world_identity;
+pub use signal_identity::*;
 mod world_journal;
 pub use world_identity::*;
 pub use world_journal::WorldDurableJournal;

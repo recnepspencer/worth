@@ -10,6 +10,10 @@ pub const SIGNAL_AUTHORED_IMAGE_PROTOCOL: BoundaryProtocolIdentity =
     BoundaryProtocolIdentity::new("worth.signal.authored-image");
 pub const SIGNAL_AUTHORED_IMAGE_VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(1);
 
+pub(super) fn validate_bytes(bytes: &[u8]) -> Result<(), SignalAuthoredImageDenial> {
+    codec::validate(framing::payload(bytes)?)
+}
+
 /// Descriptive source bytes. Admission validates the format, not operational ownership.
 /// Only Signal owner readmission may turn this source into live branch authority.
 #[derive(Debug, Clone)]
