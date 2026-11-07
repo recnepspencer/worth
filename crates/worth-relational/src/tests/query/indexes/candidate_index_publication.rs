@@ -102,102 +102,95 @@ fn expired_candidate_denies_index_preflight_with_lifetime_not_missing_generation
 }
 
 #[test]
-fn candidate_indexes_deny_before_effect_then_publish_exact_cold_generation_on_settlement() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
+fn native_empty_predecessor_and_seeded_updates_match_cold_at_every_step() {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
     let runtime = runtime_with_index_field_aspects();
-    let first = create_entity_outcome(execution, &runtime, "before");
-    let entity = changed_entities(&first)[0];
     let index_id = index(&runtime);
-    let mut candidate = candidate_for_update(execution, &runtime, entity, "after");
-    let commit_id = candidate
-        .index_preparation_roots()
-        .unwrap()
-        .1
-        .commit_id()
-        .unwrap();
-    let denied = runtime
-        .index_authority()
-        .prepare_for_candidate(
-            &mut candidate,
-            &[index_id],
-            Some(&first.snapshot),
-            budget(0),
-            execution,
-        )
-        .unwrap_err();
-    assert_eq!(
-        denied.kind,
-        DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired
-    );
-    assert!(runtime
-        .indexes
-        .derived_artifacts_for_commit(commit_id)
-        .is_empty());
-
-    let work = runtime
-        .index_authority()
-        .prepare_for_candidate(
-            &mut candidate,
-            &[index_id],
-            Some(&first.snapshot),
-            budget(100),
-            execution,
+    let mut transaction = test_owner_begin_transaction_for_main(&runtime);
+    transaction
+        .push_batch(
+            batch_create("initial"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    assert_eq!(work.generation_publications_reserved, 1);
-    assert!(work.cold_record_slots > 0);
-    assert!(runtime
-        .indexes
-        .derived_artifacts_for_commit(commit_id)
-        .is_empty());
-    let duplicate = runtime
-        .index_authority()
-        .prepare_for_candidate(
-            &mut candidate,
-            &[index_id],
-            Some(&first.snapshot),
-            budget(100),
-            execution,
-        )
-        .unwrap_err();
-    assert_eq!(
-        duplicate.kind,
-        DerivedIndexMaintenanceDenialKind::CandidateIndexesAlreadyPrepared
+    let first = publish_native(
+        execution,
+        &runtime,
+        runtime
+            .prepare_branch_transaction(execution, transaction)
+            .unwrap(),
     );
+    let entity = changed_entities(&first)[0];
+    let mut previous = first;
+    let mut court = worth_testkit_relational::maintenance::MaintainedCourt::new(
+        "native_indexes",
+        Arc::new(Vec::new()),
+    );
+    for ordinal in 0..16 {
+        let candidate = candidate_for_update(
+            execution,
+            &runtime,
+            entity,
+            &format!("seeded-{}", (ordinal * 7) % 11),
+        );
+        let next = publish_native(execution, &runtime, candidate);
+        let maintained = runtime
+            .indexes
+            .published_generation_for_commit(
+                index_id,
+                Some(&next.commit.branch_id),
+                next.commit.commit_id,
+                next.commit.version_id,
+            )
+            .unwrap();
+        let cold = runtime.index_authority().build_for_commit(
+            execution,
+            DerivedIndexBuildRequest {
+                source_commit_id: next.commit.commit_id,
+                branch_id: next.commit.branch_id.clone(),
+                index_ids: vec![index_id],
+            },
+        );
+        assert!(cold.failed_indexes.is_empty());
+        court
+            .check_against_cold::<DerivedIndexMaintenanceDenialKind>(
+                Arc::new(vec![maintained.entries.clone()]),
+                Arc::new(vec![cold.generations[0].entries.clone()]),
+                |left, right| left == right,
+            )
+            .unwrap();
+        release_test_commit_snapshot(&runtime, &previous);
+        previous = next;
+    }
+    release_test_commit_snapshot(&runtime, &previous);
+}
 
+pub(super) fn publish_native(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    mut candidate: crate::mvcc::PreparedRelationalCommitCandidate,
+) -> crate::transactions::data::CommitResult {
+    // Root-only owner court; when P1's caller is present its prepared payload is used.
+    if !candidate.indexes_already_prepared() {
+        let (before, after) = candidate.index_preparation_roots().unwrap();
+        let prepared = runtime
+            .indexes
+            .definition_read_binding()
+            .prepare_publication(execution, &before, &after, after.commit_change().unwrap())
+            .unwrap()
+            .unwrap();
+        assert_eq!(prepared.work().cold_record_slots, 0);
+        assert!(prepared.matches_root(&after));
+        candidate.attach_prepared_indexes(prepared).unwrap();
+    }
     let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
         .publication_port()
         .compare_and_publish(execution, candidate)
     else {
-        panic!("candidate must publish");
+        panic!("native candidate publishes");
     };
-    assert!(runtime
-        .indexes
-        .derived_artifacts_for_commit(commit_id)
-        .is_empty());
-    let second = runtime.settle_performed_publication(performed).unwrap();
-    let generation = runtime
-        .indexes
-        .published_generation_for_commit(
-            index_id,
-            Some(&BranchId("main".into())),
-            commit_id,
-            second.commit.version_id,
-        )
-        .unwrap();
-    let DerivedIndexEntries::EntityField(entries) = &generation.entries else {
-        panic!("entity field index");
-    };
-    let after_key =
-        AuthoritativeFieldComparisonKey::from_aspect_value(&string_aspect_value("after"));
-    let before_key =
-        AuthoritativeFieldComparisonKey::from_aspect_value(&string_aspect_value("before"));
-    assert_eq!(entries.get(&after_key).unwrap().get(0), Some(&entity));
-    assert!(entries.get(&before_key).is_none());
-    release_test_commit_snapshot(&runtime, &first);
-    release_test_commit_snapshot(&runtime, &second);
+    runtime.settle_performed_publication(performed).unwrap()
 }
 
 #[test]
@@ -209,6 +202,18 @@ fn candidate_index_work_exhaustion_leaves_the_candidate_unpublished_and_retryabl
     let first = create_entity_outcome(execution, &runtime, "before");
     let entity = changed_entities(&first)[0];
     let index_id = index(&runtime);
+    assert!(runtime
+        .index_authority()
+        .build_for_commit(
+            execution,
+            DerivedIndexBuildRequest {
+                source_commit_id: first.commit.commit_id,
+                branch_id: first.commit.branch_id.clone(),
+                index_ids: vec![index_id],
+            }
+        )
+        .failed_indexes
+        .is_empty());
     let mut candidate = candidate_for_update(execution, &runtime, entity, "after");
     let commit_id = candidate
         .index_preparation_roots()
@@ -277,6 +282,18 @@ fn discarded_prepared_candidate_does_not_expose_index_generation() {
     let first = create_entity_outcome(execution, &runtime, "before");
     let entity = changed_entities(&first)[0];
     let index_id = index(&runtime);
+    assert!(runtime
+        .index_authority()
+        .build_for_commit(
+            execution,
+            DerivedIndexBuildRequest {
+                source_commit_id: first.commit.commit_id,
+                branch_id: first.commit.branch_id.clone(),
+                index_ids: vec![index_id],
+            }
+        )
+        .failed_indexes
+        .is_empty());
     let mut candidate = candidate_for_update(execution, &runtime, entity, "abandoned");
     let commit_id = candidate
         .index_preparation_roots()

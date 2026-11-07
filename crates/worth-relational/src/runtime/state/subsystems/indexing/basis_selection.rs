@@ -334,20 +334,6 @@ impl IndexingSubsystem {
             state: Arc::clone(&previous.state),
         })
     }
-    pub(crate) fn bind_published_generations(
-        &self,
-        basis: &mut PreparedIndexBasisSelection,
-        generations: &[DerivedIndexGeneration],
-        prepare: &mut dyn FnMut(u64, u64) -> Result<(), Denial>,
-    ) -> Result<(), Denial> {
-        let state = self.state.read();
-        for generation in generations {
-            if let Some(payload) = state.generations.generation(generation.generation_id) {
-                basis.replace_admitted(payload, prepare)?;
-            }
-        }
-        Ok(())
-    }
     pub(crate) fn install_basis_selection(&self, basis: PreparedIndexBasisSelection) {
         self.state.write().bases.install(basis);
     }

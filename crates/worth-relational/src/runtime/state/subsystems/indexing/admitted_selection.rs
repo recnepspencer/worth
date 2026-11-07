@@ -5,23 +5,6 @@ use crate::mvcc::RelationalBranchObservation;
 use super::{generation_catalog::navigation_work, IndexingSubsystem};
 
 impl IndexingSubsystem {
-    pub(crate) fn publish_generations_admitted<Stop>(
-        &self,
-        generations: &[crate::indexes::data::DerivedIndexGeneration],
-        mut prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
-    ) -> Result<(), SelectedIndexGenerationAdmissionStop<Stop>> {
-        let mut state = self.state.write();
-        state
-            .bases
-            .quote_updates(generations, false, &mut prepare)?;
-        state
-            .generations
-            .publish_batch_admitted(generations, &mut prepare)?;
-        for generation in generations {
-            state.record_basis_generation(generation.generation_id);
-        }
-        Ok(())
-    }
     pub(crate) fn maintenance_inputs_admitted<Stop>(
         &self,
         index: DerivedIndexId,

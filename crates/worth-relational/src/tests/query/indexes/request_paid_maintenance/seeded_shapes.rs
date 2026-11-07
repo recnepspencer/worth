@@ -107,6 +107,21 @@ fn prove_shapes(shapes: impl IntoIterator<Item = (usize, usize)>) {
         }
         let (paid, report) = execution
             .run(ExecutionWorkCeiling::new(None), |_| {
+                let mut missing = request.clone();
+                missing.index_ids = indexes
+                    .iter()
+                    .enumerate()
+                    .filter(|(field, _)| (seed >> field) & 1 == 0)
+                    .map(|(_, index)| *index)
+                    .collect();
+                if !missing.index_ids.is_empty() {
+                    runtime.index_authority().reconstruct_for_basis(
+                        execution,
+                        missing,
+                        &basis,
+                        cold_budget(),
+                    )?;
+                }
                 runtime.index_authority().refresh_for_basis(
                     request.clone(),
                     &basis,
@@ -237,6 +252,23 @@ fn prove_commit_paths(
                 .unwrap();
         }
     }
+    let (_, basis) = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    let mut missing = request.clone();
+    missing.index_ids = request
+        .index_ids
+        .iter()
+        .enumerate()
+        .filter(|(field, _)| (seed >> field) & 1 == 0)
+        .map(|(_, index)| *index)
+        .collect();
+    if !missing.index_ids.is_empty() {
+        runtime
+            .index_authority()
+            .reconstruct_for_basis(execution, missing, &basis, cold_budget())
+            .unwrap();
+    }
     let transaction = test_owner_begin_transaction_for_main(runtime);
     let mut candidate = runtime
         .prepare_branch_transaction(execution, transaction)
@@ -277,7 +309,7 @@ fn prove_commit_paths(
         if (seed >> field) & 1 != 0 {
             assert_eq!(new.generation_id, old.generation_id);
         } else {
-            assert_eq!(new.source_commit_id, committed.commit.commit_id);
+            assert_eq!(new.source_commit_id, created.commit.commit_id);
         }
     }
     release_test_commit_snapshot(runtime, &committed);

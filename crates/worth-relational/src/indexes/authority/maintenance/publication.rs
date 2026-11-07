@@ -57,23 +57,25 @@ impl PreparedRefresh {
             .and_then(|n| n.checked_mul(4))
             .ok_or(Denial::WorkBudgetExceeded)?;
         work.prepare(comparisons as u64, 0)?;
-        runtime
+        work.array::<DerivedIndexGeneration>(generations.len())?;
+        for generation in &generations {
+            let width =
+                generation.source_branch_id.0.len() + generation.applicability.branch_id.0.len();
+            work.prepare(width as u64 + 1, width as u64)?;
+        }
+        let publication = runtime
             .indexes
-            .publish_generations_admitted(&generations, |units, bytes| work.prepare(units, bytes))
+            .prepare_generation_batch(generations.clone(), self.basis.take(), |units, bytes| {
+                work.prepare(units, bytes)
+            })
             .map_err(|stop| match stop {
                 SelectedIndexGenerationAdmissionStop::Admission(stop) => stop,
                 SelectedIndexGenerationAdmissionStop::AccountingOverflow => {
                     Denial::WorkBudgetExceeded
                 }
             })?;
-        if let Some(mut basis) = self.basis.take() {
-            runtime.indexes.bind_published_generations(
-                &mut basis,
-                &generations,
-                &mut |units, bytes| work.prepare(units, bytes),
-            )?;
-            runtime.indexes.install_basis_selection(basis);
-        }
+        // All work, allocation, generation issuance and binding quotes precede effects.
+        publication.publish();
         generations.extend(self.reused);
         generations.sort_unstable_by_key(|generation| generation.index_id);
         Ok(generations)
