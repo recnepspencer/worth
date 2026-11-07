@@ -318,3 +318,35 @@ fn actual_successor_supplements_equal_independent_head_and_full_closure_differen
         previous = current;
     }
 }
+
+#[test]
+fn published_head_still_refuses_a_forged_owned_historical_kind_claim() {
+    let fixture = region_with_history();
+    let request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&request);
+    let original = region_load::load_head(&fixture.cold, execution, 1 << 24).unwrap();
+    let mut partition = original.partition.clone();
+    let forged = crate::identity::data::RelationId::new(
+        fixture.relation.partition_id,
+        fixture.relation.slot_index() as u64,
+        fixture.relation.generation_value() + 1,
+    );
+    partition
+        .adjacency
+        .get_mut(fixture.entity.slot_index())
+        .unwrap()
+        .index_historical_kind(KindId(99), forged);
+    let published = RelationalRegionResidency::resident_head(
+        partition,
+        original.commitment.clone().unwrap(),
+        original.kind_indexes.clone().unwrap(),
+        original.history_presence,
+        fixture.cold.schema.clone(),
+        &fixture.cold.symbols,
+    );
+    let accepted = published.head_view();
+    let refused = full_demand(published.cell(), 1 << 24).unwrap_err();
+    assert_eq!(refused.cause, Cause::IntegrityMismatch);
+    assert!(accepted.entity(fixture.entity).is_some());
+    assert_eq!(full_demand(published.cell(), 1 << 24).unwrap_err(), refused);
+}

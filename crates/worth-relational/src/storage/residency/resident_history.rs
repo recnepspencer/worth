@@ -104,11 +104,22 @@ impl ResidentHistoryReadmission {
                 .map_err(|_| refuse(Cause::Damaged))?;
             partition.adjacency = head.partition.adjacency.clone();
             partition.reverse_adjacency = head.partition.reverse_adjacency.clone();
-            let projection = super::kind_projection::capture(
-                lane,
-                &head.partition,
-                AdjacencyKindBasis::Historical,
-            )
+            let projection = if head.kind_indexes.is_some() {
+                // Published Head carries authenticated kind authority. Its
+                // supplied claims must still equal independently restored rows.
+                super::kind_projection::capture(
+                    lane,
+                    &head.partition,
+                    AdjacencyKindBasis::Historical,
+                )
+            } else {
+                // The mutable mirror has no committed kind authority. Retention
+                // and slot reuse can discard owned generations while their
+                // optional adjacency cache still names them. Reconstruct local
+                // claims from restored truth; peer claims stay carried, and the
+                // independent content commitment below checks all owned bytes.
+                super::kind_projection::canonical_history(lane, &partition)
+            }
             .map_err(refuse)?;
             super::kind_projection::rebuild(
                 lane,
