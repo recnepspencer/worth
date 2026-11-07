@@ -1,0 +1,12 @@
+# Exact constructor callers only; there is no crate-wide owner exemption.
+# Cold restore and lazy readmission of untrusted region/history bytes.
+crates/worth-relational/src/storage/residency/region_load.rs
+crates/worth-relational/src/storage/residency/resident_history.rs
+crates/worth-relational/src/storage/residency/history_fold.rs
+# Checkpoint export verification and checkpoint image import.
+crates/worth-relational/src/storage/residency/region_capture.rs
+crates/worth-relational/src/storage/residency/checkpoint_kind_images.rs
+# The first image of a new region has no maintained predecessor.
+crates/worth-relational/src/storage/residency/region_initialization.rs
+# Generic certification oracle; never a production fallback.
+crates/worth-testkit-relational/src/maintenance.rs

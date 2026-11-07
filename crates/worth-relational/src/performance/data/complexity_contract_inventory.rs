@@ -42,13 +42,14 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
     ComplexityContract {
         id: "runtime.partition_edition.acquire",
         function_path: "runtime/state/subsystems/storage/partition_edition.rs::PartitionEdition, runtime/state/runtime_state/partition_edition_access.rs::RelationalRuntimeState::acquire_partition_edition",
-        declared_time_complexity: "O(1) per acquisition. A write under an outstanding edition copies O(partitions) spine handles, O(1) partition handles, then only changed persistent column/index paths; each copy lane is counted",
-        budget_summary: "Readers must be lent the partition spine under one reference-count acquisition rather than handed a deep copy of every partition and slot. Owning the spine is not owning the partitions behind it, so the per-partition copy-on-write a write is forced into is counted separately from the spine and attributed to the ordinary or reconstructive lane rather than absorbed silently.",
+        declared_time_complexity: "O(1) per acquisition; observed writes share the persistent spine and copy O(log(partitions)) map paths plus changed partition column/index paths",
+        budget_summary: "Readers retain an immutable persistent root. The original maintenance request admits bounded remove/reinsert paths; only observed partition payload detachments are counted in their ordinary or reconstructive lane. Fixed-edit growth and untouched-cell identity guard spine sharing.",
         status: ComplexityStatus::Verified,
         proof_tests: &[
+            "runtime::state::subsystems::storage::partition_edition::cost::observed_small_write_shares_the_spine_as_partition_count_doubles",
             "tests::complexity::contracts::commit_budgets::partition_local_commit::complexity_contract_partition_edition_acquisition_is_declared_and_measured",
             "tests::complexity::contracts::substrate_edition_budgets::edition_copy_lanes::complexity_budget_ordinary_commit_copies_neither_lane_of_the_substrate",
-            "tests::complexity::contracts::substrate_edition_budgets::edition_copy_lanes::complexity_budget_write_under_an_outstanding_reader_copies_the_spine_once",
+            "tests::complexity::contracts::substrate_edition_budgets::edition_copy_lanes::complexity_budget_write_under_an_outstanding_reader_detaches_observed_payload",
             "tests::complexity::contracts::substrate_edition_budgets::edition_copy_lanes::complexity_budget_forking_defers_copy_cost_until_a_partition_is_written",
             "tests::complexity::contracts::substrate_edition_budgets::edition_copy_lanes::complexity_budget_read_only_retention_sweep_pins_one_edition_for_every_slot",
             "tests::complexity::contracts::substrate_edition_budgets::partition_copy_on_write::complexity_budget_unobserved_write_copies_no_partition",

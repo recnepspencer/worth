@@ -53,9 +53,10 @@ impl<S> MaintainedCourt<S> {
             )
         })
         .map_err(MaintenanceCourtFailure::Apply)?;
-        let rebuilt =
-            ReconstructionLane::recover(execution, |lane, work| maintainer.cold(lane, work))
-                .map_err(MaintenanceCourtFailure::Reconstruction)?;
+        let rebuilt = ReconstructionLane::enter_reconstruction(|lane| {
+            lane.recover(execution, |lane, work| maintainer.cold(lane, work))
+        })
+        .map_err(MaintenanceCourtFailure::Reconstruction)?;
         self.check_against_cold(updated, rebuilt, equivalent)
     }
 }

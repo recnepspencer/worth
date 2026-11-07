@@ -1,3 +1,6 @@
+pub use crate::execution::phase_observation::{
+    observe_maintenance_work, MaintenancePhaseWork, MaintenanceWorkObservation,
+};
 pub use crate::history::retention::RelationalRetentionCostCounters;
 pub use crate::inspection::data::{
     CommitInspection, ConnectivityComponentSummary, ConnectivityInspectionBudget,

@@ -111,7 +111,11 @@ fn rehashed_cross_region_kind_forgery_is_refused_by_the_canonical_root() {
     )
     .unwrap();
     members.insert(locator, bytes.into());
-    let commitment = super::super::kind_commitment::digest(&head.kind_projection).unwrap();
+    let commitment = super::super::kind_commitment::digest(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &head.kind_projection,
+    )
+    .unwrap();
     for forged in wire
         .manifest
         .roots

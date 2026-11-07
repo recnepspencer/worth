@@ -10,8 +10,11 @@ use worth_relational::facade::{
     transactions::{CommitResult, CreateIntent, MutationIntent, RecordRef, WorkerIntentBatch},
 };
 
+mod commit_growth;
+
 #[test]
 fn public_scale_small_edits_on_growing_model() {
+    commit_growth::assert_public_growth();
     let request = SerialRequest::from_policy(
         &ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
@@ -91,4 +94,73 @@ fn commit_batch(
         .push_batch(batch, execution.allocation_policy())
         .unwrap();
     transaction.commit(execution, &world.runtime).unwrap()
+}
+#[test]
+fn phase_observation_includes_nested_kind_work_without_changing_the_bill() {
+    use worth_relational::facade::inspection::{
+        observe_maintenance_work, MaintenanceWorkObservation,
+    };
+    fn run(observed: bool) -> (u64, MaintenanceWorkObservation) {
+        let request = SerialRequest::from_policy(
+            &ExecutionRequestPolicy::new(
+                ExecutionPosture::Serial,
+                DeterminismContract::CanonicalBitwise,
+                ExecutionBudget::new(
+                    std::num::NonZeroUsize::MIN,
+                    Some(64 * 1024 * 1024),
+                    Some(8_000_000),
+                ),
+            ),
+            CancellationSource::new().token(),
+            None,
+        );
+        let execution = ExecutionRequest::serial(&request);
+        let mut world = World::new();
+        world.create(&execution, 7, "left");
+        world.create(&execution, 7, "right");
+        let intent = world.relation_intent(0, 1, 7, "edge");
+        let ((commit, observation), report) = execution
+            .run(worth_execution::ExecutionWorkCeiling::new(None), |_| {
+                if observed {
+                    observe_maintenance_work(32, || world.commit(&execution, intent))
+                } else {
+                    (
+                        world.commit(&execution, intent),
+                        MaintenanceWorkObservation::default(),
+                    )
+                }
+            })
+            .unwrap();
+        let commit = commit.unwrap();
+        assert!(!commit.changed_records.is_empty());
+        world.release(&commit);
+        (report.charged_work(), observation)
+    }
+    let (ordinary, _) = run(false);
+    let (observed, observation) = run(true);
+    assert_eq!(
+        ordinary, observed,
+        "inspection must preserve the request bill"
+    );
+    assert_eq!(observation.omitted_phases, 0);
+    let work = |name| {
+        observation
+            .phases
+            .iter()
+            .filter(|row| row.phase == name)
+            .map(|row| {
+                assert!(row.accounted);
+                row.charged_work
+            })
+            .sum::<u64>()
+    };
+    let kind = work("kind_commitment");
+    assert!(
+        kind > 0,
+        "the real adopter must charge its projection/digest work"
+    );
+    assert!(
+        work("root_admission") >= kind,
+        "root admission includes region work"
+    );
 }

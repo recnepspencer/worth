@@ -14,6 +14,7 @@ use crate::storage::data::{
 };
 use crate::storage::overlay::PartitionContentCommitment;
 use crate::storage::partition::AdjacencyKindBasis;
+use crate::storage::substrate::maintenance::ReconstructionLane;
 use crate::storage::substrate::{EntityRecordKind, RecordArena, RecordKind, RelationRecordKind};
 use std::sync::Arc;
 
@@ -43,82 +44,90 @@ impl ResidentHistoryReadmission {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
     ) -> Result<Arc<ResidentRegion>, Failure> {
-        let partition_id = head.partition.partition_id;
-        let refuse = |cause| {
-            Failure::StorageUnavailable(RelationalStorageUnavailable {
-                subject: RelationalStorageSubject::Region(partition_id),
-                cause,
-            })
-        };
-        let contracts = CheckpointAspectContractCatalog::from_contracts(
-            self.schema.retained_aspect_contracts(),
-        )
-        .map_err(|_| refuse(Cause::Damaged))?;
-        // Owned current edits have no required acceleration cache. Derive
-        // their expected root from Head and authenticated prefix openings
-        // before reading any historical member, independently of folding.
-        self.symbols.demand_symbol_ids(
-            execution,
-            super::required_symbols::collect_head(&head.partition),
-        )?;
-        let expected = match &head.commitment {
-            Some(commitment) => commitment.clone(),
-            None => {
-                PartitionContentCommitment::capture_layered(
-                    &head.partition,
-                    &self.symbols.interner_snapshot(),
-                )
-                .map_err(|_| refuse(Cause::Damaged))?
-                .0
-            }
-        };
-        let mut image = partition_to_image_with_contracts(
-            head.partition.clone(),
-            self.schema.aspect_plans(),
-            &contracts,
-        )
-        .map_err(|_| refuse(Cause::Damaged))?;
-        let mut folder = HistoryFolder::new(execution, partition_id, limit);
-        restore_rows::<EntityRecordKind>(
-            &mut folder,
-            &head.partition.entity_arena,
-            &mut image.entity_arena.metadata_history,
-        )?;
-        restore_rows::<RelationRecordKind>(
-            &mut folder,
-            &head.partition.relation_arena,
-            &mut image.relation_arena.metadata_history,
-        )?;
-        let mut partition = partition_from_image(image, self.schema.aspect_plans(), &contracts)
+        ReconstructionLane::enter_reconstruction(|lane| {
+            let partition_id = head.partition.partition_id;
+            let refuse = |cause| {
+                Failure::StorageUnavailable(RelationalStorageUnavailable {
+                    subject: RelationalStorageSubject::Region(partition_id),
+                    cause,
+                })
+            };
+            let contracts = CheckpointAspectContractCatalog::from_contracts(
+                self.schema.retained_aspect_contracts(),
+            )
             .map_err(|_| refuse(Cause::Damaged))?;
-        partition.adjacency = head.partition.adjacency.clone();
-        partition.reverse_adjacency = head.partition.reverse_adjacency.clone();
-        let projection =
-            super::kind_projection::capture(&head.partition, AdjacencyKindBasis::Historical)
-                .map_err(refuse)?;
-        super::kind_projection::rebuild(
-            &mut partition,
-            &projection,
-            AdjacencyKindBasis::Historical,
-        )
-        .map_err(refuse)?;
-        self.symbols
-            .demand_symbol_ids(execution, super::required_symbols::collect(&partition))?;
-        let (commitment, _) = PartitionContentCommitment::capture(
-            &partition,
-            &self.symbols.interner_snapshot(),
-            None,
-        )
-        .map_err(|_| refuse(Cause::Damaged))?;
-        if commitment.digest(partition_id) != expected.digest(partition_id) {
-            return Err(refuse(Cause::IntegrityMismatch));
-        }
-        crate::execution::check_request(execution).map_err(Failure::Request)?;
-        Ok(Arc::new(ResidentRegion {
-            kind_indexes: Some(super::kind_admission::reconstruct(execution, &partition)?),
-            partition,
-            commitment: Some(commitment),
-        }))
+            // Owned current edits have no required acceleration cache. Derive
+            // their expected root from Head and authenticated prefix openings
+            // before reading any historical member, independently of folding.
+            self.symbols.demand_symbol_ids(
+                execution,
+                super::required_symbols::collect_head(&head.partition),
+            )?;
+            let expected = match &head.commitment {
+                Some(commitment) => commitment.clone(),
+                None => {
+                    PartitionContentCommitment::capture_layered(
+                        &head.partition,
+                        &self.symbols.interner_snapshot(),
+                    )
+                    .map_err(|_| refuse(Cause::Damaged))?
+                    .0
+                }
+            };
+            let mut image = partition_to_image_with_contracts(
+                head.partition.clone(),
+                self.schema.aspect_plans(),
+                &contracts,
+            )
+            .map_err(|_| refuse(Cause::Damaged))?;
+            let mut folder = HistoryFolder::new(execution, partition_id, limit);
+            restore_rows::<EntityRecordKind>(
+                &mut folder,
+                &head.partition.entity_arena,
+                &mut image.entity_arena.metadata_history,
+            )?;
+            restore_rows::<RelationRecordKind>(
+                &mut folder,
+                &head.partition.relation_arena,
+                &mut image.relation_arena.metadata_history,
+            )?;
+            let mut partition = partition_from_image(image, self.schema.aspect_plans(), &contracts)
+                .map_err(|_| refuse(Cause::Damaged))?;
+            partition.adjacency = head.partition.adjacency.clone();
+            partition.reverse_adjacency = head.partition.reverse_adjacency.clone();
+            let projection = super::kind_projection::capture(
+                lane,
+                &head.partition,
+                AdjacencyKindBasis::Historical,
+            )
+            .map_err(refuse)?;
+            super::kind_projection::rebuild(
+                lane,
+                &mut partition,
+                &projection,
+                AdjacencyKindBasis::Historical,
+            )
+            .map_err(refuse)?;
+            self.symbols
+                .demand_symbol_ids(execution, super::required_symbols::collect(&partition))?;
+            let (commitment, _) = PartitionContentCommitment::capture(
+                &partition,
+                &self.symbols.interner_snapshot(),
+                None,
+            )
+            .map_err(|_| refuse(Cause::Damaged))?;
+            if commitment.digest(partition_id) != expected.digest(partition_id) {
+                return Err(refuse(Cause::IntegrityMismatch));
+            }
+            crate::execution::check_request(execution).map_err(Failure::Request)?;
+            Ok(Arc::new(ResidentRegion {
+                kind_indexes: Some(super::kind_admission::reconstruct(
+                    lane, execution, &partition,
+                )?),
+                partition,
+                commitment: Some(commitment),
+            }))
+        })
     }
 }
 

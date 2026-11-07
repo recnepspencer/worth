@@ -4,6 +4,7 @@ use super::kind_projection::{ProjectionCheckpoint, ProjectionRetention};
 use crate::identity::data::{KindId, RelationId};
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use crate::storage::overlay::{PartitionMutationJournal, PartitionState};
+use crate::storage::substrate::maintenance::ReconstructionLane;
 use crate::storage::substrate::{
     RecordHistoryPrefix, RelationEndpoints, SharedColumn, SharedMap, StorageAllocationVisitor,
 };
@@ -17,6 +18,7 @@ type Edit = (KindId, RelationId, bool, usize, bool);
 pub(super) struct HistorySupports(SharedMap<Coordinate, (KindId, u64)>);
 impl HistorySupports {
     pub(super) fn capture(
+        _lane: &ReconstructionLane<'_>,
         partition: &PartitionState,
         checkpoint: &mut ProjectionCheckpoint<'_>,
     ) -> Result<Self, Cause> {

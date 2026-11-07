@@ -152,8 +152,13 @@ fn adopting_a_different_head_carries_its_owned_historical_projection_with_the_re
     assert_eq!(source.history_reads.load(Ordering::SeqCst), 0);
     let symbols = fixture.cold.symbols.interner_snapshot();
     let (commitment, _) = PartitionContentCommitment::capture_layered(&partial, &symbols).unwrap();
-    let kind_indexes =
-        Arc::new(super::super::kind_incremental::RegionKindIndexes::capture(&partial).unwrap());
+    let kind_indexes = Arc::new(
+        super::super::kind_incremental::RegionKindIndexes::capture(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            &partial,
+        )
+        .unwrap(),
+    );
     let owned = RelationalRegionResidency::resident_head(
         partial,
         commitment,
@@ -219,14 +224,34 @@ fn assert_owned_history(partial: &mut PartitionState, full: &mut PartitionState)
                 table.get_mut(slot).unwrap().reset_historical_kind_buckets();
             }
         }
-        super::super::rebuild_region_history_kind_buckets(partition).unwrap();
+        super::super::rebuild_region_history_kind_buckets(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            partition,
+        )
+        .unwrap();
     }
     assert_eq!(
-        super::super::kind_projection::canonical_history(partial).unwrap(),
-        super::super::kind_projection::canonical_history(full).unwrap()
+        super::super::kind_projection::canonical_history(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            partial
+        )
+        .unwrap(),
+        super::super::kind_projection::canonical_history(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            full
+        )
+        .unwrap()
     );
     assert_eq!(
-        super::super::RelationalRegionKindCommitment::capture(partial).unwrap(),
-        super::super::RelationalRegionKindCommitment::capture(full).unwrap()
+        super::super::RelationalRegionKindCommitment::capture(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            partial
+        )
+        .unwrap(),
+        super::super::RelationalRegionKindCommitment::capture(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            full
+        )
+        .unwrap()
     );
 }

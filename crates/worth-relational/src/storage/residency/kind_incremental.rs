@@ -5,6 +5,7 @@ use super::RelationalRegionKindCommitment;
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use crate::storage::overlay::{PartitionMutationJournal, PartitionState};
 use crate::storage::partition::AdjacencyKindBasis;
+use crate::storage::substrate::maintenance::ReconstructionLane;
 use crate::storage::substrate::StorageAllocationVisitor;
 
 #[derive(Debug, Clone)]
@@ -14,17 +15,23 @@ pub(super) struct RegionKindIndexes {
     pub(super) supports: super::kind_history::HistorySupports,
 }
 impl RegionKindIndexes {
-    pub(super) fn capture(partition: &PartitionState) -> Result<Self, Cause> {
-        Self::capture_controlled(partition, &mut |_, _| Ok(()))
+    pub(super) fn capture(
+        lane: &ReconstructionLane<'_>,
+        partition: &PartitionState,
+    ) -> Result<Self, Cause> {
+        Self::capture_controlled(lane, partition, &mut |_, _| Ok(()))
     }
     pub(super) fn capture_controlled(
+        lane: &ReconstructionLane<'_>,
         partition: &PartitionState,
         checkpoint: &mut ProjectionCheckpoint<'_>,
     ) -> Result<Self, Cause> {
         Ok(Self {
-            supports: super::kind_history::HistorySupports::capture(partition, checkpoint)?,
+            supports: super::kind_history::HistorySupports::capture(lane, partition, checkpoint)?,
             head: KindIndex::rebuild(
+                lane,
                 &super::kind_projection::capture_controlled(
+                    lane,
                     partition,
                     AdjacencyKindBasis::Current,
                     checkpoint,
@@ -32,7 +39,9 @@ impl RegionKindIndexes {
                 checkpoint,
             )?,
             history: KindIndex::rebuild(
+                lane,
                 &super::kind_projection::capture_controlled(
+                    lane,
                     partition,
                     AdjacencyKindBasis::Historical,
                     checkpoint,

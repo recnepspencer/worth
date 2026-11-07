@@ -15,17 +15,24 @@ impl ReconstructionWork<'_, '_> {
     }
 }
 impl ReconstructionLane<'_> {
+    /// Constructor restricted by the exact trust-boundary caller registry.
+    /// Ordinary SDK paths and downstream production adopters cannot mint one:
+    /// boundary-check rejects every constructor reference outside that registry.
+    pub fn enter_reconstruction<T>(operation: impl FnOnce(&ReconstructionLane<'_>) -> T) -> T {
+        let lane = Self {
+            _scope: std::marker::PhantomData,
+        };
+        operation(&lane)
+    }
     /// Explicit recovery verb. Cost: the recovered structure's named cold work;
     /// the original request still admits every traversal and allocation.
     pub fn recover<T, E: From<MaintenanceRefusal>>(
+        &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         operation: impl FnOnce(&ReconstructionLane<'_>, &mut ReconstructionWork<'_, '_>) -> Result<T, E>,
     ) -> Result<T, E> {
         ChangeWork::run(execution, |work| {
-            let lane = Self {
-                _scope: std::marker::PhantomData,
-            };
-            operation(&lane, &mut ReconstructionWork { work })
+            operation(self, &mut ReconstructionWork { work })
         })
     }
     #[cfg(test)]

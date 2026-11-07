@@ -40,17 +40,22 @@ fn normalize(
     budget: &SerialMemoryBudget,
 ) -> Result<super::super::RelationalRegionKindCommitment, Cause> {
     // Actual reservation values fund this fixture without driving SDK work.
-    kind_admission::normalize_value(partition, &mut |_, _| Ok(()), &mut |prior, bytes| {
-        let custody = super::retained_admission::admit(prior, bytes, &mut |bytes| {
-            budget.reserve(bytes).map(Some).map_err(|denial| {
-                crate::execution::denial::lease_denial(
-                    worth_execution::LeaseDenial::MemoryExhausted(denial),
-                )
+    kind_admission::normalize_value(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        partition,
+        &mut |_, _| Ok(()),
+        &mut |prior, bytes| {
+            let custody = super::retained_admission::admit(prior, bytes, &mut |bytes| {
+                budget.reserve(bytes).map(Some).map_err(|denial| {
+                    crate::execution::denial::lease_denial(
+                        worth_execution::LeaseDenial::MemoryExhausted(denial),
+                    )
+                })
             })
-        })
-        .expect("positive value fixture funding must admit");
-        Ok(custody)
-    })
+            .expect("positive value fixture funding must admit");
+            Ok(custody)
+        },
+    )
 }
 
 #[test]
@@ -87,7 +92,11 @@ fn normalization_preserves_literal_peer_claims_and_refuses_conflicting_kinds() {
     let mut partition = peer_partition();
     let budget = SerialMemoryBudget::new(Some(1 << 20));
     let commitment = normalize(&mut partition, &budget).unwrap();
-    let claims = kind_projection::canonical_history(&partition).unwrap();
+    let claims = kind_projection::canonical_history(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &partition,
+    )
+    .unwrap();
     assert_eq!(claims.len(), 1);
     assert_eq!(claims[0].relation, RelationId::new(PartitionId(11), 3, 1));
     assert_eq!(claims[0].kind, KindId(9));
@@ -104,7 +113,11 @@ fn normalization_preserves_literal_peer_claims_and_refuses_conflicting_kinds() {
         Err(Cause::IntegrityMismatch)
     );
     assert_eq!(
-        kind_commitment::digest(&[]).unwrap(),
+        kind_commitment::digest(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            &[]
+        )
+        .unwrap(),
         [
             124, 141, 64, 135, 143, 11, 198, 95, 76, 148, 197, 94, 181, 204, 245, 140, 200, 172,
             222, 42, 127, 107, 104, 209, 141, 141, 153, 139, 97, 85, 161, 41
@@ -150,10 +163,15 @@ fn historical_kind_funding_follows_clones_partial_adoption_and_replacement() {
 #[test]
 fn normalization_refuses_before_mutation_when_value_admission_refuses() {
     let mut partition = peer_partition();
-    let before = kind_projection::canonical_history(&partition).unwrap();
+    let before = kind_projection::canonical_history(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &partition,
+    )
+    .unwrap();
     let mut calls = Vec::new();
     assert_eq!(
         kind_admission::normalize_value(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
             &mut partition,
             &mut |work, bytes| {
                 calls.push((work, bytes));
@@ -165,7 +183,11 @@ fn normalization_refuses_before_mutation_when_value_admission_refuses() {
     );
     assert_eq!(calls, vec![(0, 65_536)]);
     assert_eq!(
-        kind_projection::canonical_history(&partition).unwrap(),
+        kind_projection::canonical_history(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            &partition
+        )
+        .unwrap(),
         before
     );
 }
@@ -179,6 +201,7 @@ fn digest_work_refusal_keeps_the_exact_value_checkpoint_cause() {
     let mut work = 0_u64;
     assert_eq!(
         kind_admission::normalize_value(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
             &mut partition,
             &mut |units, bytes| {
                 calls.push((units, bytes));

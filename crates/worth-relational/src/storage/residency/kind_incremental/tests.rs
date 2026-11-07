@@ -7,8 +7,16 @@ mod fixture;
 
 fn cold(partition: &PartitionState) -> RegionKindIndexes {
     let mut rebuilt = partition.clone();
-    crate::storage::residency::rebuild_region_history_kind_buckets(&mut rebuilt).unwrap();
-    RegionKindIndexes::capture(&rebuilt).unwrap()
+    crate::storage::residency::rebuild_region_history_kind_buckets(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &mut rebuilt,
+    )
+    .unwrap();
+    RegionKindIndexes::capture(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &rebuilt,
+    )
+    .unwrap()
 }
 
 #[test]

@@ -93,7 +93,7 @@ impl Maintained for KindMaintainer<'_, '_, '_> {
     }
     fn cold(
         &mut self,
-        _lane: &ReconstructionLane<'_>,
+        lane: &ReconstructionLane<'_>,
         work: &mut ReconstructionWork<'_, '_>,
     ) -> Result<Arc<Self::State>, Self::Error> {
         // cost-lane: reconstruction. Local history comes from the arena;
@@ -102,8 +102,8 @@ impl Maintained for KindMaintainer<'_, '_, '_> {
             self.execution,
             &mut |units, bytes| work.prepare(units, bytes),
             &mut |checkpoint, retain| {
-                super::normalize_value(self.partition, checkpoint, retain)?;
-                RegionKindIndexes::capture_controlled(self.partition, checkpoint)
+                super::normalize_value(lane, self.partition, checkpoint, retain)?;
+                RegionKindIndexes::capture_controlled(lane, self.partition, checkpoint)
             },
         )
         .map(Arc::new)

@@ -1,14 +1,17 @@
 use super::*;
 use crate::identity::data::KindId;
+use crate::storage::substrate::maintenance::ReconstructionLane;
 
 /// Owned relations are reconstructed from record metadata. Peer relations use
 /// only the projection authenticated by this region's canonical root leaf.
 pub(in crate::storage::residency) fn rebuild(
+    lane: &ReconstructionLane<'_>,
     partition: &mut PartitionState,
     projection: &[RegionRelationProjection],
     basis: AdjacencyKindBasis,
 ) -> Result<(), Cause> {
     rebuild_controlled(
+        lane,
         partition,
         projection,
         basis,
@@ -18,6 +21,7 @@ pub(in crate::storage::residency) fn rebuild(
 }
 
 pub(in crate::storage::residency) fn rebuild_controlled(
+    _lane: &ReconstructionLane<'_>,
     partition: &mut PartitionState,
     projection: &[RegionRelationProjection],
     basis: AdjacencyKindBasis,
@@ -86,6 +90,7 @@ pub(in crate::storage::residency) fn rebuild_controlled(
 /// The digest is authenticated by the caller. Head can corroborate current
 /// owned claims; Full must later reconstruct all owned historical claims.
 pub(in crate::storage::residency) fn rebuild_head_history(
+    _lane: &ReconstructionLane<'_>,
     partition: &mut PartitionState,
     projection: &[RegionRelationProjection],
 ) -> Result<(), Cause> {
@@ -196,17 +201,19 @@ fn install_projection(
 }
 
 pub(in crate::storage::residency) fn canonical_history(
+    lane: &ReconstructionLane<'_>,
     partition: &PartitionState,
 ) -> Result<Vec<RegionRelationProjection>, Cause> {
-    canonical_history_controlled(partition, &mut |_, _| Ok(()))
+    canonical_history_controlled(lane, partition, &mut |_, _| Ok(()))
 }
 
 pub(in crate::storage::residency) fn canonical_history_controlled(
+    lane: &ReconstructionLane<'_>,
     partition: &PartitionState,
     checkpoint: &mut ProjectionCheckpoint<'_>,
 ) -> Result<Vec<RegionRelationProjection>, Cause> {
     let mut expected = BTreeMap::new();
-    for entry in capture_controlled(partition, AdjacencyKindBasis::Historical, checkpoint)? {
+    for entry in capture_controlled(lane, partition, AdjacencyKindBasis::Historical, checkpoint)? {
         checkpoint(1, 4096)?;
         if entry.relation.partition_id != partition.partition_id {
             expected.insert(entry.relation, entry);
