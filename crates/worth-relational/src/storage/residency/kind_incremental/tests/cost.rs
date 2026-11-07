@@ -11,7 +11,11 @@ fn work(records: usize, history: usize) -> u64 {
     // starting point, then measure the same retarget at every history scale.
     let base_step = history.div_ceil(15) * 15;
     fixture::edit(&mut partition, 0, base_step);
-    crate::storage::residency::rebuild_region_history_kind_buckets(&mut partition).unwrap();
+    crate::storage::residency::rebuild_region_history_kind_buckets(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &mut partition,
+    )
+    .unwrap();
     let prior = Arc::new(cold(&partition));
     let previous = partition.clone();
     let journal = fixture::edit(&mut partition, 0, base_step + 2);

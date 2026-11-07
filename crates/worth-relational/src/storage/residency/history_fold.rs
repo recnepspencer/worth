@@ -13,6 +13,7 @@ use crate::storage::data::{
     RelationalStorageSubject, RelationalStorageUnavailable,
     RelationalStorageUnavailableCause as Cause,
 };
+use crate::storage::substrate::maintenance::ReconstructionLane;
 use crate::storage::substrate::{EntityRecordKind, RelationRecordKind};
 use serde::Serialize;
 use std::collections::BTreeMap;
@@ -138,8 +139,10 @@ impl<'request, 'scope, 'host> HistoryFolder<'request, 'scope, 'host> {
         .map_err(|cause| unavailable(partition, cause))?;
         let image: RegionHistoryImage = rmp_serde::from_slice(frame.payload)
             .map_err(|_| unavailable(partition, Cause::Damaged))?;
-        super::kind_commitment::verify(&image.kind_projection, reference.kind_commitment)
-            .map_err(|cause| unavailable(partition, cause))?;
+        ReconstructionLane::enter_reconstruction(|lane| {
+            super::kind_commitment::verify(lane, &image.kind_projection, reference.kind_commitment)
+        })
+        .map_err(|cause| unavailable(partition, cause))?;
         super::history_kind_cache::verify(&image).map_err(|cause| unavailable(partition, cause))?;
         verify_directory(&image, directory, reference.member)
             .map_err(|cause| unavailable(partition, cause))?;

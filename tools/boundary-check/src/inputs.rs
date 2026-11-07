@@ -48,6 +48,7 @@ impl Inputs {
             "consumer-docs.toml",
             "control-callers.txt",
             "certification-construction-callers.txt",
+            "reconstruction-callers.txt",
             "test-workspaces.txt",
             "src-court-baseline.json",
         ] {

@@ -3,6 +3,7 @@ use super::kind_projection::ProjectionCheckpoint;
 use crate::identity::data::{KindId, RelationId};
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use crate::storage::partition::RegionRelationProjection;
+use crate::storage::substrate::maintenance::ReconstructionLane;
 use crate::storage::substrate::{DigestIndex, SharedMap, StorageAllocationVisitor};
 use sha2::{Digest, Sha256};
 
@@ -24,6 +25,7 @@ impl KindIndex {
     /// Cold reconstruction uses sorted bulk construction, independently of the
     /// ordinary membership update. Ordering and tree shape depend only on keys.
     pub(super) fn rebuild(
+        lane: &ReconstructionLane<'_>,
         projection: &[RegionRelationProjection],
         checkpoint: &mut ProjectionCheckpoint<'_>,
     ) -> Result<Self, Cause> {
@@ -45,7 +47,7 @@ impl KindIndex {
                     checkpoint(1, 512)?;
                     leaves.push((slot as u128, membership_digest(slot)));
                 }
-                Ok::<_, Cause>(DigestIndex::from_sorted_entries(&leaves))
+                DigestIndex::cold(lane, &leaves).map_err(|_| Cause::IntegrityMismatch)
             };
             let value = KindIncidence {
                 kind: entry.kind,
@@ -59,7 +61,7 @@ impl KindIndex {
         // RelationId's ordering and its packed native key have the same order.
         Ok(Self {
             relations: SharedMap::from_sorted_unique(relations),
-            digest: DigestIndex::from_sorted_entries(&digests),
+            digest: DigestIndex::cold(lane, &digests).map_err(|_| Cause::IntegrityMismatch)?,
             incidence_bytes,
         })
     }

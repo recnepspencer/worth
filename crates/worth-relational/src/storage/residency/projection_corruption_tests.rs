@@ -77,8 +77,11 @@ fn historical_projection_is_reconstructed_from_owned_record_history() {
     )
     .unwrap();
     let mut cold = fixture.cold.clone();
-    cold.kind_authority.history =
-        super::super::kind_commitment::digest(&history.kind_projection).unwrap();
+    cold.kind_authority.history = super::super::kind_commitment::digest(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &history.kind_projection,
+    )
+    .unwrap();
     // Even a rehashed projection and matching cache cannot replace owned arena
     // history. The canonical root separately prevents replacing peer authority.
     let mut members = fixture.source.members.clone();

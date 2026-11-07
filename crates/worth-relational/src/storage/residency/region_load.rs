@@ -1,3 +1,4 @@
+use crate::storage::substrate::maintenance::ReconstructionLane;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -19,103 +20,113 @@ pub(super) fn load_head(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     limit: u64,
 ) -> Result<Arc<ResidentRegion>, Failure> {
-    let (mut partition, frontiers, mut historical) = (|| -> Result<_, Cause> {
-        check_member_limit(cold.head.length, limit)?;
-        let bytes = cold.source.read_member(cold.head, limit)?;
-        let frame = RelationalRegionImage::decode(
-            &bytes,
-            cold.head,
-            cold.partition_id,
-            cold.schema_carrier_digest,
-            RelationalRegionImageKind::Head,
-        )?;
-        let head: RegionHeadImage =
-            rmp_serde::from_slice(frame.payload).map_err(|_| Cause::Damaged)?;
-        super::kind_commitment::verify(&head.kind_projection, cold.kind_authority.head)?;
-        super::kind_commitment::verify(&head.history_kind_projection, cold.kind_authority.history)?;
-        if head.partition.partition_id != cold.partition_id {
-            return Err(Cause::Damaged);
-        }
-        if head.partition.entity_arena.metadata_history.len()
-            != head.partition.entity_arena.generations.len()
-            || head.partition.relation_arena.metadata_history.len()
-                != head.partition.relation_arena.generations.len()
-        {
-            return Err(Cause::Damaged);
-        }
-        let contracts = contracts(cold)?;
-        let mut partition =
-            partition_from_image(head.partition, cold.schema.aspect_plans(), &contracts)
-                .map_err(|_| Cause::Damaged)?;
-        super::kind_projection::rebuild(
-            &mut partition,
-            &head.kind_projection,
-            AdjacencyKindBasis::Current,
-        )?;
-        verify_buckets(
-            &partition,
-            &head.adjacency_kinds,
-            &head.reverse_adjacency_kinds,
-            AdjacencyKindBasis::Current,
-        )?;
-        super::kind_projection::rebuild_head_history(
-            &mut partition,
-            &head.history_kind_projection,
-        )?;
-        let mut historical = BTreeMap::<usize, Vec<_>>::new();
-        for claim in head.history_kind_projection {
-            if claim.relation.partition_id == cold.partition_id {
-                historical
-                    .entry(claim.relation.slot_index())
-                    .or_default()
-                    .push(claim);
+    ReconstructionLane::enter_reconstruction(|lane| {
+        let (mut partition, frontiers, mut historical) = (|| -> Result<_, Cause> {
+            check_member_limit(cold.head.length, limit)?;
+            let bytes = cold.source.read_member(cold.head, limit)?;
+            let frame = RelationalRegionImage::decode(
+                &bytes,
+                cold.head,
+                cold.partition_id,
+                cold.schema_carrier_digest,
+                RelationalRegionImageKind::Head,
+            )?;
+            let head: RegionHeadImage =
+                rmp_serde::from_slice(frame.payload).map_err(|_| Cause::Damaged)?;
+            super::kind_commitment::verify(lane, &head.kind_projection, cold.kind_authority.head)?;
+            super::kind_commitment::verify(
+                lane,
+                &head.history_kind_projection,
+                cold.kind_authority.history,
+            )?;
+            if head.partition.partition_id != cold.partition_id {
+                return Err(Cause::Damaged);
             }
-        }
-        Ok((partition, head.history_frontiers, historical))
-    })()
-    .map_err(|cause| unavailable(cold, cause))?;
-    cold.symbols
-        .demand_symbol_ids(execution, super::required_symbols::collect(&partition))?;
-    let symbols = cold.symbols.interner_snapshot();
-    let commitment = PartitionContentCommitment::capture_head(&partition, &symbols, &frontiers)
-        .ok_or_else(|| unavailable(cold, Cause::Damaged))?;
-    verify_leaf(cold, &partition, &commitment).map_err(|cause| unavailable(cold, cause))?;
-    crate::history::data::current_route_presence::admission::validate(
-        execution,
-        &partition,
-        cold.schema.registry(),
-    )?;
-    let history_custody = cold
-        .source
-        .retain_members(
-            &cold
-                .history_members
-                .members(cold.history)
-                .into_iter()
-                .collect::<Vec<_>>(),
-        )
+            if head.partition.entity_arena.metadata_history.len()
+                != head.partition.entity_arena.generations.len()
+                || head.partition.relation_arena.metadata_history.len()
+                    != head.partition.relation_arena.generations.len()
+            {
+                return Err(Cause::Damaged);
+            }
+            let contracts = contracts(cold)?;
+            let mut partition =
+                partition_from_image(head.partition, cold.schema.aspect_plans(), &contracts)
+                    .map_err(|_| Cause::Damaged)?;
+            super::kind_projection::rebuild(
+                lane,
+                &mut partition,
+                &head.kind_projection,
+                AdjacencyKindBasis::Current,
+            )?;
+            verify_buckets(
+                &partition,
+                &head.adjacency_kinds,
+                &head.reverse_adjacency_kinds,
+                AdjacencyKindBasis::Current,
+            )?;
+            super::kind_projection::rebuild_head_history(
+                lane,
+                &mut partition,
+                &head.history_kind_projection,
+            )?;
+            let mut historical = BTreeMap::<usize, Vec<_>>::new();
+            for claim in head.history_kind_projection {
+                if claim.relation.partition_id == cold.partition_id {
+                    historical
+                        .entry(claim.relation.slot_index())
+                        .or_default()
+                        .push(claim);
+                }
+            }
+            Ok((partition, head.history_frontiers, historical))
+        })()
         .map_err(|cause| unavailable(cold, cause))?;
-    let (entity_openings, relation_openings) = frontiers.into_arenas();
-    install_history_prefixes(
-        &mut partition.entity_arena,
-        cold,
-        &history_custody,
-        entity_openings,
-        &mut BTreeMap::new(),
-    )?;
-    install_history_prefixes(
-        &mut partition.relation_arena,
-        cold,
-        &history_custody,
-        relation_openings,
-        &mut historical,
-    )?;
-    crate::execution::check_request(execution).map_err(Failure::Request)?;
-    Ok(Arc::new(ResidentRegion {
-        kind_indexes: Some(super::kind_admission::reconstruct(execution, &partition)?),
-        partition,
-        commitment: Some(commitment),
-    }))
+        cold.symbols
+            .demand_symbol_ids(execution, super::required_symbols::collect(&partition))?;
+        let symbols = cold.symbols.interner_snapshot();
+        let commitment = PartitionContentCommitment::capture_head(&partition, &symbols, &frontiers)
+            .ok_or_else(|| unavailable(cold, Cause::Damaged))?;
+        verify_leaf(cold, &partition, &commitment).map_err(|cause| unavailable(cold, cause))?;
+        crate::history::data::current_route_presence::admission::validate(
+            execution,
+            &partition,
+            cold.schema.registry(),
+        )?;
+        let history_custody = cold
+            .source
+            .retain_members(
+                &cold
+                    .history_members
+                    .members(cold.history)
+                    .into_iter()
+                    .collect::<Vec<_>>(),
+            )
+            .map_err(|cause| unavailable(cold, cause))?;
+        let (entity_openings, relation_openings) = frontiers.into_arenas();
+        install_history_prefixes(
+            &mut partition.entity_arena,
+            cold,
+            &history_custody,
+            entity_openings,
+            &mut BTreeMap::new(),
+        )?;
+        install_history_prefixes(
+            &mut partition.relation_arena,
+            cold,
+            &history_custody,
+            relation_openings,
+            &mut historical,
+        )?;
+        crate::execution::check_request(execution).map_err(Failure::Request)?;
+        Ok(Arc::new(ResidentRegion {
+            kind_indexes: Some(super::kind_admission::reconstruct(
+                lane, execution, &partition,
+            )?),
+            partition,
+            commitment: Some(commitment),
+        }))
+    })
 }
 
 pub(super) fn load_full(
@@ -124,86 +135,94 @@ pub(super) fn load_full(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     limit: u64,
 ) -> Result<Arc<ResidentRegion>, Failure> {
-    let reference = RegionHistoryBase {
-        member: cold.history,
-        partition_id: cold.partition_id,
-        schema_carrier_digest: cold.schema_carrier_digest,
-        row_index: 0,
-        kind_commitment: cold.kind_authority.history,
-    };
-    let mut folder = super::history_fold::HistoryFolder::new(execution, cold.partition_id, limit);
-    let history = folder.read(cold.source.as_ref(), &cold.history_members, &reference)?;
-    super::kind_commitment::verify(&history.kind_projection, cold.kind_authority.history)
-        .map_err(|cause| unavailable(cold, cause))?;
-    if history.entities.len() != head.partition.entity_arena.slot_count()
-        || history.relations.len() != head.partition.relation_arena.slot_count()
-    {
-        return Err(unavailable(cold, Cause::Damaged).into());
-    }
-    let entities = folder.fold_rows::<crate::storage::substrate::EntityRecordKind>(
-        cold.source.as_ref(),
-        &cold.history_members,
-        &reference,
-        history.entities.len(),
-    )?;
-    let relations = folder.fold_rows::<crate::storage::substrate::RelationRecordKind>(
-        cold.source.as_ref(),
-        &cold.history_members,
-        &reference,
-        history.relations.len(),
-    )?;
-    drop(folder);
-    let partition = (|| -> Result<_, Cause> {
-        let contracts = contracts(cold)?;
-        let mut image = partition_to_image_with_contracts(
-            head.partition.clone(),
-            cold.schema.aspect_plans(),
-            &contracts,
-        )
-        .map_err(|_| Cause::Damaged)?;
-        for (current, mut earlier) in image.entity_arena.metadata_history.iter_mut().zip(entities) {
-            earlier.append(current);
-            *current = earlier;
-        }
-        for (current, mut earlier) in image
-            .relation_arena
-            .metadata_history
-            .iter_mut()
-            .zip(relations)
+    ReconstructionLane::enter_reconstruction(|lane| {
+        let reference = RegionHistoryBase {
+            member: cold.history,
+            partition_id: cold.partition_id,
+            schema_carrier_digest: cold.schema_carrier_digest,
+            row_index: 0,
+            kind_commitment: cold.kind_authority.history,
+        };
+        let mut folder =
+            super::history_fold::HistoryFolder::new(execution, cold.partition_id, limit);
+        let history = folder.read(cold.source.as_ref(), &cold.history_members, &reference)?;
+        super::kind_commitment::verify(lane, &history.kind_projection, cold.kind_authority.history)
+            .map_err(|cause| unavailable(cold, cause))?;
+        if history.entities.len() != head.partition.entity_arena.slot_count()
+            || history.relations.len() != head.partition.relation_arena.slot_count()
         {
-            earlier.append(current);
-            *current = earlier;
+            return Err(unavailable(cold, Cause::Damaged).into());
         }
-        let mut partition = partition_from_image(image, cold.schema.aspect_plans(), &contracts)
+        let entities = folder.fold_rows::<crate::storage::substrate::EntityRecordKind>(
+            cold.source.as_ref(),
+            &cold.history_members,
+            &reference,
+            history.entities.len(),
+        )?;
+        let relations = folder.fold_rows::<crate::storage::substrate::RelationRecordKind>(
+            cold.source.as_ref(),
+            &cold.history_members,
+            &reference,
+            history.relations.len(),
+        )?;
+        drop(folder);
+        let partition = (|| -> Result<_, Cause> {
+            let contracts = contracts(cold)?;
+            let mut image = partition_to_image_with_contracts(
+                head.partition.clone(),
+                cold.schema.aspect_plans(),
+                &contracts,
+            )
             .map_err(|_| Cause::Damaged)?;
-        partition.adjacency = head.partition.adjacency.clone();
-        partition.reverse_adjacency = head.partition.reverse_adjacency.clone();
-        super::kind_projection::rebuild(
-            &mut partition,
-            &history.kind_projection,
-            AdjacencyKindBasis::Historical,
-        )?;
-        verify_buckets(
-            &partition,
-            &history.adjacency_kinds,
-            &history.reverse_adjacency_kinds,
-            AdjacencyKindBasis::Historical,
-        )?;
-        Ok(partition)
-    })()
-    .map_err(|cause| unavailable(cold, cause))?;
-    cold.symbols
-        .demand_symbol_ids(execution, super::required_symbols::collect(&partition))?;
-    let symbols = cold.symbols.interner_snapshot();
-    let (commitment, _) = PartitionContentCommitment::capture(&partition, &symbols, None)
-        .map_err(|_| unavailable(cold, Cause::Damaged))?;
-    verify_leaf(cold, &partition, &commitment).map_err(|cause| unavailable(cold, cause))?;
-    crate::execution::check_request(execution).map_err(Failure::Request)?;
-    Ok(Arc::new(ResidentRegion {
-        kind_indexes: Some(super::kind_admission::reconstruct(execution, &partition)?),
-        partition,
-        commitment: Some(commitment),
-    }))
+            for (current, mut earlier) in
+                image.entity_arena.metadata_history.iter_mut().zip(entities)
+            {
+                earlier.append(current);
+                *current = earlier;
+            }
+            for (current, mut earlier) in image
+                .relation_arena
+                .metadata_history
+                .iter_mut()
+                .zip(relations)
+            {
+                earlier.append(current);
+                *current = earlier;
+            }
+            let mut partition = partition_from_image(image, cold.schema.aspect_plans(), &contracts)
+                .map_err(|_| Cause::Damaged)?;
+            partition.adjacency = head.partition.adjacency.clone();
+            partition.reverse_adjacency = head.partition.reverse_adjacency.clone();
+            super::kind_projection::rebuild(
+                lane,
+                &mut partition,
+                &history.kind_projection,
+                AdjacencyKindBasis::Historical,
+            )?;
+            verify_buckets(
+                &partition,
+                &history.adjacency_kinds,
+                &history.reverse_adjacency_kinds,
+                AdjacencyKindBasis::Historical,
+            )?;
+            Ok(partition)
+        })()
+        .map_err(|cause| unavailable(cold, cause))?;
+        cold.symbols
+            .demand_symbol_ids(execution, super::required_symbols::collect(&partition))?;
+        let symbols = cold.symbols.interner_snapshot();
+        let (commitment, _) = PartitionContentCommitment::capture(&partition, &symbols, None)
+            .map_err(|_| unavailable(cold, Cause::Damaged))?;
+        verify_leaf(cold, &partition, &commitment).map_err(|cause| unavailable(cold, cause))?;
+        crate::execution::check_request(execution).map_err(Failure::Request)?;
+        Ok(Arc::new(ResidentRegion {
+            kind_indexes: Some(super::kind_admission::reconstruct(
+                lane, execution, &partition,
+            )?),
+            partition,
+            commitment: Some(commitment),
+        }))
+    })
 }
 
 fn unavailable(cold: &RelationalColdRegion, cause: Cause) -> RelationalStorageUnavailable {

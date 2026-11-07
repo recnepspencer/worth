@@ -5,6 +5,7 @@ use super::{
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use crate::storage::overlay::PartitionState;
 use crate::storage::partition::AdjacencyKindBasis;
+use crate::storage::substrate::maintenance::ReconstructionLane;
 mod retained_admission;
 #[cfg(test)]
 #[path = "kind_admission_tests.rs"]
@@ -17,16 +18,16 @@ use std::sync::Arc;
 
 /// Reconstruct only at a cold trust boundary, under the original request.
 pub(super) fn reconstruct(
+    lane: &ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     partition: &PartitionState,
 ) -> Result<Arc<RegionKindIndexes>, super::RelationalResidencyDemandFailure> {
     use super::RelationalResidencyDemandFailure as Failure;
-    use crate::storage::substrate::maintenance::ReconstructionLane;
-    ReconstructionLane::recover(execution, |_, work| {
+    lane.recover(execution, |lane, work| {
         maintained::controlled(
             execution,
             &mut |units, bytes| work.prepare(units, bytes),
-            &mut |checkpoint, _| RegionKindIndexes::capture_controlled(partition, checkpoint),
+            &mut |checkpoint, _| RegionKindIndexes::capture_controlled(lane, partition, checkpoint),
         )
     })
     .map(Arc::new)
@@ -87,26 +88,36 @@ pub(super) fn update(
 
 /// One reconstruction engine over owned values. The driver supplies admission.
 pub(super) fn normalize_value(
+    lane: &ReconstructionLane<'_>,
     partition: &mut PartitionState,
     checkpoint: &mut kind_projection::ProjectionCheckpoint<'_>,
     retain: &mut kind_projection::ProjectionRetention<'_>,
 ) -> Result<RelationalRegionKindCommitment, Cause> {
     // Admit bounded simultaneous traversal stacks before the first iterator.
     checkpoint(0, 65_536)?;
-    let projection = kind_projection::canonical_history_controlled(partition, checkpoint)?;
+    let projection = kind_projection::canonical_history_controlled(lane, partition, checkpoint)?;
     kind_projection::rebuild_controlled(
+        lane,
         partition,
         &projection,
         AdjacencyKindBasis::Historical,
         checkpoint,
         retain,
     )?;
-    let head =
-        kind_projection::capture_controlled(partition, AdjacencyKindBasis::Current, checkpoint)?;
-    let history =
-        kind_projection::capture_controlled(partition, AdjacencyKindBasis::Historical, checkpoint)?;
+    let head = kind_projection::capture_controlled(
+        lane,
+        partition,
+        AdjacencyKindBasis::Current,
+        checkpoint,
+    )?;
+    let history = kind_projection::capture_controlled(
+        lane,
+        partition,
+        AdjacencyKindBasis::Historical,
+        checkpoint,
+    )?;
     Ok(RelationalRegionKindCommitment {
-        head: kind_commitment::digest_controlled(&head, checkpoint)?,
-        history: kind_commitment::digest_controlled(&history, checkpoint)?,
+        head: kind_commitment::digest_controlled(lane, &head, checkpoint)?,
+        history: kind_commitment::digest_controlled(lane, &history, checkpoint)?,
     })
 }

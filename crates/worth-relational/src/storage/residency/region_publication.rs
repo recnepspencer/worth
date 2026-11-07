@@ -13,7 +13,6 @@ use crate::storage::overlay::{
     RelationalPartitionAllocationInventory,
 };
 use crate::storage::substrate::{RecordArena, RecordKind};
-use crate::symbols::data::StringInterner;
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
@@ -39,43 +38,6 @@ pub(crate) struct PreparedResidentRegion {
 }
 
 impl PreparedResidentRegion {
-    pub(crate) fn initial(
-        mut partition: PartitionState,
-        symbols: &StringInterner,
-    ) -> Result<Self, RegionContentFailure> {
-        normalize(&mut partition)?;
-        let (commitment, hashed) = PartitionContentCommitment::capture(&partition, symbols, None)
-            .map_err(RegionContentFailure::Content)?;
-        let inventory = partition.allocation_inventory();
-        let unavailable_records = partition.entity_arena.lifecycle_counts().unavailable
-            + partition.relation_arena.lifecycle_counts().unavailable;
-        let kind_indexes = Arc::new(
-            super::kind_incremental::RegionKindIndexes::capture(&partition)
-                .map_err(|_| RegionContentFailure::Adjacency)?,
-        );
-        let kind_commitment = kind_indexes.commitment();
-        let entity_slots = partition.entity_arena.slot_count();
-        let relation_slots = partition.relation_arena.slot_count();
-        let content_digest = commitment.digest(partition.partition_id);
-        Ok(Self {
-            partition_id: partition.partition_id,
-            retention: RelationalRegionRetention::from_lease(RelationalRegionResidency::resident(
-                partition,
-                commitment,
-                kind_indexes,
-            )),
-            inventory,
-            content_digest,
-            kind_commitment,
-            entity_slots,
-            relation_slots,
-            content_values_hashed: hashed,
-            unavailable_records,
-            copied_truth_bytes: 0,
-            new_payload_bytes: inventory.authoritative_bytes,
-        })
-    }
-
     pub(crate) fn incremental(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: RegionCaptureBasis<'_>,
@@ -178,13 +140,6 @@ impl PreparedResidentRegion {
             new_payload_bytes,
         })
     }
-}
-
-fn normalize(partition: &mut PartitionState) -> Result<(), RegionContentFailure> {
-    super::rebuild_region_history_kind_buckets(partition)
-        .map_err(|_| RegionContentFailure::Adjacency)?;
-    partition.clear_runtime_pin_counters();
-    Ok(())
 }
 
 fn unavailable_delta<K: RecordKind>(

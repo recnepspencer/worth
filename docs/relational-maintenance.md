@@ -22,11 +22,18 @@ The `ChangeWork` scope admits work and memory through the original SDK request.
 There is no ordinary fallback to reconstruction.
 
 A cold implementation requires a sealed `ReconstructionLane` and a
-`ReconstructionWork` scope. `ReconstructionLane::recover` is the explicit
-recovery entrance. It keeps original cancellation, deadline, work and memory
-admission. No public constructor manufactures a lane. A maintainer's retirement
-input is its associated owner-specific horizon type; the contract does not
-invent a retention policy or authorize pruning authoritative history.
+`ReconstructionWork` scope. Only the exact trust-boundary files registered in
+`tools/boundary-check/config/reconstruction-callers.txt` may reference the
+`enter_reconstruction` constructor. There is no crate-wide exemption:
+`BC7014_RECONSTRUCTION_LANE_SEAL` refuses ordinary callers, including aliases.
+The registry covers cold restore/readmission, checkpoint import/export,
+first-region initialization and the generic certification oracle. Native unit
+oracles exist only under `cfg(test)`. Possessing a lane permits
+`lane.recover(execution, operation)`, which retains original cancellation,
+deadline, work and memory admission. Every full kind rebuild, projection,
+history-support capture and commitment reconstruction requires that lane by
+type. A maintainer's retirement input remains its owner-specific horizon;
+the contract invents no retention policy or authority to prune history.
 
 `DigestIndex` is the existing storage Patricia commitment, generalized from
 partition-content maintenance. Its tree shape and digest depend only on keys
@@ -86,3 +93,10 @@ Totals are inclusive: nested phases overlap their enclosing phase, so use the
 request report for whole-operation work. Native-only rows have `accounted: false`.
 The production inspection recorder is thread-local, isolated under nested
 captures, bounded by the requested maximum, and cleared on return or unwind.
+
+The public scale journey also guards the real SDK commit's inclusive
+`root_admission` charged work, separately doubling the relation roster and the
+retained history of one relation while keeping the measured endpoint edit
+fixed. It uses `assert_change_bounded`; timings remain telemetry. A full
+rebuild inserted after the production kind update fails this court, even
+though the isolated incremental engine itself remains unchanged.

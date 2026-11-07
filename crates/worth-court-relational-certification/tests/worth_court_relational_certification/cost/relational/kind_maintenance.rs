@@ -10,8 +10,11 @@ use worth_relational::facade::{
     transactions::{CommitResult, CreateIntent, MutationIntent, RecordRef, WorkerIntentBatch},
 };
 
+mod commit_growth;
+
 #[test]
 fn public_scale_small_edits_on_growing_model() {
+    commit_growth::assert_public_growth();
     let request = SerialRequest::from_policy(
         &ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
