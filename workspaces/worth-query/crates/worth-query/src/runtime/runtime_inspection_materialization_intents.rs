@@ -391,6 +391,6 @@ impl WorthQueryRuntime {
             .get(&WorthQueryDerivedMaterializationTarget::new(view_name))
             .map(WorthQueryComputedInspectionEvidence::from_runtime)
             .transpose()?
-            .ok_or_else(|| WorthQueryRuntimeError::MissingDerivedView(view_name.to_string()))?
+            .ok_or_else(|| WorthQueryRuntimeError::MissingDerivedView(view_name.to_string()))
     }
 }

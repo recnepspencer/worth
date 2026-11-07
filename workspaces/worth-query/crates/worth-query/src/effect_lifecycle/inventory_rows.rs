@@ -9,8 +9,10 @@ use super::inventory::{
 use super::planning::EffectAuthorityOwner;
 use super::support_matrix::EffectSupportPosture;
 
-pub(super) fn effect_lifecycle_family_rows(
-) -> Result<Vec<EffectLifecycleFamilyInventoryRow>, IdentityDerivationDenial> {
+pub(super) fn effect_lifecycle_family_rows() -> Result<
+    Vec<EffectLifecycleFamilyInventoryRow>,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+> {
     Ok(vec![
         EffectLifecycleFamilyInventoryRow::new(
             EffectLifecycleFamilyKey::Mutation,
@@ -66,8 +68,10 @@ pub(super) fn effect_lifecycle_family_rows(
     ])
 }
 
-pub(super) fn effect_lifecycle_public_surface_rows(
-) -> Result<Vec<EffectLifecyclePublicSurfaceRow>, IdentityDerivationDenial> {
+pub(super) fn effect_lifecycle_public_surface_rows() -> Result<
+    Vec<EffectLifecyclePublicSurfaceRow>,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+> {
     Ok(vec![
         EffectLifecyclePublicSurfaceRow::new(
             EffectPublicSurfaceKind::CommonPathIntentAuthoring,

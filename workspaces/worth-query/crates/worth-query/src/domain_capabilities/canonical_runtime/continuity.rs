@@ -41,7 +41,7 @@ where
     let payload = domain_contribution.payload();
     let binding_identity = domain_capability_continuity_binding_identity(
         domain_contribution.target().kind(),
-        &domain_contribution.target().binding_identity(),
+        &domain_contribution.target().binding_identity()?,
     )?;
     let Some(runtime_semantics) = payload.runtime_semantics() else {
         return Ok(TransitionOutcome::Denied(missing_runtime_semantics_denial(

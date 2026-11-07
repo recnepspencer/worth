@@ -126,11 +126,11 @@ pub trait WorthQueryBindingTargetWitness: Clone + sealed::Sealed {
         self.erased_target().binding_digest()
     }
 
-    fn target_identity(&self) -> WorthQueryEvidenceIdentity {
+    fn target_identity(&self) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
         self.erased_target().target_identity()
     }
 
-    fn binding_identity(&self) -> WorthQueryEvidenceIdentity {
+    fn binding_identity(&self) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
         self.erased_target().binding_identity()
     }
 

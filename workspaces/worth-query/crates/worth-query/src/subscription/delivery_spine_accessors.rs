@@ -43,11 +43,8 @@ impl SubscriptionPerformanceReceipt {
 impl QuerySubscriptionDeliveryIntent {
     pub fn delivery_intent_projection(
         &self,
-    ) -> Result<
-        QueryProjectionIdentity<String, QuerySubscriptionIdentityKind>,
-        IdentityDerivationDenial,
-    > {
-        Ok(subscription_evidence_projection(&self.evidence_identity()))
+    ) -> QueryProjectionIdentity<String, QuerySubscriptionIdentityKind> {
+        subscription_evidence_projection(&self.evidence_identity())
     }
 }
 

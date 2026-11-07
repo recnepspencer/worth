@@ -177,15 +177,13 @@ impl<D: 'static> WorthQueryInstalledDomainLiveHandle<D> {
         &self,
         read: &WorthQueryInstalledDomainLiveRead,
         declaration: crate::ordinary::read::WorthQueryProjectionDeclaration,
-    ) -> Result<WorthQueryInstalledDomainProjectionOutcome<D>, IdentityDerivationDenial> {
+    ) -> WorthQueryInstalledDomainProjectionOutcome<D> {
         let outcome = self.handle.project(read.result(), declaration);
         let receipt = self.receipt.derive(
             WorthQueryInstalledDomainCapabilityKind::Projection,
             read.receipt().operational_identity().clone(),
         );
-        Ok(WorthQueryInstalledDomainProjectionOutcome::from_outcome(
-            outcome, receipt,
-        ))
+        WorthQueryInstalledDomainProjectionOutcome::from_outcome(outcome, receipt)
     }
 
     pub fn drain(
@@ -275,16 +273,14 @@ impl<D: 'static> WorthQueryInstalledDomainLiveHandle<D> {
     pub fn close(
         self,
         workspace: &mut WorthQueryWorkspace,
-    ) -> Result<WorthQueryInstalledDomainLiveCloseOutcome<D>, IdentityDerivationDenial> {
+    ) -> WorthQueryInstalledDomainLiveCloseOutcome<D> {
         if let Err(drift) = WorthQueryInstalledDomainExecutionDrift::validate::<D>(
             self.receipt.installed_authority(),
             workspace,
         ) {
-            return Ok(WorthQueryInstalledDomainLiveCloseOutcome::AuthorityStopped(
-                self, drift,
-            ));
+            return WorthQueryInstalledDomainLiveCloseOutcome::AuthorityStopped(self, drift);
         }
-        Ok(close_outcome(self.handle.close(workspace), self.receipt)?)
+        close_outcome(self.handle.close(workspace), self.receipt)
     }
 
     fn validate(

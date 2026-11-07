@@ -3,6 +3,7 @@ use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvide
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum QuerySubscriptionRuntimeCertificationErrorKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     CoverageResolutionDenied,
     CoverageFamilyMissing,
     CoverageFamilyMismatch,
@@ -18,6 +19,7 @@ pub enum QuerySubscriptionRuntimeCertificationErrorKind {
 impl QuerySubscriptionRuntimeCertificationErrorKind {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => "evidence_identity_derivation_denied",
             Self::CoverageResolutionDenied => "coverage_resolution_denied",
             Self::CoverageFamilyMissing => "coverage_family_missing",
             Self::CoverageFamilyMismatch => "coverage_family_mismatch",
@@ -147,13 +149,29 @@ pub struct QuerySubscriptionRuntimeCertificationError {
 }
 
 impl QuerySubscriptionRuntimeCertificationError {
+    pub(in crate::subscription) fn identity_refused(
+        cause: IdentityDerivationDenial,
+        counters: QuerySubscriptionRuntimeCertificationCounters,
+    ) -> Self {
+        Self {
+            error_kind:
+                QuerySubscriptionRuntimeCertificationErrorKind::EvidenceIdentityDerivationDenied(
+                    cause,
+                ),
+            message: "runtime certification evidence identity exceeded its digest bounds",
+            failure_identity: Err(cause),
+            counters,
+        }
+    }
+
     pub(crate) fn new(
         error_kind: QuerySubscriptionRuntimeCertificationErrorKind,
         message: &'static str,
-        evidence: &[WorthQueryEvidenceIdentity],
+        evidence: Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial>,
         counters: QuerySubscriptionRuntimeCertificationCounters,
     ) -> Self {
         let failure_identity = (|| {
+            let evidence = evidence?;
             Ok(WorthQueryEvidenceIdentity::compose(
                 WorthQueryEvidenceScope::SubscriptionActivationReceipt,
             )

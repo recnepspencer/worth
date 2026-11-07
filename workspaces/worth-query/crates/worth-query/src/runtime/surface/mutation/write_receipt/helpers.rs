@@ -23,30 +23,25 @@ pub(super) fn symbolic_target_reference_evidence(
     if mutation_family == WorthQueryMutationFamily::Insert {
         return Ok(None);
     }
-    Ok(bridge_reference
-        .map(|bundle| {
-            let target_collection = authored_reference.and_then(|reference| {
-                reference
-                    .target_collection()
-                    .or_else(|| bundle.target_collection())
-            });
-            WorthQuerySymbolicTargetReferenceEvidence::from_bridge_with_query_context(
-                bundle,
-                resolved_entity_identity,
-                target_collection,
-            )
+    if let Some(bundle) = bridge_reference {
+        let target_collection = authored_reference.and_then(|reference| {
+            reference
+                .target_collection()
+                .or_else(|| bundle.target_collection())
+        });
+        return WorthQuerySymbolicTargetReferenceEvidence::from_bridge_with_query_context(
+            bundle,
+            resolved_entity_identity,
+            target_collection,
+        )
+        .map(Some);
+    }
+    authored_reference
+        .zip(resolved_entity_identity)
+        .map(|(reference, entity)| {
+            WorthQuerySymbolicTargetReferenceEvidence::from_reference(reference, entity)
         })
-        .or_else(|| {
-            authored_reference
-                .zip(resolved_entity_identity)
-                .map(|(reference, resolved_entity_identity)| {
-                    WorthQuerySymbolicTargetReferenceEvidence::from_reference(
-                        reference,
-                        resolved_entity_identity,
-                    )
-                })
-                .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?
-        })?)
+        .transpose()
 }
 
 pub(super) fn naming_mutation_evidence(
@@ -71,7 +66,8 @@ pub(super) fn naming_mutation_evidence(
                     target_collection,
                 )
             })
-        })?)
+        })
+        .transpose()?)
 }
 
 pub(super) fn continuity_mutation_evidence(
@@ -101,7 +97,8 @@ pub(super) fn continuity_mutation_evidence(
                     target_collection,
                 )
             })
-        })?)
+        })
+        .transpose()?)
 }
 
 pub(super) fn assertion_evidence(
@@ -112,7 +109,9 @@ pub(super) fn assertion_evidence(
     declared_aspect_value_digest: Option<&WorthQueryEvidenceIdentity>,
     snapshot_identity: &WorthQuerySnapshotIdentity,
 ) -> Result<Option<WorthQueryExistingTruthAssertionEvidence>, IdentityDerivationDenial> {
-    let _binding = existing_truth_binding?;
+    let Some(_binding) = existing_truth_binding else {
+        return Ok(None);
+    };
     if let Some(verification) = existing_truth_assertion {
         return Ok(Some(
             WorthQueryExistingTruthAssertionEvidence::backend_verified(verification),

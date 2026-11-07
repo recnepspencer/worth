@@ -16,14 +16,11 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     pub(crate) fn declaration_progression_recipe<I>(
         &self,
         legal: WorthQueryDeclarationLegalityEvidence<D, I>,
-    ) -> Result<WorthQueryDeclarationProgressionRecipe<D, I>, IdentityDerivationDenial>
+    ) -> WorthQueryDeclarationProgressionRecipe<D, I>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        Ok(worth_query_declaration_progression_recipe(
-            legal,
-            self.retained_world_basis(),
-        ))
+        worth_query_declaration_progression_recipe(legal, self.retained_world_basis())
     }
 
     pub fn progress_declaration<I>(
@@ -36,7 +33,7 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        match self.progress_declaration_checked(legal)? {
+        match self.progress_declaration_checked(legal) {
             WorthQueryDeclarationProgressionChecked::Admitted(admitted) => Ok(admitted),
             WorthQueryDeclarationProgressionChecked::Deferred(progress) => Err(
                 WorthQueryDeclarationProgressionTerminalError::Deferred(progress),
@@ -90,13 +87,11 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     pub fn progress_declaration_checked<I>(
         &self,
         legal: WorthQueryDeclarationLegalityEvidence<D, I>,
-    ) -> Result<WorthQueryDeclarationProgressionChecked<D, I>, IdentityDerivationDenial>
+    ) -> WorthQueryDeclarationProgressionChecked<D, I>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        Ok(worth_query_checked_declaration_progression(
-            self.declaration_progression_recipe(legal)?,
-        ))
+        worth_query_checked_declaration_progression(self.declaration_progression_recipe(legal))
     }
 
     #[cfg(test)]

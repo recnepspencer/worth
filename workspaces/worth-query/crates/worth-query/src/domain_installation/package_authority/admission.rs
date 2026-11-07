@@ -146,7 +146,7 @@ pub(crate) fn admit_domain_package_with_artifact_support<D: WorthQueryDomainEntr
                 WorthQueryEvidenceTag::new("portable_admission"),
                 portable_package.admission_identity().digest(),
             )
-            .seal();
+            .seal()?;
 
     Ok(WorthQueryAdmittedDomainPackage {
         marker: package.marker,

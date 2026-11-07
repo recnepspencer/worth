@@ -24,7 +24,7 @@ impl WorthQueryWorkflowRequest {
             ));
         }
         debug_assert_eq!(family, WorthQueryWorkflowFamily::PreviewPromotion);
-        match workspace.ordinary_authority_drift(request_execution, &self.context.authority)? {
+        match workspace.ordinary_authority_drift(request_execution, &self.context.authority) {
             WorthQueryOrdinaryAuthorityDrift::ForeignOwner => {
                 return Ok(WorthQueryWorkflowOutcome::Stopped(
                     WorthQueryWorkflowStop::denied(

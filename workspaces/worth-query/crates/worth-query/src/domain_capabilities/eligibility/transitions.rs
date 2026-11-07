@@ -128,14 +128,14 @@ where
             WorthQueryDomainCapabilityTargetKind::LowerRuntimeBoundaryEnvelope => {
                 TransitionOutcome::Stale(WorthQueryDomainCapabilityStale::new(
                     category,
-                    bound_target.target_identity(),
-                    current_target.target_identity(),
+                    bound_target.target_identity()?,
+                    current_target.target_identity()?,
                 ))
             }
             _ => TransitionOutcome::RebindRequired(WorthQueryDomainCapabilityRebindRequired::new(
                 category,
-                bound_target.target_identity(),
-                current_target.target_identity(),
+                bound_target.target_identity()?,
+                current_target.target_identity()?,
             )),
         });
     }
@@ -165,7 +165,7 @@ where
                 WorthQueryDomainCapabilityProgressionDenialKind::StaleInstallationGeneration,
                 "the installed domain authority belongs to a stale installation generation",
             )
-        })?)
+        }))
 }
 
 fn denial_for<P, T>(

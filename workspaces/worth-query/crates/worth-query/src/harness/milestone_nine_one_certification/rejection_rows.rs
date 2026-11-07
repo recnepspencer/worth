@@ -10,9 +10,8 @@ use crate::live::LiveQueryFamily;
 use crate::subscription::QuerySubscriptionConstructionSource;
 use crate::view_shape_live::LiveViewShapeFamily;
 
-pub(super) fn rejection_rows() -> Result<Vec<MilestoneNineOneRejectionRow>, IdentityDerivationDenial>
-{
-    Ok(vec![
+pub(super) fn rejection_rows() -> Vec<MilestoneNineOneRejectionRow> {
+    vec![
         MilestoneNineOneRejectionRow {
             row_name: "view-family-mismatch-denies-before-declaration",
             perturbation_class: MilestoneNineOnePerturbationClass::ViewFamilyMismatch,
@@ -154,5 +153,5 @@ pub(super) fn rejection_rows() -> Result<Vec<MilestoneNineOneRejectionRow>, Iden
                 QuerySubscriptionConstructionSource::FacadeLive,
             )?,
         },
-    ])
+    ]
 }

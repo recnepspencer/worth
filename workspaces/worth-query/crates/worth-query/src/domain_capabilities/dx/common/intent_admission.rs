@@ -115,8 +115,8 @@ impl WorthQueryIntentAdmissionContribution {
                 )
             },
             |ready| {
-                worth_proof::TransitionOutcome::Success(materialize_canonical_admission_artifact(
-                    ready,
+                Ok(worth_proof::TransitionOutcome::Success(
+                    materialize_canonical_admission_artifact(ready)?,
                 ))
             },
         )?)

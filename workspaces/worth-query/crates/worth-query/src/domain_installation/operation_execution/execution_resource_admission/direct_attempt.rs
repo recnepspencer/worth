@@ -68,8 +68,7 @@ where
         input: O::Input,
         request: WorthQueryExecutionResourceRequest,
         workspace: &crate::runtime::WorthQueryWorkspace,
-    ) -> Result<WorthQueryDirectResourceAdmissionOutcome<D, O, F, L>, IdentityDerivationDenial>
-    {
+    ) -> WorthQueryDirectResourceAdmissionOutcome<D, O, F, L> {
         let mut counters = WorthQueryExecutionResourceAdmissionCounters {
             runtime_authority_checks: 1,
             ..Default::default()
@@ -85,19 +84,17 @@ where
                 format!("{denial:?}"),
                 counters,
             );
-            return Ok(runtime_denial(kind, denial));
+            return runtime_denial(kind, denial);
         }
         counters.input_contract_checks += 1;
         if !super::super::operation_input::input_satisfies_contract(
             &input,
             &self.definition().semantics().parameters,
         ) {
-            return Ok(TransitionOutcome::Denied(
-                WorthQueryExecutionResourceAdmissionDenial::new(
-                    Kind::InputContract,
-                    "operation input does not satisfy the installed parameter contract",
-                    counters,
-                ),
+            return TransitionOutcome::Denied(WorthQueryExecutionResourceAdmissionDenial::new(
+                Kind::InputContract,
+                "operation input does not satisfy the installed parameter contract",
+                counters,
             ));
         }
         counters.execution_contract_checks += 1;
@@ -112,11 +109,11 @@ where
                 crate::domain_installation::WorthQueryOperationLineageContract::NotRequired
             )
         {
-            return Ok(TransitionOutcome::Denied(WorthQueryExecutionResourceAdmissionDenial::new(
+            return TransitionOutcome::Denied(WorthQueryExecutionResourceAdmissionDenial::new(
                 Kind::DirectExecutionContract,
                 "direct execution lacks an admitted evidence route for the declared effects, invariants, or lineage",
                 counters,
-            )));
+            ));
         }
         let executor = std::sync::Arc::clone(self.direct_executor());
         let support = self
@@ -132,14 +129,14 @@ where
             counters,
         ) {
             Ok(resources) => resources,
-            Err(denial) => return Ok(admission_denial_outcome(denial)),
+            Err(denial) => return admission_denial_outcome(denial),
         };
         let resource_attempt = match workspace
             .query_execution_runtime()
             .start_direct_resource_attempt(self.execution_authority(), resources)
         {
             Ok(attempt) => attempt,
-            Err(denial) => return Ok(admission_denial_outcome(denial)),
+            Err(denial) => return admission_denial_outcome(denial),
         };
         let mut basis = operation_phase_basis(self.authority_proof()).clone();
         basis.resource_admission_identity =
@@ -149,15 +146,13 @@ where
             Some(self.authority_proof().payload().identity()),
             basis,
         );
-        Ok(TransitionOutcome::Success(
-            WorthQueryAdmittedDirectOperation {
-                bound: self,
-                input,
-                executor,
-                resource_attempt,
-                phase_proof,
-            },
-        ))
+        TransitionOutcome::Success(WorthQueryAdmittedDirectOperation {
+            bound: self,
+            input,
+            executor,
+            resource_attempt,
+            phase_proof,
+        })
     }
 }
 

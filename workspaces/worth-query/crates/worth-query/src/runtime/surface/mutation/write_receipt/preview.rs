@@ -84,7 +84,7 @@ impl WorthQueryWriteReceipt {
                 command.mutation_family(),
                 declared_collection_identity.clone(),
                 command.declared_entity_identity(),
-                target_collection_identity.clone()?,
+                target_collection_identity.clone(),
                 command.declared_entity_identity(),
             ),
             existing_truth_assertion_evidence: None,

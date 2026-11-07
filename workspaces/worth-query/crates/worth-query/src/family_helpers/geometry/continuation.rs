@@ -318,7 +318,7 @@ fn signal_subject_from_progressed<
     >,
     progression: WorthQueryAdmittedDeclarationProgression<D, I>,
 ) -> Result<WorthQueryDeclarationSignalCompatibilityInput<D, I>, IdentityDerivationDenial> {
-    let envelope_checked = handle.orchestrate_envelope_from_progressed_checked(progression)?;
+    let envelope_checked = handle.orchestrate_envelope_from_progressed_checked(progression);
     Ok(WorthQueryDeclarationSignalCompatibilityInput::envelope_checked(envelope_checked))
 }
 

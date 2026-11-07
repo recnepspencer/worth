@@ -172,7 +172,7 @@ impl<D> WorthQueryInstalledDomainReadCompletion<D> {
     pub fn project(
         &self,
         declaration: WorthQueryProjectionDeclaration,
-    ) -> Result<WorthQueryInstalledDomainProjectionOutcome<D>, IdentityDerivationDenial> {
+    ) -> WorthQueryInstalledDomainProjectionOutcome<D> {
         let outcome = self.completion.consume_projection(declaration);
         let receipt = WorthQueryInstalledDomainExecutionReceipt::new(
             self.receipt.installed_authority().clone(),
@@ -181,11 +181,11 @@ impl<D> WorthQueryInstalledDomainReadCompletion<D> {
             self.receipt.basis_identity().clone(),
             self.receipt.operational_identity().clone(),
         );
-        Ok(WorthQueryInstalledDomainProjectionOutcome {
+        WorthQueryInstalledDomainProjectionOutcome {
             outcome,
             receipt,
             marker: PhantomData,
-        })
+        }
     }
 
     pub(crate) fn witness(&self) -> &WorthQueryInstalledDomainAuthorityWitness {

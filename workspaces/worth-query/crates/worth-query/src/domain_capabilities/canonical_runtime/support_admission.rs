@@ -39,7 +39,10 @@ where
 
 fn support_traceability_row<T>(
     contribution: &WorthQueryMaterializationReadySupportContribution<T>,
-) -> WorthQueryDomainCapabilityTransitionOutcome<WorthQueryIntentAdmissionSupportTraceabilityRow>
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<WorthQueryIntentAdmissionSupportTraceabilityRow>,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+>
 where
     T: WorthQueryAdmittedPlanContributionTargetBinding,
 {
@@ -53,7 +56,7 @@ where
     else {
         unreachable!("admitted-plan target should preserve admitted-plan semantics");
     };
-    TransitionOutcome::Success(
+    Ok(TransitionOutcome::Success(
         WorthQueryIntentAdmissionSupportTraceabilityRow::new_domain_scoped(
             super::support::support_lane(payload.posture()),
             family.as_str(),
@@ -62,7 +65,7 @@ where
             Some(
                 domain_contribution
                     .target()
-                    .binding_identity()
+                    .binding_identity()?
                     .as_str()
                     .to_string(),
             ),
@@ -70,5 +73,5 @@ where
             Some(eligibility_digest.to_string()),
             Some(decision_digest.to_string()),
         ),
-    )
+    ))
 }

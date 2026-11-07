@@ -142,21 +142,19 @@ impl WorthQueryInstalledDomainExecutionDrift {
         Ok(())
     }
 
-    pub(crate) fn stale_installation(
-        witness: &WorthQueryInstalledDomainAuthorityWitness,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+    pub(crate) fn stale_installation(witness: &WorthQueryInstalledDomainAuthorityWitness) -> Self {
+        Self::new(
             witness,
             None,
             WorthQueryInstalledDomainExecutionDriftKind::StaleInstallation,
             WorthQueryInstalledDomainExecutionNextAction::RebindCurrentInstallation,
-        )?)
+        )
     }
 
     fn from_handle_denial(
         witness: &WorthQueryInstalledDomainAuthorityWitness,
         denial: WorthQueryDomainHandleDenial,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let (kind, next_action) = match denial.kind() {
             WorthQueryDomainHandleDenialKind::DomainNotInstalled => (
                 WorthQueryInstalledDomainExecutionDriftKind::DomainNotInstalled,
@@ -175,7 +173,7 @@ impl WorthQueryInstalledDomainExecutionDrift {
                 WorthQueryInstalledDomainExecutionNextAction::ReconcilePackageMeaning,
             ),
         };
-        Ok(Self::new(witness, None, kind, next_action)?)
+        Self::new(witness, None, kind, next_action)
     }
 
     fn new(
@@ -183,7 +181,7 @@ impl WorthQueryInstalledDomainExecutionDrift {
         current_authority: Option<&WorthQueryInstalledDomainAuthorityWitness>,
         kind: WorthQueryInstalledDomainExecutionDriftKind,
         next_action: WorthQueryInstalledDomainExecutionNextAction,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let mut drift_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::InstalledDomainExecution)
                 .field_shape(WorthQueryEvidenceTag::new("outcome"), "authority-drift")
@@ -202,14 +200,14 @@ impl WorthQueryInstalledDomainExecutionDrift {
                 current_authority.witness_identity(),
             );
         }
-        Ok(Self {
+        Self {
             kind,
             next_action,
             counters: WorthQueryInstalledDomainExecutionDriftCounters::denied_before_work(),
             retained_authority: retained_authority.clone(),
             current_authority: current_authority.cloned(),
-            drift_identity: drift_identity.seal()?,
-        })
+            drift_identity: drift_identity.seal().expect("fixed authority drift grammar: three closed enum labels and at most two sealed witness identities"),
+        }
     }
 
     pub fn kind(&self) -> WorthQueryInstalledDomainExecutionDriftKind {

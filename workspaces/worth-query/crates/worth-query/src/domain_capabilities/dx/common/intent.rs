@@ -110,8 +110,11 @@ pub struct WorthQueryIntentSupportContribution {
 impl WorthQueryIntentSupportContribution {
     pub fn try_materialize(
         self,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<
-        WorthQueryIntentDeclarationSupportTraceabilityArtifact,
+    ) -> Result<
+        WorthQueryCheckedDomainCapabilityOutcome<
+            WorthQueryIntentDeclarationSupportTraceabilityArtifact,
+        >,
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
     > {
         let semantic_code = qualify_semantic_code(self.target.authority(), &self.semantic_code);
         let target = self.target.clone();
@@ -133,7 +136,7 @@ impl WorthQueryIntentSupportContribution {
             WorthQuerySupportContributionPosture::NarrowedSupport => unreachable!(),
         })?;
 
-        materialize_common_lane(
+        Ok(materialize_common_lane(
             "support-traceability",
             WorthQueryDomainCapabilityTargetKind::IntentDeclaration,
             self.posture.as_str(),
@@ -146,7 +149,7 @@ impl WorthQueryIntentSupportContribution {
                 )
             },
             materialize_intent_declaration_support_traceability_artifact,
-        )?
+        )?)
     }
 
     pub fn materialize(
@@ -155,7 +158,7 @@ impl WorthQueryIntentSupportContribution {
         WorthQueryIntentDeclarationSupportTraceabilityArtifact,
         WorthQueryDomainCapabilityMaterializationError,
     > {
-        self.try_materialize().into_result()
+        self.try_materialize()?.into_result()
     }
 }
 

@@ -202,7 +202,7 @@ where
             input_contract: input_contract.to_string(),
             source_lane,
             target_lane,
-            target_binding_identity: domain_contribution.target().binding_identity(),
+            target_binding_identity: domain_contribution.target().binding_identity()?,
             request_identity: domain_contribution.request_identity().clone(),
             materialization_identity: domain_capability_scope_encoder(
                 "worth_query_intent_declaration_support_traceability_artifact_v1",
@@ -315,7 +315,7 @@ where
             route_kind,
             support_posture,
             envelope_identity,
-            target_binding_identity: domain_contribution.target().binding_identity(),
+            target_binding_identity: domain_contribution.target().binding_identity()?,
             request_identity: domain_contribution.request_identity().clone(),
             materialization_identity,
         },

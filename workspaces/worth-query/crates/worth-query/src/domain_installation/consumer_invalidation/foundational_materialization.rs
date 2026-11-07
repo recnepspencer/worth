@@ -13,6 +13,7 @@ pub type WorthQueryFoundationalInvalidationBoundaryArtifact =
     >;
 
 pub enum WorthQueryFoundationalInvalidationMaterializationStop {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     ForeignOrStaleLease,
     Foundational(FoundationalBoundaryMaterializationDenial),
 }
@@ -23,12 +24,15 @@ impl super::WorthQueryAdmittedConsumerInvalidation<'_> {
         workspace: &crate::runtime::WorthQueryWorkspace,
     ) -> Result<Option<super::WorthQueryFoundationalInvalidationProjection>, IdentityDerivationDenial>
     {
-        Ok(self.remains_current(workspace).then(|| {
-            super::foundational_projection::foundational_projection(
-                self.delta(),
-                FoundationalBoundaryEvidenceFreshnessPosture::FreshRetained,
-            )
-        })?)
+        Ok(self
+            .remains_current(workspace)
+            .then(|| {
+                super::foundational_projection::foundational_projection(
+                    self.delta(),
+                    FoundationalBoundaryEvidenceFreshnessPosture::FreshRetained,
+                )
+            })
+            .transpose()?)
     }
 
     pub fn materialize_foundational_projection(
@@ -41,6 +45,7 @@ impl super::WorthQueryAdmittedConsumerInvalidation<'_> {
     > {
         let projection = self
             .foundational_projection(workspace)
+            .map_err(WorthQueryFoundationalInvalidationMaterializationStop::EvidenceIdentityDerivationDenied)?
             .ok_or(WorthQueryFoundationalInvalidationMaterializationStop::ForeignOrStaleLease)?;
         let surface = FoundationalBoundaryArtifactSurface::new(projection, 1);
         materialize_descriptive_boundary_surface(

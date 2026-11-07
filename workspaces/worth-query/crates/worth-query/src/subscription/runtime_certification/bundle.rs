@@ -234,13 +234,13 @@ pub fn certify_query_subscription_runtime_family(
         return Err(QuerySubscriptionRuntimeCertificationError::new(
             QuerySubscriptionRuntimeCertificationErrorKind::MissingHostileCoverage,
             "runtime family certification requires at least one hostile family coverage row for every supported family",
-            &[
-                validation_shape_role_evidence_identity("family", scope.family().as_str()),
+            (|| { Ok(vec![
+                validation_shape_role_evidence_identity("family", scope.family().as_str())?,
                 validation_role_evidence_identity(
                     "coverage",
                     coverage_handle.family_coverage_identity(),
                 ),
-            ],
+            ]) })(),
             QuerySubscriptionRuntimeCertificationCounters::uncovered_family(false),
         ));
     }
@@ -249,8 +249,8 @@ pub fn certify_query_subscription_runtime_family(
         return Err(QuerySubscriptionRuntimeCertificationError::new(
             QuerySubscriptionRuntimeCertificationErrorKind::UncoveredFamily,
             "runtime family certification requires admitted coverage plus non-empty basis, policy, tenant, relationship-proof, view-shape, and lifecycle variation sets",
-            &[
-                validation_shape_role_evidence_identity("family", scope.family().as_str()),
+            (|| { Ok(vec![
+                validation_shape_role_evidence_identity("family", scope.family().as_str())?,
                 validation_role_evidence_identity(
                     "coverage",
                     coverage_handle.family_coverage_identity(),
@@ -259,12 +259,18 @@ pub fn certify_query_subscription_runtime_family(
                     "uncovered_variation_width",
                     uncovered_variation_width,
                 ),
-            ],
+            ]) })(),
             QuerySubscriptionRuntimeCertificationCounters::uncovered_family(false),
         ));
     }
 
-    let hostile_coverage_identity = hostile_coverage_identity(coverage_handle.hostile_rows());
+    let hostile_coverage_identity = hostile_coverage_identity(coverage_handle.hostile_rows())
+        .map_err(|cause| {
+            QuerySubscriptionRuntimeCertificationError::identity_refused(
+                cause,
+                scope.counters().clone(),
+            )
+        })?;
     let coverage_resolution_posture = *coverage_handle.coverage_resolution_posture();
     let receipt = CertificationCoverageReceipt::new(
         coverage_resolution_posture,

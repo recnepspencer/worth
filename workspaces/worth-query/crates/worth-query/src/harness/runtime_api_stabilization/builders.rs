@@ -16,16 +16,13 @@ use super::{
 
 pub(super) fn canonical_rows(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> Result<
-    Vec<
-        CanonicalCertificationRow<
-            RuntimeApiStabilizationPerturbationClass,
-            RuntimeApiStabilizationBundle,
-        >,
+) -> Vec<
+    CanonicalCertificationRow<
+        RuntimeApiStabilizationPerturbationClass,
+        RuntimeApiStabilizationBundle,
     >,
-    IdentityDerivationDenial,
 > {
-    Ok(vec![
+    vec![
         canonical_row(
             request_execution,
             "workflow-editor-golden-transcript",
@@ -70,22 +67,19 @@ pub(super) fn canonical_rows(
             8,
         )?,
         adversarial_composed_row(request_execution)?,
-    ])
+    ]
 }
 
 pub(super) fn rejection_rows(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> Result<
-    Vec<
-        RejectionCertificationRow<
-            RuntimeApiStabilizationPerturbationClass,
-            RuntimeApiStabilizationBundle,
-            RuntimeApiStabilizationRejectionBundle,
-        >,
+) -> Vec<
+    RejectionCertificationRow<
+        RuntimeApiStabilizationPerturbationClass,
+        RuntimeApiStabilizationBundle,
+        RuntimeApiStabilizationRejectionBundle,
     >,
-    IdentityDerivationDenial,
 > {
-    Ok(vec![
+    vec![
         rejection_row(
             request_execution,
             "store-backed-parity-deferred-gate",
@@ -100,7 +94,7 @@ pub(super) fn rejection_rows(
             WorthQueryRuntimeFacadeFamily::DurableArtifacts,
             RuntimeApiStabilizationFailureClass::DeferredStoreDurableGate,
         )?,
-    ])
+    ]
 }
 
 fn canonical_row(

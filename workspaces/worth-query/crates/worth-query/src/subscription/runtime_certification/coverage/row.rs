@@ -116,7 +116,7 @@ impl QuerySubscriptionFamilyCoverageRow {
             return Err(QuerySubscriptionRuntimeCertificationError::new(
                 QuerySubscriptionRuntimeCertificationErrorKind::ScopeSourceMismatch,
                 "admitted family coverage rows require diagnostic bundle digests aligned with support and lifecycle evidence",
-                &[
+                (|| { Ok(vec![
                     validation_role_evidence_identity(
                         "diagnostic_support",
                         diagnostic.support_report_identity(),
@@ -130,7 +130,7 @@ impl QuerySubscriptionFamilyCoverageRow {
                         "lifecycle",
                         lifecycle.certification_bundle_identity(),
                     ),
-                ],
+                ]) })(),
                 QuerySubscriptionRuntimeCertificationCounters::default(),
             ));
         }
@@ -144,7 +144,7 @@ impl QuerySubscriptionFamilyCoverageRow {
             diagnostic.bundle_identity(),
             None,
             lifecycle_class,
-        ))
+        )?)
     }
 
     pub fn hostile(
@@ -162,16 +162,16 @@ impl QuerySubscriptionFamilyCoverageRow {
             return Err(QuerySubscriptionRuntimeCertificationError::new(
                 QuerySubscriptionRuntimeCertificationErrorKind::CoverageFamilyMismatch,
                 "hostile family coverage rows require denied diagnostic bundles for the same query subscription family",
-                &[
+                (|| { Ok(vec![
                     validation_shape_role_evidence_identity(
                         "diagnostic_family",
                         diagnostic.semantic_labels().query_family_label(),
-                    ),
+                    )?,
                     validation_shape_role_evidence_identity(
                         "expected_family",
                         family.as_str(),
-                    ),
-                ],
+                    )?,
+                ]) })(),
                 QuerySubscriptionRuntimeCertificationCounters::default(),
             ));
         }
@@ -185,7 +185,7 @@ impl QuerySubscriptionFamilyCoverageRow {
             diagnostic.bundle_identity(),
             Some(failure.failure_identity()),
             lifecycle_class,
-        ))
+        )?)
     }
 
     fn new(

@@ -83,7 +83,10 @@ pub(super) fn materialize_collection_rows_from_request(
 
 pub(super) fn synthetic_detail_rows_for_request(
     request: &DeclarativeLiveQueryRequest,
-) -> Result<Vec<WorthQueryEntity>, IdentityDerivationDenial> {
+) -> Result<
+    Vec<WorthQueryEntity>,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+> {
     let anchor_identity = identity_anchor(request).unwrap_or("synthetic-anchor");
     Ok(vec![WorthQueryEntity::from_aspect_projection(
         crate::memory_workspace::admit_authored_entity_label(anchor_identity)?,

@@ -9,9 +9,8 @@ use crate::live::LiveQueryFamily;
 use crate::subscription::QuerySubscriptionConstructionSource;
 use crate::view_shape_live::LiveViewShapeFamily;
 
-pub(super) fn canonical_rows(
-) -> Result<Vec<MilestoneNineOneCertificationRow>, IdentityDerivationDenial> {
-    Ok(vec![
+pub(super) fn canonical_rows() -> Vec<MilestoneNineOneCertificationRow> {
+    vec![
         MilestoneNineOneCertificationRow {
             row_name: "detail-direct-scope-template-saved-facade-parity",
             perturbation_class: MilestoneNineOnePerturbationClass::ConstructionSourceParity,
@@ -266,5 +265,5 @@ pub(super) fn canonical_rows(
                 [3, 30, 300],
             )?,
         },
-    ])
+    ]
 }

@@ -71,7 +71,7 @@ impl EffectDiagnosticsMaterialization {
         if request.include_transition_rules {
             detail_sections.push(format!(
                 "transitions:{}",
-                receipt.transition_rules().rules_for_reporting()
+                receipt.transition_rules()?.rules_for_reporting()
             ));
         }
         if request.include_source_refs {

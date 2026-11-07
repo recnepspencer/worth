@@ -164,9 +164,9 @@ impl WorthQuerySupportContributionAuthoring {
         posture: WorthQuerySupportContributionPosture,
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self {
-            payload: WorthQuerySupportContributionPayload::new(posture, semantic_code, detail),
-        }
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        Ok(Self {
+            payload: WorthQuerySupportContributionPayload::new(posture, semantic_code, detail)?,
+        })
     }
 }

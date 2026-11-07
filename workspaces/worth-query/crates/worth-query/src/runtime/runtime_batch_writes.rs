@@ -91,7 +91,7 @@ impl WorthQueryRuntime {
                 naming_intent,
                 continuity_intent,
                 declared_aspect_operations,
-                declared_aspect_value_digest.clone()?,
+                declared_aspect_value_digest.clone(),
                 command.symbolic_aspect_references().to_vec(),
                 symbolic_aspect_resolution_evidence,
                 mutation_metadata,

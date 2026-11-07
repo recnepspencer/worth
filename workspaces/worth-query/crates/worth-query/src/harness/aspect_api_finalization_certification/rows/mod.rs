@@ -20,16 +20,13 @@ use super::{
 
 pub(super) fn canonical_rows(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> Result<
-    Vec<
-        CanonicalCertificationRow<
-            AspectApiFinalizationPerturbationClass,
-            AspectApiFinalizationCertificationBundle,
-        >,
+) -> Vec<
+    CanonicalCertificationRow<
+        AspectApiFinalizationPerturbationClass,
+        AspectApiFinalizationCertificationBundle,
     >,
-    IdentityDerivationDenial,
 > {
-    Ok(vec![
+    vec![
         CanonicalCertificationRow {
             row_name: "authoritative-insert-update-delete-surface",
             perturbation_class: AspectApiFinalizationPerturbationClass::AuthoritativeCrudSurface,
@@ -81,22 +78,19 @@ pub(super) fn canonical_rows(
             hostile_lane: mutation_surface_contract_lane(request_execution),
             parity_lane: mutation_surface_contract_lane(request_execution),
         },
-    ])
+    ]
 }
 
 pub(super) fn rejection_rows(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> Result<
-    Vec<
-        RejectionCertificationRow<
-            AspectApiFinalizationPerturbationClass,
-            AspectApiFinalizationCertificationBundle,
-            AspectApiFinalizationRejectionBundle,
-        >,
+) -> Vec<
+    RejectionCertificationRow<
+        AspectApiFinalizationPerturbationClass,
+        AspectApiFinalizationCertificationBundle,
+        AspectApiFinalizationRejectionBundle,
     >,
-    IdentityDerivationDenial,
 > {
-    Ok(vec![
+    vec![
         RejectionCertificationRow {
             row_name: "unsupported-intent-family-fails-typed-and-early",
             perturbation_class:
@@ -113,5 +107,5 @@ pub(super) fn rejection_rows(
             hostile_lane: duplicate_aspect_authoring_rejection(request_execution)?,
             parity_lane: mutation_surface_contract_lane(request_execution),
         },
-    ])
+    ]
 }

@@ -40,7 +40,7 @@ pub fn certify_lower_runtime_routing(
         certification_row(
             WorthQueryLowerRuntimeCertificationLane::CrossingsSurface,
             crossings
-                .inventory_digest()
+                .inventory_digest()?
                 .terminal_projection_for_reporting()
                 .to_string(),
             format!(
@@ -130,7 +130,7 @@ pub fn certify_lower_runtime_routing(
         ),
         certification_row(
             WorthQueryLowerRuntimeCertificationLane::DeferredNeighborDenial,
-            closeout.registry_digest(),
+            closeout.registry_digest()?,
             "deferred/store-temporal-async neighbors remain explicit closeout rows rather than admitted support".to_string(),
             counter_digest(&[
                 format!("closeout_rows:{}", closeout.rows().len()),

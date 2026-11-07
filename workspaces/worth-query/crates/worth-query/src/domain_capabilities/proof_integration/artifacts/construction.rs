@@ -22,7 +22,7 @@ where
     T: WorthQueryDomainCapabilityTargetBinding,
     (P, T): AllowedContributionBinding<P, T>,
 {
-    let binding_basis = target.binding_identity().as_str().to_string();
+    let binding_basis = target.binding_identity()?.as_str().to_string();
     Ok(WorthQueryRequestedDomainCapabilityContribution(
         remint_with_phase(
             WorthQueryDomainCapabilityContribution::new(target, payload)?,

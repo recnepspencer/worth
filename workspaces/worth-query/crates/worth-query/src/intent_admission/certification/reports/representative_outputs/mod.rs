@@ -44,7 +44,7 @@ pub fn worth_query_intent_admission_representative_output_report(
 fn representative_outputs(
     fixtures: &RepresentativeOutputFixtures,
     eligibility: &RepresentativeEligibilityDigests,
-) -> Result<Vec<OutputRow>, IdentityDerivationDenial> {
+) -> Result<Vec<OutputRow>, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
     Ok(vec![
         query_digest_output(fixtures),
         raw_intent_digest_output(fixtures),

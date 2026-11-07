@@ -271,12 +271,12 @@ impl WorthQueryRuntime {
             let session = self.open_preview_with_admitted_basis(execution, basis_admission)?;
             session.discard()
         };
-        let receipt_identity = outcome.closeout_evidence().closeout_identity().clone();
+        let receipt_identity = outcome?.closeout_evidence().closeout_identity().clone();
         self.finish_ordinary_preview_execution(
             execution,
             receipt_identity,
             request_identity,
-            outcome,
+            outcome?,
             materialize_inspection,
         )
     }

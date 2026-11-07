@@ -54,7 +54,7 @@ where
             WorthQueryCertificationReplayAdmissionDenial::ReplayComparatorUnavailable,
         ));
     };
-    let admitted = match bound.admit_workflow_resources(resources, workspace)? {
+    let admitted = match bound.admit_workflow_resources(resources, workspace) {
         TransitionOutcome::Success(admitted) => admitted,
         TransitionOutcome::Denied(stop) => {
             return Ok(TransitionOutcome::Denied(

@@ -138,7 +138,7 @@ impl WorthQueryRuntime {
             .get(&effect_target)
             .map(WorthQueryEffectInspectionEvidence::from_runtime)
             .transpose()?
-            .ok_or_else(|| WorthQueryRuntimeError::MissingEffect(effect_name.to_string()))?
+            .ok_or_else(|| WorthQueryRuntimeError::MissingEffect(effect_name.to_string()))
     }
 
     pub(super) fn computed_candidate_live_views(

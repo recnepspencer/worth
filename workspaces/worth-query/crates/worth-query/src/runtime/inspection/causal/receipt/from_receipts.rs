@@ -151,14 +151,14 @@ impl QueryObservationReceipt {
                         CausalEvidenceFamily::QueryInspection,
                         inspection.inspection_identity(),
                     )?,
-                ),
+                )?,
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::RelationalAuthority,
                     causal_evidence_reference_identity_digest(
                         CausalEvidenceFamily::RelationalAuthority,
                         &commit_identity,
                     )?,
-                ),
+                )?,
             ],
         })?)
     }
@@ -203,7 +203,7 @@ impl QueryObservationReceipt {
                     CausalEvidenceFamily::QueryInspection,
                     inspection.inspection_identity(),
                 )?,
-            )],
+            )?],
         })?)
     }
 
@@ -245,14 +245,14 @@ impl QueryObservationReceipt {
                         CausalEvidenceFamily::QueryInspection,
                         inspection.inspection_identity(),
                     )?,
-                ),
+                )?,
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::BridgePreview,
                     causal_evidence_reference_identity_digest(
                         CausalEvidenceFamily::BridgePreview,
                         inspection.admission_identity(),
                     )?,
-                ),
+                )?,
             ],
         })?)
     }
@@ -295,14 +295,14 @@ impl QueryObservationReceipt {
                         CausalEvidenceFamily::QueryInspection,
                         inspection.inspection_identity(),
                     )?,
-                ),
+                )?,
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::BridgePreview,
                     causal_evidence_reference_identity_digest(
                         CausalEvidenceFamily::BridgePreview,
                         inspection.closeout_identity(),
                     )?,
-                ),
+                )?,
             ],
         })?)
     }

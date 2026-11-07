@@ -73,7 +73,7 @@ where
             runtime_snapshot_identity,
         } => {
             let binding_scope =
-                WorkflowBindingScopeField::Identity(&target.binding_identity());
+                WorkflowBindingScopeField::Identity(&target.binding_identity()?);
             crate::workflow::synthetic_runtime_workflow_binding_scoped_for_snapshot_binding_identity(
                 source_label.as_str(),
                 &binding_scope,
@@ -83,7 +83,7 @@ where
         WorthQueryWorkflowRuntimeBindingSemantics::RuntimePreflightBundle { preflight } =>
             match scoped_runtime_preflight_workflow_binding_for_binding_identity(
                 preflight,
-                &target.binding_identity(),
+                &target.binding_identity()?,
             ) {
                 Ok(binding) => binding,
                 Err(error) => {

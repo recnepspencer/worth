@@ -160,7 +160,7 @@ impl WorthQueryBatchMutationEvidence {
                 .iter()
                 .find_map(Option::as_ref)
                 .map(|evidence| evidence.execution_record_digest().clone()),
-        })?)
+        }))
     }
 
     pub fn component_count(&self) -> usize {

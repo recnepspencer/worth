@@ -95,7 +95,8 @@ impl WorthQueryContinuityMutationEvidence {
             .map(|collection| {
                 WorthQueryMutationTargetCollectionIdentity::new("continuity-target", collection)
             })
-            .or_else(|| target_collection.cloned())?;
+            .transpose()?
+            .or_else(|| target_collection.cloned());
         let (lineage_digest, continuity_resolution_digest) =
             continuity_digests(ContinuityDigestInput {
                 family: family.as_str(),
@@ -104,7 +105,7 @@ impl WorthQueryContinuityMutationEvidence {
                 successors: &successor_authoritative_identities,
                 basis_binding: basis_binding_digest.as_ref(),
                 resolved_target: resolved_target_entity_identity.as_ref(),
-                target_collection: target_collection.as_ref()?,
+                target_collection: target_collection.as_ref(),
             })?;
         Ok(Self {
             family,

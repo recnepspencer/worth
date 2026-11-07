@@ -188,9 +188,9 @@ impl WorthQueryIntentPreviewMutationContribution {
                 )
             },
             |ready| {
-                materialize_query_workflow_declaration(ready).map_success(
+                Ok(materialize_query_workflow_declaration(ready)?.map_success(
                     |declaration| WorthQueryIntentPreviewMutationPlan { inner: declaration },
-                )
+                ))
             },
         )?)
     }

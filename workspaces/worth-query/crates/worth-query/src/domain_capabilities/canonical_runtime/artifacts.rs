@@ -38,8 +38,8 @@ where
         let semantic_code = contribution.payload().payload().semantic_code().to_string();
         let detail = contribution.payload().payload().detail().to_string();
         let target_kind = contribution.payload().target().kind();
-        let target_identity = contribution.payload().target().target_identity();
-        let binding_identity = contribution.payload().target().binding_identity();
+        let target_identity = contribution.payload().target().target_identity()?;
+        let binding_identity = contribution.payload().target().binding_identity()?;
         let request_identity = contribution.payload().request_identity();
         let semantic_identity = canonical_runtime_semantic_identity(
             category,

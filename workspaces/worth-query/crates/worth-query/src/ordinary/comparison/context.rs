@@ -58,12 +58,12 @@ impl WorthQueryCapturedBranchComparisonBasis {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         workspace: &WorthQueryWorkspace,
-    ) -> Result<bool, IdentityDerivationDenial> {
-        Ok(self.workspace_name == workspace.name()
+    ) -> bool {
+        self.workspace_name == workspace.name()
             && self
                 .runtime_basis
                 .snapshot()
-                .is_same_current_identity_as(&workspace.snapshot_identity_with_request(execution)))
+                .is_same_current_identity_as(&workspace.snapshot_identity_with_request(execution))
     }
 }
 
@@ -71,11 +71,11 @@ impl WorthQueryCapturedComparisonBasis {
     fn capture(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         workspace: &WorthQueryWorkspace,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             workspace_name: workspace.name().to_string(),
             snapshot: workspace.snapshot_identity_with_request(execution),
-        })
+        }
     }
 
     pub(crate) fn workspace_name(&self) -> &str {
@@ -90,11 +90,11 @@ impl WorthQueryCapturedComparisonBasis {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         workspace: &WorthQueryWorkspace,
-    ) -> Result<bool, IdentityDerivationDenial> {
-        Ok(self.workspace_name == workspace.name()
+    ) -> bool {
+        self.workspace_name == workspace.name()
             && self
                 .snapshot
-                .is_same_current_identity_as(&workspace.snapshot_identity_with_request(execution)))
+                .is_same_current_identity_as(&workspace.snapshot_identity_with_request(execution))
     }
 }
 
@@ -134,13 +134,13 @@ impl WorthQueryComparisonContext {
 pub fn current_and_retained(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &WorthQueryWorkspace,
-) -> Result<WorthQueryComparisonContext, IdentityDerivationDenial> {
-    Ok(WorthQueryComparisonContext {
+) -> WorthQueryComparisonContext {
+    WorthQueryComparisonContext {
         authority: WorthQueryComparisonPairAuthority::CurrentAndRetained {
-            current: WorthQueryCapturedComparisonBasis::capture(execution, workspace)?,
-            retained: at(execution, workspace)?,
+            current: WorthQueryCapturedComparisonBasis::capture(execution, workspace),
+            retained: at(execution, workspace),
         },
-    })
+    }
 }
 
 /// Structurally bind two independently owned workspace/branch bases.

@@ -61,7 +61,7 @@ pub(super) fn preview_certification_evidence(
                     crate::evidence_identity::WorthQueryEvidenceTag::new("identity_family"),
                     "subscription_preview_support_absent_v1",
                 )
-                .seal()],
+                .seal()?],
                 performance_receipt_identity: lifecycle_absent_performance_receipt_identity(),
             })?
         }
@@ -161,7 +161,7 @@ pub(super) fn preview_certification_evidence(
                         crate::evidence_identity::WorthQueryEvidenceTag::new("isolation"),
                         isolation.isolation_identity(),
                     )
-                    .seal(),
+                    .seal()?,
                     WorthQueryEvidenceIdentity::compose(
                         crate::evidence_identity::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
                     )
@@ -173,7 +173,7 @@ pub(super) fn preview_certification_evidence(
                         crate::evidence_identity::WorthQueryEvidenceTag::new("residue"),
                         residue_report.report_identity(),
                     )
-                    .seal(),
+                    .seal()?,
                     WorthQueryEvidenceIdentity::compose(
                         crate::evidence_identity::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
                     )
@@ -287,7 +287,7 @@ pub(super) fn preview_certification_evidence(
                         crate::evidence_identity::WorthQueryEvidenceTag::new("isolation"),
                         isolation.isolation_identity(),
                     )
-                    .seal(),
+                    .seal()?,
                     WorthQueryEvidenceIdentity::compose(
                         crate::evidence_identity::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
                     )
@@ -299,7 +299,7 @@ pub(super) fn preview_certification_evidence(
                         crate::evidence_identity::WorthQueryEvidenceTag::new("residue"),
                         residue_report.report_identity(),
                     )
-                    .seal(),
+                    .seal()?,
                     WorthQueryEvidenceIdentity::compose(
                         crate::evidence_identity::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
                     )

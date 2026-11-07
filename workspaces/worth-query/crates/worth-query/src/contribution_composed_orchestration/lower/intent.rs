@@ -127,7 +127,7 @@ where
         order_index,
         category_family,
         requested.payload().request_identity().clone(),
-        requested.payload().target().binding_identity(),
+        requested.payload().target().binding_identity()?,
         requested.payload().payload().semantic_code(),
         requested.payload().payload().detail(),
         declaration_aspect_record,

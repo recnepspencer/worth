@@ -47,11 +47,11 @@ impl<D> WorthQueryInstalledDomainMutationDeclaration<D> {
     pub fn workflow(
         self,
         label: WorthQuerySessionLabel,
-    ) -> Result<WorthQueryInstalledDomainWorkflowDeclaration<D>, IdentityDerivationDenial> {
-        Ok(WorthQueryInstalledDomainWorkflowDeclaration::new(
+    ) -> WorthQueryInstalledDomainWorkflowDeclaration<D> {
+        WorthQueryInstalledDomainWorkflowDeclaration::new(
             self.witness,
             declare_workflow(label, self.declaration),
-        ))
+        )
     }
 }
 

@@ -19,7 +19,7 @@ impl WorthQueryMutationRequest {
             self.context.authority.family(),
             WorthQueryOrdinaryAuthorityFamily::Mutation
         );
-        match workspace.ordinary_authority_drift(request_execution, &self.context.authority)? {
+        match workspace.ordinary_authority_drift(request_execution, &self.context.authority) {
             WorthQueryOrdinaryAuthorityDrift::ForeignOwner => {
                 return Ok(WorthQueryMutationOutcome::Stopped(
                     WorthQueryMutationStop::authority(

@@ -173,7 +173,7 @@ macro_rules! define_payload_family {
                 posture: $posture,
                 semantic_code: impl Into<String>,
                 detail: impl Into<String>,
-            ) -> Self {
+            ) -> Result<Self, $crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
                 let semantic_code = semantic_code.into();
                 let detail = detail.into();
                 let payload_identity = $crate::domain_capabilities::identity::domain_capability_scope_encoder(
@@ -183,13 +183,13 @@ macro_rules! define_payload_family {
                     .field_shape($crate::WorthQueryEvidenceTag::new("posture"), posture.as_str())
                     .field_shape($crate::WorthQueryEvidenceTag::new("semantic_code"), &semantic_code)
                     .field_shape($crate::WorthQueryEvidenceTag::new("detail"), &detail)
-                    .seal();
-                Self {
+                    .seal()?;
+                Ok(Self {
                     posture,
                     semantic_code,
                     detail,
                     payload_identity,
-                }
+                })
             }
 
             pub fn category(&self) -> WorthQueryDomainCapabilityCategory {

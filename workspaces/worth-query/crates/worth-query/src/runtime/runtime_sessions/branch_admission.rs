@@ -86,7 +86,7 @@ impl WorthQueryRuntime {
         .chain(
             branch_support_evidence
                 .into_iter()
-                .map(WorthQueryBasisAdmissionEvidenceRow::support_profile_token),
+                .map(WorthQueryBasisAdmissionEvidenceRow::support_profile_token)?,
         )
         .collect::<Vec<_>>();
         Ok(WorthQueryBranchBasisAdmission::new(

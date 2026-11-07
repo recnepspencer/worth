@@ -64,8 +64,7 @@ where
         self,
         request: WorthQueryExecutionResourceRequest,
         workspace: &crate::runtime::WorthQueryWorkspace,
-    ) -> Result<WorthQueryWorkflowResourceAdmissionOutcome<D, O, F, L>, IdentityDerivationDenial>
-    {
+    ) -> WorthQueryWorkflowResourceAdmissionOutcome<D, O, F, L> {
         let counters = WorthQueryExecutionResourceAdmissionCounters {
             runtime_authority_checks: 1,
             ..Default::default()
@@ -81,7 +80,7 @@ where
                 format!("{denial:?}"),
                 counters,
             );
-            return Ok(runtime_denial(kind, denial));
+            return runtime_denial(kind, denial);
         }
         let (graph, executor, parallel_posture) = self.workflow_providers();
         let graph = std::sync::Arc::clone(graph);
@@ -100,7 +99,7 @@ where
             counters,
         ) {
             Ok(plan) => plan,
-            Err(denial) => return Ok(admission_denial_outcome(denial)),
+            Err(denial) => return admission_denial_outcome(denial),
         };
         let stages = match lower_stages(
             &self,
@@ -108,7 +107,7 @@ where
             WorthQueryExecutionResourceAdmissionCounters::default(),
         ) {
             Ok(stages) => stages,
-            Err(denial) => return Ok(admission_denial_outcome(denial)),
+            Err(denial) => return admission_denial_outcome(denial),
         };
         let resources = WorthQueryAdmittedWorkflowResourcePlan::assemble(operation, stages);
         let resource_attempt = match workspace
@@ -116,7 +115,7 @@ where
             .start_workflow_resource_attempt(self.execution_authority(), resources)
         {
             Ok(attempt) => attempt,
-            Err(denial) => return Ok(admission_denial_outcome(denial)),
+            Err(denial) => return admission_denial_outcome(denial),
         };
         let mut basis = operation_phase_basis(self.authority_proof()).clone();
         basis.resource_admission_identity =
@@ -126,16 +125,14 @@ where
             Some(self.authority_proof().payload().identity()),
             basis,
         );
-        Ok(TransitionOutcome::Success(
-            WorthQueryAdmittedWorkflowOperation {
-                bound: self,
-                graph,
-                executor,
-                parallel_posture,
-                resource_attempt,
-                phase_proof,
-            },
-        ))
+        TransitionOutcome::Success(WorthQueryAdmittedWorkflowOperation {
+            bound: self,
+            graph,
+            executor,
+            parallel_posture,
+            resource_attempt,
+            phase_proof,
+        })
     }
 }
 

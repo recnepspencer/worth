@@ -64,10 +64,12 @@ pub struct WorthQueryLowerRuntimeGraphInvariantDenialContribution {
 impl WorthQueryLowerRuntimeGraphInvariantDenialContribution {
     pub fn try_materialize(
         self,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<WorthQueryGraphCompositionDomainInvariantDenial>
-    {
+    ) -> Result<
+        WorthQueryCheckedDomainCapabilityOutcome<WorthQueryGraphCompositionDomainInvariantDenial>,
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         let target = self.target;
-        materialize_common_lane(
+        Ok(materialize_common_lane(
             "invariant-capability",
             WorthQueryDomainCapabilityTargetKind::LowerRuntimeBoundaryEnvelope,
             WorthQueryInvariantCapabilityContributionPosture::InvariantDenial.as_str(),
@@ -80,7 +82,7 @@ impl WorthQueryLowerRuntimeGraphInvariantDenialContribution {
                 )
             },
             materialize_graph_composition_domain_invariant_denial,
-        )?
+        )?)
     }
 
     pub fn materialize(
@@ -89,6 +91,6 @@ impl WorthQueryLowerRuntimeGraphInvariantDenialContribution {
         WorthQueryGraphCompositionDomainInvariantDenial,
         WorthQueryDomainCapabilityMaterializationError,
     > {
-        self.try_materialize().into_result()
+        self.try_materialize()?.into_result()
     }
 }

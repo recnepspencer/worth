@@ -79,7 +79,7 @@ pub(crate) fn lower_grouped_members_on_handle<
     for member in declaration.members() {
         if capture_proof {
             let transcript =
-                handle.orchestrate_envelope_from_progressed_proof(member.progression().clone())?;
+                handle.orchestrate_envelope_from_progressed_proof(member.progression().clone());
             let terminal_outcome = match transcript.outcome() {
                 WorthQueryDeclarationEnvelopeChecked::Enveloped(_) => None,
                 terminal => Some(declaration_entry_outcome_from_envelope_checked_ref(
@@ -104,7 +104,7 @@ pub(crate) fn lower_grouped_members_on_handle<
 
             let checked =
                 handle.orchestrate_envelope_from_progressed_checked(member.progression().clone());
-            if let WorthQueryDeclarationEnvelopeChecked::Enveloped(envelope) = checked? {
+            if let WorthQueryDeclarationEnvelopeChecked::Enveloped(envelope) = checked {
                 member_envelopes.push(WorthQueryGroupedEnvelopeMember::new(
                     member.member_index(),
                     member.role(),
@@ -117,7 +117,7 @@ pub(crate) fn lower_grouped_members_on_handle<
 
         let checked =
             handle.orchestrate_envelope_from_progressed_checked(member.progression().clone());
-        match checked? {
+        match checked {
             WorthQueryDeclarationEnvelopeChecked::Enveloped(envelope) => {
                 member_envelopes.push(WorthQueryGroupedEnvelopeMember::new(
                     member.member_index(),

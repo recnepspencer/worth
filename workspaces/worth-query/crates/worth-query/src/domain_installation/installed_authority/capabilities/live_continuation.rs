@@ -205,8 +205,8 @@ impl<D> WorthQueryInstalledDomainLiveCloseStop<D> {
 pub(super) fn close_outcome<D>(
     outcome: WorthQueryManagedLiveCloseOutcome,
     receipt: WorthQueryInstalledDomainExecutionReceipt,
-) -> Result<WorthQueryInstalledDomainLiveCloseOutcome<D>, IdentityDerivationDenial> {
-    Ok(match outcome {
+) -> WorthQueryInstalledDomainLiveCloseOutcome<D> {
+    match outcome {
         WorthQueryManagedLiveCloseOutcome::Closed(close_receipt) => {
             let execution_receipt = receipt.derive(
                 WorthQueryInstalledDomainCapabilityKind::LiveClose,
@@ -228,5 +228,5 @@ pub(super) fn close_outcome<D>(
                 },
             )
         }
-    })
+    }
 }

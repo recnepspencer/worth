@@ -102,29 +102,21 @@ impl<D> WorthQueryInstalledDomainHandle<D> {
         )
     }
 
-    pub fn authority_witness(
-        &self,
-    ) -> Result<WorthQueryInstalledDomainAuthorityWitness, IdentityDerivationDenial> {
-        Ok(WorthQueryInstalledDomainAuthorityWitness::from_authority(
-            self.authority_arc(),
-        ))
+    pub fn authority_witness(&self) -> WorthQueryInstalledDomainAuthorityWitness {
+        WorthQueryInstalledDomainAuthorityWitness::from_authority(self.authority_arc())
     }
     pub fn graph_read_operation(
         &self,
         definition: &WorthQueryDomainGraphReadOperationDefinition,
-    ) -> Result<WorthQueryInstalledGraphReadOperation, IdentityDerivationDenial> {
-        let authority = self.authority_witness()?;
-        Ok(WorthQueryInstalledGraphReadOperation::new(
+    ) -> WorthQueryInstalledGraphReadOperation {
+        let authority = self.authority_witness();
+        WorthQueryInstalledGraphReadOperation::new(
             definition.declare_for_installed_authority(&authority),
             authority,
-        ))
+        )
     }
-    pub fn rebind_request(
-        &self,
-    ) -> Result<WorthQueryDomainRebindRequest<D>, IdentityDerivationDenial> {
-        Ok(WorthQueryDomainRebindRequest::new(
-            self.authority_witness()?,
-        ))
+    pub fn rebind_request(&self) -> WorthQueryDomainRebindRequest<D> {
+        WorthQueryDomainRebindRequest::new(self.authority_witness())
     }
 
     pub fn declarations<C>(
@@ -143,7 +135,7 @@ impl<D> WorthQueryInstalledDomainHandle<D> {
             .validate_installed_domain_handle(self)
             .map_err(WorthQueryInstalledDomainDeclarationContextDenial::handle)?;
         WorthQueryInstalledDomainDeclarationContext::admit(
-            self.authority_witness()?,
+            self.authority_witness(),
             operating_context,
         )
     }
@@ -160,7 +152,7 @@ impl<D> WorthQueryInstalledDomainHandle<D> {
         D: crate::application::WorthQueryDomainEntryMarker + 'static,
         C: crate::application::WorthQueryDomainOperatingContext<D>,
     {
-        let witness = self.authority_witness()?;
+        let witness = self.authority_witness();
         workspace
             .validate_installed_domain_witness::<D>(&witness)
             .map_err(WorthQueryInstalledDomainDeclarationContextDenial::handle)?;

@@ -11,9 +11,8 @@ use crate::live::LiveQueryFamily;
 use crate::subscription::QuerySubscriptionMaintenanceDeltaKind;
 use crate::view_shape_live::LiveViewShapeFamily;
 
-pub(super) fn canonical_rows(
-) -> Result<Vec<MilestoneNineTwoCertificationRow>, IdentityDerivationDenial> {
-    Ok(vec![
+pub(super) fn canonical_rows() -> Vec<MilestoneNineTwoCertificationRow> {
+    vec![
         row(
             "detail-active-lifecycle-delivery-ack",
             MilestoneNineTwoPerturbationClass::DetailLifecycleDelivery,
@@ -177,7 +176,7 @@ pub(super) fn canonical_rows(
                 2,
             )?,
         ),
-    ])
+    ]
 }
 
 fn row(

@@ -77,7 +77,7 @@ where
     P: WorthQueryDomainCapabilityPayload,
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    let binding_identity = target.binding_identity();
+    let binding_identity = target.binding_identity()?;
     let mut identity = domain_capability_scope_encoder("worth_query_domain_capability_request_v2")
         .field_shape(
             WorthQueryEvidenceTag::new("category"),

@@ -97,8 +97,11 @@ pub struct WorthQueryLowerRuntimeSupportContribution {
 impl WorthQueryLowerRuntimeSupportContribution {
     pub fn try_materialize(
         self,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<
-        WorthQueryLowerRuntimeBoundarySupportTraceabilityArtifact,
+    ) -> Result<
+        WorthQueryCheckedDomainCapabilityOutcome<
+            WorthQueryLowerRuntimeBoundarySupportTraceabilityArtifact,
+        >,
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
     > {
         let target = self.target.clone();
         let requested = WorthQuerySupportContributionAuthoring::narrowed_support(
@@ -107,7 +110,7 @@ impl WorthQueryLowerRuntimeSupportContribution {
         )
         .bind_to_installed_target(self.target)?;
 
-        materialize_common_lane(
+        Ok(materialize_common_lane(
             "support-traceability",
             WorthQueryDomainCapabilityTargetKind::LowerRuntimeBoundaryEnvelope,
             WorthQuerySupportContributionPosture::NarrowedSupport.as_str(),
@@ -120,7 +123,7 @@ impl WorthQueryLowerRuntimeSupportContribution {
                 )
             },
             materialize_lower_runtime_support_traceability_artifact,
-        )?
+        )?)
     }
 
     pub fn materialize(
@@ -129,7 +132,7 @@ impl WorthQueryLowerRuntimeSupportContribution {
         WorthQueryLowerRuntimeBoundarySupportTraceabilityArtifact,
         WorthQueryDomainCapabilityMaterializationError,
     > {
-        self.try_materialize().into_result()
+        self.try_materialize()?.into_result()
     }
 }
 

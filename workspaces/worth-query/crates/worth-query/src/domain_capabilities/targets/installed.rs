@@ -48,7 +48,7 @@ where
         )
         .field_evidence_identity(
             WorthQueryEvidenceTag::new("semantic_target"),
-            &target.target_identity(),
+            &target.target_identity()?,
         )
         .seal()?;
         let binding_identity = worth_query_evidence_identity(
@@ -57,7 +57,7 @@ where
         .field_evidence_identity(WorthQueryEvidenceTag::new("target"), &target_identity)
         .field_evidence_identity(
             WorthQueryEvidenceTag::new("semantic_binding"),
-            &target.binding_identity(),
+            &target.binding_identity()?,
         )
         .seal()?;
         let target_digest = target_identity.as_str().to_string();
@@ -113,12 +113,12 @@ where
         &self.binding_digest
     }
 
-    fn target_identity(&self) -> WorthQueryEvidenceIdentity {
-        self.target_identity.clone()
+    fn target_identity(&self) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(self.target_identity.clone())
     }
 
-    fn binding_identity(&self) -> WorthQueryEvidenceIdentity {
-        self.binding_identity.clone()
+    fn binding_identity(&self) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(self.binding_identity.clone())
     }
 
     fn semantics(&self) -> &WorthQueryDomainCapabilityTargetSemantics {

@@ -217,7 +217,10 @@ impl WorthQueryMemoryWorkspace {
         changed: &BTreeSet<worth_relational::facade::identity::EntityId>,
         commit_identity: &WorthQueryCommitIdentity,
         snapshot_identity: &super::WorthQuerySnapshotIdentity,
-    ) -> Result<WorthQueryMutationReceipt, IdentityDerivationDenial> {
+    ) -> Result<
+        WorthQueryMutationReceipt,
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         let entity = mutation
             .entity
             .expect("insert identities were admitted above");

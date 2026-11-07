@@ -12,9 +12,8 @@ use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as Iden
 use crate::live::LiveQueryFamily;
 use crate::subscription::QuerySubscriptionMaintenanceDeltaKind;
 
-pub(super) fn rejection_rows() -> Result<Vec<MilestoneNineTwoRejectionRow>, IdentityDerivationDenial>
-{
-    Ok(vec![
+pub(super) fn rejection_rows() -> Vec<MilestoneNineTwoRejectionRow> {
+    vec![
         rejection_row(
             "masked-sharing-denies-before-join",
             MilestoneNineTwoPerturbationClass::MaskedSharingDenied,
@@ -50,7 +49,7 @@ pub(super) fn rejection_rows() -> Result<Vec<MilestoneNineTwoRejectionRow>, Iden
             MilestoneNineTwoPerturbationClass::StoreBackedRestartDenied,
             store_backed_restart_rejection()?,
         )?,
-    ])
+    ]
 }
 
 fn rejection_row(

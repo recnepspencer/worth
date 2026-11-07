@@ -119,7 +119,7 @@ pub fn build_certified_family_coverage_handle(
         return Err(QuerySubscriptionRuntimeCertificationError::new(
             QuerySubscriptionRuntimeCertificationErrorKind::CoverageResolutionDenied,
             "runtime family coverage handle construction may not proceed from a denied matrix-scan posture",
-            &[validation_shape_role_evidence_identity("family", family.as_str())],
+            (|| { Ok(vec![validation_shape_role_evidence_identity("family", family.as_str())?]) })(),
             QuerySubscriptionRuntimeCertificationCounters::uncovered_family(false),
         ));
     }
@@ -134,10 +134,10 @@ pub fn build_certified_family_coverage_handle(
         return Err(QuerySubscriptionRuntimeCertificationError::new(
             QuerySubscriptionRuntimeCertificationErrorKind::CoverageFamilyMissing,
             "runtime family coverage handle construction requires at least one family-scoped coverage row",
-            &[
-                validation_shape_role_evidence_identity("family", family.as_str()),
+            (|| { Ok(vec![
+                validation_shape_role_evidence_identity("family", family.as_str())?,
                 validation_role_evidence_identity("matrix", matrix.family_coverage_identity()),
-            ],
+            ]) })(),
             QuerySubscriptionRuntimeCertificationCounters::uncovered_family(
                 posture == CoverageResolutionPosture::MatrixScanDebtExplicit,
             ),
@@ -179,7 +179,7 @@ pub fn build_certified_family_coverage_handle(
     let view_shape_variations =
         QuerySubscriptionViewShapeVariationSet::from_identities(view_shape_identities.iter());
     let lifecycle_class_variations =
-        QuerySubscriptionLifecycleClassVariationSet::from_set(lifecycle_classes);
+        QuerySubscriptionLifecycleClassVariationSet::from_set(lifecycle_classes)?;
 
     let family_coverage_identity = certified_family_coverage_handle_identity(
         family.as_str(),
@@ -190,10 +190,10 @@ pub fn build_certified_family_coverage_handle(
         tenant_variations.variation_identity(),
         relationship_proof_variations.variation_identity(),
         view_shape_variations.variation_identity(),
-        lifecycle_class_variations.variation_identity(),
+        lifecycle_class_variations?.variation_identity(),
         admitted_rows.len(),
         hostile_rows.len(),
-    );
+    )?;
 
     Ok(CertifiedFamilyCoverageHandle {
         family: family.clone(),

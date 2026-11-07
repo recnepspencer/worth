@@ -139,7 +139,7 @@ pub(in crate::runtime) fn execute_runtime_basis_context_read_graph(
         )?);
     let receipt_snapshot_identity = runtime.current_snapshot_identity_with_request(execution);
     let (rows, maintenance_source_rows) =
-        if context_allows_runtime_materialization(&receipt_snapshot_identity, context)? {
+        if context_allows_runtime_materialization(&receipt_snapshot_identity, context) {
             let (rows, support_rows, _) =
                 materialize_read_rows(execution, runtime, read_graph)?.into_parts();
             (rows, Some(support_rows))
@@ -229,8 +229,8 @@ fn ensure_context_matches_read_graph(
 fn context_allows_runtime_materialization(
     runtime_snapshot_identity: &WorthQuerySnapshotIdentity,
     context: &ScopedQueryBasisContext,
-) -> Result<bool, IdentityDerivationDenial> {
-    Ok(match context.family() {
+) -> bool {
+    match context.family() {
         QueryContextFamily::CurrentBranchHead => true,
         QueryContextFamily::HistoricalSnapshot => {
             context.admits_runtime_snapshot(runtime_snapshot_identity)
@@ -239,5 +239,5 @@ fn context_allows_runtime_materialization(
         | QueryContextFamily::HistoricalCommit
         | QueryContextFamily::PreviewDerivedHistorical
         | QueryContextFamily::DiffComparison => false,
-    })
+    }
 }

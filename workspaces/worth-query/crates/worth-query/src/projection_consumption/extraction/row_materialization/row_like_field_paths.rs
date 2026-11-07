@@ -51,7 +51,7 @@ impl ProjectionMaterializedField {
                     fact_kind: ProjectionFactKind::DerivedField,
                     expected_shape: "bridge projection field locator",
                 },
-            )?
+            )
     }
 
     fn into_parts(self) -> (ProjectionFactFieldPath, ConsumedNativeValue) {
