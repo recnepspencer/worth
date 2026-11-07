@@ -4,9 +4,11 @@ use crate::application::{
     WorthQueryDeclarationInput, WorthQueryDeclarationLegalityDenial,
     WorthQueryDeclarationProgressionTerminalError, WorthQueryDomainEntryMarker,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryGroupedDeclarationStopKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     Deferred,
     Unsupported,
     InvalidContext,
@@ -65,6 +67,14 @@ pub(super) fn grouped_declaration_stop<
     error: &WorthQueryDeclarationEntryProgressionError<D, I>,
 ) -> WorthQueryGroupedDeclarationStop {
     match error {
+        WorthQueryDeclarationEntryProgressionError::EvidenceIdentityDerivationDenied(cause) => {
+            WorthQueryGroupedDeclarationStop::new(
+                member_index,
+                I::Family::semantic_family_key(),
+                WorthQueryGroupedDeclarationStopKind::EvidenceIdentityDerivationDenied(*cause),
+                "canonical evidence identity refused",
+            )
+        }
         WorthQueryDeclarationEntryProgressionError::Entry(entry) => {
             grouped_declaration_entry_stop(member_index, entry)
         }
@@ -82,6 +92,14 @@ fn grouped_declaration_entry_stop<
     error: &WorthQueryDeclarationAdmissionOrLegalityError<D, I>,
 ) -> WorthQueryGroupedDeclarationStop {
     match error {
+        WorthQueryDeclarationAdmissionOrLegalityError::EvidenceIdentityDerivationDenied(cause) => {
+            WorthQueryGroupedDeclarationStop::new(
+                member_index,
+                I::Family::semantic_family_key(),
+                WorthQueryGroupedDeclarationStopKind::EvidenceIdentityDerivationDenied(*cause),
+                "canonical evidence identity refused",
+            )
+        }
         WorthQueryDeclarationAdmissionOrLegalityError::Admission(admission) => {
             grouped_admission_stop(member_index, admission)
         }
@@ -96,6 +114,7 @@ fn grouped_admission_stop<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarati
     error: &WorthQueryDeclarationAdmissionError<D, I>,
 ) -> WorthQueryGroupedDeclarationStop {
     match error {
+WorthQueryDeclarationAdmissionError::EvidenceIdentityDerivationDenied(cause) => WorthQueryGroupedDeclarationStop::new(member_index, I::Family::semantic_family_key(), WorthQueryGroupedDeclarationStopKind::EvidenceIdentityDerivationDenied(*cause), "canonical evidence identity refused"),
         WorthQueryDeclarationAdmissionError::Deferred(denial) => WorthQueryGroupedDeclarationStop::new(
             member_index,
             I::Family::semantic_family_key(),
@@ -229,6 +248,10 @@ fn grouped_progression_stop<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclara
     error: &WorthQueryDeclarationProgressionTerminalError<D, I>,
 ) -> WorthQueryGroupedDeclarationStop {
     let (kind, reason) = match error {
+        WorthQueryDeclarationProgressionTerminalError::EvidenceIdentityDerivationDenied(cause) => (
+            WorthQueryGroupedDeclarationStopKind::EvidenceIdentityDerivationDenied(*cause),
+            "canonical evidence identity refused",
+        ),
         WorthQueryDeclarationProgressionTerminalError::Deferred(_) => (
             WorthQueryGroupedDeclarationStopKind::Deferred,
             "declaration progression deferred",

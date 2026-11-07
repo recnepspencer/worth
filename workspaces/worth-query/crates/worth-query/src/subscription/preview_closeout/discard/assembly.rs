@@ -43,7 +43,7 @@ impl PreviewSubscriptionDiscardCloseout {
             residue_report.report_identity(),
             performance_receipt.performance_receipt_identity(),
             PreviewSubscriptionLifecycleState::PreviewDiscarded.as_str(),
-            &counters.evidence_identity()?,
+            &counters.evidence_identity(),
         )?;
         Ok(Self {
             active_lane_digest: isolation.active_lane_digest().clone(),

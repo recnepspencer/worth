@@ -73,7 +73,7 @@ impl ProjectionConsumptionReceipt {
             counter_snapshot_digest,
             integrity_digest,
             receipt_digest,
-        })?
+        })
     }
 
     pub fn declaration_digest(&self) -> &str {

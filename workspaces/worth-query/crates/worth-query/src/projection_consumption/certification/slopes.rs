@@ -260,7 +260,7 @@ pub fn projection_consumption_slope_report(
                 )
             })?,
         )?,
-    })?
+    })
 }
 
 #[cfg(test)]

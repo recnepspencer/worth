@@ -29,7 +29,7 @@ pub(in crate::runtime) fn execute_runtime_current_read_graph(
         &materialized.execution,
         &materialized.rows,
         materialized.records_examined_count,
-    )
+    )?
     .with_materialized_fact_posture(materialized.fact_posture);
     Ok(WorthQueryExecutedReadProduct {
         graph_read_access_execution_counters: materialized.graph_read_access_counters,
@@ -61,7 +61,7 @@ pub(in crate::runtime) fn execute_runtime_current_count_graph(
         materialized.records_examined_count,
         materialized.rows.len(),
         count,
-    )
+    )?
     .with_materialized_fact_posture(materialized.fact_posture);
     Ok(WorthQueryExecutedReadProduct {
         graph_read_access_execution_counters: materialized.graph_read_access_counters,
@@ -85,14 +85,14 @@ fn materialize_current_read_input(
     read_graph: &WorthQueryReadGraph,
 ) -> Result<WorthQueryCurrentReadMaterialization, WorthQueryReadDenial> {
     let admitted = admit_current_read_execution(execution, runtime, read_graph)?;
-    let snapshot_evidence_identity = admitted.snapshot_identity.evidence_identity();
+    let snapshot_evidence_identity = admitted.snapshot_identity.evidence_identity()?;
     let mut graph_read_access_recorder =
         WorthQueryGraphReadAccessExecutionRecorder::entered_executor();
     let (rows, maintenance_source_rows, records_examined_count) =
         materialize_read_rows(execution, runtime, read_graph)?.into_parts();
     graph_read_access_recorder.record_materialized_rows(rows.len());
     let fact_posture =
-        materialized_fact_posture_for_read_graph(runtime, read_graph, &snapshot_evidence_identity);
+        materialized_fact_posture_for_read_graph(runtime, read_graph, &snapshot_evidence_identity)?;
     Ok(WorthQueryCurrentReadMaterialization {
         snapshot_identity: admitted.snapshot_identity,
         execution: admitted.execution,
@@ -114,7 +114,7 @@ fn admit_current_read_execution(
     runtime: &WorthQueryRuntime,
     read_graph: &WorthQueryReadGraph,
 ) -> Result<WorthQueryCurrentReadExecutionAdmission, WorthQueryReadDenial> {
-    let snapshot_identity = runtime.current_snapshot_identity_with_request(execution);
+    let snapshot_identity = runtime.current_snapshot_identity_with_request(execution)?;
     let identity = crate::basis::ResolvedSnapshotIdentity::new(
         BasisAuthorityFamily::Runtime,
         None,

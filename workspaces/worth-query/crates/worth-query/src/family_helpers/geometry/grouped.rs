@@ -76,13 +76,21 @@ impl<'a, D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     pub fn orchestrate_local_neighborhood_for_active_face_selection_outcome<I>(
         &self,
         declaration: WorthQueryGroupedDeclarationArtifact<D, I>,
-    ) -> WorthQueryOrdinaryOutcome<WorthQueryGroupedOrchestration<D, I>>
+    ) -> Result<
+        WorthQueryOrdinaryOutcome<WorthQueryGroupedOrchestration<D, I>>,
+        IdentityDerivationDenial,
+    >
     where
         I: WorthQueryDeclarationInput<D> + Clone,
         I::Family: WorthQueryGeometryNeighborhoodHelperFamily<D>
             + WorthQueryDeclarationSupportsNeighborhoodGrouping<D>,
     {
-        orchestrate_local_neighborhood_for_active_face_selection_outcome(self.handle, declaration)
+        Ok(
+            orchestrate_local_neighborhood_for_active_face_selection_outcome(
+                self.handle,
+                declaration,
+            )?,
+        )
     }
 
     pub fn orchestrate_local_neighborhood_for_active_face_selection_checked<I>(

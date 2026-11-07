@@ -81,14 +81,12 @@ impl WorthQueryAdmittedWorldBasis {
 
 pub(crate) fn compose_basis_lifecycle_support_identity(
     matrix_digest: &str,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "basis_lifecycle_support_matrix_v1",
-            )
-            .field_shape(WorthQueryEvidenceTag::new("support_matrix"), matrix_digest)
-            .seal()?,
-    )
+) -> WorthQueryEvidenceIdentity {
+    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "basis_lifecycle_support_matrix_v1",
+        )
+        .field_shape(WorthQueryEvidenceTag::new("support_matrix"), matrix_digest)
+        .seal().expect("private lifecycle matrix identity contains fixed metadata and one 64-byte SHA256 projection")
 }

@@ -146,7 +146,7 @@ impl WorthQueryAdmittedPlanAftermathContribution {
         WorthQueryAftermathProjectionConsumptionReview,
         WorthQueryDomainCapabilityMaterializationError,
     > {
-        self.try_review().into_result()
+        self.try_review()?.into_result()
     }
 
     pub fn try_materialize_support_report(
@@ -162,7 +162,7 @@ impl WorthQueryAdmittedPlanAftermathContribution {
         self,
     ) -> Result<ProjectionConsumptionSupportReport, WorthQueryDomainCapabilityMaterializationError>
     {
-        self.try_materialize_support_report().into_result()
+        self.try_materialize_support_report()?.into_result()
     }
 
     pub fn try_materialize_eligibility(
@@ -178,7 +178,7 @@ impl WorthQueryAdmittedPlanAftermathContribution {
         self,
     ) -> Result<ProjectionConsumptionEligibility, WorthQueryDomainCapabilityMaterializationError>
     {
-        self.try_materialize_eligibility().into_result()
+        self.try_materialize_eligibility()?.into_result()
     }
 
     pub fn try_materialize_admitted(
@@ -193,7 +193,7 @@ impl WorthQueryAdmittedPlanAftermathContribution {
     pub fn materialize_admitted(
         self,
     ) -> Result<AdmittedProjectionConsumption, WorthQueryDomainCapabilityMaterializationError> {
-        self.try_materialize_admitted().into_result()
+        self.try_materialize_admitted()?.into_result()
     }
 
     pub fn try_materialize(

@@ -105,7 +105,7 @@ pub fn discover_projection_consumption_support(
                 ),
                 posture,
             }
-        })?
+        })
         .collect();
     Ok(ProjectionConsumptionSupportReport { rows })
 }

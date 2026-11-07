@@ -218,7 +218,7 @@ impl WorthQueryReadReceipt {
                 .execution_plan()
                 .query()
                 .plan_digest()
-                .evidence_identity()?,
+                .evidence_identity(),
             canonical_query_digest: read_graph.canonical().query().digest().as_str().to_string(),
             query_digest: read_graph.query_digest().to_string(),
             basis_digest: basis_digest.to_string(),

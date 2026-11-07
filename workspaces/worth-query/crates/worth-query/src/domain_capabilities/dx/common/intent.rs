@@ -155,7 +155,7 @@ impl WorthQueryIntentSupportContribution {
         WorthQueryIntentDeclarationSupportTraceabilityArtifact,
         WorthQueryDomainCapabilityMaterializationError,
     > {
-        self.try_materialize()?.into_result()
+        self.try_materialize().into_result()
     }
 }
 

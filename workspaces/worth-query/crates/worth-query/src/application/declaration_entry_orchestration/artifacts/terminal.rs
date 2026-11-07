@@ -29,6 +29,7 @@ impl<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>
 {
     pub fn reason(&self) -> &'static str {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => "canonical evidence identity refused",
             Self::Deferred(outcome) => outcome.reason(),
             Self::Denied(outcome) => outcome.reason(),
             Self::Stale(outcome) => outcome.reason(),

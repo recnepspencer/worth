@@ -99,7 +99,7 @@ impl WorthQueryBatchWriteReceiptInspection {
             affected_live_view_ids,
             affected_derived_view_ids,
             inspection_identity,
-        })?
+        })
     }
 
     pub fn authority_lane(&self) -> WorthQueryAuthorityLane {

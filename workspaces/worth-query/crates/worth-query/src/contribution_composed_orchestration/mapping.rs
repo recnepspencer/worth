@@ -1,3 +1,4 @@
+mod artifact_links;
 use crate::application::{
     WorthQueryDeclarationAdmissionError, WorthQueryDeclarationAdmissionOrLegalityError,
     WorthQueryDeclarationEntryOrchestrationStage, WorthQueryDeclarationEntryProgressionError,
@@ -6,6 +7,9 @@ use crate::application::{
     WorthQueryDomainEntryMarker,
 };
 use crate::binding_pipeline::WorthQueryBindingLinkedArtifacts;
+pub(super) use artifact_links::{
+    contribution_digest_from_outcome, linked_artifacts_for_envelope, linked_artifacts_from_outcome,
+};
 
 use super::composition::WorthQueryContributionComposedStop;
 use super::intent_result::WorthQueryContributionComposedIntentRequestDescriptor;
@@ -23,7 +27,19 @@ pub(super) fn declaration_error_outcome<
     error: WorthQueryDeclarationEntryProgressionError<D, I>,
 ) -> WorthQueryContributionComposedOrchestrationOutcome<D, I> {
     match error {
+        WorthQueryDeclarationEntryProgressionError::EvidenceIdentityDerivationDenied(cause) => {
+            WorthQueryContributionComposedOrchestrationOutcome::EvidenceIdentityDerivationDenied(
+                cause,
+            )
+        }
         WorthQueryDeclarationEntryProgressionError::Entry(value) => match value {
+            WorthQueryDeclarationAdmissionOrLegalityError::EvidenceIdentityDerivationDenied(
+                cause,
+            ) => {
+                WorthQueryContributionComposedOrchestrationOutcome::EvidenceIdentityDerivationDenied(
+                    cause,
+                )
+            }
             WorthQueryDeclarationAdmissionOrLegalityError::Admission(admission) => {
                 declaration_admission_outcome(admission)
             }
@@ -39,6 +55,13 @@ pub(super) fn declaration_error_outcome<
             ),
         },
         WorthQueryDeclarationEntryProgressionError::Progression(value) => match value {
+            WorthQueryDeclarationProgressionTerminalError::EvidenceIdentityDerivationDenied(
+                cause,
+            ) => {
+                WorthQueryContributionComposedOrchestrationOutcome::EvidenceIdentityDerivationDenied(
+                    cause,
+                )
+            }
             WorthQueryDeclarationProgressionTerminalError::Deferred(progress) => {
                 declaration_outcome(
                     WorthQueryContributionComposedOrchestrationCheckedKind::Deferred,
@@ -140,6 +163,11 @@ pub(super) fn envelope_error_outcome<
     error: WorthQueryDeclarationEnvelopeTerminalError<D, I>,
 ) -> WorthQueryContributionComposedOrchestrationOutcome<D, I> {
     match error {
+        WorthQueryDeclarationEnvelopeTerminalError::EvidenceIdentityDerivationDenied(cause) => {
+            WorthQueryContributionComposedOrchestrationOutcome::EvidenceIdentityDerivationDenied(
+                cause,
+            )
+        }
         WorthQueryDeclarationEnvelopeTerminalError::Deferred(value) => declaration_outcome(
             WorthQueryContributionComposedOrchestrationCheckedKind::DeclarationDenied,
             WorthQueryContributionComposedStop::DeclarationDenied,
@@ -170,69 +198,6 @@ pub(super) fn envelope_error_outcome<
             None,
             None,
         ),
-    }
-}
-
-pub(super) fn linked_artifacts_for_envelope<
-    D: WorthQueryDomainEntryMarker,
-    I: WorthQueryDeclarationInput<D>,
->(
-    envelope: &WorthQueryDeclarationEnvelope<D, I>,
-) -> WorthQueryBindingLinkedArtifacts {
-    let mut linked = WorthQueryBindingLinkedArtifacts::new()
-        .with_declaration_digest(envelope.declaration_digest().to_string());
-    if let Some(value) = envelope.progression_digest() {
-        linked = linked.with_progression_digest(value.to_string());
-    }
-    if let Some(value) = envelope.route_plan_digest() {
-        linked = linked.with_route_plan_digest(value.to_string());
-    }
-    linked
-        .with_receipt_digest(format!("{:?}", envelope.receipt_digest()))
-        .with_envelope_digest(format!("{:?}", envelope.envelope_digest()))
-}
-
-pub(super) fn linked_artifacts_from_outcome<
-    D: WorthQueryDomainEntryMarker,
-    I: WorthQueryDeclarationInput<D>,
->(
-    outcome: &WorthQueryContributionComposedOrchestrationOutcome<D, I>,
-) -> WorthQueryBindingLinkedArtifacts {
-    match outcome {
-        WorthQueryContributionComposedOrchestrationOutcome::Bound(value) => {
-            linked_artifacts_for_envelope(value.envelope())
-        }
-        WorthQueryContributionComposedOrchestrationOutcome::Deferred(value)
-        | WorthQueryContributionComposedOrchestrationOutcome::DeclarationDenied(value)
-        | WorthQueryContributionComposedOrchestrationOutcome::ContributionDenied(value)
-        | WorthQueryContributionComposedOrchestrationOutcome::Stale(value)
-        | WorthQueryContributionComposedOrchestrationOutcome::RebindRequired(value)
-        | WorthQueryContributionComposedOrchestrationOutcome::Unsupported(value)
-        | WorthQueryContributionComposedOrchestrationOutcome::Failed(value) => {
-            value.linked_artifacts().clone()
-        }
-    }
-}
-
-pub(super) fn contribution_digest_from_outcome<
-    D: WorthQueryDomainEntryMarker,
-    I: WorthQueryDeclarationInput<D>,
->(
-    outcome: &WorthQueryContributionComposedOrchestrationOutcome<D, I>,
-) -> Option<String> {
-    match outcome {
-        WorthQueryContributionComposedOrchestrationOutcome::Bound(value) => {
-            Some(value.composition_for_reporting().to_string())
-        }
-        WorthQueryContributionComposedOrchestrationOutcome::Deferred(value)
-        | WorthQueryContributionComposedOrchestrationOutcome::DeclarationDenied(value)
-        | WorthQueryContributionComposedOrchestrationOutcome::ContributionDenied(value)
-        | WorthQueryContributionComposedOrchestrationOutcome::Stale(value)
-        | WorthQueryContributionComposedOrchestrationOutcome::RebindRequired(value)
-        | WorthQueryContributionComposedOrchestrationOutcome::Unsupported(value)
-        | WorthQueryContributionComposedOrchestrationOutcome::Failed(value) => {
-            value.contribution_digest().map(str::to_string)
-        }
     }
 }
 
@@ -313,6 +278,11 @@ fn declaration_admission_outcome<
     error: WorthQueryDeclarationAdmissionError<D, I>,
 ) -> WorthQueryContributionComposedOrchestrationOutcome<D, I> {
     match error {
+        WorthQueryDeclarationAdmissionError::EvidenceIdentityDerivationDenied(cause) => {
+            WorthQueryContributionComposedOrchestrationOutcome::EvidenceIdentityDerivationDenied(
+                cause,
+            )
+        }
         WorthQueryDeclarationAdmissionError::Deferred(_) => declaration_outcome(
             WorthQueryContributionComposedOrchestrationCheckedKind::Deferred,
             WorthQueryContributionComposedStop::Deferred,

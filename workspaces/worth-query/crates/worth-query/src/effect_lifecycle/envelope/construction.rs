@@ -66,7 +66,7 @@ impl SelfDescribingEffectEnvelope {
                 )
                 .field_evidence_identity(
                     WorthQueryEvidenceTag::new("counters"),
-                    &receipt.delivery_counters().evidence_identity()?,
+                    &receipt.delivery_counters().evidence_identity(),
                 )
                 .seal()?;
         let boundary_identity =

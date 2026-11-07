@@ -215,7 +215,7 @@ impl WorthQueryWriteReceipt {
             refresh_fallback,
             decision_trace_envelope,
             execution_provenance,
-        })?
+        })
     }
 
     pub(in crate::runtime) fn batch_component(
@@ -345,6 +345,6 @@ impl WorthQueryWriteReceipt {
             refresh_fallback: false,
             decision_trace_envelope: None,
             execution_provenance: None,
-        })?
+        })
     }
 }

@@ -120,7 +120,7 @@ impl NormalizedEffectIntent {
             source_path,
             normalized_identity,
             counters: EffectLifecycleCounters::normalized(1, 1, 1),
-        })?
+        })
     }
 
     pub fn family(&self) -> EffectFamily {

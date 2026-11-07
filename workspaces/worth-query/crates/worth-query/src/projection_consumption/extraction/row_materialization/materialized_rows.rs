@@ -266,7 +266,7 @@ where
     if matches!(mode, RowIdentityExtractionMode::RowIdentityAsEntityIdentity) {
         return Ok(typed_identity.clone().unwrap_or_else(|| {
             crate::memory_workspace::admit_authored_entity_label(row_identity)
-        })?);
+        }));
     }
     let path = identity_field_path();
     let value = lookup(

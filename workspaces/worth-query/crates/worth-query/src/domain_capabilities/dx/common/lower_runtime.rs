@@ -129,7 +129,7 @@ impl WorthQueryLowerRuntimeSupportContribution {
         WorthQueryLowerRuntimeBoundarySupportTraceabilityArtifact,
         WorthQueryDomainCapabilityMaterializationError,
     > {
-        self.try_materialize()?.into_result()
+        self.try_materialize().into_result()
     }
 }
 

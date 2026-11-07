@@ -30,10 +30,10 @@ impl WorthQueryLiveSubscriptionInspectionCounters {
         let counters = installation.counters();
         let active_lane_counters = installation.active_lane_counters();
         let consumer_attachment_counters = installation.consumer_attachment_counters();
-        let declaration_counter_identity = counters.evidence_identity().clone()?;
-        let active_lane_counter_identity = active_lane_counters.evidence_identity().clone()?;
+        let declaration_counter_identity = counters.evidence_identity().clone();
+        let active_lane_counter_identity = active_lane_counters.evidence_identity().clone();
         let consumer_attachment_counter_identity =
-            consumer_attachment_counters.evidence_identity().clone()?;
+            consumer_attachment_counters.evidence_identity().clone();
         let family_selection_count = counters.family_selection_count();
         let declaration_count = counters.declaration_count();
         let bridge_lowering_count = counters.bridge_lowering_count();

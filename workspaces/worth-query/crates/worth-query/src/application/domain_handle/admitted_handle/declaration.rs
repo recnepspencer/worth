@@ -146,7 +146,7 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     pub fn review_legality_checked<I>(
         &self,
         declaration: WorthQueryCanonicalDeclarationArtifact<D, I>,
-    ) -> Result<WorthQueryDeclarationLegalityChecked<D, I>, IdentityDerivationDenial>
+    ) -> WorthQueryDeclarationLegalityChecked<D, I>
     where
         I: WorthQueryDeclarationInput<D>,
     {
@@ -166,14 +166,11 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
             declaration,
             support_report,
             legality_contract,
-            self.retained_world_basis()?,
+            self.retained_world_basis(),
             temporal_runtime_support_status,
             async_runtime_support_status,
         );
-        Ok(review_declaration_legality(
-            self.handle_identity_digest(),
-            input,
-        ))
+        review_declaration_legality(self.handle_identity_digest(), input)
     }
 
     pub fn declare_and_review<I>(

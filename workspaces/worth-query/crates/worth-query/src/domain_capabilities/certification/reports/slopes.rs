@@ -121,7 +121,7 @@ pub(crate) fn worth_query_domain_capability_slope_report_in(
             |e| (e.support_width(), e.support_digest()),
         )?,
         counter_snapshot,
-    })?
+    })
 }
 
 fn slope_digest(

@@ -378,7 +378,7 @@ pub(crate) fn worth_query_domain_capability_representative_report_in(
             .rows()
             .len(),
         support_width: support_traceability_report.rows().len() + 2,
-    })?
+    })
 }
 
 fn decision_digest(decision: &crate::runtime::WorthQueryIntentAdmissionDecision) -> String {

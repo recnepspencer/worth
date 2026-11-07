@@ -3,8 +3,9 @@ use crate::application::{
     WorthQueryDeclarationBridgeContinuationFamily, WorthQueryDeclarationBridgeContinuationMode,
     WorthQueryDeclarationBridgeRoutingClass, WorthQueryDeclarationBridgeRoutingDenialCause,
     WorthQueryDeclarationBridgeTruthContext, WorthQueryDeclarationEnvelopeClass,
-    WorthQueryDeclarationEnvelopeEvidenceOrigin, WorthQueryDeclarationInput,
-    WorthQueryDeclarationReceiptDenialCause, WorthQueryDeclarationRelationalAuthorityAspectSummary,
+    WorthQueryDeclarationEnvelopeEvidenceOrigin, WorthQueryDeclarationFamilyMarker,
+    WorthQueryDeclarationInput, WorthQueryDeclarationReceiptDenialCause,
+    WorthQueryDeclarationRelationalAuthorityAspectSummary,
     WorthQueryDeclarationRelationalAuthorityFamily, WorthQueryDeclarationRelationalRoutingClass,
     WorthQueryDeclarationRelationalRoutingDenialCause, WorthQueryDeclarationRelationalTruthClaim,
     WorthQueryDeclarationRoutePlanDenialCause, WorthQueryDeclarationSignalAuthorityAspectSummary,
@@ -266,6 +267,7 @@ impl<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>
 
     pub fn declaration_family_key(&self) -> &'static str {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => I::Family::semantic_family_key(),
             Self::RetainedSubjectMismatch {
                 declaration_family_key,
                 ..
@@ -275,6 +277,7 @@ impl<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>
     }
     pub fn reason(&self) -> &'static str {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => "canonical evidence identity refused",
             Self::RetainedSubjectMismatch { reason, .. } => reason,
             Self::ContributionComposition(error) => error.reason(),
         }
@@ -284,7 +287,9 @@ impl<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>
     ) -> Option<&WorthQueryDeclarationEntryContributionCompositionError<D, I>> {
         match self {
             Self::ContributionComposition(error) => Some(error),
-            Self::RetainedSubjectMismatch { .. } => None,
+            Self::EvidenceIdentityDerivationDenied(_) | Self::RetainedSubjectMismatch { .. } => {
+                None
+            }
         }
     }
 }

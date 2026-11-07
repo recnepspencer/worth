@@ -51,7 +51,7 @@ impl QuerySubscriptionScaleCounterSnapshot {
         let activation_identity = activation.evidence_identity().clone();
         let admission_identity = activation.admission_identity().clone();
         let counters = activation.counters().clone();
-        let counter_identity = counters.evidence_identity()?;
+        let counter_identity = counters.evidence_identity();
         let snapshot_identity = scale_counter_snapshot_identity(
             fixture_size.as_str(),
             fixture_row_count,

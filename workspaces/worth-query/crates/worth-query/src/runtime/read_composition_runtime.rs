@@ -135,11 +135,11 @@ pub(in crate::runtime) fn execute_runtime_basis_context_read_graph(
         context_execution.with_materialized_fact_posture(materialized_fact_posture_for_read_graph(
             runtime,
             read_graph,
-            &query_context_basis_digest_identity(context.basis_digest()),
-        ));
-    let receipt_snapshot_identity = runtime.current_snapshot_identity_with_request(execution);
+            &query_context_basis_digest_identity(context.basis_digest())?,
+        )?);
+    let receipt_snapshot_identity = runtime.current_snapshot_identity_with_request(execution)?;
     let (rows, maintenance_source_rows) =
-        if context_allows_runtime_materialization(&receipt_snapshot_identity, context) {
+        if context_allows_runtime_materialization(&receipt_snapshot_identity, context)? {
             let (rows, support_rows, _) =
                 materialize_read_rows(execution, runtime, read_graph)?.into_parts();
             (rows, Some(support_rows))
@@ -153,7 +153,7 @@ pub(in crate::runtime) fn execute_runtime_basis_context_read_graph(
         receipt_snapshot_identity,
         &context_execution,
         &rows,
-    );
+    )?;
     let product = match maintenance_source_rows {
         Some(source_rows) => WorthQueryReadResult::new_with_source_rows(rows, source_rows, receipt),
         None => WorthQueryReadResult::new(rows, receipt),

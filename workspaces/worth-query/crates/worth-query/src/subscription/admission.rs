@@ -235,7 +235,7 @@ fn admission_error(
         admission_pipeline_stage(stage),
         message,
         source_identity,
-        &counters.evidence_identity()?,
+        &counters.evidence_identity(),
     )?;
     let support_profile = QuerySubscriptionSupportProfile::denied(source_identity)?;
     Ok(QuerySubscriptionAdmissionError::new(

@@ -87,7 +87,7 @@ impl EffectLifecycleSupportDiscovery {
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("counters"),
-                &counters.evidence_identity()?,
+                &counters.evidence_identity(),
             );
         discovery = match matched_row_identity.as_ref() {
             Some(row_identity) => discovery

@@ -166,7 +166,7 @@ impl EffectReceiptIntegrityMarkers {
         receipt_identity: &WorthQueryEvidenceIdentity,
     ) -> Result<Self, IdentityDerivationDenial> {
         let authority_artifact_identity = executed_authority_artifact_identity(authority_artifact)?;
-        let counter_snapshot_identity = counters.evidence_identity()?;
+        let counter_snapshot_identity = counters.evidence_identity();
         let integrity_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
                 .field_shape(

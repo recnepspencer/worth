@@ -82,7 +82,7 @@ impl PreviewSubscriptionPromotionHandoff {
             &rebinding_identity,
             performance_receipt.performance_receipt_identity(),
             PreviewSubscriptionLifecycleState::PreviewPromoted.as_str(),
-            &counters.evidence_identity()?,
+            &counters.evidence_identity(),
         )?;
         Ok(Self {
             preview_lane_digest: isolation.active_lane_digest().clone(),

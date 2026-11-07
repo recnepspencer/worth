@@ -220,14 +220,14 @@ impl WorthQueryRuntimeLiveSubscriptionInstallation {
         )
         .seal()?;
         let counter_identity =
-            live_subscription_source_identity("counters", &counters.evidence_identity()?)?;
+            live_subscription_source_identity("counters", &counters.evidence_identity())?;
         let active_lane_counter_identity = live_subscription_source_identity(
             "active_lane_counters",
-            &active_lane_counters.evidence_identity()?,
+            &active_lane_counters.evidence_identity(),
         )?;
         let consumer_attachment_counter_identity = live_subscription_source_identity(
             "consumer_attachment_counters",
-            &consumer_attachment_counters.evidence_identity()?,
+            &consumer_attachment_counters.evidence_identity(),
         )?;
         let installation_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
