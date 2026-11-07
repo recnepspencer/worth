@@ -70,7 +70,7 @@ fn changed_codec_live_swallowed_refusal_and_cancelled_domain_error_cannot_ack() 
         primed,
         WorthQueryApplicationLiveOutcome::Delivered(_)
     ));
-    publish_target(&target, 180315);
+    publish_target(&target, 180310);
     successor::projection::reset();
     successor::output::reset_decodes();
     let (outcome, report) =
