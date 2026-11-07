@@ -91,7 +91,10 @@ pub(crate) fn admit_preview_live_session_plan_component(
             preview_binding.basis().binding_tuple().digest(),
             live_plan.subscription_digest().as_str(),
             live_descriptor.family().as_str(),
-        ),
+        )
+        .map_err(|cause| {
+            PreviewLiveError::identity_refused(cause, PreviewLiveCounters::default())
+        })?,
         preview_binding_digest: preview_binding.basis().binding_tuple().digest().to_string(),
         live_subscription_digest: live_plan.subscription_digest().as_str().to_string(),
         live_family: live_descriptor.family().as_str().to_string(),

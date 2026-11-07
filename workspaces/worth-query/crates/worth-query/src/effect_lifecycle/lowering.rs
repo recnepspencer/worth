@@ -54,13 +54,29 @@ impl EffectLoweringDenialKind {
 pub struct EffectLoweringDenial {
     denial_kind: EffectLoweringDenialKind,
     message: &'static str,
-    staleness_class: WorkflowStalenessClass,
+    staleness_class: Option<WorkflowStalenessClass>,
     authority_scoped_plan_identity: WorthQueryEvidenceIdentity,
     denial_identity: Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>,
     counters: EffectLifecycleCounters,
 }
 
 impl EffectLoweringDenial {
+    pub(crate) fn identity_refused(
+        subject: &WorthQueryEvidenceIdentity,
+        support_rows: usize,
+        lowering_width: usize,
+        cause: IdentityDerivationDenial,
+    ) -> Self {
+        Self {
+            denial_kind: EffectLoweringDenialKind::EvidenceIdentityDerivationDenied(cause),
+            message: "batch lowering identity exceeded its digest bounds",
+            staleness_class: None,
+            authority_scoped_plan_identity: subject.clone(),
+            denial_identity: Err(cause),
+            counters: EffectLifecycleCounters::lowering_denied(support_rows, lowering_width),
+        }
+    }
+
     fn from_workflow_error(plan: &AuthorityScopedEffectPlan, error: WorkflowLoweringError) -> Self {
         Self::from_workflow_error_for_batch(
             plan.plan_identity(),
@@ -95,7 +111,7 @@ impl EffectLoweringDenial {
         Self {
             denial_kind,
             message: error.message(),
-            staleness_class: error.staleness_class().clone(),
+            staleness_class: Some(error.staleness_class().clone()),
             authority_scoped_plan_identity: execution_subject_identity.clone(),
             denial_identity,
             counters: EffectLifecycleCounters::lowering_denied(
@@ -113,8 +129,8 @@ impl EffectLoweringDenial {
         self.message
     }
 
-    pub fn staleness_class(&self) -> &WorkflowStalenessClass {
-        &self.staleness_class
+    pub fn staleness_class(&self) -> Option<&WorkflowStalenessClass> {
+        self.staleness_class.as_ref()
     }
 
     pub fn authority_scoped_plan_identity(&self) -> &WorthQueryEvidenceIdentity {
@@ -157,7 +173,7 @@ impl LoweredEffectExecutionPlan {
     fn new(
         authority_scoped_plan: AuthorityScopedEffectPlan,
         artifact: LoweredEffectExecutionArtifact,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let lowered_effect_execution_plan_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
                 .field_shape(
@@ -172,18 +188,18 @@ impl LoweredEffectExecutionPlan {
                     WorthQueryEvidenceTag::new("artifact"),
                     artifact_identity(&artifact),
                 )
-                .seal()?;
+                .seal().expect("fixed lowered effect grammar: one literal family and two already sealed plan and artifact identities");
         let counters = EffectLifecycleCounters::lowered(
             authority_scoped_plan.counters().effect_support_row_count(),
             artifact_counters(&artifact).workflow_lowering_width(),
             artifact_counters(&artifact).workflow_executor_rediscovery_count(),
         );
-        Ok(Self {
+        Self {
             authority_scoped_plan,
             artifact,
             lowered_effect_execution_plan_identity,
             counters,
-        })
+        }
     }
 
     pub fn authority_scoped_plan(&self) -> &AuthorityScopedEffectPlan {
@@ -320,11 +336,14 @@ pub fn lower_authority_scoped_effect_plan(
 pub(crate) fn assemble_lowered_batch_mutation_component(
     admitted: AdmittedEffectIntent,
     declaration: LoweredMutationIntentDeclaration,
-) -> Result<LoweredEffectExecutionPlan, IdentityDerivationDenial> {
+) -> Result<
+    LoweredEffectExecutionPlan,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+> {
     Ok(LoweredEffectExecutionPlan::new(
         scope_admitted_effect_plan(admitted)?,
         LoweredEffectExecutionArtifact::Mutation(declaration),
-    )?)
+    ))
 }
 
 fn lowering_denial_kind(failure_class: &WorkflowLoweringFailureClass) -> EffectLoweringDenialKind {

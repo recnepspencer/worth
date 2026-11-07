@@ -76,55 +76,37 @@ impl<'a, D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     pub fn orchestrate_local_neighborhood_for_active_face_selection_outcome<I>(
         &self,
         declaration: WorthQueryGroupedDeclarationArtifact<D, I>,
-    ) -> Result<
-        WorthQueryOrdinaryOutcome<WorthQueryGroupedOrchestration<D, I>>,
-        IdentityDerivationDenial,
-    >
+    ) -> WorthQueryOrdinaryOutcome<WorthQueryGroupedOrchestration<D, I>>
     where
         I: WorthQueryDeclarationInput<D> + Clone,
         I::Family: WorthQueryGeometryNeighborhoodHelperFamily<D>
             + WorthQueryDeclarationSupportsNeighborhoodGrouping<D>,
     {
-        Ok(
-            orchestrate_local_neighborhood_for_active_face_selection_outcome(
-                self.handle,
-                declaration,
-            )?,
-        )
+        orchestrate_local_neighborhood_for_active_face_selection_outcome(self.handle, declaration)
     }
 
     pub fn orchestrate_local_neighborhood_for_active_face_selection_checked<I>(
         &self,
         declaration: WorthQueryGroupedDeclarationArtifact<D, I>,
-    ) -> Result<WorthQueryGroupedOrchestrationChecked<D, I>, IdentityDerivationDenial>
+    ) -> WorthQueryGroupedOrchestrationChecked<D, I>
     where
         I: WorthQueryDeclarationInput<D> + Clone,
         I::Family: WorthQueryGeometryNeighborhoodHelperFamily<D>
             + WorthQueryDeclarationSupportsNeighborhoodGrouping<D>,
     {
-        Ok(
-            orchestrate_local_neighborhood_for_active_face_selection_checked(
-                self.handle,
-                declaration,
-            )?,
-        )
+        orchestrate_local_neighborhood_for_active_face_selection_checked(self.handle, declaration)
     }
 
     pub fn orchestrate_local_neighborhood_for_active_face_selection_proof<I>(
         &self,
         declaration: WorthQueryGroupedDeclarationArtifact<D, I>,
-    ) -> Result<WorthQueryGroupedOrchestrationTranscript<D, I>, IdentityDerivationDenial>
+    ) -> WorthQueryGroupedOrchestrationTranscript<D, I>
     where
         I: WorthQueryDeclarationInput<D> + Clone,
         I::Family: WorthQueryGeometryNeighborhoodHelperFamily<D>
             + WorthQueryDeclarationSupportsNeighborhoodGrouping<D>,
     {
-        Ok(
-            orchestrate_local_neighborhood_for_active_face_selection_proof(
-                self.handle,
-                declaration,
-            )?,
-        )
+        orchestrate_local_neighborhood_for_active_face_selection_proof(self.handle, declaration)
     }
 
     pub fn grouped_routes_for_active_face_selection_checked<I>(
@@ -273,7 +255,7 @@ where
     I::Family: WorthQueryGeometryNeighborhoodHelperFamily<D>
         + WorthQueryDeclarationSupportsNeighborhoodGrouping<D>,
 {
-    match orchestrate_local_neighborhood_for_active_face_selection_checked(handle, declaration)? {
+    match orchestrate_local_neighborhood_for_active_face_selection_checked(handle, declaration) {
         WorthQueryGroupedOrchestrationChecked::Bound(value) => Ok(value),
         WorthQueryGroupedOrchestrationChecked::MemberStopped(stop) => {
             Err(WorthQueryGroupedOrchestrationStop::MemberStopped(stop))
@@ -294,14 +276,14 @@ pub(super) fn orchestrate_local_neighborhood_for_active_face_selection_outcome<
 >(
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     declaration: WorthQueryGroupedDeclarationArtifact<D, I>,
-) -> Result<WorthQueryOrdinaryOutcome<WorthQueryGroupedOrchestration<D, I>>, IdentityDerivationDenial>
+) -> WorthQueryOrdinaryOutcome<WorthQueryGroupedOrchestration<D, I>>
 where
     I::Family: WorthQueryGeometryNeighborhoodHelperFamily<D>
         + WorthQueryDeclarationSupportsNeighborhoodGrouping<D>,
 {
-    Ok(ordinary_outcome_from_grouped_orchestration_checked(
-        orchestrate_local_neighborhood_for_active_face_selection_checked(handle, declaration)?,
-    ))
+    ordinary_outcome_from_grouped_orchestration_checked(
+        orchestrate_local_neighborhood_for_active_face_selection_checked(handle, declaration),
+    )
 }
 
 pub(super) fn orchestrate_local_neighborhood_for_active_face_selection_checked<
@@ -311,15 +293,12 @@ pub(super) fn orchestrate_local_neighborhood_for_active_face_selection_checked<
 >(
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     declaration: WorthQueryGroupedDeclarationArtifact<D, I>,
-) -> Result<WorthQueryGroupedOrchestrationChecked<D, I>, IdentityDerivationDenial>
+) -> WorthQueryGroupedOrchestrationChecked<D, I>
 where
     I::Family: WorthQueryGeometryNeighborhoodHelperFamily<D>
         + WorthQueryDeclarationSupportsNeighborhoodGrouping<D>,
 {
-    Ok(worth_query_grouped_orchestration_checked_on_handle(
-        handle,
-        declaration,
-    )?)
+    worth_query_grouped_orchestration_checked_on_handle(handle, declaration)
 }
 
 pub(super) fn orchestrate_local_neighborhood_for_active_face_selection_proof<
@@ -329,13 +308,10 @@ pub(super) fn orchestrate_local_neighborhood_for_active_face_selection_proof<
 >(
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     declaration: WorthQueryGroupedDeclarationArtifact<D, I>,
-) -> Result<WorthQueryGroupedOrchestrationTranscript<D, I>, IdentityDerivationDenial>
+) -> WorthQueryGroupedOrchestrationTranscript<D, I>
 where
     I::Family: WorthQueryGeometryNeighborhoodHelperFamily<D>
         + WorthQueryDeclarationSupportsNeighborhoodGrouping<D>,
 {
-    Ok(worth_query_grouped_orchestration_proof_on_handle(
-        handle,
-        declaration,
-    )?)
+    worth_query_grouped_orchestration_proof_on_handle(handle, declaration)
 }

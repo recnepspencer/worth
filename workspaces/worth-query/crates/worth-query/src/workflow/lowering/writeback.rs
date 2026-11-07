@@ -136,10 +136,9 @@ pub(crate) fn lower_query_writeback_declaration(
     };
     let causality_identity =
         writeback_causality_identity(declaration, request_kind).map_err(identity_denial)?;
-    let basis_identity = writeback_basis_identity(declaration).map_err(identity_denial)?;
+    let basis_identity = writeback_basis_identity(declaration);
     let bridge_declaration =
-        writeback_bridge_declaration(declaration, input.family(), request_kind)
-            .map_err(identity_denial)?;
+        writeback_bridge_declaration(declaration, input.family(), request_kind);
     let lowering_identity = writeback_lowering_identity(
         declaration,
         input.family(),

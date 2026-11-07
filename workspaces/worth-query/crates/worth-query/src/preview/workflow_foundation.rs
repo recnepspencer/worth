@@ -54,6 +54,7 @@ impl PreviewWorkflowFoundationRequest {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PreviewWorkflowFoundationFailureClass {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     OutOfScopeWorkflowFoundationRequest,
     ReadOnlyPreviewWritebackFoundationForbidden,
 }
@@ -66,6 +67,18 @@ pub struct PreviewWorkflowFoundationError {
 }
 
 impl PreviewWorkflowFoundationError {
+    pub(crate) fn identity_refused(
+        cause: IdentityDerivationDenial,
+        counters: PreviewExecutionCounters,
+    ) -> Self {
+        Self {
+            failure_class: PreviewWorkflowFoundationFailureClass::EvidenceIdentityDerivationDenied(
+                cause,
+            ),
+            message: "preview workflow foundation identity refused",
+            counters,
+        }
+    }
     pub fn failure_class(&self) -> &PreviewWorkflowFoundationFailureClass {
         &self.failure_class
     }
@@ -328,21 +341,24 @@ pub fn admit_preview_workflow_foundation_request(
         });
     }
 
-    Ok(AdmittedPreviewWorkflowFoundation {
-        artifact: derive_preview_workflow_foundation(binding, request),
-        counters: PreviewExecutionCounters {
-            binding_counters: binding.report().counters().clone(),
-            execution_counters: ExecutionCounters::default(),
-            preview_execution_envelope_count: 0,
-            preview_execution_count: 0,
-            preview_promotable_execution_count: 0,
-            preview_read_only_execution_count: 0,
-            preview_comparison_eligibility_proof_count: 0,
-            preview_comparison_shape_check_width: 0,
-            preview_workflow_foundation_admission_count: 1,
-            preview_workflow_foundation_denial_count: 0,
-            preview_workflow_foundation_artifact_lookup_count: 1,
-            preview_work_avoided_by_explicit_basis_count: 1,
-        },
-    })
+    let mut counters = PreviewExecutionCounters {
+        binding_counters: binding.report().counters().clone(),
+        execution_counters: ExecutionCounters::default(),
+        preview_execution_envelope_count: 0,
+        preview_execution_count: 0,
+        preview_promotable_execution_count: 0,
+        preview_read_only_execution_count: 0,
+        preview_comparison_eligibility_proof_count: 0,
+        preview_comparison_shape_check_width: 0,
+        preview_workflow_foundation_admission_count: 1,
+        preview_workflow_foundation_denial_count: 0,
+        preview_workflow_foundation_artifact_lookup_count: 1,
+        preview_work_avoided_by_explicit_basis_count: 1,
+    };
+    let artifact = derive_preview_workflow_foundation(binding, request).map_err(|cause| {
+        counters.preview_workflow_foundation_admission_count = 0;
+        counters.preview_workflow_foundation_denial_count = 1;
+        PreviewWorkflowFoundationError::identity_refused(cause, counters.clone())
+    })?;
+    Ok(AdmittedPreviewWorkflowFoundation { artifact, counters })
 }

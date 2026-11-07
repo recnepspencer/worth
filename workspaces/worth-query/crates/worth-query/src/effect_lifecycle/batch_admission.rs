@@ -48,7 +48,16 @@ pub fn admit_effect_batch_components(
         ));
     }
 
-    Ok(AdmittedEffectBatch::new(admitted))
+    let input_count = admitted.len();
+    AdmittedEffectBatch::new(admitted).map_err(|cause| {
+        EffectBatchAdmissionDenial::new(
+            EffectBatchAdmissionDenialKind::EvidenceIdentityDerivationDenied(cause),
+            None,
+            "batch admission identity exceeded its digest bounds",
+            EffectLifecycleCounters::batch_admission_denied(input_count),
+            None,
+        )
+    })
 }
 
 #[derive(Clone, Debug, Default)]
@@ -112,51 +121,64 @@ impl EffectBatchIntentDraftWithBasis {
 
         let mut admitted = Vec::with_capacity(normalized.len());
         for (index, normalized_intent) in normalized.into_iter().enumerate() {
-            let admitted_intent = match evaluate_effect_eligibility(normalized_intent) {
-                EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
-                EffectEligibilityOutcome::Advisory(advisory) => {
-                    return Err(EffectBatchAdmissionDenial::new(
-                        EffectBatchAdmissionDenialKind::ComponentAdvisory(
-                            advisory.advisory_cause(),
-                        ),
+            let admitted_intent =
+                match evaluate_effect_eligibility(normalized_intent).map_err(|cause| {
+                    EffectBatchAdmissionDenial::new(
+                        EffectBatchAdmissionDenialKind::EvidenceIdentityDerivationDenied(cause),
                         Some(index),
-                        advisory.decision_trace().message(),
+                        "batch eligibility identity exceeded its digest bounds",
                         EffectLifecycleCounters::batch_admission_denied(index + 1),
                         None,
-                    ))
-                }
-                EffectEligibilityOutcome::Denied(denial) => {
-                    return Err(EffectBatchAdmissionDenial::new(
-                        EffectBatchAdmissionDenialKind::ComponentEligibilityDenied(
-                            denial.denial_kind(),
-                        ),
-                        Some(index),
-                        denial.decision_trace().message(),
-                        EffectLifecycleCounters::batch_admission_denied(index + 1),
-                        None,
-                    ))
-                }
-                EffectEligibilityOutcome::RebindRequired(rebind) => {
-                    return Err(EffectBatchAdmissionDenial::new(
-                        EffectBatchAdmissionDenialKind::ComponentRebindRequired(
-                            rebind.denial_kind(),
-                        ),
-                        Some(index),
-                        rebind.decision_trace().message(),
-                        EffectLifecycleCounters::batch_admission_denied(index + 1),
-                        None,
-                    ))
-                }
-                EffectEligibilityOutcome::Deferred(deferred) => {
-                    return Err(EffectBatchAdmissionDenial::new(
-                        EffectBatchAdmissionDenialKind::ComponentDeferred(deferred.denial_kind()),
-                        Some(index),
-                        deferred.decision_trace().message(),
-                        EffectLifecycleCounters::batch_admission_denied(index + 1),
-                        Some(deferred.deferred_contract().clone()),
-                    ))
-                }
-            };
+                    )
+                })? {
+                    EffectEligibilityOutcome::Admitted(eligibility) => {
+                        admit_effect_intent(eligibility)
+                    }
+                    EffectEligibilityOutcome::Advisory(advisory) => {
+                        return Err(EffectBatchAdmissionDenial::new(
+                            EffectBatchAdmissionDenialKind::ComponentAdvisory(
+                                advisory.advisory_cause(),
+                            ),
+                            Some(index),
+                            advisory.decision_trace().message(),
+                            EffectLifecycleCounters::batch_admission_denied(index + 1),
+                            None,
+                        ))
+                    }
+                    EffectEligibilityOutcome::Denied(denial) => {
+                        return Err(EffectBatchAdmissionDenial::new(
+                            EffectBatchAdmissionDenialKind::ComponentEligibilityDenied(
+                                denial.denial_kind(),
+                            ),
+                            Some(index),
+                            denial.decision_trace().message(),
+                            EffectLifecycleCounters::batch_admission_denied(index + 1),
+                            None,
+                        ))
+                    }
+                    EffectEligibilityOutcome::RebindRequired(rebind) => {
+                        return Err(EffectBatchAdmissionDenial::new(
+                            EffectBatchAdmissionDenialKind::ComponentRebindRequired(
+                                rebind.denial_kind(),
+                            ),
+                            Some(index),
+                            rebind.decision_trace().message(),
+                            EffectLifecycleCounters::batch_admission_denied(index + 1),
+                            None,
+                        ))
+                    }
+                    EffectEligibilityOutcome::Deferred(deferred) => {
+                        return Err(EffectBatchAdmissionDenial::new(
+                            EffectBatchAdmissionDenialKind::ComponentDeferred(
+                                deferred.denial_kind(),
+                            ),
+                            Some(index),
+                            deferred.decision_trace().message(),
+                            EffectLifecycleCounters::batch_admission_denied(index + 1),
+                            Some(deferred.deferred_contract().clone()),
+                        ))
+                    }
+                };
             admitted.push(admitted_intent);
         }
 
@@ -166,6 +188,7 @@ impl EffectBatchIntentDraftWithBasis {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum EffectBatchAdmissionDenialKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     EmptyBatch,
     MixedAuthorityLane,
     MixedBasisLane,

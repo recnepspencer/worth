@@ -16,6 +16,7 @@ use super::{WorthQueryTraceLineageCounters, WorthQueryTraceLineageReport};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryLineageBindingDenial {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     StaleInstallationGeneration,
     LineageAlreadyBound,
     LineageNotDeclared,
@@ -29,6 +30,15 @@ pub enum WorthQueryLineageBindingDenial {
     ClosureEffectMismatch,
 }
 
+impl WorthQueryLineageBindingDenial {
+    pub(crate) fn identity_derivation_denial(self) -> Option<IdentityDerivationDenial> {
+        match self {
+            Self::EvidenceIdentityDerivationDenied(cause) => Some(cause),
+            _ => None,
+        }
+    }
+}
+
 type TraceLineageBindingResult<D, O, F, L> = Result<
     WorthQueryCompletedWorkflowTrace<D, O, F, L>,
     (
@@ -39,7 +49,7 @@ type TraceLineageBindingResult<D, O, F, L> = Result<
 
 pub(crate) fn bind_execution_lineage<D, O, F, L: BasisOperationLane>(
     trace: WorthQueryCompletedWorkflowTrace<D, O, F, L>,
-) -> Result<TraceLineageBindingResult<D, O, F, L>, IdentityDerivationDenial> {
+) -> TraceLineageBindingResult<D, O, F, L> {
     let declarations = trace
         .stage_receipts()
         .iter()
@@ -55,30 +65,38 @@ pub(crate) fn bind_execution_lineage<D, O, F, L: BasisOperationLane>(
         == WorthQueryOperationLineageContract::NotRequired
         && declarations.is_empty()
     {
-        return Ok(Ok(trace));
+        return Ok(trace);
     }
-    Ok(bind_trace_lineage(trace, declarations)?)
+    bind_trace_lineage(trace, declarations)
 }
 
 fn bind_trace_lineage<D, O, F, L: BasisOperationLane>(
     mut trace: WorthQueryCompletedWorkflowTrace<D, O, F, L>,
     declarations: Vec<WorthQueryStageLineageDeclaration>,
-) -> Result<TraceLineageBindingResult<D, O, F, L>, IdentityDerivationDenial> {
+) -> TraceLineageBindingResult<D, O, F, L> {
     let contract = match admit_trace_lineage_binding(&trace, &declarations) {
         Ok(contract) => contract,
-        Err(denial) => return Ok(Err((trace, denial))),
+        Err(denial) => return Err((trace, denial)),
     };
     let mut binding = match TraceLineageBinding::new(&trace, contract) {
         Ok(binding) => binding,
-        Err(denial) => return Ok(Err((trace, denial))),
+        Err(denial) => return Err((trace, denial)),
     };
     for declaration in declarations {
         if let Err(denial) = binding.bind_declaration(&declaration) {
-            return Ok(Err((trace, denial)));
+            return Err((trace, denial));
         }
     }
     let (evidence, counters) = binding.finish();
-    let identity = lineage_report_identity(trace.identity(), &evidence)?;
+    let identity = match lineage_report_identity(trace.identity(), &evidence) {
+        Ok(identity) => identity,
+        Err(cause) => {
+            return Err((
+                trace,
+                WorthQueryLineageBindingDenial::EvidenceIdentityDerivationDenied(cause),
+            ))
+        }
+    };
     let proof = mint_operation_phase_proof(
         identity.clone(),
         Some(trace.phase_proof().payload().identity()),
@@ -92,7 +110,7 @@ fn bind_trace_lineage<D, O, F, L: BasisOperationLane>(
         proof,
     });
     trace.refresh_semantic_identity_for_lineage();
-    Ok(Ok(trace))
+    Ok(trace)
 }
 
 fn admit_trace_lineage_binding<D, O, F, L: BasisOperationLane>(

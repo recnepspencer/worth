@@ -22,7 +22,7 @@ pub(super) fn structural_delta_identities(
                         WorthQueryEvidenceTag::new("version_id"),
                         version_id as usize,
                     )
-                    .seal(),
+                    .seal().expect("structural delta grammar has at most three sealed identities or primitive coordinates and two literal labels"),
             ]
         }
         EffectReceiptTargetEvidence::MergeCommit {
@@ -41,7 +41,7 @@ pub(super) fn structural_delta_identities(
                         WorthQueryEvidenceTag::new("version_id"),
                         version_id as usize,
                     )
-                    .seal(),
+                    .seal().expect("structural delta grammar has at most three sealed identities or primitive coordinates and two literal labels"),
             ]
         }
         EffectReceiptTargetEvidence::Writeback {
@@ -68,7 +68,7 @@ pub(super) fn structural_delta_identities(
                         WorthQueryEvidenceTag::new("execution_receipt"),
                         &execution_receipt_identity,
                     )
-                    .seal(),
+                    .seal().expect("structural delta grammar has at most three sealed identities or primitive coordinates and two literal labels"),
             ]
         }
         EffectReceiptTargetEvidence::BatchMutation {
@@ -92,7 +92,7 @@ pub(super) fn structural_delta_identities(
                         WorthQueryEvidenceTag::new("component_count"),
                         component_count,
                     )
-                    .seal(),
+                    .seal().expect("structural delta grammar has at most three sealed identities or primitive coordinates and two literal labels"),
             ]
         }
     }

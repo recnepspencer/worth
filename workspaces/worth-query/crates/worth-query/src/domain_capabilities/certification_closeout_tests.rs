@@ -217,7 +217,7 @@ fn certification_bundle_boundary_and_failure_outputs_track_live_surfaces(
             "",
         )?
         .bind_to_installed_target(target),
-    )? {
+    ) {
         TransitionOutcome::Denied(denial) => denial,
         _ => panic!("expected typed denial"),
     };

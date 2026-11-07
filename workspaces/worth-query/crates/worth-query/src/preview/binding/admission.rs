@@ -25,7 +25,7 @@ pub fn bind_preflight_to_preview_session(
     validate_execution_record_affinity(source)?;
     validate_active_linkage(&query_context)?;
 
-    Ok(build_preview_binding(preflight, query_context))
+    build_preview_binding(preflight, query_context).map_err(PreviewBindingError::identity_refused)
 }
 
 fn validate_runtime_basis(preflight: &ExecutionPreflightBundle) -> Result<(), PreviewBindingError> {

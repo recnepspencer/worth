@@ -54,8 +54,8 @@ fn common_lower_runtime_support_lane_matches_proof_lane_materialization(
     )?
     .bind_to_installed_target(target);
     let proof_admitted = success(admit_eligible_domain_capability_contribution(success(
-        evaluate_requested_domain_capability_contribution(proof_requested)?,
-    ))?);
+        evaluate_requested_domain_capability_contribution(proof_requested),
+    )));
     let proof_target = proof_admitted.payload().target().clone();
     let proof = materialize_lower_runtime_support_traceability_artifact(success(
         prepare_admitted_domain_capability_contribution_for_materialization(
@@ -115,8 +115,8 @@ fn common_lower_runtime_explanation_artifact_matches_proof_lane_materialization(
         )?
         .bind_to_installed_target(target);
     let proof_admitted = success(admit_eligible_domain_capability_contribution(success(
-        evaluate_requested_domain_capability_contribution(proof_requested)?,
-    ))?);
+        evaluate_requested_domain_capability_contribution(proof_requested),
+    )));
     let proof_target = proof_admitted.payload().target().clone();
     let proof = materialize_query_causal_inspection_artifact(success(
         prepare_admitted_domain_capability_contribution_for_materialization(
@@ -337,10 +337,8 @@ fn materialize_invariant_denial(
         crate::domain_capabilities::WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
     >,
 ) -> Result<WorthQueryGraphCompositionDomainInvariantDenial, IdentityDerivationDenial> {
-    let eligible = success(evaluate_requested_domain_capability_contribution(
-        requested,
-    )?);
-    let admitted = success(admit_eligible_domain_capability_contribution(eligible)?);
+    let eligible = success(evaluate_requested_domain_capability_contribution(requested));
+    let admitted = success(admit_eligible_domain_capability_contribution(eligible));
     let target = admitted.payload().target().clone();
     Ok(success(
         materialize_graph_composition_domain_invariant_denial(success(

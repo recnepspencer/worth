@@ -9,11 +9,8 @@ use super::inventory::{
 use super::planning::EffectAuthorityOwner;
 use super::support_matrix::EffectSupportPosture;
 
-pub(super) fn effect_lifecycle_family_rows() -> Result<
-    Vec<EffectLifecycleFamilyInventoryRow>,
-    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
-> {
-    Ok(vec![
+pub(super) fn effect_lifecycle_family_rows() -> Vec<EffectLifecycleFamilyInventoryRow> {
+    vec![
         EffectLifecycleFamilyInventoryRow::new(
             EffectLifecycleFamilyKey::Mutation,
             EffectAuthorityOwner::WorthRelational,
@@ -27,7 +24,8 @@ pub(super) fn effect_lifecycle_family_rows() -> Result<
             EffectReceiptArtifactKind::WorthQueryIntentExecution,
             EffectSupportPosture::Denied,
             EffectSupportPosture::Unsupported,
-        )?,
+        )
+        .expect("closed inventory row uses fixed enum lists and literal surface labels"),
         EffectLifecycleFamilyInventoryRow::new(
             EffectLifecycleFamilyKey::Merge,
             EffectAuthorityOwner::WorthRelational,
@@ -36,7 +34,8 @@ pub(super) fn effect_lifecycle_family_rows() -> Result<
             EffectReceiptArtifactKind::WorthQueryIntentExecution,
             EffectSupportPosture::Denied,
             EffectSupportPosture::Unsupported,
-        )?,
+        )
+        .expect("closed inventory row uses fixed enum lists and literal surface labels"),
         EffectLifecycleFamilyInventoryRow::new(
             EffectLifecycleFamilyKey::Writeback,
             EffectAuthorityOwner::WorthRuntimeBridge,
@@ -50,7 +49,8 @@ pub(super) fn effect_lifecycle_family_rows() -> Result<
             EffectReceiptArtifactKind::WorthQueryWriteReceipt,
             EffectSupportPosture::Denied,
             EffectSupportPosture::Deferred,
-        )?,
+        )
+        .expect("closed inventory row uses fixed enum lists and literal surface labels"),
         EffectLifecycleFamilyInventoryRow::new(
             EffectLifecycleFamilyKey::OrderedBatch,
             EffectAuthorityOwner::WorthRelational,
@@ -64,15 +64,13 @@ pub(super) fn effect_lifecycle_family_rows() -> Result<
             EffectReceiptArtifactKind::WorthQueryBatchWriteReceipt,
             EffectSupportPosture::Denied,
             EffectSupportPosture::Unsupported,
-        )?,
-    ])
+        )
+        .expect("closed inventory row uses fixed enum lists and literal surface labels"),
+    ]
 }
 
-pub(super) fn effect_lifecycle_public_surface_rows() -> Result<
-    Vec<EffectLifecyclePublicSurfaceRow>,
-    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
-> {
-    Ok(vec![
+pub(super) fn effect_lifecycle_public_surface_rows() -> Vec<EffectLifecyclePublicSurfaceRow> {
+    vec![
         EffectLifecyclePublicSurfaceRow::new(
             EffectPublicSurfaceKind::CommonPathIntentAuthoring,
             Some(
@@ -81,7 +79,7 @@ pub(super) fn effect_lifecycle_public_surface_rows() -> Result<
             Some(EffectReceiptArtifactKind::WorthQueryIntentExecution),
             EffectPublicSurfaceAvailability::Implemented,
             true,
-        )?,
+        ).expect("closed inventory row uses fixed enum lists and literal surface labels"),
         EffectLifecyclePublicSurfaceRow::new(
             EffectPublicSurfaceKind::WritebackCommonPath,
             Some(
@@ -90,35 +88,35 @@ pub(super) fn effect_lifecycle_public_surface_rows() -> Result<
             Some(EffectReceiptArtifactKind::WorthQueryWriteReceipt),
             EffectPublicSurfaceAvailability::Implemented,
             true,
-        )?,
+        ).expect("closed inventory row uses fixed enum lists and literal surface labels"),
         EffectLifecyclePublicSurfaceRow::new(
             EffectPublicSurfaceKind::InspectableLoweredPlan,
             Some("scope_admitted_effect_plan(...).lower()"),
             Some(EffectReceiptArtifactKind::WorthQueryIntentExecution),
             EffectPublicSurfaceAvailability::Implemented,
             true,
-        )?,
+        ).expect("closed inventory row uses fixed enum lists and literal surface labels"),
         EffectLifecyclePublicSurfaceRow::new(
             EffectPublicSurfaceKind::SupportDiscovery,
             Some("discover_effect_lifecycle_support(...)"),
             None,
             EffectPublicSurfaceAvailability::Implemented,
             true,
-        )?,
+        ).expect("closed inventory row uses fixed enum lists and literal surface labels"),
         EffectLifecyclePublicSurfaceRow::new(
             EffectPublicSurfaceKind::DenialOrRebind,
             Some("evaluate_effect_eligibility(...)"),
             None,
             EffectPublicSurfaceAvailability::Implemented,
             true,
-        )?,
+        ).expect("closed inventory row uses fixed enum lists and literal surface labels"),
         EffectLifecyclePublicSurfaceRow::new(
             EffectPublicSurfaceKind::BatchExecution,
             Some("effect_batch().using_basis(...).admit().lower().execute()"),
             Some(EffectReceiptArtifactKind::WorthQueryBatchWriteReceipt),
             EffectPublicSurfaceAvailability::Implemented,
             true,
-        )?,
+        ).expect("closed inventory row uses fixed enum lists and literal surface labels"),
         EffectLifecyclePublicSurfaceRow::new(
             EffectPublicSurfaceKind::DiagnosticsEnvelope,
             Some(
@@ -127,20 +125,20 @@ pub(super) fn effect_lifecycle_public_surface_rows() -> Result<
             Some(EffectReceiptArtifactKind::SelfDescribingEffectEnvelope),
             EffectPublicSurfaceAvailability::Implemented,
             true,
-        )?,
+        ).expect("closed inventory row uses fixed enum lists and literal surface labels"),
         EffectLifecyclePublicSurfaceRow::new(
             EffectPublicSurfaceKind::ProductionCertification,
             Some("certify_effect_execution_pipeline()"),
             None,
             EffectPublicSurfaceAvailability::Implemented,
             true,
-        )?,
+        ).expect("closed inventory row uses fixed enum lists and literal surface labels"),
         EffectLifecyclePublicSurfaceRow::new(
             EffectPublicSurfaceKind::HiddenLowerRuntimeTypes,
             None,
             None,
             EffectPublicSurfaceAvailability::Implemented,
             true,
-        )?,
-    ])
+        ).expect("closed inventory row uses fixed enum lists and literal surface labels"),
+    ]
 }

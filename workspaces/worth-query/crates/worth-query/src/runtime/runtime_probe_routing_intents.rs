@@ -143,7 +143,7 @@ impl WorthQueryRuntime {
     ) -> Result<WorthQueryExistingTruthProbeIntentSeed, IdentityDerivationDenial> {
         let preflight = match self.backend.admit_existing_truth_binding(request.binding()) {
             Err(denial) => WorthQueryExistingTruthProbeRoutingPreflight::BindingDenied(denial),
-            Ok(()) => match self.probe_existing_support_denial(request.binding())? {
+            Ok(()) => match self.probe_existing_support_denial(request.binding()) {
                 Some(denial) => WorthQueryExistingTruthProbeRoutingPreflight::ProbeDenied(denial),
                 None => WorthQueryExistingTruthProbeRoutingPreflight::Admitted,
             },
@@ -156,7 +156,7 @@ impl WorthQueryRuntime {
     fn probe_existing_support_denial(
         &self,
         binding: &WorthQueryExistingTruthTargetBinding,
-    ) -> Result<Option<WorthQueryExistingTruthProbeDenial>, IdentityDerivationDenial> {
+    ) -> Option<WorthQueryExistingTruthProbeDenial> {
         let support_profile = self.backend.support_profile();
         let Some(row) = support_profile
             .bridge_backed_verification_support_rows()
@@ -167,7 +167,7 @@ impl WorthQueryRuntime {
                         == binding.family().bridge_backed_support_family()
             })
         else {
-            return Ok(None);
+            return None;
         };
         let supported = match support_profile.posture() {
             WorthQueryRuntimeBackendPosture::Scaffold => row.scaffold_profile_supported(),
@@ -176,15 +176,15 @@ impl WorthQueryRuntime {
             }
         };
         if supported {
-            return Ok(None);
+            return None;
         }
-        Ok(Some(WorthQueryExistingTruthProbeDenial::new(
+        Some(WorthQueryExistingTruthProbeDenial::new(
             binding,
             WorthQueryExistingTruthProbeDenialKind::BackendProbeUnsupported,
             None,
             row.denial_class_when_primary_unsupported().unwrap_or(
                 "this runtime backend does not admit backend-verified existing-truth probes yet",
             ),
-        )))
+        ))
     }
 }

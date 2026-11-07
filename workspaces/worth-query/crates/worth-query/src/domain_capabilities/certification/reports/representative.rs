@@ -149,11 +149,11 @@ pub(crate) fn worth_query_domain_capability_representative_report_in(
     let request_digest = support_requested.payload().request_digest().to_string();
     let support_eligible = success(evaluate_requested_domain_capability_contribution(
         support_requested,
-    )?);
+    ));
     let eligibility_digest = support_eligible.eligibility_for_reporting()?;
     let support_admitted = success(admit_eligible_domain_capability_contribution(
         support_eligible,
-    )?);
+    ));
     let admitted_digest = support_admitted.admitted_for_reporting()?;
 
     let support_artifact = success(
@@ -270,7 +270,7 @@ pub(crate) fn worth_query_domain_capability_representative_report_in(
     let support_traceability_report =
         success(materialize_intent_admission_support_traceability_report(
             admitted_ready(plan_support_requested(admitted_plan_target.clone())?)?,
-        ));
+        )?);
 
     let capability_row = success(materialize_graph_composition_capability_support_row(
         admitted_ready(capability_requested(lower_runtime_target.clone())?)?,
@@ -297,7 +297,7 @@ pub(crate) fn worth_query_domain_capability_representative_report_in(
             "",
         )?
         .bind_to_installed_target(declaration_target.clone())?,
-    )? {
+    ) {
         worth_proof::TransitionOutcome::Denied(denial) => denial,
         _ => panic!("expected typed denial"),
     };

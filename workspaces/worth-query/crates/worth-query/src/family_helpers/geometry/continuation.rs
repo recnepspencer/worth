@@ -26,7 +26,7 @@ pub(super) fn prepare_preview_for_active_face_selection<
         handle,
         progression,
         preview_session_request(),
-    )?)?)
+    ))?)
 }
 
 pub(super) fn prepare_preview_for_active_face_selection_outcome<
@@ -45,7 +45,7 @@ pub(super) fn prepare_preview_for_active_face_selection_outcome<
             handle,
             progression,
             preview_session_request(),
-        )?)?,
+        ))?,
     )
 }
 
@@ -62,7 +62,7 @@ pub(super) fn prepare_preview_for_active_face_selection_checked<
             handle,
             progression,
             preview_session_request(),
-        )?)?,
+        ))?,
     )
 }
 
@@ -79,7 +79,7 @@ pub(super) fn prepare_preview_for_active_face_selection_proof<
             handle,
             progression,
             preview_session_request(),
-        )?)?,
+        ))?,
     )
 }
 
@@ -95,7 +95,7 @@ pub(super) fn prepare_runtime_route_for_active_face_selection<
         handle,
         progression,
         runtime_route_request(),
-    )?)?)
+    ))?)
 }
 
 pub(super) fn prepare_runtime_route_for_active_face_selection_outcome<
@@ -114,7 +114,7 @@ pub(super) fn prepare_runtime_route_for_active_face_selection_outcome<
             handle,
             progression,
             runtime_route_request(),
-        )?)?,
+        ))?,
     )
 }
 
@@ -131,7 +131,7 @@ pub(super) fn prepare_runtime_route_for_active_face_selection_checked<
             handle,
             progression,
             runtime_route_request(),
-        )?)?,
+        ))?,
     )
 }
 
@@ -148,7 +148,7 @@ pub(super) fn prepare_runtime_route_for_active_face_selection_proof<
             handle,
             progression,
             runtime_route_request(),
-        )?)?,
+        ))?,
     )
 }
 
@@ -164,7 +164,7 @@ pub(super) fn prepare_current_truth_view_for_active_face_selection<
         handle,
         progression,
         truth_view_request(WorthQueryDeclarationBridgeTruthContext::Current),
-    )?)?)
+    ))?)
 }
 
 pub(super) fn prepare_current_truth_view_for_active_face_selection_outcome<
@@ -183,7 +183,7 @@ pub(super) fn prepare_current_truth_view_for_active_face_selection_outcome<
             handle,
             progression,
             truth_view_request(WorthQueryDeclarationBridgeTruthContext::Current),
-        )?)?,
+        ))?,
     )
 }
 
@@ -200,7 +200,7 @@ pub(super) fn prepare_current_truth_view_for_active_face_selection_checked<
             handle,
             progression,
             truth_view_request(WorthQueryDeclarationBridgeTruthContext::Current),
-        )?)?,
+        ))?,
     )
 }
 
@@ -217,7 +217,7 @@ pub(super) fn prepare_current_truth_view_for_active_face_selection_proof<
             handle,
             progression,
             truth_view_request(WorthQueryDeclarationBridgeTruthContext::Current),
-        )?)?,
+        ))?,
     )
 }
 
@@ -233,7 +233,7 @@ pub(super) fn prepare_historical_truth_view_for_active_face_selection<
         handle,
         progression,
         truth_view_request(WorthQueryDeclarationBridgeTruthContext::Historical),
-    )?)?)
+    ))?)
 }
 
 pub(super) fn prepare_historical_truth_view_for_active_face_selection_outcome<
@@ -252,7 +252,7 @@ pub(super) fn prepare_historical_truth_view_for_active_face_selection_outcome<
             handle,
             progression,
             truth_view_request(WorthQueryDeclarationBridgeTruthContext::Historical),
-        )?)?,
+        ))?,
     )
 }
 
@@ -269,7 +269,7 @@ pub(super) fn prepare_historical_truth_view_for_active_face_selection_checked<
             handle,
             progression,
             truth_view_request(WorthQueryDeclarationBridgeTruthContext::Historical),
-        )?)?,
+        ))?,
     )
 }
 
@@ -286,7 +286,7 @@ pub(super) fn prepare_historical_truth_view_for_active_face_selection_proof<
             handle,
             progression,
             truth_view_request(WorthQueryDeclarationBridgeTruthContext::Historical),
-        )?)?,
+        ))?,
     )
 }
 
@@ -297,15 +297,13 @@ fn continuation_input<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationIn
     >,
     progression: WorthQueryAdmittedDeclarationProgression<D, I>,
     bridge_request: WorthQueryDeclarationBridgeContinuationRequest,
-) -> Result<WorthQuerySignalCompatibilityOrchestrationInput<D, I>, IdentityDerivationDenial> {
-    Ok(
-        WorthQuerySignalCompatibilityOrchestrationInput::new(signal_subject_from_progressed(
-            handle,
-            progression,
-        )?)
-        .with_required_aspect_contract(I::Family::aspect_contract())
-        .with_bridge_request(bridge_request),
-    )
+) -> WorthQuerySignalCompatibilityOrchestrationInput<D, I> {
+    WorthQuerySignalCompatibilityOrchestrationInput::new(signal_subject_from_progressed(
+        handle,
+        progression,
+    ))
+    .with_required_aspect_contract(I::Family::aspect_contract())
+    .with_bridge_request(bridge_request)
 }
 
 fn signal_subject_from_progressed<
@@ -317,9 +315,9 @@ fn signal_subject_from_progressed<
         impl WorthQueryDomainOperatingContext<D>,
     >,
     progression: WorthQueryAdmittedDeclarationProgression<D, I>,
-) -> Result<WorthQueryDeclarationSignalCompatibilityInput<D, I>, IdentityDerivationDenial> {
+) -> WorthQueryDeclarationSignalCompatibilityInput<D, I> {
     let envelope_checked = handle.orchestrate_envelope_from_progressed_checked(progression);
-    Ok(WorthQueryDeclarationSignalCompatibilityInput::envelope_checked(envelope_checked))
+    WorthQueryDeclarationSignalCompatibilityInput::envelope_checked(envelope_checked)
 }
 
 fn preview_session_request() -> WorthQueryDeclarationBridgeContinuationRequest {

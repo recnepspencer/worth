@@ -136,7 +136,7 @@ where
         "contribution request evaluated",
         Some(requested.requested_identity()?),
     );
-    let eligible = match evaluate_requested_domain_capability_contribution(requested)? {
+    let eligible = match evaluate_requested_domain_capability_contribution(requested) {
         TransitionOutcome::Success(value) => value,
         TransitionOutcome::Denied(value) => {
             return Ok(denied_result(
@@ -173,7 +173,7 @@ where
         "contribution request is eligible for admission",
         Some(eligible.eligibility_identity()?),
     );
-    let admitted = match admit_eligible_domain_capability_contribution(eligible)? {
+    let admitted = match admit_eligible_domain_capability_contribution(eligible) {
         TransitionOutcome::Success(value) => value,
         TransitionOutcome::Denied(value) => {
             return Ok(WorthQueryContributionComposedIntentResult::new(

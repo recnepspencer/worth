@@ -18,34 +18,31 @@ use semantic_identity::semantic_trace_identity;
 impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkflowRun<D, O, F, L> {
     pub fn complete(
         mut self,
-    ) -> Result<
-        TransitionOutcome<
-            WorthQueryCompletedWorkflowTrace<D, O, F, L>,
-            WorthQueryWorkflowCompletionDenial,
-            std::convert::Infallible,
-            WorthQueryWorkflowCompletionDenial,
-            WorthQueryWorkflowCompletionDenial,
-            WorthQueryWorkflowCompletionDenial,
-        >,
-        IdentityDerivationDenial,
+    ) -> TransitionOutcome<
+        WorthQueryCompletedWorkflowTrace<D, O, F, L>,
+        WorthQueryWorkflowCompletionDenial,
+        std::convert::Infallible,
+        WorthQueryWorkflowCompletionDenial,
+        WorthQueryWorkflowCompletionDenial,
+        WorthQueryWorkflowCompletionDenial,
     > {
         if !self.bound.installation_is_current() {
             let denial = WorthQueryWorkflowCompletionDenial::from_run(
                 WorthQueryWorkflowCompletionDenialKind::StaleInstallationGeneration,
                 &self,
             );
-            return Ok(TransitionOutcome::Stale(
+            return TransitionOutcome::Stale(
                 denial.with_managed_cleanup(cleanup_abandoned_workflow(&mut self)),
-            ));
+            );
         }
         if self.completed.len() != self.graph.stages().len() {
             let denial = WorthQueryWorkflowCompletionDenial::from_run(
                 WorthQueryWorkflowCompletionDenialKind::IncompleteStages,
                 &self,
             );
-            return Ok(TransitionOutcome::Denied(
+            return TransitionOutcome::Denied(
                 denial.with_managed_cleanup(cleanup_abandoned_workflow(&mut self)),
-            ));
+            );
         }
         let mut run = self;
         for receipt in run.receipts.iter_mut().rev() {
@@ -61,14 +58,14 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
             Err(rejection) => {
                 let detail = rejection.denial().detail().to_owned();
                 let cleanup = rejection.into_running().abandon().cleanup();
-                return Ok(TransitionOutcome::Denied(
+                return TransitionOutcome::Denied(
                     WorthQueryWorkflowCompletionDenial::from_run(
                         WorthQueryWorkflowCompletionDenialKind::ManagedRun,
                         &run,
                     )
                     .with_managed_detail(detail)
                     .with_managed_cleanup(cleanup),
-                ));
+                );
             }
         };
         match terminal.cleanup() {
@@ -76,37 +73,38 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
                 run.managed_cleanup = Some(receipt);
             }
             cleanup => {
-                return Ok(TransitionOutcome::Denied(
+                return TransitionOutcome::Denied(
                     WorthQueryWorkflowCompletionDenial::from_run(
                         WorthQueryWorkflowCompletionDenialKind::ManagedRun,
                         &run,
                     )
                     .with_managed_detail("managed workflow cleanup requires owner resolution")
                     .with_managed_cleanup(cleanup),
-                ));
+                );
             }
         }
         let mut trace = mint_completed_trace(run);
         match crate::domain_installation::dependency_impact::compile_workflow_semantic_aspect_dependencies(&trace) {
             Ok(dependency_closure) => trace.dependency_closure = Some(dependency_closure),
             Err(denial) => {
-                return Ok(TransitionOutcome::Denied(WorthQueryWorkflowCompletionDenial::from_trace(
+                return TransitionOutcome::Denied(WorthQueryWorkflowCompletionDenial::from_trace(
                     WorthQueryWorkflowCompletionDenialKind::DependencyCompilation(denial),
                     &trace,
-                )));
+                ));
             }
         }
-        Ok(
-            match crate::domain_installation::operation_lineage::bind_execution_lineage(trace)? {
-                Ok(trace) => TransitionOutcome::Success(trace),
-                Err((trace, _)) => {
-                    TransitionOutcome::Denied(WorthQueryWorkflowCompletionDenial::from_trace(
-                        WorthQueryWorkflowCompletionDenialKind::LineageEvidence,
-                        &trace,
-                    ))
-                }
-            },
-        )
+        match crate::domain_installation::operation_lineage::bind_execution_lineage(trace) {
+            Ok(trace) => TransitionOutcome::Success(trace),
+            Err((trace, denial)) => {
+                let kind = denial.identity_derivation_denial().map_or(
+                    WorthQueryWorkflowCompletionDenialKind::LineageEvidence,
+                    WorthQueryWorkflowCompletionDenialKind::EvidenceIdentityDerivationDenied,
+                );
+                TransitionOutcome::Denied(WorthQueryWorkflowCompletionDenial::from_trace(
+                    kind, &trace,
+                ))
+            }
+        }
     }
 }
 
@@ -170,6 +168,7 @@ fn mint_completed_trace<D, O, F, L: BasisOperationLane>(
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowCompletionDenialKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     StaleInstallationGeneration,
     IncompleteStages,
     LineageEvidence,

@@ -82,13 +82,13 @@ impl WorthQueryRuntime {
         let evidence_rows = std::iter::once(WorthQueryBasisAdmissionEvidenceRow::tagged(
             evidence_tag,
             evidence_tag,
-        )?)
+        ))
         .chain(
             branch_support_evidence
                 .into_iter()
-                .map(WorthQueryBasisAdmissionEvidenceRow::support_profile_token)?,
+                .map(WorthQueryBasisAdmissionEvidenceRow::support_profile_token),
         )
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
         Ok(WorthQueryBranchBasisAdmission::new(
             &self.evidence_authority,
             label,

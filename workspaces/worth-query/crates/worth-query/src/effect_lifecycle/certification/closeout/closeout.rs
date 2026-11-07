@@ -31,7 +31,7 @@ pub fn certify_effect_execution_pipeline(
     let writeback = writeback_receipt_surface(execution)?;
     let batch = batch_receipt_surface(execution)?;
     let support_matrix = effect_lifecycle_support_matrix()?;
-    let public_surface = effect_lifecycle_public_surface_inventory()?;
+    let public_surface = effect_lifecycle_public_surface_inventory();
     let dx = build_closeout_dx(execution, &public_surface)?;
     let oracles = build_closeout_oracles(execution)?;
     let audits = build_closeout_audits(

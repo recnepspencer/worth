@@ -54,14 +54,11 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     pub fn orchestrate_grouped_checked<I>(
         &self,
         declaration: WorthQueryGroupedDeclarationArtifact<D, I>,
-    ) -> Result<WorthQueryGroupedOrchestrationChecked<D, I>, IdentityDerivationDenial>
+    ) -> WorthQueryGroupedOrchestrationChecked<D, I>
     where
         I: WorthQueryDeclarationInput<D> + Clone,
     {
-        Ok(worth_query_grouped_orchestration_checked_on_handle(
-            self,
-            declaration,
-        )?)
+        worth_query_grouped_orchestration_checked_on_handle(self, declaration)
     }
 
     pub fn orchestrate_grouped<I>(
@@ -71,7 +68,7 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     where
         I: WorthQueryDeclarationInput<D> + Clone,
     {
-        match self.orchestrate_grouped_checked(declaration)? {
+        match self.orchestrate_grouped_checked(declaration) {
             WorthQueryGroupedOrchestrationChecked::Bound(value) => Ok(value),
             WorthQueryGroupedOrchestrationChecked::MemberStopped(stop) => {
                 Err(WorthQueryGroupedOrchestrationStop::MemberStopped(stop))
@@ -88,29 +85,23 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     pub fn orchestrate_grouped_outcome<I>(
         &self,
         declaration: WorthQueryGroupedDeclarationArtifact<D, I>,
-    ) -> Result<
-        WorthQueryOrdinaryOutcome<WorthQueryGroupedOrchestration<D, I>>,
-        IdentityDerivationDenial,
-    >
+    ) -> WorthQueryOrdinaryOutcome<WorthQueryGroupedOrchestration<D, I>>
     where
         I: WorthQueryDeclarationInput<D> + Clone,
     {
-        Ok(ordinary_outcome_from_grouped_orchestration_checked(
-            self.orchestrate_grouped_checked(declaration)?,
-        ))
+        ordinary_outcome_from_grouped_orchestration_checked(
+            self.orchestrate_grouped_checked(declaration),
+        )
     }
 
     pub fn orchestrate_grouped_proof<I>(
         &self,
         declaration: WorthQueryGroupedDeclarationArtifact<D, I>,
-    ) -> Result<WorthQueryGroupedOrchestrationTranscript<D, I>, IdentityDerivationDenial>
+    ) -> WorthQueryGroupedOrchestrationTranscript<D, I>
     where
         I: WorthQueryDeclarationInput<D> + Clone,
     {
-        Ok(worth_query_grouped_orchestration_proof_on_handle(
-            self,
-            declaration,
-        )?)
+        worth_query_grouped_orchestration_proof_on_handle(self, declaration)
     }
 
     pub fn grouped_route_checked<I>(

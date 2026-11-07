@@ -19,24 +19,21 @@ impl InstalledIdentityEvolutionOutcome {
     pub(crate) fn authoritative_subject_evidence_identity(
         &self,
         ordinal: usize,
-    ) -> Result<
-        Option<crate::evidence_identity::WorthQueryEvidenceIdentity>,
-        IdentityDerivationDenial,
-    > {
+    ) -> Option<crate::evidence_identity::WorthQueryEvidenceIdentity> {
         if !self.is_authoritative_continuity() {
-            return Ok(None);
+            return None;
         }
         if let Some(target) = &self.lifecycle_target {
-            return Ok((ordinal == 0).then(|| target.evidence_identity()));
+            return (ordinal == 0).then(|| target.evidence_identity());
         }
         let Some(continuity) = self.continuity.as_ref() else {
-            return Ok(None);
+            return None;
         };
-        Ok(continuity
+        continuity
             .successor_authoritative_identities()
             .get(ordinal)
             .map(crate::runtime::WorthQueryMutationAuthorityIdentity::evidence_identity)
-            .cloned())
+            .cloned()
     }
 
     pub(crate) fn authoritative_subject_entity_identity(

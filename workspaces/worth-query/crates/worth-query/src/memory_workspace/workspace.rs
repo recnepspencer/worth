@@ -82,6 +82,11 @@ impl WorthQueryMemoryWorkspace {
         initial_seed_rows: Option<usize>,
     ) -> Result<Self, WorthQueryWorkspaceError> {
         let kind_name = kind_name.into();
+        let mutation_delta_collection_identity =
+            crate::runtime::WorthQueryMutationTargetCollectionIdentity::new(
+                "memory-workspace-mutation-delta-collection",
+                &kind_name,
+            )?;
         let kind_id = KindId(1);
         let aspect_contracts = declared_aspects
             .iter()
@@ -120,6 +125,7 @@ impl WorthQueryMemoryWorkspace {
             runtime,
             kind_id,
             kind_name,
+            mutation_delta_collection_identity,
             aspects,
             aspect_contracts,
             next_client_key: 0,
@@ -180,7 +186,7 @@ impl WorthQueryMemoryWorkspace {
             receipt
                 .deltas
                 .push(WorthQueryMutationDelta::from_collection_identity(
-                    self.mutation_delta_collection_identity()?,
+                    self.mutation_delta_collection_identity(),
                     entity_identity,
                     WorthQueryMutationKind::Deleted,
                     Vec::new(),
@@ -375,14 +381,8 @@ impl WorthQueryMemoryWorkspace {
 
     pub(super) fn mutation_delta_collection_identity(
         &self,
-    ) -> Result<crate::runtime::WorthQueryMutationTargetCollectionIdentity, IdentityDerivationDenial>
-    {
-        Ok(
-            crate::runtime::WorthQueryMutationTargetCollectionIdentity::new(
-                "memory-workspace-mutation-delta-collection",
-                &self.kind_name,
-            )?,
-        )
+    ) -> crate::runtime::WorthQueryMutationTargetCollectionIdentity {
+        self.mutation_delta_collection_identity.clone()
     }
 }
 

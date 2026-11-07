@@ -49,10 +49,10 @@ pub(crate) fn lower_grouped_members_on_handle<
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     declaration: WorthQueryGroupedDeclarationArtifact<D, I>,
     capture_proof: bool,
-) -> Result<WorthQueryGroupedMemberLowering<D, I>, IdentityDerivationDenial> {
+) -> WorthQueryGroupedMemberLowering<D, I> {
     if declaration.operating_context_identity_digest() != handle.operating_context_identity_digest()
     {
-        return Ok(WorthQueryGroupedMemberLowering {
+        return WorthQueryGroupedMemberLowering {
             checked: WorthQueryGroupedOrchestrationChecked::WrongWorld(
                 WorthQueryGroupedOrchestrationAlignmentStop::new(
                     declaration,
@@ -60,10 +60,10 @@ pub(crate) fn lower_grouped_members_on_handle<
                 ),
             ),
             member_transcripts: Vec::new(),
-        });
+        };
     }
     if declaration.handle_identity_digest() != handle.handle_identity_digest() {
-        return Ok(WorthQueryGroupedMemberLowering {
+        return WorthQueryGroupedMemberLowering {
             checked: WorthQueryGroupedOrchestrationChecked::WrongHandle(
                 WorthQueryGroupedOrchestrationAlignmentStop::new(
                     declaration,
@@ -71,7 +71,7 @@ pub(crate) fn lower_grouped_members_on_handle<
                 ),
             ),
             member_transcripts: Vec::new(),
-        });
+        };
     }
 
     let mut member_envelopes = Vec::with_capacity(declaration.members().len());
@@ -88,7 +88,7 @@ pub(crate) fn lower_grouped_members_on_handle<
             };
             member_transcripts.push(transcript);
             if let Some(outcome) = terminal_outcome {
-                return Ok(WorthQueryGroupedMemberLowering {
+                return WorthQueryGroupedMemberLowering {
                     checked: WorthQueryGroupedOrchestrationChecked::MemberStopped(
                         WorthQueryGroupedMemberOrchestrationStop::new(
                             declaration.clone(),
@@ -99,7 +99,7 @@ pub(crate) fn lower_grouped_members_on_handle<
                         ),
                     ),
                     member_transcripts,
-                });
+                };
             }
 
             let checked =
@@ -127,7 +127,7 @@ pub(crate) fn lower_grouped_members_on_handle<
                 ));
             }
             terminal => {
-                return Ok(WorthQueryGroupedMemberLowering {
+                return WorthQueryGroupedMemberLowering {
                     checked: WorthQueryGroupedOrchestrationChecked::MemberStopped(
                         WorthQueryGroupedMemberOrchestrationStop::new(
                             declaration.clone(),
@@ -138,18 +138,18 @@ pub(crate) fn lower_grouped_members_on_handle<
                         ),
                     ),
                     member_transcripts,
-                });
+                };
             }
         }
     }
 
-    Ok(WorthQueryGroupedMemberLowering {
+    WorthQueryGroupedMemberLowering {
         checked: WorthQueryGroupedOrchestrationChecked::Bound(WorthQueryGroupedOrchestration::new(
             declaration,
             member_envelopes,
         )),
         member_transcripts,
-    })
+    }
 }
 
 fn declaration_entry_outcome_from_envelope_checked_ref<

@@ -8,18 +8,8 @@ pub(super) fn materialize_common_lane<Request, Eligible, Admitted, Ready, Succes
     target_kind: WorthQueryDomainCapabilityTargetKind,
     semantic_posture: &'static str,
     requested: Request,
-    evaluate: impl FnOnce(
-        Request,
-    ) -> Result<
-        WorthQueryDomainCapabilityTransitionOutcome<Eligible>,
-        IdentityDerivationDenial,
-    >,
-    admit: impl FnOnce(
-        Eligible,
-    ) -> Result<
-        WorthQueryDomainCapabilityTransitionOutcome<Admitted>,
-        IdentityDerivationDenial,
-    >,
+    evaluate: impl FnOnce(Request) -> WorthQueryDomainCapabilityTransitionOutcome<Eligible>,
+    admit: impl FnOnce(Eligible) -> WorthQueryDomainCapabilityTransitionOutcome<Admitted>,
     prepare: impl FnOnce(
         Admitted,
     ) -> Result<
@@ -33,8 +23,8 @@ pub(super) fn materialize_common_lane<Request, Eligible, Admitted, Ready, Succes
         IdentityDerivationDenial,
     >,
 ) -> Result<WorthQueryCheckedDomainCapabilityOutcome<Success>, IdentityDerivationDenial> {
-    let outcome = match evaluate(requested)? {
-        worth_proof::TransitionOutcome::Success(eligible) => match admit(eligible)? {
+    let outcome = match evaluate(requested) {
+        worth_proof::TransitionOutcome::Success(eligible) => match admit(eligible) {
             worth_proof::TransitionOutcome::Success(admitted) => match prepare(admitted)? {
                 worth_proof::TransitionOutcome::Success(ready) => materialize(ready)?,
                 worth_proof::TransitionOutcome::Denied(denial) => {

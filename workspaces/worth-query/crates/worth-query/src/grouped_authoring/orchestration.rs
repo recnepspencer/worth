@@ -285,8 +285,8 @@ pub(crate) fn worth_query_grouped_orchestration_checked_on_handle<
 >(
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     declaration: WorthQueryGroupedDeclarationArtifact<D, I>,
-) -> Result<WorthQueryGroupedOrchestrationChecked<D, I>, IdentityDerivationDenial> {
-    Ok(lower_grouped_members_on_handle(handle, declaration, false)?.checked())
+) -> WorthQueryGroupedOrchestrationChecked<D, I> {
+    lower_grouped_members_on_handle(handle, declaration, false).checked()
 }
 
 pub(crate) fn worth_query_grouped_orchestration_proof_on_handle<
@@ -296,14 +296,10 @@ pub(crate) fn worth_query_grouped_orchestration_proof_on_handle<
 >(
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     declaration: WorthQueryGroupedDeclarationArtifact<D, I>,
-) -> Result<WorthQueryGroupedOrchestrationTranscript<D, I>, IdentityDerivationDenial> {
+) -> WorthQueryGroupedOrchestrationTranscript<D, I> {
     let (checked, member_transcripts) =
-        lower_grouped_members_on_handle(handle, declaration.clone(), true)?.into_parts();
-    Ok(WorthQueryGroupedOrchestrationProof::new(
-        declaration,
-        member_transcripts,
-        checked,
-    ))
+        lower_grouped_members_on_handle(handle, declaration.clone(), true).into_parts();
+    WorthQueryGroupedOrchestrationProof::new(declaration, member_transcripts, checked)
 }
 
 impl<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>

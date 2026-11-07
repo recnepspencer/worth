@@ -97,7 +97,21 @@ pub fn admit_authoritative_preview_comparison_candidate(
     candidate_preflight: &ExecutionPreflightBundle,
     candidate_execution: &ExecutionResultEnvelope,
 ) -> Result<AuthoritativePreviewComparisonCandidate, PreviewComparisonError> {
-    let candidate = derive_preview_comparison_candidate(candidate_preflight, candidate_execution);
+    let candidate = derive_preview_comparison_candidate(candidate_preflight, candidate_execution)
+        .map_err(|cause| {
+        PreviewComparisonError::identity_refused(
+            cause,
+            None,
+            None,
+            PreviewComparisonCounters {
+                preview_promotion_comparison_count: 0,
+                preview_promotion_comparison_denial_count: 1,
+                preview_comparison_eligibility_proof_count: 0,
+                preview_comparison_shape_check_width: 0,
+                preview_basis_pair_width: 1,
+            },
+        )
+    })?;
     let denial_counters = || PreviewComparisonCounters {
         preview_promotion_comparison_count: 0,
         preview_promotion_comparison_denial_count: 1,
@@ -243,7 +257,15 @@ fn admit_preview_execution_comparison(
             candidate.digest(),
             candidate.basis_digest(),
             candidate.result_digest().as_str(),
-        ),
+        )
+        .map_err(|cause| {
+            PreviewComparisonError::identity_refused(
+                cause,
+                Some(preview.digest()),
+                Some(candidate.digest()),
+                denial_counters(shape_check_width),
+            )
+        })?,
         preview_execution_digest: preview_execution
             .report()
             .preview_execution_digest()

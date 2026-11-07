@@ -349,6 +349,7 @@ pub struct WorthQueryMemoryWorkspace {
     runtime: WorthQueryRelationalSourceOwner,
     kind_id: KindId,
     kind_name: String,
+    mutation_delta_collection_identity: crate::runtime::WorthQueryMutationTargetCollectionIdentity,
     aspects: Vec<WorthQueryAspect>,
     aspect_contracts:
         crate::runtime::native_aspect_contracts::WorthQueryNativeAspectContractRegistry,

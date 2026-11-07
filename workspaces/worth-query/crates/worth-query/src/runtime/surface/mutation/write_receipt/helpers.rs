@@ -108,24 +108,24 @@ pub(super) fn assertion_evidence(
     declared_aspect_operations: &[crate::runtime::WorthQueryAspectMutationOperation],
     declared_aspect_value_digest: Option<&WorthQueryEvidenceIdentity>,
     snapshot_identity: &WorthQuerySnapshotIdentity,
-) -> Result<Option<WorthQueryExistingTruthAssertionEvidence>, IdentityDerivationDenial> {
+) -> Option<WorthQueryExistingTruthAssertionEvidence> {
     let Some(_binding) = existing_truth_binding else {
-        return Ok(None);
+        return None;
     };
     if let Some(verification) = existing_truth_assertion {
-        return Ok(Some(
-            WorthQueryExistingTruthAssertionEvidence::backend_verified(verification),
+        return Some(WorthQueryExistingTruthAssertionEvidence::backend_verified(
+            verification,
         ));
     }
     if mutation_family != WorthQueryMutationFamily::Assertion {
-        return Ok(None);
+        return None;
     }
-    Ok(Some(
+    Some(
         WorthQueryExistingTruthAssertionEvidence::retained_assertion(
             declared_aspect_operations.len(),
             retained_assertion_verification_digest(snapshot_identity, declared_aspect_value_digest),
         ),
-    ))
+    )
 }
 
 fn retained_assertion_verification_digest(

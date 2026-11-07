@@ -150,7 +150,7 @@ impl WorthQueryWriteReceipt {
             &declared_aspect_operations,
             declared_aspect_value_digest.as_ref(),
             &inner.snapshot_identity,
-        )?;
+        );
         let symbolic_target_reference_evidence = symbolic_target_reference_evidence(
             mutation_family,
             inner
@@ -281,7 +281,7 @@ impl WorthQueryWriteReceipt {
             &declared_aspect_operations,
             declared_aspect_value_digest.as_ref(),
             &inner.snapshot_identity,
-        )?;
+        );
         let symbolic_target_reference_evidence = symbolic_target_reference_evidence(
             mutation_family,
             inner

@@ -39,18 +39,29 @@ impl AdmittedEffectBatch {
             .binding()
             .basis_family()
             .clone();
-        Ok(LoweredEffectBatchExecutionPlan::new(
+        let lowering_width = declarations
+            .iter()
+            .map(|declaration| declaration.counters().workflow_lowering_width())
+            .sum();
+        let identity_refused = |cause| {
+            EffectLoweringDenial::identity_refused(
+                self.batch_identity(),
+                self.counters().effect_support_row_count(),
+                lowering_width,
+                cause,
+            )
+        };
+        let artifact =
+            LoweredRelationalMutationBatchExecutionArtifact::new(workflow_basis_lane, declarations)
+                .map_err(&identity_refused)?;
+        LoweredEffectBatchExecutionPlan::new(
             self.authority_lane(),
             self.basis_family(),
             EffectAuthorityOwner::WorthRelational,
-            LoweredEffectBatchExecutionArtifact::RelationalMutation(
-                LoweredRelationalMutationBatchExecutionArtifact::new(
-                    workflow_basis_lane,
-                    declarations,
-                ),
-            ),
+            LoweredEffectBatchExecutionArtifact::RelationalMutation(artifact),
             self.admitted().to_vec(),
-        ))
+        )
+        .map_err(identity_refused)
     }
 }
 

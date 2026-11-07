@@ -20,18 +20,13 @@ use crate::domain_capabilities::targets::{
 
 pub fn evaluate_requested_domain_capability_contribution<P, T>(
     requested: WorthQueryRequestedDomainCapabilityContribution<P, T>,
-) -> Result<
-    WorthQueryDomainCapabilityTransitionOutcome<
-        WorthQueryEligibleDomainCapabilityContribution<P, T>,
-    >,
-    IdentityDerivationDenial,
->
+) -> WorthQueryDomainCapabilityTransitionOutcome<WorthQueryEligibleDomainCapabilityContribution<P, T>>
 where
     P: WorthQueryDomainCapabilityPayload,
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    if let Some(denial) = stale_installation_generation_denial(requested.payload())? {
-        return Ok(TransitionOutcome::Denied(denial));
+    if let Some(denial) = stale_installation_generation_denial(requested.payload()) {
+        return TransitionOutcome::Denied(denial);
     }
     if requested
         .payload()
@@ -40,11 +35,11 @@ where
             !authority.permits_domain_capability_category(requested.payload().category())
         })
     {
-        return Ok(TransitionOutcome::Denied(denial_for(
+        return TransitionOutcome::Denied(denial_for(
             requested.payload(),
             WorthQueryDomainCapabilityProgressionDenialKind::ContributionCategoryNotInstalled,
             "the installed domain package does not admit this contribution category",
-        )));
+        ));
     }
     if requested
         .payload()
@@ -53,53 +48,40 @@ where
         .trim()
         .is_empty()
     {
-        return Ok(TransitionOutcome::Denied(denial_for(
+        return TransitionOutcome::Denied(denial_for(
             requested.payload(),
             WorthQueryDomainCapabilityProgressionDenialKind::EmptySemanticCode,
             "domain capability contributions require a non-empty semantic code",
-        )));
+        ));
     }
     if requested.payload().payload().detail().trim().is_empty() {
-        return Ok(TransitionOutcome::Denied(denial_for(
+        return TransitionOutcome::Denied(denial_for(
             requested.payload(),
             WorthQueryDomainCapabilityProgressionDenialKind::EmptyDetail,
             "domain capability contributions require non-empty detail text",
-        )));
+        ));
     }
     let basis = contribution_basis(&requested.0);
     let payload = requested.into_inner().into_parts().into_parts().0;
-    Ok(TransitionOutcome::Success(
-        WorthQueryEligibleDomainCapabilityContribution(remint_with_phase(
-            payload,
-            basis,
-            eligible_proof(),
-        )),
+    TransitionOutcome::Success(WorthQueryEligibleDomainCapabilityContribution(
+        remint_with_phase(payload, basis, eligible_proof()),
     ))
 }
 
 pub fn admit_eligible_domain_capability_contribution<P, T>(
     eligible: WorthQueryEligibleDomainCapabilityContribution<P, T>,
-) -> Result<
-    WorthQueryDomainCapabilityTransitionOutcome<
-        WorthQueryAdmittedDomainCapabilityContribution<P, T>,
-    >,
-    IdentityDerivationDenial,
->
+) -> WorthQueryDomainCapabilityTransitionOutcome<WorthQueryAdmittedDomainCapabilityContribution<P, T>>
 where
     P: WorthQueryDomainCapabilityPayload,
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    if let Some(denial) = stale_installation_generation_denial(eligible.payload())? {
-        return Ok(TransitionOutcome::Denied(denial));
+    if let Some(denial) = stale_installation_generation_denial(eligible.payload()) {
+        return TransitionOutcome::Denied(denial);
     }
     let basis = contribution_basis(&eligible.0);
     let payload = eligible.into_inner().into_parts().into_parts().0;
-    Ok(TransitionOutcome::Success(
-        WorthQueryAdmittedDomainCapabilityContribution(remint_with_phase(
-            payload,
-            basis,
-            admitted_proof(),
-        )),
+    TransitionOutcome::Success(WorthQueryAdmittedDomainCapabilityContribution(
+        remint_with_phase(payload, basis, admitted_proof()),
     ))
 }
 
@@ -116,7 +98,7 @@ where
     P: WorthQueryDomainCapabilityPayload,
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    if let Some(denial) = stale_installation_generation_denial(admitted.payload())? {
+    if let Some(denial) = stale_installation_generation_denial(admitted.payload()) {
         return Ok(TransitionOutcome::Denied(denial));
     }
     let basis = contribution_basis(&admitted.0);
@@ -151,12 +133,12 @@ where
 
 fn stale_installation_generation_denial<P, T>(
     contribution: &WorthQueryDomainCapabilityContribution<P, T>,
-) -> Result<Option<WorthQueryDomainCapabilityProgressionDenial>, IdentityDerivationDenial>
+) -> Option<WorthQueryDomainCapabilityProgressionDenial>
 where
     P: WorthQueryDomainCapabilityPayload,
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    Ok(contribution
+    contribution
         .installed_authority()
         .is_some_and(|authority| !authority.is_current_installation_generation())
         .then(|| {
@@ -165,7 +147,7 @@ where
                 WorthQueryDomainCapabilityProgressionDenialKind::StaleInstallationGeneration,
                 "the installed domain authority belongs to a stale installation generation",
             )
-        }))
+        })
 }
 
 fn denial_for<P, T>(

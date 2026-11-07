@@ -10,10 +10,8 @@ where
     P: crate::domain_capabilities::payloads::WorthQueryDomainCapabilityPayload,
     T: crate::domain_capabilities::targets::WorthQueryDomainCapabilityTargetBinding,
 {
-    let eligible = success(evaluate_requested_domain_capability_contribution(
-        requested,
-    )?);
-    let admitted = success(admit_eligible_domain_capability_contribution(eligible)?);
+    let eligible = success(evaluate_requested_domain_capability_contribution(requested));
+    let admitted = success(admit_eligible_domain_capability_contribution(eligible));
     let target = admitted.payload().target().clone();
     Ok(success(
         prepare_admitted_domain_capability_contribution_for_materialization(admitted, target)?,
