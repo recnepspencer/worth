@@ -51,6 +51,10 @@ pub(crate) use indexing::{
     IndexDefinitionReadBinding, IndexingState, IndexingSubsystem, OriginalCheckpointIndexes,
     PreparedGenerationBatch,
 };
+pub use indexing::{
+    PreparedRelationalIndexDefinitions, RelationalIndexDefinitionPreparation,
+    RelationalIndexDefinitionPreparationDenial,
+};
 pub(crate) use lineage::{
     LineageState, LineageSubsystem, ResidentLineageEventPage, ResidentLineageNode,
     ValidatedLineageEventBatch,

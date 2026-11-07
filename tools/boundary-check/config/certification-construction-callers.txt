@@ -213,3 +213,5 @@ application-home-recovered-finalization workspaces/worth-store/crates/worth-stor
 
 query-home-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts/successor_compilation.rs
 application-home-recovered-finalization workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts/successor_compilation.rs
+# Original Home Target index preparation consumes and completes the same World open.
+query-world-commit-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_indexes/publication.rs

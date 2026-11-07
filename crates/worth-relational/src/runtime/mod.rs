@@ -131,6 +131,10 @@ pub(crate) use state::{
     RelationalSettlementReservationDenial, ReservedRelationalSettlement,
 };
 pub use state::{
+    PreparedRelationalIndexDefinitions, RelationalIndexDefinitionPreparation,
+    RelationalIndexDefinitionPreparationDenial,
+};
+pub use state::{
     PreparedRelationalSourceClose, RelationalSourceClose, RelationalSourceCloseDenial,
     RelationalSourceCloseProgress, RetiredSourceRelationalAllocation,
 };

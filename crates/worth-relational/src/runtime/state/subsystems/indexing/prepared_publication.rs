@@ -9,6 +9,34 @@ pub(crate) struct PreparedGenerationBatch {
     generations: Vec<DerivedIndexGeneration>,
 }
 impl PreparedGenerationBatch {
+    pub(crate) fn covers_home_definitions(
+        &self,
+        definitions: &super::PreparedRelationalIndexDefinitions,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<bool, worth_execution::WorkCeilingDenial> {
+        let (covered, _) = execution.run_native_with_checkpoint(|context| {
+            for index in definitions.introduced_ids() {
+                let mut found = false;
+                for generation in &self.generations {
+                    if context.has_accounting() {
+                        context.checkpoint(1)?;
+                    } else {
+                        context.poll()?;
+                    }
+                    if generation.index_id == index {
+                        found = true;
+                        break;
+                    }
+                }
+                if !found {
+                    return Ok(false);
+                }
+            }
+            Ok::<_, worth_execution::MapKernelStop>(true)
+        })?;
+        covered.map_err(worth_execution::WorkCeilingDenial::Stopped)
+    }
+
     pub(crate) fn publish(self) {
         let mut state = self.catalog.write();
         for generation in self.generations {

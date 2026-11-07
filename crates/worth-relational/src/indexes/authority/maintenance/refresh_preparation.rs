@@ -6,6 +6,7 @@ impl IndexAuthority<'_> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: &DerivedIndexBuildRequest,
         before: Option<&VisibilityProjectionView>,
+        definitions: Option<&crate::runtime::PreparedRelationalIndexDefinitions>,
         after: &VisibilityProjectionView,
         work: &mut MaintenanceWork,
     ) -> Result<PreparedRefresh, DerivedIndexMaintenanceDenialKind> {
@@ -37,6 +38,7 @@ impl IndexAuthority<'_> {
                 .indexes
                 .maintenance_inputs_admitted(
                     index_id,
+                    definitions.map(|prepared| prepared.captured.catalog.as_ref()),
                     &request.branch_id,
                     request.source_commit_id,
                     after.version_id(),

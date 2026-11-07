@@ -47,6 +47,10 @@ fn successor_query_compilation_prepares_changed_meaning_without_installing_or_pu
             .observe_branch(&native.main_branch_identity())
             .unwrap();
         let head = native.history().historical_latest_commit();
+        let index_count = native
+            .index_access()
+            .definition_lookup_snapshot()
+            .definition_count();
         let rows = administration::rows(native, &execution, "Account");
         assert_eq!(rows.len(), 1);
         let target = successor()
@@ -61,6 +65,14 @@ fn successor_query_compilation_prepares_changed_meaning_without_installing_or_pu
             original
         );
         assert_eq!(native.history().historical_latest_commit(), head);
+        assert_eq!(
+            native
+                .index_access()
+                .definition_lookup_snapshot()
+                .definition_count(),
+            index_count,
+            "B index compilation never registers definitions on A"
+        );
         assert_eq!(administration::rows(native, &execution, "Account"), rows);
         let (_, after) = native
             .observe_branch(&native.main_branch_identity())

@@ -220,6 +220,22 @@ impl RelationalPublicationPort {
                 ))
             }
         }
+        let definitions = candidate.home_index_definitions();
+        if let Some(definitions) = &definitions {
+            if definitions.introduces_definitions()
+                && !candidate
+                    .covers_home_definitions(definitions, execution)
+                    .map_err(RelationalPublicationOutcome::RequestStopped)?
+            {
+                return Err(RelationalPublicationOutcome::denied(
+                    RelationalPublicationDenial::HomeProgramIndexDefinitionsRequired,
+                ));
+            }
+        }
+        let definition_publication = definitions
+            .map(|definitions| self.index_definitions.prepare_publication(definitions))
+            .transpose()
+            .map_err(RelationalPublicationOutcome::denied)?;
         let parts = candidate
             .into_publication_parts()
             .map_err(RelationalPublicationOutcome::deferred)?;
@@ -249,6 +265,11 @@ impl RelationalPublicationPort {
             execution,
             outcome: &mut outcome,
         });
+        if matches!(&outcome, Some(RelationalPublicationOutcome::Performed(_))) {
+            if let Some(definitions) = definition_publication {
+                definitions.publish();
+            }
+        }
         // Any owning companion payload, including retired T, dies here after
         // the caller's guard ends. The actual outcome remains in this slot.
         drop(prepared);

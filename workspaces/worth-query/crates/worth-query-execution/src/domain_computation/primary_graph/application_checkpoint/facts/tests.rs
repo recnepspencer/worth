@@ -222,7 +222,6 @@ fn optional_absence_is_exact_and_an_older_wire_version_is_never_read() {
 
 #[test]
 fn indexed_selection_wire_preserves_semantic_definition_and_signed_zero() {
-    use std::sync::Arc;
     use worth_foundational::facade::{AspectValue, CanonicalF64};
     use worth_relational::facade::indexes::{
         DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind,
@@ -236,14 +235,16 @@ fn indexed_selection_wire_preserves_semantic_definition_and_signed_zero() {
     );
     let fact = Fact::IndexedEntitySelection {
         index_id: DerivedIndexId(8),
-        definition: Arc::new(DerivedIndexDefinition {
-            index_id: DerivedIndexId(8),
-            name: "test-index".to_owned(),
-            kind: DerivedIndexKind::EntityField {
-                field_locator: locator.clone(),
+        definition: worth_relational::facade::indexes::RetainedDerivedIndexDefinition::from_owned(
+            DerivedIndexDefinition {
+                index_id: DerivedIndexId(8),
+                name: "test-index".to_owned(),
+                kind: DerivedIndexKind::EntityField {
+                    field_locator: locator.clone(),
+                },
+                branch_scoped: true,
             },
-            branch_scoped: true,
-        }),
+        ),
         entity_kind: KindId(3),
         locator,
         value: AspectValue::Float64(CanonicalF64::from_f64(-0.0)),

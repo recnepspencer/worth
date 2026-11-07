@@ -5,6 +5,10 @@ pub(crate) use subsystems::{
     OriginalEmptySchemaObservation, OriginalRecordAllocationCursor, OriginalSymbolMeanings,
     RetainedBranchTransition,
 };
+pub use subsystems::{
+    PreparedRelationalIndexDefinitions, RelationalIndexDefinitionPreparation,
+    RelationalIndexDefinitionPreparationDenial,
+};
 mod runtime_state;
 mod subsystems;
 

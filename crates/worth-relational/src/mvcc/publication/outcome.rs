@@ -196,6 +196,9 @@ pub enum RelationalPublicationDenial {
     HomeProgramTransition(crate::durability::medium::RelationalHomeProgramWriteDenial),
     /// The selected Home root has no matching admitted execution inventory.
     HomeProgramContractsRequired,
+    HomeProgramIndexDefinitionsRequired,
+    StaleIndexDefinitions,
+    IndexDefinitionPublicationContended,
     CanonicalArtifactEncoding(
         crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial,
     ),

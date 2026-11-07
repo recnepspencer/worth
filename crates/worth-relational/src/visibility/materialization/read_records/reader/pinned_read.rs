@@ -69,7 +69,7 @@ pub struct RelationalPinnedRead<Snapshot = SnapshotHandle> {
 
 #[derive(Clone, Debug)]
 pub(crate) struct PinnedIndex {
-    pub definition: Arc<DerivedIndexDefinition>,
+    pub definition: crate::indexes::RetainedDerivedIndexDefinition,
     pub generation: Option<Arc<DerivedIndexGeneration>>,
 }
 

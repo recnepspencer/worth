@@ -42,6 +42,16 @@ impl PreparedCandidateIndexPublication {
             && root.schema_authority().schema_version() == self.prepared.schema_version
     }
 
+    pub(crate) fn covers_home_definitions(
+        &self,
+        definitions: &crate::runtime::PreparedRelationalIndexDefinitions,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<bool, worth_execution::WorkCeilingDenial> {
+        self.prepared
+            .publication
+            .covers_home_definitions(definitions, execution)
+    }
+
     pub(crate) fn publish(self, _runtime: &crate::runtime::RelationalRuntime) {
         let funding = self.funding;
         self.prepared.publication.publish();
@@ -156,7 +166,15 @@ impl IndexAuthority<'_> {
             .transpose()?;
         validate_expected_root(&expected_root, before.as_ref())?;
         basis::validate_prepared(&request, before.as_ref(), &after)?;
-        let prepared = self.prepare_refresh(execution, &request, before.as_ref(), &after, work)?;
+        let definitions = candidate.home_index_definitions();
+        let prepared = self.prepare_refresh(
+            execution,
+            &request,
+            before.as_ref(),
+            definitions.as_deref(),
+            &after,
+            work,
+        )?;
         work.charge(prepared.entries.len())?;
         work.reserve_generation_publications(prepared.entries.len());
         work.array::<DerivedIndexGeneration>(prepared.entries.len())?;

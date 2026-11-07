@@ -45,6 +45,7 @@ pub enum RelationalHomeProgramContractDenial {
     Admission(worth_proof::HomeProgramTransitionAdmissionDenial),
     Plan(worth_foundational::facade::HomeProgramTransitionDescriptionDenial),
     TargetCatalogMismatch,
+    IndexDefinitions(crate::runtime::RelationalIndexDefinitionPreparationDenial),
     TargetStepMismatch,
     CallerEnvelope(worth_foundational::facade::HomeProgramTransitionCallerDenial),
     SourceContractChanged,
@@ -58,8 +59,21 @@ pub enum RelationalHomeProgramContractDenial {
 pub struct PreparedRelationalHomeProgramContracts {
     pub(crate) meaning: Arc<RelationalRootExecutionContracts>,
     pub(crate) receiver_epoch: crate::runtime::RelationalRuntimeConfigurationSnapshot,
+    pub(crate) index_definitions: Option<Arc<crate::runtime::PreparedRelationalIndexDefinitions>>,
 }
 impl PreparedRelationalHomeProgramContracts {
+    /// Attach privately prepared definitions from this actual Native owner.
+    pub fn with_index_definitions(
+        mut self,
+        definitions: crate::runtime::PreparedRelationalIndexDefinitions,
+    ) -> Result<Self, RelationalHomeProgramContractDenial> {
+        if definitions.runtime != self.meaning.runtime {
+            return Err(RelationalHomeProgramContractDenial::ForeignRuntime);
+        }
+        self.index_definitions = Some(Arc::new(definitions));
+        Ok(self)
+    }
+
     pub fn catalog_digest(&self) -> HomeProgramTransitionCatalogDigest {
         self.meaning.digest
     }

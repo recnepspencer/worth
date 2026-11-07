@@ -8,8 +8,14 @@ use worth_foundational::facade::{AspectFieldLocator, AspectKey, FieldKey};
 mod admitted_definition;
 mod catalog_publication;
 mod definition_catalog;
+mod definition_preparation;
+mod definition_publication;
 pub(crate) use catalog_publication::CapturedIndexDefinitionCatalog;
 pub(crate) use definition_catalog::{IndexCatalogCoverage, IndexDefinitionCatalog};
+pub use definition_preparation::{
+    PreparedRelationalIndexDefinitions, RelationalIndexDefinitionPreparation,
+    RelationalIndexDefinitionPreparationDenial,
+};
 mod admitted_selection;
 mod cold_checkpoint;
 #[cfg(test)]
@@ -87,7 +93,10 @@ impl IndexingState {
         Arc::make_mut(&mut self.catalog).insert(definition);
     }
 
-    pub(crate) fn definition(&self, index: DerivedIndexId) -> Option<&Arc<DerivedIndexDefinition>> {
+    pub(crate) fn definition(
+        &self,
+        index: DerivedIndexId,
+    ) -> Option<&crate::indexes::RetainedDerivedIndexDefinition> {
         self.catalog.definitions.get(&index)
     }
 
@@ -117,18 +126,21 @@ impl Default for IndexingState {
 #[derive(Debug, Default)]
 pub(crate) struct IndexingSubsystem {
     state: RuntimeOwnedState<IndexingState>,
+    definition_publication: RuntimeOwnedState<()>,
 }
 
 /// Read-only handle to installed definitions used while sealing commit changes.
 #[derive(Debug)]
 pub(crate) struct IndexDefinitionReadBinding {
     state: RuntimeOwnedState<IndexingState>,
+    definition_publication: RuntimeOwnedState<()>,
 }
 
 impl Clone for IndexDefinitionReadBinding {
     fn clone(&self) -> Self {
         Self {
             state: self.state.share(),
+            definition_publication: self.definition_publication.share(),
         }
     }
 }
@@ -158,6 +170,7 @@ impl IndexingSubsystem {
     pub(crate) fn definition_read_binding(&self) -> IndexDefinitionReadBinding {
         IndexDefinitionReadBinding {
             state: self.state.share(),
+            definition_publication: self.definition_publication.share(),
         }
     }
     pub(crate) fn reclaim_except_versions(
@@ -179,6 +192,7 @@ impl IndexingSubsystem {
 
     /// Replace the whole subsystem, for checkpoint restore.
     pub(crate) fn install(&self, mut state: IndexingState) {
+        let _definitions = self.definition_publication.write();
         Arc::make_mut(&mut state.catalog).renew_incarnation();
         *self.state.write() = state;
     }
@@ -190,29 +204,31 @@ impl IndexingSubsystem {
     pub(crate) fn definition(
         &self,
         index_id: DerivedIndexId,
-    ) -> Option<Arc<DerivedIndexDefinition>> {
+    ) -> Option<crate::indexes::RetainedDerivedIndexDefinition> {
         self.state
             .read()
             .catalog
             .definitions
             .get(&index_id)
-            .map(Arc::clone)
+            .cloned()
     }
 
     pub(crate) fn with_definitions<R>(
         &self,
-        read: impl FnOnce(&BTreeMap<DerivedIndexId, Arc<DerivedIndexDefinition>>) -> R,
+        read: impl FnOnce(
+            &BTreeMap<DerivedIndexId, crate::indexes::RetainedDerivedIndexDefinition>,
+        ) -> R,
     ) -> R {
         read(&self.state.read().catalog.definitions)
     }
 
-    pub(crate) fn definitions(&self) -> Vec<Arc<DerivedIndexDefinition>> {
+    pub(crate) fn definitions(&self) -> Vec<crate::indexes::RetainedDerivedIndexDefinition> {
         self.state
             .read()
             .catalog
             .definitions
             .values()
-            .map(Arc::clone)
+            .cloned()
             .collect()
     }
 
@@ -258,21 +274,6 @@ impl IndexingSubsystem {
         &self,
     ) -> crate::indexes::data::DerivedIndexSelectionCounters {
         self.state.read().generations.selection_counters()
-    }
-
-    /// Allocate the next definition identity and record the definition.
-    pub(crate) fn register_definition(
-        &self,
-        mut definition: DerivedIndexDefinition,
-    ) -> Result<DerivedIndexDefinition, crate::indexes::data::DerivedIndexRegistrationDenial> {
-        let mut state = self.state.write();
-        definition.index_id = DerivedIndexId(state.next_index_id);
-        state.next_index_id = state
-            .next_index_id
-            .checked_add(1)
-            .ok_or(crate::indexes::data::DerivedIndexRegistrationDenial::IdentityExhausted)?;
-        state.insert_definition(definition.clone());
-        Ok(definition)
     }
 
     /// Reserve the next generation identity without publishing anything.
@@ -368,12 +369,14 @@ impl RuntimeSubsystem for IndexingSubsystem {
     fn new(_: &Self::Config) -> Self {
         Self {
             state: RuntimeOwnedState::new(IndexingState::empty()),
+            definition_publication: RuntimeOwnedState::default(),
         }
     }
 
     fn fork(&self) -> Self {
         Self {
             state: RuntimeOwnedState::new(self.snapshot()),
+            definition_publication: RuntimeOwnedState::default(),
         }
     }
 }

@@ -72,6 +72,21 @@ impl<'runtime> IndexAuthority<'runtime> {
         Self { runtime }
     }
 
+    /// Privately prepare an append-only catalog on this actual receiver.
+    pub fn prepare_home_program_definitions(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        crate::runtime::RelationalIndexDefinitionPreparation,
+        crate::runtime::RelationalIndexDefinitionPreparationDenial,
+    > {
+        crate::runtime::RelationalIndexDefinitionPreparation::capture(
+            self.runtime.runtime_instance_id(),
+            self.runtime.indexes.definition_read_binding(),
+            request,
+        )
+    }
+
     pub fn register(
         &self,
         definition: DerivedIndexDefinition,

@@ -249,6 +249,34 @@ impl PreparedRelationalCommitCandidate {
             .and_then(|payload| payload.execution.home_step().cloned())
     }
 
+    pub(crate) fn home_index_definitions(
+        &self,
+    ) -> Option<std::sync::Arc<crate::runtime::PreparedRelationalIndexDefinitions>> {
+        self._payload
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .as_ref()
+            .and_then(|payload| payload.execution.home_index_definitions())
+    }
+
+    pub(crate) fn covers_home_definitions(
+        &self,
+        definitions: &crate::runtime::PreparedRelationalIndexDefinitions,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<bool, worth_execution::WorkCeilingDenial> {
+        match self
+            ._payload
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .as_ref()
+        {
+            Some(payload) => payload
+                .execution
+                .covers_home_definitions(definitions, execution),
+            None => Ok(false),
+        }
+    }
+
     pub(crate) fn indexes_already_prepared(&self) -> bool {
         self._payload
             .lock()

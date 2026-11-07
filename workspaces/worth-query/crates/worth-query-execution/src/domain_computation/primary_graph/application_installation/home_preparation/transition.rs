@@ -27,6 +27,7 @@ struct HomeTransitionTargetCustody<Schema: ApplicationSchemaComposition, Program
 pub enum QueryHomeTransitionPreparationDenial {
     Compiler(WorthQueryPrimaryGraphInstallationDenial),
     Native(RelationalHomeProgramContractDenial),
+    Indexes(String),
 }
 pub struct QueryHomeTransitionPreparationRefused<Schema: ApplicationSchemaComposition, Program> {
     _custody: TransitionPreparationCustody<Schema, Program>,
@@ -107,7 +108,7 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Sche
         };
         let mut inventory = NativeSchemaInventory::compile(&layout, &registrations);
         let sources = inventory.take_public_sources();
-        let pending = HomeTransitionTargetCustody {
+        let mut pending = HomeTransitionTargetCustody {
             _state: state,
             _layout: layout,
             _managed_sources: managed_sources,
@@ -121,20 +122,65 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Sche
                 cause: QueryHomeTransitionPreparationDenial::Compiler(WorthQueryPrimaryGraphInstallationDenial::new(
                     super::super::super::WorthQueryPrimaryGraphInstallationDenialKind::InvalidSchemaMember, format!("successor Native registry composition refused: {cause:?}"))) }),
         };
-        match native.prepare_home_program_contracts(
-            &phase.execution_request(),
-            basis,
-            registry,
-            registrations,
-            sources,
-        ) {
+        let execution = phase.execution_request();
+        let compiled = (|| {
+            let mut definitions = native
+                .index_authority()
+                .prepare_home_program_definitions(&execution)
+                .map_err(|cause| {
+                    QueryHomeTransitionPreparationDenial::Native(
+                        RelationalHomeProgramContractDenial::IndexDefinitions(cause),
+                    )
+                })?;
+            let mut native_refusal = None;
+            let indexes =
+                super::super::super::root::index_installation::install_primary_graph_indexes(
+                    &mut pending._layout,
+                    |mut definition| {
+                        definition.index_id = definitions
+                            .install(&execution, &definition)
+                            .map_err(|cause| {
+                                let diagnostic = format!(
+                                    "successor index definition preparation refused: {cause:?}"
+                                );
+                                native_refusal = Some(cause);
+                                diagnostic
+                            })?;
+                        Ok(definition)
+                    },
+                );
+            if let Err(diagnostic) = indexes {
+                return Err(match native_refusal {
+                    Some(cause) => QueryHomeTransitionPreparationDenial::Native(
+                        RelationalHomeProgramContractDenial::IndexDefinitions(cause),
+                    ),
+                    None => QueryHomeTransitionPreparationDenial::Indexes(diagnostic),
+                });
+            }
+            let definitions = definitions.finish(&execution).map_err(|cause| {
+                QueryHomeTransitionPreparationDenial::Native(
+                    RelationalHomeProgramContractDenial::IndexDefinitions(cause),
+                )
+            })?;
+            native
+                .prepare_home_program_contracts(
+                    &phase.execution_request(),
+                    basis,
+                    registry,
+                    registrations,
+                    sources,
+                )
+                .and_then(|contracts| contracts.with_index_definitions(definitions))
+                .map_err(QueryHomeTransitionPreparationDenial::Native)
+        })();
+        match compiled {
             Ok(contracts) => Ok(PreparedHomeProgramTransitionTarget {
                 _pending: pending,
                 contracts,
             }),
             Err(cause) => Err(QueryHomeTransitionPreparationRefused {
                 _custody: TransitionPreparationCustody::Compiled { _pending: pending },
-                cause: QueryHomeTransitionPreparationDenial::Native(cause),
+                cause,
             }),
         }
     }

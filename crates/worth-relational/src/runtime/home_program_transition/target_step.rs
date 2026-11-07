@@ -7,6 +7,7 @@ pub(crate) struct AdmittedRelationalHomeProgramTarget {
     pub(crate) step: worth_foundational::facade::HomeProgramTransitionStepAssociation,
     pub(crate) meaning: Arc<RelationalRootExecutionContracts>,
     pub(crate) receiver_epoch: crate::runtime::RelationalRuntimeConfigurationSnapshot,
+    pub(crate) index_definitions: Option<Arc<crate::runtime::PreparedRelationalIndexDefinitions>>,
     _memory: Option<ExecutionMemoryReservation>,
 }
 
@@ -22,6 +23,7 @@ impl RelationalRuntime {
     {
         use RelationalHomeProgramContractDenial as Denial;
         let receiver_epoch = target.receiver_epoch.clone();
+        let index_definitions = target.index_definitions.clone();
         let target = target.meaning.clone();
         if target.runtime != self.runtime_instance_id()
             || basis.identity().runtime_instance_id() != self.runtime_instance_id()
@@ -74,6 +76,7 @@ impl RelationalRuntime {
             step: target_step,
             meaning: target,
             receiver_epoch,
+            index_definitions,
             _memory: memory,
         }));
         Ok(transaction)
