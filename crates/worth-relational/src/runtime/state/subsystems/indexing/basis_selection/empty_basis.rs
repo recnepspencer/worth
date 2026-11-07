@@ -32,7 +32,10 @@ impl IndexingSubsystem {
             state: Arc::new(super::super::IndexSelectionState {
                 entries: Selections::new(),
                 empty: state.catalog.installed.clone(),
+                global: Selections::new(),
+                global_empty: state.catalog.globals.clone(),
             }),
+            globals: state.catalog.globals.clone(),
         })
     }
 }
@@ -71,7 +74,9 @@ impl IndexingSubsystem {
             prepare,
         )?;
         // Only completed independent projections are bound after this empty accumulator.
-        Arc::make_mut(&mut basis.state).empty = im::OrdSet::new();
+        let state = Arc::make_mut(&mut basis.state);
+        state.empty = im::OrdSet::new();
+        state.global_empty = im::OrdSet::new();
         Ok(basis)
     }
 }

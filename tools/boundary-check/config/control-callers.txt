@@ -1740,3 +1740,6 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 crates/worth-foundational/ crates/worth-relational/src/runtime/state/runtime_state/court_doors_for_test.rs
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-decl-host-native-fragments/tests/worth_query_court_decl_host_native_fragments/native_fragments/stored_value_corruption/storage.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-native-fragments/tests/worth_query_court_decl_host_native_fragments/native_fragments/stored_value_corruption/storage.rs
+
+# Canonical decoder refusal twins use the actual accepted original-request prefix.
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_admission/request_funding.rs

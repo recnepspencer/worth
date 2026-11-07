@@ -127,9 +127,10 @@ mod tests {
         use super::super::super::basis_selection::BasisSelections;
         let mut bases = BasisSelections::default();
         for id in 1..=40 {
-            bases.insert_generation(Arc::new(super::super::tests::generation(
-                id, 1, 0, id, 1, true,
-            )));
+            bases.insert_generation(
+                Arc::new(super::super::tests::generation(id, 1, 0, id, 1, true)),
+                &im::OrdSet::new(),
+            );
         }
         bases.retire(3, |_, _, _| true);
         let branch = crate::history::data::BranchId("branch-0".into());
@@ -137,9 +138,10 @@ mod tests {
         for round in 0..32 {
             for offset in 1..=10 {
                 let id = 40 + round * 10 + offset;
-                bases.insert_generation(Arc::new(super::super::tests::generation(
-                    id, 1, 0, id, 1, true,
-                )));
+                bases.insert_generation(
+                    Arc::new(super::super::tests::generation(id, 1, 0, id, 1, true)),
+                    &im::OrdSet::new(),
+                );
             }
             bases.retire(3, |_, version, _| version != VersionId(1));
             if bases.get(Some(&branch), VersionId(1)).is_none()

@@ -3,17 +3,22 @@ pub(crate) use worth_query_testkit_certification_canonical::facade::certificatio
 #[test]
 fn ordinary_attempt_refusal_cannot_be_swallowed_before_fact_completion() {
     let funded = host::install(super::FUNDED_WORK);
+    assert_eq!(host::read(&funded, "root").value, super::value());
     let positive = observe_twice(&funded);
     assert!(!positive.second_refused);
     positive
         .completed
         .expect("sufficient admitted ordinary observations complete real facts");
     assert_eq!(super::opaque::ignored_refusals(), 0);
+    let work = funded
+        .second_decode_work
+        .get()
+        .expect("funded observations reached the second seed");
     drop(funded);
 
-    let bounded = host::install(super::ONE_VALUE_WORK);
-    // Verify this immutable source once before measuring cumulative warm reads.
+    let mut bounded = host::install(super::FUNDED_WORK);
     assert_eq!(host::read(&bounded, "root").value, super::value());
+    bounded.request_work = work;
     let refused = observe_twice(&bounded);
     assert!(
         refused.second_refused,
@@ -32,6 +37,7 @@ fn ordinary_attempt_refusal_cannot_be_swallowed_before_fact_completion() {
             WorthQueryValueDecodeDenial::Checkpoint(worth_execution::MapKernelStop::WorkCeiling)
         )
     );
+    bounded.request_work = super::FUNDED_WORK;
     assert_eq!(
         host::read(&bounded, "root").value,
         super::value(),

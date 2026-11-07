@@ -50,7 +50,7 @@ pub(crate) use region_capture::capture_region_members;
 pub(crate) use views::{RelationalRegionFullView, RelationalRegionHeadView};
 
 use cell::ResidentRegion;
-pub(crate) use cell::{RelationalColdRegion, RelationalRegionResidency};
+pub(crate) use cell::{ReconstructedRegionHead, RelationalColdRegion, RelationalRegionResidency};
 
 mod retention;
 pub(crate) use retention::RelationalRegionRetention;

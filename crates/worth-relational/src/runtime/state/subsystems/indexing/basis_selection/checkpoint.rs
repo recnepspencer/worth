@@ -79,12 +79,28 @@ impl IndexingState {
             }
             empty.insert(*index);
         }
+        let global = entries
+            .iter()
+            .filter(|(index, _)| self.catalog.globals.contains(index))
+            .map(|(index, value)| (*index, value.clone()))
+            .collect();
+        let global_empty = empty
+            .iter()
+            .filter(|index| self.catalog.globals.contains(index))
+            .copied()
+            .collect();
         let restored = PreparedIndexBasisSelection {
             branch: basis.branch.clone(),
             commit: basis.commit,
             version: basis.version,
             schema: basis.schema,
-            state: std::sync::Arc::new(super::super::IndexSelectionState { entries, empty }),
+            state: std::sync::Arc::new(super::super::IndexSelectionState {
+                entries,
+                empty,
+                global,
+                global_empty,
+            }),
+            globals: self.catalog.globals.clone(),
         };
         self.bases.install(restored);
         Ok(())

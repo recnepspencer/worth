@@ -71,6 +71,15 @@ impl RelationalRegionRetention {
         Ok(self.head.get().map(|lease| lease.resident_region()))
     }
 
+    pub(crate) fn reconstruct_head(
+        &self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<super::ReconstructedRegionHead, super::RelationalResidencyDemandFailure> {
+        self.cell
+            .reconstruct_head(lane, execution, self.authority.as_deref())
+    }
+
     pub(crate) fn cell(&self) -> &Arc<RelationalRegionResidency> {
         &self.cell
     }

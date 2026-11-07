@@ -11,20 +11,41 @@ use crate::visibility::materialization::read_records::ProjectionRecordSource;
 /// with an ambient or unrelated schema authority.
 pub(in crate::indexes) struct IndexProjectionSource<'view> {
     projection: &'view VisibilityProjectionView,
+    reconstruction:
+        Option<&'view crate::storage::substrate::maintenance::ReconstructionLane<'view>>,
 }
 
 impl<'view> IndexProjectionSource<'view> {
+    pub(in crate::indexes) fn reconstructing<'lane>(
+        &'lane self,
+        lane: &'lane crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+    ) -> IndexProjectionSource<'lane> {
+        IndexProjectionSource {
+            projection: self.projection,
+            reconstruction: Some(lane),
+        }
+    }
+
     pub(in crate::indexes) fn selected(projection: &'view VisibilityProjectionView) -> Self {
-        Self { projection }
+        Self {
+            projection,
+            reconstruction: None,
+        }
     }
     pub(in crate::indexes) fn exact(projection: &'view VisibilityProjectionView) -> Option<Self> {
-        projection.is_exact_basis().then_some(Self { projection })
+        projection.is_exact_basis().then_some(Self {
+            projection,
+            reconstruction: None,
+        })
     }
 
     pub(in crate::indexes) fn historical(
         projection: &'view VisibilityProjectionView,
     ) -> Option<Self> {
-        (!projection.is_exact_basis()).then_some(Self { projection })
+        (!projection.is_exact_basis()).then_some(Self {
+            projection,
+            reconstruction: None,
+        })
     }
 
     fn schema_authority(&self) -> Option<&RelationalBranchRootSchemaAuthority> {

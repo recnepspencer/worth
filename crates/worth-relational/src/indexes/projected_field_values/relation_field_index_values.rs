@@ -22,15 +22,18 @@ pub(in crate::indexes) fn build_relation_aspect_field_index(
 > {
     let mut entries = BTreeMap::new();
     for scope in relation_index_projection_scopes(projection, field_locator) {
-        projection.for_each_relation(execution, scope.kind_id(), |record| {
-            if let Some(key) = relation_query_locus_comparison_key(record, field_locator) {
-                entries
-                    .entry(key)
-                    .or_insert_with(Vec::new)
-                    .push(record.relation_id);
-            }
-            Ok(())
-        })?;
+        projection.try_for_each_relation_field(execution, scope.kind_id(), field_locator,
+            |_, _| Ok::<_, crate::execution::RelationalExecutionDenialCause>(()),
+            |relation_id, value| {
+                if let Some(value) = value {
+                    let key = AuthoritativeFieldComparisonKey::from_aspect_value(value);
+                    entries.entry(key).or_insert_with(Vec::new).push(relation_id);
+                }
+                Ok(())
+            }).map_err(|stop| match stop {
+                crate::visibility::materialization::read_records::read_stop::ReadStop::Request(cause)
+                | crate::visibility::materialization::read_records::read_stop::ReadStop::Admission(cause) => cause,
+            })?;
     }
     Ok(entries)
 }

@@ -5,6 +5,7 @@ use crate::execution::{
     execute_read_only_packets, PacketBudgetDenial, PacketMemory, ReadOnlyPacket,
 };
 use crate::identity::data::PartitionId;
+use crate::storage::overlay::PartitionAccess;
 use crate::tests::support::*;
 use std::{
     num::NonZeroUsize,

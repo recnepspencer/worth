@@ -33,6 +33,12 @@ pub(super) fn outer(entries: usize, width: u64) -> Option<(u64, u64)> {
             + std::mem::size_of::<BranchId>()
             + 4 * std::mem::size_of::<usize>()) as u64,
     )?;
+    quote.1 = quote.1.checked_add(
+        (std::mem::size_of::<super::super::IndexSelectionState>()
+            + std::mem::size_of::<PreparedIndexBasisSelection>()
+            + 4 * std::mem::size_of::<usize>()) as u64,
+    )?;
+    quote.0 = quote.0.checked_add(4)?;
     // Two FIFO insertions reuse the same now-owned append path. im's 64-slot
     // RRB geometry bounds its fringe copies by 5h+4 branches and four leaves.
     let mut queue_entries = entries;
@@ -62,5 +68,10 @@ pub(super) fn inner(mut entries: usize) -> Option<(u64, u64)> {
     let nodes = height.checked_mul(3)?.checked_add(2)?;
     let bytes = (64 * std::mem::size_of::<(DerivedIndexId, Arc<DerivedIndexGeneration>)>()
         + 71 * std::mem::size_of::<usize>()) as u64;
-    Some((nodes.checked_mul(64)?, nodes.checked_mul(bytes)?))
+    // A reached global index updates the full selection and its global-only
+    // carried view. Scoped updates reserve the same two-path upper bound.
+    Some((
+        nodes.checked_mul(128)?,
+        nodes.checked_mul(bytes)?.checked_mul(2)?,
+    ))
 }

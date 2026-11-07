@@ -94,13 +94,15 @@ pub(super) fn execute_index_packets(
 }
 
 pub(super) fn execute_index_inputs(
-    _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_>,
     inputs: Vec<ReadOnlyPacket<IndexPreparationPacket>>,
     lease: Option<&ExecutionResourceLease<'_>>,
     work_budget: Option<&RequestWorkBudget>,
 ) -> Result<Vec<(IndexReductionKey, IndexPreparationResult)>, DerivedIndexExecutionDenial> {
+    let reconstruction = projection.reconstructing(lane);
+    let projection = &reconstruction;
     crate::execution::admit_read_only_packet_order(&inputs)
         .map_err(PacketExecutionStop::Admission)
         .map_err(index_execution_denial)?;

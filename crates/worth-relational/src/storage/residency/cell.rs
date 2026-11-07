@@ -1,3 +1,6 @@
+#[path = "cell/reconstruction_head.rs"]
+mod reconstruction_head;
+pub(crate) use reconstruction_head::ReconstructedRegionHead;
 #[path = "cell/member_export.rs"]
 mod member_export;
 #[path = "cell/observation.rs"]

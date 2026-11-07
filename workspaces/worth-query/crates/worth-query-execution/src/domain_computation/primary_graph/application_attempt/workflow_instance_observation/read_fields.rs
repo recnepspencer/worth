@@ -81,7 +81,9 @@ impl<'a, 'e, 'r> ReadFields<'a, 'e, 'r> {
                 };
                 match v {
                     None => Ok(None),
-                    Some(AspectValue::String(InternedString::Stored(text))) => encode(text.as_str()),
+                    Some(AspectValue::String(InternedString::Stored(text))) => {
+                        encode(text.as_str())
+                    }
                     Some(AspectValue::String(InternedString::Raw(text))) => encode(text.as_str()),
                     Some(AspectValue::String(InternedString::Symbol(symbol))) => self
                         .pin

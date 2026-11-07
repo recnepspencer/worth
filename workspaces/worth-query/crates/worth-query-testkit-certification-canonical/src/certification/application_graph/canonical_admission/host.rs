@@ -41,6 +41,7 @@ impl WorthQueryApplicationContribution<AdmissionSchema> for AdmissionContributio
 pub struct Host {
     pub program: WorthQueryProgramApplicationRuntime<AdmissionSchema, Program>,
     pub request_work: u64,
+    pub second_decode_work: std::cell::Cell<Option<u64>>,
 }
 pub fn install(work: u64) -> Host {
     install_owned(work, false).0
@@ -120,6 +121,7 @@ pub fn install_owned(
         Host {
             program: host,
             request_work: work,
+            second_decode_work: Default::default(),
         },
         projection,
     )
@@ -143,6 +145,7 @@ pub fn restore(checkpoint: WorthQueryApplicationCheckpoint, work: u64) -> Host {
     Host {
         program,
         request_work: work,
+        second_decode_work: Default::default(),
     }
 }
 pub fn capture(host: &Host) -> WorthQueryApplicationCheckpoint {

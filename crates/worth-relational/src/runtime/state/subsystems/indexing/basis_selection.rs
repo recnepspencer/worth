@@ -22,6 +22,7 @@ pub(crate) struct PreparedIndexBasisSelection {
     pub(crate) version: VersionId,
     pub(crate) schema: SchemaVersionId,
     state: Arc<super::IndexSelectionState>,
+    globals: im::OrdSet<DerivedIndexId>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -50,11 +51,24 @@ impl BasisSelections {
     pub(super) fn install(&mut self, basis: PreparedIndexBasisSelection) {
         let version = basis.version;
         let branch = basis.branch.clone();
+        if !basis.state.global.is_empty() || !basis.state.global_empty.is_empty() {
+            let mut global = basis.clone();
+            global.state = Arc::new(super::IndexSelectionState {
+                entries: basis.state.global.clone(),
+                empty: basis.state.global_empty.clone(),
+                global: basis.state.global.clone(),
+                global_empty: basis.state.global_empty.clone(),
+            });
+            self.replace_lookup((None, version), Some(Arc::new(global)));
+        }
         let basis = Arc::new(basis);
-        self.replace_lookup((None, version), Some(Arc::clone(&basis)));
         self.replace_lookup((Some(Arc::new(branch)), version), Some(basis));
     }
-    pub(super) fn insert_generation(&mut self, generation: Arc<DerivedIndexGeneration>) {
+    pub(super) fn insert_generation(
+        &mut self,
+        generation: Arc<DerivedIndexGeneration>,
+        globals: &im::OrdSet<DerivedIndexId>,
+    ) {
         let mut basis = self
             .get(
                 Some(&generation.source_branch_id),
@@ -67,7 +81,9 @@ impl BasisSelections {
                 version: generation.applicability.version_id,
                 schema: generation.applicability.schema_version,
                 state: Arc::new(super::IndexSelectionState::default()),
+                globals: globals.clone(),
             });
+        basis.globals = globals.clone();
         basis.replace(generation);
         self.install(basis);
     }
@@ -85,6 +101,8 @@ impl BasisSelections {
             let state = Arc::make_mut(&mut basis.state);
             state.entries.remove(&index);
             state.empty.remove(&index);
+            state.global.remove(&index);
+            state.global_empty.remove(&index);
             if basis.state.entries.is_empty() && basis.state.empty.is_empty() {
                 self.replace_lookup(key, None);
             } else {
@@ -107,7 +125,9 @@ impl BasisSelections {
             let Some(basis) = self.entries.get(&key) else {
                 continue;
             };
-            if held(Some(&basis.branch), basis.version, basis.schema) {
+            // Global selections remain in custody while any branch or historical
+            // reader holds this version; the generation's author is not its scope.
+            if held(key.0.as_deref(), basis.version, basis.schema) {
                 // FIFO custody checks are fair even while forks at an old version arrive.
                 self.retirement.push_back(key);
             } else {
@@ -117,25 +137,23 @@ impl BasisSelections {
     }
     /// cost-lane: explicit reclamation scans the retained exact-basis catalog.
     pub(super) fn reclaim(&mut self, retained: &crate::history::retention::RetainedIndexRoots) {
+        let retained_global: std::collections::BTreeSet<_> = retained
+            .historical_versions
+            .iter()
+            .copied()
+            .chain(
+                retained
+                    .live
+                    .iter()
+                    .chain(&retained.retired)
+                    .map(|(_, version, schema)| (*version, *schema)),
+            )
+            .collect();
         let removed: Vec<_> = self
             .entries
             .iter()
             .filter(|(key, basis)| !match &key.0 {
-                None => {
-                    retained
-                        .historical_versions
-                        .contains(&(basis.version, basis.schema))
-                        || retained.live.contains(&(
-                            basis.branch.clone(),
-                            basis.version,
-                            basis.schema,
-                        ))
-                        || retained.retired.contains(&(
-                            basis.branch.clone(),
-                            basis.version,
-                            basis.schema,
-                        ))
-                }
+                None => retained_global.contains(&(basis.version, basis.schema)),
                 Some(branch) => {
                     retained
                         .historical_versions
@@ -245,6 +263,8 @@ impl PreparedIndexBasisSelection {
         } else {
             state.empty.remove(&index);
         }
+        state.global.remove(&index);
+        state.global_empty.remove(&index);
         Ok(())
     }
     pub(crate) fn replace_admitted(
@@ -274,6 +294,12 @@ impl PreparedIndexBasisSelection {
         if state.empty.contains(&generation.index_id) {
             state.empty.remove(&generation.index_id);
         }
+        if self.globals.contains(&generation.index_id) {
+            state.global_empty.remove(&generation.index_id);
+            state
+                .global
+                .insert(generation.index_id, Arc::clone(&generation));
+        }
         state.entries.insert(generation.index_id, generation);
     }
 }
@@ -286,7 +312,7 @@ impl IndexingState {
             .generations
             .generation(generation)
             .expect("publication just installed its generation");
-        self.bases.insert_generation(payload);
+        self.bases.insert_generation(payload, &self.catalog.globals);
     }
 }
 impl IndexingSubsystem {
@@ -332,6 +358,7 @@ impl IndexingSubsystem {
             version,
             schema,
             state: Arc::clone(&previous.state),
+            globals: state.catalog.globals.clone(),
         })
     }
     pub(crate) fn install_basis_selection(&self, basis: PreparedIndexBasisSelection) {

@@ -67,15 +67,22 @@ fn mutation_refreshes_every_exact_performed_commit_across_branches() {
                     source,
                 )
                 .expect("feature branch forks from main");
+            let (_, before) = runtime.observe_branch(&runtime.main_branch_identity()).unwrap();
+            let before = before.observation().commit_receipt().unwrap().clone();
+            let original: Vec<_> = index_ids.iter().map(|index| runtime.index_access()
+                .read_published_generation_for_commit(execution, *index, &before)
+                .unwrap().unwrap()).collect();
             let feature = commit_empty(execution, runtime, "index-refresh-feature");
             let main = commit_empty(execution, runtime, "main");
-            assert!(index_ids.iter().any(|index_id| {
-                runtime
-                    .index_access()
-                    .read_published_generation_for_commit(execution, *index_id, &feature)
-                    .unwrap()
-                    .is_none()
-            }));
+            for committed in [&feature, &main] {
+                for (index, original) in index_ids.iter().zip(&original) {
+                    let selected = runtime.index_access()
+                        .read_published_generation_for_commit(execution, *index, committed)
+                        .unwrap().expect("native publication carries the unchanged exact selection");
+                    assert_eq!(selected.as_ref(), original.as_ref(),
+                        "empty edits carry the same generation identity and every entry on each branch");
+                }
+            }
             Ok::<_, &'static str>((feature, main))
         })
         .expect("exact publication delta refresh succeeds")

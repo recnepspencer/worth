@@ -24,12 +24,30 @@ pub fn with_request<R>(
         deadline: scope.deadline(),
     })
     .expect("the finite caller request is admitted");
-    host.program
+    super::opaque::begin_request();
+    let observer =
+        worth_execution::RequestConsultObservationForTest::install_on_this_thread_for_test(
+            super::opaque::consult,
+        );
+    let answer = host
+        .program
         .runtime()
         .with_funded_application_advancement(
             scope,
             ExecutionAllocationPolicy::Execution(&caller),
             body,
         )
-        .expect("the installed phase borrows the original funded caller")
+        .expect("the installed phase borrows the original funded caller");
+    // Pick the real accepted prefix at the second seed's first charge. The
+    // negative twin below must independently reach and swallow its next refusal.
+    let second = super::opaque::second_decode_consult();
+    host.second_decode_work.set(second.and_then(|consult| {
+        observer
+            .charged_prefixes_for_test()
+            .into_iter()
+            .filter(|(ordinal, _)| *ordinal <= consult)
+            .map(|(_, work)| work)
+            .max()
+    }));
+    answer
 }

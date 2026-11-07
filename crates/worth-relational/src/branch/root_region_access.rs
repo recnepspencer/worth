@@ -3,6 +3,21 @@ mod kind_directory;
 use super::*;
 
 impl RelationalBranchRoot {
+    pub(crate) fn reconstruct_region_head(
+        &self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: PartitionId,
+    ) -> Result<
+        Option<crate::storage::residency::ReconstructedRegionHead>,
+        crate::storage::residency::RelationalResidencyDemandFailure,
+    > {
+        self.regions
+            .get(id)
+            .map(|region| region.partition.reconstruct_head(lane, execution))
+            .transpose()
+    }
+
     pub(crate) fn live_counts(&self) -> crate::storage::residency::LiveRecordCounts {
         self.regions.live_counts()
     }

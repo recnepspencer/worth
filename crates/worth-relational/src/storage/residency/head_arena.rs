@@ -58,6 +58,13 @@ impl<'lease, K: RecordKind> RelationalRecordHeadArenaView<'lease, K> {
         self.arena.live_bitset.set_slots()
     }
 
+    pub(crate) fn try_live_slots<Stop>(
+        &self,
+        prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
+    ) -> Result<crate::storage::partition::DenseSlotIterator<'lease>, Stop> {
+        self.arena.live_bitset.try_set_slots(prepare)
+    }
+
     pub(crate) fn live_count(&self) -> usize {
         self.arena.live_bitset.count_ones()
     }
