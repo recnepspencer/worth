@@ -37,7 +37,7 @@ fn checkpoint_transition_refuses_real_accepted_output_before_authoring() {
         .expect("installed host call opens");
     assert_eq!(sections.accepted_output_count(), 1);
     let mut called = false;
-    let denial = installation::in_memory_rostered_program_from_checkpoint_with_transition(
+    let denial = installation::WorthQueryInterimCheckpointRestore::rostered_program_with_transition(
         validated_program(),
         WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
         DocumentRetentionSchema::declaration().unwrap(),

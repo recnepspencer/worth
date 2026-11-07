@@ -38,6 +38,16 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         crate::execution::check_request(execution)
             .map_err(crate::durability::data::RelationalNativeCheckpointCaptureDenial::Request)?;
         let basis = self.capture_checkpoint_basis()?;
+        self.encode_native_capture(basis, execution, policy, artifact_policy)
+    }
+
+    pub(in crate::durability::authority) fn encode_native_capture(
+        &self,
+        basis: super::checkpoint_capture::CapturedCheckpointBasis,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        artifact_policy: crate::durability::data::RelationalCheckpointArtifactPolicy,
+    ) -> Result<crate::durability::data::RelationalNativeCheckpoint, CaptureDenial> {
         // One capture is one stage: every write, hash and copy charges its meter
         // cumulatively, so the request's work ceiling bounds the whole capture.
         let mut answer = None;
@@ -48,13 +58,14 @@ impl<'runtime> DurabilityAuthority<'runtime> {
                     stage,
                 };
             answer = Some((|| -> Result<_, CaptureDenial> {
-                let mut captured = basis.build_native_capture(
+                let captured = basis.build_native_capture(
                     execution,
                     policy,
                     self.runtime.durability.cold_source(),
                     &artifact_policy,
                     &mut control,
-                )?.seal_ordinary();
+                )?;
+                let mut captured = captured.seal_ordinary();
                 let manifest_publication = if !artifact_policy.is_embedded() {
                     artifact_policy.publication_source().map(|source| {
                         self.runtime.durability.checkpoint_selection().prepare(

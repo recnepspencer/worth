@@ -13,8 +13,10 @@ type Application =
     application_installation::WorthQueryProgramApplicationRuntime<NoReuseSchema, NoReuseProgram>;
 type Request<'a, 'p, 's> = WorthQueryApplicationRequest<'a, 'p, 's, NoReuseSchema>;
 
-fn reopen(bytes: &[u8]) -> application_installation::WorthQueryApplicationCheckpoint {
-    application_installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes.to_vec())
+fn reopen(
+    checkpoint: &application_installation::WorthQueryApplicationCheckpoint,
+) -> application_installation::WorthQueryApplicationCheckpoint {
+    checkpoint.clone()
 }
 
 fn reset_contacts(provider_observation: &crate::producer::ProviderContacts) {

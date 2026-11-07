@@ -20,7 +20,7 @@ fn acknowledged_codec_successor_keeps_exact_capture_cause_and_repairs_without_re
     output::reset_decodes();
     let pending = worth_query_testkit_host::facade::host::checkpoint_capture::stopped(|phase| {
         callbacks = 0;
-        installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement(
+        installation::WorthQueryInterimCheckpointRestore::rostered_program_with_transition_in_advancement(
             phase,
             host::program(),
             installation::WorthQueryApplicationProgramRoster::new(),
@@ -40,25 +40,23 @@ fn acknowledged_codec_successor_keeps_exact_capture_cause_and_repairs_without_re
             },
         )
     });
-    let Some(installation::WorthQueryCheckpointCaptureDenial::Allocation(cause)) =
+    // Authenticated capture first funds its Native history-consolidation owner.
+    // Keep that actual typed request refusal, before any final-frame allocation.
+    let Some(installation::WorthQueryCheckpointCaptureDenial::Execution(cause)) =
         pending.capture_denial()
     else {
-        panic!("exact native capture allocation refusal is retained: {pending:?}");
+        panic!("exact native capture admission refusal is retained: {pending:?}");
     };
-    let requested = cause
-        .requested_payload_bytes()
-        .expect("native capture supplies its exact payload quote");
+    let worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied {
+        kind: worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind::ExecutionResource {
+            denial: worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial::MemoryLimit {
+                requested, admitted: 0,
+                level: worth_query_host::facade::application_contribution::WorthQueryMemoryLimitLevel::Policy,
+            },
+            partition_identity: None, policy_ancestor: Some(0),
+        }
+    } = cause.kind() else { panic!("exact Native memory admission: {cause:?}"); };
     assert!(requested > 0);
-    assert_eq!(
-        cause.classify(),
-        ExecutionAllocationDenialClass::Request(worth_execution::WorkCeilingDenial::Admission(
-            LeaseDenial::MemoryExhausted(MemoryLimitDenial::Capacity {
-                requested,
-                admitted: 0,
-                level: MemoryLimitLevel::Policy { ancestor: 0 },
-            })
-        ))
-    );
     assert_eq!(
         callbacks, 1,
         "capture refusal follows real transition authoring and acknowledgment"

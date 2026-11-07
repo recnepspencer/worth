@@ -14,7 +14,7 @@ use worth_query_installation::facade::{
     WorthQueryInstalledApplicationSchema, WorthQueryProgramSupportRoster,
 };
 
-use super::WorthQueryInMemoryApplicationDenial;
+use super::WorthQueryApplicationPreparationDenial;
 
 /// The complete, immutable program support one installation admitted, together
 /// with the program its first occurrence activates.
@@ -37,6 +37,6 @@ pub(in crate::domain_computation::primary_graph) type WorthQueryProgramAdmission
             &WorthQueryInstalledApplicationSchema<Schema>,
         ) -> Result<
             WorthQueryAdmittedProgramSupport<Schema>,
-            WorthQueryInMemoryApplicationDenial,
+            WorthQueryApplicationPreparationDenial,
         > + 'authoring,
 >;

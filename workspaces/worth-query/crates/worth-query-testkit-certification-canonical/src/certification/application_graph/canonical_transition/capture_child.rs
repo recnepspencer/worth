@@ -16,7 +16,7 @@ pub use worth_query_host::facade::{
     application_contribution::{
         with_bootstrap_advancement_from_request, WorthQueryBootstrapAdvancementPhase,
     },
-    application_installation::WorthQueryInMemoryApplicationDenial,
+    application_installation::WorthQueryApplicationPreparationDenial,
 };
 
 pub fn request(
@@ -49,8 +49,8 @@ pub fn funded_by<T>(
     funding: &ExecutionResourceLease<'_>,
     transition: impl FnOnce(
         &WorthQueryBootstrapAdvancementPhase<'_>,
-    ) -> Result<T, WorthQueryInMemoryApplicationDenial>,
-) -> Result<T, WorthQueryInMemoryApplicationDenial> {
+    ) -> Result<T, WorthQueryApplicationPreparationDenial>,
+) -> Result<T, WorthQueryApplicationPreparationDenial> {
     with_bootstrap_advancement_from_request(ExecutionRequest::leased(funding), |phase| {
         transition(&phase)
     })

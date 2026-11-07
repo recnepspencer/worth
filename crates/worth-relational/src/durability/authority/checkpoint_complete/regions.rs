@@ -2,6 +2,14 @@
 mod covered;
 mod emission;
 mod grouping;
+pub(super) enum CheckpointMirror<'a> {
+    CurrentMainRoot,
+    Substrate {
+        edition: &'a crate::runtime::PartitionEdition,
+        schema: &'a crate::branch::RelationalBranchRootSchemaAuthority,
+        carrier: [u8; 32],
+    },
+}
 use super::{branches::BranchImages, roots::CapturedRoots, schemas::CompleteSchemas};
 use crate::branch::{RelationalBranchBasisDescriptor, RelationalBranchRoot};
 use crate::durability::{data::*, medium::RelationalDurableMemberLocator};
@@ -68,7 +76,37 @@ pub(super) fn capture<
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<RegionOutput, Denial> {
     let grouped = Grouped::capture(observations, main, branches, roots, schemas, request)?;
-    emission::capture(grouped, roots, base, dictionary, members, request)
+    emission::capture(
+        grouped,
+        roots,
+        base,
+        CheckpointMirror::CurrentMainRoot,
+        dictionary,
+        members,
+        request,
+    )
+}
+pub(super) fn capture_interim<
+    'a,
+    I: Iterator<
+        Item = (
+            &'a RelationalBranchBasisDescriptor,
+            &'a Arc<RelationalBranchRoot>,
+        ),
+    >,
+>(
+    observations: impl Fn() -> I,
+    main: &BranchId,
+    branches: &BranchImages<'_>,
+    roots: &CapturedRoots,
+    schemas: &CompleteSchemas<'_>,
+    mirror: CheckpointMirror<'_>,
+    dictionary: &dyn SymbolTextLookup,
+    members: &mut ExecutionOrderedMap<RelationalDurableMemberLocator, RelationalCheckpointMember>,
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<RegionOutput, Denial> {
+    let grouped = Grouped::capture(observations, main, branches, roots, schemas, request)?;
+    emission::capture(grouped, roots, None, mirror, dictionary, members, request)
 }
 fn request_stop(cause: crate::execution::RelationalExecutionDenialCause) -> Denial {
     Denial::Request(cause)

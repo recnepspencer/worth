@@ -8,6 +8,7 @@ mod capture_cost;
 pub(crate) mod cold_materialization;
 mod contract_work;
 mod indexes;
+mod interim_origin;
 mod operational;
 mod references;
 mod region_memory;

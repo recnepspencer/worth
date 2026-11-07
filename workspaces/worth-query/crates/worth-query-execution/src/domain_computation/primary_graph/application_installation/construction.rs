@@ -5,19 +5,19 @@ use super::super::{
     WorthQueryPrimaryGraphInstallationDenial,
 };
 use super::{
-    WorthQueryInMemoryApplicationDenial, WorthQueryInMemoryApplicationLimits,
+    WorthQueryApplicationLimits, WorthQueryApplicationPreparationDenial,
     WorthQueryProgramAdmissionStep,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchemaComposition, ApplicationSchemaDeclaration,
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
-pub(super) fn in_memory_with_contributions_in_advancement<Schema, Contributions>(
+pub(super) fn construct_with_contributions_in_advancement<Schema, Contributions>(
     phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
     declaration: ApplicationSchemaDeclaration<Schema>,
     configuration: <Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     initial_state: impl FnOnce(
         &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
@@ -31,12 +31,23 @@ pub(super) fn in_memory_with_contributions_in_advancement<Schema, Contributions>
     checkpoint_transition: Option<
         super::super::bootstrap::checkpoint_transition::CheckpointTransition<'_, '_, Schema>,
     >,
-) -> Result<WorthQueryPrimaryGraphApplicationRuntime<Schema>, WorthQueryInMemoryApplicationDenial>
+) -> Result<WorthQueryPrimaryGraphApplicationRuntime<Schema>, WorthQueryApplicationPreparationDenial>
 where
     Schema: ApplicationSchemaComposition,
     Contributions: WorthQueryApplicationContributionTuple<Schema>,
 {
-    use WorthQueryInMemoryApplicationDenial as Denial;
+    use WorthQueryApplicationPreparationDenial as Denial;
+
+    let execution = phase.execution_request();
+    if let Some(checkpoint) = &checkpoint {
+        checkpoint
+            .preflight_interim(&execution)
+            .map_err(|cause| Denial::Graph(cause.into_installation_denial()))?;
+    }
+    let mut decoded_checkpoint = checkpoint
+        .map(|checkpoint| checkpoint.decode_with_execution(&execution))
+        .transpose()
+        .map_err(|cause| Denial::Graph(cause.into_installation_denial()))?;
 
     let super::prepared_meaning::PreparedInstalledMeaning {
         runtime,
@@ -78,11 +89,6 @@ where
     let relational_runtime = relational_builder
         .build()
         .map_err(|cause| Denial::Graph(cause.into()))?;
-    let execution = phase.execution_request();
-    let mut decoded_checkpoint = checkpoint
-        .map(|checkpoint| checkpoint.decode_with_execution(&execution))
-        .transpose()
-        .map_err(|cause| Denial::Graph(cause.into_installation_denial()))?;
     let restoring = decoded_checkpoint.is_some();
     let mut graph = authority
         .prepare_native_graph(
@@ -123,20 +129,24 @@ where
         &producers,
     )
     .map_err(Denial::Graph)?;
+    let mut interim_continuation = None;
     if restoring && let Some(support) = &admitted_program_support {
         if let Some(transition) = checkpoint_transition {
-            graph = super::super::bootstrap::checkpoint_transition::transition_checkpoint(
-                phase,
-                graph,
-                decoded_checkpoint.as_mut().expect("restoring checkpoint"),
-                super::super::bootstrap::checkpoint_transition::InstalledCheckpointTarget {
-                    schema: &installed,
-                    program: support,
-                    producers: &producers,
-                },
-                &activation,
-                transition,
-            )?;
+            let (next_graph, continuation) =
+                super::super::bootstrap::checkpoint_transition::transition_checkpoint(
+                    phase,
+                    graph,
+                    decoded_checkpoint.as_mut().expect("restoring checkpoint"),
+                    super::super::bootstrap::checkpoint_transition::InstalledCheckpointTarget {
+                        schema: &installed,
+                        program: support,
+                        producers: &producers,
+                    },
+                    &activation,
+                    transition,
+                )?;
+            graph = next_graph;
+            interim_continuation = Some(continuation);
         } else {
             super::super::bootstrap::recover_program_activation(
                 phase,
@@ -251,6 +261,12 @@ where
         );
     }
     if let Some(checkpoint) = decoded_checkpoint {
+        let origin = checkpoint.origin.as_ref().ok_or_else(|| Denial::Graph(
+            WorthQueryPrimaryGraphInstallationDenial::new(super::super::WorthQueryPrimaryGraphInstallationDenialKind::InterimCheckpointCaptureOriginMissing,
+                "interim checkpoint capture origin was lost")))?;
+        application
+            .restore_interim_registry(origin, interim_continuation.as_ref(), &execution)
+            .map_err(Denial::Graph)?;
         application.runtime.recovered_outputs =
             super::super::application_output_demand::WorthQueryRecoveredOutputs::from_checkpoint(
                 checkpoint,

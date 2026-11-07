@@ -59,8 +59,17 @@ pub(super) fn prepare(
             .map(|base| &base.directory.manifest),
         execution,
     )?;
-    let canonical =
-        CanonicalOutput::prepare(&commits, &frozen.original, &mut metadata.members, execution)?;
+    let canonical = CanonicalOutput::prepare(
+        &commits,
+        &frozen.original.artifacts,
+        frozen
+            .original
+            .base
+            .as_ref()
+            .map(|base| &base.directory.manifest),
+        &mut metadata.members,
+        execution,
+    )?;
     let region_output = super::regions::capture(
         || frozen.components.observations(),
         main,
@@ -82,7 +91,16 @@ pub(super) fn prepare(
         .ok_or(Denial::OriginalAuthorityUnavailable)?;
     let (schema_images, carriers) = schemas.into_parts();
     let (mut draft, member_map) = super::draft::assemble(
-        &frozen,
+        &super::draft::CheckpointDraftMetadata {
+            branches: &frozen.branches,
+            identity: &frozen.identity,
+            indexes: &frozen.indexes,
+            symbol_frontier: frozen.symbol_frontier,
+            through: frozen.original.branches.transitions().last().map_or(
+                crate::branch::RelationalBranchTransitionSequence(0),
+                |entry| entry.positioned.sequence(),
+            ),
+        },
         &canonical,
         schema_images,
         lineage.basis.clone(),

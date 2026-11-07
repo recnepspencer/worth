@@ -16,6 +16,7 @@ pub(crate) struct RelationalCheckpointManifestSelection {
 }
 #[derive(Debug, Clone)]
 struct CheckpointSelectionState {
+    interim_capture_serial: u64,
     admission: Option<crate::durability::checkpoint_admission::CheckpointAdmissionBinding>,
     admission_loan: bool,
     capture_base: Option<Arc<SelectedCheckpointCaptureBase>>,
@@ -27,6 +28,7 @@ struct CheckpointSelectionState {
 impl Default for CheckpointSelectionState {
     fn default() -> Self {
         Self {
+            interim_capture_serial: 0,
             admission: None,
             admission_loan: false,
             capture_base: None,
@@ -47,6 +49,29 @@ pub(crate) struct RelationalCheckpointManifestPublication {
 }
 
 impl RelationalCheckpointManifestSelection {
+    pub(crate) fn require_interim_image(
+        &self,
+        image: &crate::durability::checkpoint_admission::RelationalCheckpointAdmissionArtifact,
+    ) -> Result<
+        Arc<RelationalCheckpointDirectory>,
+        crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal,
+    > {
+        let binding = self.selected.lock().unwrap_or_else(|cause| cause.into_inner()).admission.clone()
+            .ok_or(crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal::MissingCaptureOrigin)?;
+        binding.require_image(image)
+    }
+    pub(crate) fn next_interim_capture_serial(
+        &self,
+    ) -> Result<u64, crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal>
+    {
+        let mut state = self
+            .selected
+            .lock()
+            .unwrap_or_else(|cause| cause.into_inner());
+        state.interim_capture_serial = state.interim_capture_serial.checked_add(1)
+            .ok_or(crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal::CapacityOverflow)?;
+        Ok(state.interim_capture_serial)
+    }
     pub(crate) fn freeze_capture_base(
         &self,
     ) -> Result<

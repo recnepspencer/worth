@@ -13,9 +13,50 @@ pub(super) struct CompleteSchemas<'a> {
     images: CheckpointSchemaImages,
     // Pointer lookup is valid only while the actual immutable input owners
     // remain borrowed. An unrelated later allocation cannot reuse an address.
-    _sources: PhantomData<&'a FrozenOriginalInputs>,
+    _sources: PhantomData<&'a ()>,
 }
 impl<'a> CompleteSchemas<'a> {
+    pub(super) fn capture_interim(
+        frames: &'a [OriginalCanonicalCommit],
+        components: impl Iterator<
+            Item = (
+                &'a crate::branch::RelationalBranchBasisDescriptor,
+                &'a Arc<crate::branch::RelationalBranchRoot>,
+            ),
+        >,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Self, Denial> {
+        let mut identities = ExecutionOrderedMap::default();
+        let mut images = ExecutionOrderedMap::default();
+        for frame in frames {
+            record(
+                &frame.inputs.prestate_schema,
+                &mut identities,
+                &mut images,
+                request,
+            )?;
+            record(
+                &frame.inputs.result_schema,
+                &mut identities,
+                &mut images,
+                request,
+            )?;
+        }
+        for (_, root) in components {
+            record(
+                &root.retained_schema_authority(),
+                &mut identities,
+                &mut images,
+                request,
+            )?;
+        }
+        Ok(Self {
+            original: identities,
+            images: CheckpointSchemaImages::copy_for_request(&images, request)
+                .map_err(Denial::Request)?,
+            _sources: PhantomData,
+        })
+    }
     pub(super) fn capture(
         original: &'a FrozenOriginalInputs,
         _commits: &'a [OriginalCanonicalCommit],

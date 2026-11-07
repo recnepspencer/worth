@@ -28,6 +28,7 @@ pub(crate) struct SelectedSource {
     pub(super) medium: Arc<TestDurableMedium>,
     pub(super) canonical_reads: Mutex<Vec<RelationalDurableMemberLocator>>,
     pub(crate) fired: AtomicBool,
+    pub(crate) member_reads: Mutex<Vec<RelationalDurableMemberLocator>>,
     pub(super) journal_reads: Mutex<Vec<PatchStreamPosition>>,
     stop: Mutex<Option<(RelationalDurableMemberLocator, MemberStop)>>,
     custody: Mutex<Option<Arc<CustodyControl>>>,
@@ -38,6 +39,7 @@ impl SelectedSource {
             medium,
             canonical_reads: Mutex::new(Vec::new()),
             fired: AtomicBool::new(false),
+            member_reads: Mutex::new(Vec::new()),
             journal_reads: Mutex::new(Vec::new()),
             stop: Mutex::new(None),
             custody: Mutex::new(None),
@@ -199,15 +201,22 @@ impl RelationalDurableColdSource for SelectedSource {
         limit: u64,
     ) -> Result<Vec<u8>, RelationalStorageUnavailableCause> {
         let bytes = self.medium.read_member(member, limit)?;
+        self.member_reads.lock().unwrap().push(member);
         let mut armed = self.stop.lock().unwrap();
         if armed.as_ref().is_some_and(|(target, stop)| {
-            *target == member && matches!(stop, MemberStop::MemoryRoom { .. })
+            *target == member && !matches!(stop, MemberStop::Exhaust { .. })
         }) {
-            let (_, MemberStop::MemoryRoom { held, budget, room }) = armed.take().unwrap() else {
-                unreachable!("the selected memory-room arm was just inspected")
-            };
+            let (_, stop) = armed.take().unwrap();
             self.fired.store(true, Ordering::Relaxed);
-            reserve_budget_room(&budget, &held, room);
+            match stop {
+                MemberStop::Cancel(cancellation) => cancellation.cancel(),
+                MemberStop::MemoryRoom { held, budget, room } => {
+                    reserve_budget_room(&budget, &held, room);
+                }
+                MemberStop::Exhaust { .. } => {
+                    unreachable!("an ordinary read has no execution scope to exhaust")
+                }
+            }
         }
         Ok(bytes)
     }

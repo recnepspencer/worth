@@ -20,8 +20,8 @@ mod manifest_validation;
 pub(crate) mod member_frame;
 mod member_sequence;
 mod member_source;
-pub(crate) use checkpoint_decoding::decode_checkpoint_with_image;
 pub(crate) use checkpoint_decoding::{decode_checkpoint, decode_checkpoint_from_source};
+pub(crate) use checkpoint_decoding::{decode_checkpoint_with_image, decode_interim_with_image};
 #[cfg(test)]
 pub(crate) use checkpoint_encoding::encode_checkpoint;
 pub(crate) use checkpoint_encoding::{encode_captured, CheckpointEncodingControl};

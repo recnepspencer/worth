@@ -28,9 +28,9 @@ pub fn transition(
         TemporalHostSchema,
         TemporalInstallationProgram,
     >,
-    application_installation::WorthQueryInMemoryApplicationDenial,
+    application_installation::WorthQueryApplicationPreparationDenial,
 > {
-    application_installation::in_memory_rostered_program_from_checkpoint_with_transition(
+    application_installation::WorthQueryInterimCheckpointRestore::rostered_program_with_transition(
         validated_program(),
         application_installation::WorthQueryApplicationProgramRoster::new(),
         TemporalHostSchema::declaration().unwrap(),

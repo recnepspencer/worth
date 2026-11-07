@@ -61,7 +61,7 @@ use worth_query_host::facade::{
 | `…host::facade` | `WorthQueryApplicationHomeRequest`, `WorthQueryApplicationHomeLocation`, `WorthQueryApplicationHome`, owning opening and close refusals |
 | `â€¦decl::facade::application_program` | `ApplicationFeature`, `ApplicationFeatureSpec`, `ApplicationProgramDefinition`, `ApplicationProgramAuthoring`, `ValidatedApplicationProgram`, ports and connections, `ApplicationWorkflowSpec`, `ApplicationWorkflowDefinitionBuilder` |
 | `â€¦decl::facade::application_operation` | `ApplicationMutationBinding`, `ApplicationMutationIntent`, `ApplicationCapabilityMutationBinding` |
-| `â€¦host::facade::application_installation` | `WorthQueryApplicationProgramRoster`, `WorthQueryInMemoryApplicationLimits`, `WorthQueryProgramApplicationRuntime`, `WorthQueryProgramOwner` (a trait: import it to call `owned_revision()`) |
+| `â€¦host::facade::application_installation` | `WorthQueryApplicationProgramRoster`, `WorthQueryApplicationLimits`, `WorthQueryProgramApplicationRuntime`, `WorthQueryProgramOwner` (a trait: import it to call `owned_revision()`) |
 | `â€¦host::facade::application_entry` | `WorthQueryApplicationRequestExt`, `WorthQueryOperationBuilder`, `WorthQueryOperationDescription`, `WorthQueryOperationAdvance`, `WorthQuerySettledFixedOperation`, `WorthQueryTerminalFixedOperation`, `WorthQueryWorkflowOperation`, `WorthQueryApplicationMutationOutcome`, `WorthQueryBranchAdoptionPublicationOutcome`, `Workflow*Outcome`, `Published*Ref` |
 | `â€¦host::facade::application_discovery` | `WorthQueryWorkflowDefinitionDiscovery`, `WorthQueryWorkflowInstanceRead`, `WorthQueryWorkflowInstancePage`, `WorthQueryWorkflowHistoryPage`, `WorthQueryWorkflowHistoryMark` |
 | `â€¦host::facade::domain` | `WorthQueryApplicationWorkflowSpecInstallation`, `WorthQueryApplicationWorkflowResourceCeiling`, `WorthQueryInstalledApplicationSchema` |
@@ -1954,7 +1954,7 @@ let request = WorthQueryApplicationHomeRequest::new(
     declaration,                       // MySchema::declaration()
     configuration,                     // one value per contribution
     ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID"))?,
-    limits,                            // WorthQueryInMemoryApplicationLimits
+    limits,                            // WorthQueryApplicationLimits
     |_phase, graph, installed| seed_graph(graph, installed),
 );
 let opening = with_bootstrap_advancement_from_request(original_request, |phase| {
@@ -1970,8 +1970,7 @@ an opening refusal may own the physical Home and mutation lease. Its consuming
 custody. A failed open is not permission to initialize or discard the directory.
 The outer bootstrap result and the inner opening result are separate failures.
 
-The limits type is currently named `WorthQueryInMemoryApplicationLimits` and is
-used by both locations. It carries World resources, the query resource profile,
+`WorthQueryApplicationLimits` is used by both locations. It carries World resources, the query resource profile,
 Signal conditional evaluation budget and the process execution service.
 Use `request.with_authorization_time_source(source)` to supply trusted capability
 time in either location. Reopening can supply a new trusted source. Opening does
@@ -2006,7 +2005,7 @@ trusted authorization time use the shared installation path. A declaration that
 needs Signal node allocation or Bridge correspondence is unsupported. In
 particular, producers, conditionals and application resource pools return
 `WorthQueryApplicationHomeOpenRefused::Preparation` with
-`WorthQueryInMemoryApplicationDenial::UnsupportedSeed` before contribution
+`WorthQueryApplicationPreparationDenial::UnsupportedSeed` before contribution
 configuration, physical Home creation, initialization or World bootstrap.
 Its `WorthQueryDurableStateAdmissionDenial::Unsupported` cause identifies the
 family (`SignalNodeDefinitions`, `BridgeConditionalDefinitions` or
@@ -2636,7 +2635,7 @@ See [native source and cleanup custody](../crates/worth-runtime-world/README.md#
 ### Checkpoint admission — pending (owner P-A, D12)
 
 Ordinary checkpoint restore has the same original-request option:
-`host::application_installation::in_memory_rostered_program_from_checkpoint_in_advancement`
+`host::application_installation::WorthQueryInterimCheckpointRestore::rostered_program_in_advancement`
 takes that bootstrap phase first, followed by the validated program, roster,
 declaration, configuration, build identity, unchanged World limits and checkpoint.
 It reconstructs through the ordinary restore core and accepts no seed or transition
@@ -2647,7 +2646,7 @@ checkpoint restoration continues to open from the World request policy.
 When installation belongs to an already admitted execution attempt, borrow its
 `ExecutionRequest` through `host::application_contribution::with_bootstrap_advancement_from_request`
 and pass the resulting phase to
-`host::application_installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement`.
+`host::application_installation::WorthQueryInterimCheckpointRestore::rostered_program_with_transition_in_advancement`.
 This variant takes the existing transition arguments with the phase first and a
 required capture policy. It borrows the original cancellation/deadline and
 remaining cumulative work through construction, roster admission, native transition,

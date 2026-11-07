@@ -14,6 +14,14 @@ pub(crate) fn decode_checkpoint(
     decode(execution, bytes, None, None)
 }
 
+pub(crate) fn decode_interim_with_image(
+    execution: &ExecutionRequest<'_, '_>,
+    bytes: &[u8],
+    image: crate::durability::checkpoint_admission::RelationalCheckpointAdmissionArtifact,
+) -> Result<DecodedNativeCheckpoint, RelationalRecoveryStop> {
+    decode(execution, bytes, None, Some(image))
+}
+
 pub(crate) fn decode_checkpoint_with_image(
     execution: &ExecutionRequest<'_, '_>,
     bytes: &[u8],

@@ -2,13 +2,14 @@
 use super::runtime::DirectoryHome;
 use worth_query_declaration::facade::application_schema::ApplicationSchemaComposition;
 use worth_query_execution::facade::{
-    application_home_integration::*, application_installation::WorthQueryInMemoryApplicationDenial,
+    application_home_integration::*,
+    application_installation::WorthQueryApplicationPreparationDenial,
     primary_graph::WorthQueryPrimaryGraphInstallationDenial,
 };
 use worth_store_application::*;
 
 pub enum WorthQueryApplicationHomeOpenRefused<Schema: ApplicationSchemaComposition, Program> {
-    Preparation(WorthQueryInMemoryApplicationDenial),
+    Preparation(WorthQueryApplicationPreparationDenial),
     Binding {
         query: PreparedHomeApplication<Schema, Program>,
         cause: worth_query_installation::facade::WorthQueryHomeBindingDenial,

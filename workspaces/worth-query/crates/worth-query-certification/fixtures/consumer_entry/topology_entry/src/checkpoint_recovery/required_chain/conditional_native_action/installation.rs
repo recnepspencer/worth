@@ -8,7 +8,7 @@ use worth_query_host::facade::application_installation::ApplicationBuildIdentity
 
 pub(super) fn install<const MODE: u8>() -> Result<
     application_installation::WorthQueryProgramApplicationRuntime<JointSchema, JointProgram<MODE>>,
-    WorthQueryInMemoryApplicationDenial,
+    WorthQueryApplicationPreparationDenial,
 > {
     let declaration = JointSchema::declaration().expect("the real topology schema validates");
     let program = ApplicationProgramAuthoring::<JointSchema, JointProgram<MODE>>::begin()

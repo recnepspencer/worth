@@ -37,11 +37,13 @@ impl<K: RecordKind> RecordArena<K> {
     }
 
     fn move_slot_from_overlay(&mut self, overlay: &Self, slot: usize) -> u64 {
-        let overlay_physical = overlay
-            .physical_index(slot)
-            .expect(/* Proof: WorkingState::into_partition_commits emits this private journal only from the successful applied-mutation phase. Every touched slot has completed its native arena write; an errored mutation cannot issue PublicationArtifacts. Replay recomputes that journal through mutation rather than decoding one from media. */ "touched overlay slot must be materialized");
+        let adoption = super::slot_adoption::SlotAdoption::prepare(
+            slot, &self.slots, &overlay.slots,
+        ).expect(/* Proof: WorkingState::into_partition_commits emits this private journal only from the successful applied-mutation phase. Every touched slot has completed its native arena write; an errored mutation cannot issue PublicationArtifacts. Replay recomputes that journal through mutation rather than decoding one from media. */ "touched overlay slot must be materialized");
+        let overlay_physical = adoption.selected_physical();
         let mut copied_bytes = 0_u64;
-        let physical = if let Some(physical) = self.physical_index(slot) {
+        if !adoption.appends() {
+            let physical = adoption.destination_physical();
             // Pins belong to the live owner, not to the sparse transaction
             // overlay. A new generation may inherit no old obligations.
             if self.generations[physical] != overlay.generations[overlay_physical] {
@@ -64,9 +66,7 @@ impl<K: RecordKind> RecordArena<K> {
                 self.replay_pins.set(physical, 0);
                 self.snapshot_pins.set(physical, 0);
             }
-            physical
         } else {
-            let physical = self.slots.len();
             copied_bytes = self
                 .slots
                 .insert(slot as u64)
@@ -74,15 +74,14 @@ impl<K: RecordKind> RecordArena<K> {
             self.branch_pins.push(0);
             self.replay_pins.push(0);
             self.snapshot_pins.push(0);
-            physical
-        };
+        }
 
         // Header and dynamic payload owners use the same adoption operation:
         // no discarded prior value and no selected overlay payload is cloned.
         macro_rules! adopt_truth_columns {
             ($($column:ident),+ $(,)?) => { $(
                 copied_bytes = copied_bytes.saturating_add(
-                    self.$column.copy_value_from(physical, &overlay.$column, overlay_physical)
+                    adoption.copy_selected_value(&mut self.$column, &overlay.$column)
                 );
             )+ };
         }
@@ -99,10 +98,9 @@ impl<K: RecordKind> RecordArena<K> {
             aspect_versions,
             field_revisions
         );
-        self.diagnostics_enrichment.copy_value_from(
-            physical,
+        adoption.copy_selected_value(
+            &mut self.diagnostics_enrichment,
             &overlay.diagnostics_enrichment,
-            overlay_physical,
         );
         copied_bytes = copied_bytes.saturating_add(self.live_bitset.set(
             slot,

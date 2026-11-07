@@ -73,7 +73,7 @@ pub fn request_with_handler_retirement_refusal(
         declaration,
         (RefusingHandlerConfiguration { contacts, refusal },),
         build,
-        WorthQueryInMemoryApplicationLimits::new(
+        WorthQueryApplicationLimits::new(
             identity::world_resources(),
             WorthQueryApplicationQueryResourceProfile::default(),
             SignalConditionalEvaluationBudget::development(),

@@ -129,7 +129,7 @@ pub(super) fn install(
     configuration: Configuration,
     initialize: Initialize,
     names: [&str; 3],
-) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
+) -> Result<Host, WorthQueryApplicationPreparationDenial> {
     let declaration = Catalog::declaration().unwrap();
     in_memory_program(
         ApplicationProgramAuthoring::<Catalog, Program>::begin()

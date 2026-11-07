@@ -67,7 +67,7 @@ fn authored_body_input_selection_requires_capture_at_installation() {
         |_phase, _graph, _schema| panic!("missing capture must deny before initialization"),
     );
     match result {
-        Err(WorthQueryInMemoryApplicationDenial::Contributions(denial)) => assert_eq!(
+        Err(WorthQueryApplicationPreparationDenial::Contributions(denial)) => assert_eq!(
             denial.kind(),
             WorthQueryPrimaryGraphInstallationDenialKind::OperationBodyUnavailable
         ),

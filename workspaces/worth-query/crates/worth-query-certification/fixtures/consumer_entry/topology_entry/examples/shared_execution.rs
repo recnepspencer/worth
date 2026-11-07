@@ -72,7 +72,7 @@ pub(crate) fn run() {
         .with_schema(&ExampleSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
-    let mut reopened = installation::in_memory_program_from_checkpoint(
+    let mut reopened = installation::WorthQueryInterimCheckpointRestore::program(
         program,
         ExampleSchema::declaration().unwrap(),
         (setup::configuration(),),

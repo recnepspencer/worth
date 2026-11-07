@@ -495,6 +495,7 @@ Choose a task and follow its guide for the exact calls and result handling.
 | Select history from an original recorded receipt | `request.at_original_receipt(&phase, &receipt, maximum_history_work)` admits the exact original through the current owner history; `at_recorded_commit` accepts its durable commit coordinate. Both require fresh authority and preserve typed history refusal. | [Directory Home and retries](../workspaces/worth-query/crates/worth-query-host/README.md) |
 | Configure application compute placement | `host::runtime::ExecutionRequestPolicy::for_workers(posture, determinism, workers)` selects placement, determinism and width; start with Serial. Pass the policy through application resources. Platform stages use `ExecutionRequest::run_native`, `run_native_with_checkpoint` and `KernelContext::poll`; scoped visitors use `KernelContext::work_loan` to charge the original account. Propagate typed request and allocation failures. | [One process execution service](build-an-application.md#one-process-execution-service), [Original-scoped work](../crates/worth-execution/README.md#original-scoped-work) |
 | Fund automatic Directory Home upkeep after application advancement | Pass `host::WorthQueryApplicationHomeCheckpointLimits::new(entries, payload_bytes).with_maintenance_allowance(work, memory_bytes, timeout)` through the Home request's `with_checkpoint_limits`. Defaults are 1 Gi work units per advancement, 256 MiB shared retained/scratch memory and 60 seconds. The Host owns this allowance; exhaustion leaves maintenance due or pending and preserves the business result. Explicit `checkpoint` and `recover_checkpoint` use their invoking request. | [Checkpoint limits](../workspaces/worth-store/crates/worth-store-application/src/checkpoint/limits.rs), [Host checkpoint calls](../workspaces/worth-query/crates/worth-query-host/src/application_home/checkpoint.rs) |
+| Restore a captured interim application checkpoint | `host::application_installation::WorthQueryInterimCheckpointRestore` is the single interim door. Keep the capture-issued `WorthQueryApplicationCheckpoint`, or transport its bytes together with its opaque `capture_origin()` and rebind with `with_capture_origin`. The Native image and World-original registry are authenticated by the actual capture owners. Format14 refuses predecessors and byte-only operational restore. This interim mechanism is distinct from filesystem Home reopen. | [Interim restore](../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/program/checkpoint.rs) |
 | Share workers across applications and checkpoint reopen | Construct `ExecutionAuthority::try_construct(ExecutionAuthorityConfig::for_workers(workers))` once at process startup, retain its `Arc` above sessions, and pass clones through installation's `with_execution_authority`. A final handle drop does not authorize constructing another physical authority in that process. | [Shared service and runnable example](build-an-application.md#one-process-execution-service) |
 | Configure explicit request-memory accounting | `ExecutionBudget::new(workers, memory, work)` and `SerialMemoryBudget::new(memory)` accept optional memory ceilings. `Some(bytes)` selects a finite ceiling. Retain each reservation with its payload and handle finite-capacity or counter-overflow denials. | [Explicit request-memory policy](build-an-application.md#optional-request-memory-policy) |
 | Retain a result whose heap size is not known before evaluation | Original `ExecutionRequest::run_measured_result(ceiling, known_bytes, &mut reservation, kernel)` reuses Scope admission and lends `ExecutionResultMemory` on that same reservation for before-growth claims. It measures opaque callback results/errors before framework retention and leaves their actual heap charged until release. This is post-materialization admission unless the source cooperates before allocation; declared Scan/Map maxima remain separate real contracts. | [Request-memory policy](build-an-application.md#optional-request-memory-policy) |
@@ -813,7 +814,7 @@ from that policy. See [installation funding](build-an-application.md#4-install-o
 
 For ordinary checkpoint restoration under a separately funded opening request,
 pass that same bootstrap phase first to
-`host::application_installation::in_memory_rostered_program_from_checkpoint_in_advancement`,
+`host::application_installation::WorthQueryInterimCheckpointRestore::rostered_program_in_advancement`,
 then the validated program, roster, declaration, configuration, build identity,
 World limits and checkpoint. The checkpoint is the sole model source; no seed or
 transition callback is accepted. The installed World keeps its declared runtime
@@ -822,7 +823,7 @@ request policy. Default checkpoint restore still opens from that policy.
 For installation and checkpoint-transition work inside an already admitted original
 execution request, use `host::application_contribution::with_bootstrap_advancement_from_request`.
 Its bootstrap phase borrows the same cancellation/deadline and cumulative native work.
-Call `host::application_installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement`
+Call `host::application_installation::WorthQueryInterimCheckpointRestore::rostered_program_with_transition_in_advancement`
 with that phase and an explicit capture policy from
 `phase.execution_request().allocation_policy()` or a descendant of that funding lease.
 An unrelated lease refuses before effects with
@@ -1215,7 +1216,7 @@ returns its typed refusal when native asynchronous support is unavailable.
 
 ### Retain privileged read authority when restoring a program
 
-The composition root calls `application_installation::in_memory_program_from_checkpoint_with_projection`
+The composition root calls `application_installation::WorthQueryInterimCheckpointRestore::program_with_projection`
 on `worth-query-host` to receive the restored runtime and its
 `WorthQueryApplicationInvariantProjectionAuthority`. This is the same read-only
 capability retained during bootstrap; it grants no initial-state authoring on

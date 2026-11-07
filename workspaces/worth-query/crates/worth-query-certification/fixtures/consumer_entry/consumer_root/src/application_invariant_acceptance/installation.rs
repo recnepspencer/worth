@@ -16,7 +16,7 @@ use std::sync::{
 };
 use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::{
-    application_installation::{self as installation, WorthQueryInMemoryApplicationLimits},
+    application_installation::{self as installation, WorthQueryApplicationLimits},
     declaration::authentication::WorthQueryPrincipalMappingStatus,
     domain, primary_graph, runtime,
 };
@@ -54,7 +54,7 @@ pub(super) fn assert_program_cannot_omit_an_installed_rule() {
         Arc::new(AtomicUsize::new(0)),
         (),
     );
-    let limits = WorthQueryInMemoryApplicationLimits::new(
+    let limits = WorthQueryApplicationLimits::new(
         resources::world_resources(),
         runtime::WorthQueryApplicationQueryResourceProfile::new(
             std::num::NonZeroUsize::new(32).expect("concurrent graph work is non-zero"),
@@ -82,7 +82,7 @@ pub(super) fn assert_program_cannot_omit_an_installed_rule() {
         },
     );
     let denial = match result {
-        Err(installation::WorthQueryInMemoryApplicationDenial::Program(denial)) => denial,
+        Err(installation::WorthQueryApplicationPreparationDenial::Program(denial)) => denial,
         Err(other) => panic!("expected omitted-rule denial, received {other}"),
         Ok(_) => panic!("a program that omits an installed rule was accepted"),
     };
@@ -106,7 +106,7 @@ pub(super) fn assert_program_cannot_omit_a_required_binding() {
         Arc::new(AtomicUsize::new(0)),
         (),
     );
-    let limits = WorthQueryInMemoryApplicationLimits::new(
+    let limits = WorthQueryApplicationLimits::new(
         resources::world_resources(),
         runtime::WorthQueryApplicationQueryResourceProfile::new(
             std::num::NonZeroUsize::new(32).expect("concurrent graph work is non-zero"),
@@ -133,7 +133,7 @@ pub(super) fn assert_program_cannot_omit_a_required_binding() {
         },
     );
     let denial = match result {
-        Err(installation::WorthQueryInMemoryApplicationDenial::Program(denial)) => denial,
+        Err(installation::WorthQueryApplicationPreparationDenial::Program(denial)) => denial,
         Err(other) => panic!("expected omitted-binding denial, received {other}"),
         Ok(_) => panic!("a program that omits a required installed binding was accepted"),
     };
@@ -159,7 +159,7 @@ pub(super) fn assert_required_output_source_cannot_be_an_action() {
         Arc::new(AtomicUsize::new(0)),
         (),
     );
-    let limits = WorthQueryInMemoryApplicationLimits::new(
+    let limits = WorthQueryApplicationLimits::new(
         resources::world_resources(),
         runtime::WorthQueryApplicationQueryResourceProfile::new(
             std::num::NonZeroUsize::new(32).expect("concurrent graph work is non-zero"),
@@ -268,7 +268,7 @@ pub(super) fn assert_repeated_optional_member_correspondence(world: &ConsumerWor
 
 fn install_configuration(
     foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,
-) -> Result<ConsumerWorld, installation::WorthQueryInMemoryApplicationDenial> {
+) -> Result<ConsumerWorld, installation::WorthQueryApplicationPreparationDenial> {
     install_with_roster(
         foreign,
         installation::WorthQueryApplicationProgramRoster::new(),
@@ -281,7 +281,7 @@ pub(super) fn install_with_roster(
 
     roster: installation::WorthQueryApplicationProgramRoster<ConsumerSchema>,
     deployment_grants: &[crate::program_deployment::ConsumerDeploymentGrantSeed],
-) -> Result<ConsumerWorld, installation::WorthQueryInMemoryApplicationDenial> {
+) -> Result<ConsumerWorld, installation::WorthQueryApplicationPreparationDenial> {
     install_selected_program(
         foreign,
         roster,

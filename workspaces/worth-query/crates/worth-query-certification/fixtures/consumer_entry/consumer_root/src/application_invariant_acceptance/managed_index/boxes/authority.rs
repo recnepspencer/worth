@@ -270,7 +270,7 @@ fn run() {
     .err()
     .expect("genuinely incompatible executable version");
     assert!(
-        matches!(incompatible,WorthQueryInMemoryApplicationDenial::Contributions(ref cause) if cause.kind()==WorthQueryPrimaryGraphInstallationDenialKind::ManagedIndexProviderMeaningMismatch)
+        matches!(incompatible,WorthQueryApplicationPreparationDenial::Contributions(ref cause) if cause.kind()==WorthQueryPrimaryGraphInstallationDenialKind::ManagedIndexProviderMeaningMismatch)
     );
     assert_eq!(version_calls.totals(), (0, 0, 0));
     let before_head = request

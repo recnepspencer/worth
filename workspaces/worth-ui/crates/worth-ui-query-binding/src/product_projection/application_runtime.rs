@@ -1,7 +1,7 @@
 use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::{
     application_installation::{
-        in_memory_program, WorthQueryInMemoryApplicationLimits, WorthQueryProgramApplicationRuntime,
+        in_memory_program, WorthQueryApplicationLimits, WorthQueryProgramApplicationRuntime,
     },
     declaration::authentication::{
         WorthQueryExternalPrincipalIdentity, WorthQueryPrincipalMappingStatus,
@@ -90,7 +90,7 @@ pub(super) fn external_identity() -> WorthQueryExternalPrincipalIdentity {
         .expect("the local UI source identity is canonical")
 }
 
-fn resource_limits() -> WorthQueryInMemoryApplicationLimits {
+fn resource_limits() -> WorthQueryApplicationLimits {
     let world = WorthQueryProductWorldResources::install(
         RuntimeWorldBudgetInstallation {
             branches: RuntimeWorldBranchBudgetInstallation {
@@ -123,7 +123,7 @@ fn resource_limits() -> WorthQueryInMemoryApplicationLimits {
         crate::query_runtime_resources::UI_EXECUTION_POLICY,
     )
     .expect("the UI product resources are statically valid");
-    WorthQueryInMemoryApplicationLimits::new(
+    WorthQueryApplicationLimits::new(
         world,
         WorthQueryApplicationQueryResourceProfile::new(
             std::num::NonZeroUsize::new(16).expect("concurrent graph admission is nonzero"),

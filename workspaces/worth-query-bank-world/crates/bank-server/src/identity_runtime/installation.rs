@@ -15,7 +15,7 @@ use worth_query_host::facade::{
     application_installation::{
         in_memory_rostered_program_in_advancement,
         in_memory_rostered_program_with_authorization_time_source_in_advancement,
-        WorthQueryApplicationProgramRoster, WorthQueryInMemoryApplicationLimits,
+        WorthQueryApplicationLimits, WorthQueryApplicationProgramRoster,
     },
     domain::{
         WorthQueryApplicationWorkflowResourceCeiling,
@@ -232,17 +232,17 @@ fn payment_workflow_resources() -> WorthQueryApplicationWorkflowResourceCeiling 
 }
 
 #[cfg(test)]
-pub(crate) fn bank_application_limits() -> WorthQueryInMemoryApplicationLimits {
+pub(crate) fn bank_application_limits() -> WorthQueryApplicationLimits {
     application_limits(super::product_world_resources::bank_product_world_resources())
 }
 
 fn application_limits(
     resources: worth_query_host::facade::runtime::WorthQueryProductWorldResources,
-) -> WorthQueryInMemoryApplicationLimits {
+) -> WorthQueryApplicationLimits {
     let queries = WorthQueryApplicationQueryResourceProfile::new(
         std::num::NonZeroUsize::new(64).expect("native graph concurrency is nonzero"),
     );
-    WorthQueryInMemoryApplicationLimits::new(
+    WorthQueryApplicationLimits::new(
         resources,
         queries,
         SignalConditionalEvaluationBudget::development(),

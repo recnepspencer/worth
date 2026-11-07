@@ -1,4 +1,9 @@
 mod clock;
+pub(crate) mod interim_checkpoint;
+pub use interim_checkpoint::{
+    CapturedWorldInterimAdmission, CapturedWorldInterimOrigin, WorldInterimCheckpointPort,
+    WorldInterimCheckpointRefusal,
+};
 mod close;
 pub(crate) use close::{checkpoint_close_step, RecoveredCloseReceipt};
 pub mod owner;

@@ -11,9 +11,9 @@ pub use worth_query_host::facade::application_contribution::{
 };
 pub use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 pub use worth_query_host::facade::application_installation::{
-    in_memory_rostered_program, WorthQueryApplicationProgramRoster,
-    WorthQueryInMemoryApplicationDenial, WorthQueryInMemoryApplicationLimits,
-    WorthQueryInMemoryApplicationProfile, WorthQueryProgramApplicationRuntime,
+    in_memory_rostered_program, WorthQueryApplicationLimits,
+    WorthQueryApplicationPreparationDenial, WorthQueryApplicationProfile,
+    WorthQueryApplicationProgramRoster, WorthQueryProgramApplicationRuntime,
 };
 pub use worth_query_host::facade::declaration::application_program::{
     ApplicationProgramDefinition, ApplicationProgramOutputsShape, ValidatedApplicationProgram,
@@ -160,19 +160,19 @@ pub fn publish_on_first_program() -> DocumentRetentionRuntime<RetentionProgramP0
 pub fn publish_on_first_program_for_workflow_scale() -> DocumentRetentionRuntime<RetentionProgramP0>
 {
     publish_on_first_program_with_limits(
-        WorthQueryInMemoryApplicationLimits::new(
+        WorthQueryApplicationLimits::new(
             world_resources(1_024, 256 * 1024 * 1024, 2_048, worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
             runtime::WorthQueryApplicationQueryResourceProfile::new(
                 std::num::NonZeroUsize::new(128).expect("concurrent graph work is non-zero"),
             ),
             primary_graph::SignalConditionalEvaluationBudget::development(),
         )
-        .with_profile(WorthQueryInMemoryApplicationProfile::WorkflowScale),
+        .with_profile(WorthQueryApplicationProfile::WorkflowScale),
     )
 }
 
 pub fn publish_on_first_program_with_limits(
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
 ) -> DocumentRetentionRuntime<RetentionProgramP0> {
     publish_with_limits(
         validated_first_program(),
@@ -206,7 +206,7 @@ pub fn publish_on_second_program() -> DocumentRetentionRuntime<RetentionProgramP
 
 /// Attempts a host without a V2 program against the two-rule catalog.
 pub fn publish_first_program_alone(
-) -> Result<DocumentRetentionRuntime<RetentionProgramP0>, WorthQueryInMemoryApplicationDenial> {
+) -> Result<DocumentRetentionRuntime<RetentionProgramP0>, WorthQueryApplicationPreparationDenial> {
     publish(
         validated_first_program(),
         WorthQueryApplicationProgramRoster::new(),
@@ -215,7 +215,7 @@ pub fn publish_first_program_alone(
 
 /// Attempts a host that rosters a program declaring an uninstalled rule.
 pub fn publish_with_foreign_rule_rostered(
-) -> Result<DocumentRetentionRuntime<RetentionProgramP0>, WorthQueryInMemoryApplicationDenial> {
+) -> Result<DocumentRetentionRuntime<RetentionProgramP0>, WorthQueryApplicationPreparationDenial> {
     publish(
         validated_first_program(),
         WorthQueryApplicationProgramRoster::new()
@@ -230,7 +230,7 @@ pub fn publish_with_foreign_rule_rostered(
 pub fn publish<Initial>(
     initial: ValidatedApplicationProgram<DocumentRetentionSchema, Initial>,
     roster: WorthQueryApplicationProgramRoster<'_, DocumentRetentionSchema>,
-) -> Result<DocumentRetentionRuntime<Initial>, WorthQueryInMemoryApplicationDenial>
+) -> Result<DocumentRetentionRuntime<Initial>, WorthQueryApplicationPreparationDenial>
 where
     Initial: ApplicationProgramDefinition<
             DocumentRetentionSchema,
@@ -248,8 +248,8 @@ where
 pub fn publish_with_limits<Initial>(
     initial: ValidatedApplicationProgram<DocumentRetentionSchema, Initial>,
     roster: WorthQueryApplicationProgramRoster<'_, DocumentRetentionSchema>,
-    limits: WorthQueryInMemoryApplicationLimits,
-) -> Result<DocumentRetentionRuntime<Initial>, WorthQueryInMemoryApplicationDenial>
+    limits: WorthQueryApplicationLimits,
+) -> Result<DocumentRetentionRuntime<Initial>, WorthQueryApplicationPreparationDenial>
 where
     Initial: ApplicationProgramDefinition<
             DocumentRetentionSchema,

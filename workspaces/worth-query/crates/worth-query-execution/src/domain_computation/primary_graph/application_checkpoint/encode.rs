@@ -9,8 +9,21 @@ pub(crate) mod body;
 pub(crate) mod sizing;
 
 impl WorthQueryApplicationCheckpoint {
-    pub(in crate::domain_computation::primary_graph) fn encode(
+    fn encode(
         native: worth_relational::facade::durability::RelationalNativeCheckpoint,
+        publication: &super::super::WorthQueryPrimaryGraphPublication,
+        accepted_outputs: &[super::super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity],
+        policy: WorthQueryCheckpointCapturePolicy<'_, '_>,
+    ) -> Result<
+        (Self, WorthQueryApplicationCheckpointSectionBytes),
+        WorthQueryCheckpointCaptureDenial,
+    > {
+        Self::encode_frame(native, &[], &[], publication, accepted_outputs, policy)
+    }
+    pub(super) fn encode_frame(
+        native: worth_relational::facade::durability::RelationalNativeCheckpoint,
+        native_image: &[u8],
+        world_originals: &[u8],
         publication: &super::super::WorthQueryPrimaryGraphPublication,
         accepted_outputs: &[super::super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity],
         policy: WorthQueryCheckpointCapturePolicy<'_, '_>,
@@ -20,7 +33,13 @@ impl WorthQueryApplicationCheckpoint {
     > {
         let native_sections = native.captured_sections().map(Into::into);
         let native_len = native.bytes().len();
-        let size = sizing::ValidatedCheckpointSize::new(native_len, accepted_outputs, policy)?;
+        let size = sizing::ValidatedCheckpointSize::with_originals(
+            native_len,
+            native_image.len(),
+            world_originals.len(),
+            accepted_outputs,
+            policy,
+        )?;
         let mut bytes = reserve_buffer(size.total(), policy)?;
         bytes.extend_from_slice(MAGIC)?;
         bytes.extend_from_slice(&[0; CHECKSUM_BYTES])?;
@@ -28,6 +47,8 @@ impl WorthQueryApplicationCheckpoint {
         body::write(
             &mut bytes,
             native.bytes(),
+            native_image,
+            world_originals,
             publication,
             accepted_outputs,
             &size,
@@ -46,6 +67,8 @@ impl WorthQueryApplicationCheckpoint {
         let sections = WorthQueryApplicationCheckpointSectionBytes::new(
             HEADER_BYTES,
             native_len,
+            native_image.len(),
+            world_originals.len(),
             size.accepted(),
             accepted_outputs.len(),
             native_sections,
@@ -54,6 +77,7 @@ impl WorthQueryApplicationCheckpoint {
         Ok((
             Self {
                 bytes: bytes.seal()?,
+                origin: None,
             },
             sections,
         ))

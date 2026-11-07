@@ -10,6 +10,7 @@ pub(super) fn capture(
     grouped: Grouped<'_>,
     roots: &CapturedRoots,
     base: Option<&crate::durability::checkpoint_admission::FrozenSelectedCaptureBase>,
+    mirror_source: CheckpointMirror<'_>,
     dictionary: &dyn SymbolTextLookup,
     members: &mut ExecutionOrderedMap<RelationalDurableMemberLocator, RelationalCheckpointMember>,
     request: &ExecutionRequest<'_, '_>,
@@ -18,10 +19,13 @@ pub(super) fn capture(
     let mut output =
         PreparedCheckpointRoots::prepare(grouped.groups.len(), request).map_err(request_stop)?;
     let (empty, empty_memory) = grouped.copy_empty(request)?;
-    let mirror_count = grouped
-        .mirror
-        .and_then(|commit| roots.get(commit))
-        .map_or(0, |root| root.checkpoint_region_count());
+    let mirror_count = match &mirror_source {
+        CheckpointMirror::CurrentMainRoot => grouped
+            .mirror
+            .and_then(|commit| roots.get(commit))
+            .map_or(0, |root| root.checkpoint_region_count()),
+        CheckpointMirror::Substrate { edition, .. } => edition.cells().count(),
+    };
     let mirror_memory = reserve(
         array_bytes::<RelationalCheckpointRegion>(mirror_count)?,
         request,
@@ -117,12 +121,12 @@ pub(super) fn capture(
                 return Err(Denial::OriginalAuthorityUnavailable);
             }
             root.push(cached.leaf.clone()).map_err(request_stop)?;
-            if group.current_main {
+            if group.current_main && matches!(mirror_source, CheckpointMirror::CurrentMainRoot) {
                 mirror.push(cached.leaf.clone());
             }
             Ok::<_, Denial>(())
         })?;
-        if group.current_main {
+        if group.current_main && matches!(mirror_source, CheckpointMirror::CurrentMainRoot) {
             mirror_schema = Some(group.carrier);
         }
         output
@@ -138,6 +142,63 @@ pub(super) fn capture(
                 .map_err(request_stop)?,
             )
             .map_err(request_stop)?;
+    }
+    if let CheckpointMirror::Substrate {
+        edition,
+        schema,
+        carrier,
+    } = mirror_source
+    {
+        for (partition, retention) in edition.cells() {
+            crate::execution::check_request(request).map_err(request_stop)?;
+            let cell = retention.cell();
+            #[expect(
+                clippy::disallowed_methods,
+                reason = "Fixed allocation identity deduplicates custody; canonical order never uses this address"
+            )]
+            let identity = Arc::as_ptr(cell) as usize;
+            let key = (identity, carrier);
+            if !cache.contains_key(&key) {
+                let lease = retention.demand_full(request, 1 << 30).map_err(|cause| {
+                    crate::durability::checkpoint_history::capture::capture_stop(cause.into())
+                })?;
+                let captured = lease
+                    .capture_checkpoint_data_for_request(request, schema, carrier, dictionary)
+                    .map_err(crate::durability::checkpoint_history::capture::capture_stop)?;
+                for member in captured.members {
+                    let locator = member.locator();
+                    if !members.contains_key(&locator) {
+                        members
+                            .insert_cloned_native_for_request(&locator, &member, *request)
+                            .map_err(map_stop)?;
+                    }
+                }
+                cache
+                    .insert_cloned_native_for_request(
+                        &key,
+                        &Cached {
+                            leaf: captured.leaf,
+                            publication: Some(captured.publication),
+                        },
+                        *request,
+                    )
+                    .map_err(map_stop)?;
+                if !cells.contains_key(&identity) {
+                    cells
+                        .insert_cloned_native_for_request(&identity, cell, *request)
+                        .map_err(map_stop)?;
+                }
+            }
+            let leaf = &cache
+                .get(&key)
+                .ok_or(Denial::OriginalAuthorityUnavailable)?
+                .leaf;
+            if leaf.partition_id != partition {
+                return Err(Denial::OriginalAuthorityUnavailable);
+            }
+            mirror.push(leaf.clone());
+        }
+        mirror_schema = Some(carrier);
     }
     if mirror.len() != mirror_count {
         return Err(Denial::OriginalAuthorityUnavailable);

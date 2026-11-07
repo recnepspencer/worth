@@ -66,7 +66,7 @@ pub fn try_install(
     prefix: Arc<prefix_observation::Calls>,
     boxes: Arc<boxes::Calls>,
     incompatible: bool,
-) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
+) -> Result<Host, WorthQueryApplicationPreparationDenial> {
     install_configuration(Configuration {
         prefix,
         configure_prefix: |calls, setup| {
@@ -78,7 +78,7 @@ pub fn try_install(
 }
 pub(super) fn install_configuration(
     configuration: Configuration,
-) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
+) -> Result<Host, WorthQueryApplicationPreparationDenial> {
     let declaration = Catalog::declaration().unwrap();
     in_memory_program(
         ApplicationProgramAuthoring::<Catalog, Program>::begin()

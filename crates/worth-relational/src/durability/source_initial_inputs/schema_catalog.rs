@@ -1,5 +1,6 @@
 //! One request-funded immutable schema graph follows exact source readmission.
 use crate::branch::RelationalBranchRootSchemaAuthority;
+use crate::durability::checkpoints::region_directory::corrupt;
 use crate::durability::data::RelationalRecoveryStop;
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionOrderedMap, ExecutionRequest};
@@ -52,5 +53,49 @@ impl ReadmittedSourceSchemaCatalog {
             rows: Default::default(),
             _memory: memory,
         }))
+    }
+    pub(crate) fn insert_image(
+        catalog: &mut Arc<Self>,
+        image: &crate::durability::data::DurableBranchRootSchemaImage,
+        configured: &crate::schema::data::RelationalSchemaRegistry,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), RelationalRecoveryStop> {
+        crate::execution::check_request(request).map_err(RelationalRecoveryStop::Request)?;
+        if let Some(prior) = catalog.rows.get(&image.carrier_digest()) {
+            if prior.recorded_image(request)? != *image {
+                return Err(corrupt("same source carrier has differing full schema DATA").into());
+            }
+            return Ok(());
+        }
+        let (registry, contracts) = image.readmit_registry().map_err(corrupt)?;
+        let expected = registry.authority_snapshot();
+        let mut registry = if configured.authority_snapshot() == expected {
+            configured.clone()
+        } else {
+            registry
+        };
+        // A recorded carrier describes readers but cannot recreate their
+        // executable handles. Bind this same source graph before root admission,
+        // including historical schemas that differ from the configured target.
+        registry.content_formats = registry
+            .content_formats
+            .bind_recorded(&configured.content_formats)?;
+        let schema = RelationalBranchRootSchemaAuthority::readmit_exact(
+            catalog.rows.len() as u64 + 1,
+            registry,
+            contracts,
+            &expected,
+            image.descriptor_semantics_version(),
+        )
+        .ok_or_else(|| corrupt("original schema carrier executable admission failed"))?;
+        schema
+            .retain_readmitted_image(image.clone())
+            .map_err(corrupt)?;
+        Arc::get_mut(catalog)
+            .ok_or_else(|| corrupt("source schema graph was shared before admission completed"))?
+            .rows
+            .insert_cloned_native_for_request(&image.carrier_digest(), &schema, *request)
+            .map_err(crate::durability::checkpoint_history::capture::map_stop)?;
+        Ok(())
     }
 }

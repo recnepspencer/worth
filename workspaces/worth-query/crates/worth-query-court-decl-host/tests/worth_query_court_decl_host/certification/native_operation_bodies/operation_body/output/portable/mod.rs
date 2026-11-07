@@ -111,7 +111,7 @@ fn output_bodies_reconstruct_and_new_receipts_rebind_exact_entity_types() {
         .unwrap();
     drop(old);
     let schema = program::schema::<31>();
-    let restored = in_memory_program_from_checkpoint(
+    let restored = WorthQueryInterimCheckpointRestore::program(
         program::validated::<31>(&schema),
         schema,
         (program::Installation::Native,),

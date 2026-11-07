@@ -1,5 +1,6 @@
 //! Named factory reach follows its semantic owner and exact caller class.
 pub(super) const FACTORIES: &[&str] = &[
+    "WorthQueryInterimCheckpointRestore",
     "install_home_checkpoint_maintenance",
     "begin_fresh_home_initialization",
     "prepare_fresh_home_schema_installation",
@@ -65,7 +66,12 @@ pub(super) const FACTORIES: &[&str] = &[
 ];
 
 pub(super) fn ownership(name: &str) -> (&'static str, &'static str) {
-    if name == "install_home_checkpoint_maintenance" {
+    if name == "WorthQueryInterimCheckpointRestore" {
+        (
+            "query-interim-checkpoint",
+            "workspaces/worth-query/crates/worth-query-execution/",
+        )
+    } else if name == "install_home_checkpoint_maintenance" {
         (
             "application-home-checkpoint-maintenance",
             "workspaces/worth-store/crates/worth-store-application/",

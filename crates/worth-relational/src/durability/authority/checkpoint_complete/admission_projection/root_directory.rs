@@ -10,7 +10,7 @@ use serde::{
 };
 use worth_execution::{ExecutionImmutableBytes, ExecutionRequest};
 
-pub(super) fn encode(
+pub(in crate::durability::authority::checkpoint_complete) fn encode(
     manifest: &RelationalCheckpointManifest,
     originals: &CapturedRoots,
     request: &ExecutionRequest<'_, '_>,

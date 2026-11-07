@@ -1,10 +1,13 @@
 mod inspection;
+pub(in crate::domain_computation::primary_graph) mod interim_transport;
+mod transition_capture;
 pub use inspection::{
     CheckpointAllocatorInspection, CheckpointRecordFrontier, CheckpointRecordIdentity,
     CheckpointReservationAdvanceDenial, WorthQueryApplicationCheckpointInspection,
     WorthQueryCheckpointInspectionDenial, WorthQueryCheckpointModelBytes,
     WorthQueryCheckpointRecordClass,
 };
+pub use interim_transport::WorthQueryInterimCheckpointOrigin;
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
 
@@ -32,12 +35,13 @@ pub use section_bytes::{
 pub use worth_execution::ExecutionAllocationPolicy as WorthQueryCheckpointCapturePolicy;
 
 pub const MAGIC: &[u8; 8] = b"WQAPCP01";
-// Current-only combined grammar: whole-aspect facts remain wire12 (presence tag11); producer quotes are absent.
-pub const FORMAT_VERSION: u16 = 13;
+// Current-only transport includes Native admission and World originals. Facts
+// remain wire12 (presence tag11); producer quotes are absent.
+pub const FORMAT_VERSION: u16 = 14;
 pub const WORKFLOW_FACTS: u16 = 2;
 pub const WORKFLOW_INSTANCES: u16 = 4;
 pub const CHECKSUM_BYTES: usize = 32;
-pub const BODY_PREFIX_BYTES: usize = 2 + 2 + 2 + 8 + 8 + 8;
+pub const BODY_PREFIX_BYTES: usize = 2 + 2 + 2 + 8 + 8 + 8 + 8 + 8;
 pub const HEADER_BYTES: usize = MAGIC.len() + CHECKSUM_BYTES + BODY_PREFIX_BYTES;
 // Version 9 preserves the row layout and certifies the exporter exclusion.
 pub const MINIMUM_ACCEPTED_OUTPUT_BYTES: usize =
@@ -50,14 +54,23 @@ pub const MAXIMUM_ENTITY_NAME_BYTES: usize = 4 * 1024;
 ///
 /// Query alone defines and admits the payload. Hosts retain and transport the
 /// bytes without interpreting model facts or reconstructing a partial runtime.
-/// Clones share immutable byte backing. Decoding retains that same backing for
-/// the embedded native region; native recovery still owns fresh readmission.
-#[derive(Clone, Debug, Eq, PartialEq)]
+/// Clones share immutable byte backing and any actual capture-issued origin.
+/// Imported bytes alone cannot grant restoration. Native and World retain
+/// distinct owner readmission; neither reconstructs authority from a checksum.
+#[derive(Clone, Debug)]
 pub struct WorthQueryApplicationCheckpoint {
     bytes: worth_execution::ExecutionImmutableBytes,
+    origin: Option<WorthQueryInterimCheckpointOrigin>,
 }
+impl PartialEq for WorthQueryApplicationCheckpoint {
+    fn eq(&self, other: &Self) -> bool {
+        self.bytes == other.bytes
+    }
+}
+impl Eq for WorthQueryApplicationCheckpoint {}
 
 pub struct DecodedApplicationCheckpoint {
+    pub(super) origin: Option<WorthQueryInterimCheckpointOrigin>,
     pub(super) native: worth_relational::facade::durability::RelationalNativeCheckpoint,
     pub(super) bootstrap_commit_id: worth_relational::facade::history::CommitId,
     pub(super) accepted_outputs:
@@ -68,6 +81,7 @@ pub struct DecodedApplicationCheckpoint {
 impl WorthQueryApplicationCheckpoint {
     pub fn from_untrusted_bytes(bytes: impl Into<Box<[u8]>>) -> Self {
         Self {
+            origin: None,
             bytes: worth_execution::ExecutionImmutableBytes::from_external_bytes(Arc::new(
                 bytes.into(),
             )),

@@ -55,7 +55,9 @@ fn configured_omissions_preserve_required_meaning_and_release_pending_installati
         let probe = Arc::clone(&configuration.topology.invariant_probe);
         let seeded = std::cell::Cell::new(false);
         let denial = match setup::install::<false>(configuration, || seeded.set(true)) {
-            Err(installation::WorthQueryInMemoryApplicationDenial::Contributions(denial)) => denial,
+            Err(installation::WorthQueryApplicationPreparationDenial::Contributions(denial)) => {
+                denial
+            }
             Err(other) => panic!("unexpected refusal: {other:?}"),
             Ok(_) => panic!("missing required configuration must not install"),
         };
@@ -87,7 +89,7 @@ fn omitting_both_contracts_and_registration_cannot_erase_program_requirement() {
     let calls = Arc::clone(&configuration.topology.setup_calls);
     let seeded = std::cell::Cell::new(false);
     let denial = match setup::install::<true>(configuration, || seeded.set(true)) {
-        Err(installation::WorthQueryInMemoryApplicationDenial::Contributions(denial)) => denial,
+        Err(installation::WorthQueryApplicationPreparationDenial::Contributions(denial)) => denial,
         Err(other) => panic!("unexpected refusal: {other:?}"),
         Ok(_) => panic!("the independent required pair must survive both omissions"),
     };

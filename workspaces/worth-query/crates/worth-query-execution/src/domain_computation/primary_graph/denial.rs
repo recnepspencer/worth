@@ -158,6 +158,9 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     InvariantInstallationReceiptMismatch,
     /// Recovery from a checkpoint was rejected.
     CheckpointRecoveryRejected,
+    InterimCheckpointCaptureOriginMissing,
+    InterimCheckpointCaptureOriginMismatch,
+    InterimCheckpointReceiverMismatch,
     UnsupportedCheckpointFormat {
         observed: u16,
         supported: u16,

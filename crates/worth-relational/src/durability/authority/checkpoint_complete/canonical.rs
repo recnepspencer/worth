@@ -22,16 +22,16 @@ pub(super) struct CanonicalOutput {
 impl CanonicalOutput {
     pub(super) fn prepare(
         commits: &[OriginalCanonicalCommit],
-        original: &super::source::FrozenOriginalInputs,
+        artifacts: &[Arc<crate::history::RelationalCommitArtifact>],
+        prior: Option<&RelationalCheckpointManifest>,
         members: &mut ExecutionOrderedMap<
             RelationalDurableMemberLocator,
             RelationalCheckpointMember,
         >,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, Denial> {
-        let prior = original.base.as_ref().map(|base| &base.directory.manifest);
         let covered = prior.map_or(0, |prior| prior.commits.len());
-        let count = original.artifacts.len();
+        let count = artifacts.len();
         let index = CheckpointCommitIndex::copy_for_request(
             count,
             |index| {
@@ -78,7 +78,7 @@ impl CanonicalOutput {
                     .map_err(map_stop)?;
             }
         }
-        for artifact in original.artifacts.iter() {
+        for artifact in artifacts {
             let cell = artifact.envelope_residency();
             let position = cell
                 .captured_position()

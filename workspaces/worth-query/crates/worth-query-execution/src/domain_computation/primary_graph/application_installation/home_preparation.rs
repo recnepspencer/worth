@@ -61,7 +61,7 @@ struct HomeApplicationState<Schema: ApplicationSchemaComposition, Program> {
     support: program_admission::WorthQueryAdmittedProgramSupport<Schema>,
     pending: PreparedApplicationRuntimeContributions<Schema>,
     activation: WorthQueryProgramActivationCell,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     authorization_time_source:
         Option<Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>>,
@@ -75,12 +75,12 @@ pub fn prepare_home_program<Schema, Program>(
     declaration: ApplicationSchemaDeclaration<Schema>,
     configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     authorization_time_source: Option<
         Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>,
     >,
     directory_support: fn(worth_foundational::facade::DurableStateFamily, u8) -> Option<u8>,
-) -> Result<PreparedHomeApplication<Schema, Program>, WorthQueryInMemoryApplicationDenial>
+) -> Result<PreparedHomeApplication<Schema, Program>, WorthQueryApplicationPreparationDenial>
 where
     Schema: ApplicationSchemaComposition,
     Program: ApplicationProgramDefinition<Schema> + 'static,
@@ -114,9 +114,9 @@ where
         &admitted_program_support,
     )?;
     let support = admitted_program_support
-        .ok_or(WorthQueryInMemoryApplicationDenial::ProgramAdmissionIncomplete)?;
+        .ok_or(WorthQueryApplicationPreparationDenial::ProgramAdmissionIncomplete)?;
     let (program, supported) =
-        admitted.ok_or(WorthQueryInMemoryApplicationDenial::ProgramAdmissionIncomplete)?;
+        admitted.ok_or(WorthQueryApplicationPreparationDenial::ProgramAdmissionIncomplete)?;
     Ok(PreparedHomeApplication {
         state: HomeApplicationState {
             runtime,

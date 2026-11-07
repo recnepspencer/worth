@@ -11,14 +11,15 @@ pub use worth_query_host::facade::{
         with_bootstrap_advancement_from_request, WorthQueryBootstrapAdvancementPhase,
     },
     application_installation::{
-        WorthQueryCheckpointTransitionRecovery, WorthQueryInMemoryApplicationDenial,
+        WorthQueryApplicationPreparationDenial, WorthQueryCheckpointTransitionRecovery,
     },
 };
 
 pub fn stopped<Runtime>(
     mut transition: impl for<'scope> FnMut(
         &WorthQueryBootstrapAdvancementPhase<'scope>,
-    ) -> Result<Runtime, WorthQueryInMemoryApplicationDenial>,
+    )
+        -> Result<Runtime, WorthQueryApplicationPreparationDenial>,
 ) -> Box<WorthQueryCheckpointTransitionRecovery> {
     let lease = lease(64 * 1024 * 1024);
     let result =
@@ -27,9 +28,9 @@ pub fn stopped<Runtime>(
         })
         .expect("original bootstrap request opens");
     match result {
-        Err(WorthQueryInMemoryApplicationDenial::CheckpointTransitionCaptureStopped(pending)) => {
-            pending
-        }
+        Err(WorthQueryApplicationPreparationDenial::CheckpointTransitionCaptureStopped(
+            pending,
+        )) => pending,
         Err(cause) => panic!("capture-only limit must retain acknowledged custody: {cause:?}"),
         Ok(_) => panic!("capture-only limit must refuse native capture"),
     }

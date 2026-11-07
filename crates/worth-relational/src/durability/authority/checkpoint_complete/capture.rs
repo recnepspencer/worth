@@ -1,5 +1,6 @@
 //! Freeze source DATA together, then leave both logical epochs before physical reads.
-use super::super::checkpoint_components::{capture_complete, CapturedCompleteComponents};
+use super::super::checkpoint_components::CapturedCompleteComponents;
+use super::current_metadata::FrozenCurrentCheckpointMetadata;
 use super::{source::FrozenOriginalInputs, Denial};
 use crate::branch::CheckpointBranchMetadata;
 use crate::durability::data::DurableRecordIdentityState;
@@ -66,28 +67,19 @@ impl FrozenCompleteMetadata {
                 if original.base.is_some() && placement.is_embedded() {
                     return Err(Denial::OriginalAuthorityUnavailable);
                 }
-                let branches = runtime
-                    .history
-                    .capture_checkpoint_branch_metadata(
-                        request,
-                        &configuration.config.execution.runtime_name,
-                    )
-                    .map_err(branch_stop)?;
-                let main_cell = branches
-                    .branch_cells
-                    .iter()
-                    .position(|cell| cell.branch_id == configuration.config.history.main_branch)
-                    .ok_or(Denial::OriginalAuthorityUnavailable)?;
-                let components = capture_complete(runtime, request, &branches)?;
-                let identity = runtime
-                    .record_identity
-                    .checkpoint_identity_for_request(request)
-                    .map_err(stop)?;
-                let indexes = runtime.indexes.checkpoint_inputs_for_request(request)?;
-                let symbol_frontier = runtime
-                    .services
-                    .symbols
-                    .with_read(|symbols| symbols.identity_frontier());
+                let FrozenCurrentCheckpointMetadata {
+                    branches,
+                    components,
+                    identity,
+                    indexes,
+                    symbol_frontier,
+                    main_cell,
+                } = FrozenCurrentCheckpointMetadata::capture(
+                    runtime,
+                    request,
+                    &configuration.config.execution.runtime_name,
+                    &configuration.config.history.main_branch,
+                )?;
                 Ok::<_, Denial>(Self {
                     original,
                     branches,
@@ -104,20 +96,4 @@ impl FrozenCompleteMetadata {
         // performed while either of the original logical epochs was held.
         Ok(snapshot)
     }
-}
-fn branch_stop(cause: crate::branch::CheckpointBranchMetadataCaptureDenial) -> Denial {
-    match cause {
-        crate::branch::CheckpointBranchMetadataCaptureDenial::Request(cause) => {
-            Denial::Request(cause)
-        }
-        crate::branch::CheckpointBranchMetadataCaptureDenial::SizeOverflow => {
-            Denial::Request(crate::execution::RelationalExecutionDenialCause::MemoryOverflow)
-        }
-        crate::branch::CheckpointBranchMetadataCaptureDenial::SourceChanged => {
-            Denial::OriginalAuthorityUnavailable
-        }
-    }
-}
-fn stop(cause: crate::durability::data::RelationalRecoveryStop) -> Denial {
-    crate::durability::checkpoint_history::capture::capture_stop(cause)
 }

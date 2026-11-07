@@ -281,7 +281,7 @@ impl FrozenOriginalInputs {
     }
 }
 
-fn canonical_readmission_stop(
+pub(super) fn canonical_readmission_stop(
     cause: crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal,
 ) -> Denial {
     use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal as Refusal;

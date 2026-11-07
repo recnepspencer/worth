@@ -15,7 +15,7 @@ fn admitted_actor_survives_reconstruction_and_cannot_be_chosen_by_input() {
         .unwrap();
     drop(old);
     let schema = program::schema::<36>();
-    let restored = in_memory_program_from_checkpoint(
+    let restored = WorthQueryInterimCheckpointRestore::program(
         program::validated::<36>(&schema),
         schema,
         (program::Installation::Native,),

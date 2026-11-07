@@ -10,7 +10,7 @@ fn authored_body_without_a_mutation_binding_is_denied_before_initialization() {
         |_phase, _graph, _schema| panic!("missing body execution must deny before initial state"),
     );
     match result {
-        Err(WorthQueryInMemoryApplicationDenial::Contributions(denial)) => assert_eq!(
+        Err(WorthQueryApplicationPreparationDenial::Contributions(denial)) => assert_eq!(
             denial.kind(),
             WorthQueryPrimaryGraphInstallationDenialKind::OperationBodyUnavailable,
         ),
