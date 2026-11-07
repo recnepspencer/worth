@@ -6,6 +6,9 @@ mod retirement;
 pub(crate) use retirement::PublicationFactsRetirement;
 pub(super) mod memory_observation;
 pub(crate) use memory_observation::MemoryPublicationRecord;
+pub(crate) use memory_observation::{
+    MemoryPublicationMeaning, MemoryPublicationReceiver, MemoryPublicationReceiverScope,
+};
 mod readmission;
 pub use memory_observation::WorldObservedMemoryPublication;
 pub(crate) use readmission::{

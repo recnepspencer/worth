@@ -27,6 +27,9 @@ pub(super) fn restore_prefix(
         return Err(corrupt("original birth missing").into());
     };
     let birth = observation(birth, graph)?;
+    crate::durability::checkpoint_admission::SelectedCheckpointCaptureBase::restore_original(
+        runtime, original, request,
+    )?;
     let covered = original.covered.as_ref();
     if let Some(artifact) = covered.and_then(|image| image.artifact.as_ref()) {
         runtime

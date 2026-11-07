@@ -79,13 +79,13 @@ fn world_resources_for(
 }
 
 pub(super) fn application_limits(
-) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
+) -> worth_query_host::facade::application_installation::WorthQueryApplicationLimits {
     application_limits_for_world(world_resources())
 }
 
 pub(super) fn application_limits_with_branches(
     branch_capacity: u64,
-) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
+) -> worth_query_host::facade::application_installation::WorthQueryApplicationLimits {
     application_limits_for_world(world_resources_for(
         EXECUTION_POLICY,
         ACTIVE_WORLD_OBSERVATIONS,
@@ -98,7 +98,7 @@ pub(super) fn application_limits_with_branches(
 pub(super) fn application_limits_with_clock(
     policy: worth_foundational::ExecutionRequestPolicy,
     clock: WorthQueryAdmissionClock,
-) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
+) -> worth_query_host::facade::application_installation::WorthQueryApplicationLimits {
     application_limits_for_world(world_resources_for(
         policy,
         ACTIVE_WORLD_OBSERVATIONS,
@@ -111,7 +111,7 @@ pub(super) fn application_limits_with_clock(
 pub(super) fn application_limits_with_observations(
     policy: worth_foundational::ExecutionRequestPolicy,
     active_observations: u64,
-) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
+) -> worth_query_host::facade::application_installation::WorthQueryApplicationLimits {
     application_limits_for_world(world_resources_for(
         policy,
         active_observations,
@@ -122,8 +122,8 @@ pub(super) fn application_limits_with_observations(
 
 fn application_limits_for_world(
     world: WorthQueryProductWorldResources,
-) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
-    worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits::new(
+) -> worth_query_host::facade::application_installation::WorthQueryApplicationLimits {
+    worth_query_host::facade::application_installation::WorthQueryApplicationLimits::new(
         world,
         worth_query_host::facade::runtime::WorthQueryApplicationQueryResourceProfile::new(
             std::num::NonZeroUsize::new(32).expect("concurrent graph work is non-zero"),

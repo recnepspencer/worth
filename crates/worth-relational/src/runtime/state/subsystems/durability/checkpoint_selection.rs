@@ -1,5 +1,8 @@
 //! Selected directory DATA and the independently completed catalog frontier.
 mod source_retirement;
+use crate::durability::checkpoint_admission::{
+    FrozenSelectedCaptureBase, PreparedCheckpointCaptureBase, SelectedCheckpointCaptureBase,
+};
 use crate::durability::data::{
     NativeCheckpointDirectoryEdge, PreparedCheckpointDirectory, RelationalCheckpointDirectory,
     RelationalCheckpointManifest,
@@ -13,8 +16,10 @@ pub(crate) struct RelationalCheckpointManifestSelection {
 }
 #[derive(Debug, Clone)]
 struct CheckpointSelectionState {
+    interim_capture_serial: u64,
     admission: Option<crate::durability::checkpoint_admission::CheckpointAdmissionBinding>,
     admission_loan: bool,
+    capture_base: Option<Arc<SelectedCheckpointCaptureBase>>,
     directory: Option<NativeCheckpointDirectoryEdge>,
     acknowledged_index_definition_frontier: u64,
     initial_inputs:
@@ -23,8 +28,10 @@ struct CheckpointSelectionState {
 impl Default for CheckpointSelectionState {
     fn default() -> Self {
         Self {
+            interim_capture_serial: 0,
             admission: None,
             admission_loan: false,
+            capture_base: None,
             directory: None,
             acknowledged_index_definition_frontier: 1,
             initial_inputs: None,
@@ -34,6 +41,7 @@ impl Default for CheckpointSelectionState {
 
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalCheckpointManifestPublication {
+    capture_base: Option<Arc<PreparedCheckpointCaptureBase>>,
     selection: RelationalCheckpointManifestSelection,
     directory: PreparedCheckpointDirectory,
     initial_inputs:
@@ -41,6 +49,77 @@ pub(crate) struct RelationalCheckpointManifestPublication {
 }
 
 impl RelationalCheckpointManifestSelection {
+    pub(crate) fn require_interim_image(
+        &self,
+        image: &crate::durability::checkpoint_admission::RelationalCheckpointAdmissionArtifact,
+    ) -> Result<
+        Arc<RelationalCheckpointDirectory>,
+        crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal,
+    > {
+        let binding = self.selected.lock().unwrap_or_else(|cause| cause.into_inner()).admission.clone()
+            .ok_or(crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal::MissingCaptureOrigin)?;
+        binding.require_image(image)
+    }
+    pub(crate) fn next_interim_capture_serial(
+        &self,
+    ) -> Result<u64, crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal>
+    {
+        let mut state = self
+            .selected
+            .lock()
+            .unwrap_or_else(|cause| cause.into_inner());
+        state.interim_capture_serial = state.interim_capture_serial.checked_add(1)
+            .ok_or(crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal::CapacityOverflow)?;
+        Ok(state.interim_capture_serial)
+    }
+    pub(crate) fn freeze_capture_base(
+        &self,
+    ) -> Result<
+        Option<FrozenSelectedCaptureBase>,
+        crate::durability::data::RelationalNativeCheckpointCaptureDenial,
+    > {
+        use crate::durability::data::RelationalNativeCheckpointCaptureDenial as Denial;
+        let state = self
+            .selected
+            .lock()
+            .unwrap_or_else(|cause| cause.into_inner());
+        match (&state.directory, &state.capture_base) {
+            (None, None) => Ok(None),
+            (Some(edge), Some(base)) => {
+                let directory = edge
+                    .snapshot()
+                    .ok_or(Denial::OriginalAuthorityUnavailable)?;
+                if directory.manifest.covered_position != base.source().covered()
+                    || directory.manifest.coverage.up_to_branch_transition
+                        != base.source().covered_transitions()
+                {
+                    return Err(Denial::OriginalAuthorityUnavailable);
+                }
+                Ok(Some(FrozenSelectedCaptureBase {
+                    directory,
+                    state: base.clone(),
+                }))
+            }
+            (None, Some(_)) | (Some(_), None) => Err(Denial::OriginalAuthorityUnavailable),
+        }
+    }
+    pub(crate) fn restore_capture_base(
+        &self,
+        original: &crate::durability::source_initial_inputs::source_admission::SourceOriginalInputs,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal>
+    {
+        use crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal as Refusal;
+        let mut state = self
+            .selected
+            .lock()
+            .unwrap_or_else(|cause| cause.into_inner());
+        let owner = state.admission.as_ref().ok_or(Refusal::OwnerUnavailable)?;
+        let base = SelectedCheckpointCaptureBase::from_bound_inputs(owner, original, request)?;
+        state.capture_base = Some(base.consume(Arc::new));
+        Ok(())
+    }
+
     pub(crate) fn install_admission_owner(
         &self,
         owner: worth_proof::RelationalReadmitted<
@@ -119,6 +198,7 @@ impl RelationalCheckpointManifestSelection {
         history_members: Arc<crate::durability::data::RelationalHistoryMemberDirectory>,
     ) -> RelationalCheckpointManifestPublication {
         RelationalCheckpointManifestPublication {
+            capture_base: None,
             selection: self.clone(),
             initial_inputs: None,
             directory: PreparedCheckpointDirectory {
@@ -166,6 +246,20 @@ impl RelationalCheckpointManifestSelection {
 }
 
 impl RelationalCheckpointManifestPublication {
+    pub(crate) fn with_capture_base(
+        mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, crate::durability::data::RelationalNativeCheckpointCaptureDenial> {
+        self.capture_base = Some(PreparedCheckpointCaptureBase::allocate(request).map_err(|cause| match cause {
+            crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal::Request(cause) => crate::durability::data::RelationalNativeCheckpointCaptureDenial::Request(cause),
+            _ => crate::durability::data::RelationalNativeCheckpointCaptureDenial::OriginalAuthorityUnavailable,
+        })?);
+        Ok(self)
+    }
+    pub(crate) fn capture_base(&self) -> Option<Arc<PreparedCheckpointCaptureBase>> {
+        self.capture_base.clone()
+    }
+
     pub(crate) fn with_initial_inputs(
         mut self,
         input: crate::durability::source_initial_inputs::RelationalSourceInitialInputsArtifact,
@@ -256,6 +350,7 @@ impl RelationalCheckpointManifestPublication {
             return Err(Denial::StaleCapture);
         }
         selected.initial_inputs = self.initial_inputs.clone();
+        selected.capture_base = self.capture_base.as_ref().and_then(|base| base.snapshot());
         Ok(selected
             .directory
             .replace(NativeCheckpointDirectoryEdge::new(directory))

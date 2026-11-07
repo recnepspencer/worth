@@ -1,63 +1,7 @@
 //! Original roots, not reconstructed expected hashes, are the independent oracle.
 use super::*;
 use crate::branch::RelationalBranchRootIdentityIssuer;
-use crate::storage::substrate::SharedMap;
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
-
-#[test]
-fn request_readmission_matches_real_root_and_keeps_only_actual_retained_owners() {
-    let host = crate::test_execution_policy::serial_request();
-    let execution = ExecutionRequest::serial(&host);
-    let (runtime, original, _) = committed_root_and_envelope(&execution);
-    let mut partitions = SharedMap::new();
-    for id in original.partition_ids_iter() {
-        let lease = original.resident_full_region_witness(id).unwrap().unwrap();
-        partitions.insert(id, lease.full_view().partition().clone());
-    }
-    let budget = SerialMemoryBudget::new(Some(16 * 1024 * 1024));
-    let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
-    let execution = ExecutionRequest::serial(&host);
-    let issuer = RelationalBranchRootIdentityIssuer::for_request(&execution).unwrap();
-    let reconstructed = super::super::RelationalBranchRoot::readmit_for_request(
-        &issuer,
-        &partitions,
-        original.retained_content(),
-        original.canonical_envelope().unwrap().clone(),
-        original.descriptor().unwrap().clone(),
-        original.retained_schema_authority(),
-        &runtime.services.symbols.interner_snapshot(),
-        original.output_publication_positions.clone(),
-        &execution,
-    )
-    .unwrap();
-    assert_eq!(reconstructed.axes(), original.axes());
-    assert_eq!(reconstructed.descriptor(), original.descriptor());
-    assert_eq!(
-        reconstructed.checkpoint_region_count(),
-        original.checkpoint_region_count()
-    );
-    let unchanged = super::super::RelationalBranchRoot::readmit_unchanged_for_request(
-        &issuer,
-        &reconstructed,
-        original.canonical_envelope().unwrap().clone(),
-        original.descriptor().unwrap().clone(),
-        original.retained_schema_authority(),
-        original.output_publication_positions.clone(),
-        &execution,
-    )
-    .unwrap();
-    assert_eq!(unchanged.axes(), original.axes());
-    assert!(Arc::ptr_eq(&unchanged.regions, &reconstructed.regions));
-    drop(issuer);
-    let alias = reconstructed.clone();
-    drop(reconstructed);
-    let retained = budget.charged_memory_bytes();
-    assert!(retained > 0);
-    drop(alias);
-    assert!(budget.charged_memory_bytes() > 0);
-    drop(unchanged);
-    assert_eq!(budget.charged_memory_bytes(), 0);
-}
 
 #[test]
 fn request_root_refusal_preserves_original_and_releases_partial_backing() {

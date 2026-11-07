@@ -21,11 +21,7 @@ impl OriginalPublication {
                 value.after().branch_identity() == expected.branch_identity()
                     && value.after().lifecycle_incarnation() == expected.lifecycle_incarnation()
             }
-            Self::Memory(value) => {
-                value.after().owner() == expected.owner_identity().get()
-                    && value.after().branch() == expected.branch_identity().name().as_str()
-                    && value.after().incarnation() == expected.lifecycle_incarnation().ordinal()
-            }
+            Self::Memory(value) => value.matches_receiver(expected),
         }
     }
     pub(super) fn branch_name_bytes(&self) -> usize {

@@ -24,6 +24,16 @@ pub(in crate::storage::residency) fn rebuild_controlled(
     checkpoint: &mut ProjectionCheckpoint<'_>,
     retain: &mut ProjectionRetention<'_>,
 ) -> Result<(), Cause> {
+    rebuild_using(partition, projection, basis, None, checkpoint, retain)
+}
+fn rebuild_using(
+    partition: &mut PartitionState,
+    projection: &[RegionRelationProjection],
+    basis: AdjacencyKindBasis,
+    request: Option<&request::RequestProjection<'_, '_, '_>>,
+    checkpoint: &mut ProjectionCheckpoint<'_>,
+    retain: &mut ProjectionRetention<'_>,
+) -> Result<(), Cause> {
     let mut expected = BTreeMap::<RelationId, RegionRelationProjection>::new();
     for entry in projection {
         let cloned = clone_claim(entry, checkpoint)?;
@@ -51,7 +61,7 @@ pub(in crate::storage::residency) fn rebuild_controlled(
             return Err(Cause::IntegrityMismatch);
         }
     }
-    install_projection(partition, &expected, basis, checkpoint, retain)?;
+    installation::install(partition, &expected, basis, request, checkpoint, retain)?;
     if !historical {
         for entry in expected
             .values()
@@ -85,11 +95,12 @@ pub(in crate::storage::residency) fn rebuild_controlled(
 
 /// The digest is authenticated by the caller. Head can corroborate current
 /// owned claims; Full must later reconstruct all owned historical claims.
-pub(in crate::storage::residency) fn rebuild_head_history(
+fn rebuild_head_using(
     partition: &mut PartitionState,
     projection: &[RegionRelationProjection],
+    request: Option<&request::RequestProjection<'_, '_, '_>>,
+    checkpoint: &mut ProjectionCheckpoint<'_>,
 ) -> Result<(), Cause> {
-    let checkpoint: &mut ProjectionCheckpoint<'_> = &mut |_, _| Ok(());
     let mut expected = BTreeMap::new();
     for entry in projection {
         let cloned = clone_claim(entry, checkpoint)?;
@@ -108,91 +119,14 @@ pub(in crate::storage::residency) fn rebuild_head_history(
             return Err(Cause::IntegrityMismatch);
         }
     }
-    install_projection(
+    installation::install(
         partition,
         &expected,
         AdjacencyKindBasis::Historical,
+        request,
         checkpoint,
         &mut |_, _| Ok(None),
     )
-}
-
-fn install_projection(
-    partition: &mut PartitionState,
-    expected: &BTreeMap<RelationId, RegionRelationProjection>,
-    basis: AdjacencyKindBasis,
-    checkpoint: &mut ProjectionCheckpoint<'_>,
-    retain: &mut ProjectionRetention<'_>,
-) -> Result<(), Cause> {
-    let historical = matches!(basis, AdjacencyKindBasis::Historical);
-    for (incoming, table) in [
-        (false, &mut partition.adjacency),
-        (true, &mut partition.reverse_adjacency),
-    ] {
-        let mut keys = Vec::new();
-        for (&slot, _) in table.iter() {
-            checkpoint(1, 2 * size_of::<usize>() as u64)?;
-            keys.push(slot);
-        }
-        for slot in keys {
-            let admission = table
-                .adoption_allocation_bound(1)
-                .ok_or(Cause::MemoryExhausted)?;
-            let admission = admission.checked_add(256).ok_or(Cause::MemoryExhausted)?;
-            checkpoint(table.navigation_work_bound() as u64, 0)?;
-            let custody = retain(None, admission)?;
-            let adjacency = table.get_mut(slot).ok_or(Cause::IntegrityMismatch)?;
-            if historical {
-                adjacency.reset_historical_kind_buckets_with_custody(custody);
-            } else {
-                adjacency.reset_kind_buckets();
-            }
-        }
-        for entry in expected.values() {
-            checkpoint(1, 0)?;
-            let slots = if incoming {
-                &entry.incoming
-            } else {
-                &entry.outgoing
-            };
-            for &slot in slots {
-                checkpoint(table.navigation_work_bound() as u64, 0)?;
-                let admission = table
-                    .adoption_allocation_bound(1)
-                    .and_then(|bytes| bytes.checked_add(256))
-                    .ok_or(Cause::MemoryExhausted)?;
-                let set = table.get(slot).ok_or(Cause::IntegrityMismatch)?;
-                let admission = admission
-                    .checked_add(
-                        set.historical_kind_insertion_bound(entry.kind)
-                            .ok_or(Cause::MemoryExhausted)?,
-                    )
-                    .ok_or(Cause::MemoryExhausted)?;
-                checkpoint(128, 0)?;
-                retain(set.historical_kind_custody(), admission)?;
-                let adjacency = table.get_mut(slot).ok_or(Cause::IntegrityMismatch)?;
-                if historical {
-                    adjacency.index_historical_kind(entry.kind, entry.relation);
-                } else {
-                    adjacency.index_current_kind(entry.kind, entry.relation);
-                }
-            }
-        }
-        if !historical {
-            for (_, adjacency) in table.iter() {
-                let ids: BTreeSet<_> = adjacency.current_ids().iter().copied().collect();
-                let indexed: BTreeSet<_> = adjacency
-                    .checkpoint_kind_memberships(basis)
-                    .into_iter()
-                    .flat_map(|(_, ids)| ids)
-                    .collect();
-                if ids != indexed {
-                    return Err(Cause::IntegrityMismatch);
-                }
-            }
-        }
-    }
-    Ok(())
 }
 
 pub(in crate::storage::residency) fn canonical_history(
@@ -225,3 +159,9 @@ mod owned_history;
 use owned_history::{add_owned, project_owned_history};
 mod claim_copy;
 use claim_copy::{claims_match, clone_claim};
+
+mod installation;
+mod request;
+pub(in crate::storage::residency) use request::{
+    rebuild_for_request, rebuild_head_history_for_request,
+};

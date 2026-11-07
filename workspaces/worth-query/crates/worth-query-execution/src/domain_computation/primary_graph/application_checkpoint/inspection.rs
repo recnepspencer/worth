@@ -50,6 +50,8 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static>
             query_header,
             accepted_count_bytes,
             native,
+            native_image: _,
+            world_originals: _,
             outputs,
             bootstrap_commit_id: _,
             accepted_count: _,

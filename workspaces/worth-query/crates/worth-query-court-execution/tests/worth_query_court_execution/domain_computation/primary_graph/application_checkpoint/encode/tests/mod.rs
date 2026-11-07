@@ -23,7 +23,7 @@ use worth_query_execution::facade::application_installation::WorthQueryApplicati
 use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as WorthQueryApplicationOutputPosture;
 
 #[test]
-fn checkpoint_one_buffer_matches_independent_v13_grammar_and_sections() {
+fn checkpoint_one_buffer_matches_independent_current_grammar_and_sections() {
     let (world, receipt) = recoverable_application_world(141, "checkpoint-wire-proof");
     let scope = receipt.principal_scope().scope();
     let facts = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::encode(&[WorthQueryApplicationObservedFact::SourceEntity {
@@ -49,7 +49,7 @@ fn checkpoint_one_buffer_matches_independent_v13_grammar_and_sections() {
     scope_wire.extend_from_slice(&scope.partition_id().to_be_bytes());
     scope_wire.extend_from_slice(&scope.local_slot().to_be_bytes());
     scope_wire.extend_from_slice(&scope.generation().to_be_bytes());
-    let expected = independent_v13(
+    let expected = independent_current(
         world
             .application
             .publication()
@@ -67,7 +67,7 @@ fn checkpoint_one_buffer_matches_independent_v13_grammar_and_sections() {
     )
     .unwrap();
     assert_eq!(checkpoint.bytes(), expected);
-    assert_eq!(sections.framing_bytes(), 70);
+    assert_eq!(sections.framing_bytes(), 86);
     assert_eq!(sections.native_bytes(), native.len());
     assert_eq!(sections.accepted_output_count(), 2);
     // Two fixed rows, literal text widths, three 33-byte role frames,
@@ -75,7 +75,7 @@ fn checkpoint_one_buffer_matches_independent_v13_grammar_and_sections() {
     let fixed_row_bytes = 8 + 1 + 48 + 32 + 16 + 32 + 1 + 32 + 32 + 8 + 2 + 8;
     let expected_rows = 2 * fixed_row_bytes + 20 + 3 * 33 + 3 + 14 + facts.len();
     assert_eq!(sections.accepted_output_bytes(), expected_rows);
-    assert_eq!(sections.total_bytes(), 70 + native.len() + expected_rows);
+    assert_eq!(sections.total_bytes(), 86 + native.len() + expected_rows);
     assert_eq!(sections.total_bytes(), checkpoint.bytes().len());
     assert_eq!(sections.native_sections(), None);
 
@@ -92,6 +92,8 @@ fn checkpoint_one_buffer_matches_independent_v13_grammar_and_sections() {
     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::encode::body::write(
         &mut buffer,
         native,
+        &[],
+        &[],
         world.application.publication(),
         &rows,
         &size,
@@ -112,6 +114,8 @@ fn checkpoint_one_buffer_matches_independent_v13_grammar_and_sections() {
     let denial = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::encode::body::write(
         &mut short_buffer,
         b"abcd",
+        &[],
+        &[],
         world.application.publication(),
         &[],
         &short_size,
@@ -195,15 +199,17 @@ pub fn role(
     )
 }
 
-/// Independent current v13 grammar with literal fixture branch choices.
+/// Independent current grammar with literal fixture branch choices.
 /// It does not call the production body writer, or size helper.
-pub fn independent_v13(bootstrap: u64, scope: &[u8], native: &[u8], facts: &[u8]) -> Vec<u8> {
+pub fn independent_current(bootstrap: u64, scope: &[u8], native: &[u8], facts: &[u8]) -> Vec<u8> {
     let mut body = Vec::new();
-    body.extend_from_slice(&13_u16.to_be_bytes());
+    body.extend_from_slice(&14_u16.to_be_bytes());
     body.extend_from_slice(&2_u16.to_be_bytes());
     body.extend_from_slice(&4_u16.to_be_bytes());
     body.extend_from_slice(&bootstrap.to_be_bytes());
     body.extend_from_slice(&(native.len() as u64).to_be_bytes());
+    body.extend_from_slice(&0_u64.to_be_bytes());
+    body.extend_from_slice(&0_u64.to_be_bytes());
     body.extend_from_slice(&2_u64.to_be_bytes());
     body.extend_from_slice(native);
     text(&mut body, b"producer-a");

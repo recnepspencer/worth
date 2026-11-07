@@ -1,0 +1,321 @@
+command: python target/lane-evidence/owned_host_funding_probe.py area-funding-host-selection "test(journal_only_killed_home_reopens_original_inputs_and_commits_without_initializing) | test(selected_complete_home_reopens_and_selects_another_complete_checkpoint) | test(killed_home_reopens_normalized_image_plus_nonempty_tail) | test(interrupted_owner_ack_resumes_original_attempt_and_reopens_unacknowledged_selection) | test(automatic_checkpoints_bound_host_reopen_journal_reads_with_headroom) | test(same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old_key) | test(flushed_and_pending_multibatch_homes_readmit_their_completed_publication) | test(separate_processes_readmit_old_keys_and_restore_the_actual_outcome_frontier) | test(initializer_refusal_reopens_at_missing_world_origin_without_replaying_initializer) | test(cold_image_plus_tail_recapture_reads_only_the_uncovered_original_frames) | test(live_checkpoint_recapture_keeps_all_covered_canonical_bodies_cold) | test(automatic_capture_at_head_forty_one_preserves_ordinary_request_results) | test(close_checkpoint_uses_host_allowance_with_an_ordinary_close_caller) | test(close_checkpoint_exhaustion_reports_failure_and_preserves_journal_reopen) | test(automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_uses_its_own_allowance) | test(automatic_checkpoint_progresses_after_caller_cancellation_without_replacing_the_body_value)" 16
+HEAD: 367ddc069042a3b024fea129dde92aea8bceb837
+git_status_short_empty: false
+start_utc: 2026-11-04T23:53:58.629428+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+prebuild: cargo metadata --offline --format-version 1 --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\Cargo.toml"
+prebuild: cargo test --message-format=json --no-run --package worth-query-court-query-decl-host --test worth_query_court_query_decl_host --profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo nextest list --cargo-message-format=json --package worth-query-court-query-decl-host --test worth_query_court_query_decl_host --cargo-profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\Cargo.toml" --list-type binaries-only --message-format json
+   Compiling worth-store-physical-backend v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-physical-backend)
+   Compiling worth-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-relational)
+   Compiling worth-store-physical-isolation v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-physical-isolation)
+   Compiling worth-store-io-scheduler v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-io-scheduler)
+   Compiling worth-store-reclaim-policy v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-reclaim-policy)
+   Compiling worth-store-retention v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-retention)
+   Compiling worth-store-lsm-authority v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-lsm-authority)
+   Compiling worth-store-tiering v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-tiering)
+   Compiling worth-store-blob-chunks v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-blob-chunks)
+   Compiling worth-store-layout-indexes v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-layout-indexes)
+   Compiling worth-store v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store)
+   Compiling worth-store-recovery-runtime v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-recovery-runtime)
+   Compiling worth-runtime-bridge v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-runtime-bridge)
+   Compiling worth-store-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-relational)
+   Compiling worth-runtime-world v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-runtime-world)
+   Compiling worth-query-execution v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-execution)
+   Compiling worth-store-application v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-application)
+   Compiling worth-query-publication v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-publication)
+   Compiling worth-query-host v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-host)
+   Compiling worth-query v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query)
+   Compiling worth-query-testkit-document-retention v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-testkit-document-retention)
+   Compiling worth-query-testkit-certification-canonical v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-testkit-certification-canonical)
+   Compiling worth-query-testkit-host v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-testkit-host)
+   Compiling worth-query-testkit-certification-granular-invalidation v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-testkit-certification-granular-invalidation)
+   Compiling worth-query-testkit-certification-correction v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-testkit-certification-correction)
+   Compiling worth-query-testkit-certification v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-testkit-certification)
+   Compiling worth-query-court-query-decl-host v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-court-query-decl-host)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 14m 03s
+MARKER_FREE_EXECUTABLE: C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\target\debug\deps\worth_query_court_query_decl_host-0388f5f36454721a.exe
+prebuild: cargo nextest list --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\query\area-funding-host-selection\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\query\area-funding-host-selection\build\binaries.json" --message-format json --ignore-default-filter -E "test(journal_only_killed_home_reopens_original_inputs_and_commits_without_initializing) | test(selected_complete_home_reopens_and_selects_another_complete_checkpoint) | test(killed_home_reopens_normalized_image_plus_nonempty_tail) | test(interrupted_owner_ack_resumes_original_attempt_and_reopens_unacknowledged_selection) | test(automatic_checkpoints_bound_host_reopen_journal_reads_with_headroom) | test(same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old_key) | test(flushed_and_pending_multibatch_homes_readmit_their_completed_publication) | test(separate_processes_readmit_old_keys_and_restore_the_actual_outcome_frontier) | test(initializer_refusal_reopens_at_missing_world_origin_without_replaying_initializer) | test(cold_image_plus_tail_recapture_reads_only_the_uncovered_original_frames) | test(live_checkpoint_recapture_keeps_all_covered_canonical_bodies_cold) | test(automatic_capture_at_head_forty_one_preserves_ordinary_request_results) | test(close_checkpoint_uses_host_allowance_with_an_ordinary_close_caller) | test(close_checkpoint_exhaustion_reports_failure_and_preserves_journal_reopen) | test(automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_uses_its_own_allowance) | test(automatic_checkpoint_progresses_after_caller_cancellation_without_replacing_the_body_value)"
+prebuild: cargo nextest run --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\query\area-funding-host-selection\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\query\area-funding-host-selection\build\binaries.json" --profile ci --config-file "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\query\area-funding-host-selection\nextest.toml" --success-output immediate --ignore-default-filter --no-fail-fast --no-tests=fail --message-format libtest-json -E "test(journal_only_killed_home_reopens_original_inputs_and_commits_without_initializing) | test(selected_complete_home_reopens_and_selects_another_complete_checkpoint) | test(killed_home_reopens_normalized_image_plus_nonempty_tail) | test(interrupted_owner_ack_resumes_original_attempt_and_reopens_unacknowledged_selection) | test(automatic_checkpoints_bound_host_reopen_journal_reads_with_headroom) | test(same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old_key) | test(flushed_and_pending_multibatch_homes_readmit_their_completed_publication) | test(separate_processes_readmit_old_keys_and_restore_the_actual_outcome_frontier) | test(initializer_refusal_reopens_at_missing_world_origin_without_replaying_initializer) | test(cold_image_plus_tail_recapture_reads_only_the_uncovered_original_frames) | test(live_checkpoint_recapture_keeps_all_covered_canonical_bodies_cold) | test(automatic_capture_at_head_forty_one_preserves_ordinary_request_results) | test(close_checkpoint_uses_host_allowance_with_an_ordinary_close_caller) | test(close_checkpoint_exhaustion_reports_failure_and_preserves_journal_reopen) | test(automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_uses_its_own_allowance) | test(automatic_checkpoint_progresses_after_caller_cancellation_without_replacing_the_body_value)"
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-query-area-funding-host-selection-build-cargo-metadata-367ddc069042-202611042354005599050000-2e40daee7d5a.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-query-area-funding-host-selection-build-binaries-build-367ddc069042-202611042354021623320000-ba224701a91a.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-query-area-funding-host-selection-build-binaries-build-367ddc069042-202611042354043381740000-0211bcf9c807.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-query-area-funding-host-selection-build-request-select-367ddc069042-202611050008138148420000-8a00e1da6021.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-query-area-funding-host-selection-run-selection.log-367ddc069042-202611050008163347710000-db4ca784f955.log
+test host::application_home::reopening::checkpoint_restart::cold_image_plus_tail_recapture_reads_only_the_uncovered_original_frames has been running for over 60 seconds
+
+thread 'host::application_home::reopening::checkpoint_restart::cold_image_plus_tail_recapture_reads_only_the_uncovered_original_frames' (20708) panicked at crates\worth-query-court-query-decl-host\tests\worth_query_court_query_decl_host\host\application_home\reopening\checkpoint_restart.rs:182:9:
+assertion `left == right` failed: each uncovered cold Journal frame is demanded once; covered image frames stay cold
+  left: 4
+ right: 3
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+test host::application_home::reopening::checkpoint_restart::automatic_checkpoints_bound_host_reopen_journal_reads_with_headroom has been running for over 60 seconds
+
+thread 'host::application_home::reopening::checkpoint_restart::automatic_checkpoints_bound_host_reopen_journal_reads_with_headroom' (40764) panicked at crates\worth-query-court-query-decl-host\tests\worth_query_court_query_decl_host\host\application_home\reopening\checkpoint_restart.rs:104:9:
+writer did not reach its durable observation: 
+running 1 test
+test host::application_home::reopening::checkpoint_restart::automatic_checkpoints_bound_host_reopen_journal_reads_with_headroom has been running for over 60 seconds
+
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+info: experimental features enabled: wrapper-scripts
+────────────
+ Nextest run ID 1c5e7a1f-8c5b-4e67-97a6-670225405153 with nextest profile: ci
+    Starting 16 tests across 1 binary (360 tests skipped)
+        PASS [  55.489s] ( 1/16) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_funding::automatic_checkpoint_progresses_after_caller_cancellation_without_replacing_the_body_value
+  output ───
+
+    running 1 test
+    test host::application_home::reopening::checkpoint_funding::automatic_checkpoint_progresses_after_caller_cancellation_without_replacing_the_body_value ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 375 filtered out; finished in 51.29s
+
+
+        SLOW [> 60.000s] (─────) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_restart::selected_complete_home_reopens_and_selects_another_complete_checkpoint
+        SLOW [> 60.000s] (─────) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_restart::interrupted_owner_ack_resumes_original_attempt_and_reopens_unacknowledged_selection
+        SLOW [> 60.000s] (─────) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_restart::cold_image_plus_tail_recapture_reads_only_the_uncovered_original_frames
+        SLOW [> 60.000s] (─────) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_restart::automatic_checkpoints_bound_host_reopen_journal_reads_with_headroom
+        SLOW [> 60.000s] (─────) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_state::close_checkpoint_uses_host_allowance_with_an_ordinary_close_caller
+        SLOW [> 60.000s] (─────) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::refusals::initializer_refusal_reopens_at_missing_world_origin_without_replaying_initializer
+        SLOW [> 60.000s] (─────) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_state::live_checkpoint_recapture_keeps_all_covered_canonical_bodies_cold
+        SLOW [> 60.000s] (─────) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_state::automatic_capture_at_head_forty_one_preserves_ordinary_request_results
+        PASS [  63.648s] ( 2/16) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::refusals::initializer_refusal_reopens_at_missing_world_origin_without_replaying_initializer
+  output ───
+
+    running 1 test
+
+    thread 'host::application_home::reopening::refusals::initializer_refusal_reopens_at_missing_world_origin_without_replaying_initializer' (62608) panicked at crates\worth-query-court-query-decl-host\tests\worth_query_court_query_decl_host\host\application_home\reopening\refusals.rs:23:13:
+    court initializer stopped before any seed publication
+    note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+    test host::application_home::reopening::refusals::initializer_refusal_reopens_at_missing_world_origin_without_replaying_initializer ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 375 filtered out; finished in 58.52s
+
+
+        SLOW [> 60.000s] (─────) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::flushed_and_pending_multibatch_homes_readmit_their_completed_publication
+        SLOW [> 60.000s] (─────) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_state::close_checkpoint_exhaustion_reports_failure_and_preserves_journal_reopen
+        SLOW [> 60.000s] (─────) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::separate_process::separate_processes_readmit_old_keys_and_restore_the_actual_outcome_frontier
+        SLOW [> 60.000s] (─────) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_funding::automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_uses_its_own_allowance
+        SLOW [> 60.000s] (─────) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_restart::journal_only_killed_home_reopens_original_inputs_and_commits_without_initializing
+        SLOW [> 60.000s] (─────) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_restart::killed_home_reopens_normalized_image_plus_nonempty_tail
+        SLOW [> 60.000s] (─────) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old_key
+        PASS [  68.338s] ( 3/16) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_state::live_checkpoint_recapture_keeps_all_covered_canonical_bodies_cold
+  output ───
+
+    running 1 test
+    test host::application_home::reopening::checkpoint_state::live_checkpoint_recapture_keeps_all_covered_canonical_bodies_cold has been running for over 60 seconds
+    test host::application_home::reopening::checkpoint_state::live_checkpoint_recapture_keeps_all_covered_canonical_bodies_cold ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 375 filtered out; finished in 62.86s
+
+
+        PASS [  76.589s] ( 4/16) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_state::close_checkpoint_exhaustion_reports_failure_and_preserves_journal_reopen
+  output ───
+
+    running 1 test
+    test host::application_home::reopening::checkpoint_state::close_checkpoint_exhaustion_reports_failure_and_preserves_journal_reopen has been running for over 60 seconds
+    test host::application_home::reopening::checkpoint_state::close_checkpoint_exhaustion_reports_failure_and_preserves_journal_reopen ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 375 filtered out; finished in 69.94s
+
+
+        PASS [  78.473s] ( 5/16) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_restart::selected_complete_home_reopens_and_selects_another_complete_checkpoint
+  output ───
+
+    running 1 test
+    test host::application_home::reopening::checkpoint_restart::selected_complete_home_reopens_and_selects_another_complete_checkpoint has been running for over 60 seconds
+    test host::application_home::reopening::checkpoint_restart::selected_complete_home_reopens_and_selects_another_complete_checkpoint ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 375 filtered out; finished in 76.11s
+
+
+        PASS [  80.448s] ( 6/16) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_funding::automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_uses_its_own_allowance
+  output ───
+
+    running 1 test
+    test host::application_home::reopening::checkpoint_funding::automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_uses_its_own_allowance has been running for over 60 seconds
+    test host::application_home::reopening::checkpoint_funding::automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_uses_its_own_allowance ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 375 filtered out; finished in 70.32s
+
+
+        PASS [  86.133s] ( 7/16) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_restart::killed_home_reopens_normalized_image_plus_nonempty_tail
+  output ───
+
+    running 1 test
+    test host::application_home::reopening::checkpoint_restart::killed_home_reopens_normalized_image_plus_nonempty_tail has been running for over 60 seconds
+    test host::application_home::reopening::checkpoint_restart::killed_home_reopens_normalized_image_plus_nonempty_tail ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 375 filtered out; finished in 75.68s
+
+
+        PASS [  86.561s] ( 8/16) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_restart::interrupted_owner_ack_resumes_original_attempt_and_reopens_unacknowledged_selection
+  output ───
+
+    running 1 test
+    test host::application_home::reopening::checkpoint_restart::interrupted_owner_ack_resumes_original_attempt_and_reopens_unacknowledged_selection has been running for over 60 seconds
+    test host::application_home::reopening::checkpoint_restart::interrupted_owner_ack_resumes_original_attempt_and_reopens_unacknowledged_selection ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 375 filtered out; finished in 84.36s
+
+
+        FAIL [  88.335s] ( 9/16) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_restart::cold_image_plus_tail_recapture_reads_only_the_uncovered_original_frames
+  output ───
+
+    running 1 test
+    test host::application_home::reopening::checkpoint_restart::cold_image_plus_tail_recapture_reads_only_the_uncovered_original_frames has been running for over 60 seconds
+
+    thread 'host::application_home::reopening::checkpoint_restart::cold_image_plus_tail_recapture_reads_only_the_uncovered_original_frames' (20708) panicked at crates\worth-query-court-query-decl-host\tests\worth_query_court_query_decl_host\host\application_home\reopening\checkpoint_restart.rs:182:9:
+    assertion `left == right` failed: each uncovered cold Journal frame is demanded once; covered image frames stay cold
+      left: 4
+     right: 3
+    note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+    test host::application_home::reopening::checkpoint_restart::cold_image_plus_tail_recapture_reads_only_the_uncovered_original_frames ... FAILED
+
+    failures:
+
+    failures:
+        host::application_home::reopening::checkpoint_restart::cold_image_plus_tail_recapture_reads_only_the_uncovered_original_frames
+
+    test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 375 filtered out; finished in 85.74s
+
+
+        PASS [  89.739s] (10/16) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old_key
+  output ───
+
+    running 1 test
+    test host::application_home::reopening::same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old_key has been running for over 60 seconds
+    test host::application_home::reopening::same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old_key ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 375 filtered out; finished in 78.37s
+
+
+        PASS [  89.789s] (11/16) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_restart::journal_only_killed_home_reopens_original_inputs_and_commits_without_initializing
+  output ───
+
+    running 1 test
+    test host::application_home::reopening::checkpoint_restart::journal_only_killed_home_reopens_original_inputs_and_commits_without_initializing has been running for over 60 seconds
+    test host::application_home::reopening::checkpoint_restart::journal_only_killed_home_reopens_original_inputs_and_commits_without_initializing ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 375 filtered out; finished in 79.52s
+
+
+        PASS [  94.307s] (12/16) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::separate_process::separate_processes_readmit_old_keys_and_restore_the_actual_outcome_frontier
+  output ───
+
+    running 1 test
+    test host::application_home::reopening::separate_process::separate_processes_readmit_old_keys_and_restore_the_actual_outcome_frontier has been running for over 60 seconds
+    test host::application_home::reopening::separate_process::separate_processes_readmit_old_keys_and_restore_the_actual_outcome_frontier ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 375 filtered out; finished in 86.03s
+
+
+        PASS [  98.938s] (13/16) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::flushed_and_pending_multibatch_homes_readmit_their_completed_publication
+  output ───
+
+    running 1 test
+    test host::application_home::reopening::flushed_and_pending_multibatch_homes_readmit_their_completed_publication has been running for over 60 seconds
+    test host::application_home::reopening::flushed_and_pending_multibatch_homes_readmit_their_completed_publication ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 375 filtered out; finished in 92.88s
+
+
+        SLOW [>120.000s] (─────) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_restart::automatic_checkpoints_bound_host_reopen_journal_reads_with_headroom
+        SLOW [>120.000s] (─────) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_state::close_checkpoint_uses_host_allowance_with_an_ordinary_close_caller
+        FAIL [ 122.851s] (14/16) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_restart::automatic_checkpoints_bound_host_reopen_journal_reads_with_headroom
+  output ───
+
+    running 1 test
+    test host::application_home::reopening::checkpoint_restart::automatic_checkpoints_bound_host_reopen_journal_reads_with_headroom has been running for over 60 seconds
+
+    thread 'host::application_home::reopening::checkpoint_restart::automatic_checkpoints_bound_host_reopen_journal_reads_with_headroom' (40764) panicked at crates\worth-query-court-query-decl-host\tests\worth_query_court_query_decl_host\host\application_home\reopening\checkpoint_restart.rs:104:9:
+    writer did not reach its durable observation: 
+    running 1 test
+    test host::application_home::reopening::checkpoint_restart::automatic_checkpoints_bound_host_reopen_journal_reads_with_headroom has been running for over 60 seconds
+
+    note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+    test host::application_home::reopening::checkpoint_restart::automatic_checkpoints_bound_host_reopen_journal_reads_with_headroom ... FAILED
+
+    failures:
+
+    failures:
+        host::application_home::reopening::checkpoint_restart::automatic_checkpoints_bound_host_reopen_journal_reads_with_headroom
+
+    test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 375 filtered out; finished in 120.23s
+
+
+{"type":"suite","event":"started","test_count":18}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$cost::certification::runtime_world_branching::cumulative::scheduled_public_read_timings_report_cold_and_warm_distributions"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$cost::certification::runtime_world_branching::cumulative::scheduled_seeded_model_broadens_public_action_roster"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_restart::cold_image_plus_tail_recapture_reads_only_the_uncovered_original_frames"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_restart::automatic_checkpoints_bound_host_reopen_journal_reads_with_headroom"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_restart::journal_only_killed_home_reopens_original_inputs_and_commits_without_initializing"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_funding::automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_uses_its_own_allowance"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_restart::interrupted_owner_ack_resumes_original_attempt_and_reopens_unacknowledged_selection"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_funding::automatic_checkpoint_progresses_after_caller_cancellation_without_replacing_the_body_value"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_restart::selected_complete_home_reopens_and_selects_another_complete_checkpoint"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_restart::killed_home_reopens_normalized_image_plus_nonempty_tail"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_state::close_checkpoint_exhaustion_reports_failure_and_preserves_journal_reopen"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_state::live_checkpoint_recapture_keeps_all_covered_canonical_bodies_cold"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_state::close_checkpoint_uses_host_allowance_with_an_ordinary_close_caller"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_state::automatic_capture_at_head_forty_one_preserves_ordinary_request_results"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::refusals::initializer_refusal_reopens_at_missing_world_origin_without_replaying_initializer"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::flushed_and_pending_multibatch_homes_readmit_their_completed_publication"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::separate_process::separate_processes_readmit_old_keys_and_restore_the_actual_outcome_frontier"}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old_key"}
+{"type":"test","event":"ignored","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$cost::certification::runtime_world_branching::cumulative::scheduled_public_read_timings_report_cold_and_warm_distributions"}
+{"type":"test","event":"ignored","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$cost::certification::runtime_world_branching::cumulative::scheduled_seeded_model_broadens_public_action_roster"}
+{"type":"test","event":"ok","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_funding::automatic_checkpoint_progresses_after_caller_cancellation_without_replacing_the_body_value","exec_time":55.4892117}
+{"type":"test","event":"ok","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::refusals::initializer_refusal_reopens_at_missing_world_origin_without_replaying_initializer","exec_time":63.647968}
+{"type":"test","event":"ok","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_state::live_checkpoint_recapture_keeps_all_covered_canonical_bodies_cold","exec_time":68.3377761}
+{"type":"test","event":"ok","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_state::close_checkpoint_exhaustion_reports_failure_and_preserves_journal_reopen","exec_time":76.5885319}
+{"type":"test","event":"ok","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_restart::selected_complete_home_reopens_and_selects_another_complete_checkpoint","exec_time":78.4733084}
+{"type":"test","event":"ok","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_funding::automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_uses_its_own_allowance","exec_time":80.4481181}
+{"type":"test","event":"ok","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_restart::killed_home_reopens_normalized_image_plus_nonempty_tail","exec_time":86.1333011}
+{"type":"test","event":"ok","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_restart::interrupted_owner_ack_resumes_original_attempt_and_reopens_unacknowledged_selection","exec_time":86.5611284}
+{"type":"test","event":"failed","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_restart::cold_image_plus_tail_recapture_reads_only_the_uncovered_original_frames","exec_time":88.3346402,"stdout":"test host::application_home::reopening::checkpoint_restart::cold_image_plus_tail_recapture_reads_only_the_uncovered_original_frames has been running for over 60 seconds\n\nthread 'host::application_home::reopening::checkpoint_restart::cold_image_plus_tail_recapture_reads_only_the_uncovered_original_frames' (20708) panicked at crates\\worth-query-court-query-decl-host\\tests\\worth_query_court_query_decl_host\\host\\application_home\\reopening\\checkpoint_restart.rs:182:9:\nassertion `left == right` failed: each uncovered cold Journal frame is demanded once; covered image frames stay cold\n  left: 4\n right: 3\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"}
+{"type":"test","event":"ok","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old_key","exec_time":89.7394219}
+{"type":"test","event":"ok","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_restart::journal_only_killed_home_reopens_original_inputs_and_commits_without_initializing","exec_time":89.7893273}
+{"type":"test","event":"ok","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::separate_process::separate_processes_readmit_old_keys_and_restore_the_actual_outcome_frontier","exec_time":94.306589}
+{"type":"test","event":"ok","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::flushed_and_pending_multibatch_homes_readmit_their_completed_publication","exec_time":98.9376434}
+{"type":"test","event":"failed","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_restart::automatic_checkpoints_bound_host_reopen_journal_reads_with_headroom","exec_time":122.8506868,"stdout":"test host::application_home::reopening::checkpoint_restart::automatic_checkpoints_bound_host_reopen_journal_reads_with_headroom has been running for over 60 seconds\n\nthread 'host::application_home::reopening::checkpoint_restart::automatic_checkpoints_bound_host_reopen_journal_reads_with_headroom' (40764) panicked at crates\\worth-query-court-query-decl-host\\tests\\worth_query_court_query_decl_host\\host\\application_home\\reopening\\checkpoint_restart.rs:104:9:\nwriter did not reach its durable observation: \nrunning 1 test\ntest host::application_home::reopening::checkpoint_restart::automatic_checkpoints_bound_host_reopen_journal_reads_with_headroom has been running for over 60 seconds\n\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"}
+{"type":"suite","event":"failed","passed":12,"failed":2,"ignored":2,"measured":0,"filtered_out":358,"exec_time":1179.6376523}
+        SLOW [>120.000s] (─────) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_state::automatic_capture_at_head_forty_one_preserves_ordinary_request_results
+        PASS [ 129.078s] (15/16) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_state::close_checkpoint_uses_host_allowance_with_an_ordinary_close_caller
+  output ───
+
+    running 1 test
+    test host::application_home::reopening::checkpoint_state::close_checkpoint_uses_host_allowance_with_an_ordinary_close_caller has been running for over 60 seconds
+    test host::application_home::reopening::checkpoint_state::close_checkpoint_uses_host_allowance_with_an_ordinary_close_caller ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 375 filtered out; finished in 125.74s
+
+
+        PASS [ 138.871s] (16/16) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_state::automatic_capture_at_head_forty_one_preserves_ordinary_request_results
+  output ───
+
+    running 1 test
+    test host::application_home::reopening::checkpoint_state::automatic_capture_at_head_forty_one_preserves_ordinary_request_results has been running for over 60 seconds
+    test host::application_home::reopening::checkpoint_state::automatic_capture_at_head_forty_one_preserves_ordinary_request_results ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 375 filtered out; finished in 133.57s
+
+
+────────────
+     Summary [ 138.882s] 16 tests run: 14 passed (13 slow), 2 failed, 360 skipped
+        FAIL [  88.335s] ( 9/16) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_restart::cold_image_plus_tail_recapture_reads_only_the_uncovered_original_frames
+        FAIL [ 122.851s] (14/16) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_restart::automatic_checkpoints_bound_host_reopen_journal_reads_with_headroom
+{"type":"suite","event":"started","test_count":18}
+{"type":"test","event":"ok","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_state::close_checkpoint_uses_host_allowance_with_an_ordinary_close_caller","exec_time":129.0780153}
+{"type":"test","event":"ok","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_state::automatic_capture_at_head_forty_one_preserves_ordinary_request_results","exec_time":138.8714989}
+{"type":"suite","event":"ok","passed":2,"failed":0,"ignored":2,"measured":0,"filtered_out":372,"exec_time":267.9495142}
+error: test run failed
+
+EVIDENCE_TEST_COUNTS: 14,2,0
+
+end_utc: 2026-11-05T00:10:35.628239+00:00
+exit_code: 100
+tests_passed: 14
+tests_failed: 2
+tests_ignored: 0

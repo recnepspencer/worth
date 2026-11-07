@@ -9,6 +9,7 @@ use worth_foundational::facade::{
     NativeCheckpointBranchObservation as Observation, NativeCheckpointBranchReference as Reference,
     NativeCheckpointBranchTarget as Target,
 };
+use worth_foundational::CanonicalDigestId;
 
 fn observation<'a>(
     branch: &'a str,
@@ -54,16 +55,16 @@ pub(super) fn predecessor(
 pub(super) struct Component<'a> {
     descriptor_version: u16,
     reference: Reference<'a>,
-    schema_commitment: [u8; 32],
-    visibility_commitment: [u8; 32],
+    schema_commitment: CanonicalDigestId,
+    visibility_commitment: CanonicalDigestId,
     posture: crate::branch::RelationalBranchBasisPosture,
 }
 pub(super) fn component(descriptor: &RelationalBranchBasisDescriptor) -> Component<'_> {
     Component {
         descriptor_version: descriptor.descriptor_version(),
         reference: recorded_reference(descriptor),
-        schema_commitment: descriptor.schema_commitment(),
-        visibility_commitment: descriptor.visibility_commitment(),
+        schema_commitment: CanonicalDigestId::new(descriptor.schema_commitment()),
+        visibility_commitment: CanonicalDigestId::new(descriptor.visibility_commitment()),
         posture: descriptor.posture(),
     }
 }

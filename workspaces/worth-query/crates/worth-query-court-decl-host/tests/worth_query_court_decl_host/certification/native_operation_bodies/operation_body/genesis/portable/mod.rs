@@ -25,7 +25,7 @@ fn creation_only_body_survives_checkpoint_and_fresh_readmission() {
         validate_portable_application_schema_freshly(portable).unwrap(),
         *schema.erased()
     );
-    let restored = in_memory_program_from_checkpoint(
+    let restored = WorthQueryInterimCheckpointRestore::program(
         program::validated::<30>(&schema),
         schema,
         (program::Installation::Native,),

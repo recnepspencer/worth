@@ -9,10 +9,12 @@ use serde::{Serialize, Serializer};
 use worth_execution::{ExecutionImmutableBytes, ExecutionRequest};
 
 pub(super) fn emit(
-    original: &OriginalBranchSchemaInputs,
+    source: &super::source::FrozenOriginalInputs,
     commits: &[OriginalCanonicalCommit],
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<ExecutionImmutableBytes, super::Denial> {
+    let original = &source.branches;
+    let prior = source.base.as_ref().map(|base| base.state.normalized());
     let mut leaves =
         worth_execution::ExecutionRequestArrayBuilder::allocate(*request, commits.len())
             .map_err(crate::durability::checkpoint_history::capture::array_capture_stop)?;
@@ -27,7 +29,7 @@ pub(super) fn emit(
     let leaves = leaves
         .seal()
         .map_err(crate::durability::checkpoint_history::capture::array_capture_stop)?;
-    let canonical = Canonical(commits, &leaves);
+    let canonical = Canonical(commits, &leaves, prior);
     for entry in original.transitions() {
         let schema = entry
             .schema
@@ -49,10 +51,21 @@ pub(super) fn emit(
     .map_err(crate::durability::checkpoint_history::capture::capture_stop)
 }
 
-struct Canonical<'a>(&'a [OriginalCanonicalCommit], &'a [[u8; 32]]);
+struct Canonical<'a>(
+    &'a [OriginalCanonicalCommit],
+    &'a [[u8; 32]],
+    Option<&'a crate::durability::source_initial_inputs::normalized::NormalizedOriginalInputs>,
+);
 impl Serialize for Canonical<'_> {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let mut rows = serializer.serialize_seq(Some(self.0.len()))?;
+        let mut rows = serializer.serialize_seq(Some(
+            self.0.len() + self.2.map_or(0, |prior| prior.canonical.len()),
+        ))?;
+        if let Some(prior) = self.2 {
+            for row in &prior.canonical {
+                rows.serialize_element(row)?;
+            }
+        }
         for (original, leaf) in self.0.iter().zip(self.1) {
             let inputs = original
                 .envelope

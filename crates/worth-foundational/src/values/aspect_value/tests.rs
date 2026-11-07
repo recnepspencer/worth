@@ -38,3 +38,18 @@ fn retained(value: &str, capacity: usize) -> String {
     assert_eq!(retained.capacity(), capacity);
     retained
 }
+
+mod cost {
+    use super::*;
+
+    #[test]
+    fn inline_bytes_clone_quote_counts_length_without_spare_capacity() {
+        let length = 65536;
+        let mut bytes = Vec::with_capacity(2 * length);
+        bytes.resize(length, 0x51);
+        let value = AspectValue::InlineBytes(crate::values::InlineBytes::try_new(bytes).unwrap());
+        assert_eq!(value.owned_allocation_capacity_bytes(), 2 * length);
+        assert_eq!(value.clone_allocation_bytes(), Some(length));
+        assert_eq!(value.clone().owned_allocation_capacity_bytes(), length);
+    }
+}

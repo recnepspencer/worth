@@ -16,7 +16,7 @@ use worth_query_testkit_document_retention::facade::{
         document_history::{navigation::Navigation, retention_policy::Window},
         host::{
             primary_graph, publish_on_first_program_with_limits, runtime,
-            WorthQueryInMemoryApplicationLimits,
+            WorthQueryApplicationLimits,
         },
         operator_identity::{authenticate_operator, request_scope},
         retention_entry::DOCUMENT_IDENTITY,
@@ -39,7 +39,7 @@ pub(super) fn install(nodes: usize) -> App {
         128 * 1024 * 1024,
         nodes * 4 + 256
     );
-    publish_on_first_program_with_limits(WorthQueryInMemoryApplicationLimits::new(
+    publish_on_first_program_with_limits(WorthQueryApplicationLimits::new(
         world_resources_with_capacity(
             nodes * 4 + 128,
             128 * 1024 * 1024,

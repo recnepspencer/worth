@@ -12,7 +12,7 @@ fn companion_post_ack_capture_refusal_repairs_same_capsule_with_historical_roste
     let mut callbacks = 0;
     let pending = worth_query_testkit_host::facade::host::checkpoint_capture::stopped(|phase| {
         callbacks = 0;
-        installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement(
+        installation::WorthQueryInterimCheckpointRestore::rostered_program_with_transition_in_advancement(
             phase,
             new::host::program::<new::program::TargetProgram>(),
             installation::WorthQueryApplicationProgramRoster::new(),

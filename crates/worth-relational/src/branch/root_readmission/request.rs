@@ -1,89 +1,9 @@
 //! Reconstruct root DATA under the original request without service publication.
 use super::*;
 use crate::history::data::RequiredOutputPublicationPositions;
-use crate::storage::substrate::SharedMap;
 use worth_execution::ExecutionRequest;
 
 impl RelationalBranchRoot {
-    pub(crate) fn readmit_for_request(
-        issuer: &RelationalBranchRootIdentityIssuer,
-        partitions: &SharedMap<PartitionId, PartitionState>,
-        prior_content: &crate::content::ContentDirectory,
-        envelope: Arc<CanonicalCommitEnvelope>,
-        descriptor: RelationalBranchRootDescriptor,
-        schema: Arc<super::super::RelationalBranchRootSchemaAuthority>,
-        symbols: &dyn crate::symbols::data::SymbolTextLookup,
-        positions: RequiredOutputPublicationPositions,
-        execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
-        validate_schema_root(&envelope, &descriptor)?;
-        let memory = super::super::reserve_arc_memory::<Self>(Some(execution))?;
-        let root_id = issuer.issue_root_id()?;
-        let mut regions =
-            crate::branch::root_regions::PreparedRelationalRegionSet::new(root_id, execution)?;
-        let (mut entity_slots, mut relation_slots) = (0usize, 0usize);
-        let (mut region_bytes, mut values_hashed) = (0u64, 0u64);
-        let first_node = issuer.next_reachability_id();
-        for (&partition_id, partition) in partitions.iter() {
-            crate::execution::check_request(execution)
-                .map_err(RelationalBranchRootCaptureDenial::Request)?;
-            partition.visit_retained_symbols(&mut |symbol| {
-                symbols.retained_text(symbol).map(|_| ()).ok_or(
-                    RelationalBranchRootCaptureDenial::UnresolvedContentSymbol(symbol),
-                )
-            })?;
-            let region = super::super::RelationalRootRegion::new_for_request(
-                root_id,
-                issuer.issue_region_id()?,
-                partition.clone(),
-                symbols,
-                execution,
-            )?;
-            let observation = region.observation();
-            region_bytes = region_bytes
-                .saturating_add(observation.authoritative_bytes)
-                .saturating_add(observation.partition_state_bytes)
-                .saturating_add(observation.root_region_bytes);
-            values_hashed = values_hashed.saturating_add(region.content_values_hashed);
-            entity_slots = entity_slots
-                .checked_add(region.entity_slots)
-                .ok_or(RelationalBranchRootCaptureDenial::SlotCountOverflow)?;
-            relation_slots = relation_slots
-                .checked_add(region.relation_slots)
-                .ok_or(RelationalBranchRootCaptureDenial::SlotCountOverflow)?;
-            regions.insert(partition_id, region, issuer, execution)?;
-        }
-        let regions = regions.finish();
-        let (nodes, bytes) = regions.newly_owned_allocation_cost(first_node);
-        let cost = super::super::RelationalBranchRootPublicationCost {
-            touched_regions: regions.len() as u64,
-            persistent_index_path_nodes: nodes,
-            content_values_hashed: values_hashed,
-            reused_schema_authorities: 1,
-            new_authoritative_bytes: region_bytes
-                .saturating_add(bytes)
-                .saturating_add(size_of::<Self>() as u64),
-            ..Default::default()
-        };
-        let root = bind_original(
-            ReadmittedRegionSet {
-                root_id,
-                regions,
-                entity_slot_count: entity_slots,
-                relation_slot_count: relation_slots,
-                publication_cost: cost,
-            },
-            envelope,
-            descriptor,
-            schema,
-            positions,
-            execution,
-            memory,
-            prior_content,
-        )?;
-        Ok(root)
-    }
-
     /// Only the actual mutation owner's empty journal may select this path.
     /// The original descriptor still must match the prior immutable storage.
     pub(crate) fn readmit_unchanged_for_request(

@@ -36,6 +36,8 @@ fn query_clones_decode_into_the_same_native_payload_backing() {
     body.extend_from_slice(&1_u64.to_be_bytes());
     body.extend_from_slice(&3_u64.to_be_bytes());
     body.extend_from_slice(&0_u64.to_be_bytes());
+    body.extend_from_slice(&0_u64.to_be_bytes());
+    body.extend_from_slice(&0_u64.to_be_bytes());
     body.extend_from_slice(b"abc");
     let checkpoint = checkpoint_from_body(body);
     let bytes = Arc::new(checkpoint.bytes().to_vec().into_boxed_slice());

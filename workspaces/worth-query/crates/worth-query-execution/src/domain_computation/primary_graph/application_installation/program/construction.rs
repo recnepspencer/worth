@@ -8,7 +8,7 @@ use worth_query_installation::facade::{
     WorthQueryInstalledApplicationProgram, WorthQueryInstalledApplicationSchema,
 };
 
-use super::super::{WorthQueryInMemoryApplicationDenial, WorthQueryInMemoryApplicationLimits};
+use super::super::{WorthQueryApplicationLimits, WorthQueryApplicationPreparationDenial};
 use super::supported_program::WorthQuerySupportedProgramRecord;
 use super::{
     WorthQueryApplicationProgramRoots, WorthQueryApplicationProgramRoster,
@@ -25,13 +25,16 @@ pub fn in_memory_program<Schema, Program>(
     declaration: ApplicationSchemaDeclaration<Schema>,
     configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     initial_state: impl FnOnce(
         &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
-) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryInMemoryApplicationDenial>
+) -> Result<
+    WorthQueryProgramApplicationRuntime<Schema, Program>,
+    WorthQueryApplicationPreparationDenial,
+>
 where
     Schema: ApplicationSchemaComposition,
     Program: ApplicationProgramDefinition<Schema>,
@@ -39,7 +42,7 @@ where
         ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
     Program::Contributions: WorthQueryApplicationContributionTuple<Schema>,
 {
-    in_memory_program_with_optional_authorization_time_source(
+    construct_program_with_optional_authorization_time_source(
         program,
         WorthQueryApplicationProgramRoster::new(),
         declaration,
@@ -60,14 +63,17 @@ pub fn in_memory_program_with_authorization_time_source<Schema, Program>(
     declaration: ApplicationSchemaDeclaration<Schema>,
     configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     initial_state: impl FnOnce(
         &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
     source: impl crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource,
-) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryInMemoryApplicationDenial>
+) -> Result<
+    WorthQueryProgramApplicationRuntime<Schema, Program>,
+    WorthQueryApplicationPreparationDenial,
+>
 where
     Schema: ApplicationSchemaComposition,
     Program: ApplicationProgramDefinition<Schema>,
@@ -75,7 +81,7 @@ where
         ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
     Program::Contributions: WorthQueryApplicationContributionTuple<Schema>,
 {
-    in_memory_program_with_optional_authorization_time_source(
+    construct_program_with_optional_authorization_time_source(
         program,
         WorthQueryApplicationProgramRoster::new(),
         declaration,
@@ -103,13 +109,16 @@ pub fn in_memory_rostered_program<Schema, Program>(
     declaration: ApplicationSchemaDeclaration<Schema>,
     configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     initial_state: impl FnOnce(
         &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
-) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryInMemoryApplicationDenial>
+) -> Result<
+    WorthQueryProgramApplicationRuntime<Schema, Program>,
+    WorthQueryApplicationPreparationDenial,
+>
 where
     Schema: ApplicationSchemaComposition,
     Program: ApplicationProgramDefinition<Schema> + 'static,
@@ -117,7 +126,7 @@ where
         ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
     Program::Contributions: WorthQueryApplicationContributionTuple<Schema>,
 {
-    in_memory_program_with_optional_authorization_time_source(
+    construct_program_with_optional_authorization_time_source(
         program,
         roster,
         declaration,
@@ -139,14 +148,17 @@ pub fn in_memory_rostered_program_with_authorization_time_source<Schema, Program
     declaration: ApplicationSchemaDeclaration<Schema>,
     configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     initial_state: impl FnOnce(
         &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
     source: impl crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource,
-) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryInMemoryApplicationDenial>
+) -> Result<
+    WorthQueryProgramApplicationRuntime<Schema, Program>,
+    WorthQueryApplicationPreparationDenial,
+>
 where
     Schema: ApplicationSchemaComposition,
     Program: ApplicationProgramDefinition<Schema> + 'static,
@@ -154,7 +166,7 @@ where
         ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
     Program::Contributions: WorthQueryApplicationContributionTuple<Schema>,
 {
-    in_memory_program_with_optional_authorization_time_source(
+    construct_program_with_optional_authorization_time_source(
         program,
         roster,
         declaration,
@@ -168,13 +180,13 @@ where
     )
 }
 
-pub(super) fn in_memory_program_with_optional_authorization_time_source<Schema, Program>(
+pub(super) fn construct_program_with_optional_authorization_time_source<Schema, Program>(
     program: ValidatedApplicationProgram<Schema, Program>,
     roster: WorthQueryApplicationProgramRoster<'_, Schema>,
     declaration: ApplicationSchemaDeclaration<Schema>,
     configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     initial_state: impl FnOnce(
         &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
@@ -185,7 +197,10 @@ pub(super) fn in_memory_program_with_optional_authorization_time_source<Schema, 
     >,
     checkpoint: Option<crate::domain_computation::primary_graph::WorthQueryApplicationCheckpoint>,
     checkpoint_transition: Option<crate::domain_computation::primary_graph::bootstrap::checkpoint_transition::CheckpointTransition<'_, '_, Schema>>,
-) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryInMemoryApplicationDenial>
+) -> Result<
+    WorthQueryProgramApplicationRuntime<Schema, Program>,
+    WorthQueryApplicationPreparationDenial,
+>
 where
     Schema: ApplicationSchemaComposition,
     Program: ApplicationProgramDefinition<Schema> + 'static,
@@ -196,7 +211,7 @@ where
     crate::domain_computation::primary_graph::with_bootstrap_advancement(
         limits.world.execution_policy(),
         |phase| {
-            in_memory_program_in_advancement(
+            construct_program_in_advancement(
                 &phase,
                 program,
                 roster,
@@ -212,20 +227,20 @@ where
         },
     )
     .map_err(|cause| {
-        WorthQueryInMemoryApplicationDenial::Graph(super::super::super::bootstrap::request_denial(
-            cause,
-        ))
+        WorthQueryApplicationPreparationDenial::Graph(
+            super::super::super::bootstrap::request_denial(cause),
+        )
     })?
 }
 
-pub(super) fn in_memory_program_in_advancement<Schema, Program>(
+pub(super) fn construct_program_in_advancement<Schema, Program>(
     phase: &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
     program: ValidatedApplicationProgram<Schema, Program>,
     roster: WorthQueryApplicationProgramRoster<'_, Schema>,
     declaration: ApplicationSchemaDeclaration<Schema>,
     configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     initial_state: impl FnOnce(
         &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
@@ -236,7 +251,10 @@ pub(super) fn in_memory_program_in_advancement<Schema, Program>(
     >,
     checkpoint: Option<crate::domain_computation::primary_graph::WorthQueryApplicationCheckpoint>,
     checkpoint_transition: Option<crate::domain_computation::primary_graph::bootstrap::checkpoint_transition::CheckpointTransition<'_, '_, Schema>>,
-) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryInMemoryApplicationDenial>
+) -> Result<
+    WorthQueryProgramApplicationRuntime<Schema, Program>,
+    WorthQueryApplicationPreparationDenial,
+>
 where
     Schema: ApplicationSchemaComposition,
     Program: ApplicationProgramDefinition<Schema> + 'static,
@@ -248,7 +266,7 @@ where
         WorthQueryInstalledApplicationProgram<Schema, Program>,
         Vec<WorthQuerySupportedProgramRecord>,
     )> = None;
-    let runtime = super::super::in_memory_with_contributions_in_advancement::<
+    let runtime = super::super::construct_with_contributions_in_advancement::<
         Schema,
         Program::Contributions,
     >(

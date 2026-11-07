@@ -5,8 +5,8 @@ use worth_query_decl::facade::application_program::ApplicationProgramAuthoring;
 use worth_query_host::facade::{
     application_contribution::with_bootstrap_advancement_from_request,
     application_installation::{
-        ApplicationBuildIdentity, WorthQueryApplicationProgramRoster,
-        WorthQueryInMemoryApplicationDenial,
+        ApplicationBuildIdentity, WorthQueryApplicationPreparationDenial,
+        WorthQueryApplicationProgramRoster,
     },
     product::WorthQueryDurableStateAdmissionDenial,
     WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeOpenRefused,
@@ -56,7 +56,7 @@ fn directory_resource_seed_refuses_before_clock_provider_or_owner_effect() {
         matches!(
             refused,
             WorthQueryApplicationHomeOpenRefused::Preparation(
-                WorthQueryInMemoryApplicationDenial::UnsupportedSeed(
+                WorthQueryApplicationPreparationDenial::UnsupportedSeed(
                     WorthQueryDurableStateAdmissionDenial::Unsupported {
                         family: DurableStateFamily::BridgeOwnedAsyncDefinitions,
                         supported_from_phase: 5,

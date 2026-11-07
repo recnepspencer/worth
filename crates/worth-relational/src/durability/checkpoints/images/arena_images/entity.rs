@@ -32,14 +32,22 @@ impl CheckpointArenaKind for EntityRecordKind {
         })
     }
 
-    fn extra_from_image(
+    fn extra_from_image_using(
         extra: EntityExtraImage,
         contracts: &CheckpointAspectContractCatalog,
-    ) -> Result<Self::Extra, DurabilityError> {
-        Ok(EntityExtra::from_unbudgeted_parts(
+        admission: &ImageReadmission<'_, '_, '_>,
+    ) -> Result<Self::Extra, crate::durability::data::RelationalRecoveryStop> {
+        let (state, memory) = readmit_state_using(
+            extra.authoritative_aspect_state,
+            contracts,
+            crate::storage::substrate::StorageAllocation::<EntityExtra>::layout_bytes(),
+            admission,
+        )?;
+        Ok(EntityExtra::from_funded_parts(
             extra.structural_fingerprint,
             extra.lineage_id,
-            readmit_state(extra.authoritative_aspect_state, contracts)?,
+            state,
+            memory,
         ))
     }
 
@@ -60,21 +68,31 @@ impl CheckpointArenaKind for EntityRecordKind {
         })
     }
 
-    fn meta_from_image(
+    fn meta_from_image_using(
         meta: VersionedEntityMetadataImage,
         contracts: &CheckpointAspectContractCatalog,
-    ) -> Result<Self::Meta, DurabilityError> {
-        Ok(VersionedEntityMetadata::from_ordinary(
+        admission: &ImageReadmission<'_, '_, '_>,
+    ) -> Result<Self::Meta, crate::durability::data::RelationalRecoveryStop> {
+        let (state, memory) = readmit_state_using(
+            meta.authoritative_aspect_state,
+            contracts,
+            crate::storage::substrate::StorageAllocation::<EntityExtra>::layout_bytes(),
+            admission,
+        )?;
+        let extra = crate::storage::substrate::StorageAllocation::new(
+            EntityExtra::from_funded_parts(None, meta.lineage_id, state, memory),
+        );
+        let value = VersionedEntityMetadata::from_ordinary(
             meta.effective_at,
             meta.retired_at,
             meta.generation,
             meta.kind_id,
             meta.lineage_id,
-            crate::storage::substrate::StorageAllocation::new(EntityExtra::from_unbudgeted_parts(
-                None,
-                meta.lineage_id,
-                readmit_state(meta.authoritative_aspect_state, contracts)?,
-            )),
-        ))
+            extra,
+        );
+        match admission.request {
+            Some(request) => value.fund_for_request(request).map_err(Into::into),
+            None => Ok(value),
+        }
     }
 }

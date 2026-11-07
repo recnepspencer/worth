@@ -6,7 +6,7 @@ pub use bank_server::{
     BankIdentityRuntime, BankIdentityRuntimeBuildError, BankPrincipalAdmissionError,
     BankPrincipalSeed,
 };
-pub use worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial;
+pub use worth_query_host::facade::application_installation::WorthQueryApplicationPreparationDenial;
 pub use worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus;
 pub use worth_query_host::facade::primary_graph::{
     WorthQueryPrimaryGraphInstallationDenialKind, WorthQueryPrincipalResolutionDenialKind,

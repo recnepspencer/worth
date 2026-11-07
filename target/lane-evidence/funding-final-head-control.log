@@ -1,0 +1,65 @@
+command: python target/lane-evidence/owned_native_funding_finish_probe.py funding-final-head-control test(cold_inline_bytes_head_refuses_after_member_read_then_retains_exact_payload_through_edit) 1
+HEAD: ff0e8e88cad6be1b54790ff60357eb5f58deea8f
+git_status_short_empty: false
+start_utc: 2026-11-05T02:51:46.859458+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+prebuild: cargo metadata --offline --format-version 1 --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml"
+prebuild: cargo test --message-format=json --no-run --package worth-court-relational-certification --test worth_court_relational_certification --profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo nextest list --cargo-message-format=json --package worth-court-relational-certification --test worth_court_relational_certification --cargo-profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml" --list-type binaries-only --message-format json
+   Compiling worth-court-relational-certification v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-relational-certification)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 10.58s
+prebuild: cargo nextest list --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\funding-final-head-control\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\funding-final-head-control\build\binaries.json" --message-format json --ignore-default-filter -E test(cold_inline_bytes_head_refuses_after_member_read_then_retains_exact_payload_through_edit)
+prebuild: cargo nextest run --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\funding-final-head-control\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\funding-final-head-control\build\binaries.json" --profile ci --config-file "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\d12-retained-image-and-sparse-courts\nextest.toml" --ignore-default-filter --no-fail-fast --no-tests=fail --message-format libtest-json -E test(cold_inline_bytes_head_refuses_after_member_read_then_retains_exact_payload_through_edit)
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-funding-final-head-control-build-cargo-metadata.l-ff0e8e88cad6-202611050251481139860000-bc27c7177361.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-funding-final-head-control-build-binaries-build-u-ff0e8e88cad6-202611050251490076180000-4fbff1a551c7.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-funding-final-head-control-build-binaries-build.l-ff0e8e88cad6-202611050251497692340000-54aedefcea9f.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-funding-final-head-control-build-request-selectio-ff0e8e88cad6-202611050252025783440000-d873d7f0e884.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-funding-final-head-control-run-selection.log-ff0e8e88cad6-202611050252035461540000-aa3db69e2003.log
+small cold Head footprint: frame_peak=1144, retained=20568, residual_room=21712
+
+thread 'relational::durable_publication::source_initial_inputs::checkpoint_admission::cold_materialization::byte_payloads::cold_inline_bytes_head_refuses_after_member_read_then_retains_exact_payload_through_edit' (20684) panicked at crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\durable_publication\source_initial_inputs\checkpoint_admission\cold_materialization\byte_payloads.rs:35:20:
+called `Result::unwrap()` on an `Err` value: Request(PolicyMemoryExhausted { requested: 125316, admitted: 19888, ancestor: 0 })
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+info: experimental features enabled: wrapper-scripts
+────────────
+ Nextest run ID 782b4a50-f362-4d5a-b049-b9edd404c804 with nextest profile: ci
+    Starting 1 test across 1 binary (197 tests skipped)
+{"type":"suite","event":"started","test_count":2}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$cost::relational::relational_certification::scale_invariant_admission::large_runtime_keeps_global_enforcement_and_filters_graph_planning"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":1,"measured":0,"filtered_out":196,"exec_time":0}
+        FAIL [   1.066s] (1/1) worth-court-relational-certification::worth_court_relational_certification relational::durable_publication::source_initial_inputs::checkpoint_admission::cold_materialization::byte_payloads::cold_inline_bytes_head_refuses_after_member_read_then_retains_exact_payload_through_edit
+  output ───
+
+    running 1 test
+    small cold Head footprint: frame_peak=1144, retained=20568, residual_room=21712
+
+    thread 'relational::durable_publication::source_initial_inputs::checkpoint_admission::cold_materialization::byte_payloads::cold_inline_bytes_head_refuses_after_member_read_then_retains_exact_payload_through_edit' (20684) panicked at crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\durable_publication\source_initial_inputs\checkpoint_admission\cold_materialization\byte_payloads.rs:35:20:
+    called `Result::unwrap()` on an `Err` value: Request(PolicyMemoryExhausted { requested: 125316, admitted: 19888, ancestor: 0 })
+    note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+    test relational::durable_publication::source_initial_inputs::checkpoint_admission::cold_materialization::byte_payloads::cold_inline_bytes_head_refuses_after_member_read_then_retains_exact_payload_through_edit ... FAILED
+
+    failures:
+
+    failures:
+        relational::durable_publication::source_initial_inputs::checkpoint_admission::cold_materialization::byte_payloads::cold_inline_bytes_head_refuses_after_member_read_then_retains_exact_payload_through_edit
+
+    test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 197 filtered out; finished in 0.33s
+
+
+{"type":"suite","event":"started","test_count":2}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::checkpoint_admission::cold_materialization::byte_payloads::cold_inline_bytes_head_refuses_after_member_read_then_retains_exact_payload_through_edit"}
+{"type":"test","event":"failed","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::checkpoint_admission::cold_materialization::byte_payloads::cold_inline_bytes_head_refuses_after_member_read_then_retains_exact_payload_through_edit","exec_time":1.0658163,"stdout":"small cold Head footprint: frame_peak=1144, retained=20568, residual_room=21712\n\nthread 'relational::durable_publication::source_initial_inputs::checkpoint_admission::cold_materialization::byte_payloads::cold_inline_bytes_head_refuses_after_member_read_then_retains_exact_payload_through_edit' (20684) panicked at crates\\worth-court-relational-certification\\tests\\worth_court_relational_certification\\relational\\durable_publication\\source_initial_inputs\\checkpoint_admission\\cold_materialization\\byte_payloads.rs:35:20:\ncalled `Result::unwrap()` on an `Err` value: Request(PolicyMemoryExhausted { requested: 125316, admitted: 19888, ancestor: 0 })\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"}
+{"type":"suite","event":"failed","passed":0,"failed":1,"ignored":1,"measured":0,"filtered_out":196,"exec_time":1.0658163}
+────────────
+     Summary [   1.068s] 1 test run: 0 passed, 1 failed, 197 skipped
+        FAIL [   1.066s] (1/1) worth-court-relational-certification::worth_court_relational_certification relational::durable_publication::source_initial_inputs::checkpoint_admission::cold_materialization::byte_payloads::cold_inline_bytes_head_refuses_after_member_read_then_retains_exact_payload_through_edit
+error: test run failed
+
+EVIDENCE_TEST_COUNTS: 0,1,0
+
+end_utc: 2026-11-05T02:52:04.991623+00:00
+exit_code: 100
+tests_passed: 0
+tests_failed: 1
+tests_ignored: 0

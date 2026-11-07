@@ -1,0 +1,63 @@
+command: python target/lane-evidence/owned_native_funding_finish_probe.py funding-controls-peer-court test(retired_peer_history_keeps_its_funding_through_edits_and_returns_real_historical_neighbors) 1
+HEAD: 05755fb657382fae17e168c86b6b00b08b10d479
+git_status_short_empty: false
+start_utc: 2026-11-05T02:21:11.683718+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+prebuild: cargo metadata --offline --format-version 1 --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml"
+prebuild: cargo test --message-format=json --no-run --package worth-court-relational-certification --test worth_court_relational_certification --profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo nextest list --cargo-message-format=json --package worth-court-relational-certification --test worth_court_relational_certification --cargo-profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml" --list-type binaries-only --message-format json
+   Compiling worth-court-relational-certification v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-relational-certification)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 10.14s
+prebuild: cargo nextest list --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\funding-controls-peer-court\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\funding-controls-peer-court\build\binaries.json" --message-format json --ignore-default-filter -E test(retired_peer_history_keeps_its_funding_through_edits_and_returns_real_historical_neighbors)
+prebuild: cargo nextest run --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\funding-controls-peer-court\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\funding-controls-peer-court\build\binaries.json" --profile ci --config-file "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\d12-retained-image-and-sparse-courts\nextest.toml" --ignore-default-filter --no-fail-fast --no-tests=fail --message-format libtest-json -E test(retired_peer_history_keeps_its_funding_through_edits_and_returns_real_historical_neighbors)
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-funding-controls-peer-court-build-cargo-metadata.-05755fb65738-202611050221128006800000-374992962508.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-funding-controls-peer-court-build-binaries-build--05755fb65738-202611050221135919740000-149f76520a48.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-funding-controls-peer-court-build-binaries-build.-05755fb65738-202611050221143695240000-346aace465bc.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-funding-controls-peer-court-build-request-selecti-05755fb65738-202611050221266139030000-57a7db1a8767.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-funding-controls-peer-court-run-selection.log-05755fb65738-202611050221274840440000-c6afd5a50982.log
+
+thread 'relational::durable_publication::source_initial_inputs::checkpoint_admission::cold_materialization::peer_history::retired_peer_history_keeps_its_funding_through_edits_and_returns_real_historical_neighbors' (25584) panicked at crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\durable_publication\source_initial_inputs\checkpoint_admission\cold_materialization\peer_history.rs:54:63:
+called `Result::unwrap()` on an `Err` value: Conflict { error: CommitConflict { class: DuplicateRelationIdentity { detail: "duplicate relation identity in merged plan" }, code: DuplicateRelationIdentity, detail: "duplicate relation identity in merged plan", context: ErrorContext { subsystem: Transaction, operation: Validate, affected_records: [], version_context: None, suggested_fix: Some(InspectDiagnostics) } }, commit_log: CommitLog { events: [PhaseStarted(DraftPreparation), CommitRejected { phase: DraftPreparation, diagnostic_code: Some(DuplicateRelationIdentity), publication_stage: None, detail: "duplicate relation identity in merged plan" }], running_summary: CommitSummary { phase_count: 1, structural_summary: None, history_summary: None, patch_budget_summary: None, change_summary: None, aspect_summary: None, publication_summary: None, invariant_result_count: 0, invariant_advisory_count: 0, invariant_violation_count: 0 } } }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+info: experimental features enabled: wrapper-scripts
+────────────
+ Nextest run ID 831e82e0-1579-4f74-8b3f-fd3f0d401f4f with nextest profile: ci
+    Starting 1 test across 1 binary (197 tests skipped)
+{"type":"suite","event":"started","test_count":2}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$cost::relational::relational_certification::scale_invariant_admission::large_runtime_keeps_global_enforcement_and_filters_graph_planning"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":1,"measured":0,"filtered_out":196,"exec_time":0}
+        FAIL [   0.737s] (1/1) worth-court-relational-certification::worth_court_relational_certification relational::durable_publication::source_initial_inputs::checkpoint_admission::cold_materialization::peer_history::retired_peer_history_keeps_its_funding_through_edits_and_returns_real_historical_neighbors
+  output ───
+
+    running 1 test
+
+    thread 'relational::durable_publication::source_initial_inputs::checkpoint_admission::cold_materialization::peer_history::retired_peer_history_keeps_its_funding_through_edits_and_returns_real_historical_neighbors' (25584) panicked at crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\durable_publication\source_initial_inputs\checkpoint_admission\cold_materialization\peer_history.rs:54:63:
+    called `Result::unwrap()` on an `Err` value: Conflict { error: CommitConflict { class: DuplicateRelationIdentity { detail: "duplicate relation identity in merged plan" }, code: DuplicateRelationIdentity, detail: "duplicate relation identity in merged plan", context: ErrorContext { subsystem: Transaction, operation: Validate, affected_records: [], version_context: None, suggested_fix: Some(InspectDiagnostics) } }, commit_log: CommitLog { events: [PhaseStarted(DraftPreparation), CommitRejected { phase: DraftPreparation, diagnostic_code: Some(DuplicateRelationIdentity), publication_stage: None, detail: "duplicate relation identity in merged plan" }], running_summary: CommitSummary { phase_count: 1, structural_summary: None, history_summary: None, patch_budget_summary: None, change_summary: None, aspect_summary: None, publication_summary: None, invariant_result_count: 0, invariant_advisory_count: 0, invariant_violation_count: 0 } } }
+    note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+    test relational::durable_publication::source_initial_inputs::checkpoint_admission::cold_materialization::peer_history::retired_peer_history_keeps_its_funding_through_edits_and_returns_real_historical_neighbors ... FAILED
+
+    failures:
+
+    failures:
+        relational::durable_publication::source_initial_inputs::checkpoint_admission::cold_materialization::peer_history::retired_peer_history_keeps_its_funding_through_edits_and_returns_real_historical_neighbors
+
+    test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 197 filtered out; finished in 0.04s
+
+
+{"type":"suite","event":"started","test_count":2}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::checkpoint_admission::cold_materialization::peer_history::retired_peer_history_keeps_its_funding_through_edits_and_returns_real_historical_neighbors"}
+{"type":"test","event":"failed","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::checkpoint_admission::cold_materialization::peer_history::retired_peer_history_keeps_its_funding_through_edits_and_returns_real_historical_neighbors","exec_time":0.7372902,"stdout":"\nthread 'relational::durable_publication::source_initial_inputs::checkpoint_admission::cold_materialization::peer_history::retired_peer_history_keeps_its_funding_through_edits_and_returns_real_historical_neighbors' (25584) panicked at crates\\worth-court-relational-certification\\tests\\worth_court_relational_certification\\relational\\durable_publication\\source_initial_inputs\\checkpoint_admission\\cold_materialization\\peer_history.rs:54:63:\ncalled `Result::unwrap()` on an `Err` value: Conflict { error: CommitConflict { class: DuplicateRelationIdentity { detail: \"duplicate relation identity in merged plan\" }, code: DuplicateRelationIdentity, detail: \"duplicate relation identity in merged plan\", context: ErrorContext { subsystem: Transaction, operation: Validate, affected_records: [], version_context: None, suggested_fix: Some(InspectDiagnostics) } }, commit_log: CommitLog { events: [PhaseStarted(DraftPreparation), CommitRejected { phase: DraftPreparation, diagnostic_code: Some(DuplicateRelationIdentity), publication_stage: None, detail: \"duplicate relation identity in merged plan\" }], running_summary: CommitSummary { phase_count: 1, structural_summary: None, history_summary: None, patch_budget_summary: None, change_summary: None, aspect_summary: None, publication_summary: None, invariant_result_count: 0, invariant_advisory_count: 0, invariant_violation_count: 0 } } }\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"}
+{"type":"suite","event":"failed","passed":0,"failed":1,"ignored":1,"measured":0,"filtered_out":196,"exec_time":0.7372902}
+────────────
+     Summary [   0.739s] 1 test run: 0 passed, 1 failed, 197 skipped
+        FAIL [   0.737s] (1/1) worth-court-relational-certification::worth_court_relational_certification relational::durable_publication::source_initial_inputs::checkpoint_admission::cold_materialization::peer_history::retired_peer_history_keeps_its_funding_through_edits_and_returns_real_historical_neighbors
+error: test run failed
+
+EVIDENCE_TEST_COUNTS: 0,1,0
+
+end_utc: 2026-11-05T02:21:28.493104+00:00
+exit_code: 100
+tests_passed: 0
+tests_failed: 1
+tests_ignored: 0

@@ -141,6 +141,33 @@ impl<'a> IntoIterator for &'a CheckpointLineageEventPages {
 }
 
 impl CheckpointLineageEventPagesBuilder {
+    /// Carry an already selected immutable page, funding this directory's copy.
+    pub(crate) fn push_carried(
+        &mut self,
+        page: &RelationalCheckpointLineageEventPage,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), super::RelationalNativeCheckpointCaptureDenial> {
+        use super::RelationalNativeCheckpointCaptureDenial as Denial;
+        self.room().map_err(Denial::Request)?;
+        let ids = Layout::array::<u64>(page.event_ids.len())
+            .map_err(|_| Denial::Request(Cause::ChargedBytesOverflow))?
+            .size();
+        let routes = Layout::array::<super::RelationalLineageEventPageRoute>(page.routes.len())
+            .map_err(|_| Denial::Request(Cause::ChargedBytesOverflow))?
+            .size();
+        let mut bytes = ids
+            .checked_add(routes)
+            .ok_or(Denial::Request(Cause::ChargedBytesOverflow))?;
+        for route in &page.routes {
+            crate::execution::check_request(request).map_err(Denial::Request)?;
+            bytes = bytes
+                .checked_add(route.branch_id.0.len())
+                .ok_or(Denial::Request(Cause::ChargedBytesOverflow))?;
+        }
+        self.admit_nested(bytes, request).map_err(Denial::Request)?;
+        self.rows.push(page.clone());
+        Ok(())
+    }
     pub(crate) fn push<'a>(
         &mut self,
         member: super::super::medium::RelationalDurableMemberLocator,

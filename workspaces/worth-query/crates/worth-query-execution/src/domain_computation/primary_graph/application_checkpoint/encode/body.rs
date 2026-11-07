@@ -12,6 +12,8 @@ use super::sizing::ValidatedCheckpointSize;
 pub fn write(
     bytes: &mut worth_execution::ExecutionByteBuffer,
     native: &[u8],
+    native_image: &[u8],
+    world_originals: &[u8],
     publication: &WorthQueryPrimaryGraphPublication,
     accepted_outputs: &[WorthQueryAcceptedOutputCheckpointIdentity],
     size: &ValidatedCheckpointSize,
@@ -22,8 +24,12 @@ pub fn write(
     writer.bytes(&super::super::WORKFLOW_INSTANCES.to_be_bytes())?;
     writer.bytes(&publication.bootstrap_commit_id().0.to_be_bytes())?;
     writer.length(native.len())?;
+    writer.length(native_image.len())?;
+    writer.length(world_originals.len())?;
     writer.length(accepted_outputs.len())?;
     writer.bytes(native)?;
+    writer.bytes(native_image)?;
+    writer.bytes(world_originals)?;
     for accepted in accepted_outputs {
         writer.length(accepted.producer.len())?;
         writer.bytes(accepted.producer.as_bytes())?;

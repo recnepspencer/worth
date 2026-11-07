@@ -7,7 +7,7 @@ use super::super::{
 };
 use super::{
     program_admission::WorthQueryAdmittedProgramSupport,
-    WorthQueryInMemoryApplicationDenial as Denial,
+    WorthQueryApplicationPreparationDenial as Denial,
 };
 use crate::domain_computation::execution_runtime::WorthQueryExecutionRuntime;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};

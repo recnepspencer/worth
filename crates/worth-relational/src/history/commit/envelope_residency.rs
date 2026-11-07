@@ -4,6 +4,7 @@ mod authored_writes;
 mod selected_checkpoint;
 pub(crate) use selected_checkpoint::RetiredCanonicalPlacement;
 mod demand;
+mod interim_original;
 mod source_readmission;
 mod source_retirement;
 use super::RelationalCommitIndexEntry;

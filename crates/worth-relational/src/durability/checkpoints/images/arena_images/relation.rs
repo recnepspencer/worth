@@ -37,19 +37,28 @@ impl CheckpointArenaKind for RelationRecordKind {
         })
     }
 
-    fn extra_from_image(
+    fn extra_from_image_using(
         extra: RelationExtraImage,
         contracts: &CheckpointAspectContractCatalog,
-    ) -> Result<Self::Extra, DurabilityError> {
-        Ok(
-            crate::storage::substrate::RelationExtra::from_unbudgeted_parts(
-                extra.endpoints.as_ref().map(|endpoints| RelationEndpoints {
-                    source: endpoints.source,
-                    target: endpoints.target,
-                }),
-                readmit_state(extra.authoritative_aspect_state, contracts)?,
-            ),
-        )
+        admission: &ImageReadmission<'_, '_, '_>,
+    ) -> Result<Self::Extra, crate::durability::data::RelationalRecoveryStop> {
+        let (state, memory) =
+            readmit_state_using(
+                extra.authoritative_aspect_state,
+                contracts,
+                crate::storage::substrate::StorageAllocation::<
+                    crate::storage::substrate::RelationExtra,
+                >::layout_bytes(),
+                admission,
+            )?;
+        Ok(crate::storage::substrate::RelationExtra::from_funded_parts(
+            extra.endpoints.map(|value| RelationEndpoints {
+                source: value.source,
+                target: value.target,
+            }),
+            state,
+            memory,
+        ))
     }
 
     fn meta_to_image(
@@ -72,28 +81,42 @@ impl CheckpointArenaKind for RelationRecordKind {
         })
     }
 
-    fn meta_from_image(
+    fn meta_from_image_using(
         meta: VersionedRelationMetadataImage,
         contracts: &CheckpointAspectContractCatalog,
-    ) -> Result<Self::Meta, DurabilityError> {
-        Ok(VersionedRelationMetadata::from_ordinary(
+        admission: &ImageReadmission<'_, '_, '_>,
+    ) -> Result<Self::Meta, crate::durability::data::RelationalRecoveryStop> {
+        let (state, memory) =
+            readmit_state_using(
+                meta.authoritative_aspect_state,
+                contracts,
+                crate::storage::substrate::StorageAllocation::<
+                    crate::storage::substrate::RelationExtra,
+                >::layout_bytes(),
+                admission,
+            )?;
+        let endpoints = RelationEndpoints {
+            source: meta.endpoints.source,
+            target: meta.endpoints.target,
+        };
+        let extra = crate::storage::substrate::StorageAllocation::new(
+            crate::storage::substrate::RelationExtra::from_funded_parts(
+                Some(endpoints.clone()),
+                state,
+                memory,
+            ),
+        );
+        let value = VersionedRelationMetadata::from_ordinary(
             meta.effective_at,
             meta.retired_at,
             meta.generation,
             meta.kind_id,
-            RelationEndpoints {
-                source: meta.endpoints.source,
-                target: meta.endpoints.target,
-            },
-            crate::storage::substrate::StorageAllocation::new(
-                crate::storage::substrate::RelationExtra::from_unbudgeted_parts(
-                    Some(RelationEndpoints {
-                        source: meta.endpoints.source,
-                        target: meta.endpoints.target,
-                    }),
-                    readmit_state(meta.authoritative_aspect_state, contracts)?,
-                ),
-            ),
-        ))
+            endpoints,
+            extra,
+        );
+        match admission.request {
+            Some(request) => value.fund_for_request(request).map_err(Into::into),
+            None => Ok(value),
+        }
     }
 }

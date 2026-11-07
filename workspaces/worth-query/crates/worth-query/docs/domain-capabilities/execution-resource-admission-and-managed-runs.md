@@ -195,7 +195,7 @@ let controls = WorthQueryOutputDemandControls::default();
 
 ```
 
-`WorthQueryInMemoryApplicationLimits::with_output_demand_resources(...)` installs
+`WorthQueryApplicationLimits::with_output_demand_resources(...)` installs
 `WorthQueryOutputDemandResourceProfile`. Its four independent dimensions are source
 currentness work, producer work, producer retained bytes, and settlement attempts.
 The standard profile allows 4,194,304 units in each work dimension, 4 MiB of producer

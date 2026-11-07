@@ -1,0 +1,20 @@
+[
+  [
+    "area-funding-store-selection",
+    "python",
+    "target/lane-evidence/owned_store_funding_probe.py",
+    "area-funding-store-selection",
+    "test(selected_checkpoint_survives_observer_drop_online_history_and_mutation_before_ack_recovery) | test(selected_completion_and_activation_failures_keep_owned_home_without_initializing) | test(selected_home_admission_refuses_predecessors_missing_foreign_and_damaged_images) | test(selected_home_image_preserves_original_binding_fields_and_world_publication)",
+    "4"
+  ],
+  [
+    "area-funding-cdc-recovery",
+    "python",
+    "target/lane-evidence/focused_runner.py",
+    "root",
+    "area-funding-cdc-recovery",
+    "worth-relational",
+    "lib",
+    "test(cdc_property_persisted_random_operation_matrix_recovers) | test(seeded_full_key_differential_fork_recovery_and_replay_keep_actual_names_and_lineage) | test(excess_scalar_columns_refuse_before_schema_lookup)"
+  ]
+]

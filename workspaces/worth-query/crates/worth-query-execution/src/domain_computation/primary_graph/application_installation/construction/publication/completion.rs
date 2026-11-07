@@ -4,8 +4,8 @@ use super::*;
 pub(super) fn complete<S: ApplicationSchemaComposition>(
     phase: &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
     published: BootstrapPublicationStorage<PublishedMemoryService<S>>,
-) -> Result<WorthQueryPrimaryGraphApplicationRuntime<S>, WorthQueryInMemoryApplicationDenial> {
-    use WorthQueryInMemoryApplicationDenial as Denial;
+) -> Result<WorthQueryPrimaryGraphApplicationRuntime<S>, WorthQueryApplicationPreparationDenial> {
+    use WorthQueryApplicationPreparationDenial as Denial;
     let PublishedMemoryService {
         application,
         installed_conditionals,
@@ -18,6 +18,7 @@ pub(super) fn complete<S: ApplicationSchemaComposition>(
         admitted_program_support,
         activation,
         decoded_checkpoint,
+        interim_continuation,
     } = completion.consume();
     let execution = phase.execution_request();
     application.installed_producers = producers;
@@ -44,6 +45,12 @@ pub(super) fn complete<S: ApplicationSchemaComposition>(
         );
     }
     if let Some(checkpoint) = decoded_checkpoint {
+        let origin = checkpoint.origin.as_ref().ok_or_else(|| Denial::Graph(
+            WorthQueryPrimaryGraphInstallationDenial::new(crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::InterimCheckpointCaptureOriginMissing,
+                "interim checkpoint capture origin was lost")))?;
+        application
+            .restore_interim_registry(origin, interim_continuation.as_ref(), &execution)
+            .map_err(Denial::Graph)?;
         application.runtime.recovered_outputs =
             crate::domain_computation::primary_graph::application_output_demand::WorthQueryRecoveredOutputs::from_checkpoint(
                 checkpoint,

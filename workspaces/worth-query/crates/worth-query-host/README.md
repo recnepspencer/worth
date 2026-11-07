@@ -69,7 +69,7 @@ Declared producers, conditionals and application resource pools refuse through
 one preparation check, before contribution configuration, initialization,
 physical Home creation or World bootstrap. Match
 `WorthQueryApplicationHomeOpenRefused::Preparation` and its
-`WorthQueryInMemoryApplicationDenial::UnsupportedSeed` cause. The cause carries
+`WorthQueryApplicationPreparationDenial::UnsupportedSeed` cause. The cause carries
 `WorthQueryDurableStateAdmissionDenial::Unsupported { family, supported_from_phase }`:
 
 Inspect `next_actions()` through `facade::primary_graph::ProductUnpublishedNextAction`
@@ -297,7 +297,7 @@ borrows the unpublished typed graph and its installed schema, seeds initial
 state, and returns a typed graph installation result. Successful program
 construction returns `WorthQueryProgramApplicationRuntime<Schema, Program>`.
 
-`WorthQueryInMemoryApplicationLimits::new` accepts World resources, an application
+`WorthQueryApplicationLimits::new` accepts World resources, an application
 query profile and a conditional evaluation budget. Installed handlers implement
 `decide` and `build_candidate`; computing handlers override `prepare_decision`
 and return the installed computation's `decision_plan`. Decision reads retain
@@ -431,7 +431,7 @@ recovery obligations; preparation classification does not turn them into denials
 
 Ordinary graph demands use `WorthQueryOutputDemandControls::default()` and inherit
 the installed host policy. Configure that policy once with
-`WorthQueryInMemoryApplicationLimits::with_output_demand_resources(...)` and
+`WorthQueryApplicationLimits::with_output_demand_resources(...)` and
 `WorthQueryOutputDemandResourceProfile`; currentness work, producer work, producer
 retained bytes, and settlement attempts are separate dimensions. Explicit caller
 controls and child artifact limits only narrow the relevant dimensions. A handle's

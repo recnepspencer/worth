@@ -82,10 +82,6 @@ mod serial {
             })
             .expect("the original request admits native capture")
             .expect("the unassessed source is checkpointable");
-        let checkpoint =
-            application_installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(
-                checkpoint.bytes().to_vec(),
-            );
         drop(receipt);
         drop(observed);
         drop(principal);

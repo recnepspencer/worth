@@ -80,7 +80,7 @@ fn install_configured_with_limits(
     rules: Arc<rule::Calls>,
     decision_read: DecisionRead,
     geometry: geometry::Configuration,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     clock: WorthQueryAdmissionClock,
 ) -> Host {
     let world = try_install_root(
@@ -127,9 +127,9 @@ fn try_install_root(
     rules: Arc<rule::Calls>,
     decision_read: DecisionRead,
     geometry: geometry::Configuration,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     clock: WorthQueryAdmissionClock,
-) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
+) -> Result<Host, WorthQueryApplicationPreparationDenial> {
     try_install_root_with_sources(
         prefix,
         rules,
@@ -164,9 +164,9 @@ fn try_install_root_with_sources(
     decision_read: DecisionRead,
     geometry: geometry::Configuration,
     sources: source_authorization::Configuration,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     clock: WorthQueryAdmissionClock,
-) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
+) -> Result<Host, WorthQueryApplicationPreparationDenial> {
     let declaration = Catalog::declaration().unwrap();
     in_memory_program_with_authorization_time_source(
         ApplicationProgramAuthoring::<Catalog, Program>::begin()
@@ -207,7 +207,7 @@ fn try_install_root_with_sources(
 pub(super) fn try_install_unpopulated(
     prefix: Arc<prefix_observation::Calls>,
     rules: Arc<rule::Calls>,
-) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
+) -> Result<Host, WorthQueryApplicationPreparationDenial> {
     try_install_root(
         prefix,
         rules,

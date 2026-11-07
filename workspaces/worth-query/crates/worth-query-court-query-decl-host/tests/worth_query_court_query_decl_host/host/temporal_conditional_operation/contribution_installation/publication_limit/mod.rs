@@ -31,7 +31,7 @@ fn explicit_publication_limit_survives_checkpoint_installation_and_enforces_comm
     let original = read_intent(&source);
     drop(source);
     for maximum in [1, 65_536] {
-        let application = application_installation::in_memory_program_from_checkpoint(
+        let application = application_installation::WorthQueryInterimCheckpointRestore::program(
             validated_program(),
             TemporalHostSchema::declaration().unwrap(),
             (configuration(),),

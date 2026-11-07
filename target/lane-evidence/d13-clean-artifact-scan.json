@@ -1,0 +1,57 @@
+[
+  {
+    "binary": "worth-query-court-query-decl-host::worth_query_court_query_decl_host",
+    "path": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\workspaces\\worth-query\\target\\debug\\deps\\worth_query_court_query_decl_host-0388f5f36454721a.exe",
+    "diagnostic_markers": []
+  },
+  {
+    "binary": "worth-query-court-decl-host::worth_query_court_decl_host",
+    "path": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\workspaces\\worth-query\\target\\debug\\deps\\worth_query_court_decl_host-daf443a0fb715ec5.exe",
+    "diagnostic_markers": []
+  },
+  {
+    "binary": "worth-query-court-decl-host-package-archive-replay-application-graph::worth_query_court_decl_host_package_archive_replay_application_graph",
+    "path": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\workspaces\\worth-query\\target\\debug\\deps\\worth_query_court_decl_host_package_archive_replay_application_graph-9214fa9e7a3ad3c4.exe",
+    "diagnostic_markers": []
+  },
+  {
+    "binary": "worth-query-court-execution::worth_query_court_execution",
+    "path": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\workspaces\\worth-query\\target\\debug\\deps\\worth_query_court_execution-8a2d1de8ec507292.exe",
+    "diagnostic_markers": []
+  },
+  {
+    "binary": "worth-query-consumer-root::bin/worth-query-consumer-root",
+    "path": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\target\\debug\\deps\\worth_query_consumer_root-b2e4165405daca74.exe",
+    "diagnostic_markers": []
+  },
+  {
+    "binary": "worth-query-topology-entry",
+    "path": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\target\\debug\\deps\\worth_query_topology_entry-e372a0688f977320.exe",
+    "diagnostic_markers": []
+  },
+  {
+    "binary": "worth-query-topology-entry::shared_execution",
+    "path": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\target\\debug\\deps\\shared_execution-03aab5354f1fe757.exe",
+    "diagnostic_markers": []
+  },
+  {
+    "binary": "worth-query-topology-entry::example/invariant_reads",
+    "path": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\target\\debug\\examples\\invariant_reads-2b733cb81ec7905d.exe",
+    "diagnostic_markers": []
+  },
+  {
+    "binary": "worth-query-topology-entry::example/required_feature",
+    "path": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\target\\debug\\examples\\required_feature-7fc4e30ad0cbc1db.exe",
+    "diagnostic_markers": []
+  },
+  {
+    "binary": "worth-query-topology-entry::example/shared_execution",
+    "path": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\target\\debug\\examples\\shared_execution-7bf055c10bd0c242.exe",
+    "diagnostic_markers": []
+  },
+  {
+    "binary": "worth-store-court-application::worth_store_court_application",
+    "path": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\workspaces\\worth-store\\target\\debug\\deps\\worth_store_court_application-cab83c97facae755.exe",
+    "diagnostic_markers": []
+  }
+]

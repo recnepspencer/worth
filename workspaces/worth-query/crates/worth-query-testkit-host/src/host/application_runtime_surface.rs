@@ -115,7 +115,7 @@ pub fn installed_application(
         HostIdentitySchema::declaration().unwrap(),
         ((),),
         build_identity,
-        WorthQueryInMemoryApplicationLimits::new(
+        WorthQueryApplicationLimits::new(
             world_resources(),
             WorthQueryApplicationQueryResourceProfile::new(
                 std::num::NonZeroUsize::new(128).unwrap(),

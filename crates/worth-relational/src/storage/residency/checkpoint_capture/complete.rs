@@ -65,16 +65,61 @@ impl RelationalRegionResidency {
         request
             .consult()
             .map_err(|cause| RelationalRecoveryStop::Request(cause.into()))?;
-        let lease = self
-            .lease_resident_full()?
-            .ok_or_else(|| self.capture_failure(Cause::SourceUnavailable))?;
+        let lease = match self.lease_resident_full()? {
+            Some(lease) => lease,
+            None => self.demand_full(
+                request,
+                super::super::history_capture_bound::FULL_HISTORY_READ_LIMIT,
+                None,
+            )?,
+        };
+        lease.capture_checkpoint_data_for_request(request, schema, schema_digest, symbols)
+    }
+    fn capture_full_contents_for_request(
+        self: &Arc<Self>,
+        lease: &super::super::RelationalResidencyLease<super::super::Full>,
+        request: &ExecutionRequest<'_, '_>,
+        schema: &RelationalBranchRootSchemaAuthority,
+        schema_digest: [u8; 32],
+        symbols: &dyn crate::symbols::data::SymbolTextLookup,
+    ) -> Result<CapturedCompleteRegion, RelationalRecoveryStop> {
         let region = lease.resident_region();
+        let computed;
+        let commitment = match region.commitment.as_ref() {
+            Some(commitment) => commitment,
+            None => {
+                computed = PartitionContentCommitment::capture_full_for_request(
+                    &region.partition,
+                    symbols,
+                    request,
+                )
+                .map_err(|cause| match cause {
+                    PartitionContentDigestError::Request(cause) => {
+                        RelationalRecoveryStop::Request(cause)
+                    }
+                    PartitionContentDigestError::UnresolvedContentSymbol(symbol) => {
+                        RelationalStorageUnavailable {
+                            subject: RelationalStorageSubject::Symbols {
+                                first: symbol,
+                                last: symbol,
+                            },
+                            cause: Cause::SourceUnavailable,
+                        }
+                        .into()
+                    }
+                    PartitionContentDigestError::InvalidHistoryCoverage
+                    | PartitionContentDigestError::Encoding
+                    | PartitionContentDigestError::AllocationAccountingOverflow => {
+                        self.capture_failure(Cause::IntegrityMismatch).into()
+                    }
+                })?
+                .0;
+                &computed
+            }
+        };
         let captured = super::super::region_capture::complete::capture(
             &region.partition,
-            region
-                .commitment
-                .as_ref()
-                .ok_or_else(|| self.capture_failure(Cause::SourceUnavailable))?,
+            commitment,
             schema,
             schema_digest,
             symbols,
@@ -84,11 +129,7 @@ impl RelationalRegionResidency {
         let leaf = RelationalCheckpointRegion {
             kind_authority: captured.kind_authority,
             partition_id: partition.partition_id,
-            content_digest: region
-                .commitment
-                .as_ref()
-                .unwrap()
-                .digest(partition.partition_id),
+            content_digest: commitment.digest(partition.partition_id),
             entity_slots: partition.entity_arena.slot_count(),
             relation_slots: partition.relation_arena.slot_count(),
             unavailable_records: partition.entity_arena.lifecycle_counts().unavailable
@@ -118,6 +159,19 @@ impl RelationalRegionResidency {
                 recorded,
             },
         })
+    }
+}
+/// DATA projection consumes the actual same-cell counted Full observation.
+impl super::super::RelationalResidencyLease<super::super::Full> {
+    pub(crate) fn capture_checkpoint_data_for_request(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+        schema: &RelationalBranchRootSchemaAuthority,
+        schema_digest: [u8; 32],
+        symbols: &dyn crate::symbols::data::SymbolTextLookup,
+    ) -> Result<CapturedCompleteRegion, RelationalRecoveryStop> {
+        self.cell()
+            .capture_full_contents_for_request(self, request, schema, schema_digest, symbols)
     }
 }
 #[cfg(test)]

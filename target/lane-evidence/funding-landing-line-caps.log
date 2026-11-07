@@ -1,0 +1,12 @@
+command: bash scripts/ci/check_workspace_rust_line_caps.sh dirty
+HEAD: 5a49620b1d2c6efe405d7ff97870243b21d87fc0
+git_status_short_empty: false
+start_utc: 2026-11-05T04:05:48.035776+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+<3>WSL (2559402 - Relay) ERROR: CreateProcessCommon:875: execvpe(/bin/bash) failed: No such file or directory
+
+end_utc: 2026-11-05T04:05:48.285362+00:00
+exit_code: 1
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

@@ -1,5 +1,9 @@
 //! Verified-original projection and protected checkpoint-root admission.
 mod admitted_commit;
+mod capture_base;
+pub(crate) use capture_base::{
+    FrozenSelectedCaptureBase, PreparedCheckpointCaptureBase, SelectedCheckpointCaptureBase,
+};
 mod artifact;
 pub(crate) use admitted_commit::CheckpointAdmittedCommit;
 mod custody;

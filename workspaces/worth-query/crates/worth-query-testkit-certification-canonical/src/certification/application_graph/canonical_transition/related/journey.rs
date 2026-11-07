@@ -11,7 +11,7 @@ pub fn successor(
     checkpoint: installation::WorthQueryApplicationCheckpoint,
 ) -> successor::host::Host {
     successor::output::reset_decodes();
-    installation::in_memory_rostered_program_from_checkpoint_with_transition(
+    installation::WorthQueryInterimCheckpointRestore::rostered_program_with_transition(
         successor::host::program(),
         installation::WorthQueryApplicationProgramRoster::new().support(
             successor::companion::host::program::<successor::companion::program::TargetProgram>(),

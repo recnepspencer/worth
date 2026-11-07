@@ -26,8 +26,8 @@ pub(super) type Query = PreparedHomeQueryRuntime<HomeIdentitySchema, HomeProgram
 pub(super) fn build() -> ApplicationBuildIdentity {
     ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap()
 }
-fn limits() -> WorthQueryInMemoryApplicationLimits {
-    WorthQueryInMemoryApplicationLimits::new(
+fn limits() -> WorthQueryApplicationLimits {
+    WorthQueryApplicationLimits::new(
         identity::world_resources(),
         worth_query_host::facade::runtime::WorthQueryApplicationQueryResourceProfile::default(),
         SignalConditionalEvaluationBudget::development(),

@@ -122,7 +122,7 @@ where
 pub(super) fn install_program_with_limits<Program>(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     seed: impl FnOnce(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
 ) -> application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>
 where
@@ -155,11 +155,11 @@ where
 pub(super) fn try_install_program_with_limits<Program>(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     seed: impl FnOnce(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
 ) -> Result<
     application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>,
-    Box<application_installation::WorthQueryInMemoryApplicationDenial>,
+    Box<application_installation::WorthQueryApplicationPreparationDenial>,
 >
 where
     Program: ApplicationProgramDefinition<CheckpointSchema>,
@@ -239,7 +239,7 @@ pub(super) fn invalidation() -> worth_query_host::facade::runtime::WorthQueryInv
 pub(super) fn limits(
     retained_composite_commits: u64,
     invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
-) -> WorthQueryInMemoryApplicationLimits {
+) -> WorthQueryApplicationLimits {
     limits_with_room(retained_composite_commits, 16, 64, invalidation)
 }
 
@@ -251,7 +251,7 @@ pub(super) fn limits_with_room(
     active_observations: u64,
     unique_exact_component_pins: u64,
     invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
-) -> WorthQueryInMemoryApplicationLimits {
+) -> WorthQueryApplicationLimits {
     limits_with_policy(
         retained_composite_commits,
         active_observations,
@@ -267,7 +267,7 @@ pub(super) fn limits_with_policy(
     unique_exact_component_pins: u64,
     invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
     policy: worth_foundational::ExecutionRequestPolicy,
-) -> WorthQueryInMemoryApplicationLimits {
+) -> WorthQueryApplicationLimits {
     limits_with_history_and_policy(
         retained_composite_commits,
         active_observations,
@@ -287,8 +287,8 @@ pub(super) fn limits_with_history_and_policy(
     history_metadata_bytes: u64,
     policy: worth_foundational::ExecutionRequestPolicy,
     clock: authentication::WorthQueryAdmissionClock,
-) -> WorthQueryInMemoryApplicationLimits {
-    WorthQueryInMemoryApplicationLimits::new(
+) -> WorthQueryApplicationLimits {
+    WorthQueryApplicationLimits::new(
         WorthQueryProductWorldResources::install(
             RuntimeWorldBudgetInstallation {
                 branches: RuntimeWorldBranchBudgetInstallation {

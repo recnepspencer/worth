@@ -284,14 +284,14 @@ fn exact_refinement_requires_the_declared_executable_at_installation() {
     );
 }
 fn installation() {
-    use worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial;
+    use worth_query_host::facade::application_installation::WorthQueryApplicationPreparationDenial;
     let calls = Arc::new(prefix_observation::Calls::default());
     calls.omit_refinement.store(true, Ordering::SeqCst);
     let denied =
         host::try_install_unpopulated(calls.clone(), Arc::new(rule::Calls::new(calls.clone())))
             .err()
             .expect("declared refined Parent needs its executable");
-    let WorthQueryInMemoryApplicationDenial::Contributions(cause) = denied else {
+    let WorthQueryApplicationPreparationDenial::Contributions(cause) = denied else {
         panic!("{denied:?}")
     };
     assert_eq!(

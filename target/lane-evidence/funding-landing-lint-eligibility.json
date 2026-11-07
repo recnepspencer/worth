@@ -1,0 +1,85 @@
+{
+  "head": "5a49620b1d2c6efe405d7ff97870243b21d87fc0",
+  "lifecycle": "d40751936a8b9299f72a8e75fed5ae6d6bfd4828",
+  "master": "14bc0269b14ca96c4fbecf979eaeb1cb921f1367",
+  "sites": [
+    {
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/serial/relational/managed_source_work_account/public_only.rs",
+      "lifecycle_diff_exit": 0,
+      "master_diff_exit": 1,
+      "action": "skip"
+    },
+    {
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/serial/relational/managed_source_work_account.rs",
+      "lifecycle_diff_exit": 0,
+      "master_diff_exit": 1,
+      "action": "skip"
+    },
+    {
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/index_catalog.rs",
+      "lifecycle_diff_exit": 0,
+      "master_diff_exit": 1,
+      "action": "skip"
+    },
+    {
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/index_catalog/recovery.rs",
+      "lifecycle_diff_exit": 0,
+      "master_diff_exit": 1,
+      "action": "skip"
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/contracts/caller_association.rs",
+      "lifecycle_diff_exit": 0,
+      "master_diff_exit": 1,
+      "action": "skip"
+    },
+    {
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_envelope_matrix.rs",
+      "lifecycle_diff_exit": 0,
+      "master_diff_exit": 1,
+      "action": "skip"
+    },
+    {
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/managed_source/nested.rs",
+      "lifecycle_diff_exit": 0,
+      "master_diff_exit": 1,
+      "action": "skip"
+    },
+    {
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/managed_source/row_read.rs",
+      "lifecycle_diff_exit": 0,
+      "master_diff_exit": 1,
+      "action": "skip"
+    },
+    {
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/managed_source/owner.rs",
+      "lifecycle_diff_exit": 0,
+      "master_diff_exit": 1,
+      "action": "skip"
+    },
+    {
+      "path": "crates/worth-court-relational-branch-reference-compile-time/tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/change_source_pass/selected_commit_mints_receipt.rs",
+      "lifecycle_diff_exit": 0,
+      "master_diff_exit": 0,
+      "action": "fix"
+    },
+    {
+      "path": "crates/worth-relational/src/derived_relation/evaluation/memo/tests.rs",
+      "lifecycle_diff_exit": 0,
+      "master_diff_exit": 1,
+      "action": "skip"
+    },
+    {
+      "path": "crates/worth-relational/src/transactions/data/outcomes/created_entity_bindings.rs",
+      "lifecycle_diff_exit": 0,
+      "master_diff_exit": 1,
+      "action": "skip"
+    },
+    {
+      "path": "crates/worth-relational/src/transactions/data/outcomes/created_relation_bindings.rs",
+      "lifecycle_diff_exit": 0,
+      "master_diff_exit": 1,
+      "action": "skip"
+    }
+  ]
+}

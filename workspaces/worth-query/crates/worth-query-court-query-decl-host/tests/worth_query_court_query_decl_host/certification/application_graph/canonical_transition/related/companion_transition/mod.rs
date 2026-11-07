@@ -122,7 +122,7 @@ fn companion_target_rule_rejects_actual_surviving_relation_before_publication() 
     )
     .err()
     .expect("actual target rule must judge the surviving edge");
-    let installation::WorthQueryInMemoryApplicationDenial::Graph(denial) = denial else {
+    let installation::WorthQueryApplicationPreparationDenial::Graph(denial) = denial else {
         panic!("the target rule must reject native preparation before publication: {denial:?}")
     };
     assert_eq!(denial.kind(), worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::RelationalCommitRejected);

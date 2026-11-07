@@ -5,7 +5,7 @@ use super::super::{
     WorthQueryPrimaryGraphInstallationDenial,
 };
 use super::{
-    WorthQueryInMemoryApplicationDenial, WorthQueryInMemoryApplicationLimits,
+    WorthQueryApplicationLimits, WorthQueryApplicationPreparationDenial,
     WorthQueryProgramAdmissionStep,
 };
 use worth_query_declaration::facade::application_schema::{
@@ -15,12 +15,12 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 mod native_preparation;
 mod publication;
 
-pub(super) fn in_memory_with_contributions_in_advancement<Schema, Contributions>(
+pub(super) fn construct_with_contributions_in_advancement<Schema, Contributions>(
     phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
     declaration: ApplicationSchemaDeclaration<Schema>,
     configuration: <Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     initial_state: impl FnOnce(
         &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
@@ -34,7 +34,7 @@ pub(super) fn in_memory_with_contributions_in_advancement<Schema, Contributions>
     checkpoint_transition: Option<
         super::super::bootstrap::checkpoint_transition::CheckpointTransition<'_, '_, Schema>,
     >,
-) -> Result<WorthQueryPrimaryGraphApplicationRuntime<Schema>, WorthQueryInMemoryApplicationDenial>
+) -> Result<WorthQueryPrimaryGraphApplicationRuntime<Schema>, WorthQueryApplicationPreparationDenial>
 where
     Schema: ApplicationSchemaComposition,
     Contributions: WorthQueryApplicationContributionTuple<Schema>,

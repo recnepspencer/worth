@@ -13,7 +13,7 @@ mod service;
 pub(super) fn publish<S: ApplicationSchemaComposition>(
     phase: &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
     prepared: BootstrapPublicationStorage<PreparedMemoryApplication<S>>,
-) -> Result<WorthQueryPrimaryGraphApplicationRuntime<S>, WorthQueryInMemoryApplicationDenial> {
+) -> Result<WorthQueryPrimaryGraphApplicationRuntime<S>, WorthQueryApplicationPreparationDenial> {
     let configured = configuration::prepare(phase, prepared)?;
     let published = service::publish(phase, configured)?;
     completion::complete(phase, published)

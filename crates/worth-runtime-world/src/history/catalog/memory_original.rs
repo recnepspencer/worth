@@ -3,6 +3,7 @@ use super::{lock_state, validate_owner, CompositeHistoryCatalog};
 use crate::history::publication::memory_observation::MemoryPublicationRecord;
 use crate::history::{WorldObservedMemoryPublication, WorldReadmittedPublicationDenial as Denial};
 use std::sync::{atomic::Ordering, Arc, Mutex, Weak};
+mod readmission;
 
 #[derive(Debug)]
 enum Slot {
@@ -11,9 +12,18 @@ enum Slot {
 }
 #[derive(Debug, Default)]
 struct Records {
+    receiver: ReceiverAdmission,
     slots: Vec<Slot>,
     vacant: Option<usize>,
     _capacity_funding: Option<worth_execution::ExecutionMemoryReservation>,
+}
+#[derive(Debug, Default)]
+enum ReceiverAdmission {
+    #[default]
+    Available,
+    Preparing,
+    Installed,
+    Refused,
 }
 type Registry = Mutex<Records>;
 #[derive(Debug, Clone, Default)]
@@ -28,6 +38,12 @@ pub(crate) struct MemoryOriginalRegistration {
 }
 impl MemoryOriginalRegistration {
     pub(crate) fn mark_committed(&self, movement: &crate::branch::ProductBranchReferenceMovement) {
+        let registry = self.registry.upgrade();
+        let _records = registry.as_ref().map(|registry| {
+            registry
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+        });
         self.record.mark_committed(movement);
     }
 }
@@ -57,6 +73,77 @@ impl Drop for MemoryOriginalRegistration {
     }
 }
 impl CompositeHistoryCatalog {
+    pub(crate) fn snapshot_memory_originals(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        worth_execution::ExecutionArray<Arc<MemoryPublicationRecord>>,
+        crate::lifecycle::WorldInterimCheckpointRefusal,
+    > {
+        use crate::lifecycle::WorldInterimCheckpointRefusal as Stop;
+        let records = self
+            .originals
+            .0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if matches!(
+            records.receiver,
+            ReceiverAdmission::Preparing | ReceiverAdmission::Refused
+        ) {
+            return Err(Stop::OwnerUnavailable);
+        }
+        crate::lifecycle::interim_checkpoint::charge(request, records.slots.len())?;
+        let committed = records
+            .slots
+            .iter()
+            .filter(|slot| match slot {
+                Slot::Original(record) => record.committed.load(Ordering::Acquire),
+                Slot::Vacant(_) => false,
+            })
+            .count();
+        let mut builder =
+            worth_execution::ExecutionRequestArrayBuilder::allocate(*request, committed)
+                .map_err(Stop::Backing)?;
+        for slot in &records.slots {
+            crate::lifecycle::interim_checkpoint::charge(request, 1)?;
+            match slot {
+                Slot::Original(record) if record.committed.load(Ordering::Acquire) => {
+                    builder.push(record.clone()).map_err(Stop::Backing)?
+                }
+                Slot::Original(_) | Slot::Vacant(_) => {}
+            }
+        }
+        builder.seal().map_err(Stop::Backing)
+    }
+
+    pub(crate) fn matches_memory_originals(
+        &self,
+        originals: &[Arc<MemoryPublicationRecord>],
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<bool, crate::lifecycle::WorldInterimCheckpointRefusal> {
+        let records = self
+            .originals
+            .0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        crate::lifecycle::interim_checkpoint::charge(request, records.slots.len())?;
+        let mut originals = originals.iter();
+        for slot in &records.slots {
+            match slot {
+                Slot::Original(record) if record.committed.load(Ordering::Acquire) => {
+                    if originals
+                        .next()
+                        .is_none_or(|original| !Arc::ptr_eq(original, record))
+                    {
+                        return Ok(false);
+                    }
+                }
+                Slot::Original(_) | Slot::Vacant(_) => {}
+            }
+        }
+        Ok(originals.next().is_none())
+    }
+
     pub(crate) fn register_memory_original(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -74,6 +161,14 @@ impl CompositeHistoryCatalog {
             .0
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if matches!(
+            records.receiver,
+            ReceiverAdmission::Preparing | ReceiverAdmission::Refused
+        ) {
+            return Err(Refusal::Basis(
+                worth_relational::facade::branch::RelationalBranchBasisDenial::OwnerUnavailable,
+            ));
+        }
         if records.vacant.is_none() && records.slots.len() == records.slots.capacity() {
             let capacity = records
                 .slots

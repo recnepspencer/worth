@@ -1,0 +1,28 @@
+command: python target/lane-evidence/funding_landing_scope_audit.py
+HEAD: 5a49620b1d2c6efe405d7ff97870243b21d87fc0
+git_status_short_empty: false
+start_utc: 2026-11-05T04:05:52.904143+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+Verified exact granted Rust expressions (formatting ignored): crates/worth-relational/src/durability/artifact_payload_emission/request.rs
+Verified exact granted Rust expressions (formatting ignored): crates/worth-relational/src/durability/checkpoint_admission/wire/emission.rs
+Verified exact granted Rust expressions (formatting ignored): crates/worth-relational/src/durability/medium/recovery_source/home_preflight.rs
+Verified exact granted Rust expressions (formatting ignored): crates/worth-relational/src/history/data/required_output_positions/readmission/node.rs
+Verified exact granted Rust expressions (formatting ignored): crates/worth-relational/src/runtime/state/subsystems/durability/checkpoint_selection/source_retirement.rs
+Verified exact granted Rust expressions (formatting ignored): workspaces/worth-store/crates/worth-store-application/src/world_section/close.rs
+git apply --reverse --check target/lane-evidence/proposed-contract-court-callers.patch
+error: patch failed: tools/boundary-check/config/certification-construction-callers.txt:188
+error: tools/boundary-check/config/certification-construction-callers.txt: patch does not apply
+Traceback (most recent call last):
+  File "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\funding_landing_scope_audit.py", line 41, in <module>
+    run(["git", "apply", "--reverse", "--check", "target/lane-evidence/proposed-contract-court-callers.patch"])
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\funding_landing_scope_audit.py", line 9, in run
+    assert observed.returncode == 0, observed.returncode
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1
+
+end_utc: 2026-11-05T04:05:54.631417+00:00
+exit_code: 1
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

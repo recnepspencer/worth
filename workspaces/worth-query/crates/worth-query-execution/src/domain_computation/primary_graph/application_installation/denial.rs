@@ -6,7 +6,7 @@ use worth_query_installation::facade::{
 
 /// The exact phase that prevented an application from being published.
 #[derive(Debug)]
-pub enum WorthQueryInMemoryApplicationDenial {
+pub enum WorthQueryApplicationPreparationDenial {
     Package(WorthQueryPortablePackageValidationDenial),
     Admission(WorthQueryInstallationAdmissionDenial),
     Runtime(WorthQueryInstalledPackageIndexDenial),
@@ -18,7 +18,7 @@ pub enum WorthQueryInMemoryApplicationDenial {
     /// The checkpoint preserves that actual successor for ordinary target restore.
     CheckpointTransitionAcknowledged {
         checkpoint: super::super::WorthQueryApplicationCheckpoint,
-        cause: Box<WorthQueryInMemoryApplicationDenial>,
+        cause: Box<WorthQueryApplicationPreparationDenial>,
     },
     /// Native publication performed, but settlement refused its performed
     /// witness. No World or acknowledged successor was issued.
@@ -50,16 +50,13 @@ pub enum WorthQueryInMemoryApplicationDenial {
     ProgramAdmissionIncomplete,
 }
 
-impl std::fmt::Display for WorthQueryInMemoryApplicationDenial {
+impl std::fmt::Display for WorthQueryApplicationPreparationDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            formatter,
-            "in-memory application installation denied: {self:?}"
-        )
+        write!(formatter, "application preparation denied: {self:?}")
     }
 }
 
-impl std::error::Error for WorthQueryInMemoryApplicationDenial {
+impl std::error::Error for WorthQueryApplicationPreparationDenial {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Package(error) => Some(error),

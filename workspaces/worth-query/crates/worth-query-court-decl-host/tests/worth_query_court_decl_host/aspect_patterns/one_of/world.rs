@@ -88,7 +88,7 @@ pub fn install_with_control(cancellation: Option<WorthQueryCancellationSource>) 
     .unwrap()
 }
 pub fn restore(checkpoint: WorthQueryApplicationCheckpoint) -> Host {
-    in_memory_program_from_checkpoint(
+    WorthQueryInterimCheckpointRestore::program(
         program(),
         Schema::declaration().unwrap(),
         (None,),

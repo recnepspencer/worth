@@ -125,8 +125,8 @@ pub fn configuration() -> TemporalContributionConfiguration {
     }
 }
 
-pub fn limits() -> WorthQueryInMemoryApplicationLimits {
-    WorthQueryInMemoryApplicationLimits::new(
+pub fn limits() -> WorthQueryApplicationLimits {
+    WorthQueryApplicationLimits::new(
         product_world_resources(1_024),
         runtime::WorthQueryApplicationQueryResourceProfile::new(
             std::num::NonZeroUsize::new(128).expect("concurrent graph work is non-zero"),

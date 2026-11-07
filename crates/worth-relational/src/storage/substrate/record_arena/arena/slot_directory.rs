@@ -49,6 +49,17 @@ impl RecordSlotDirectory {
         Ok(directory)
     }
 
+    pub(crate) fn restore_for_request(
+        slots: Vec<u64>,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, super::MetadataWriteDenial> {
+        let mut directory = Self::with_capacity(slots.len());
+        for slot in slots {
+            directory.insert_for_request(slot, request)?;
+        }
+        Ok(directory)
+    }
+
     pub(crate) fn physical_index(&self, logical_slot: usize) -> Option<usize> {
         self.physical_by_logical
             .get(&(logical_slot as u64))

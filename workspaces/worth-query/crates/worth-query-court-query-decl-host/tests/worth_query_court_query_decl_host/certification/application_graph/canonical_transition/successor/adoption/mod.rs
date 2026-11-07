@@ -52,20 +52,24 @@ fn nonempty_v1_native_carrier_adopts_v2_then_produces_edits_and_reopens() {
     drop(demand);
     drop(predecessor);
     output::reset_decodes();
-    let application = installation::in_memory_rostered_program_from_checkpoint_with_transition(
-        host::program(),
-        installation::WorthQueryApplicationProgramRoster::new(),
-        schema::CanonicalSchema::declaration().unwrap(),
-        ((),),
-        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host::limits(),
-        checkpoint,
-        expected_predecessor,
-        installation::WorthQueryCheckpointTransitionResources::bounded(4096, 32, 16384).unwrap(),
-        CapturePolicy::SystemAllocation,
-        |_, _| Ok(()),
-    )
-    .expect("native performed-field provenance admits same-carrier derived retirement/adoption");
+    let application =
+        installation::WorthQueryInterimCheckpointRestore::rostered_program_with_transition(
+            host::program(),
+            installation::WorthQueryApplicationProgramRoster::new(),
+            schema::CanonicalSchema::declaration().unwrap(),
+            ((),),
+            ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+            host::limits(),
+            checkpoint,
+            expected_predecessor,
+            installation::WorthQueryCheckpointTransitionResources::bounded(4096, 32, 16384)
+                .unwrap(),
+            CapturePolicy::SystemAllocation,
+            |_, _| Ok(()),
+        )
+        .expect(
+            "native performed-field provenance admits same-carrier derived retirement/adoption",
+        );
     assert_eq!(
         retained_checkpoint.bytes(),
         original_bytes,

@@ -4,25 +4,56 @@ use std::sync::{
     Arc,
 };
 use worth_foundational::facade::MemoryProductBranchReference;
+use worth_foundational::facade::RecordedCompositePublicationAttemptIdentity;
 use worth_relational::facade::{
     branch::ObservedRelationalMemoryComponent, durability::ObservedRelationalMemoryCommit,
 };
 
 #[derive(Debug)]
 pub(crate) struct MemoryPublicationRecord {
-    pub(crate) before: MemoryProductBranchReference,
-    pub(crate) after: MemoryProductBranchReference,
-    pub(crate) attempt: crate::identity::CompositePublicationAttemptIdentity,
+    pub(crate) meaning: Arc<MemoryPublicationMeaning>,
+    pub(crate) receiver: MemoryPublicationReceiver,
     pub(crate) before_component: ObservedRelationalMemoryComponent,
     pub(crate) after_component: ObservedRelationalMemoryComponent,
     pub(crate) committed: AtomicBool,
     pub(crate) _funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
+#[derive(Debug)]
+pub(crate) struct MemoryPublicationMeaning {
+    pub(crate) before: MemoryProductBranchReference,
+    pub(crate) after: MemoryProductBranchReference,
+    pub(crate) attempt: RecordedCompositePublicationAttemptIdentity,
+    pub(crate) _funding: Option<worth_execution::ExecutionMemoryReservation>,
+}
+#[derive(Debug, Clone)]
+pub(crate) enum MemoryPublicationReceiver {
+    Live,
+    Restored(Arc<MemoryPublicationReceiverScope>),
+    Archived,
+}
+#[derive(Debug)]
+pub(crate) struct MemoryPublicationReceiverScope {
+    pub(crate) reference: MemoryProductBranchReference,
+    pub(crate) _funding: Option<worth_execution::ExecutionMemoryReservation>,
+}
 impl MemoryPublicationRecord {
+    pub(crate) fn matches_receiver(
+        &self,
+        observation: &crate::branch::ProductBranchObservation,
+    ) -> bool {
+        let reference = match &self.receiver {
+            MemoryPublicationReceiver::Live => &self.meaning.after,
+            MemoryPublicationReceiver::Restored(scope) => &scope.reference,
+            MemoryPublicationReceiver::Archived => return false,
+        };
+        reference.owner() == observation.owner_identity().get()
+            && reference.branch() == observation.branch_identity().name().as_str()
+            && reference.incarnation() == observation.lifecycle_incarnation().ordinal()
+    }
     pub(crate) fn mark_committed(&self, movement: &crate::branch::ProductBranchReferenceMovement) {
         for (actual, recorded) in [
-            (movement.before(), &self.before),
-            (movement.after(), &self.after),
+            (movement.before(), &self.meaning.before),
+            (movement.after(), &self.meaning.after),
         ] {
             assert_eq!(
                 actual.branch_identity().owner_identity().get(),
@@ -51,10 +82,10 @@ pub struct WorldObservedMemoryPublication {
 }
 impl WorldObservedMemoryPublication {
     pub fn before(&self) -> &MemoryProductBranchReference {
-        &self.record.before
+        &self.record.meaning.before
     }
     pub fn after(&self) -> &MemoryProductBranchReference {
-        &self.record.after
+        &self.record.meaning.after
     }
     pub fn before_component(&self) -> &ObservedRelationalMemoryComponent {
         &self.record.before_component
@@ -62,8 +93,11 @@ impl WorldObservedMemoryPublication {
     pub fn after_component(&self) -> &ObservedRelationalMemoryComponent {
         &self.record.after_component
     }
-    pub fn attempt_identity(&self) -> &crate::identity::CompositePublicationAttemptIdentity {
-        &self.record.attempt
+    pub fn attempt_identity(&self) -> RecordedCompositePublicationAttemptIdentity {
+        self.record.meaning.attempt
+    }
+    pub fn matches_receiver(&self, observation: &crate::branch::ProductBranchObservation) -> bool {
+        self.record.matches_receiver(observation)
     }
     pub fn native(&self) -> &ObservedRelationalMemoryCommit {
         &self.native

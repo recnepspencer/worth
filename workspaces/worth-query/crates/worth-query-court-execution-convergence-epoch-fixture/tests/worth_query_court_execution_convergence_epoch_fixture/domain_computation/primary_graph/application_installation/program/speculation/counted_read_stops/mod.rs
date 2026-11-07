@@ -7,9 +7,9 @@ pub use worth_query_declaration::facade::authentication::WorthQueryExternalPrinc
 pub use worth_query_declaration::facade::authentication::WorthQueryPrincipalMappingStatus;
 pub use worth_query_declaration::facade::authentication::WorthQueryPrincipalMappingStatusBinding;
 pub use worth_query_execution::facade::application_installation::in_memory_program;
+pub use worth_query_execution::facade::application_installation::WorthQueryApplicationLimits;
 pub use worth_query_execution::facade::application_installation::WorthQueryApplicationPreviewReadmissionDenial;
 pub use worth_query_execution::facade::application_installation::WorthQueryApplicationPreviewRequest;
-pub use worth_query_execution::facade::application_installation::WorthQueryInMemoryApplicationLimits;
 pub use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
 pub use worth_query_execution::facade::application_installation::WorthQueryProgramOwner;
 pub use worth_query_execution::facade::domain_computation::WorthQueryProductBranchAdmissionDenial as Branch;
@@ -123,7 +123,7 @@ fn installed_preview_runtime() -> WorthQueryProgramApplicationRuntime<PreviewSch
     in_memory_program(
         program, PreviewSchema::declaration().unwrap(), ((),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        WorthQueryInMemoryApplicationLimits::new(
+        WorthQueryApplicationLimits::new(
             worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
             Default::default(),
             worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),

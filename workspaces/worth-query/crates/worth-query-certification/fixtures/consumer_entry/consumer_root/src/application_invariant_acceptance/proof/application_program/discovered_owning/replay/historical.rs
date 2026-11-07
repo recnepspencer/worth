@@ -85,11 +85,49 @@ fn discovered_restored_historical_commit_is_terminal_and_closes_without_rerun() 
         .unwrap_or_else(|(_, _, d)| panic!("restored capture: {d:?}"))
         .retain_operation::<DiscoveredProgram, DiscoveredAction>(&restored)
         .unwrap_or_else(|(_, d)| panic!("restored construction: {d:?}"));
-    let terminal=match replay.advance(&request) {
-        Advance::Terminal{operation,denial:worth_query_host::facade::application_entry::WorthQueryOperationAdvanceDenial::NativeTerminal}=>operation,
-        Advance::Terminal{operation,denial}=>panic!("restored terminal: {denial:?}, native={:?}",operation.native_outcome()),
-        Advance::Refused{denial,..}=>panic!("restored admission: {denial:?}"),
-        _=>panic!("history cannot complete outputs or recreate a receipt"),
+    // Recorded replay first observes the original, then asks the real registry
+    // for retained output custody (the phase cutover in 6b1c8ff677).
+    let replay = match replay.advance(&request) {
+        Advance::Progress {
+            operation,
+            progress: Progress::SourceReplayObserved,
+        } => operation,
+        Advance::Progress { .. } => {
+            panic!("unexpected original replay phase")
+        }
+        Advance::Terminal { operation, denial } => panic!(
+            "original lookup: {denial:?}, native={:?}",
+            operation.native_outcome()
+        ),
+        Advance::Refused { denial, .. } => panic!("original lookup admission: {denial:?}"),
+        Advance::Settled(_) => panic!("historical original lookup cannot settle a live operation"),
+    };
+    assert_eq!(planar_source_adjustment_contacts(&contacts), (1, 1));
+    let terminal = match replay.advance(&request) {
+        Advance::Terminal {
+            operation,
+            denial:
+                worth_query_host::facade::application_entry::WorthQueryOperationAdvanceDenial::Outputs(
+                    cause,
+                ),
+        } => {
+            assert_eq!(cause.recovery_posture(), worth_query_host::facade::application_entry::WorthQueryRequiredOutputRecoveryPosture::Terminal);
+            assert!(
+                matches!(cause, worth_query_host::facade::application_entry::WorthQueryRequiredOutputPreparationDenial::DemandExecution(ref native) if native.kind() == worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable)
+            );
+            operation
+        }
+        Advance::Terminal { operation, denial } => panic!(
+            "historical terminal: {denial:?}, native={:?}",
+            operation.native_outcome()
+        ),
+        Advance::Refused { denial, .. } => {
+            panic!("missing output custody must be terminal: {denial:?}")
+        }
+        Advance::Progress { .. } => {
+            panic!("history cannot recreate output custody")
+        }
+        Advance::Settled(_) => panic!("history cannot settle without retained output custody"),
     };
     let outcome = terminal.native_outcome().unwrap();
     assert!(matches!(outcome, worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::RecoveredCommitted(_)), "restored native outcome: {outcome:?}");

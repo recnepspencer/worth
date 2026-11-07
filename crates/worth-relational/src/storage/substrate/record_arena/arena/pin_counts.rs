@@ -35,6 +35,23 @@ impl RecordPinCounts {
         }
         self.len += 1;
     }
+    pub(crate) fn restore_values_for_request(
+        &mut self,
+        values: Vec<u32>,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+        let mut result = Self::new();
+        result.len = values.len();
+        for (index, value) in values.into_iter().enumerate() {
+            request.consult()?;
+            if value != 0 {
+                result.values.insert_for_request(index, value, request)?;
+            }
+        }
+        *self = result;
+        Ok(())
+    }
+
     pub(crate) fn get(&self, index: usize) -> Option<&u32> {
         (index < self.len).then(|| self.values.get(&index).unwrap_or(&0))
     }

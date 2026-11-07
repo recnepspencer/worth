@@ -3,8 +3,8 @@
 
 pub use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 pub use worth_query_host::facade::application_installation::{
-    in_memory_rostered_program_from_checkpoint, WorthQueryApplicationCheckpoint,
-    WorthQueryApplicationProgramRoster, WorthQueryInMemoryApplicationDenial,
+    WorthQueryApplicationCheckpoint, WorthQueryApplicationPreparationDenial,
+    WorthQueryApplicationProgramRoster, WorthQueryInterimCheckpointRestore,
 };
 pub use worth_query_host::facade::declaration::application_program::{
     ApplicationProgramDefinition, ApplicationProgramOutputsShape, ValidatedApplicationProgram,
@@ -19,7 +19,7 @@ pub use super::{host_limits, DocumentRetentionRuntime};
 pub fn restore_on_first_program(
     checkpoint: WorthQueryApplicationCheckpoint,
     roster: WorthQueryApplicationProgramRoster<'_, DocumentRetentionSchema>,
-) -> Result<DocumentRetentionRuntime<RetentionProgramP0>, WorthQueryInMemoryApplicationDenial> {
+) -> Result<DocumentRetentionRuntime<RetentionProgramP0>, WorthQueryApplicationPreparationDenial> {
     restore(validated_first_program(), checkpoint, roster)
 }
 
@@ -27,7 +27,7 @@ pub fn restore<Initial>(
     initial: ValidatedApplicationProgram<DocumentRetentionSchema, Initial>,
     checkpoint: WorthQueryApplicationCheckpoint,
     roster: WorthQueryApplicationProgramRoster<'_, DocumentRetentionSchema>,
-) -> Result<DocumentRetentionRuntime<Initial>, WorthQueryInMemoryApplicationDenial>
+) -> Result<DocumentRetentionRuntime<Initial>, WorthQueryApplicationPreparationDenial>
 where
     Initial: ApplicationProgramDefinition<
             DocumentRetentionSchema,
@@ -40,7 +40,7 @@ where
             >,
 {
     let roster = super::auxiliary_programs::include(roster, initial.identity(), initial.revision());
-    in_memory_rostered_program_from_checkpoint(
+    WorthQueryInterimCheckpointRestore::rostered_program(
         initial,
         roster,
         DocumentRetentionSchema::declaration().expect("the document-retention schema is valid"),

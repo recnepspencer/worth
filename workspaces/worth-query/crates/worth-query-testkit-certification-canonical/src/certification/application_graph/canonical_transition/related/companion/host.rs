@@ -31,7 +31,7 @@ pub fn install<
 >(
     value: NestedValue,
     roster: WorthQueryApplicationProgramRoster<'_, CanonicalSchema>,
-) -> Result<Host<P>, WorthQueryInMemoryApplicationDenial>
+) -> Result<Host<P>, WorthQueryApplicationPreparationDenial>
 where
     P::Outputs: ApplicationProgramOutputsShape<CanonicalSchema>,
 {
@@ -178,7 +178,7 @@ pub fn restore<
 where
     P::Outputs: ApplicationProgramOutputsShape<CanonicalSchema>,
 {
-    in_memory_rostered_program_from_checkpoint(
+    WorthQueryInterimCheckpointRestore::rostered_program(
         program::<P>(),
         roster,
         CanonicalSchema::declaration().unwrap(),

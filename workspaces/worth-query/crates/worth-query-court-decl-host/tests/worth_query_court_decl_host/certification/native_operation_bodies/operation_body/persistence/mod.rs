@@ -17,7 +17,7 @@ fn authored_body_checkpoint_keeps_the_original_program_and_destination() {
     drop(old);
     let successor = install::<9>();
     let schema = program::schema::<8>();
-    let restored = in_memory_program_from_checkpoint(
+    let restored = WorthQueryInterimCheckpointRestore::program(
         program::validated::<8>(&schema),
         schema,
         (program::Installation::Native,),
@@ -85,7 +85,7 @@ fn authored_body_input_survives_checkpoint_and_fresh_portable_readmission() {
         validate_portable_application_schema_freshly(portable).unwrap(),
         *schema.erased()
     );
-    let restored = in_memory_program_from_checkpoint(
+    let restored = WorthQueryInterimCheckpointRestore::program(
         program::validated::<100>(&schema),
         schema,
         (program::Installation::Native,),

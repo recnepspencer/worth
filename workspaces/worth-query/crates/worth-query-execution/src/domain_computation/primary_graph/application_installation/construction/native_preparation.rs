@@ -26,6 +26,8 @@ pub(super) struct PreparedMemoryApplication<S: ApplicationSchemaComposition> {
     pub(super) admitted_program_support: Option<WorthQueryAdmittedProgramSupport<S>>,
     pub(super) activation: WorthQueryProgramActivationCell,
     pub(super) decoded_checkpoint: Option<DecodedApplicationCheckpoint>,
+    pub(super) interim_continuation:
+        Option<worth_relational::facade::durability::NativeInterimBootstrapContinuation>,
 }
 
 #[inline(never)]
@@ -34,7 +36,7 @@ pub(super) fn prepare_native<Schema, Contributions>(
     declaration: ApplicationSchemaDeclaration<Schema>,
     configuration: <Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     initial_state: impl FnOnce(
         &super::super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
@@ -50,13 +52,23 @@ pub(super) fn prepare_native<Schema, Contributions>(
     >,
 ) -> Result<
     BootstrapPublicationStorage<PreparedMemoryApplication<Schema>>,
-    WorthQueryInMemoryApplicationDenial,
+    WorthQueryApplicationPreparationDenial,
 >
 where
     Schema: ApplicationSchemaComposition,
     Contributions: WorthQueryApplicationContributionTuple<Schema>,
 {
-    use WorthQueryInMemoryApplicationDenial as Denial;
+    use WorthQueryApplicationPreparationDenial as Denial;
+    let execution = phase.execution_request();
+    if let Some(checkpoint) = &checkpoint {
+        checkpoint
+            .preflight_interim(&execution)
+            .map_err(|cause| Denial::Graph(cause.into_installation_denial()))?;
+    }
+    let mut decoded_checkpoint = checkpoint
+        .map(|checkpoint| checkpoint.decode_with_execution(&execution))
+        .transpose()
+        .map_err(|cause| Denial::Graph(cause.into_installation_denial()))?;
 
     let super::super::prepared_meaning::PreparedInstalledMeaning {
         runtime,
@@ -98,11 +110,6 @@ where
     let relational_runtime = relational_builder
         .build()
         .map_err(|cause| Denial::Graph(cause.into()))?;
-    let execution = phase.execution_request();
-    let mut decoded_checkpoint = checkpoint
-        .map(|checkpoint| checkpoint.decode_with_execution(&execution))
-        .transpose()
-        .map_err(|cause| Denial::Graph(cause.into_installation_denial()))?;
     let restoring = decoded_checkpoint.is_some();
     let mut graph = authority
         .prepare_native_graph(
@@ -143,9 +150,10 @@ where
         &producers,
     )
     .map_err(Denial::Graph)?;
+    let mut interim_continuation = None;
     if restoring && let Some(support) = &admitted_program_support {
         if let Some(transition) = checkpoint_transition {
-            graph = super::super::super::bootstrap::checkpoint_transition::transition_checkpoint(
+            let (next_graph, continuation) = super::super::super::bootstrap::checkpoint_transition::transition_checkpoint(
                 phase,
                 graph,
                 decoded_checkpoint.as_mut().expect("restoring checkpoint"),
@@ -157,6 +165,8 @@ where
                 &activation,
                 transition,
             )?;
+            graph = next_graph;
+            interim_continuation = Some(continuation);
         } else {
             super::super::super::bootstrap::recover_program_activation(
                 phase,
@@ -211,5 +221,6 @@ where
         admitted_program_support,
         activation,
         decoded_checkpoint,
+        interim_continuation,
     }))
 }

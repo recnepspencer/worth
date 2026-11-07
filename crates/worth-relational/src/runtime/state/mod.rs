@@ -2,8 +2,7 @@ pub use runtime_state::CompleteRelationalCheckpointPreparation;
 pub(crate) use subsystems::{
     MutationRecordAllocations, MutationSymbolMeanings, OriginalBranchSchemaInputs,
     OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
-    OriginalEmptySchemaObservation, OriginalRecordAllocationCursor, OriginalSymbolMeanings,
-    RetainedBranchTransition,
+    OriginalEmptySchemaObservation, RetainedBranchTransition,
 };
 mod runtime_state;
 mod subsystems;

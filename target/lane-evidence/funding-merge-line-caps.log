@@ -1,0 +1,28 @@
+command: "C:/Program Files/Git/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty
+HEAD: 25619ac5d1ae6092ab5a91bc4b7123be6042475c
+git_status_short_empty: false
+start_utc: 2026-11-06T17:33:56.351937+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+[workspace-rust-line-caps] enforcing 400-line cap for dirty Rust files
+warning: in the working copy of 'crates/worth-relational/src/authority/mutation/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/durability/checkpoints/aspect_state_images/readmission_funding.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/runtime/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/runtime/state/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/runtime/state/subsystems/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/runtime/state/subsystems/services/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/runtime/state/subsystems/services/symbol_table.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/storage/residency/history_fold.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/storage/residency/kind_projection/reconstruction.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/storage/residency/kind_projection/reconstruction/installation.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/storage/residency/kind_projection/reconstruction/request.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/storage/residency/region_load/materialization_funding/aspect_state.rs', LF will be replaced by CRLF the next time Git touches it
+warning: exhaustive rename detection was skipped due to too many files.
+warning: you may want to set your diff.renameLimit variable to at least 4284 and retry the command.
+[workspace-rust-line-caps] allowlisted: crates/worth-foundational/src/facade.rs (743 lines)
+[workspace-rust-line-caps] PASS: checked 7676 Rust files
+
+end_utc: 2026-11-06T17:34:51.032620+00:00
+exit_code: 0
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

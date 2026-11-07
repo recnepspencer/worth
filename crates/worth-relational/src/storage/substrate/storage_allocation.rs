@@ -11,7 +11,13 @@ const _: () = assert!(
 /// Inspectable copy-on-write ownership; cloning a handle preserves identity,
 /// detaching its value issues a new identity. It conveys no mutation authority.
 #[derive(Debug)]
-pub(crate) struct StorageAllocation<T>(Arc<T>);
+pub(crate) struct StorageAllocation<T>(Arc<AllocationBacking<T>>);
+
+#[derive(Debug)]
+struct AllocationBacking<T> {
+    value: T,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
+}
 
 impl<T> Clone for StorageAllocation<T> {
     fn clone(&self) -> Self {
@@ -22,7 +28,7 @@ impl<T> Clone for StorageAllocation<T> {
 impl<T> std::ops::Deref for StorageAllocation<T> {
     type Target = T;
     fn deref(&self) -> &T {
-        &self.0
+        &self.0.value
     }
 }
 
@@ -34,7 +40,17 @@ impl<T> AsRef<T> for StorageAllocation<T> {
 
 impl<T> StorageAllocation<T> {
     pub(crate) fn new(value: T) -> Self {
-        Self(Arc::new(value))
+        Self::from_reserved(value, None)
+    }
+    /// Native readmission reserves the complete immutable payload before allocation.
+    pub(crate) fn from_reserved(
+        value: T,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Self {
+        Self(Arc::new(AllocationBacking {
+            value,
+            _memory: memory,
+        }))
     }
     #[expect(
         clippy::disallowed_methods,
@@ -48,6 +64,8 @@ impl<T> StorageAllocation<T> {
     }
     pub(in crate::storage::substrate) fn get_mut(this: &mut Self) -> Option<&mut T> {
         Arc::get_mut(&mut this.0)
+            .filter(|backing| backing._memory.is_none())
+            .map(|backing| &mut backing.value)
     }
     pub(crate) fn is_unique(&self) -> bool {
         Arc::strong_count(&self.0) == 1
@@ -56,7 +74,7 @@ impl<T> StorageAllocation<T> {
     /// excluding allocator-private bookkeeping and T's separately owned storage.
     pub(crate) fn layout_bytes() -> u64 {
         std::alloc::Layout::new::<[usize; 2]>()
-            .extend(std::alloc::Layout::new::<T>())
+            .extend(std::alloc::Layout::new::<AllocationBacking<T>>())
             .expect(/* Proof: StorageAllocation is crate-private. Its closed native monomorphizations are column/map/digest nodes and fixed owner metadata; their dynamic values are behind Vec/Arc/map headers, never input-sized inline arrays. These concrete layouts plus two usize headers are below isize::MAX on supported targets, including the preallocation callers that have not yet allocated T. */ "storage layout fits")
             .0
             .pad_to_align()
@@ -66,10 +84,30 @@ impl<T> StorageAllocation<T> {
 
 impl<T: Clone> StorageAllocation<T> {
     pub(crate) fn make_mut(this: &mut Self) -> &mut T {
-        Arc::make_mut(&mut this.0)
+        // Funded outer payloads are immutable Native diagnostics/openings.
+        // Production edits share or replace their carriers; only independently
+        // admitted ordinary values can enter this unrequested mutation path.
+        assert!(
+            this.0._memory.is_none(),
+            "funded payload needs prepared replacement"
+        );
+        if Arc::strong_count(&this.0) != 1 {
+            *this = Self::new(this.0.value.clone());
+        }
+        &mut Arc::get_mut(&mut this.0)
+            .expect("selected unique allocation")
+            .value
     }
     pub(crate) fn unwrap_or_clone(this: Self) -> T {
-        Arc::unwrap_or_clone(this.0)
+        if this.0._memory.is_some() {
+            // Raw wire projection must not move out the funded native backing.
+            // The independently owned copy follows the receiving export contract.
+            return this.0.value.clone();
+        }
+        match Arc::try_unwrap(this.0) {
+            Ok(backing) => backing.value,
+            Err(backing) => backing.value.clone(),
+        }
     }
 }
 
