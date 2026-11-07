@@ -23,6 +23,7 @@ pub enum WorthQueryCustomInvariantDenial {
         phase: worth_relational::facade::transactions::CustomInvariantFailurePhase,
         /// Why evaluation failed.
         failure: worth_relational::facade::transactions::ResultCustomInvariantFailureKind,
+        cause: Option<Box<worth_relational::facade::runtime::CustomInvariantFailureCause>>,
     },
 }
 

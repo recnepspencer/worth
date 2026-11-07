@@ -56,34 +56,28 @@ impl Rule {
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, CanonicalSchema>,
         budget: Option<&dyn CustomInvariantLeaseBudget>,
-    ) -> Result<Vec<Entity>, WorthQueryApplicationInvariantPreparationError> {
+    ) -> Result<Vec<Entity>, WorthQueryApplicationInvariantError> {
         let view = planner.proposed();
         let entities = view
             .touched_entities(&self.field)
-            .map_err(|e| WorthQueryApplicationInvariantPreparationError::new(e.to_string()))?;
+            .map_err(WorthQueryApplicationInvariantError::from)?;
         if budget.is_some_and(|b| {
             !b.claim_result((entities.capacity() * std::mem::size_of::<Entity>()) as u64)
         }) {
-            return Err(WorthQueryApplicationInvariantPreparationError::new(
-                "stopped",
-            ));
+            return Err(WorthQueryApplicationInvariantError::Stopped);
         }
         for entity in &entities {
             if budget.is_some_and(|b| !b.checkpoint(1)) {
-                return Err(WorthQueryApplicationInvariantPreparationError::new(
-                    "stopped",
-                ));
+                return Err(WorthQueryApplicationInvariantError::Stopped);
             }
             for edge in view
                 .relations_from(&self.edge, entity)
-                .map_err(|e| WorthQueryApplicationInvariantPreparationError::new(e.to_string()))?
+                .map_err(WorthQueryApplicationInvariantError::from)?
             {
-                view.field(&self.field, edge.from()).map_err(|e| {
-                    WorthQueryApplicationInvariantPreparationError::new(e.to_string())
-                })?;
-                view.field(&self.field, edge.to()).map_err(|e| {
-                    WorthQueryApplicationInvariantPreparationError::new(e.to_string())
-                })?;
+                view.field(&self.field, edge.from())
+                    .map_err(WorthQueryApplicationInvariantError::from)?;
+                view.field(&self.field, edge.to())
+                    .map_err(WorthQueryApplicationInvariantError::from)?;
             }
         }
         Ok(entities)
@@ -93,25 +87,23 @@ impl Rule {
         context: &WorthQueryApplicationInvariantContext<'_, '_, CanonicalSchema>,
         scope: &[Entity],
         budget: Option<&dyn CustomInvariantLeaseBudget>,
-    ) -> Result<
-        WorthQueryApplicationInvariantVerdict<()>,
-        WorthQueryApplicationInvariantExecutionError,
-    > {
+    ) -> Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>
+    {
         let view = context.proposed();
         for entity in scope {
             if budget.is_some_and(|b| !b.checkpoint(1)) {
-                return Err(WorthQueryApplicationInvariantExecutionError::new("stopped"));
+                return Err(WorthQueryApplicationInvariantError::Stopped);
             }
             for edge in view
                 .relations_from(&self.edge, entity)
-                .map_err(|e| WorthQueryApplicationInvariantExecutionError::new(e.to_string()))?
+                .map_err(WorthQueryApplicationInvariantError::from)?
             {
-                let from = view.field(&self.field, edge.from()).map_err(|e| {
-                    WorthQueryApplicationInvariantExecutionError::new(e.to_string())
-                })?;
-                let to = view.field(&self.field, edge.to()).map_err(|e| {
-                    WorthQueryApplicationInvariantExecutionError::new(e.to_string())
-                })?;
+                let from = view
+                    .field(&self.field, edge.from())
+                    .map_err(WorthQueryApplicationInvariantError::from)?;
+                let to = view
+                    .field(&self.field, edge.to())
+                    .map_err(WorthQueryApplicationInvariantError::from)?;
                 if from.as_deref() != Some("companion-left")
                     || to.as_deref() != Some("companion-right")
                 {
@@ -134,7 +126,7 @@ impl WorthQueryApplicationInvariantRule<CanonicalSchema> for Rule {
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, CanonicalSchema>,
         budget: &dyn CustomInvariantLeaseBudget,
-    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantPreparationError>> {
+    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantError>> {
         Some(self.prepare(planner, Some(budget)))
     }
     fn evaluate_checked(
@@ -143,27 +135,22 @@ impl WorthQueryApplicationInvariantRule<CanonicalSchema> for Rule {
         scope: &Self::Scope,
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Option<
-        Result<
-            WorthQueryApplicationInvariantVerdict<()>,
-            WorthQueryApplicationInvariantExecutionError,
-        >,
+        Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>,
     > {
         Some(self.judge(context, scope, Some(budget)))
     }
     fn prepare_scope(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, CanonicalSchema>,
-    ) -> Result<Self::Scope, WorthQueryApplicationInvariantPreparationError> {
+    ) -> Result<Self::Scope, WorthQueryApplicationInvariantError> {
         self.prepare(planner, None)
     }
     fn evaluate(
         &self,
         context: &WorthQueryApplicationInvariantContext<'_, '_, CanonicalSchema>,
         scope: &Self::Scope,
-    ) -> Result<
-        WorthQueryApplicationInvariantVerdict<()>,
-        WorthQueryApplicationInvariantExecutionError,
-    > {
+    ) -> Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>
+    {
         self.judge(context, scope, None)
     }
 }

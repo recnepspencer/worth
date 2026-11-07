@@ -389,3 +389,6 @@ pub use worth_foundational::facade::{ContractValidationDenial, PortableAspectRea
 pub use worth_relational::facade::transactions::{
     ConflictClass, RecordAspectPatchDenial, RecordAspectPatchTarget, TransactionCommitError,
 };
+
+mod native_refusals;
+pub use native_refusals::*;

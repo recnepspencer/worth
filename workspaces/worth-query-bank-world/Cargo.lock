@@ -234,10 +234,12 @@ dependencies = [
  "bank-external-rail",
  "bank-server",
  "getrandom 0.4.3",
+ "serde",
  "serde_json",
  "tokio",
  "worth-foundational",
  "worth-query-bank-testkit",
+ "worth-query-decl",
  "worth-query-host",
 ]
 

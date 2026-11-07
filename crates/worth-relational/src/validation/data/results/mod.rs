@@ -120,6 +120,7 @@ pub enum InvariantViolationFields {
         identity: CustomInvariantFailureIdentity,
         phase: CustomInvariantFailurePhase,
         failure: CustomInvariantFailureKind,
+        cause: Option<Box<super::CustomInvariantFailureCause>>,
         detail: String,
     },
     CustomInvariantViolation {
@@ -183,9 +184,16 @@ impl InvariantViolationFields {
                         .map_or(0, |label| label.capacity() as u64),
                 ),
             Fields::CustomInvariantFailure {
-                identity, detail, ..
+                identity,
+                detail,
+                cause,
+                ..
             } => (identity.semantic_identity().rule_id.as_str().len() as u64)
-                .saturating_add(detail.capacity() as u64),
+                .saturating_add(detail.capacity() as u64)
+                .saturating_add(cause.as_ref().map_or(0, |cause| {
+                    (std::mem::size_of::<super::CustomInvariantFailureCause>() as u64)
+                        .saturating_add(cause.owned_allocation_capacity_bytes())
+                })),
             Fields::CustomInvariantViolation { identity, refusal } => {
                 (identity.rule_id.as_str().len() as u64)
                     .saturating_add(refusal.owned_allocation_capacity_bytes())

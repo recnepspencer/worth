@@ -1,5 +1,5 @@
 //! Pure interruption observation of the caller's original execution request.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum CustomInvariantInterruption {
     Cancelled,
     DeadlineElapsed,

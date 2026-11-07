@@ -1,9 +1,16 @@
 use super::*;
 #[derive(Clone, Debug, PartialEq, Eq, WorthValue)]
 #[worth_value(crate = "worth_query_decl::facade::application_schema")]
-pub struct Refusal {
-    pub subject: String,
-    pub present: u64,
+pub enum Refusal {
+    Membership {
+        subject: String,
+        present: u64,
+    },
+    Capacity {
+        field: String,
+        maximum: u64,
+        observed: u64,
+    },
 }
 worth_query_value_binding!(pub RefusalBinding for Refusal { identity: "native-record-patterns.refusal.v1", scalar: String, canonical: ValueDecodeBounds::new(256, 64, 8, 8), });
 pub struct OneOf;
@@ -65,7 +72,7 @@ impl WorthQueryApplicationInvariantRule<Schema> for Rule {
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Schema>,
         budget: &dyn CustomInvariantLeaseBudget,
-    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantPreparationError>> {
+    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantError<Refusal>>> {
         Some(self.prepare(planner, budget))
     }
     fn evaluate_checked(
@@ -76,7 +83,7 @@ impl WorthQueryApplicationInvariantRule<Schema> for Rule {
     ) -> Option<
         Result<
             WorthQueryApplicationInvariantVerdict<Refusal>,
-            WorthQueryApplicationInvariantExecutionError,
+            WorthQueryApplicationInvariantError<Refusal>,
         >,
     > {
         Some(self.check(context, scope, budget))
@@ -84,10 +91,8 @@ impl WorthQueryApplicationInvariantRule<Schema> for Rule {
     fn prepare_scope(
         &self,
         _: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Schema>,
-    ) -> Result<Self::Scope, WorthQueryApplicationInvariantPreparationError> {
-        Err(WorthQueryApplicationInvariantPreparationError::new(
-            "checked preparation required",
-        ))
+    ) -> Result<Self::Scope, WorthQueryApplicationInvariantError<Refusal>> {
+        Err(WorthQueryApplicationInvariantError::CheckedHookRequired)
     }
     fn evaluate(
         &self,
@@ -95,11 +100,9 @@ impl WorthQueryApplicationInvariantRule<Schema> for Rule {
         _: &Self::Scope,
     ) -> Result<
         WorthQueryApplicationInvariantVerdict<Refusal>,
-        WorthQueryApplicationInvariantExecutionError,
+        WorthQueryApplicationInvariantError<Refusal>,
     > {
-        Err(WorthQueryApplicationInvariantExecutionError::new(
-            "checked evaluation required",
-        ))
+        Err(WorthQueryApplicationInvariantError::CheckedHookRequired)
     }
 }
 impl Rule {
@@ -112,10 +115,9 @@ impl Rule {
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Result<
         Vec<WorthQueryApplicationInvariantEntity<Schema, Record>>,
-        WorthQueryApplicationInvariantPreparationError,
+        WorthQueryApplicationInvariantError<Refusal>,
     > {
-        let stop =
-            || WorthQueryApplicationInvariantPreparationError::new("original request stopped");
+        let stop = || WorthQueryApplicationInvariantError::Stopped;
         if !budget.checkpoint(1) {
             return Err(stop());
         }
@@ -127,7 +129,7 @@ impl Rule {
             }
             for root in proposed
                 .touched_entities(field)
-                .map_err(|e| WorthQueryApplicationInvariantPreparationError::new(e.to_string()))?
+                .map_err(WorthQueryApplicationInvariantError::from)?
             {
                 if !budget.checkpoint(1) {
                     return Err(stop());
@@ -139,9 +141,9 @@ impl Rule {
                     if !budget.claim_result(std::mem::size_of_val(&root) as u64) {
                         return Err(stop());
                     }
-                    roots.try_reserve_exact(1).map_err(|e| {
-                        WorthQueryApplicationInvariantPreparationError::new(e.to_string())
-                    })?;
+                    roots
+                        .try_reserve_exact(1)
+                        .map_err(WorthQueryApplicationInvariantError::from)?;
                     roots.push(root);
                 }
             }
@@ -152,14 +154,14 @@ impl Rule {
             }
             proposed
                 .field(&self.key, root)
-                .map_err(|e| WorthQueryApplicationInvariantPreparationError::new(e.to_string()))?;
+                .map_err(WorthQueryApplicationInvariantError::from)?;
             for field in self.fields() {
                 if !budget.checkpoint(1) {
                     return Err(stop());
                 }
-                proposed.field(field, root).map_err(|e| {
-                    WorthQueryApplicationInvariantPreparationError::new(e.to_string())
-                })?;
+                proposed
+                    .field(field, root)
+                    .map_err(WorthQueryApplicationInvariantError::from)?;
             }
         }
         Ok(roots)
@@ -171,9 +173,9 @@ impl Rule {
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Result<
         WorthQueryApplicationInvariantVerdict<Refusal>,
-        WorthQueryApplicationInvariantExecutionError,
+        WorthQueryApplicationInvariantError<Refusal>,
     > {
-        let stop = || WorthQueryApplicationInvariantExecutionError::new("original request stopped");
+        let stop = || WorthQueryApplicationInvariantError::Stopped;
         if !budget.checkpoint(1) {
             return Err(stop());
         }
@@ -187,9 +189,20 @@ impl Rule {
                 if !budget.checkpoint(1) {
                     return Err(stop());
                 }
-                *value = proposed.field(field, root).map_err(|e| {
-                    WorthQueryApplicationInvariantExecutionError::new(e.to_string())
-                })?;
+                *value = proposed
+                    .field(field, root)
+                    .map_err(WorthQueryApplicationInvariantError::from)?;
+            }
+            if let Some(observed) = values[0]
+                && observed > 255
+            {
+                return Err(WorthQueryApplicationInvariantError::Cause(
+                    Refusal::Capacity {
+                        field: "Record.First.FirstValue".into(),
+                        maximum: 255,
+                        observed,
+                    },
+                ));
             }
             let valid = matches!(
                 values,
@@ -203,18 +216,19 @@ impl Rule {
                 }
                 let subject = proposed
                     .field(&self.key, root)
-                    .map_err(|e| WorthQueryApplicationInvariantExecutionError::new(e.to_string()))?
-                    .ok_or_else(|| {
-                        WorthQueryApplicationInvariantExecutionError::new("missing subject key")
-                    })?;
+                    .map_err(WorthQueryApplicationInvariantError::from)?
+                    .ok_or_else(
+                        || WorthQueryApplicationInvariantError::MissingRequiredField {
+                            field: "missing subject key",
+                        },
+                    )?;
                 let present = [values[0], values[1], values[3]]
                     .into_iter()
                     .filter(Option::is_some)
                     .count() as u64;
-                return Ok(WorthQueryApplicationInvariantVerdict::Violation(Refusal {
-                    subject,
-                    present,
-                }));
+                return Ok(WorthQueryApplicationInvariantVerdict::Violation(
+                    Refusal::Membership { subject, present },
+                ));
             }
         }
         Ok(WorthQueryApplicationInvariantVerdict::Pass)

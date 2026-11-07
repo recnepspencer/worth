@@ -219,3 +219,20 @@ Principal references in mutation, query, workflow-read and program-adoption call
 all use the same already-infallible requirement expressions. Fragment records, one-of
 members, declared access, managed-index refinements and program feature specs introduce
 no additional hook-only fallible constructor.
+
+### Typed invariant causes and checkpoint recovery
+
+An installed rule's `Refusal` and canonical `RefusalBinding` own both domain
+violations and application evaluation failures. Hooks return
+`WorthQueryApplicationInvariantError<Self::Refusal>`; `Cause(value)` retains a
+closed application value, while `Access`, `Interrupted`, `Stopped`, `Allocation`
+and `CheckedHookRequired` describe SDK failures. Installation and commit keep
+the invariant identity, and `decode_refusal::<Binding>()` recovers that same
+application value. Commit also exposes `decode_invariant_refusal::<Binding>()`.
+No message is needed to distinguish a membership violation from an arithmetic
+capacity failure naming its field and bounds.
+
+Query's `primary_graph` audience exports `RelationalRecoveryStop`,
+`RecoveryFailureClass` and `DurabilityError`. `native_recovery_cause()` retains
+the original checkpoint recovery stop for every class; corrupt and unsupported
+legacy checkpoints can be matched by type.

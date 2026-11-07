@@ -49,6 +49,13 @@ pub(super) fn encode<Binding: ApplicationReadableScalarValueBinding>(
     let super::WorthQueryApplicationInvariantVerdict::Violation(value) = verdict else {
         return Ok(CustomInvariantVerdict::Pass);
     };
+    encode_value::<Binding>(&value, budget).map(CustomInvariantVerdict::Violation)
+}
+
+fn encode_value<Binding: ApplicationReadableScalarValueBinding>(
+    value: &Binding::Value,
+    budget: &dyn CustomInvariantLeaseBudget,
+) -> Result<CustomInvariantRefusal, CustomInvariantExecutionError> {
     let maximum = maximum::<Binding>().map_err(CustomInvariantExecutionError::new)?;
     let retained = (maximum as u64)
         .checked_add(Binding::IDENTITY_NAME.len() as u64)
@@ -58,7 +65,7 @@ pub(super) fn encode<Binding: ApplicationReadableScalarValueBinding>(
             "refusal encoding budget refused",
         ));
     }
-    let encoded = Binding::encode(&value).map_err(|denial| {
+    let encoded = Binding::encode(value).map_err(|denial| {
         CustomInvariantExecutionError::new(format!("refusal codec denied: {denial:?}"))
     })?;
     let AspectValue::String(InternedString::Raw(text)) = encoded else {
@@ -71,12 +78,10 @@ pub(super) fn encode<Binding: ApplicationReadableScalarValueBinding>(
             "refusal exceeds declared wire bound",
         ));
     }
-    Ok(CustomInvariantVerdict::Violation(
-        CustomInvariantRefusal::DeclaredValue {
-            value_identity: Binding::IDENTITY_NAME.to_owned(),
-            bytes: text.into_bytes(),
-        },
-    ))
+    Ok(CustomInvariantRefusal::DeclaredValue {
+        value_identity: Binding::IDENTITY_NAME.to_owned(),
+        bytes: text.into_bytes(),
+    })
 }
 
 pub(crate) fn decode<Binding: ApplicationReadableScalarValueBinding>(
@@ -108,23 +113,60 @@ impl crate::domain_computation::WorthQueryCustomInvariantDenial {
     pub fn decode_refusal<Binding: ApplicationReadableScalarValueBinding>(
         &self,
     ) -> Result<Binding::Value, WorthQueryInvariantRefusalDecodeDenial> {
-        match self {
-            Self::Violation { refusal, .. } => decode::<Binding>(refusal),
-            Self::Failure { .. } => Err(WorthQueryInvariantRefusalDecodeDenial::NoDomainRefusal),
-        }
+        decode::<Binding>(
+            self.refusal_payload()
+                .ok_or(WorthQueryInvariantRefusalDecodeDenial::NoDomainRefusal)?,
+        )
     }
 
     pub fn refusal_bytes(&self) -> Option<&[u8]> {
-        match self {
-            Self::Violation {
-                refusal: CustomInvariantRefusal::DeclaredValue { bytes, .. },
-                ..
-            } => Some(bytes),
-            Self::Violation {
-                refusal: CustomInvariantRefusal::Empty,
-                ..
-            }
-            | Self::Failure { .. } => None,
+        match self.refusal_payload()? {
+            CustomInvariantRefusal::DeclaredValue { bytes, .. } => Some(bytes),
+            CustomInvariantRefusal::Empty => None,
         }
+    }
+
+    pub(crate) fn refusal_payload(&self) -> Option<&CustomInvariantRefusal> {
+        match self {
+            Self::Violation { refusal, .. } => Some(refusal),
+            Self::Failure { cause, .. } => match cause.as_deref()? {
+                worth_relational::facade::runtime::CustomInvariantFailureCause::DeclaredValue(
+                    refusal,
+                ) => Some(refusal),
+                _ => None,
+            },
+        }
+    }
+}
+
+pub(super) fn execution_error<Binding: ApplicationReadableScalarValueBinding>(
+    error: super::WorthQueryApplicationInvariantError<Binding::Value>,
+    budget: &dyn CustomInvariantLeaseBudget,
+) -> CustomInvariantExecutionError {
+    match error.into_cause() {
+        Ok(value) => match encode_value::<Binding>(&value, budget) {
+            Ok(cause) => CustomInvariantExecutionError::Cause(Box::new(
+                worth_relational::facade::runtime::CustomInvariantFailureCause::DeclaredValue(
+                    cause,
+                ),
+            )),
+            Err(error) => error,
+        },
+        Err(error) => system_error(error),
+    }
+}
+
+fn system_error(error: super::hook_error::SystemInvariantError) -> CustomInvariantExecutionError {
+    CustomInvariantExecutionError::Cause(Box::new(error))
+}
+
+pub(super) fn preparation_error<Binding: ApplicationReadableScalarValueBinding>(
+    error: super::WorthQueryApplicationInvariantError<Binding::Value>,
+    budget: &dyn CustomInvariantLeaseBudget,
+) -> worth_relational::facade::runtime::CustomInvariantPreparationError {
+    use worth_relational::facade::runtime::CustomInvariantPreparationError as Error;
+    match execution_error::<Binding>(error, budget) {
+        CustomInvariantExecutionError::Cause(cause) => Error::Cause(cause),
+        CustomInvariantExecutionError::Runtime(detail) => Error::Runtime(detail),
     }
 }

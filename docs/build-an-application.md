@@ -4929,11 +4929,16 @@ encoding; no domain-value clone, alternate codec or platform trait on the pure
 domain type is needed.
 
 Evaluation returns `WorthQueryApplicationInvariantVerdict::Pass` or
-`Violation(refusal)`. `WorthQueryApplicationInvariantExecutionError` means that
-the rule could not evaluate, including a refusal that exceeds its declared wire
-maximum; it is not a domain violation. Cancellation and deadlines retain the
-original request's control outcome. The adapter admits the maximum retained refusal bytes against the original
-evaluation meter before encoding, including ordinary serial rule hooks.
+`Violation(refusal)`. Preparation and evaluation errors use
+`WorthQueryApplicationInvariantError<Self::Refusal>`. Return `Cause(value)` when
+application arithmetic or another domain prerequisite prevents evaluation. The
+same `RefusalBinding` encodes both outcomes; there is no second cause codec or
+message that owns the application's meaning. SDK access, interruption and
+allocation failures have named error variants. A cause that exceeds its declared
+wire maximum remains an encoding failure rather than a domain violation. Cancellation
+and deadlines retain the original request's control outcome. The adapter admits the
+maximum retained refusal bytes against the original evaluation meter before encoding,
+including ordinary serial rule hooks.
 
 Under a multiworker policy, rules at the same execution point may evaluate
 concurrently and finish in any order. The original publication result carries
@@ -4944,6 +4949,22 @@ completion order. Its `WorthQueryApplicationCommitDenial` exposes
 unchanged canonical bytes are also available through `invariant_refusal_bytes()`.
 Relational retains that same payload in the transaction conflict and diagnostic
 history. Neither reading the denial nor decoding it reruns the rejected candidate.
+
+At installation, seed refusals use `WorthQueryInMemoryApplicationDenial::Publication`;
+conditional publication uses `ConditionalPublication` and
+`WorthQueryConditionalRuntimeInstallationDenialKind::PrimaryGraphPublication`.
+Inspect the enclosed graph denial's `custom_invariant_denial()`. Both installation and commit retain
+`WorthQueryCustomInvariantDenial::{Violation, Failure}` with the original invariant
+identity. `Failure` also retains its phase, failure kind and typed SDK cause.
+`decode_refusal::<Binding>()` decodes the original application value in either
+case; commit's `decode_invariant_refusal::<Binding>()` and byte accessor do the
+same. A closed application enum can distinguish, for example, a membership
+violation from `Capacity { field, maximum, observed }` without parsing a message.
+
+Checkpoint recovery callers use `primary_graph::{RelationalRecoveryStop,
+RecoveryFailureClass, DurabilityError}`. The installation denial's
+`native_recovery_cause()` retains every original Native stop, including
+`Durability(error)` with `CorruptCheckpoint` or `UnsupportedLegacySemantics`.
 
 Native recovery checkpoints retain symbol meanings from installation configuration,
 published canonical envelopes, retained roots and the historical mirror, including
@@ -7244,9 +7265,7 @@ request. A retained preparation from another observation cannot supply this loan
 
 <!-- compiled: managed_prefix_invariant.rs -->
 ```rust
-        let pair = context
-            .managed_index(scope)
-            .map_err(|cause| execution(format!("{cause:?}")))?;
+        let pair = context.managed_index(scope).map_err(execution)?;
         let probe = query::Probe {
             prefix: "taken".into(),
         };

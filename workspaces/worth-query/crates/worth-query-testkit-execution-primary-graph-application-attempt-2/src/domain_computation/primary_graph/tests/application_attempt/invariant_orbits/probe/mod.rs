@@ -1,20 +1,18 @@
 //! One installed orbit policy and a read-only, receiver-owned observer.
+use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantError;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::schema::*;
 use worth_relational::facade::runtime::CustomInvariantLeaseBudget;
 use worth_foundational::facade::RelationDirection;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantComponentSetBinding;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantContext;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantEntity;
-use worth_relational::facade::runtime::CustomInvariantExecutionError as WorthQueryApplicationInvariantExecutionError;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantFieldBinding;
-use worth_relational::facade::runtime::CustomInvariantPreparationError as WorthQueryApplicationInvariantPreparationError;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantReadView;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantRelationBinding;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantRule;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantSchemaResolver;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantScopePlanner;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantVerdict;
-use worth_query_execution::facade::application_invariants::WorthQueryInvariantAccessDenial;
 use std::collections::BTreeMap;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicUsize;
@@ -180,9 +178,9 @@ impl<const O: bool> Rule<O> {
     pub fn nodes(
         &self,
         view: &WorthQueryApplicationInvariantReadView<'_, OrbitSchema<O>>,
-    ) -> Result<Vec<(u64, Entity<O>)>, WorthQueryApplicationInvariantPreparationError> {
+    ) -> Result<Vec<(u64, Entity<O>)>, WorthQueryApplicationInvariantError<Refusal>> {
         if self.observer.complete_components {
-            return crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::component_invariants::preparation::nodes(view, self);
+            return crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::component_invariants::preparation::nodes(view, self).map_err(Into::into);
         }
         let mut nodes = BTreeMap::new();
         let touched = view
@@ -207,9 +205,11 @@ impl<const O: bool> Rule<O> {
                 let key = view
                     .field(&self.key, &entity)
                     .map_err(preparation_error)?
-                    .ok_or_else(|| {
-                        WorthQueryApplicationInvariantPreparationError::new("key absent")
-                    })?;
+                    .ok_or_else(
+                        || WorthQueryApplicationInvariantError::MissingRequiredField {
+                            field: "key absent",
+                        },
+                    )?;
                 nodes.insert(entity.entity_id(), (key, entity));
             }
         }
@@ -227,11 +227,9 @@ impl<const O: bool> WorthQueryApplicationInvariantRule<OrbitSchema<O>> for Rule<
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, OrbitSchema<O>>,
         budget: &dyn CustomInvariantLeaseBudget,
-    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantPreparationError>> {
+    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantError<Refusal>>> {
         if !budget.checkpoint(0) {
-            return Some(Err(WorthQueryApplicationInvariantPreparationError::new(
-                "orbit preparation stopped",
-            )));
+            return Some(Err(WorthQueryApplicationInvariantError::Stopped));
         }
         Some(self.prepare_scope(planner))
     }
@@ -243,13 +241,11 @@ impl<const O: bool> WorthQueryApplicationInvariantRule<OrbitSchema<O>> for Rule<
     ) -> Option<
         Result<
             WorthQueryApplicationInvariantVerdict<Refusal>,
-            WorthQueryApplicationInvariantExecutionError,
+            WorthQueryApplicationInvariantError<Refusal>,
         >,
     > {
         if !budget.checkpoint(0) {
-            return Some(Err(WorthQueryApplicationInvariantExecutionError::new(
-                "orbit evaluation stopped",
-            )));
+            return Some(Err(WorthQueryApplicationInvariantError::Stopped));
         }
         Some(self.evaluate(context, scope))
     }
@@ -257,7 +253,7 @@ impl<const O: bool> WorthQueryApplicationInvariantRule<OrbitSchema<O>> for Rule<
     fn prepare_scope(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, OrbitSchema<O>>,
-    ) -> Result<Self::Scope, WorthQueryApplicationInvariantPreparationError> {
+    ) -> Result<Self::Scope, WorthQueryApplicationInvariantError<Refusal>> {
         let scope = Scope {
             proposed: self.nodes(&planner.proposed())?,
             committed: self.nodes(&planner.committed())?,
@@ -271,11 +267,11 @@ impl<const O: bool> WorthQueryApplicationInvariantRule<OrbitSchema<O>> for Rule<
         scope: &Scope<O>,
     ) -> Result<
         WorthQueryApplicationInvariantVerdict<Refusal>,
-        WorthQueryApplicationInvariantExecutionError,
+        WorthQueryApplicationInvariantError<Refusal>,
     > {
         context
             .check_live()
-            .map_err(|e| WorthQueryApplicationInvariantExecutionError::new(format!("{e:?}")))?;
+            .map_err(WorthQueryApplicationInvariantError::from)?;
         self.observation.0[1].fetch_add(1, Ordering::SeqCst);
         if self.observer.armed.load(Ordering::SeqCst) {
             (self.observer.callback)(context, scope, self);
@@ -284,7 +280,7 @@ impl<const O: bool> WorthQueryApplicationInvariantRule<OrbitSchema<O>> for Rule<
             let actual = context
                 .proposed()
                 .component_count(&self.shells)
-                .map_err(|e| WorthQueryApplicationInvariantExecutionError::new(e.to_string()))?;
+                .map_err(WorthQueryApplicationInvariantError::from)?;
             if actual != expected {
                 return Ok(WorthQueryApplicationInvariantVerdict::Violation(Refusal {
                     root: 0,
@@ -297,14 +293,14 @@ impl<const O: bool> WorthQueryApplicationInvariantRule<OrbitSchema<O>> for Rule<
             let view = context.proposed();
             let orbit = view
                 .orbit(&self.next, root)
-                .map_err(|e| WorthQueryApplicationInvariantExecutionError::new(e.to_string()))?;
+                .map_err(WorthQueryApplicationInvariantError::from)?;
             if orbit.len() > 3 {
                 self.observation.0[2].fetch_add(1, Ordering::SeqCst);
             }
             for (ordinal, entity) in orbit.members().enumerate() {
                 let key = view
                     .field(&self.key, &entity)
-                    .map_err(|e| WorthQueryApplicationInvariantExecutionError::new(e.to_string()))?
+                    .map_err(WorthQueryApplicationInvariantError::from)?
                     .unwrap();
                 if self.blocked.contains(&key) {
                     return Ok(WorthQueryApplicationInvariantVerdict::Violation(Refusal {
@@ -319,7 +315,7 @@ impl<const O: bool> WorthQueryApplicationInvariantRule<OrbitSchema<O>> for Rule<
     }
 }
 pub fn preparation_error(
-    e: WorthQueryInvariantAccessDenial,
-) -> WorthQueryApplicationInvariantPreparationError {
-    WorthQueryApplicationInvariantPreparationError::new(e.to_string())
+    e: impl Into<WorthQueryApplicationInvariantError<Refusal>>,
+) -> WorthQueryApplicationInvariantError<Refusal> {
+    e.into()
 }

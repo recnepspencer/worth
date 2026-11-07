@@ -89,18 +89,14 @@ impl Rule {
         context: &WorthQueryApplicationInvariantContext<'_, '_, Catalog>,
         scope: &WorthQueryPreparedInvariantManagedIndex<Catalog, provider::BoxIndex>,
         budget: &dyn CustomInvariantLeaseBudget,
-    ) -> Result<
-        WorthQueryApplicationInvariantVerdict<()>,
-        WorthQueryApplicationInvariantExecutionError,
-    > {
+    ) -> Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>
+    {
         if !budget.checkpoint(1) {
-            return Err(execution("original geometry request stopped"));
+            return Err(WorthQueryApplicationInvariantError::Stopped);
         }
         let updates_before_callback = self.calls.provider.updates.load(Ordering::SeqCst);
         let builds_before_callback = self.calls.provider.builds.load(Ordering::SeqCst);
-        let pair = context
-            .managed_index(scope)
-            .map_err(|cause| execution(format!("{cause:?}")))?;
+        let pair = context.managed_index(scope).map_err(execution)?;
         let after = pair.proposed().query(&probe()).map_err(execution)?;
         let before = match pair.committed().query(&probe()) {
             Ok(rows) => Some(rows),
@@ -130,9 +126,9 @@ impl Rule {
             .try_fold(size_of::<Record>() as u64, |bytes, row| {
                 bytes.checked_add((size_of::<query::Row>() + row.identity.capacity()) as u64)
             })
-            .ok_or_else(|| execution("geometry observation size overflow"))?;
+            .ok_or(WorthQueryApplicationInvariantError::Allocation)?;
         if !budget.claim_result(bytes) {
-            return Err(execution("geometry observation storage stopped"));
+            return Err(WorthQueryApplicationInvariantError::Stopped);
         }
         let scope = scope.scope_identity();
         self.calls.records.lock().unwrap().push(Record {
@@ -168,33 +164,29 @@ impl WorthQueryApplicationInvariantRule<Catalog> for Rule {
     fn prepare_scope(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Catalog>,
-    ) -> Result<Self::Scope, WorthQueryApplicationInvariantPreparationError> {
-        planner.retain_managed_index(&self.index).map_err(|cause| {
-            WorthQueryApplicationInvariantPreparationError::new(format!("{cause:?}"))
-        })
+    ) -> Result<Self::Scope, WorthQueryApplicationInvariantError> {
+        planner
+            .retain_managed_index(&self.index)
+            .map_err(WorthQueryApplicationInvariantError::from)
     }
     fn prepare_scope_checked(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Catalog>,
         budget: &dyn CustomInvariantLeaseBudget,
-    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantPreparationError>> {
+    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantError>> {
         Some(if budget.checkpoint(1) {
             self.prepare_scope(planner)
         } else {
-            Err(WorthQueryApplicationInvariantPreparationError::new(
-                "original geometry preparation stopped",
-            ))
+            Err(WorthQueryApplicationInvariantError::Stopped)
         })
     }
     fn evaluate(
         &self,
         _: &WorthQueryApplicationInvariantContext<'_, '_, Catalog>,
         _: &Self::Scope,
-    ) -> Result<
-        WorthQueryApplicationInvariantVerdict<()>,
-        WorthQueryApplicationInvariantExecutionError,
-    > {
-        Err(execution("geometry requires the original checked budget"))
+    ) -> Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>
+    {
+        Err(WorthQueryApplicationInvariantError::CheckedHookRequired)
     }
     fn evaluate_checked(
         &self,
@@ -202,14 +194,13 @@ impl WorthQueryApplicationInvariantRule<Catalog> for Rule {
         scope: &Self::Scope,
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Option<
-        Result<
-            WorthQueryApplicationInvariantVerdict<()>,
-            WorthQueryApplicationInvariantExecutionError,
-        >,
+        Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>,
     > {
         Some(self.judge(context, scope, budget))
     }
 }
-fn execution(cause: impl std::fmt::Display) -> WorthQueryApplicationInvariantExecutionError {
-    WorthQueryApplicationInvariantExecutionError::new(cause.to_string())
+fn execution(
+    cause: impl Into<WorthQueryApplicationInvariantError>,
+) -> WorthQueryApplicationInvariantError {
+    cause.into()
 }

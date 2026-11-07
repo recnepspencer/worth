@@ -129,7 +129,10 @@ impl WorthQueryPrimaryGraphInstallationDenial {
         &self,
     ) -> Option<&worth_relational::facade::content::RelationalContentDenial> {
         match self.cause.as_deref() {
-            Some(InstallationDenialCause::Content(cause)) => Some(cause),
+            Some(InstallationDenialCause::Content(cause))
+            | Some(InstallationDenialCause::NativeRecovery(
+                worth_relational::facade::durability::RelationalRecoveryStop::Content(cause),
+            )) => Some(cause),
             _ => None,
         }
     }

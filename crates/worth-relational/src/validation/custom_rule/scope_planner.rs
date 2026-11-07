@@ -308,6 +308,11 @@ impl<'runtime> CustomInvariantScopePlanner<'runtime> {
         }
     }
 
+    /// Retains encoded preparation causes under the original validation meter.
+    pub fn refusal_budget(&self) -> &dyn super::CustomInvariantLeaseBudget {
+        &self.work
+    }
+
     /// Checks the original request without charging work or opening a scope.
     pub fn check_live(&self) -> Result<(), super::CustomInvariantInterruption> {
         super::interruption::check_live(self.execution)

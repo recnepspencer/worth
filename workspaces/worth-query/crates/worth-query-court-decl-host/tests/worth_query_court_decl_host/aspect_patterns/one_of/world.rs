@@ -59,6 +59,12 @@ pub fn install() -> Host {
     install_with_control(None)
 }
 pub fn install_with_control(cancellation: Option<WorthQueryCancellationSource>) -> Host {
+    try_install_seed(cancellation, Some(11)).unwrap()
+}
+pub fn try_install_seed(
+    cancellation: Option<WorthQueryCancellationSource>,
+    first: Option<u64>,
+) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
     in_memory_program(
         program(),
         Schema::declaration().unwrap(),
@@ -73,20 +79,23 @@ pub fn install_with_control(cancellation: Option<WorthQueryCancellationSource>) 
                 operator_identity(),
                 WorthQueryPrincipalMappingStatus::Enabled,
             )?;
-            graph.bind_entity(
-                WorthQueryApplicationEntitySeed::new(
+            let mut seed = WorthQueryApplicationEntitySeed::new(
                     Record::reference(),
                     WorthQueryApplicationEntityKey::new("record").unwrap(),
                 )
-                .field(Key::at("Key"), "record".to_owned())
-                .field(FirstValue::at("FirstValue"), 11),
-            )?;
+                .field(Key::at("Key"), "record".to_owned());
+            if let Some(first) = first { seed = seed.field(FirstValue::at("FirstValue"), first); }
+            graph.bind_entity(seed)?;
             Ok(())
         },
     )
-    .unwrap()
 }
 pub fn restore(checkpoint: WorthQueryApplicationCheckpoint) -> Host {
+    try_restore(checkpoint).unwrap()
+}
+pub fn try_restore(
+    checkpoint: WorthQueryApplicationCheckpoint,
+) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
     in_memory_program_from_checkpoint(
         program(),
         Schema::declaration().unwrap(),
@@ -95,7 +104,6 @@ pub fn restore(checkpoint: WorthQueryApplicationCheckpoint) -> Host {
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         checkpoint,
     )
-    .unwrap()
 }
 pub fn read(host: &Host) -> query::Row {
     let scope = request_scope();

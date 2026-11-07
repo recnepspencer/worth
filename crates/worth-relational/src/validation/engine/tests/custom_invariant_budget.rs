@@ -279,6 +279,7 @@ fn rule_overrunning_its_installed_work_is_an_execution_error_not_a_violation() {
         phase,
         failure,
         detail,
+        ..
     } = &violation.fields
     else {
         panic!("the swallowed refusal must not reach the caller: {violation:?}");
