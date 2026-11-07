@@ -181,7 +181,6 @@ fn selector_denial(
 ) -> WorthQueryHistoryNavigationDenial {
     use super::super::super::candidate_selectors::CandidateSelectorMaintenanceDenial as Cause;
     match cause {
-        Cause::Snapshot(cause) => WorthQueryHistoryNavigationDenial::SelectorSnapshot(cause),
         Cause::Maintenance(cause) => WorthQueryHistoryNavigationDenial::SelectorMaintenance(cause),
     }
 }

@@ -115,7 +115,7 @@ fn relation_field_deletion_removes_the_old_entry_with_one_read_per_basis() {
 }
 
 #[test]
-fn mixed_patch_and_cold_field_generations_use_their_own_changes() {
+fn mixed_seeded_and_missing_fields_refuse_until_explicit_recovery() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -151,6 +151,37 @@ fn mixed_patch_and_cold_field_generations_use_their_own_changes() {
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
+    let refused = runtime
+        .index_authority()
+        .refresh_for_basis(
+            request(second.commit.commit_id, vec![name.index_id, cold.index_id]),
+            &basis,
+            Some(&first.snapshot),
+            DerivedIndexMaintenanceBudget {
+                maximum_work_units: None,
+                maximum_cold_record_slots: None,
+                maximum_derived_rows: None,
+            },
+            execution,
+        )
+        .unwrap_err();
+    assert_eq!(
+        refused.kind,
+        crate::indexes::data::DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired
+    );
+    assert_eq!(refused.work.cold_record_slots, 0);
+    runtime
+        .index_authority()
+        .reconstruct_for_commit(
+            execution,
+            request(first.commit.commit_id, vec![cold.index_id]),
+            DerivedIndexMaintenanceBudget {
+                maximum_work_units: None,
+                maximum_cold_record_slots: None,
+                maximum_derived_rows: None,
+            },
+        )
+        .unwrap();
     let refreshed = runtime
         .index_authority()
         .refresh_for_basis(
@@ -165,9 +196,9 @@ fn mixed_patch_and_cold_field_generations_use_their_own_changes() {
             execution,
         )
         .unwrap();
-    assert!(refreshed.work.cold_record_slots > 0);
-    assert_eq!(refreshed.work.record_reads, 4);
-    assert_eq!(refreshed.work.entry_edits, 3);
+    assert_eq!(refreshed.work.cold_record_slots, 0);
+    assert_eq!(refreshed.work.record_reads, 2);
+    assert_eq!(refreshed.work.entry_edits, 4);
     let name_generation = refreshed
         .generations
         .iter()

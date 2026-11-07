@@ -119,7 +119,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         let (result, _) = handle.with_runtime_mut(execution, |relational| {
 
                 handle
-                    .ensure_primary_indexes_for_basis(
+                    .carry_primary_index_basis_for_basis(
                         execution,
                         relational,
                         self.product().relational_basis(),

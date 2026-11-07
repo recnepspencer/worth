@@ -122,9 +122,14 @@ fn kind_routing_skips_unrelated_records_and_preserves_endpoint_retirement() {
         .unwrap();
     // Both indexes have populated relevant rows, but the changed entity has
     // neither the ordering child kind nor a changed join membership kind.
-    assert_eq!(local.work.record_reads, 2);
-    assert_eq!(local.work.entry_edits, 0);
-    assert_eq!(local.work.adjacency_work_units, 0);
+    assert_eq!(
+        local
+            .generations
+            .iter()
+            .map(|g| g.generation_id)
+            .collect::<Vec<_>>(),
+        retained.iter().map(|g| g.generation_id).collect::<Vec<_>>()
+    );
     assert_rebuild(
         execution,
         &runtime,

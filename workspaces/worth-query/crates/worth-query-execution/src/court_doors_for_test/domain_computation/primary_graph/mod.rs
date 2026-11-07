@@ -39,8 +39,6 @@ pub mod fact_verification_observation;
 pub mod handler;
 #[path = "index_currency/mod.rs"]
 pub mod index_currency;
-#[path = "index_maintenance_budget/mod.rs"]
-pub mod index_maintenance_budget;
 #[path = "index_refresh/mod.rs"]
 pub mod index_refresh;
 #[path = "invariant_projection/mod.rs"]

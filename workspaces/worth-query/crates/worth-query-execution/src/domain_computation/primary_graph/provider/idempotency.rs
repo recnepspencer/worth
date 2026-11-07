@@ -206,7 +206,7 @@ impl WorthQueryPrimaryGraphProvider {
                 return Ok(resolution);
             }
             self.graph
-                .ensure_primary_indexes_for_basis(execution, runtime, basis)
+                .carry_primary_index_basis_for_basis(execution, runtime, basis)
                 .map_err(idempotency_index_currency_denial)?;
             let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, basis)
                 .map_err(|denial| idempotency_snapshot_denial(denial.into()))?;

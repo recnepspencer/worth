@@ -55,12 +55,11 @@ fn reused_slot_cold_and_retained_generations_match_rebuild_then_accept_local_edi
         .unwrap();
     let cold = runtime
         .index_authority()
-        .refresh_for_basis(
+        .reconstruct_for_basis(
+            execution,
             request(cold_id, replacement.commit.commit_id),
             &basis,
-            None,
             cold_budget(),
-            execution,
         )
         .unwrap();
     let rebuilt_cold = runtime.index_authority().build_for_basis(

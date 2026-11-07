@@ -17,7 +17,7 @@ fn name_index(runtime: &RelationalRuntime, name: &str, branch_scoped: bool) -> D
 }
 
 #[test]
-fn a_fresh_fork_needs_its_own_branch_scoped_generation() {
+fn a_fresh_fork_carries_authoring_generation_through_its_own_basis() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -42,13 +42,16 @@ fn a_fresh_fork_needs_its_own_branch_scoped_generation() {
     let fork_observation = fork_basis.observation();
     let access = runtime.index_access();
 
-    // The fork selects its parent's commit, but a scoped generation published
-    // for main is not current for the fork.
+    // Fork installation carries the exact source selection before exposing the target.
     assert_eq!(fork_observation.commit_id(), Some(anchor.commit.commit_id));
-    assert!(access
+    let carried = access
         .read_published_generation_for_observation(execution, scoped, &fork_observation)
         .unwrap()
-        .is_none());
+        .unwrap();
+    assert_eq!(
+        carried.generation_id,
+        main_build.generations[0].generation_id
+    );
     let shared = access
         .read_published_generation_for_observation(execution, global, &fork_observation)
         .unwrap()
@@ -58,9 +61,7 @@ fn a_fresh_fork_needs_its_own_branch_scoped_generation() {
         .iter()
         .any(|built| built.generation_id == shared.generation_id));
 
-    // The production refresh reuses the shared global generation and seeds the
-    // scoped one from main's generation at the same root. A zero cold budget
-    // proves neither projects the graph.
+    // Reads reuse both carried selections without projecting the graph.
     let fork_build = runtime
         .index_authority()
         .refresh_for_basis(
@@ -80,8 +81,8 @@ fn a_fresh_fork_needs_its_own_branch_scoped_generation() {
         )
         .unwrap();
     assert_eq!(fork_build.generations.len(), 2);
-    assert_eq!(fork_build.work.reused_generations, 1);
-    assert_eq!(fork_build.work.seeded_generations, 1);
+    assert_eq!(fork_build.work.reused_generations, 2);
+    assert_eq!(fork_build.work.seeded_generations, 0);
     assert_eq!(fork_build.work.cold_record_slots, 0);
     let fork_generation = access
         .read_published_generation_for_observation(execution, scoped, &fork_observation)
@@ -91,7 +92,7 @@ fn a_fresh_fork_needs_its_own_branch_scoped_generation() {
         .generations
         .iter()
         .any(|built| built.generation_id == fork_generation.generation_id));
-    assert_eq!(fork_generation.source_branch_id, fork);
+    assert_eq!(fork_generation.source_branch_id, main);
 
     let (_, main_basis) = runtime
         .observe_branch(&runtime.branch_identity(&main).unwrap())
@@ -101,7 +102,7 @@ fn a_fresh_fork_needs_its_own_branch_scoped_generation() {
         .unwrap()
         .unwrap();
     assert_eq!(main_generation.source_branch_id, main);
-    assert_ne!(main_generation.generation_id, fork_generation.generation_id);
+    assert_eq!(main_generation.generation_id, fork_generation.generation_id);
     assert_eq!(main_generation.entries, fork_generation.entries);
 }
 
@@ -155,11 +156,15 @@ fn selected_fork_currency_uses_original_request_work_and_never_cold_population()
         short.unwrap_err().kind,
         Denial::Execution(Cause::WorkExhausted)
     );
-    assert!(runtime
-        .index_access()
-        .read_published_generation_for_observation(execution, index, &basis.observation())
-        .unwrap()
-        .is_none());
+    assert_eq!(
+        runtime
+            .index_access()
+            .read_published_generation_for_observation(execution, index, &basis.observation(),)
+            .unwrap()
+            .unwrap()
+            .generation_id,
+        main_build.generations[0].generation_id
+    );
     let (funded, report) = execution
         .run(ExecutionWorkCeiling::new(None), |_| {
             runtime
@@ -174,7 +179,10 @@ fn selected_fork_currency_uses_original_request_work_and_never_cold_population()
         .read_published_generation_for_observation(execution, index, &basis.observation())
         .unwrap()
         .unwrap();
-    assert_eq!(fork_generation.source_branch_id, fork);
+    assert_eq!(
+        fork_generation.generation_id,
+        main_build.generations[0].generation_id
+    );
     assert_eq!(fork_generation.entries, main_build.generations[0].entries);
     let (warm, report) = execution
         .run(ExecutionWorkCeiling::new(None), |_| {
@@ -195,4 +203,118 @@ fn selected_fork_currency_uses_original_request_work_and_never_cold_population()
         fork_generation.generation_id
     );
     release_test_commit_snapshot(&runtime, &anchor);
+}
+
+#[test]
+fn fork_first_write_uses_carried_selection_after_parent_history_and_retirement() {
+    use crate::transactions::data::{
+        EntityMutationIntent, MutationIntent, UpdateEntityFieldsIntent, WorkerIntentBatch,
+    };
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let runtime = runtime_with_index_field_aspects();
+    let anchor = create_entity_outcome(execution, &runtime, "anchor");
+    let entity = changed_entities(&anchor)[0];
+    let index = name_index(&runtime, "fork-first-write.name", true);
+    let untouched = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "fork-first-write.unreached".into(),
+            branch_scoped: true,
+            kind: DerivedIndexKind::RelationField {
+                field_locator: aspect_field_locator(aspect_key("label"), field_key("label")),
+            },
+        })
+        .unwrap()
+        .index_id;
+    let initial = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
+            source_commit_id: anchor.commit.commit_id,
+            branch_id: anchor.commit.branch_id.clone(),
+            index_ids: vec![index, untouched],
+        },
+    );
+    assert!(initial.failed_indexes.is_empty());
+    let retained = runtime
+        .index_access()
+        .read_published_generation_for_commit(execution, untouched, &anchor.commit)
+        .unwrap()
+        .unwrap();
+    let fork = create_branch_from_main(&runtime, "fork-after-parent-advances");
+    let mut previous = anchor;
+    for step in 0..32 {
+        let next = update_entity(execution, &runtime, entity, &format!("parent-{step}"));
+        let (_, basis) = runtime
+            .observe_branch(&runtime.main_branch_identity())
+            .unwrap();
+        runtime
+            .index_authority()
+            .refresh_for_basis(
+                DerivedIndexBuildRequest {
+                    source_commit_id: next.commit.commit_id,
+                    branch_id: next.commit.branch_id.clone(),
+                    index_ids: vec![index, untouched],
+                },
+                &basis,
+                Some(&previous.snapshot),
+                DerivedIndexMaintenanceBudget {
+                    maximum_work_units: None,
+                    maximum_cold_record_slots: Some(0),
+                    maximum_derived_rows: None,
+                },
+                execution,
+            )
+            .unwrap();
+        release_test_commit_snapshot(&runtime, &previous);
+        previous = next;
+    }
+    runtime.retention().run_pass(execution).unwrap();
+    let mut transaction = test_owner_begin_transaction_for_branch(&runtime, fork.clone());
+    transaction
+        .push_batch(
+            WorkerIntentBatch::new("fork-first-write").push(MutationIntent::Entity(
+                EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
+                    entity_id: entity,
+                    fields: name_field_patch("fork-value"),
+                }),
+            )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
+    let committed = super::candidate_index_publication::publish_native(
+        execution,
+        &runtime,
+        runtime
+            .prepare_branch_transaction(execution, transaction)
+            .unwrap(),
+    );
+    let carried = runtime
+        .index_access()
+        .read_published_generation_for_commit(execution, untouched, &committed.commit)
+        .unwrap()
+        .unwrap();
+    assert!(Arc::ptr_eq(&retained, &carried));
+    let field = runtime
+        .index_access()
+        .read_published_generation_for_commit(execution, index, &committed.commit)
+        .unwrap()
+        .unwrap();
+    let (_, basis) = runtime
+        .observe_branch(&runtime.branch_identity(&fork).unwrap())
+        .unwrap();
+    let cold = runtime.index_authority().build_for_basis(
+        execution,
+        DerivedIndexBuildRequest {
+            source_commit_id: committed.commit.commit_id,
+            branch_id: fork,
+            index_ids: vec![index],
+        },
+        &basis,
+    );
+    assert!(cold.failed_indexes.is_empty());
+    assert_eq!(field.entries, cold.generations[0].entries);
+    release_test_commit_snapshot(&runtime, &previous);
+    release_test_commit_snapshot(&runtime, &committed);
 }

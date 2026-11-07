@@ -236,7 +236,6 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
     })?;
     super::super::super::candidate_selectors::prepare(execution, selected, &mut candidate)
         .map_err(|cause| match cause {
-            super::super::super::candidate_selectors::CandidateSelectorMaintenanceDenial::Snapshot(cause) => WorthQueryBranchAdoptionPreparationDenial::SelectorSnapshot(cause),
             super::super::super::candidate_selectors::CandidateSelectorMaintenanceDenial::Maintenance(cause) => WorthQueryBranchAdoptionPreparationDenial::SelectorMaintenance(cause),
         })?;
     let successor_observation_requested = false;

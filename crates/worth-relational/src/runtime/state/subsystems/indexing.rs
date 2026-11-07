@@ -1,8 +1,12 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use worth_foundational::facade::{AspectFieldLocator, AspectKey, FieldKey};
+use worth_foundational::facade::{AspectKey, FieldKey};
 
+mod selection_state;
+pub(crate) use selection_state::IndexSelectionState;
+mod basis_selection;
+pub(crate) use basis_selection::PreparedIndexBasisSelection;
 mod admitted_definition;
 mod definition_catalog;
 pub(crate) use definition_catalog::{IndexCatalogCoverage, IndexDefinitionCatalog};
@@ -27,13 +31,6 @@ use crate::indexes::data::{
 };
 use crate::runtime::state::subsystems::{RuntimeOwnedState, RuntimeSubsystem};
 use crate::schema::data::SchemaVersionId;
-use crate::storage::data::AuthoritativeFieldComparisonKey;
-
-/// Every entity that currently carries a tracked unique aspect field value.
-pub(crate) type UniqueEntityAspectFieldIndex = BTreeMap<
-    AspectFieldLocator,
-    BTreeMap<AuthoritativeFieldComparisonKey, BTreeSet<crate::identity::data::EntityId>>,
->;
 
 /// Definitions and retained derived generations owned by the native index runtime.
 ///
@@ -45,7 +42,7 @@ pub(crate) struct IndexingState {
     cold_checkpoint: Option<Arc<cold_checkpoint::DeferredIndexImage>>,
     catalog: Arc<IndexDefinitionCatalog>,
     generations: GenerationCatalog,
-    pub(crate) entity_unique_aspect_field_index: UniqueEntityAspectFieldIndex,
+    bases: basis_selection::BasisSelections,
     pub(crate) next_index_id: u64,
     pub(crate) next_generation_id: u64,
 }
@@ -62,7 +59,22 @@ impl IndexingState {
             .filter(|definition| !definition.branch_scoped)
             .map(|definition| definition.index_id)
             .collect();
-        self.generations.retained(retained, &global_indexes)
+        let mut selected: BTreeMap<_, _> = self
+            .generations
+            .retained(retained, &global_indexes)
+            .into_iter()
+            .map(|generation| (generation.generation_id, generation))
+            .collect();
+        for (_, id) in self
+            .basis_checkpoint(retained)
+            .into_iter()
+            .flat_map(|basis| basis.bindings)
+        {
+            if let Some(generation) = self.generations.generation(id) {
+                selected.insert(id, generation);
+            }
+        }
+        selected.into_values().collect()
     }
 
     fn empty() -> Self {
@@ -70,7 +82,7 @@ impl IndexingState {
             cold_checkpoint: None,
             catalog: Arc::new(IndexDefinitionCatalog::default()),
             generations: GenerationCatalog::default(),
-            entity_unique_aspect_field_index: BTreeMap::new(),
+            bases: basis_selection::BasisSelections::default(),
             next_index_id: 1,
             next_generation_id: 1,
         }
@@ -91,7 +103,9 @@ impl IndexingState {
         self.next_generation_id = self
             .next_generation_id
             .max(generation.generation_id.0.saturating_add(1));
+        let id = generation.generation_id;
         self.generations.insert(generation);
+        self.record_basis_generation(id);
     }
 
     pub(crate) fn generation_frontier(&self) -> u64 {
@@ -115,7 +129,7 @@ pub(crate) struct IndexingSubsystem {
     state: RuntimeOwnedState<IndexingState>,
 }
 
-/// Read-only handle to installed definitions used while sealing commit changes.
+/// Index catalog custody for change sealing and native publication preparation.
 #[derive(Debug)]
 pub(crate) struct IndexDefinitionReadBinding {
     state: RuntimeOwnedState<IndexingState>,
@@ -130,6 +144,12 @@ impl Clone for IndexDefinitionReadBinding {
 }
 
 impl IndexDefinitionReadBinding {
+    pub(crate) fn indexing_subsystem(&self) -> IndexingSubsystem {
+        IndexingSubsystem {
+            state: self.state.share(),
+        }
+    }
+
     pub(crate) fn with_field<R>(
         &self,
         aspect: &AspectKey,
@@ -177,9 +197,16 @@ impl IndexingSubsystem {
             .filter(|definition| !definition.branch_scoped)
             .map(|definition| definition.index_id)
             .collect();
+        state.bases.reclaim(retained);
+        let carried = state
+            .basis_checkpoint(retained)
+            .into_iter()
+            .flat_map(|basis| basis.bindings)
+            .map(|(_, id)| id)
+            .collect();
         state
             .generations
-            .reclaim_except_versions(retained, &global_indexes)
+            .reclaim_except_versions(retained, &global_indexes, &carried)
     }
 
     /// Replace the whole subsystem, for checkpoint restore.
@@ -236,10 +263,14 @@ impl IndexingSubsystem {
         version: VersionId,
         schema: SchemaVersionId,
     ) -> Option<Arc<DerivedIndexGeneration>> {
-        self.state
-            .read()
-            .generations
-            .exact(index, branch, version, schema)
+        let state = self.state.read();
+        if let Some(basis) = state.bases.get(branch, version) {
+            state.generations.note_payload_selection();
+            return (basis.schema == schema)
+                .then(|| basis.generation(index))
+                .flatten();
+        }
+        state.generations.exact(index, branch, version, schema)
     }
 
     pub(crate) fn published_generation_for_commit(
@@ -249,8 +280,14 @@ impl IndexingSubsystem {
         commit: CommitId,
         version: VersionId,
     ) -> Option<Arc<DerivedIndexGeneration>> {
-        self.state
-            .read()
+        let state = self.state.read();
+        if let Some(basis) = state.bases.get(branch, version) {
+            state.generations.note_payload_selection();
+            return (basis.commit == commit)
+                .then(|| basis.generation(index))
+                .flatten();
+        }
+        state
             .generations
             .published_for_commit(index, branch, commit, version)
     }
@@ -304,10 +341,6 @@ impl IndexingSubsystem {
         Some(ids)
     }
 
-    pub(crate) fn publish_generation(&self, generation: DerivedIndexGeneration) {
-        self.state.write().generations.publish(generation);
-    }
-
     /// Install a generation carried by a canonical envelope, replacing any
     /// earlier copy of the same generation identity.
     pub(crate) fn restore_generation(&self, generation: DerivedIndexGeneration) {
@@ -329,22 +362,6 @@ impl IndexingSubsystem {
         )
     }
 
-    /// Read the unique aspect field index without letting the guard escape.
-    #[cfg(test)]
-    pub(crate) fn with_unique_index<R>(
-        &self,
-        read: impl FnOnce(&UniqueEntityAspectFieldIndex) -> R,
-    ) -> R {
-        read(&self.state.read().entity_unique_aspect_field_index)
-    }
-
-    pub(crate) fn with_unique_index_mut<R>(
-        &self,
-        write: impl FnOnce(&mut UniqueEntityAspectFieldIndex) -> R,
-    ) -> R {
-        write(&mut self.state.write().entity_unique_aspect_field_index)
-    }
-
     /// Adversarial courts corrupt the newest generation of an index in place to
     /// prove that index-backed reads still deny rather than answer from it.
     #[cfg(test)]
@@ -359,11 +376,7 @@ impl IndexingSubsystem {
             .latest(index_id, None)
             .expect("court installs the generation it corrupts");
         corrupt(Arc::make_mut(&mut generation));
-        state.generations.insert(generation.as_ref().clone());
-    }
-
-    pub(crate) fn clear_unique_index(&self) {
-        self.state.write().entity_unique_aspect_field_index.clear();
+        state.restore_generation(generation.as_ref().clone());
     }
 }
 

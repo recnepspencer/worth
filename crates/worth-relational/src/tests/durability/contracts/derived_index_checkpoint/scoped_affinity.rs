@@ -155,6 +155,7 @@ fn digest_valid_unissued_scoped_branch_denies_without_replacing_target_state() {
     let artifact =
         crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::capture(
             generations.into_iter().map(std::sync::Arc::new).collect(),
+            Vec::new(),
         )
         .unwrap();
     // Establish that the genuine delta/digest owner admits this wire payload:

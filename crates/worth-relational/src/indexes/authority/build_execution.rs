@@ -66,6 +66,7 @@ pub(super) fn record_index_preparation_strategy_counters(
 }
 
 pub(super) fn execute_index_packets(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_>,
     packets: Vec<IndexPreparationPacket>,
@@ -89,10 +90,11 @@ pub(super) fn execute_index_packets(
             value: packet,
         })
         .collect();
-    execute_index_inputs(execution, projection, inputs, lease, work_budget)
+    execute_index_inputs(lane, execution, projection, inputs, lease, work_budget)
 }
 
 pub(super) fn execute_index_inputs(
+    _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_>,
     inputs: Vec<ReadOnlyPacket<IndexPreparationPacket>>,
@@ -192,12 +194,9 @@ fn index_packet_result_checked(
                 context,
             )?)
         }
-        DerivedIndexKind::RelationJoin(definition) => {
-            DerivedIndexEntries::RelationJoin(checked_finish(
-                build_relation_join_index_checked(execution, projection, *definition, context)?,
-                context,
-            )?)
-        }
+        DerivedIndexKind::RelationJoin(definition) => DerivedIndexEntries::RelationJoin(
+            build_relation_join_index_checked(execution, projection, *definition, context)?,
+        ),
     };
     context.checkpoint(1)?;
     Ok(OrderedReductionStream::singleton(
@@ -240,7 +239,7 @@ fn index_packet_result(
             .into(),
         ),
         DerivedIndexKind::RelationJoin(definition) => DerivedIndexEntries::RelationJoin(
-            build_relation_join_index(execution, projection, *definition)?.into(),
+            build_relation_join_index(execution, projection, *definition)?,
         ),
     };
     Ok(OrderedReductionStream::singleton(

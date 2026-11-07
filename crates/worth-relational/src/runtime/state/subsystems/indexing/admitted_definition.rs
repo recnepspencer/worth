@@ -23,20 +23,38 @@ impl IndexDefinitionCatalog {
     }
 }
 
-/// Portable BTree upper bound: at most every occupied key plus absence.
+/// Cost: at most eleven comparisons per B-tree level, plus absence.
 pub(super) fn navigation(
     context: &mut worth_execution::MapKernelContext<'_, '_>,
     entries: usize,
     width: usize,
 ) -> Result<(), worth_execution::MapKernelStop> {
-    let work = (entries as u64)
-        .checked_add(1)
-        .and_then(|n| n.checked_mul((width as u64).checked_add(1)?))
-        .ok_or(worth_execution::MapKernelStop::WorkCounterOverflow)?;
+    let work = navigation_work(entries, width)?;
     if context.has_accounting() {
         context.checkpoint(work)?;
     } else {
         context.poll()?;
     }
     Ok(())
+}
+
+fn navigation_work(entries: usize, width: usize) -> Result<u64, worth_execution::MapKernelStop> {
+    u64::from(usize::BITS - entries.leading_zeros())
+        .checked_mul(11)
+        .and_then(|n| n.checked_mul((width as u64).checked_add(1)?))
+        .and_then(|n| n.checked_add(1))
+        .ok_or(worth_execution::MapKernelStop::WorkCounterOverflow)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::navigation_work;
+
+    #[test]
+    fn catalog_navigation_grows_logarithmically_with_unrelated_definitions() {
+        let small = navigation_work(128, 8).unwrap();
+        let large = navigation_work(256, 8).unwrap();
+        assert!(large * 2 < small * 3);
+        assert!(navigation_work(usize::MAX, usize::MAX).is_err());
+    }
 }

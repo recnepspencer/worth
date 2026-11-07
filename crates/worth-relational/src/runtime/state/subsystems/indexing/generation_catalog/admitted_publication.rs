@@ -7,30 +7,6 @@ use crate::indexes::data::{
 use std::{collections::BTreeMap, mem::size_of};
 
 impl GenerationCatalog {
-    pub(in crate::runtime::state::subsystems::indexing) fn publish_batch_admitted<Stop>(
-        &mut self,
-        generations: &[DerivedIndexGeneration],
-        prepare: &mut impl FnMut(u64, u64) -> Result<(), Stop>,
-    ) -> Result<(), SelectedIndexGenerationAdmissionStop<Stop>> {
-        let count = self
-            .entries
-            .len()
-            .checked_add(generations.len())
-            .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
-        // Global and branch scopes give at most two scope entries per retained
-        // generation; other selection tables have at most one binding each.
-        let scopes = count
-            .checked_mul(2)
-            .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
-        Self::quote_batch(generations, scopes, true, prepare)?;
-        // The guard and all preparations above remain in the same write lock.
-        // Once one edit begins, this batch has no remaining fallible step.
-        prepare(0, 0).map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
-        for generation in generations {
-            self.publish(generation.clone());
-        }
-        Ok(())
-    }
     /// A prepared candidate may wait while other branches grow the catalog.
     /// Charge the existing native representational descent bound before commit;
     /// eventual installation cannot acquire a new payer or exceed this geometry.
@@ -41,7 +17,6 @@ impl GenerationCatalog {
         Self::quote_batch(
             generations,
             crate::indexes::data::SelectedIndexReadWork::MAXIMUM_ORDERED_CONTAINER_ENTRIES,
-            false,
             prepare,
         )?;
         prepare(0, 0).map_err(SelectedIndexGenerationAdmissionStop::Admission)
@@ -50,7 +25,6 @@ impl GenerationCatalog {
     fn quote_batch<Stop>(
         generations: &[DerivedIndexGeneration],
         scopes: usize,
-        clone_payload: bool,
         prepare: &mut impl FnMut(u64, u64) -> Result<(), Stop>,
     ) -> Result<(), SelectedIndexGenerationAdmissionStop<Stop>> {
         use super::insertion_quote::{add, insertion, path_nodes};
@@ -98,18 +72,8 @@ impl GenerationCatalog {
             .map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
         for generation in generations {
             let width = generation.applicability.branch_id.0.len();
-            // Deferred publication moves its carried generation. Immediate
-            // publication clones both generation branch strings as well.
-            let copies = if clone_payload {
-                generation.source_branch_id.0.len().checked_add(
-                    width
-                        .checked_mul(2)
-                        .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?,
-                )
-            } else {
-                Some(width)
-            }
-            .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
+            // The prepared batch moves its carried payload; catalog branch scope copies once.
+            let copies = width;
             let index_scope =
                 insertion::<DerivedIndexId, BTreeMap<Option<BranchId>, GenerationScope>>(scopes, 1)
                     .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;

@@ -1,4 +1,4 @@
-use super::{admission_denial, map_index_currency_denial, WorthQueryApplicationQueryBasisCustody};
+use super::{admission_denial, WorthQueryApplicationQueryBasisCustody};
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use crate::basis::WorthQueryProductObservationLease;
 use crate::domain_computation::primary_graph::{
@@ -14,25 +14,7 @@ pub(super) fn admit<Schema>(
 ) -> Result<WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial> {
     let selected =
         admit_selected_permission_basis(execution, application, product, application_basis)?;
-    let graph = application
-        .runtime
-        .primary_graph()
-        .ok_or_else(|| {
-            admission_denial(
-                WorthQueryApplicationQueryAdmissionDenialKind::BasisUnavailable,
-                "primary graph",
-            )
-        })?
-        .integration_handle();
-    graph
-        .with_runtime_mut(execution, |runtime| {
-            graph.ensure_primary_indexes_for_basis(
-                execution,
-                runtime,
-                selected.selected_product().relational_basis(),
-            )
-        })
-        .map_err(map_index_currency_denial)?;
+    // The installed read admits its selected indexes after basis and permission admission.
     Ok(selected)
 }
 

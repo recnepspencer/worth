@@ -11,90 +11,12 @@ pub(in crate::domain_computation) const fn ordinary_index_maintenance_budget(
     }
 }
 
-/// Recovery after an interrupted publication has a separate reconstruction posture.
-/// Its counters are returned by Relational with typed exhaustion.
+/// Explicit recovery, schema transition and certification callers opt into this lane.
+/// Ordinary commit/read preparation never requests this budget.
 pub(super) const fn cold_index_reconstruction_budget() -> DerivedIndexMaintenanceBudget {
     DerivedIndexMaintenanceBudget {
         maximum_work_units: None,
         maximum_cold_record_slots: None,
         maximum_derived_rows: None,
-    }
-}
-
-/// Seal the exact candidate's primary indexes before World can publish it.
-/// Only a missing compatible prior generation may enter the cold reconstruction lane.
-pub(super) fn prepare_candidate_with_cold_fallback(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    candidate: &mut worth_relational::facade::mvcc::PreparedRelationalCommitCandidate,
-    index_ids: &[worth_relational::facade::indexes::DerivedIndexId],
-    before: &worth_relational::facade::snapshots::SnapshotHandle,
-    ordinary_budget: DerivedIndexMaintenanceBudget,
-) -> Result<
-    worth_relational::facade::indexes::DerivedIndexMaintenanceWork,
-    worth_relational::facade::indexes::DerivedIndexMaintenanceDenial,
-> {
-    let initial = runtime.index_authority().prepare_for_candidate(
-        candidate,
-        index_ids,
-        Some(before),
-        ordinary_budget,
-        execution,
-    );
-    if matches!(
-        &initial,
-        Err(denial) if matches!(denial.kind,
-            worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired)
-    ) {
-        runtime.index_authority().prepare_for_candidate(
-            candidate,
-            index_ids,
-            Some(before),
-            cold_index_reconstruction_budget(),
-            execution,
-        )
-    } else {
-        initial
-    }
-}
-
-/// A captured pre-commit root does not prove that every index has a compatible
-/// prior generation. Retry only that specific absence through the explicit
-/// cold lane; absence never grants reconstruction to the ordinary lane.
-pub fn refresh_with_cold_fallback(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    request: worth_relational::facade::indexes::DerivedIndexBuildRequest,
-    basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
-    before: Option<&worth_relational::facade::snapshots::SnapshotHandle>,
-) -> Result<
-    worth_relational::facade::indexes::DerivedIndexMaintenanceOutcome,
-    worth_relational::facade::indexes::DerivedIndexMaintenanceDenial,
-> {
-    let initial = runtime.index_authority().refresh_for_basis(
-        request.clone(),
-        basis,
-        before,
-        if before.is_some() {
-            ordinary_index_maintenance_budget()
-        } else {
-            cold_index_reconstruction_budget()
-        },
-        execution,
-    );
-    if matches!(
-        &initial,
-        Err(denial) if matches!(denial.kind,
-            worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired)
-    ) {
-        runtime.index_authority().refresh_for_basis(
-            request,
-            basis,
-            before,
-            cold_index_reconstruction_budget(),
-            execution,
-        )
-    } else {
-        initial
     }
 }

@@ -195,10 +195,9 @@ impl WorthQueryPrimaryGraphProvider {
                 let mut candidate = runtime
                     .prepare_validated_proposal(execution, validated)
                     .map_err(|error| preparation_denial::preparation_denial(&error))?;
-                crate::domain_computation::primary_graph::index_maintenance_budget::prepare_candidate_with_cold_fallback(execution,
-                    runtime, &mut candidate, &self.graph.primary_index_ids, &before,
-                    crate::domain_computation::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget(),
-                ).map_err(|_| Denial::IndexPreparationUnavailable)?;
+                runtime.index_authority().prepare_routed_indexes_for_candidate(&mut candidate,
+                    crate::domain_computation::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget(), execution)
+                    .map_err(|_| Denial::IndexPreparationUnavailable)?;
                 Ok(candidate)
             })();
             crate::relational_snapshot_release::release_query_snapshot(runtime, &before);

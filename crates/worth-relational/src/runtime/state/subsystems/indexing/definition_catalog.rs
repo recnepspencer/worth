@@ -46,18 +46,22 @@ impl worth_execution::ChargedBytes for IndexCatalogCoverage {
 
 #[derive(Clone, Debug)]
 pub(crate) struct IndexDefinitionCatalog {
+    pub(super) installed: im::OrdSet<DerivedIndexId>,
     pub(super) definitions: BTreeMap<DerivedIndexId, Arc<DerivedIndexDefinition>>,
     pub(super) field_definitions:
         BTreeMap<AspectKey, BTreeMap<FieldKey, Vec<Arc<DerivedIndexDefinition>>>>,
     introductions: BTreeMap<DerivedIndexId, u64>,
+    routing: BTreeMap<SchemaVersionId, Arc<crate::indexes::data::InstalledIndexRouting>>,
     coverage: IndexCatalogCoverage,
 }
 impl Default for IndexDefinitionCatalog {
     fn default() -> Self {
         Self {
+            installed: im::OrdSet::new(),
             definitions: BTreeMap::new(),
             field_definitions: BTreeMap::new(),
             introductions: BTreeMap::new(),
+            routing: BTreeMap::new(),
             coverage: IndexCatalogCoverage {
                 incarnation: incarnation(),
                 epoch: 0,
@@ -67,6 +71,8 @@ impl Default for IndexDefinitionCatalog {
 }
 impl IndexDefinitionCatalog {
     pub(super) fn insert(&mut self, definition: DerivedIndexDefinition) {
+        self.installed.insert(definition.index_id);
+        self.routing.clear();
         self.coverage.epoch = self
             .coverage
             .epoch
@@ -150,5 +156,34 @@ impl IndexDefinitionCatalog {
                 incarnation: self.coverage.incarnation,
                 epoch: *epoch,
             }))
+    }
+}
+
+impl IndexDefinitionCatalog {
+    pub(crate) fn routing(
+        &self,
+        schema: SchemaVersionId,
+    ) -> Option<Arc<crate::indexes::data::InstalledIndexRouting>> {
+        self.routing.get(&schema).map(Arc::clone)
+    }
+}
+impl IndexingSubsystem {
+    /// cost-lane: installation, schema transition or explicit recovery.
+    pub(crate) fn install_routing(
+        &self,
+        schema: SchemaVersionId,
+        plans: &crate::schema::data::AspectContractPlanCatalog,
+    ) {
+        let mut state = self.state.write();
+        if state.catalog.routing.contains_key(&schema) {
+            return;
+        }
+        let routing = crate::indexes::data::InstalledIndexRouting::compile(
+            state.catalog.definitions.values().map(Arc::as_ref),
+            plans,
+        );
+        Arc::make_mut(&mut state.catalog)
+            .routing
+            .insert(schema, Arc::new(routing));
     }
 }

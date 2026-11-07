@@ -3,7 +3,7 @@ mod admitted_publication;
 mod admitted_selection;
 mod discard;
 mod incremental_retirement;
-mod insertion_quote;
+pub(in crate::runtime::state::subsystems::indexing) mod insertion_quote;
 mod scope;
 mod selection_retention;
 mod selection_work;
@@ -52,8 +52,10 @@ impl GenerationCatalog {
         &mut self,
         retained: &crate::history::retention::RetainedIndexRoots,
         global_indexes: &BTreeSet<DerivedIndexId>,
+        carried: &BTreeSet<DerivedIndexGenerationId>,
     ) -> usize {
-        let live = self.retained_ids(retained, global_indexes);
+        let mut live = self.retained_ids(retained, global_indexes);
+        live.extend(carried);
         let removals = self
             .entries
             .keys()
@@ -191,6 +193,10 @@ impl GenerationCatalog {
             &generation.applicability.version_id,
             generation.generation_id,
         );
+    }
+
+    pub(super) fn note_payload_selection(&self) {
+        self.work.read_payload();
     }
 
     pub(super) fn generation(

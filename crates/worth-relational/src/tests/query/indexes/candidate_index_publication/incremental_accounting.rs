@@ -176,7 +176,6 @@ fn selected_field_and_join_candidate_keep_original_funding_until_performed_insta
         .unwrap();
     assert_eq!(work.cold_record_slots, 0);
     assert!(work.patch_records > 0);
-    assert_eq!(work.generation_publications_reserved, 2);
     assert_eq!(maintenance_memory.charged_memory_bytes(), required_memory);
     assert_eq!(memory.charged_memory_bytes(), candidate_baseline);
     assert!(runtime
@@ -199,9 +198,25 @@ fn selected_field_and_join_candidate_keep_original_funding_until_performed_insta
             .indexes
             .derived_artifacts_for_commit(commit)
             .generations()
-            .len(),
-        2
+            .iter()
+            .map(|g| g.index_id)
+            .collect::<Vec<_>>(),
+        vec![field]
     );
+    assert_eq!(
+        runtime
+            .indexes
+            .published_generation_for_commit(
+                join,
+                Some(&BranchId("main".into())),
+                commit,
+                second.commit.version_id
+            )
+            .unwrap()
+            .generation_id,
+        initial_join.generation_id
+    );
+
     let generation = runtime
         .indexes
         .published_generation_for_commit(

@@ -33,7 +33,9 @@ impl DerivedIndexEntries {
             Self::EntityField(entries) => comparison_entries_bytes(entries),
             Self::RelationField(entries) => comparison_entries_bytes(entries),
             Self::RelatedEntityOrdering(entries) => ordering_entries_bytes(entries),
-            Self::RelationJoin(entries) => fixed_entries_bytes(entries),
+            Self::RelationJoin(entries) => {
+                fixed_entries_bytes(entries).saturating_add(entries.leg_bytes())
+            }
         }
     }
 }

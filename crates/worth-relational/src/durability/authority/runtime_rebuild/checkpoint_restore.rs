@@ -44,16 +44,28 @@ pub(super) fn restore_checkpoint_state(
     work: &mut CheckpointRestoreWork,
 ) -> Result<(), RelationalRecoveryStop> {
     if let Some(directory) = checkpoint.directory.clone() {
-        cold_directory::restore(execution, restored, &checkpoint, directory, work)?;
+        cold_directory::restore(execution, restored, &checkpoint, directory.clone(), work)?;
+        restored
+            .indexes
+            .install_cold_checkpoint(directory, restored)?;
         super::unshared_state(restored)?
             .durability
             .push_checkpoint(checkpoint);
         return Ok(());
     }
     let prepared = prepare_checkpoint_state(execution, restored, &checkpoint, work)?;
-    let restored = super::unshared_state(restored)?;
-    install_checkpoint_state(restored, prepared);
-    restored.durability.push_checkpoint(checkpoint);
+    install_checkpoint_state(super::unshared_state(restored)?, prepared);
+    if let Some(artifact) = &checkpoint.derived_index_checkpoint {
+        crate::indexes::verify_checkpoint_index_bases(
+            execution,
+            &restored.indexes.snapshot(),
+            artifact.bases(),
+            &crate::indexes::checkpoint_index_projections(restored),
+        )?;
+    }
+    super::unshared_state(restored)?
+        .durability
+        .push_checkpoint(checkpoint);
     Ok(())
 }
 
@@ -229,44 +241,9 @@ pub(super) fn finalize_restored_runtime(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
 ) -> Result<(), crate::durability::data::RelationalRecoveryStop> {
-    // The eager image lane rebuilds this optional inspection cache. In the
-    // native member lane, selected-state invariant scans remain authoritative;
-    // index generations retain their explicit deferred readmission cell.
-    if restored
-        .durability
-        .checkpoint_selection()
-        .snapshot()
-        .is_none()
-    {
-        restored
-            .index_authority()
-            .rebuild_unique_entity_aspect_field_indexes(execution)
-            .map_err(|denial| {
-                use crate::durability::data::RelationalRecoveryStop as Stop;
-                use crate::indexes::data::DerivedIndexMaintenanceDenialKind as Denial;
-                match denial {
-                    Denial::Execution(cause) => Stop::Request(cause),
-                    Denial::Basis(basis) => restored_index_stop(basis),
-                    Denial::SnapshotUnavailable
-                    | Denial::CommitMismatch
-                    | Denial::BeforeRootMismatch
-                    | Denial::IndexUnavailable(_)
-                    | Denial::GenerationKindMismatch(_)
-                    | Denial::PriorEntryMismatch
-                    | Denial::ColdReconstructionRequired
-                    | Denial::WorkBudgetExceeded
-                    | Denial::ForeignCandidate
-                    | Denial::CandidateLifetimeExpired { .. }
-                    | Denial::CandidateUnavailable
-                    | Denial::CandidateIndexesAlreadyPrepared
-                    | Denial::GenerationIdentityExhausted => DurabilityError::new(
-                        crate::durability::data::RecoveryFailureClass::ReplayFailure,
-                        format!("recovered unique-index admission failed: {denial:?}"),
-                    )
-                    .into(),
-                }
-            })?;
-    }
+    restored
+        .index_authority()
+        .recover_installed_index_routing(execution)?;
     restored.history.rebuild_branch_head_version_index();
     restored.visibility.cache.clear();
     restored
@@ -274,40 +251,3 @@ pub(super) fn finalize_restored_runtime(
         .rebuild_branch_head_visibility_residency();
     Ok(())
 }
-
-fn restored_index_stop(
-    denial: crate::branch::RelationalBranchBasisDenial,
-) -> crate::durability::data::RelationalRecoveryStop {
-    use crate::branch::RelationalBranchBasisDenial as Denial;
-    use crate::durability::data::RelationalRecoveryStop as Stop;
-    use crate::execution::RelationalExecutionDenialCause as Cause;
-    match denial {
-        Denial::Cancelled => Stop::Request(Cause::Cancelled),
-        Denial::TimedOut => Stop::Request(Cause::DeadlineElapsed),
-        Denial::MalformedDescriptor
-        | Denial::UnsupportedDescriptorVersion { .. }
-        | Denial::ForeignRuntime { .. }
-        | Denial::UnknownBranch(_)
-        | Denial::ArchivedBranch(_)
-        | Denial::DeletingBranch(_)
-        | Denial::StaleReferenceGeneration
-        | Denial::WrongBranchLocalTruthVersion
-        | Denial::EmptyCommittedTargetMismatch
-        | Denial::WrongImmutableTarget
-        | Denial::MixedAxis(_)
-        | Denial::MaterializationUnavailable
-        | Denial::UnavailableRetainedTarget
-        | Denial::RetentionCapacityExhausted
-        | Denial::RetentionIdentityExhausted
-        | Denial::SnapshotIdentityExhausted
-        | Denial::OwnerUnavailable
-        | Denial::OwnerFailure => DurabilityError::new(
-            crate::durability::data::RecoveryFailureClass::ReplayFailure,
-            format!("recovered unique-index basis admission failed: {denial:?}"),
-        )
-        .into(),
-    }
-}
-
-#[cfg(test)]
-mod stop_tests;

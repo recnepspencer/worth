@@ -1,11 +1,22 @@
 use super::*;
 
 impl<'runtime> IndexAuthority<'runtime> {
-    /// Build using the allocation authority and lease budget of the caller's request.
+    /// Explicit recovery: build using the allocation authority and lease budget of the caller's request.
     pub fn build_for_commit(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: DerivedIndexBuildRequest,
+    ) -> DerivedIndexBuildOutcome {
+        super::recovery_build::reconstruct(request, |request, lane| {
+            self.reconstruct_commit_image(execution, request, lane)
+        })
+    }
+
+    fn reconstruct_commit_image(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        request: DerivedIndexBuildRequest,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     ) -> DerivedIndexBuildOutcome {
         let lease = match execution.allocation_policy() {
             worth_execution::ExecutionAllocationPolicy::Execution(lease) => Some(lease),
@@ -118,10 +129,16 @@ impl<'runtime> IndexAuthority<'runtime> {
             );
         };
         let results = match checked_inputs {
-            Some(inputs) => {
-                execute_index_inputs(execution, &projection, inputs, lease, work_budget.as_ref())
-            }
+            Some(inputs) => execute_index_inputs(
+                lane,
+                execution,
+                &projection,
+                inputs,
+                lease,
+                work_budget.as_ref(),
+            ),
             None => execute_index_packets(
+                lane,
                 execution,
                 &projection,
                 plan_index_packets(definitions),
@@ -143,6 +160,9 @@ impl<'runtime> IndexAuthority<'runtime> {
             }
         };
 
+        if let Some(plans) = projection.aspect_plans() {
+            self.runtime.indexes.install_routing(schema_version, plans);
+        }
         let publication_basis = IndexGenerationPublicationBasis::new(
             &request,
             source_branch_id,

@@ -21,7 +21,7 @@ pub use crate::indexes::data::{
     DerivedIndexRegistrationDenial, DerivedIndexRows, DerivedIndexSelectionCounters,
     RelatedEntityEndpoint, RelatedEntityOrderingBoundary, RelatedEntityOrderingDirection,
     RelatedEntityOrderingEntry, RelatedEntityOrderingField, RelatedEntityOrderingValue,
-    RelationJoinDefinition, RelationJoinEntry, RelationJoinKey, RelationJoinLeg,
+    RelationJoinDefinition, RelationJoinEntry, RelationJoinIndex, RelationJoinKey, RelationJoinLeg,
     RelationJoinSharedEndpoint, SelectedIndexGenerationAdmissionStop, SelectedIndexReadWork,
     MAX_BOUNDED_INDEX_CANDIDATES, MAX_BOUNDED_RELATED_ENTITY_PAGE_WIDTH,
 };

@@ -12,10 +12,6 @@ fn complexity_budget_unique_entity_invariant_scans_the_selected_state() {
     });
     let target = create_entity(execution, &runtime, "target");
     let _other = create_entity(execution, &runtime, "other");
-    runtime
-        .index_authority()
-        .rebuild_unique_entity_aspect_field_indexes(execution)
-        .expect("main-branch unique index rebuild admits its exact basis");
 
     runtime.performance_access().reset_counters();
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
@@ -63,10 +59,6 @@ fn complexity_budget_commit_boundary_unique_invariant_applies_the_selected_plan(
     });
     let target = create_entity(execution, &runtime, "target");
     let _other = create_entity(execution, &runtime, "other");
-    runtime
-        .index_authority()
-        .rebuild_unique_entity_aspect_field_indexes(execution)
-        .expect("main-branch unique index rebuild admits its exact basis");
 
     runtime.performance_access().reset_counters();
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);

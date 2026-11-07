@@ -19,10 +19,9 @@ fn residency_cold_index_frontier_prevents_reissue_before_any_image_demand() {
         published.generation_id = reserved;
         if admitted {
             owner
-                .publish_generations_admitted(std::slice::from_ref(&published), |_, _| {
-                    Ok::<_, ()>(())
-                })
-                .unwrap();
+                .prepare_generation_batch(vec![published.clone()], None, |_, _| Ok::<_, ()>(()))
+                .unwrap()
+                .publish();
         } else {
             owner.publish_generation(published.clone());
         }

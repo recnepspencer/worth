@@ -10,7 +10,7 @@ use super::{
 };
 
 impl IndexAuthority<'_> {
-    /// Build against the exact immutable root already carried by an admitted
+    /// Explicit recovery: build against the exact immutable root already carried by an admitted
     /// owner basis. This path performs no historical retention reacquisition.
     /// The caller's request supplies allocation authority and its lease budget.
     pub fn build_for_basis(
@@ -18,6 +18,18 @@ impl IndexAuthority<'_> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: DerivedIndexBuildRequest,
         basis: &AdmittedRelationalBranchBasis,
+    ) -> DerivedIndexBuildOutcome {
+        super::recovery_build::reconstruct(request, |request, lane| {
+            self.reconstruct_basis_image(execution, request, basis, lane)
+        })
+    }
+
+    fn reconstruct_basis_image(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        request: DerivedIndexBuildRequest,
+        basis: &AdmittedRelationalBranchBasis,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     ) -> DerivedIndexBuildOutcome {
         let lease = match execution.allocation_policy() {
             worth_execution::ExecutionAllocationPolicy::Execution(lease) => Some(lease),
@@ -128,10 +140,16 @@ impl IndexAuthority<'_> {
             );
         };
         let results = match checked_inputs {
-            Some(inputs) => {
-                execute_index_inputs(execution, &projection, inputs, lease, work_budget.as_ref())
-            }
+            Some(inputs) => execute_index_inputs(
+                lane,
+                execution,
+                &projection,
+                inputs,
+                lease,
+                work_budget.as_ref(),
+            ),
             None => execute_index_packets(
+                lane,
                 execution,
                 &projection,
                 plan_index_packets(definitions),
@@ -152,6 +170,9 @@ impl IndexAuthority<'_> {
                 };
             }
         };
+        if let Some(plans) = projection.aspect_plans() {
+            self.runtime.indexes.install_routing(schema_version, plans);
+        }
         let publication_basis = IndexGenerationPublicationBasis::new(
             &request,
             source_branch_id,

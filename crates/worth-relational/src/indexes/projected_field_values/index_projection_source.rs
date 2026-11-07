@@ -55,6 +55,26 @@ impl<'view> IndexProjectionSource<'view> {
         self.schema_authority()?.relation_aspect_plan(kind_id)
     }
 
+    /// Cost: the selected endpoint's adjacency, never the complete relation kind.
+    pub(in crate::indexes) fn relations_for_endpoint(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        entity: EntityId,
+        kind: KindId,
+        outgoing: bool,
+    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+        self.projection
+            .bounded_index_relations_for_frontier(
+                execution,
+                &std::collections::BTreeSet::from([entity]),
+                kind,
+                outgoing,
+                None,
+            )?
+            .map(|read| read.into_records())
+            .map_err(|_| crate::execution::RelationalExecutionDenialCause::ResultCapacityExceeded)
+    }
+
     pub(in crate::indexes) fn for_each_entity(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

@@ -14,7 +14,7 @@ use crate::indexes::data::{
 };
 use crate::schema::data::SchemaVersionId;
 
-const DIGEST_DOMAIN: &[u8] = b"worth.relational.derived-index-checkpoint.v2\0";
+const DIGEST_DOMAIN: &[u8] = b"worth.relational.derived-index-checkpoint.v3\0";
 
 /// Checkpoint-only deltas. Canonical envelopes remain the semantic authority.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -22,6 +22,7 @@ pub(crate) struct DerivedIndexCheckpointArtifacts {
     format_version: u16,
     generation_ids: Vec<DerivedIndexGenerationId>,
     generations: Vec<CheckpointGeneration>,
+    bases: Vec<crate::indexes::data::IndexBasisCheckpoint>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -69,7 +70,7 @@ impl<'a> CheckpointDigestHeader<'a> {
 }
 
 impl DerivedIndexCheckpointArtifacts {
-    pub(crate) const FORMAT_VERSION: u16 = 2;
+    pub(crate) const FORMAT_VERSION: u16 = 3;
 
     pub(crate) fn supports_outer_format(format: u16, has_payload: bool) -> bool {
         matches!(
@@ -80,6 +81,7 @@ impl DerivedIndexCheckpointArtifacts {
 
     pub(crate) fn capture(
         mut generations: Vec<Arc<DerivedIndexGeneration>>,
+        bases: Vec<crate::indexes::data::IndexBasisCheckpoint>,
     ) -> Result<Self, DurabilityError> {
         generations.sort_by_key(|generation| (generation.index_id, generation.generation_id));
         let mut previous = BTreeMap::<DerivedIndexId, (DerivedIndexGenerationId, Vec<u8>)>::new();
@@ -158,7 +160,12 @@ impl DerivedIndexCheckpointArtifacts {
             format_version: Self::FORMAT_VERSION,
             generation_ids: captured.iter().map(|entry| entry.generation_id).collect(),
             generations: captured,
+            bases,
         })
+    }
+
+    pub(crate) fn bases(&self) -> &[crate::indexes::data::IndexBasisCheckpoint] {
+        &self.bases
     }
 
     pub(crate) fn readmit(&self) -> Result<Vec<DerivedIndexGeneration>, DurabilityError> {
@@ -307,8 +314,11 @@ mod tests {
     }
 
     fn capture(generations: Vec<DerivedIndexGeneration>) -> DerivedIndexCheckpointArtifacts {
-        DerivedIndexCheckpointArtifacts::capture(generations.into_iter().map(Arc::new).collect())
-            .unwrap()
+        DerivedIndexCheckpointArtifacts::capture(
+            generations.into_iter().map(Arc::new).collect(),
+            Vec::new(),
+        )
+        .unwrap()
     }
 
     #[test]

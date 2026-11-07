@@ -198,6 +198,7 @@ impl CapturedCheckpointBasis {
         let derived_index_checkpoint =
             super::super::derived_index_artifacts::DerivedIndexCheckpointArtifacts::capture(
                 index_state.retained_generations(&retained),
+                index_state.basis_checkpoint(&retained),
             )?;
         let captured = Self {
             envelope_cells: artifacts

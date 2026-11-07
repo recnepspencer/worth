@@ -78,7 +78,7 @@ fn refused_maintenance_cleanup_probe() {
                 .observe_branch(&runtime.main_branch_identity())
                 .unwrap();
             let refusal = graph
-                .ensure_primary_indexes_for_basis_for_test(&execution, runtime, &basis)
+                .carry_primary_index_basis_for_basis_for_test(&execution, runtime, &basis)
                 .unwrap_err();
             let Currency::Execution(cause) = refusal else {
                 panic!("maintenance keeps the native request stop")

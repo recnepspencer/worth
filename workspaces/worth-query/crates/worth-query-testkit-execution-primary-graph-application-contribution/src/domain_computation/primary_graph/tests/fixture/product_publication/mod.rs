@@ -25,7 +25,7 @@ pub fn publish_relational_mutation_on_application<
         (*(*application.product_runtime().clock_for_test()).admission_clock_for_test()).clone(),
     );
 
-    let (prepared, before_lease) =
+    let (prepared, _before_lease) =
         prepare_relational_mutation_with_before(request_execution, application, batch, &request);
     let outcome = prepared.execute_for_test(*request_execution);
     let Ok(PublicationOutcome::Performed(performed)) = outcome else {
@@ -42,19 +42,10 @@ pub fn publish_relational_mutation_on_application<
         let head = observation
             .commit_receipt()
             .expect("the fixture publication has a canonical commit");
-        let refreshed = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::index_maintenance_budget::refresh_with_cold_fallback(request_execution,
-            runtime,
-            worth_relational::facade::indexes::DerivedIndexBuildRequest {
-                source_commit_id: head.commit_id,
-                branch_id: head.branch_id.clone(),
-                index_ids: (*handle.primary_index_ids_for_test()).to_vec(),
-            },
-            &published_basis,
-            Some(before_lease.snapshot_handle()),
-        )
-        .expect("fixture publication incrementally refreshes its exact indexes");
-        assert_eq!(refreshed.generations.len(), (*handle.primary_index_ids_for_test()).len());
-        assert_eq!(refreshed.work.cold_record_slots, 0);
+        runtime
+            .index_authority()
+            .verify_index_basis_for_commit(request_execution, &head)
+            .expect("native preparation carried this publication's index selections");
     });
 }
 
