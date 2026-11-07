@@ -12,7 +12,9 @@ fn certification_surface_keeps_ordinary_lane_distinct_from_lower_lanes(
 
     assert_eq!(
         surface.public_surface_digest(),
-        inventory.public_surface_digest()
+        inventory
+            .public_surface_digest()
+            .expect("fixture digest must fit")
     );
     assert_eq!(surface.category_count(), inventory.rows().len());
     for row in inventory.rows() {

@@ -167,13 +167,17 @@ fn canonical_entry<'a>(
         .iter()
         .enumerate()
         .find_map(|(index, entry)| match entry.locus() {
-            CanonicalBasisLocus::Named(InternedString::Stored(name)) if name.ends_with(suffix) => {
+            CanonicalBasisLocus::Named(InternedString::Stored(name))
+                if name.as_str().ends_with(suffix) =>
+            {
                 let name = name.as_string();
                 {
                     Some((index, entry.value()))
                 }
             }
-            CanonicalBasisLocus::Named(InternedString::Raw(name)) if name.ends_with(suffix) => {
+            CanonicalBasisLocus::Named(InternedString::Raw(name))
+                if name.as_str().ends_with(suffix) =>
+            {
                 Some((index, entry.value()))
             }
             _ => None,

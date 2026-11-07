@@ -75,6 +75,9 @@ pub enum WorthQueryOrdinaryContributionComposedCheckedTopologyKind {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 enum WorthQueryOrdinaryCheckedTopologyRepr {
+    EvidenceIdentityDerivationDenied(
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    ),
     Orchestration {
         stop_stage: WorthQueryDeclarationEntryOrchestrationStage,
         retained_digest: Option<String>,
@@ -105,6 +108,24 @@ pub struct WorthQueryOrdinaryCheckedTopology {
 }
 
 impl WorthQueryOrdinaryCheckedTopology {
+    pub fn identity_refused(
+        cause: crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    ) -> Self {
+        Self {
+            repr: WorthQueryOrdinaryCheckedTopologyRepr::EvidenceIdentityDerivationDenied(cause),
+        }
+    }
+    pub fn identity_derivation_denial(
+        &self,
+    ) -> Option<&crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        match &self.repr {
+            WorthQueryOrdinaryCheckedTopologyRepr::EvidenceIdentityDerivationDenied(cause) => {
+                Some(cause)
+            }
+            _ => None,
+        }
+    }
+
     pub fn orchestration(
         stop_stage: WorthQueryDeclarationEntryOrchestrationStage,
         retained_digest: Option<String>,

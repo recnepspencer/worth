@@ -231,8 +231,10 @@ fn runtime_async_result_state_fails_closed_for_generation_drift_and_preview_mism
     let (basis_identity, checkpoint_identity) =
         live_subscription_async_identity(&runtime, view.name());
 
-    let drifted_checkpoint = runtime_async_checkpoint_label_identity("generation:drifted");
-    let drifted_basis = runtime_async_checkpoint_label_identity("basis:drifted");
+    let drifted_checkpoint = runtime_async_checkpoint_label_identity("generation:drifted")
+        .expect("fixture digest must fit");
+    let drifted_basis =
+        runtime_async_checkpoint_label_identity("basis:drifted").expect("fixture digest must fit");
 
     let generation_drift = runtime
         .project_async_result_state(

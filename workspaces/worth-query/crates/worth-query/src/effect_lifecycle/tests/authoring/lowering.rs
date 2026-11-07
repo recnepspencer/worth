@@ -154,7 +154,8 @@ fn admitted_writeback_plan_lowers_into_one_executable_effect_artifact() {
         WorthQueryEvidenceTag::new("basis"),
         binding.basis_identity(),
     )
-    .seal();
+    .seal()
+    .expect("fixture digest must fit");
     assert_eq!(
         writeback.causality_binding().basis_identity(),
         &expected_basis_identity

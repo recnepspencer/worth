@@ -7,7 +7,8 @@ fn denied_offline_temporal_async_artifact(
     requested_families: &[CausalEvidenceFamily],
 ) -> DeniedQueryCausalInspectionArtifact {
     let anchor = anchor_causal_observation(
-        QueryObservationReceipt::fixture(outcome, evidence_identities),
+        QueryObservationReceipt::fixture(outcome, evidence_identities)
+            .expect("positive fixture identity fits canonical digest bounds"),
         reason,
     )
     .expect("offline temporal/async receipt should anchor");

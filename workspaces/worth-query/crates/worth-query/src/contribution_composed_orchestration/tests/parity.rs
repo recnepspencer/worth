@@ -42,7 +42,9 @@ fn composed_orchestration_matches_explicit_declaration_bound_support_pipeline() 
         worth_proof::TransitionOutcome::Success(value) => value,
         _ => panic!("expected admitted support contribution"),
     };
-    let evidence_digest = admitted.admitted_for_reporting();
+    let evidence_digest = admitted
+        .admitted_for_reporting()
+        .expect("fixture digest must fit");
     let ready = match prepare_admitted_domain_capability_contribution_for_materialization(
         admitted,
         target_for_envelope(&handle, "face-a"),

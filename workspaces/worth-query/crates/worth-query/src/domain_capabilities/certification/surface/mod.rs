@@ -219,8 +219,7 @@ mod tests {
             inventory
                 .rows()
                 .iter()
-                .map(WorthQueryDomainCapabilityCertifiedSurfaceRow::row_digest)
-                .expect("positive fixture identity fits canonical digest bounds"),
+                .map(WorthQueryDomainCapabilityCertifiedSurfaceRow::row_digest),
         )?;
 
         assert_eq!(inventory.public_surface_digest(), expected);

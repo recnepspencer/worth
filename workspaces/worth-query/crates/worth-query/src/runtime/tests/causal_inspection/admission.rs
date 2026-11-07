@@ -27,7 +27,8 @@ fn changed_reference_set() -> CausalEvidenceReferenceSet {
                 )
                 .expect("fixture digest must fit"),
             ],
-        ),
+        )
+        .expect("positive fixture identity fits canonical digest bounds"),
         CausalInspectionReason::ChangedResult,
     )
     .unwrap();

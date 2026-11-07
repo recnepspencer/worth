@@ -40,7 +40,9 @@ pub fn worth_query_domain_capability_certification_surface(
 ) -> Result<WorthQueryDomainCapabilityCertificationSurface, IdentityDerivationDenial> {
     let inventory = worth_query_domain_capability_public_surface_inventory();
     Ok(WorthQueryDomainCapabilityCertificationSurface::new(
-        inventory.public_surface_digest()?,
+        inventory
+            .public_surface_digest()
+            .expect("fixture digest must fit")?,
         inventory.rows().len(),
     )?)
 }
@@ -56,7 +58,9 @@ mod tests {
 
         assert_eq!(
             surface.public_surface_digest(),
-            inventory.public_surface_digest()
+            inventory
+                .public_surface_digest()
+                .expect("fixture digest must fit")
         );
         assert_eq!(surface.category_count(), inventory.rows().len());
         assert!(!surface.certification_surface_digest().is_empty());

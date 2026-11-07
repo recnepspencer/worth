@@ -30,7 +30,8 @@ fn changed_anchor_with_route_signal_and_inspection() -> CausalObservationAnchor 
                 )
                 .expect("fixture digest must fit"),
             ],
-        ),
+        )
+        .expect("positive fixture identity fits canonical digest bounds"),
         CausalInspectionReason::ChangedResult,
     )
     .unwrap()

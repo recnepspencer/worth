@@ -33,8 +33,8 @@ impl WorthQueryLiveSubscriptionTargetIndex {
         target: WorthQueryLiveArtifactTarget,
         request: &DeclarativeLiveQueryRequest,
     ) -> Result<(), IdentityDerivationDenial> {
-        self.unregister(&target);
         let collection = request.target_collection_identity()?.as_str().to_owned();
+        self.unregister(&target);
         let entry = self.collections.entry(collection.clone()).or_default();
         entry.all.insert(target.clone());
         let routes = request_routes(request);

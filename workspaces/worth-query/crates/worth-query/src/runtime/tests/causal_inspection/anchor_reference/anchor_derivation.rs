@@ -49,7 +49,8 @@ fn anchors_cover_changed_suppressed_denied_preview_and_replay_observations() {
                 )
                 .expect("fixture digest must fit"),
             ],
-        );
+        )
+        .expect("positive fixture identity fits canonical digest bounds");
 
         let anchor = anchor_causal_observation(receipt, reason).unwrap();
 
@@ -98,7 +99,8 @@ fn anchor_counters_are_exact_and_width_bound_to_carried_reference_families() {
             )
             .expect("positive fixture identity fits canonical digest bounds"),
         ],
-    );
+    )
+    .expect("positive fixture identity fits canonical digest bounds");
 
     let anchor = anchor_causal_observation(receipt, CausalInspectionReason::ChangedResult).unwrap();
     let counters = anchor.counters();
@@ -120,10 +122,12 @@ fn anchor_counters_are_exact_and_width_bound_to_carried_reference_families() {
 
 #[test]
 fn anchor_derivation_denies_receipts_without_carried_evidence_identities() {
-    let receipt = QueryObservationReceipt::fixture(CausalObservationOutcome::Changed, Vec::new());
+    let receipt = QueryObservationReceipt::fixture(CausalObservationOutcome::Changed, Vec::new())
+        .expect("positive fixture identity fits canonical digest bounds");
 
     let error =
         anchor_causal_observation(receipt, CausalInspectionReason::ChangedResult).unwrap_err();
+    let error = match error { worth_query_execution::facade::causal_inspection::CausalInspectionConstructionStop::Anchor(denial) => denial, other => panic!("expected anchor denial, got {other:?}"), };
 
     assert_eq!(
         error.kind(),
@@ -142,7 +146,8 @@ fn anchor_derivation_seals_empty_fixture_labels_into_typed_reference_digests() {
             crate::runtime::tests::causal_inspection::causal_test_reference_digest(""),
         )
         .expect("fixture digest must fit")],
-    );
+    )
+    .expect("positive fixture identity fits canonical digest bounds");
 
     let anchor = anchor_causal_observation(receipt, CausalInspectionReason::ChangedResult)
         .expect("typed fixture references should seal empty source labels");
@@ -163,10 +168,12 @@ fn anchor_derivation_denies_inspection_reason_outcome_mismatch() {
             ),
         )
         .expect("fixture digest must fit")],
-    );
+    )
+    .expect("positive fixture identity fits canonical digest bounds");
 
     let error =
         anchor_causal_observation(receipt, CausalInspectionReason::ChangedResult).unwrap_err();
+    let error = match error { worth_query_execution::facade::causal_inspection::CausalInspectionConstructionStop::Anchor(denial) => denial, other => panic!("expected anchor denial, got {other:?}"), };
 
     assert_eq!(
         error.kind(),

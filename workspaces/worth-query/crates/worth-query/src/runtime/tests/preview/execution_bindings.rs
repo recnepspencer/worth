@@ -92,6 +92,7 @@ fn derive_only_preview_binds_handles_and_mutes_effects_without_residue() {
         )
     };
     let outcome = outcome.expect("fixture digest must fit");
+    let outcome = outcome;
 
     assert_eq!(outcome.preview_binding_count(), 4);
     assert_eq!(outcome.effect_binding_count(), 2);
@@ -259,6 +260,7 @@ fn preview_write_routes_bound_live_computed_and_redirected_effect_without_author
             preview.discard(),
         )
     };
+    let outcome = outcome.expect("fixture digest must fit");
 
     assert!(execution_evidence.iter().any(|evidence| {
         evidence.kind() == WorthQueryPreviewExecutionKind::LivePatch
@@ -277,9 +279,7 @@ fn preview_write_routes_bound_live_computed_and_redirected_effect_without_author
             && evidence.handle_name() == "ui.preview-execution"
     }));
 
-    let closeout = outcome
-        .expect("fixture digest must fit")
-        .closeout_evidence();
+    let closeout = outcome.closeout_evidence();
     assert_eq!(
         closeout.class_count(WorthQueryPreviewResidueClass::SubscriptionState),
         1
@@ -368,14 +368,13 @@ fn preview_sandboxed_write_intent_execution_stays_separate_from_delivery_residue
             preview.discard(),
         )
     };
+    let outcome = outcome.expect("fixture digest must fit");
 
     assert!(execution_evidence.iter().any(|evidence| {
         evidence.kind() == WorthQueryPreviewExecutionKind::PendingWriteIntent
             && evidence.handle_name() == "intent.preview-execution"
     }));
-    let closeout = outcome
-        .expect("fixture digest must fit")
-        .closeout_evidence();
+    let closeout = outcome.closeout_evidence();
     assert_eq!(closeout.effect_delivery_residue_count(), 0);
     assert_eq!(closeout.pending_write_intent_residue_count(), 1);
     assert_eq!(closeout.authoritative_residue_count(), 0);

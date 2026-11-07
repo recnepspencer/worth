@@ -10,7 +10,8 @@ fn basis_admissions_emit_canonical_evidence_tokens() {
         crate::runtime::WorthQueryBasisAdmissionEvidenceRow::rows_from_values([
             "basis|one",
             "basis:two",
-        ]),
+        ])
+        .expect("fixture evidence rows must fit"),
     )
     .expect("fixture digest must fit");
     let branch = crate::runtime::WorthQueryBranchBasisAdmission::new(
@@ -20,7 +21,8 @@ fn basis_admissions_emit_canonical_evidence_tokens() {
         crate::runtime::WorthQueryBasisAdmissionEvidenceRow::rows_from_values([
             "branch|one",
             "branch:two",
-        ]),
+        ])
+        .expect("fixture evidence rows must fit"),
     )
     .expect("fixture digest must fit");
 

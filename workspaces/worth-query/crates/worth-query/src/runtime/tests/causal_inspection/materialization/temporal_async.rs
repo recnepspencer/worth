@@ -13,7 +13,8 @@ fn reference_set_for(
     requested_families: &[CausalEvidenceFamily],
 ) -> CausalEvidenceReferenceSet {
     let anchor = anchor_causal_observation(
-        QueryObservationReceipt::fixture(outcome, evidence_identities),
+        QueryObservationReceipt::fixture(outcome, evidence_identities)
+            .expect("positive fixture identity fits canonical digest bounds"),
         reason,
     )
     .expect("temporal/async fixture should anchor");

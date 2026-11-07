@@ -103,7 +103,7 @@ impl WorthQueryRuntime {
                         | WorthQueryWriteCommand::VerifyExistingAspects { .. }
                 )
             {
-                record_planned_same_batch_symbolic_target(&mut planned_symbolic_targets, &command);
+                record_planned_same_batch_symbolic_target(&mut planned_symbolic_targets, &command)?;
                 deferred_backend_commands.push(self.admit_backend_write_command(command)?);
                 command_summaries.push(summary);
                 resolved_receipts.push(None);

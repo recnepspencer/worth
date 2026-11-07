@@ -38,7 +38,7 @@ pub fn assert_threshold_family_executes_through_facade(
                     &workspace,
                 )
                 .unwrap()
-                .execute(&mut workspace).expect("fixture digest must fit"),
+                .execute(&mut workspace),
         )
     else {
         panic!("the typed threshold must establish its baseline before it can compare a delta")

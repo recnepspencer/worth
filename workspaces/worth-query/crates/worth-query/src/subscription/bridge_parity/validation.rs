@@ -140,7 +140,7 @@ pub(super) fn validate_parity_sources(
                     validation_shape_role_evidence_identity(
                         "witness_declaration_family",
                         witness.declaration_family_label(),
-                    ),
+                    ).expect("positive fixture identity fits canonical digest bounds"),
                 ],
             ),
             QuerySubscriptionBridgeParityCounters::denied(),
@@ -201,7 +201,7 @@ pub(super) fn validate_parity_sources(
                     validation_label_list_evidence_identity(
                         "lowering_bridge_slices",
                         &semantics.bridge_slice_labels,
-                    ),
+                    ).expect("positive fixture identity fits canonical digest bounds"),
                     validation_label_list_evidence_identity(
                         "witness_bridge_slices",
                         witness.bridge_slice_labels(),

@@ -157,18 +157,19 @@ fn checked_lower_runtime_review_lane_preserves_denied_metadata(
         )
         .because("")
         .try_review();
+    let checked = checked.expect("fixture digest must fit");
 
     assert_eq!(
-        checked?.kind(),
+        checked.kind(),
         WorthQueryDomainCapabilityOutcomeKind::Denied
     );
-    assert_eq!(checked?.category(), "explanation-inspection");
-    assert_eq!(checked?.semantic_posture(), "explains-ambiguity");
+    assert_eq!(checked.category(), "explanation-inspection");
+    assert_eq!(checked.semantic_posture(), "explains-ambiguity");
     assert_eq!(
-        checked?.target_kind(),
+        checked.target_kind(),
         crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind::LowerRuntimeBoundaryEnvelope
     );
-    assert!(checked?.denial().is_some());
+    assert!(checked.denial().is_some());
 
     Ok(())
 }
@@ -270,7 +271,7 @@ fn lower_runtime_envelope(
         &route,
         &boundary,
         &retained_evidence,
-    )?)
+    ))
 }
 
 fn write_authority_boundary_source(
@@ -295,7 +296,7 @@ fn write_authority_boundary_source(
             ),
             Vec::new(),
         );
-    Ok(crate::runtime::WriteAuthorityExecutionReceipt::from_command(&command, mutation_receipt)?)
+    Ok(crate::runtime::WriteAuthorityExecutionReceipt::from_command(&command, mutation_receipt))
 }
 
 fn materialize_invariant_denial_from_source<S>(

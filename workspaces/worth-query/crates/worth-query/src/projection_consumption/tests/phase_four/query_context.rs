@@ -48,6 +48,7 @@ fn current_query_context_extracts_identity_and_row_bound_field_facts() {
         &crate::memory_workspace::admit_authored_entity_label(
             consumed.entity_identities()[0].source_row_identity(),
         )
+        .expect("fixture entity identity must fit")
     );
     assert_eq!(
         consumed.view_local_identities()[1].view_local_identity(),

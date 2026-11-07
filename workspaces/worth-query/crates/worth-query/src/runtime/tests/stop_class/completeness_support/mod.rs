@@ -115,7 +115,17 @@ pub(super) fn representative_runtime_stop_errors(
         ),
     );
 
+    let refusal = crate::evidence_identity::WorthQueryEvidenceIdentity::compose(
+        crate::evidence_identity::WorthQueryEvidenceScope::MutationEvidenceAggregateDigest,
+    )
+    .field_value(
+        crate::evidence_identity::WorthQueryEvidenceTag::new("runtime_stop_census"),
+        "x".repeat(4 * 1024 * 1024),
+    )
+    .seal()
+    .expect_err("oversized runtime identity fixture must refuse");
     vec![
+        WorthQueryRuntimeError::EvidenceIdentityDerivationDenied(refusal),
         WorthQueryRuntimeError::InstalledDomainAuthorityDenied(domain_handle_denial),
         WorthQueryRuntimeError::MissingBackend,
         WorthQueryRuntimeError::MissingRuntimeBridge,

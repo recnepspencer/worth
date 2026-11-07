@@ -256,10 +256,10 @@ mod tests {
         let Some(encoded) = (encoded).raw_text() else {
             panic!("the installed identity binding must encode a raw String");
         };
-        assert_eq!(encoded.capacity(), identity.encoded_index_len());
+        assert_eq!(encoded.len(), identity.encoded_index_len());
         assert_eq!(
             bytes,
-            identity.issuer().len() + identity.subject().len() + encoded.capacity()
+            identity.issuer().len() + identity.subject().len() + encoded.len()
         );
         assert_eq!(work, bytes);
         assert!(bytes < 512);

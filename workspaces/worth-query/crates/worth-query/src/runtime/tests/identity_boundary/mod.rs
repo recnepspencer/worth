@@ -10,7 +10,8 @@ fn evidence_identity_resists_joined_string_folklore() {
         crate::runtime::WorthQueryBasisAdmissionEvidenceRow::rows_from_values([
             "alpha",
             "beta|gamma",
-        ]),
+        ])
+        .expect("fixture evidence rows must fit"),
     )
     .expect("fixture digest must fit");
     let right = crate::runtime::WorthQueryPreviewBasisAdmission::new(
@@ -20,7 +21,8 @@ fn evidence_identity_resists_joined_string_folklore() {
         crate::runtime::WorthQueryBasisAdmissionEvidenceRow::rows_from_values([
             "basis|alpha",
             "beta|gamma",
-        ]),
+        ])
+        .expect("fixture evidence rows must fit"),
     )
     .expect("fixture digest must fit");
 

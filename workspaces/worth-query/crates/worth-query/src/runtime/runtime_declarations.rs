@@ -81,7 +81,7 @@ impl WorthQueryRuntime {
         self.live_subscription_index.register(
             WorthQueryLiveArtifactTarget::from_subscription_installation(&activation.installation),
             &activation.request,
-        );
+        )?;
         let future_selection = activation.active_lane_handle.future_selection();
         let pending_async_projection_digest = future_selection
             .future_selection_projection()
@@ -262,6 +262,8 @@ pub(super) fn admit_live_view_declaration_receipt(
     request: &DeclarativeLiveQueryRequest,
     schema_view: &QuerySchemaView,
 ) -> Result<(), WorthQueryRuntimeError> {
+    // Check the exact index identity before activation can allocate live state.
+    let _collection_identity = request.target_collection_identity()?;
     let admission_receipt = backend
         .admit_live_view_declaration(view_name, request, schema_view)
         .map_err(

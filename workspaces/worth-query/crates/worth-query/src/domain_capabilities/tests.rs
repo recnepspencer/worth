@@ -122,20 +122,16 @@ fn lower_runtime_boundary_drift_is_stale_not_rebind() {
         )
         .expect("fixture digest must fit"),
     )
-    .expect("fixture digest must fit")
     .expect("fixture digest must fit");
-    let eligible = success.expect("fixture digest must fit")(
-        evaluate_requested_domain_capability_contribution(requested),
-    )
-    .expect("fixture digest must fit");
-    let admitted = success.expect("fixture digest must fit")(
-        admit_eligible_domain_capability_contribution(eligible),
-    )
-    .expect("fixture digest must fit");
+    let eligible = success(evaluate_requested_domain_capability_contribution(requested))
+        .expect("fixture digest must fit");
+    let admitted = success(admit_eligible_domain_capability_contribution(eligible))
+        .expect("fixture digest must fit");
 
-    match prepare_admitted_domain_capability_contribution_for_materialization
-        .expect("fixture digest must fit")(admitted, lower_runtime_target("envelope-b"))
-    {
+    match prepare_admitted_domain_capability_contribution_for_materialization(
+        admitted,
+        lower_runtime_target("envelope-b"),
+    ) {
         TransitionOutcome::Stale(stale) => {
             assert_eq!(stale.category(), "support-traceability");
             assert_ne!(
@@ -178,9 +174,7 @@ fn every_category_reaches_admitted_form_through_the_same_lifecycle() {
             "invariant detail",
         )
         .expect("fixture digest must fit")
-        .bind_to_lower_runtime_boundary_target(
-            envelope_target.clone().expect("fixture digest must fit"),
-        )
+        .bind_to_lower_runtime_boundary_target(envelope_target.clone())
         .expect("fixture digest must fit"),
     );
     assert_admitted(

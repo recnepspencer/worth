@@ -83,10 +83,12 @@ fn value_meaning_golden_is_the_complete_shared_field_emitter() {
         .entries()
         .iter()
         .map(|entry| {
-            let Some(name) = (entry.locus()).raw_text() else {
-                panic!("golden loci are named text")
+            let worth_foundational::facade::CanonicalBasisLocus::Named(locus) = entry.locus()
+            else {
+                panic!("golden loci are named")
             };
-            (name.clone(), entry.value().clone())
+            let name = locus.raw_text().expect("golden loci are text");
+            (name.to_owned(), entry.value().clone())
         })
         .collect::<BTreeMap<_, _>>();
     let text = |value: &str| V::ExactText(value.to_owned().into());

@@ -10,7 +10,8 @@ fn runtime_surface_evidence_identities_resist_joined_string_folklore_collisions(
         crate::runtime::WorthQueryBasisAdmissionEvidenceRow::rows_from_values([
             "alpha",
             "beta|gamma",
-        ]),
+        ])
+        .expect("fixture evidence rows must fit"),
     )
     .expect("fixture digest must fit");
     let right = crate::runtime::WorthQueryPreviewBasisAdmission::new(
@@ -20,7 +21,8 @@ fn runtime_surface_evidence_identities_resist_joined_string_folklore_collisions(
         crate::runtime::WorthQueryBasisAdmissionEvidenceRow::rows_from_values([
             "basis|alpha",
             "beta|gamma",
-        ]),
+        ])
+        .expect("fixture evidence rows must fit"),
     )
     .expect("fixture digest must fit");
     let branch = crate::runtime::WorthQueryBranchBasisAdmission::new(
@@ -30,7 +32,8 @@ fn runtime_surface_evidence_identities_resist_joined_string_folklore_collisions(
         crate::runtime::WorthQueryBasisAdmissionEvidenceRow::rows_from_values([
             "alpha",
             "beta|gamma",
-        ]),
+        ])
+        .expect("fixture evidence rows must fit"),
     )
     .expect("fixture digest must fit");
 

@@ -97,7 +97,8 @@ fn evidence_reference_resolution_consumes_anchor_and_emits_sealed_reference_set(
                 )
                 .expect("positive fixture identity fits canonical digest bounds"),
             ],
-        ),
+        )
+        .expect("positive fixture identity fits canonical digest bounds"),
         CausalInspectionReason::ChangedResult,
     )
     .unwrap();
@@ -165,7 +166,8 @@ fn evidence_reference_resolution_denies_requested_family_missing_from_anchor() {
                 ),
             )
             .expect("fixture digest must fit")],
-        ),
+        )
+        .expect("positive fixture identity fits canonical digest bounds"),
         CausalInspectionReason::DeniedResult,
     )
     .unwrap();
@@ -223,7 +225,8 @@ fn evidence_reference_resolution_defaults_to_anchor_carried_families() {
                 )
                 .expect("fixture digest must fit"),
             ],
-        ),
+        )
+        .expect("positive fixture identity fits canonical digest bounds"),
         CausalInspectionReason::HistoricalReplayResult,
     )
     .unwrap();
