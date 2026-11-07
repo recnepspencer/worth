@@ -89,7 +89,7 @@ checkpoint just to discover ids.
 
 ## Counts
 
-321 named entries: D=175, C=11, V=1, B=26, T=4, R=104.
+327 named entries: D=175, C=12, V=1, B=26, T=4, R=109.
 
 D/C/V cover the full-construction engines and typed propagation listed below. B entries identify fixed trust boundaries, T entries identify the source oracle exceptions, and R entries make the non-reconstruction scan/primitive boundary explicit. Counts are inventory totals, never performance assertions.
 
@@ -277,6 +277,7 @@ D/C/V cover the full-construction engines and typed propagation listed below. B 
 
 | File:function | Lane/test posture and caller |
 | --- | --- |
+| `storage/residency/region_load.rs:install_history_prefixes` | C: private cold prefix installer; only calls are inside load_head's reconstruction scope after Head admission; no capability callback |
 | `runtime/state/subsystems/history_recovery.rs:recorded_postures` | C: HistorySubsystem::restore_branch_cells(lane, ..) |
 | `storage/residency/kind_projection/reconstruction/claim_copy.rs:claims_match` | C: kind_projection::rebuild_controlled |
 | `storage/residency/history_kind_cache.rs:verify_direction` | C: history_kind_cache::verify(lane, image) |
@@ -339,6 +340,11 @@ D/C/V cover the full-construction engines and typed propagation listed below. B 
 
 | File:function | Lane/test posture and caller |
 | --- | --- |
+| `history/data/required_output_positions/presence/admission.rs:validate` | R: complete current-route validation scratch scan; checkpoints every live entity and hashes selected publication payloads on the original request; cold load_head/readmit callers only; constructs no retained index/commitment and mints no lane |
+| `inspection/connectivity/current.rs:current_connectivity_summary` | R: explicit diagnostic graph traversal with caller checkpoints, work/entity/relation budgets and typed degradation; not ordinary publication |
+| `storage/substrate/record_arena/arena/slot_visitation.rs:try_visit_occupied` | R: generic callback-driven arena walker with navigation events; constructs no semantic tree |
+| `storage/substrate/shared_map/traits.rs:IntoIterator::into_iter (owned)` | R: explicit generic owned-container drain into a vector; visits only the supplied map |
+| `storage/substrate/shared_map/node.rs:into_values` | R: private recursive worker for the owned map drain; generic supplied-container helper without semantic reconstruction |
 | `storage/overlay/partition_content/record_history.rs:update` | R: delta entrance with mandatory predecessor and journal/changed keys; a new record or changed authenticated history basis may seed its changed intrinsic granule, but no unchanged partition/history fallback exists |
 | `symbols/data/string_interner.rs:snapshot` | R: explicit bulk read/inspection/compaction or generic supplied-input construction; not a semantic cold engine |
 | `content/reconstruction.rs:schema_has_references` | R: schema/retained-contract inspection for full content readmission; installation declarations, not model records/history |
