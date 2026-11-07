@@ -10,8 +10,8 @@ use crate::identity::data::{KindId, PartitionId, RelationId};
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use crate::storage::overlay::PartitionHistoryFrontiers;
 
-const MAGIC: &[u8] = b"WORTH-REL-REG6\n";
-const VERSION: u16 = 6;
+const MAGIC: &[u8] = b"WORTH-REL-REG7\n";
+const VERSION: u16 = 7;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) enum RelationalRegionImageKind {

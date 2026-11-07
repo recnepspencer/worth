@@ -127,9 +127,9 @@ pub(crate) fn journey(partitions: u32, slots: usize, dependencies: Dependencies)
             // a bounded positive grant, not a claim of the minimal peak.
             64 * 1024 * 1024,
             worth_execution::CancellationToken::new(),
-            // Projection traversal, retained-path rebuilding and streamed
-            // hashing now spend the same original Work grant.
-            8_000_000,
+            // Fund persistent path hashing for this actual 1023-relation
+            // change; the positive fixture does not pin a minimal invoice.
+            32_000_000,
         ))
         .unwrap();
     let execution = worth_execution::ExecutionRequest::leased(&lease);

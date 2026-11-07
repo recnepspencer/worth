@@ -122,6 +122,7 @@ pub(crate) struct RelationalBranchRootAxes {
 
 #[derive(Debug, Clone)]
 struct RelationalCommittedBranchRoot {
+    commit_change: Option<Arc<crate::storage::substrate::maintenance::CommitChange>>,
     descriptor: RelationalBranchRootDescriptor,
     canonical_envelope: Arc<CanonicalCommitEnvelope>,
     axes: RelationalBranchRootAxes,

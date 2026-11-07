@@ -42,63 +42,81 @@ pub(super) fn prepare(
     registry: &crate::schema::data::RelationalSchemaRegistry,
     symbols: &crate::runtime::RuntimeSymbolTable,
 ) -> Result<PreparedRelationalBranchRootCapture, RelationalBranchRootCaptureDenial> {
-    let root_id = issuer.issue_root_id()?;
-    let prepared_schema = prepare_schema(issuer, previous, &envelope, registry)?;
-    let prepared_regions = prepare_regions(
+    crate::execution::phase_observation::run(
         execution,
-        issuer,
-        root_id,
-        partitions,
-        published_delta,
-        previous,
-        symbols,
-        &prepared_schema.authority,
-    )?;
-    let publication_cost = prepared_schema.apply_cost(prepared_regions.publication_cost);
-    let correctness_index = RelationalRootCorrectnessIndex::AuthoritativeFallback;
-    let axes = RelationalBranchRootAxes {
-        storage_version: envelope.commit.version_id.0,
-        storage_root: prepared_regions.storage_root,
-        schema_root: prepared_schema.schema_root,
-        correctness_index,
-        visibility: RelationalBranchVisibilityCommitment::for_root(
-            &envelope,
-            prepared_regions.storage_root,
-            prepared_schema.schema_root,
-            correctness_index,
-        ),
-    };
-    let root = Arc::new(RelationalBranchRoot {
-        content: envelope.content.directory()?.clone(),
-        managed_source_image: std::sync::OnceLock::new(),
-        id: root_id,
-        regions: prepared_regions.regions,
-        entity_slot_count: prepared_regions.entity_slot_count,
-        relation_slot_count: prepared_regions.relation_slot_count,
-        content_accumulator: prepared_regions.content_accumulator,
-        output_publication_positions: if envelope.is_unmerged_output_publication_step() {
-            previous
-                .map(|root| root.output_publication_positions.clone())
-                .unwrap_or_default()
-        } else {
-            // The recovery class refuses merged physical output ownership.
-            // Carry no old selector across an unsupported canonical step.
-            crate::history::data::RequiredOutputPublicationPositions::unresolved_at(
-                envelope.commit.commit_id,
-            )
+        "root_admission",
+        || {
+            let root_id = issuer.issue_root_id()?;
+            let prepared_schema = prepare_schema(issuer, previous, &envelope, registry)?;
+            let change = crate::storage::substrate::maintenance::CommitChange::from_publication(
+                execution,
+                previous.map(Arc::as_ref),
+                published_delta,
+                Arc::clone(&envelope),
+                previous.is_none_or(|root| {
+                    root.schema_authority().authority_digest() != prepared_schema.schema_root
+                }),
+            )?;
+            let prepared_regions = prepare_regions(
+                execution,
+                issuer,
+                root_id,
+                partitions,
+                published_delta,
+                previous,
+                symbols,
+                &prepared_schema.authority,
+                &change,
+            )?;
+            let publication_cost = prepared_schema.apply_cost(prepared_regions.publication_cost);
+            let correctness_index = RelationalRootCorrectnessIndex::AuthoritativeFallback;
+            let axes = RelationalBranchRootAxes {
+                storage_version: envelope.commit.version_id.0,
+                storage_root: prepared_regions.storage_root,
+                schema_root: prepared_schema.schema_root,
+                correctness_index,
+                visibility: RelationalBranchVisibilityCommitment::for_root(
+                    &envelope,
+                    prepared_regions.storage_root,
+                    prepared_schema.schema_root,
+                    correctness_index,
+                ),
+            };
+            let root = Arc::new(RelationalBranchRoot {
+                content: envelope.content.directory()?.clone(),
+                managed_source_image: std::sync::OnceLock::new(),
+                id: root_id,
+                regions: prepared_regions.regions,
+                entity_slot_count: prepared_regions.entity_slot_count,
+                relation_slot_count: prepared_regions.relation_slot_count,
+                content_accumulator: prepared_regions.content_accumulator,
+                output_publication_positions: if envelope.is_unmerged_output_publication_step() {
+                    previous
+                        .map(|root| root.output_publication_positions.clone())
+                        .unwrap_or_default()
+                } else {
+                    // The recovery class refuses merged physical output ownership.
+                    // Carry no old selector across an unsupported canonical step.
+                    crate::history::data::RequiredOutputPublicationPositions::unresolved_at(
+                        envelope.commit.commit_id,
+                    )
+                },
+                schema_authority: prepared_schema.authority,
+                committed: Some(RelationalCommittedBranchRoot {
+                    commit_change: Some(change),
+                    descriptor: super::RelationalBranchRootDescriptor::new(
+                        axes.storage_root,
+                        axes.schema_root,
+                    ),
+                    canonical_envelope: envelope,
+                    axes,
+                    publication_cost,
+                }),
+            });
+            Ok(PreparedRelationalBranchRootCapture { root })
         },
-        schema_authority: prepared_schema.authority,
-        committed: Some(RelationalCommittedBranchRoot {
-            descriptor: super::RelationalBranchRootDescriptor::new(
-                axes.storage_root,
-                axes.schema_root,
-            ),
-            canonical_envelope: envelope,
-            axes,
-            publication_cost,
-        }),
-    });
-    Ok(PreparedRelationalBranchRootCapture { root })
+        RelationalBranchRootCaptureDenial::Execution,
+    )
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -111,6 +129,7 @@ fn prepare_regions(
     previous: Option<&Arc<RelationalBranchRoot>>,
     symbols: &crate::runtime::RuntimeSymbolTable,
     schema: &Arc<RelationalBranchRootSchemaAuthority>,
+    change: &Arc<crate::storage::substrate::maintenance::CommitChange>,
 ) -> Result<PreparedRootRegions, RelationalBranchRootCaptureDenial> {
     let (regions, publication_cost) = match previous {
         Some(previous) if previous.committed.is_some() => capture::build_incremental_regions(
@@ -121,6 +140,7 @@ fn prepare_regions(
             previous,
             symbols,
             schema,
+            Some(change),
         )?,
         _ => {
             let projected = published_delta.projected_partitions_from_access(partitions);

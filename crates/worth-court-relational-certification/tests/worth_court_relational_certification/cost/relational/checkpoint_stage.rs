@@ -40,36 +40,10 @@ const EMPTY_TOTAL: u64 = 2_376;
 
 #[test]
 fn checkpoint_stage_charges_the_documented_rate_for_each_encoded_byte() {
-    // T = (2 x bytes - magic)          final wire: sizing pass + emission pass
-    //   + classified sections          one more sizing pass per section
-    //   + sum(journal payloads)        one digest pass per resident envelope
-    //   + 2 x sum(embedded envelopes)  sizing + emission per carried envelope
-    //
-    //  0 rows: 2 x 1,108 - 16 + 176 + 0 + 2 x 0                       =     2,376
-    //  8 rows: 2 x 36,807 - 16 + 26,846 + 24,402 + 2 x 25,522         =   175,890
-    // 64 rows: 2 x 263,373 - 16 + 207,226 + 196,763 + 2 x 205,723     = 1,342,165
-    // classified = envelopes + roots + cells + mirror + index definitions:
-    //   1 + 1 + 172 + 1 + 1; 25,547 + 514 + 371 + 413 + 1;
-    //   205,918 + 516 + 376 + 415 + 1.
-    for (rows, bytes, sections, payloads, envelopes, total) in [
-        (0, 1_108, [1, 1, 172, 1, 1], 0, 0, 2_376),
-        (
-            8,
-            36_807,
-            [25_547, 514, 371, 413, 1],
-            24_402,
-            25_522,
-            175_890,
-        ),
-        (
-            64,
-            263_373,
-            [205_918, 516, 376, 415, 1],
-            196_763,
-            205_723,
-            1_342_165,
-        ),
-    ] {
+    // Compare the invoice to actual encoded bytes. Digest bytes have variable
+    // MessagePack widths, so a new commitment encoding must not require a
+    // replacement table of frozen byte or work totals.
+    for rows in [0, 8, 64] {
         let request = serial_request();
         let execution = ExecutionRequest::serial(&request);
         let runtime = runtime_with_rows(rows);
@@ -86,31 +60,26 @@ fn checkpoint_stage_charges_the_documented_rate_for_each_encoded_byte() {
                     .unwrap()
             })
             .unwrap();
-        let [envelope_section, roots, cells, mirror, indexes] = sections;
-        let classified: usize = sections.iter().sum();
-        assert_eq!(checkpoint.bytes().len(), bytes, "rows={rows}");
-        assert_eq!(
-            checkpoint.captured_sections(),
-            Some(NativeCheckpointSectionBytes {
-                total: bytes,
-                envelopes: envelope_section,
-                branch_roots: roots,
-                branch_cells: cells,
-                partition_mirror: mirror,
-                derived_indexes: indexes,
-                framing_and_metadata: bytes - classified,
-            }),
-            "rows={rows}"
-        );
-        assert_eq!(journal, payloads, "rows={rows}");
+        let bytes = checkpoint.bytes().len();
+        let NativeCheckpointSectionBytes {
+            total,
+            envelopes,
+            branch_roots,
+            branch_cells,
+            partition_mirror,
+            derived_indexes,
+            framing_and_metadata,
+        } = checkpoint.captured_sections().unwrap();
+        let classified =
+            envelopes + branch_roots + branch_cells + partition_mirror + derived_indexes;
+        assert_eq!(total, bytes);
+        assert_eq!(classified + framing_and_metadata, bytes);
         let embedded: usize = embedded_envelope_lengths(checkpoint.bytes()).iter().sum();
-        assert_eq!(embedded, envelopes, "rows={rows}");
         let derived = 2 * bytes as u64 - CHECKPOINT_MAGIC_BYTES
             + classified as u64
-            + payloads as u64
-            + 2 * envelopes as u64;
-        assert_eq!(derived, total, "rows={rows}: the arithmetic above");
-        assert_eq!(report.charged_work(), total, "rows={rows}");
+            + journal as u64
+            + 2 * embedded as u64;
+        assert_eq!(report.charged_work(), derived, "rows={rows}");
         drop(checkpoint);
         assert_eq!(request.memory().unwrap().charged_memory_bytes(), 0);
     }

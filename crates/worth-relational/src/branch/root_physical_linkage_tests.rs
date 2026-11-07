@@ -36,6 +36,7 @@ fn equal_envelope_bytes_cannot_replace_exact_physical_catalog_custody() {
     };
     let mut root = (*RelationalBranchRoot::empty()).clone();
     root.committed = Some(RelationalCommittedBranchRoot {
+        commit_change: None,
         descriptor,
         canonical_envelope: Arc::clone(&envelope),
         axes,

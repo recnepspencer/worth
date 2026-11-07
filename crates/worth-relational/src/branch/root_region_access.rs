@@ -1,6 +1,12 @@
 use super::*;
 
 impl RelationalBranchRoot {
+    pub(crate) fn commit_change(
+        &self,
+    ) -> Option<&Arc<crate::storage::substrate::maintenance::CommitChange>> {
+        self.committed.as_ref()?.commit_change.as_ref()
+    }
+
     pub(crate) fn accepted_head_region_witness(
         &self,
         id: PartitionId,

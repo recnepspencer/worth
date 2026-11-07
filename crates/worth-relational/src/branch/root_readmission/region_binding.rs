@@ -176,6 +176,7 @@ impl RelationalBranchRoot {
                 ),
             schema_authority,
             committed: Some(RelationalCommittedBranchRoot {
+                commit_change: None,
                 descriptor,
                 canonical_envelope: envelope,
                 axes,

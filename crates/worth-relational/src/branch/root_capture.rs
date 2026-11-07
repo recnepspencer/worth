@@ -90,6 +90,7 @@ pub(super) fn build_incremental_regions(
     previous: &RelationalBranchRoot,
     symbols: &crate::runtime::RuntimeSymbolTable,
     schema: &Arc<super::RelationalBranchRootSchemaAuthority>,
+    change: Option<&Arc<crate::storage::substrate::maintenance::CommitChange>>,
 ) -> Result<
     (
         Arc<RelationalPersistentRegionSet>,
@@ -120,6 +121,7 @@ pub(super) fn build_incremental_regions(
                 journal,
                 schema.clone(),
                 symbols,
+                change.map(Arc::as_ref),
             )
         } else {
             crate::storage::residency::PreparedResidentRegion::initial(

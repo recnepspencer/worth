@@ -3,7 +3,7 @@
 use super::*;
 use crate::storage::substrate::{HistoryAppendFrontier, HistoryFrontierSibling};
 impl DigestIndex {
-    pub(in crate::storage::overlay::partition_content) fn append_frontier(
+    pub(crate) fn append_frontier(
         &self,
         last_value: Option<[u8; 32]>,
     ) -> Option<HistoryAppendFrontier> {
@@ -42,9 +42,7 @@ impl DigestIndex {
             last: None,
         })
     }
-    pub(in crate::storage::overlay::partition_content) fn from_append_frontier(
-        frontier: &HistoryAppendFrontier,
-    ) -> Option<Self> {
+    pub(crate) fn from_append_frontier(frontier: &HistoryAppendFrontier) -> Option<Self> {
         let Some((key, value)) = frontier.last else {
             return frontier.siblings.is_empty().then(Self::default);
         };
@@ -82,9 +80,7 @@ impl DigestIndex {
             history_last_value: Some(Arc::new(HistoryLastValue { key, value })),
         })
     }
-    pub(in crate::storage::overlay::partition_content) fn next_history_index(
-        &self,
-    ) -> Option<u128> {
+    pub(crate) fn next_history_index(&self) -> Option<u128> {
         let mut current = self.root.as_deref();
         while let Some(node) = current {
             if let Some(children) = &node.children {
@@ -108,11 +104,9 @@ mod tests {
         let opening = full.append_frontier(Some([7; 32])).unwrap();
         let mut partial = DigestIndex::from_append_frontier(&opening).unwrap();
         let before = partial.digest();
+        assert_eq!(partial.contains_key(0), Err(DigestIndexError::OpaqueBranch));
         for value in [Some([99; 32]), None] {
-            assert_eq!(
-                partial.set(0, value),
-                Err(PartitionContentDigestError::InvalidHistoryCoverage)
-            );
+            assert_eq!(partial.set(0, value), Err(DigestIndexError::OpaqueBranch));
             assert_eq!(partial.digest(), before);
         }
         partial.set(8, Some([8; 32])).unwrap();

@@ -9,7 +9,7 @@ use worth_relational::facade::{
     transactions::*,
 };
 
-pub(super) struct World {
+pub(crate) struct World {
     pub runtime: RelationalRuntime,
     pub entities: Vec<EntityId>,
     pub relations: Vec<RelationId>,

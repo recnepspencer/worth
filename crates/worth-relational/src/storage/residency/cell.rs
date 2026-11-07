@@ -43,6 +43,7 @@ pub(crate) struct RelationalColdRegion {
 pub(crate) struct ResidentRegion {
     pub(super) partition: PartitionState,
     pub(super) commitment: Option<PartitionContentCommitment>,
+    pub(super) kind_indexes: Option<Arc<super::kind_incremental::RegionKindIndexes>>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -119,23 +120,26 @@ impl RelationalRegionResidency {
     pub(super) fn resident(
         partition: PartitionState,
         commitment: PartitionContentCommitment,
+        kind_indexes: Arc<super::kind_incremental::RegionKindIndexes>,
     ) -> RelationalResidencyLease<Full> {
-        Self::resident_with_commitment(partition, Some(commitment))
+        Self::resident_with_commitment(partition, Some(commitment), Some(kind_indexes))
     }
 
     pub(super) fn resident_uncommitted(
         partition: PartitionState,
     ) -> RelationalResidencyLease<Full> {
-        Self::resident_with_commitment(partition, None)
+        Self::resident_with_commitment(partition, None, None)
     }
 
     fn resident_with_commitment(
         partition: PartitionState,
         commitment: Option<PartitionContentCommitment>,
+        kind_indexes: Option<Arc<super::kind_incremental::RegionKindIndexes>>,
     ) -> RelationalResidencyLease<Full> {
         let region = Arc::new(ResidentRegion {
             partition,
             commitment,
+            kind_indexes,
         });
         let cell = Arc::new(Self {
             partition_id: region.partition.partition_id,
