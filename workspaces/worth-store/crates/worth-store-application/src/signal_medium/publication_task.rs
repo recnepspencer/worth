@@ -28,9 +28,12 @@ impl SignalPublications {
                 let Ok(state) = task.state.try_lock() else {
                     return Posture::Busy;
                 };
+                if state.invalid || matches!(state.endpoint, Some(Endpoint::Unresolved)) {
+                    return Posture::Unsettled;
+                }
                 if !matches!(
                     state.endpoint,
-                    Some(Endpoint::Committed(_) | Endpoint::Unresolved | Endpoint::NoEffect)
+                    Some(Endpoint::Committed(_) | Endpoint::NoEffect)
                 ) {
                     return Posture::Unsettled;
                 }

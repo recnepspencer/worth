@@ -108,6 +108,10 @@ fn indeterminate_start_retains_original_custody_and_refuses_replacement() {
     let _ = task.remember_refusal(SignalPublicationObservation::Finished(
         SignalPublicationCompletion::indeterminate(Denial::PublicationUnresolved),
     ));
+    assert_eq!(
+        publications.posture(),
+        SignalPublicationTaskPosture::Unsettled
+    );
     assert!(matches!(
         publications.task(&successor, &execution),
         Err(Denial::PublicationUnresolved)
