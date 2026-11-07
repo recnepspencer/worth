@@ -40,13 +40,13 @@ fn every_contribution_family_materializes_under_one_installed_authority(
 
     macro_rules! assert_installed_authority {
         ($artifact:expr) => {{
-            let artifact = $artifact;
-            let authority = artifact?
+            let artifact = $artifact?;
+            let authority = artifact
                 .installed_authority()
                 .expect("installed contribution materialization must retain authority");
             assert_eq!(authority.authority_identity(), &expected_authority);
             assert_eq!(authority.package_identity(), &expected_package);
-            assert_eq!(artifact?.installed_world_identity(), Some(&expected_world));
+            assert_eq!(artifact.installed_world_identity(), Some(&expected_world));
         }};
     }
 

@@ -19,17 +19,17 @@ fn conditional_aspect_and_broad_locality_require_signal_authority() {
     assert!(mutation_requires_signal_authority(
         &aspects,
         false,
-        &mutation(conditional)
+        &mutation(conditional).expect("fixture digest must fit")
     ));
     assert!(!mutation_requires_signal_authority(
         &aspects,
         false,
-        &mutation(unrelated.clone())
+        &mutation(unrelated.clone()).expect("fixture digest must fit")
     ));
     assert!(mutation_requires_signal_authority(
         &aspects,
         true,
-        &mutation(unrelated)
+        &mutation(unrelated).expect("fixture digest must fit")
     ));
 }
 

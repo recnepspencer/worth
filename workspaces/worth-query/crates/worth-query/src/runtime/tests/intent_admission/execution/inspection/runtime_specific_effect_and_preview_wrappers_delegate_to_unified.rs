@@ -48,7 +48,8 @@ fn runtime_specific_effect_and_preview_wrappers_delegate_to_unified_inspection_e
             .expect("preview session should be admitted");
         preview.use_view(&live);
         preview.discard()
-    };
+    }
+    .expect("fixture digest must fit");
 
     let preview_delegated = runtime
         .inspect_preview_outcome(request_execution, &outcome)

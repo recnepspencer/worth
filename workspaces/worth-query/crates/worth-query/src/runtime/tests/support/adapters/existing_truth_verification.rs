@@ -124,8 +124,7 @@ impl WorthQueryRuntimeExistingTruthVerificationAdapter for TestExistingTruthVeri
             let field = WorthQueryExistingTruthProbeField::from_admitted_aspect_touch(
                 aspect_touch.clone(),
                 value.clone(),
-            )
-            .expect("fixture digest must fit");
+            );
             fields.push(field.map_err(|cause| {
                 WorthQueryExistingTruthProbeDenial::new(
                     request.binding(),

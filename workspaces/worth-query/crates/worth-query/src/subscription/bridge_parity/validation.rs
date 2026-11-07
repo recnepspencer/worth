@@ -132,15 +132,15 @@ pub(super) fn validate_parity_sources(
                     validation_shape_role_evidence_identity(
                         "declaration_family",
                         declaration.family().as_str(),
-                    )?,
+                    ).map_err(|cause| QuerySubscriptionBridgeParityError::identity_refused(cause, witness.evidence_identity().clone()))?,
                     validation_shape_role_evidence_identity(
                         "witness_query_family",
                         witness.query_family_label(),
-                    ).expect("fixture digest must fit"),
+                    ).map_err(|cause| QuerySubscriptionBridgeParityError::identity_refused(cause, witness.evidence_identity().clone()))?,
                     validation_shape_role_evidence_identity(
                         "witness_declaration_family",
                         witness.declaration_family_label(),
-                    ).expect("fixture digest must fit"),
+                    ).map_err(|cause| QuerySubscriptionBridgeParityError::identity_refused(cause, witness.evidence_identity().clone()))?,
                 ],
             ),
             QuerySubscriptionBridgeParityCounters::denied(),
@@ -193,19 +193,19 @@ pub(super) fn validate_parity_sources(
                     validation_shape_role_evidence_identity(
                         "lowering_bridge_family",
                         lowering.bridge_family().as_str(),
-                    )?,
+                    ).map_err(|cause| QuerySubscriptionBridgeParityError::identity_refused(cause, witness.evidence_identity().clone()))?,
                     validation_shape_role_evidence_identity(
                         "witness_bridge_family",
                         witness.bridge_family_label(),
-                    ).expect("fixture digest must fit"),
+                    ).map_err(|cause| QuerySubscriptionBridgeParityError::identity_refused(cause, witness.evidence_identity().clone()))?,
                     validation_label_list_evidence_identity(
                         "lowering_bridge_slices",
                         &semantics.bridge_slice_labels,
-                    ).expect("fixture digest must fit"),
+                    ).map_err(|cause| QuerySubscriptionBridgeParityError::identity_refused(cause, witness.evidence_identity().clone()))?,
                     validation_label_list_evidence_identity(
                         "witness_bridge_slices",
                         witness.bridge_slice_labels(),
-                    )?,
+                    ).map_err(|cause| QuerySubscriptionBridgeParityError::identity_refused(cause, witness.evidence_identity().clone()))?,
                 ],
             ),
             QuerySubscriptionBridgeParityCounters::denied(),
@@ -257,11 +257,11 @@ pub(super) fn validate_parity_sources(
                     validation_shape_role_evidence_identity(
                         "declaration_basis",
                         declaration.basis_posture().as_str(),
-                    )?,
+                    ).map_err(|cause| QuerySubscriptionBridgeParityError::identity_refused(cause, witness.evidence_identity().clone()))?,
                     validation_shape_role_evidence_identity(
                         "witness_basis",
                         witness.basis_posture_label(),
-                    ).expect("fixture digest must fit"),
+                    ).map_err(|cause| QuerySubscriptionBridgeParityError::identity_refused(cause, witness.evidence_identity().clone()))?,
                 ],
             ),
             QuerySubscriptionBridgeParityCounters::denied(),
@@ -314,11 +314,11 @@ pub(super) fn validate_parity_sources(
                     validation_shape_role_evidence_identity(
                         "lowering_signal_strategy",
                         lowering.signal_strategy_request().request_kind().as_str(),
-                    )?,
+                    ).map_err(|cause| QuerySubscriptionBridgeParityError::identity_refused(cause, witness.evidence_identity().clone()))?,
                     validation_shape_role_evidence_identity(
                         "witness_signal_strategy",
                         witness.signal_strategy_class_label(),
-                    ).expect("fixture digest must fit"),
+                    ).map_err(|cause| QuerySubscriptionBridgeParityError::identity_refused(cause, witness.evidence_identity().clone()))?,
                 ],
             ),
             QuerySubscriptionBridgeParityCounters::denied(),

@@ -93,7 +93,7 @@ impl WorthQueryDomainCapabilityCertifiedSurfaceInventory {
         Ok(compose_public_surface_digest(
             self.rows
                 .iter()
-                .map(|row| row.row_digest().expect("fixture digest must fit"))
+                .map(WorthQueryDomainCapabilityCertifiedSurfaceRow::row_digest)
                 .collect::<Result<Vec<_>, _>>()?,
         )?)
     }

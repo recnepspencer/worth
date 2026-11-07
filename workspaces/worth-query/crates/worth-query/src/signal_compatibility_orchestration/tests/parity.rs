@@ -58,9 +58,11 @@ fn bridge_request_path_matches_explicit_continuation_preparation_posture() {
         .expect("fixture digest must fit")
         .into_checked()
         .into_outcome();
-    let orchestrated = handle.orchestrate_signal_compatibility(
-        orchestration_input(&handle, "face-a").with_bridge_request(bridge_request()),
-    );
+    let orchestrated = handle
+        .orchestrate_signal_compatibility(
+            orchestration_input(&handle, "face-a").with_bridge_request(bridge_request()),
+        )
+        .expect("fixture digest must fit");
 
     assert_eq!(
         continuation_outcome_token(&explicit),

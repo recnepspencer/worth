@@ -109,10 +109,7 @@ fn foreign_handle_and_stale_generation_deny_before_contribution_successors_are_i
     let owner_handle = owner.domain(InstalledDomain).unwrap();
     let foreign_denial = owner_handle.contributions(&foreign).unwrap_err();
     assert_eq!(
-        foreign_denial
-            .handle_denial()
-            .expect("handle denial retained")
-            .kind(),
+        foreign_denial.kind(),
         WorthQueryDomainHandleDenialKind::ForeignRuntime
     );
 
@@ -127,10 +124,7 @@ fn foreign_handle_and_stale_generation_deny_before_contribution_successors_are_i
     assert!(current_handle.installation_generation() > stale_generation);
     let stale_denial = stale_handle.contributions(&current).unwrap_err();
     assert_eq!(
-        stale_denial
-            .handle_denial()
-            .expect("handle denial retained")
-            .kind(),
+        stale_denial.kind(),
         WorthQueryDomainHandleDenialKind::StaleInstallationGeneration
     );
     let stale_denial = stale_surface

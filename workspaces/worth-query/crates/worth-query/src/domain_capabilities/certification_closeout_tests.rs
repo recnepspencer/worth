@@ -238,7 +238,7 @@ fn certification_bundle_boundary_and_failure_outputs_track_live_surfaces(
     );
     assert_eq!(
         bundle.output_digest("failure_digest"),
-        Some(denial.failure_for_reporting())
+        Some(denial.failure_for_reporting()?)
     );
 
     Ok(())

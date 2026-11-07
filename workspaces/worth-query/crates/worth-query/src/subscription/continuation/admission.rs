@@ -29,6 +29,7 @@ pub fn admit_subscription_continuation_evidence(
     authority_identity: WorthQueryEvidenceIdentity,
     remap_width: ContinuationRemapWidth,
 ) -> Result<SubscriptionContinuationEvidence, SubscriptionContinuationError> {
+    let source_for_denial = active_lane_digest.evidence_identity().clone();
     let checkpoint_identity =
         lifecycle_continuation_ordinary_checkpoint_identity(active_lane_digest.evidence_identity());
     admit_subscription_continuation_evidence_with_active_identity(
@@ -36,7 +37,14 @@ pub fn admit_subscription_continuation_evidence(
         continuation_class,
         source_identity,
         target_identity,
-        QuerySubscriptionFutureSelection::ordinary()?,
+        QuerySubscriptionFutureSelection::ordinary().map_err(|cause| {
+            SubscriptionContinuationError::new(
+                SubscriptionContinuationDenialKind::EvidenceIdentityDerivationDenied(cause),
+                "canonical digest refused continuation evidence",
+                source_for_denial.clone(),
+                ActiveSubscriptionCounters::default(),
+            )
+        })?,
         basis_identity,
         checkpoint_identity,
         authority_identity,
@@ -80,6 +88,7 @@ pub fn admit_subscription_continuation_evidence_with_active_identity(
         ));
     }
 
+    let source_for_denial = active_lane_digest.evidence_identity().clone();
     Ok(SubscriptionContinuationEvidence::new(
         active_lane_digest,
         continuation_class,
@@ -90,5 +99,13 @@ pub fn admit_subscription_continuation_evidence_with_active_identity(
         checkpoint_identity,
         authority_identity,
         remap_width,
-    )?)
+    )
+    .map_err(|cause| {
+        SubscriptionContinuationError::new(
+            SubscriptionContinuationDenialKind::EvidenceIdentityDerivationDenied(cause),
+            "canonical digest refused continuation evidence",
+            source_for_denial.clone(),
+            ActiveSubscriptionCounters::default(),
+        )
+    })?)
 }

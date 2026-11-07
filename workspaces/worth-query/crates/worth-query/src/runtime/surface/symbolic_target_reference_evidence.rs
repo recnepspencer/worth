@@ -53,7 +53,6 @@ impl WorthQuerySymbolicTargetReferenceEvidence {
                 .or(target_collection)
                 .map(|collection| {
                     WorthQueryMutationTargetCollectionIdentity::new("symbolic-target", collection)
-                        .expect("fixture digest must fit")
                 })
                 .transpose()?,
         })
