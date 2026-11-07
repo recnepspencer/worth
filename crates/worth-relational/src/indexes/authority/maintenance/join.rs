@@ -1,4 +1,5 @@
 //! Delta joins use persistent leg memberships, including unpaired relations.
+use super::root_view::IndexRootView;
 use super::{
     change_routing::ChangeRouting, entry_edits::edit, persistent_allocation::UngroupedAllocation,
     reads, record_metadata, work::MaintenanceWork,
@@ -9,7 +10,6 @@ use crate::indexes::data::{
     RelationJoinDefinition, RelationJoinEntry, RelationJoinIndex, RelationJoinKey, RelationJoinLeg,
     RelationJoinSharedEndpoint,
 };
-use crate::runtime::VisibilityProjectionView;
 use std::collections::BTreeSet;
 
 type Coordinate = (EntityId, EntityId);
@@ -21,8 +21,8 @@ pub(super) fn refresh(
     index: &mut RelationJoinIndex,
     definition: RelationJoinDefinition,
     changes: &ChangeRouting,
-    before: Option<&VisibilityProjectionView>,
-    after: &VisibilityProjectionView,
+    before: Option<&IndexRootView>,
+    after: &IndexRootView,
     work: &mut MaintenanceWork,
 ) -> Result<bool, Denial> {
     let previous = match index.legs() {
@@ -171,7 +171,7 @@ fn row(
 
 fn coordinate(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    after: &VisibilityProjectionView,
+    after: &IndexRootView,
     metadata: Option<record_metadata::RelationMetadata>,
     leg: RelationJoinLeg,
     shared_kind: KindId,
@@ -197,8 +197,8 @@ fn affected_relations(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     definition: RelationJoinDefinition,
     changes: &ChangeRouting,
-    before: Option<&VisibilityProjectionView>,
-    after: &VisibilityProjectionView,
+    before: Option<&IndexRootView>,
+    after: &IndexRootView,
     work: &mut MaintenanceWork,
 ) -> Result<BTreeSet<RelationId>, Denial> {
     let mut relations = BTreeSet::new();
@@ -240,7 +240,7 @@ fn affected_relations(
                         reads::adjacency(execution, view, entity.id, kind, outgoing, work)?
                     {
                         work.ordered::<RelationId, ()>(relations.len(), 1, 0)?;
-                        relations.insert(relation.relation_id);
+                        relations.insert(relation.id);
                     }
                 }
             }

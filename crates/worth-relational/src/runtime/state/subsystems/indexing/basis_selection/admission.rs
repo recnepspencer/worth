@@ -32,7 +32,9 @@ impl BasisSelections {
                     Some(&generation.source_branch_id),
                     generation.applicability.version_id,
                 )
-                .map_or(0, |basis| basis.entries.len())
+                .map_or(0, |basis| {
+                    basis.entries.len().saturating_add(basis.empty.len())
+                })
                 .saturating_add(generations.len())
             })
             .ok_or(StopKind::AccountingOverflow)?;
@@ -81,8 +83,13 @@ impl super::PreparedIndexBasisSelection {
         prepare: &mut impl FnMut(u64, u64) -> Result<(), Stop>,
     ) -> Result<(), crate::indexes::data::SelectedIndexGenerationAdmissionStop<Stop>> {
         use crate::indexes::data::SelectedIndexGenerationAdmissionStop as Refusal;
-        let (units, bytes) = super::payment::inner(self.entries.len().saturating_add(changes))
-            .ok_or(Refusal::AccountingOverflow)?;
+        let (units, bytes) = super::payment::inner(
+            self.entries
+                .len()
+                .saturating_add(self.empty.len())
+                .saturating_add(changes),
+        )
+        .ok_or(Refusal::AccountingOverflow)?;
         for _ in 0..changes {
             prepare(units, bytes).map_err(Refusal::Admission)?;
         }

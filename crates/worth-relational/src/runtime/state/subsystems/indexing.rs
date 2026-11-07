@@ -127,7 +127,7 @@ pub(crate) struct IndexingSubsystem {
     state: RuntimeOwnedState<IndexingState>,
 }
 
-/// Read-only handle to installed definitions used while sealing commit changes.
+/// Index catalog custody for change sealing and native publication preparation.
 #[derive(Debug)]
 pub(crate) struct IndexDefinitionReadBinding {
     state: RuntimeOwnedState<IndexingState>,
@@ -142,6 +142,12 @@ impl Clone for IndexDefinitionReadBinding {
 }
 
 impl IndexDefinitionReadBinding {
+    pub(crate) fn indexing_subsystem(&self) -> IndexingSubsystem {
+        IndexingSubsystem {
+            state: self.state.share(),
+        }
+    }
+
     pub(crate) fn with_field<R>(
         &self,
         aspect: &AspectKey,

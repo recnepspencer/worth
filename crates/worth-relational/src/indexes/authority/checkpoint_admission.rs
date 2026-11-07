@@ -58,13 +58,15 @@ pub(crate) fn verify_checkpoint_index_bases(
             return Err(corrupt("index basis mismatches selected checkpoint root").into());
         }
         let source = IndexProjectionSource::selected(projection);
-        for (index, generation) in &basis.bindings {
+        for (index, generation) in basis
+            .bindings
+            .iter()
+            .map(|(index, generation)| (index, Some(generation)))
+            .chain(basis.empty.iter().map(|index| (index, None)))
+        {
             let definition = indexes
                 .definition(*index)
                 .ok_or_else(|| corrupt("index basis definition is unavailable"))?;
-            let generation = indexes
-                .checkpoint_generation(*generation)
-                .ok_or_else(|| corrupt("index basis payload is unavailable"))?;
             let mut expected = super::execute_index_packets(
                 execution,
                 &source,
@@ -81,7 +83,25 @@ pub(crate) fn verify_checkpoint_index_bases(
                 .pop()
                 .and_then(|(_, result)| result.entries)
                 .ok_or_else(|| corrupt("checkpoint index projection is unavailable"))?;
-            if generation.entries != expected {
+            let agrees = if let Some(generation) = generation {
+                indexes
+                    .checkpoint_generation(*generation)
+                    .is_some_and(|generation| generation.entries == expected)
+            } else {
+                use crate::indexes::data::DerivedIndexEntries as E;
+                match &expected {
+                    E::EntityField(rows) => rows.is_empty(),
+                    E::RelationField(rows) => rows.is_empty(),
+                    E::RelatedEntityOrdering(rows) => rows.is_empty(),
+                    E::RelationJoin(rows) => {
+                        rows.is_empty()
+                            && rows.legs().is_some_and(|legs| {
+                                legs.left.relation_count() == 0 && legs.right.relation_count() == 0
+                            })
+                    }
+                }
+            };
+            if !agrees {
                 return Err(corrupt(
                     "checkpoint index selection differs from its authoritative root",
                 )

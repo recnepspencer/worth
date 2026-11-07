@@ -1,22 +1,21 @@
 use super::*;
 
-impl IndexAuthority<'_> {
+impl super::owner::IndexMaintenanceOwner<'_> {
     pub(super) fn prepare_refresh(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: &DerivedIndexBuildRequest,
-        before: Option<&VisibilityProjectionView>,
-        after: &VisibilityProjectionView,
+        before: Option<&root_view::IndexRootView>,
+        after: &root_view::IndexRootView,
         work: &mut MaintenanceWork,
     ) -> Result<PreparedRefresh, DerivedIndexMaintenanceDenialKind> {
-        let root = after.selected_root().expect(/* Proof: Maintenance admission requires an exact selected root before constructing this private pass; exact read bounds and metadata are available for that root. */ "validated exact root");
+        let root = after.root();
         let schema_version = root.schema_authority().schema_version();
         let authoring = root
             .canonical_envelope()
             .map(|envelope| &envelope.branch_context);
         if work.routes_installed_indexes()
             && self
-                .runtime
                 .indexes
                 .with_definitions(|definitions| definitions.is_empty())
         {
@@ -36,99 +35,19 @@ impl IndexAuthority<'_> {
         let mut pending_fields = Vec::new();
         let mut reused = Vec::new();
         let mut cold_changes = None;
-        let mut patch_changes = None;
         let mut cold_routing = None;
         let mut patch_routing = None;
-        let mut basis = if let Some(before) = before {
-            let previous = before
-                .selected_root()
-                .ok_or(DerivedIndexMaintenanceDenialKind::BeforeRootMismatch)?;
-            if let Some(envelope) = previous.canonical_envelope() {
-                self.runtime
-                    .indexes
-                    .prepare_basis_selection(
-                        &request.branch_id,
-                        request.source_commit_id,
-                        after.version_id(),
-                        schema_version,
-                        &envelope.branch_context,
-                        envelope.commit.commit_id,
-                        before.version_id(),
-                        work.publication_is_deferred(),
-                        &mut |units, bytes| work.prepare(units, bytes),
-                    )
-                    .map(Some)
-                    .or_else(|stop| {
-                        if stop == DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired {
-                            Ok(None)
-                        } else {
-                            Err(stop)
-                        }
-                    })?
-            } else {
-                None
-            }
-        } else if let Some(authoring) = authoring.filter(|branch| *branch != &request.branch_id) {
-            self.runtime
-                .indexes
-                .prepare_basis_selection(
-                    &request.branch_id,
-                    request.source_commit_id,
-                    after.version_id(),
-                    schema_version,
-                    authoring,
-                    request.source_commit_id,
-                    after.version_id(),
-                    work.publication_is_deferred(),
-                    &mut |units, bytes| work.prepare(units, bytes),
-                )
-                .map(Some)
-                .or_else(|stop| {
-                    if stop == DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired {
-                        Ok(None)
-                    } else {
-                        Err(stop)
-                    }
-                })?
-        } else {
-            None
-        };
-        let affected = if let Some(before) = before {
-            let changes = changes::ChangedRecords::patch(root, work)?;
-            let affected =
-                affected_indexes::select(self.runtime, execution, &changes, before, after, work)?;
-            patch_changes = Some(changes);
-            Some(affected)
-        } else {
-            None
-        };
-        let inherited = basis.clone();
-        if let (Some(basis), Some(affected)) = (&mut basis, &affected) {
-            for index in affected {
-                basis.remove_admitted(*index, &mut |units, bytes| work.prepare(units, bytes))?;
-            }
-        }
-        let requested = if work.routes_installed_indexes() {
-            if basis.is_none() {
-                return Err(DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired);
-            }
-            affected.ok_or(DerivedIndexMaintenanceDenialKind::BeforeRootMismatch)?
-        } else {
-            let mut requested = std::collections::BTreeSet::new();
-            for index_id in &request.index_ids {
-                work.ordered::<DerivedIndexId, ()>(requested.len(), 1, 0)?;
-                requested.insert(*index_id);
-            }
-            requested
-        };
+        let super::refresh_inputs::RootMaintenanceInputs {
+            mut basis,
+            inherited,
+            mut patch_changes,
+            requested,
+        } = self.refresh_inputs(execution, request, before, after, work)?;
         for index_id in requested {
             let compatible_before = before.filter(|view| {
-                view.selected_schema_authority()
-                    .map(|schema| schema.schema_version())
-                    == Some(schema_version)
+                Some(view.root().schema_authority().schema_version()) == Some(schema_version)
             });
             let (definition, current, prior) = self
-                .runtime
                 .indexes
                 .maintenance_inputs_admitted(
                     index_id,
@@ -136,7 +55,7 @@ impl IndexAuthority<'_> {
                     request.source_commit_id,
                     after.version_id(),
                     compatible_before.and_then(|view| {
-                        view.selected_root()?
+                        view.root()
                             .commit_id()
                             .map(|commit| (view.version_id(), schema_version, commit))
                     }),
@@ -212,14 +131,39 @@ impl IndexAuthority<'_> {
                     continue;
                 }
             }
+            let empty_before = inherited
+                .as_ref()
+                .is_some_and(|basis| basis.generation_is_empty(index_id));
+            if before.is_none() && empty_before {
+                if let Some(basis) = &mut basis {
+                    basis.remove_admitted(index_id, &mut |units, bytes| {
+                        work.prepare(units, bytes)
+                    })?;
+                }
+                work.grow_vec(&mut prepared)?;
+                prepared.push((index_id, empty_entries(&definition.kind)));
+                continue;
+            }
             let previous = prior.clone();
             let (entries, changes, old) = if let Some(prior) = prior {
                 if patch_changes.is_none() {
-                    patch_changes = Some(changes::ChangedRecords::patch(root, work)?);
+                    patch_changes = Some(changes::ChangedRecords::patch(
+                        root.commit_change()
+                            .ok_or(DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired)?,
+                        work,
+                    )?);
                 }
                 (
                     prior.entries.clone(),
                     patch_changes.as_ref().unwrap(/* Proof: The preceding branch tests this Option as Some and does not mutate it before this borrow. */ ),
+                    before,
+                )
+            } else if empty_before && before.is_some() {
+                (
+                    empty_entries(&definition.kind),
+                    patch_changes
+                        .as_ref()
+                        .ok_or(DerivedIndexMaintenanceDenialKind::BeforeRootMismatch)?,
                     before,
                 )
             } else {
@@ -227,7 +171,7 @@ impl IndexAuthority<'_> {
                     return Err(DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired);
                 }
                 if cold_changes.is_none() {
-                    cold_changes = Some(changes::ChangedRecords::cold(after, work)?);
+                    cold_changes = Some(changes::ChangedRecords::cold(after, execution, work)?);
                 }
                 match &definition.kind {
                     DerivedIndexKind::EntityField { .. } => {
@@ -312,7 +256,6 @@ impl IndexAuthority<'_> {
         }
         if !pending_fields.is_empty() {
             let routing = self
-                .runtime
                 .indexes
                 .definition_read_binding()
                 .snapshot()

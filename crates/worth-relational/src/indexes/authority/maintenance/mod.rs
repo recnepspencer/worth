@@ -19,14 +19,19 @@ mod ordering;
 mod persistent_allocation;
 mod preparation;
 mod publication;
+mod refresh_inputs;
 mod refresh_preparation;
 mod selected_field_request;
 use publication::PreparedRefresh;
+mod candidate_publication;
 #[cfg(test)]
 pub(crate) mod charge_rendezvous;
+mod owner;
+mod pipeline_preparation;
 mod reads;
 mod record_metadata;
 mod request_payment;
+mod root_view;
 #[cfg(test)]
 pub(crate) use request_payment::last_allocation_bytes;
 mod work;
@@ -34,7 +39,6 @@ mod work;
 use super::{IndexAuthority, IndexGenerationPublicationBasis};
 use crate::branch::AdmittedRelationalBranchBasis;
 use crate::indexes::data::*;
-use crate::runtime::VisibilityProjectionView;
 use crate::snapshots::data::SnapshotHandle;
 use work::MaintenanceWork;
 
@@ -81,7 +85,13 @@ impl IndexAuthority<'_> {
                 root.schema_authority().schema_version(),
                 root.schema_authority().aspect_plans(),
             );
-            let prepared = self.prepare_refresh(execution, &request, None, &projection, work)?;
+            let prepared = self.maintenance().prepare_refresh(
+                execution,
+                &request,
+                None,
+                &root_view::IndexRootView::from_projection(&projection)?,
+                work,
+            )?;
             prepared.publish_admitted(self.runtime, work)
         })?;
         Ok(DerivedIndexMaintenanceOutcome {
@@ -158,7 +168,13 @@ impl IndexAuthority<'_> {
                 );
             }
         }
-        self.prepare_refresh(execution, request, before.as_ref(), &after, work)
+        let after = root_view::IndexRootView::from_projection(&after)?;
+        let before = before
+            .as_ref()
+            .map(root_view::IndexRootView::from_projection)
+            .transpose()?;
+        self.maintenance()
+            .prepare_refresh(execution, request, before.as_ref(), &after, work)
     }
 }
 

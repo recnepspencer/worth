@@ -46,6 +46,7 @@ impl worth_execution::ChargedBytes for IndexCatalogCoverage {
 
 #[derive(Clone, Debug)]
 pub(crate) struct IndexDefinitionCatalog {
+    pub(super) installed: im::OrdSet<DerivedIndexId>,
     pub(super) definitions: BTreeMap<DerivedIndexId, Arc<DerivedIndexDefinition>>,
     pub(super) field_definitions:
         BTreeMap<AspectKey, BTreeMap<FieldKey, Vec<Arc<DerivedIndexDefinition>>>>,
@@ -56,6 +57,7 @@ pub(crate) struct IndexDefinitionCatalog {
 impl Default for IndexDefinitionCatalog {
     fn default() -> Self {
         Self {
+            installed: im::OrdSet::new(),
             definitions: BTreeMap::new(),
             field_definitions: BTreeMap::new(),
             introductions: BTreeMap::new(),
@@ -69,6 +71,7 @@ impl Default for IndexDefinitionCatalog {
 }
 impl IndexDefinitionCatalog {
     pub(super) fn insert(&mut self, definition: DerivedIndexDefinition) {
+        self.installed.insert(definition.index_id);
         self.routing.clear();
         self.coverage.epoch = self
             .coverage

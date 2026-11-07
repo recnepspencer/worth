@@ -1,9 +1,9 @@
+use super::root_view::IndexRootView;
 use super::{change_routing::ChangeRouting, join, ordering, work::MaintenanceWork};
 use crate::indexes::data::{
     DerivedIndexDefinition, DerivedIndexEntries, DerivedIndexKind,
     DerivedIndexMaintenanceDenialKind,
 };
-use crate::runtime::VisibilityProjectionView;
 pub(super) fn empty_entries(kind: &DerivedIndexKind) -> DerivedIndexEntries {
     match kind {
         DerivedIndexKind::EntityField { .. } => {
@@ -15,7 +15,12 @@ pub(super) fn empty_entries(kind: &DerivedIndexKind) -> DerivedIndexEntries {
         DerivedIndexKind::RelatedEntityOrdering { .. } => {
             DerivedIndexEntries::RelatedEntityOrdering(Default::default())
         }
-        DerivedIndexKind::RelationJoin(_) => DerivedIndexEntries::RelationJoin(Default::default()),
+        DerivedIndexKind::RelationJoin(_) => {
+            DerivedIndexEntries::RelationJoin(crate::indexes::data::RelationJoinIndex::maintained(
+                Default::default(),
+                Default::default(),
+            ))
+        }
     }
 }
 
@@ -24,8 +29,8 @@ pub(super) fn update_entries(
     definition: &DerivedIndexDefinition,
     entries: &mut DerivedIndexEntries,
     changes: &ChangeRouting,
-    before: Option<&VisibilityProjectionView>,
-    after: &VisibilityProjectionView,
+    before: Option<&IndexRootView>,
+    after: &IndexRootView,
     work: &mut MaintenanceWork,
 ) -> Result<bool, DerivedIndexMaintenanceDenialKind> {
     match (&definition.kind, entries) {

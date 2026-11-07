@@ -1,10 +1,8 @@
-//! Read only routing metadata from the selected immutable visibility basis.
-use super::{reads, work::MaintenanceWork};
+//! Root-local routing metadata; no full record or historical projection.
+use super::{root_view::IndexRootView, work::MaintenanceWork};
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::indexes::data::DerivedIndexMaintenanceDenialKind as Denial;
-use crate::runtime::VisibilityProjectionView;
 use crate::storage::data::RecordLifecycleState;
-
 #[derive(Clone, Copy)]
 pub(super) struct RelationMetadata {
     pub(super) id: RelationId,
@@ -12,71 +10,84 @@ pub(super) struct RelationMetadata {
     pub(super) source: EntityId,
     pub(super) target: EntityId,
 }
-
 pub(super) fn entity_kind(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: Option<&VisibilityProjectionView>,
+    view: Option<&IndexRootView>,
     id: EntityId,
     work: &mut MaintenanceWork,
 ) -> Result<Option<KindId>, Denial> {
-    let Some(view) = view else { return Ok(None) };
-    if !view.is_exact_basis() {
-        return Ok(reads::entity(execution, Some(view), id, work)?.map(|r| r.kind.kind_id));
-    }
-    work.read()?;
-    work.prepare(view.exact_entity_state_read_work_bound().unwrap(/* Proof: Maintenance admission requires an exact selected root before constructing this private pass; exact read bounds and metadata are available for that root. */ ), 0)?;
-    view.read_exact_entity_state(execution, id, |metadata, _| metadata.kind_id)
-        .map_err(|denial| match denial {
-            crate::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => {
-                Denial::SnapshotUnavailable
-            }
-            crate::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => {
-                Denial::Execution(cause)
-            }
-        })
-}
-
-pub(super) fn relation(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: Option<&VisibilityProjectionView>,
-    id: RelationId,
-    work: &mut MaintenanceWork,
-) -> Result<Option<RelationMetadata>, Denial> {
-    let Some(view) = view else { return Ok(None) };
-    if !view.is_exact_basis() {
-        return Ok(
-            reads::relation(execution, Some(view), id, work)?.map(|r| RelationMetadata {
-                id: r.relation_id,
-                kind: r.kind.kind_id,
-                source: r.source,
-                target: r.target,
-            }),
-        );
-    }
-    work.read()?;
-    work.prepare(view.exact_relation_metadata_read_work_bound().unwrap(/* Proof: Maintenance admission requires an exact selected root before constructing this private pass; exact read bounds and metadata are available for that root. */ ), 0)?;
-    view.demand_regions_head(execution, [id.partition_id])
-        .map_err(Denial::Execution)?;
-    let root = view.selected_root().expect(/* Proof: Maintenance admission requires an exact selected root before constructing this private pass; exact read bounds and metadata are available for that root. */ "exact basis checked");
-    let Some(partition) = root.admitted_head_region(id.partition_id) else {
+    let Some(view) = view else {
         return Ok(None);
     };
-    let Some(slot) = partition.relation_arena().get_slot(id.slot_index()) else {
+    work.read()?;
+    let Some(head) = view.head(execution, id.partition_id, work)? else {
         return Ok(None);
     };
-    // Unlike the public live-only metadata probe, maintenance also observes
-    // retained dangling relations so deleting an endpoint removes derived rows.
-    if !matches!(
-        slot.lifecycle(),
-        RecordLifecycleState::Live | RecordLifecycleState::RetainedDanglingForAudit
-    ) || (!id.generation.is_zero() && slot.generation() != id.generation_value())
+    let Some(slot) = head.entity_arena().get_slot(id.slot_index()) else {
+        return Ok(None);
+    };
+    if slot.lifecycle() != RecordLifecycleState::Live
+        || slot
+            .retired_at()
+            .is_some_and(|version| version <= view.version_id())
+        || (!id.generation.is_zero() && slot.generation() != id.generation_value())
     {
         return Ok(None);
     }
     let Some(kind) = slot.kind_id() else {
         return Ok(None);
     };
-    if !root
+    work.lookup(
+        view.root().schema_authority().registry().entity_kinds.len(),
+        1,
+    )?;
+    Ok(view
+        .root()
+        .schema_authority()
+        .registry()
+        .entity_kinds
+        .contains_key(&kind)
+        .then_some(kind))
+}
+pub(super) fn relation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    view: Option<&IndexRootView>,
+    id: RelationId,
+    work: &mut MaintenanceWork,
+) -> Result<Option<RelationMetadata>, Denial> {
+    let Some(view) = view else {
+        return Ok(None);
+    };
+    work.read()?;
+    let Some(head) = view.head(execution, id.partition_id, work)? else {
+        return Ok(None);
+    };
+    let Some(slot) = head.relation_arena().get_slot(id.slot_index()) else {
+        return Ok(None);
+    };
+    if !matches!(
+        slot.lifecycle(),
+        RecordLifecycleState::Live | RecordLifecycleState::RetainedDanglingForAudit
+    ) || slot
+        .retired_at()
+        .is_some_and(|version| version <= view.version_id())
+        || (!id.generation.is_zero() && slot.generation() != id.generation_value())
+    {
+        return Ok(None);
+    }
+    let Some(kind) = slot.kind_id() else {
+        return Ok(None);
+    };
+    work.lookup(
+        view.root()
+            .schema_authority()
+            .registry()
+            .relation_kinds
+            .len(),
+        1,
+    )?;
+    if !view
+        .root()
         .schema_authority()
         .registry()
         .relation_kinds
@@ -88,10 +99,10 @@ pub(super) fn relation(
         .extra()
         .endpoints
         .as_ref()
-        .map(|endpoints| RelationMetadata {
+        .map(|ends| RelationMetadata {
             id: RelationId::new(id.partition_id, id.local_slot_value(), slot.generation()),
             kind,
-            source: endpoints.source,
-            target: endpoints.target,
+            source: ends.source,
+            target: ends.target,
         }))
 }

@@ -77,3 +77,20 @@ pub enum DerivedIndexMaintenanceAdmissionStop<Stop> {
     Native(DerivedIndexMaintenanceDenial),
     Admission(Stop),
 }
+
+impl From<crate::storage::substrate::maintenance::MaintenanceRefusal>
+    for DerivedIndexMaintenanceDenial
+{
+    fn from(cause: crate::storage::substrate::maintenance::MaintenanceRefusal) -> Self {
+        use crate::storage::substrate::maintenance::MaintenanceRefusal as Refusal;
+        Self {
+            kind: match cause {
+                Refusal::Execution(cause) => DerivedIndexMaintenanceDenialKind::Execution(cause),
+                Refusal::MissingPredecessor | Refusal::UnavailableChange => {
+                    DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired
+                }
+            },
+            work: Default::default(),
+        }
+    }
+}

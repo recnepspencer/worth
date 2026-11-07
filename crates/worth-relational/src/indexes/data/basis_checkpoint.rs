@@ -11,5 +11,6 @@ pub(crate) struct IndexBasisCheckpoint {
     pub(crate) commit: CommitId,
     pub(crate) version: VersionId,
     pub(crate) schema: SchemaVersionId,
+    pub(crate) empty: Vec<DerivedIndexId>,
     pub(crate) bindings: Vec<(DerivedIndexId, DerivedIndexGenerationId)>,
 }

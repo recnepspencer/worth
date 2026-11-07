@@ -1,7 +1,7 @@
+use super::root_view::IndexRootView;
 use super::{
     changes::ChangedRecords,
     entry_edits::{grouped, PendingEdit},
-    reads,
     work::MaintenanceWork,
 };
 use crate::identity::data::{EntityId, RelationId};
@@ -9,14 +9,7 @@ use crate::indexes::data::{
     DerivedIndexEntries, DerivedIndexEntryMap, DerivedIndexId,
     DerivedIndexMaintenanceDenialKind as Denial,
 };
-use crate::indexes::projected_field_values::{
-    entity_index_projection_scope, relation_index_projection_scope, IndexProjectionSource,
-};
-use crate::runtime::VisibilityProjectionView;
-use crate::storage::data::{AuthoritativeFieldComparisonKey, EntityReadRecord, RelationReadRecord};
-use crate::visibility::materialization::read_records::{
-    entity_query_locus_comparison_key, relation_query_locus_comparison_key,
-};
+use crate::storage::data::AuthoritativeFieldComparisonKey;
 use std::collections::BTreeMap;
 use worth_foundational::facade::AspectFieldLocator;
 
@@ -68,16 +61,17 @@ pub(super) fn refresh(
     routing: &crate::indexes::data::InstalledIndexRouting,
     patch_changes: Option<&ChangedRecords>,
     cold_changes: Option<&ChangedRecords>,
-    before: Option<&VisibilityProjectionView>,
-    after: &VisibilityProjectionView,
+    before: Option<&IndexRootView>,
+    after: &IndexRootView,
     work: &mut MaintenanceWork,
 ) -> Result<(), Denial> {
     if pending.is_empty() {
         return Ok(());
     }
     let exact = after
-        .selected_root()
-        .map(|root| super::field_changes::FieldChanges::prepare(root, routing, work))
+        .root()
+        .commit_change()
+        .map(|change| super::field_changes::FieldChanges::prepare(change, routing, work))
         .transpose()?
         .flatten();
     let mut positions = BTreeMap::new();
@@ -167,25 +161,13 @@ fn refresh_entities(
     exact: Option<&super::field_changes::FieldChanges>,
     patch: bool,
     changed: &std::collections::BTreeSet<EntityId>,
-    before: Option<&VisibilityProjectionView>,
-    after: &VisibilityProjectionView,
+    before: Option<&IndexRootView>,
+    after: &IndexRootView,
     work: &mut MaintenanceWork,
 ) -> Result<(), Denial> {
     for id in changed {
-        let (old, new, old_kind, new_kind) = if work.prepares_allocations() {
-            (
-                None,
-                None,
-                super::record_metadata::entity_kind(execution, before, *id, work)?,
-                super::record_metadata::entity_kind(execution, Some(after), *id, work)?,
-            )
-        } else {
-            let old = reads::entity(execution, before, *id, work)?;
-            let new = reads::entity(execution, Some(after), *id, work)?;
-            let old_kind = old.as_ref().map(|record| record.kind.kind_id);
-            let new_kind = new.as_ref().map(|record| record.kind.kind_id);
-            (old, new, old_kind, new_kind)
-        };
+        let old_kind = super::record_metadata::entity_kind(execution, before, *id, work)?;
+        let new_kind = super::record_metadata::entity_kind(execution, Some(after), *id, work)?;
         for position in super::field_routing::positions(
             routing,
             positions,
@@ -211,17 +193,10 @@ fn refresh_entities(
                 continue;
             }
             work.prepare(1, 0)?;
-            let (old_key, new_key) = if work.prepares_allocations() {
-                (
-                    super::field_keys::entity(before, *id, locator, work)?,
-                    super::field_keys::entity(Some(after), *id, locator, work)?,
-                )
-            } else {
-                (
-                    entity_key(before, old.as_ref(), locator),
-                    entity_key(Some(after), new.as_ref(), locator),
-                )
-            };
+            let (old_key, new_key) = (
+                super::field_keys::entity(execution, before, *id, locator, work)?,
+                super::field_keys::entity(execution, Some(after), *id, locator, work)?,
+            );
             prepare_key_comparison(
                 old_key.as_ref().map(|(key, _)| key),
                 new_key.as_ref().map(|(key, _)| key),
@@ -249,26 +224,15 @@ fn refresh_relations(
     exact: Option<&super::field_changes::FieldChanges>,
     patch: bool,
     changed: &std::collections::BTreeSet<RelationId>,
-    before: Option<&VisibilityProjectionView>,
-    after: &VisibilityProjectionView,
+    before: Option<&IndexRootView>,
+    after: &IndexRootView,
     work: &mut MaintenanceWork,
 ) -> Result<(), Denial> {
     for id in changed {
-        let (old, new, old_kind, new_kind) = if work.prepares_allocations() {
-            (
-                None,
-                None,
-                super::record_metadata::relation(execution, before, *id, work)?.map(|r| r.kind),
-                super::record_metadata::relation(execution, Some(after), *id, work)?
-                    .map(|r| r.kind),
-            )
-        } else {
-            let old = reads::relation(execution, before, *id, work)?;
-            let new = reads::relation(execution, Some(after), *id, work)?;
-            let old_kind = old.as_ref().map(|record| record.kind.kind_id);
-            let new_kind = new.as_ref().map(|record| record.kind.kind_id);
-            (old, new, old_kind, new_kind)
-        };
+        let old_kind =
+            super::record_metadata::relation(execution, before, *id, work)?.map(|r| r.kind);
+        let new_kind =
+            super::record_metadata::relation(execution, Some(after), *id, work)?.map(|r| r.kind);
         for position in super::field_routing::positions(
             routing,
             positions,
@@ -294,17 +258,10 @@ fn refresh_relations(
                 continue;
             }
             work.prepare(1, 0)?;
-            let (old_key, new_key) = if work.prepares_allocations() {
-                (
-                    super::field_keys::relation(before, *id, locator, work)?,
-                    super::field_keys::relation(Some(after), *id, locator, work)?,
-                )
-            } else {
-                (
-                    relation_key(before, old.as_ref(), locator),
-                    relation_key(Some(after), new.as_ref(), locator),
-                )
-            };
+            let (old_key, new_key) = (
+                super::field_keys::relation(execution, before, *id, locator, work)?,
+                super::field_keys::relation(execution, Some(after), *id, locator, work)?,
+            );
             prepare_key_comparison(
                 old_key.as_ref().map(|(key, _)| key),
                 new_key.as_ref().map(|(key, _)| key),
@@ -358,36 +315,4 @@ fn prepare_key_comparison(
         _ => 1,
     };
     work.prepare(width as u64, 0)
-}
-
-fn entity_key(
-    view: Option<&VisibilityProjectionView>,
-    record: Option<&EntityReadRecord>,
-    locator: &AspectFieldLocator,
-) -> Option<(AuthoritativeFieldComparisonKey, EntityId)> {
-    let (Some(view), Some(record)) = (view, record) else {
-        return None;
-    };
-    let source = IndexProjectionSource::selected(view);
-    source
-        .entity_aspect_plan(record.kind.kind_id)
-        .and_then(|plan| entity_index_projection_scope(plan, locator))
-        .and_then(|_| entity_query_locus_comparison_key(record, locator))
-        .map(|key| (key, record.entity_id))
-}
-
-fn relation_key(
-    view: Option<&VisibilityProjectionView>,
-    record: Option<&RelationReadRecord>,
-    locator: &AspectFieldLocator,
-) -> Option<(AuthoritativeFieldComparisonKey, RelationId)> {
-    let (Some(view), Some(record)) = (view, record) else {
-        return None;
-    };
-    let source = IndexProjectionSource::selected(view);
-    source
-        .relation_aspect_plan(record.kind.kind_id)
-        .and_then(|plan| relation_index_projection_scope(plan, locator))
-        .and_then(|_| relation_query_locus_comparison_key(record, locator))
-        .map(|key| (key, record.relation_id))
 }

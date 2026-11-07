@@ -40,6 +40,7 @@ impl IndexingState {
                 commit: basis.commit,
                 version: basis.version,
                 schema: basis.schema,
+                empty: basis.empty.iter().copied().collect(),
                 bindings: basis
                     .entries
                     .iter()
@@ -67,12 +68,23 @@ impl IndexingState {
             }
             entries.insert(*index, generation);
         }
+        let mut empty = im::OrdSet::new();
+        for index in &basis.empty {
+            if entries.contains_key(index)
+                || !self.catalog.definitions.contains_key(index)
+                || empty.contains(index)
+            {
+                return Err("index empty selection is inconsistent");
+            }
+            empty.insert(*index);
+        }
         let restored = PreparedIndexBasisSelection {
             branch: basis.branch.clone(),
             commit: basis.commit,
             version: basis.version,
             schema: basis.schema,
             entries,
+            empty,
         };
         self.bases.install(restored);
         Ok(())

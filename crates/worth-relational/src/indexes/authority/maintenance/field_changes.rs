@@ -10,14 +10,11 @@ use std::collections::{BTreeMap, BTreeSet};
 pub(super) struct FieldChanges(BTreeMap<RecordRef, BTreeSet<DerivedIndexId>>);
 impl FieldChanges {
     pub(super) fn prepare(
-        root: &crate::branch::RelationalBranchRoot,
+        change: &crate::storage::substrate::maintenance::CommitChange,
         routes: &InstalledIndexRouting,
         work: &mut MaintenanceWork,
     ) -> Result<Option<Self>, Denial> {
-        let Some(touches) = root
-            .canonical_envelope()
-            .and_then(|envelope| envelope.descriptive_touches().exact_touches())
-        else {
+        let Some(touches) = change.touches() else {
             return Ok(None);
         };
         let mut fields = Self(BTreeMap::new());

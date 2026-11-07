@@ -1,32 +1,25 @@
 //! Dispatch installed maintainers from changed kinds, never from the index roster.
+use super::root_view::IndexRootView;
 use super::{change_routing::ChangeRouting, changes::ChangedRecords, work::MaintenanceWork};
 use crate::indexes::data::{DerivedIndexId, DerivedIndexMaintenanceDenialKind as Denial};
-use crate::runtime::VisibilityProjectionView;
 use std::collections::BTreeSet;
 
 pub(super) fn select(
-    runtime: &crate::runtime::RelationalRuntime,
+    indexes: &crate::runtime::IndexingSubsystem,
+    change: &crate::storage::substrate::maintenance::CommitChange,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     changes: &ChangedRecords,
-    before: &VisibilityProjectionView,
-    after: &VisibilityProjectionView,
+    before: &IndexRootView,
+    after: &IndexRootView,
     work: &mut MaintenanceWork,
 ) -> Result<BTreeSet<DerivedIndexId>, Denial> {
-    let schema = after
-        .selected_schema_authority()
-        .ok_or(Denial::CommitMismatch)?
-        .schema_version();
-    let routes = runtime
-        .indexes
+    let schema = after.root().schema_authority().schema_version();
+    let routes = indexes
         .definition_read_binding()
         .snapshot()
         .routing(schema)
         .ok_or(Denial::ColdReconstructionRequired)?;
-    if let Some(touches) = after
-        .selected_root()
-        .and_then(|root| root.canonical_envelope())
-        .and_then(|envelope| envelope.descriptive_touches().exact_touches())
-    {
+    if let Some(touches) = change.touches() {
         use crate::history::data::RelationalDescriptiveTouch as Touch;
         let mut indexes = BTreeSet::new();
         let mut add = |id| -> Result<(), Denial> {

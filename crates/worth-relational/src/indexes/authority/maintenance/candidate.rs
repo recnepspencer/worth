@@ -4,50 +4,19 @@ use super::{basis, work::MaintenanceWork};
 use crate::branch::RelationalBranchRoot;
 use crate::history::data::BranchId;
 use crate::indexes::data::{
-    DerivedIndexBuildRequest, DerivedIndexGeneration, DerivedIndexId,
-    DerivedIndexMaintenanceBudget, DerivedIndexMaintenanceDenial,
-    DerivedIndexMaintenanceDenialKind as Denial, DerivedIndexMaintenanceWork,
+    DerivedIndexBuildRequest, DerivedIndexId, DerivedIndexMaintenanceBudget,
+    DerivedIndexMaintenanceDenial, DerivedIndexMaintenanceDenialKind as Denial,
+    DerivedIndexMaintenanceWork,
 };
 use crate::mvcc::PreparedRelationalCommitCandidate;
 use crate::runtime::VisibilityProjectionView;
 use crate::snapshots::data::SnapshotHandle;
 use crate::visibility::snapshot_states::{SnapshotStateBasis, VisibilitySnapshotBasis};
 
-use super::super::{prepared_generation, IndexAuthority};
+use super::super::IndexAuthority;
 
-/// Fully derived payload owned by one single-use Relational candidate. Only
-/// catalog installation remains after its canonical branch movement.
-pub(crate) struct PreparedCandidateIndexPublication {
-    prepared: CandidateIndexPreparation,
-    funding: worth_execution::ExecutionMemoryReservation,
-}
-
-struct CandidateIndexPreparation {
-    root_id: u64,
-    branch_id: BranchId,
-    commit_id: crate::history::data::CommitId,
-    version_id: crate::identity::data::VersionId,
-    schema_version: crate::schema::data::SchemaVersionId,
-    publication: crate::runtime::PreparedGenerationBatch,
-}
-
-impl PreparedCandidateIndexPublication {
-    pub(crate) fn matches_root(&self, root: &Arc<RelationalBranchRoot>) -> bool {
-        root.id() == self.prepared.root_id
-            && root.commit_id() == Some(self.prepared.commit_id)
-            && root.canonical_envelope().is_some_and(|envelope| {
-                envelope.branch_context == self.prepared.branch_id
-                    && envelope.commit.version_id == self.prepared.version_id
-            })
-            && root.schema_authority().schema_version() == self.prepared.schema_version
-    }
-
-    pub(crate) fn publish(self, _runtime: &crate::runtime::RelationalRuntime) {
-        let funding = self.funding;
-        self.prepared.publication.publish();
-        drop(funding);
-    }
-}
+use super::candidate_publication::CandidateIndexPreparation;
+pub(crate) use super::candidate_publication::PreparedCandidateIndexPublication;
 
 impl IndexAuthority<'_> {
     /// Budget and derive exact native index deltas from a prepared candidate
@@ -176,48 +145,19 @@ impl IndexAuthority<'_> {
         };
         validate_expected_root(&expected_root, before.as_ref())?;
         basis::validate_prepared(&request, before.as_ref(), &after)?;
-        let prepared = self.prepare_refresh(execution, &request, before.as_ref(), &after, work)?;
-        work.charge(prepared.entries.len())?;
-        work.reserve_generation_publications(prepared.entries.len());
-        work.array::<DerivedIndexGeneration>(prepared.entries.len())?;
-        work.array::<crate::indexes::data::DerivedIndexGenerationId>(prepared.entries.len())?;
-        work.prepare(
-            0,
-            (prepared.publication.branch_id.0.len() * 2 * prepared.entries.len()) as u64,
+        let after = super::root_view::IndexRootView::from_projection(&after)?;
+        let before = before
+            .as_ref()
+            .map(super::root_view::IndexRootView::from_projection)
+            .transpose()?;
+        let prepared = self.maintenance().prepare_refresh(
+            execution,
+            &request,
+            before.as_ref(),
+            &after,
+            work,
         )?;
-        let generation_ids = self
-            .runtime
-            .indexes
-            .reserve_generation_ids(prepared.entries.len())
-            .ok_or(Denial::GenerationIdentityExhausted)?;
-        let generations = prepared
-            .entries
-            .into_iter()
-            .zip(generation_ids)
-            .map(|((index_id, entries), generation_id)| {
-                prepared_generation(&prepared.publication, generation_id, index_id, entries)
-            })
-            .collect();
-        let publication = self
-            .runtime
-            .indexes
-            .prepare_generation_batch(generations, prepared.basis, |units, bytes| {
-                work.prepare(units, bytes)
-            })
-            .map_err(|stop| match stop {
-                crate::indexes::data::SelectedIndexGenerationAdmissionStop::Admission(stop) => stop,
-                crate::indexes::data::SelectedIndexGenerationAdmissionStop::AccountingOverflow => {
-                    Denial::WorkBudgetExceeded
-                }
-            })?;
-        Ok(CandidateIndexPreparation {
-            root_id: prepared_root.id(),
-            branch_id,
-            commit_id: request.source_commit_id,
-            version_id: after.version_id(),
-            schema_version: prepared_root.schema_authority().schema_version(),
-            publication,
-        })
+        CandidateIndexPreparation::prepare(&self.runtime.indexes, &prepared_root, prepared, work)
     }
 }
 
