@@ -18,13 +18,17 @@ impl PhaseWorkSource for InjectedFixture {
             None,
         );
         let (_, report) = ExecutionRequest::serial(&host)
-            .run(ExecutionWorkCeiling::new(None), |meter| {
-                // Deliberate old behaviour: charge an actual visit to every
-                // unrelated item instead of only the changed item.
-                for item in 0..self.items {
-                    meter.checkpoint(1).unwrap();
-                    std::hint::black_box(item);
-                }
+            .run(ExecutionWorkCeiling::new(None), |_| {
+                ExecutionRequest::serial(&host)
+                    .run_native_with_checkpoint(|meter| {
+                        // Deliberate old behaviour: charge an actual visit to every
+                        // unrelated item instead of only the changed item.
+                        for item in 0..self.items {
+                            meter.checkpoint(1).unwrap();
+                            std::hint::black_box(item);
+                        }
+                    })
+                    .unwrap()
             })
             .unwrap();
         vec![PhaseWork {
@@ -46,6 +50,7 @@ fn an_injected_whole_state_loop_is_caught_for_each_phase_and_axis() {
         Phase::CommitPreparation,
         Phase::Publication,
         Phase::RootAdmission,
+        Phase::KindCommitment,
         Phase::IndexMaintenance,
         Phase::Invariants,
         Phase::Rebase,
@@ -66,6 +71,10 @@ fn an_injected_whole_state_loop_is_caught_for_each_phase_and_axis() {
                 sample
             });
             let failures = compare(&samples);
+            assert!(
+                !super::ratchet::unregistered("injected", &failures).is_empty(),
+                "injected work must also fail the registry gate"
+            );
             assert!(
                 failures
                     .iter()

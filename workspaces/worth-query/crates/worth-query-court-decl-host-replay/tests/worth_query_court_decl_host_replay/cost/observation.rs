@@ -6,6 +6,7 @@ pub enum Phase {
     CommitPreparation,
     Publication,
     RootAdmission,
+    KindCommitment,
     IndexMaintenance,
     Invariants,
     Rebase,

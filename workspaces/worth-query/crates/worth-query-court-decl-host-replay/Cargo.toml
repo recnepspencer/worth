@@ -1,5 +1,5 @@
 [package]
-name = "worth-query-court-decl-host-replay-scale"
+name = "worth-query-court-decl-host-replay"
 autotests = false
 edition.workspace = true
 rust-version.workspace = true
@@ -18,8 +18,8 @@ worth-query-testkit-document-retention = { path = "../worth-query-testkit-docume
 worth-testkit-relational = { path = "../../../../crates/worth-testkit-relational" }
 
 [[test]]
-name = "worth_query_court_decl_host_replay_scale"
-path = "tests/worth_query_court_decl_host_replay_scale.rs"
+name = "worth_query_court_decl_host_replay"
+path = "tests/worth_query_court_decl_host_replay.rs"
 
 [lints]
 workspace = true
