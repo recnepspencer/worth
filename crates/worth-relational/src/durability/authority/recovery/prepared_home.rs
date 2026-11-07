@@ -8,6 +8,7 @@ use worth_foundational::facade::{
     HomeProgramTransitionSchemaCarrierDigest, HomeProgramTransitionSchemaDigest,
 };
 
+mod identity_space;
 mod recovery;
 
 #[derive(Debug)]

@@ -64,6 +64,8 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Sche
         phase: &WorthQueryBootstrapAdvancementPhase<'_>,
         native: &mut RelationalRuntime,
         source: &worth_relational::facade::schema::RelationalSchemaRegistry,
+        maximum_kind: Option<worth_relational::facade::identity::KindId>,
+        maximum_aspect: Option<worth_foundational::facade::AspectIdentity>,
     ) -> Result<
         PreparedHomeNativeMeaning<Schema, Program>,
         QueryHomeNativeInstallationRefused<Schema, Program>,
@@ -76,6 +78,8 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Sche
             native,
             invariants,
             source,
+            maximum_kind,
+            maximum_aspect,
         ) {
             Ok(schema) => Ok(PreparedHomeNativeMeaning { state, schema }),
             Err(cause) => Err(QueryHomeNativeInstallationRefused {

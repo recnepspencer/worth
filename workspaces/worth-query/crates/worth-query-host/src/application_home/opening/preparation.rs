@@ -113,9 +113,18 @@ where
             native,
             initialization,
         }) => query.initialize_home_native_schema(phase, native, initialization),
-        Ok(ApplicationHomeNativeSchemaPreparation::Existing { native, source }) => {
-            query.prepare_home_native_receiver_schema(phase, native, source)
-        }
+        Ok(ApplicationHomeNativeSchemaPreparation::Existing {
+            native,
+            source,
+            maximum_kind,
+            maximum_aspect,
+        }) => query.prepare_home_native_receiver_schema(
+            phase,
+            native,
+            source,
+            maximum_kind,
+            maximum_aspect,
+        ),
         Err(cause) => return Err(Refused::NativePreparation { query, home, cause }),
     };
     let query = match installed {

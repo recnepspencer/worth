@@ -5,7 +5,7 @@ use worth_relational::facade::schema::{
 };
 
 #[derive(Clone, Copy)]
-pub(super) struct SourceRegistration<'source> {
+pub(in crate::domain_computation::primary_graph) struct SourceRegistration<'source> {
     original: Option<&'source RelationalSchemaRegistry>,
 }
 impl<'source> SourceRegistration<'source> {

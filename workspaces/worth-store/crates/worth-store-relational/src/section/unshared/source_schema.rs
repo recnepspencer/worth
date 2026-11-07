@@ -8,7 +8,12 @@ impl UnrecoveredRelationalSection {
         &mut self,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<
-        (&mut RelationalRuntime, &RelationalSchemaRegistry),
+        (
+            &mut RelationalRuntime,
+            &RelationalSchemaRegistry,
+            Option<worth_relational::facade::identity::KindId>,
+            Option<worth_foundational::facade::AspectIdentity>,
+        ),
         RelationalSectionReadmissionDenial,
     > {
         use RelationalSectionReadmissionDenial as Denial;
@@ -32,12 +37,19 @@ impl UnrecoveredRelationalSection {
             State::Consumed => return Err(Denial::PreparedHomeSourceRequired),
         }
         match &prepared.receiver {
-            State::Prepared(recovery) => Ok((
-                &mut self.attached.runtime,
-                recovery
-                    .receiver_schema_data(request)
-                    .map_err(Denial::HomePreparation)?,
-            )),
+            State::Prepared(recovery) => {
+                let (maximum_kind, maximum_aspect) = recovery
+                    .occupied_identity_maxima(request)
+                    .map_err(Denial::HomePreparation)?;
+                Ok((
+                    &mut self.attached.runtime,
+                    recovery
+                        .receiver_schema_data(request)
+                        .map_err(Denial::HomePreparation)?,
+                    maximum_kind,
+                    maximum_aspect,
+                ))
+            }
             State::NotRequested | State::Consumed => {
                 unreachable!("prepared Home Source was retained")
             }

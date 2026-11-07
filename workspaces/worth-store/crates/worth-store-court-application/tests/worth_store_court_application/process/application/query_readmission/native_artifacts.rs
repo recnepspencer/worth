@@ -21,18 +21,13 @@ use worth_store_application::*;
 mod administration;
 mod home_close;
 mod idempotency;
+mod observation_policy;
 mod operations;
+use observation_policy::{no_operation_admission, ObservationMaintenanceMustRemainUnentered};
 mod original_image;
 mod selected;
 mod stops;
 use operations::{balance, fresh_closed, set};
-#[derive(Debug)]
-struct ObservationMaintenanceMustRemainUnentered;
-impl WorthQueryHomeMaintenance for ObservationMaintenanceMustRemainUnentered {
-    fn after_advancement(&self, _: &ExecutionRequest<'_, '_>) {
-        panic!("the observational attachment must never advance or schedule maintenance");
-    }
-}
 
 type Existing = PreparedExistingHomeQueryRuntime<HomeIdentitySchema, HomeProgram>;
 type NativePreparation = PreparedHomeNativeMeaning<HomeIdentitySchema, HomeProgram>;
@@ -49,11 +44,6 @@ fn close_world(home: DirectoryHome, execution: &ExecutionRequest<'_, '_>) {
             panic!("actual World close retained custody: {reason:?}")
         }
     }
-}
-
-/// This observational attachment has no permission to admit an operation.
-fn no_operation_admission(_: worth_foundational::facade::DurableStateFamily, _: u8) -> Option<u8> {
-    panic!("the Bridge/source observation proof must never invoke Directory operation admission")
 }
 
 fn with_native<R>(
@@ -100,9 +90,18 @@ fn unshared(
         attach_relational(home, &execution).unwrap_or_else(|_| panic!("actual Native attaches"));
     let preparation = home.prepare_native_schema_for_home(&execution).unwrap();
     let query = match preparation {
-        ApplicationHomeNativeSchemaPreparation::Existing { native, source } => {
-            query.prepare_home_native_receiver_schema(phase, native, source)
-        }
+        ApplicationHomeNativeSchemaPreparation::Existing {
+            native,
+            source,
+            maximum_kind,
+            maximum_aspect,
+        } => query.prepare_home_native_receiver_schema(
+            phase,
+            native,
+            source,
+            maximum_kind,
+            maximum_aspect,
+        ),
         ApplicationHomeNativeSchemaPreparation::Fresh { .. } => {
             panic!("existing Directory fixture selected fresh initialization")
         }

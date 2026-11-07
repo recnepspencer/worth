@@ -79,7 +79,7 @@ impl WorthQueryPrimaryGraphLayout {
 impl WorthQueryPrimaryGraphLayout {
     #[doc(hidden)]
     pub fn entity_kinds_for_test(&self) -> &BTreeMap<String, KindId> {
-        &self.entity_kinds
+        &self.physical_roles.entities
     }
 }
 

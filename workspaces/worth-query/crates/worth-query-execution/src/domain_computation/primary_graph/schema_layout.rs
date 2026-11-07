@@ -32,6 +32,7 @@ mod member_domain;
 pub(in crate::domain_computation::primary_graph) use member_domain::MemberDomainBinding;
 mod lowering;
 mod native_outputs;
+mod physical_identity;
 mod platform_entity_lowering;
 mod platform_identity_allocator;
 pub(crate) mod principal_binding;
@@ -86,17 +87,16 @@ pub struct WorthQueryPrimaryGraphLayout {
     principal_bindings: BTreeMap<String, WorthQueryPrimaryPrincipalBindingLayout>,
     live_control_entity_kinds: BTreeSet<KindId>,
     authorization_selectors: authorization_selectors::WorthQueryAuthorizationSelectors,
-    entity_kinds: BTreeMap<String, KindId>,
+    pub(in crate::domain_computation::primary_graph) physical_roles:
+        physical_identity::PhysicalIdentityBindings,
     relation_kinds: BTreeMap<String, WorthQueryPrimaryRelationLayout>,
     component_sets: BTreeMap<String, ComponentSetLayout>,
     derived_relations: BTreeMap<String, derived_relation::DerivedRelationLayout>,
     managed_sources: BTreeMap<String, managed_source::ManagedSource>,
     projected_domains: BTreeMap<String, projected_member_domain::ProjectedMemberDomainLayout>,
-    application_entity_kinds: BTreeSet<KindId>,
     signing: signed_entities::SignedEntityLayout,
     pub(in crate::domain_computation::primary_graph) signing_lifecycle:
         signing_lifecycle::SigningLifecycleLayout,
-    application_relation_kinds: BTreeSet<KindId>,
     fields: BTreeMap<(String, String, String), WorthQueryPrimaryFieldLayout>,
     relation_payload: relation_payload::ApplicationRelationPayloadLayout,
     unique_fields: unique_fields::WorthQueryUniqueFieldNames,
@@ -155,7 +155,7 @@ impl WorthQueryPrimaryGraphLayout {
         &self,
         touches: &worth_query_installation::facade::WorthQueryOperationTouchContract,
     ) -> Option<KindId> {
-        self.entity_kinds
+        self.physical_roles.entities
             .iter()
             .find(|(entity, _)| {
                 !touches.scopes().iter().any(|scope| matches!(

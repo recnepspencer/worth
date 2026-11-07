@@ -8,6 +8,7 @@ use worth_relational::facade::durability::{
     RelationalHomeRecoveryPreparationDenial as Denial,
 };
 use worth_testkit_relational::initial_input_source;
+mod identity_space;
 
 #[test]
 fn prepared_home_schema_data_preserves_the_original_source_and_requires_its_receiving_installation()

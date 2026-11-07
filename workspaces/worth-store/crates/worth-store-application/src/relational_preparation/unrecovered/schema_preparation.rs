@@ -19,6 +19,8 @@ pub enum ApplicationHomeNativeSchemaPreparation<'runtime> {
     Existing {
         native: &'runtime mut RelationalRuntime,
         source: &'runtime worth_relational::facade::schema::RelationalSchemaRegistry,
+        maximum_kind: Option<worth_relational::facade::identity::KindId>,
+        maximum_aspect: Option<worth_foundational::facade::AspectIdentity>,
     },
 }
 impl UnrecoveredApplicationHome {
@@ -41,9 +43,9 @@ impl UnrecoveredApplicationHome {
                 })
             }
             HomeInitializationOrigin::Available(RecoveryStorePresence::ExistingArtifacts) => {
-                let (native, source) = self.relational.prepare_home_existing_schema_source(request)
+                let (native, source, maximum_kind, maximum_aspect) = self.relational.prepare_home_existing_schema_source(request)
                     .map_err(Denial::Source)?;
-                Ok(ApplicationHomeNativeSchemaPreparation::Existing { native, source })
+                Ok(ApplicationHomeNativeSchemaPreparation::Existing { native, source, maximum_kind, maximum_aspect })
             }
             HomeInitializationOrigin::ConsumedNewHome => Err(Denial::Initialization(
                 worth_relational::facade::runtime::RelationalInitialSchemaInstallationDenial::from_initial_inputs(

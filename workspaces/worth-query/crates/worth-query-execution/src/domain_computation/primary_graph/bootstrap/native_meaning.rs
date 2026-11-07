@@ -80,6 +80,8 @@ impl WorthQueryExecutionInstallationAuthority {
         relational_runtime: &mut RelationalRuntime,
         invariant_factories: WorthQueryApplicationInvariantFactories<Schema>,
         source: &worth_relational::facade::schema::RelationalSchemaRegistry,
+        maximum_kind: Option<worth_relational::facade::identity::KindId>,
+        maximum_aspect: Option<worth_foundational::facade::AspectIdentity>,
     ) -> Result<PreparedNativeSchemaMeaning, WorthQueryPrimaryGraphInstallationDenial> {
         self.prepare_native_schema_with_initialization(
             phase,
@@ -88,7 +90,7 @@ impl WorthQueryExecutionInstallationAuthority {
             relational_runtime,
             invariant_factories,
             None,
-            Some(source),
+            Some((source, maximum_kind, maximum_aspect)),
         )
     }
 
@@ -104,7 +106,11 @@ impl WorthQueryExecutionInstallationAuthority {
                 worth_relational::facade::durability::RelationalFreshInitialization,
             >,
         >,
-        source: Option<&worth_relational::facade::schema::RelationalSchemaRegistry>,
+        source: Option<(
+            &worth_relational::facade::schema::RelationalSchemaRegistry,
+            Option<worth_relational::facade::identity::KindId>,
+            Option<worth_foundational::facade::AspectIdentity>,
+        )>,
     ) -> Result<PreparedNativeSchemaMeaning, WorthQueryPrimaryGraphInstallationDenial> {
         if !self.belongs_to(runtime) {
             return Err(primary_graph_denial(
@@ -128,13 +134,17 @@ impl WorthQueryExecutionInstallationAuthority {
                 )
             })?;
         let (layout, additions) = match source {
-            Some(source) => WorthQueryPrimaryGraphLayout::lower_with_original(
-                installed_schema.installed_declaration(),
-                installed_schema.native_contracts(),
-                &relational_runtime.config().schema.registry,
-                installed_schema.value_bindings(),
-                Some(source),
-            ),
+            Some((source, maximum_kind, maximum_aspect)) => {
+                WorthQueryPrimaryGraphLayout::lower_with_original(
+                    installed_schema.installed_declaration(),
+                    installed_schema.native_contracts(),
+                    &relational_runtime.config().schema.registry,
+                    installed_schema.value_bindings(),
+                    source,
+                    maximum_kind,
+                    maximum_aspect,
+                )
+            }
             None => WorthQueryPrimaryGraphLayout::lower(
                 installed_schema.installed_declaration(),
                 installed_schema.native_contracts(),
