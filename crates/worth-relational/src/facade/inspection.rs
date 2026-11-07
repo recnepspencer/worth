@@ -45,3 +45,5 @@ pub use crate::runtime::RelationalBranchSharingCostCounters;
 pub use crate::runtime::{
     RecordReservationObservation, RecordReservationObservationDenial, RecordReservationReport,
 };
+
+pub use crate::storage::substrate::observe_history_prefix_traversal;

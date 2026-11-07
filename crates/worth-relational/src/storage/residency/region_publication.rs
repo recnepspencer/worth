@@ -104,18 +104,16 @@ impl PreparedResidentRegion {
         let entity_slots = partition.entity_arena.slot_count();
         let relation_slots = partition.relation_arena.slot_count();
         let content_digest = commitment.digest(partition.partition_id);
-        let omitted = partition
-            .entity_arena
-            .history_prefixes
-            .iter()
-            .chain(partition.relation_arena.history_prefixes.iter())
-            .any(Option::is_some);
+        let history_presence = previous
+            .history_presence
+            .updated(&previous.partition, &partition);
         let partition_id = partition.partition_id;
-        let retention = if omitted {
+        let retention = if !history_presence.is_complete() {
             RelationalRegionRetention::from_head_lease(RelationalRegionResidency::resident_head(
                 partition,
                 commitment,
                 kind_indexes,
+                history_presence,
                 schema,
                 symbols,
             ))

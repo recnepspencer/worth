@@ -120,6 +120,7 @@ pub(super) fn load_head(
         )?;
         crate::execution::check_request(execution).map_err(Failure::Request)?;
         Ok(Arc::new(ResidentRegion {
+            history_presence: super::history_presence::HistoryPresence::from_cold(lane, &partition),
             kind_indexes: Some(super::kind_admission::reconstruct(
                 lane, execution, &partition,
             )?),
@@ -216,6 +217,7 @@ pub(super) fn load_full(
         verify_leaf(cold, &partition, &commitment).map_err(|cause| unavailable(cold, cause))?;
         crate::execution::check_request(execution).map_err(Failure::Request)?;
         Ok(Arc::new(ResidentRegion {
+            history_presence: super::history_presence::HistoryPresence::complete(),
             kind_indexes: Some(super::kind_admission::reconstruct(
                 lane, execution, &partition,
             )?),

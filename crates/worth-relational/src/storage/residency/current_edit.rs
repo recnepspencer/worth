@@ -48,11 +48,24 @@ impl ResidentRegionLease {
             Self::Full(lease) => lease.has_other_observers(),
         };
         let state = match self {
-            Self::Full(lease) => EditState::Full(lease.into_edit()),
-            Self::Head { lease, .. } => EditState::Head {
-                partition: lease.into_owned_contents(),
-                readmission,
-            },
+            Self::Full(lease) => {
+                let region = lease.resident_region();
+                let history = region.history_presence.basis(&region.partition);
+                EditState::Current {
+                    partition: lease.into_owned_partition(),
+                    history,
+                    readmission,
+                }
+            }
+            Self::Head { lease, .. } => {
+                let region = lease.resident_region();
+                let history = region.history_presence.basis(&region.partition);
+                EditState::Current {
+                    partition: lease.into_owned_contents(),
+                    history,
+                    readmission,
+                }
+            }
         };
         (ResidentRegionEdit { state }, copied)
     }
@@ -76,8 +89,9 @@ pub(crate) struct ResidentRegionEdit {
 }
 enum EditState {
     Full(ResidentFullRegionEdit),
-    Head {
+    Current {
         partition: PartitionState,
+        history: super::history_presence::HistoryPresenceBasis,
         readmission: ResidentHistoryReadmission,
     },
 }
@@ -90,32 +104,45 @@ impl ResidentRegionEdit {
     pub(crate) fn full_partition_mut(&mut self) -> Option<&mut PartitionState> {
         match &mut self.state {
             EditState::Full(edit) => Some(edit.partition_mut()),
-            EditState::Head { .. } => None,
+            EditState::Current { .. } => None,
         }
     }
     pub(crate) fn partition(&self) -> &PartitionState {
         match &self.state {
             EditState::Full(edit) => edit.partition(),
-            EditState::Head { partition, .. } => partition,
+            EditState::Current { partition, .. } => partition,
         }
     }
     pub(crate) fn partition_mut(&mut self) -> &mut PartitionState {
         match &mut self.state {
             EditState::Full(edit) => edit.partition_mut(),
-            EditState::Head { partition, .. } => partition,
+            EditState::Current { partition, .. } => partition,
         }
     }
     pub(crate) fn transform(
         self,
+        readmission: ResidentHistoryReadmission,
         transform: impl FnOnce(PartitionState) -> PartitionState,
     ) -> Self {
         let state = match self.state {
-            EditState::Full(edit) => EditState::Full(edit.transform(transform)),
-            EditState::Head {
+            EditState::Full(edit) => {
+                // A publication may follow an earlier metadata edit in this
+                // writer and import prefixes from another Head region.
+                let history =
+                    super::history_presence::HistoryPresence::complete().basis(edit.partition());
+                EditState::Current {
+                    partition: transform(edit.into_partition()),
+                    history,
+                    readmission,
+                }
+            }
+            EditState::Current {
                 partition,
-                readmission,
-            } => EditState::Head {
+                history,
+                readmission: _,
+            } => EditState::Current {
                 partition: transform(partition),
+                history,
                 readmission,
             },
         };
@@ -124,13 +151,27 @@ impl ResidentRegionEdit {
     pub(crate) fn freeze(self) -> ResidentRegionLease {
         match self.state {
             EditState::Full(edit) => ResidentRegionLease::Full(edit.freeze()),
-            EditState::Head {
+            EditState::Current {
                 partition,
+                history,
                 readmission,
-            } => ResidentRegionLease::Head {
-                lease: RelationalRegionResidency::resident_current(partition, readmission.clone()),
-                readmission,
-            },
+            } => {
+                let history_presence = history.updated(&partition);
+                if history_presence.is_complete() {
+                    ResidentRegionLease::Full(RelationalRegionResidency::resident_uncommitted(
+                        partition,
+                    ))
+                } else {
+                    ResidentRegionLease::Head {
+                        lease: RelationalRegionResidency::resident_current(
+                            partition,
+                            history_presence,
+                            readmission.clone(),
+                        ),
+                        readmission,
+                    }
+                }
+            }
         }
     }
 }

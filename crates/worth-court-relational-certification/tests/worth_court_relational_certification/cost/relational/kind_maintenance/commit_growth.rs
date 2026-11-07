@@ -6,7 +6,7 @@ use worth_foundational::{
 };
 use worth_relational::facade::{
     identity::{KindId, RelationId},
-    inspection::observe_maintenance_work,
+    inspection::{observe_history_prefix_traversal, observe_maintenance_work},
     transactions::{
         CreateIntent, EntityReference, MutationIntent, RecordRef, RelationMutationIntent,
         UpdateRelationEndpointsIntent, WorkerIntentBatch,
@@ -19,13 +19,29 @@ pub(super) fn assert_public_growth() {
     let history = (commit_work(32, 1024), commit_work(32, 2048));
     eprintln!(
         "SDK root admission charged work: model {}->{}; history {}->{}",
-        model.0, model.1, history.0, history.1
+        model.0 .0, model.1 .0, history.0 .0, history.1 .0
     );
-    assert_change_bounded("SDK root admission", "model", model.0, model.1);
-    assert_change_bounded("SDK root admission", "history", history.0, history.1);
+    assert_change_bounded("SDK root admission", "model", model.0 .0, model.1 .0);
+    assert_change_bounded("SDK root admission", "history", history.0 .0, history.1 .0);
+    eprintln!(
+        "SDK prefix traversal: model {}->{}; history {}->{}",
+        model.0 .1, model.1 .1, history.0 .1, history.1 .1
+    );
+    assert_change_bounded(
+        "SDK prefix traversal",
+        "model",
+        model.0 .1.max(1),
+        model.1 .1.max(1),
+    );
+    assert_change_bounded(
+        "SDK prefix traversal",
+        "history",
+        history.0 .1.max(1),
+        history.1 .1.max(1),
+    );
 }
 
-fn commit_work(model: usize, history: usize) -> u64 {
+fn commit_work(model: usize, history: usize) -> (u64, u64) {
     let request = SerialRequest::from_policy(
         &ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
@@ -81,8 +97,10 @@ fn commit_work(model: usize, history: usize) -> u64 {
     }
     // Both history scales end at the same live endpoint. The fixed edit uses
     // one fresh endpoint and changes one existing relation, never the roster.
-    let (commit, observation) = observe_maintenance_work(32, || {
-        world.commit(&execution, retarget(&world, relation, model + 2))
+    let ((commit, observation), prefixes) = observe_history_prefix_traversal(|| {
+        observe_maintenance_work(32, || {
+            world.commit(&execution, retarget(&world, relation, model + 2))
+        })
     });
     world.release(&commit.unwrap());
     assert_eq!(
@@ -109,7 +127,7 @@ fn commit_work(model: usize, history: usize) -> u64 {
         })
         .sum();
     assert!(charged_work > 0, "root admission must charge its real work");
-    charged_work
+    (charged_work, prefixes)
 }
 
 fn retarget(world: &World, relation: RelationId, target: usize) -> MutationIntent {

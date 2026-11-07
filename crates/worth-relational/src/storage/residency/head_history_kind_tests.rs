@@ -159,10 +159,15 @@ fn adopting_a_different_head_carries_its_owned_historical_projection_with_the_re
         )
         .unwrap(),
     );
+    let history_presence = super::super::history_presence::HistoryPresence::from_cold(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &partial,
+    );
     let owned = RelationalRegionResidency::resident_head(
         partial,
         commitment,
         kind_indexes,
+        history_presence,
         fixture.cold.schema.clone(),
         &fixture.cold.symbols,
     );
@@ -177,6 +182,48 @@ fn adopting_a_different_head_carries_its_owned_historical_projection_with_the_re
     );
     assert!(source.history_reads.load(Ordering::SeqCst) > 0,
         "Full promotion follows the adopted relation's own source as well as the original entity source");
+}
+
+#[test]
+fn a_full_target_adopting_head_prefixes_keeps_history_readmission() {
+    let fixture = region_with_history();
+    let request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&request);
+    let head = region_load::load_head(&fixture.cold, execution, 1 << 24).unwrap();
+    let full = region_load::load_full(&fixture.cold, &head, execution, 1 << 24).unwrap();
+    let readmission =
+        ResidentHistoryReadmission::new(fixture.cold.schema.clone(), &fixture.cold.symbols);
+    for metadata_first in [false, true] {
+        let lease = RelationalRegionResidency::resident_uncommitted(full.partition.clone());
+        let edit = if metadata_first {
+            super::super::ResidentRegionEdit::from_full(lease)
+        } else {
+            super::super::ResidentRegionLease::Full(lease)
+                .into_edit(readmission.clone())
+                .0
+        };
+        let edited = edit
+            .transform(readmission.clone(), |_| head.partition.clone())
+            .freeze();
+        assert!(
+            matches!(edited, super::super::ResidentRegionLease::Head { .. }),
+            "imported prefixes must not be mislabeled Full"
+        );
+        let head_lease = edited.head_lease();
+        assert!(!head_lease.resident_region().history_presence.is_complete());
+        let rebuilt = full_demand(head_lease.cell(), 1 << 24).unwrap();
+        let symbols = fixture.cold.symbols.interner_snapshot();
+        assert_eq!(
+            rebuilt
+                .full_view()
+                .partition()
+                .authoritative_content_digest(&symbols)
+                .unwrap(),
+            full.partition
+                .authoritative_content_digest(&symbols)
+                .unwrap(),
+        );
+    }
 }
 
 fn update_target(

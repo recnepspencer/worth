@@ -121,6 +121,7 @@ impl ResidentHistoryReadmission {
             }
             crate::execution::check_request(execution).map_err(Failure::Request)?;
             Ok(Arc::new(ResidentRegion {
+                history_presence: super::history_presence::HistoryPresence::complete(),
                 kind_indexes: Some(super::kind_admission::reconstruct(
                     lane, execution, &partition,
                 )?),
