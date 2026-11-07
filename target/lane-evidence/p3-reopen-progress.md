@@ -1,4 +1,20 @@
-IN PROGRESS: merge bd3ac03d2f51a7d9aabde8976bd328688fe1435d records 14b16fa292; FUNDING MERGED is not certified.
+FUNDING MERGED bd3ac03d2f
+D13 ACTIVE: single-door/source registry batch, including the reviewed pre-World
+Native transition continuation. Current validation: three Root Clippy invocations
+failed on the import/borrow split, one needless borrow, then two fixture/struct
+constructor migrations. All diagnostics from those runs are repaired together.
+No focused build or test has run. The next compile completes this source batch;
+subsequent Query/Store/consumer checks and focused builds exceed four total
+invocations because this protocol cutover crosses their separately owned graphs.
+This is the recorded budget exception; no repeated green workspace check is planned.
+
+2026-11-06 continuation: D13 is active, followed by named digests and the six
+assigned Native BC9002 sites. Other owners' boundary findings are routed and do
+not gate this queue. Read-only Native authority review identified the reusable
+Memory producer/image consumers and required schema/actual-receiver cutovers;
+no new product decision is needed. Boundary/plan: d13-merged-boundary-and-plan.md.
+Current turn validation counts:0 check/Clippy,0 focused builds,0 test runs.
+The historical blocked-merge discussion below is superseded by this ruling.
 
 Final2026-11-06 status:34 selected tests pass, final Root/Store Clippy and Query
 check pass, format/context/7677-file dirty caps pass. Independent review02
@@ -50,3 +66,196 @@ Queue1: d0061f1327 records the exact same-directory direct court passing1/0/0 wi
 This partial queue4 commit moves one recovered-envelope custody court through actual public replay shares, intrinsic funding/refund and external Native provider. Named case1/0/0, public+Native checks, formatting,5-file caps,context andscope/name parity pass. Fresh independent partial-source APPROVE. Owner Clippy remains101 at10 allowed untouched master-changed sites. Boundary remains1 with3 BC9002 findings; no zero-findings claim.
 
 Full local adapter deletion requires protected branch/root_tests.rs and root_authoritative_payload_tests.rs consumers to migrate; they and transitive root_tests/request.rs are explicitly out of scope and untouched. No new local adapter/observer, memory substitution, baseline growth, ignored test, parked work, integration merge or push. See queue-turn-end-state.md, queue-resume-lanes.md and queue4-forbidden-root-owner-handoff.md. No integration HEAD was named, so FUNDING MERGED is not reported.
+
+D13 compile family correction: the fourth Root Clippy pass identified the Home
+constructor of PreparedPrimaryGraphMeaning. A Memory-only continuation does not
+belong in that shared owner. The transition now returns its continuation directly
+to installation and retains it locally; no Home preparation owner was edited.
+A backing-local phase guard also closes every token if recovery is abandoned.
+Next qualification starts from the completed batch, with no source edits while
+its commands run. Extra compile round rationale: finish the now-reviewed Native
+bootstrap producer/consumer continuation rather than ship an unusable repair
+checkpoint. Existing accepted lanes are not being rerun for unchanged workspaces.
+
+Root full Clippy round5: PASS, 0 tests executed, existing33 library/21 duplicate
+unit warnings. The new interim receiver/capture row lookup now precharges the
+roster visit, ordered lookup depth and variable receipt comparison before the
+row is touched. A one-unit public refusal/retry court distinguishes the unfunded
+implementation. Qualification will compile/test that Native-only addition, and
+its final Clippy check will select Native instead of repeating full Root.
+
+Query full check round1 compiled all affected callers except two old grammar
+writer invocations. Both now supply the two explicit new DATA sections; the
+selected court recheck passed. No assertion, ceiling or payload contrast changed.
+Counts so far: 7 check/Clippy invocations, 0 focused builds, 0 test runs.
+The last scope correction follows ExecutionRequest/SerialRequest's actual
+contract: lease-free calls open distinct scopes unless enclosed by a parent.
+New Native/World admission entries now enclose each full operation; Query's
+preflight encloses all three authentication passes. The roster court uses the
+same16-unit ceiling for one real row and a four-row roster. Next Clippy selects
+only changed Native/World libraries; the accepted full Root result is reused for
+unchanged owners. Then one owned selected build/run packet per affected graph.
+
+Native/World final selected Clippy: PASS, no new warnings. Source proof packet
+identity is d13-source-proof-packet.json. The owned Root prebuild now selects
+exactly14 named Native/World/Home controls; no ignored or exhaustive test is
+selected. Counts: 8 check/Clippy invocations; focused build1 in progress; tests0.
+
+Root proof packet:14/0/0. Consumer selection first refused before compiling:
+consumer-root is a binary, topology-entry a library. Cargo metadata establishes
+both target kinds. The owned runner rejects a lib selection spanning a binary
+package (nextest_build.py::selection_arguments). Its supported package selection
+will build these two affected packages' targets together; their examples also
+consume the renamed installation API. This was a driver selection error, with
+zero compiler/test executions, and no product or fixture change.
+
+D13 Root selected packet is green14/0/0. Consumer corrected selection is one
+cold owned build for consumer-root(binary) and topology-entry(library); its
+examples are affected shared-API consumers too. No source edits while it runs.
+Independent Native/World source review rejected one P1 in ordinary restore:
+a canonical-frame target is compared directly with a live runtime target.
+The correction will export the actual current basis through Native's existing
+recorded-component owner and compare full descriptions, preserving all axes.
+All consumer failures will be classified before the single correction batch.
+Current budget:8 check/Clippy invocations,2 actual focused prebuilds(one running),
+1 completed test invocation14/0/0; one target-selection refusal ran no compiler.
+
+D13 consumer first runtime packet:3/6/0. Classified families: five8M work
+refusals during reconstruction/bootstrap, one canonical/live target mismatch.
+Source review P1 confirms the target comparison; corrected through Native's
+existing actual-current export plus prepaid complete recorded-value equality.
+Reviewed immutable custody correction: Native/World validation charges/polls
+then accepts only std::ptr::eq against its own retained sealed immutable slice.
+Different/copy/imported backing still gets full authentication. This removes
+repeated hashing of the exact already-authenticated allocation, with no budget
+change or missing-origin bypass. Query review also found stale70-byte framing,
+frame-only retained-memory invoices, capture-byte equality despite fresh capture
+coordinates, and the former foreign-lease allocation variant. The correction
+preserves literal86-byte grammar, exact frame invoice, additional proof custody,
+clone sharing, model equality, typed refusals, original64MiB repair ceiling,
+acknowledged content, no author rerun and final complete release.
+Budget exception for the next batch: final owner/review corrections reach three
+separately configured test graphs plus the required Store regression. Run only
+nine affected Root controls, six failed consumers, nineteen pending Query cases
+and one pending Store case, sequentially; no repeated workspace check.
+
+Carried-original design independently APPROVED. Implementation reuses actual
+PositionedCanonicalCommit owners (no synthetic position or envelope), verified
+against the projected frame's exact Arc and index, in a funded array moved
+from staging capture to final Origin. CaptureIdentity remains index-only;
+components, receivers and continuations cannot keep that array. The receiving
+cell gets only existing RetainedCanonicalPosition weak custody, after the
+unconditional exact-image guard and source/row/artifact binding checks. Explicit
+physical original readmission is unchanged. World component capture reuses the
+same verifier's actual resident-original identity, with lookup/comparison/copy
+work prepaid. It does not re-encode that already verified original.
+The reviewer also APPROVED World transport joining Native's existing exact-
+wrapper validation instead of hashing that whole wrapper again. World's own
+section equality, row/body authentication, common cut and application checks
+remain. No new public door, format or fixture budget change.
+Budget exception: one more coherent owner correction packet is necessary to
+close the actual three remaining8M runtime failures. Run only the relevant
+Native guard/original controls and those three failures, then pending Query/
+Store packets. Do not repeat the already green unaffected consumer controls.
+One compile diagnostic (E0505): the real symbol dictionary borrows the original frames. End that encoding phase before moving the funded roster into projection/origin. The next selected prebuild verifies that ownership correction; no copy or budget change.
+The carried-original packet passes Native3/0/0 and current-family recapture1/0/0. Only the two historical terminal cases still hit8M at a shared bootstrap read label. Before another correction, run one passive original-request measurement packet selecting only those two cases; no ceiling/assertion change, and restore the exact instrumentation source afterwards.
+
+Latest runtime: Native carried-original controls3/0/0; three consumer retry
+names1/2/0. Current-family second capture is green at unchanged8M; only fixed
+and discovered historical terminal restore remain red. The common bootstrap
+read label covers both original-envelope and index reads. Do not infer which
+one failed from that label. One owned-bin passive diagnostic build/run selects
+only those two failures and records original recovery and read-entry work.
+Temporary Native-only source is backed up with exact hashes in
+ d13-work-diagnostic-source.json and must be restored before final source work.
+Current totals:8 cargo check/Clippy calls;8 focused prebuild invocations
+(including one E0505 refusal and this diagnostic build);6 completed selected
+test invocations. Query19 and Store1 packets remain unrun, not green.
+Passive trace settles the earlier ambiguity: Native recovery succeeds with4,394,878–4,395,288 units left; bootstrap original and index reads preserve that balance. The later program-activation scan uses current Head materialization. One final existing-owner quote measurement selects only the two red cases to establish the refused charge/lower bound before any fixture or product decision; no budget changes.
+The passive quote probe had one compile-only E0631 from the local Result alias; use an inferred closure for the same is_err predicate. No production behavior changes. The corrected same two-name diagnostic follows, then exact source restoration.
+D13 owner-work design review found two further gaps in the replacement invoice:
+kind projection callbacks discarded logical work, and fixed metadata/Extra
+construction needs its own charge even with no aspects. Both are accepted and
+included in the revised coherent batch. No memory/ceiling change. Extra round
+justification: existing probes established independent work-accounting defects;
+compile only after completing all implicated owners, then select all affected
+controls together. Before batch:8 check/Clippy,10 prebuilds,8 test invocations.
+Head-work source QA found a missing separate Foundation ordered-lookup comparison
+bill and a cleanup test that stopped before allocating its level. Both corrected
+before runtime compilation: matching lookup/fallback work is now distinct from
+the preflight scan; the same tiny ceiling selects carrier construction so page
+refusal happens after level reservation. Native/World Clippy completed green
+before these two local corrections (no new warnings;33/21 inherited warnings).
+The one sequential packet selects all affected Root controls, consumer restore
+controls, Query19 and Store1. It does not stop on test failure, so failures can be
+classified together. No broad suite or ignored case is selected.
+
+Head-work packet classification (before any rerun):
+- Root21/4/0. Public cold byte/custody/peer controls and D13 authentication
+  controls pass. Three private CountedSource fixture paths refuse funded custody;
+  independent boundary review forbids extending that local provider. Their
+  provider-dependent/private split needs the same public-court/value extraction
+  discipline as BC9002; do not bypass custody. The fourth failure is an old
+  arc_bytes test quote excluding StorageAllocation's own memory-ticket field:
+  actual2496 vs expected2208, exactly6 nodes x48 bytes. Fix the test's actual
+  backing calculation, keeping equality and alias/drop assertions.
+- Consumer7/2/0. The two historical courts now successfully restore and resolve
+  original receipts; their old one-step NativeTerminal assertion is stale.
+  Commit6b1c8ff677 explicitly cut recorded replay over to SourceReplayObserved,
+  then registered custody recovery. Nearest working counterpart: fixed_replay.rs
+  historical replay and discovered_owning/replay.rs completed replay. Migrate the
+  two restore courts to both real phases, keep every terminal/no-result/no-receipt/
+  no-reexecution/head/close assertion, and assert terminal output recovery denial.
+  No Lifecycle production change or idempotency-owner edit is needed.
+- Query19 and Store1 still running sequentially; classify their full results
+  before changes. Do not edit source during this packet.
+The completed packet is38/16/0 (Root21/4, consumer7/2, Query9/10,
+Store1/0). Direct same-directory Query reopen passes with RUST_MIN_STACK absent.
+Failures classified before edits:
+-9 Query codec cases: source_schema::readmit_current_source_schema requires inline
+ branch_roots, but authenticated interim admission deliberately installs the
+ selected directory/image. Both codec_transition.rs and its source_schema.rs
+ differ from7d0e5189bc on Lifecycle. Do not edit that protected schema-reader seam
+ or fabricate legacy roots; exact source-schema image admission needs an owner
+ cutover. A reader design/handoff is required before those9 can go green.
+-1 Query retirement census still needs owner attribution; a read-only reviewer is
+ tracing the real producer/inspection/retention sources. Keep exact shrink tests.
+-2 consumer historical tests use the superseded immediate NativeTerminal phase;
+ migration cites6b1c8ff677 and keeps all terminal/no-live-result/no-rerun checks.
+-1 Native layout equality omits the StorageAllocation ticket backing; use actual
+ owner layout, preserving equality and every alias/drop observation.
+-3 Native private provider tests need the documented public/value split and an
+ honest decision for unobservable original-issuer and counter assertions.
+
+Reviewed correction batch now applied: actual ordered lookup replaces quadratic
+success preflight, with existing scratch reserved before temporary key allocation;
+fixed owner bill remains before reservation/absent-state return; two existing
+historical courts follow both real replay phases; node equality uses actual layout.
+The proposed new absent-state private request test was withdrawn before commit:
+iteration Law2 rejects that form. Owner ordering is source-reviewed, not claimed
+specifically proven by the external wide-contract court. No landed test removed.
+
+Budget exception: one coherent review-correction packet now rebuilds Root owner
+controls and the two changed consumer courts. It does not rerun blocked codec
+cases or the unrelated retirement case. Prior aggregate counts:9 check/Clippy
+calls,14 prebuild invocations,12 selected nextest packets plus1 direct test.
+One compile-only consumer correction family: all4 E0277 diagnostics were the
+same attempted Debug formatting of WorthQueryOperationProgress, which has no
+Debug implementation. Remove that incidental formatting at all4 sites together;
+retain every phase assertion. Only the two changed consumer-bin cases rebuild.
+The green Root9 source and untouched topology-entry evidence are reused.
+
+Consumer correction retry classified all4 E0004 errors: both explicit replay matches in both historical tests omitted Settled. Added explicit failing arms without weakening phase or terminal assertions. One focused consumer-bin retry follows; unchanged Root9 evidence reused. This extra round repairs the complete compile-diagnostic family.
+
+Two consumer courts compile; fixed historical court is green, discovered historical court still red (d13-consumer-exhaustive-retry.log1/1/0). Classify actual runtime output before further edit. Budget exception: one passive per-root/mirror census of the one retirement failure is needed because the union-only evidence cannot attribute the owner. The temporary diagnostic will be restored byte-for-byte; no observer door or assertion change.
+
+The remaining discovered historical assertion used the fixed-output wrapper by mistake. Source tracing (mutation/discovered/recovery.rs, program/output_source.rs, registry/source_custody/recorded_replay.rs) shows DemandExecution(RetainedBasisUnavailable), while fixed uses Demand(Demand(...)). Corrected only the wrapper; keep the exact native kind, terminal posture, no rerun/result/receipt, cancellation and close assertions. Only the failed discovered case will rerun after the census build.
+
+D13 current result update:
+- fixed_restored_historical_commit_is_terminal_and_closes_without_rerun PASS in d13-consumer-exhaustive-retry.log (packet1/1/0).
+- discovered_restored_historical_commit_is_terminal_and_closes_without_rerun PASS in d13-discovered-replay-wrapper-correction.log (1/0/0). Exact DemandExecution wrapper established by source tracing; no numeric allowance or assertion meaning changed.
+- Passive retirement census d13-retirement-census-probe-normalized.log0/1/0, source restored byte-for-byte. Current mirror and root11 remove the expected four P0 entities and four relations; actual old retained roots4..9 preserve those rows in inspection's required union. The missing maintenance hypothesis is not established and read-only review rules out a direct causal explanation. Keep every shrink assertion.
+- The first census driver failed its newline-sensitive patch assertion before any source change or Cargo invocation (d13-retirement-census-probe.log0/0/0). Corrected the diagnostic driver to normalize CRLF before its temporary edit; restored original bytes after the actual probe.
+- Independent review d13-current-admission-independent-review.md REJECT for incomplete codec consumer and red qualification, no new ordinary capture/restore authority defect. Both findings accepted. No completion or D13 LANDED claimed.
+
+Census review clarification: only a direct reclamation explanation was ruled out. A reclaimed root can indirectly own Query provider payloads through managed_source_image. That chain remains under read-only investigation; no product maintenance call or funding workaround has been added.
