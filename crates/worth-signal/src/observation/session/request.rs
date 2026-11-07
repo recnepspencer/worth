@@ -150,3 +150,6 @@ impl SignalObservationSurface {
         }
     }
 }
+#[cfg(test)]
+#[path = "request_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

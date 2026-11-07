@@ -55,3 +55,6 @@ pub use work_runtime::PhysicalWorkExecution;
 pub(in crate::physical_runtime) use work_runtime::{
     PhysicalProjectionFailureCapability, PhysicalStoreWorkRuntime,
 };
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

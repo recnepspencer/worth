@@ -69,4 +69,7 @@ pub(in crate::logic::transaction::runtime) use transfer_packets::{
     RestoreTransferPacket,
 };
 
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
 mod operation_control;

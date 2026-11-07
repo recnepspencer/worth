@@ -19,4 +19,7 @@ pub use preparation_pending::{
     WorthQueryProductPreparationRefused, WorthQueryProductPreparationStage,
 };
 
+#[cfg(test)]
+#[path = "product_publication_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
 mod preparation_readmission;

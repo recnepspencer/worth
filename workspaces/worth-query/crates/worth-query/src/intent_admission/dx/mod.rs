@@ -192,3 +192,6 @@ pub(crate) fn non_admitted_runtime_violation(
         .violation()
         .clone()
 }
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

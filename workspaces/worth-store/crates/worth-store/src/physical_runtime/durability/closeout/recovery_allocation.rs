@@ -22,3 +22,6 @@ impl PhysicalRecoveryAllocationAdmission {
         self.byte_limit
     }
 }
+#[cfg(test)]
+#[path = "recovery_allocation_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -300,3 +300,6 @@ where
 mod discovery_currentness;
 
 mod history_selection;
+#[cfg(test)]
+#[path = "request_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

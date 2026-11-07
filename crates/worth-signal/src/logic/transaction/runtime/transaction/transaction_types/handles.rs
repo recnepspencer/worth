@@ -124,3 +124,6 @@ where
         self
     }
 }
+#[cfg(test)]
+#[path = "handles_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

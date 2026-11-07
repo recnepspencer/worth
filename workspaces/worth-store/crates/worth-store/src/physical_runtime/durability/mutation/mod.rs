@@ -71,3 +71,6 @@ pub(in crate::physical_runtime) use request_fingerprint::{
     PhysicalMutationFingerprintInput, PhysicalMutationOperationFamily,
     PhysicalMutationPayloadDigest, PhysicalMutationRequestScope, PhysicalMutationSecurityBasis,
 };
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

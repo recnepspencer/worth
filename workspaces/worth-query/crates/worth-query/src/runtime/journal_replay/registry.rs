@@ -195,3 +195,6 @@ pub(in crate::runtime) fn published_artifact_replay_digest(
         )
         .seal()
 }
+#[cfg(test)]
+#[path = "registry_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

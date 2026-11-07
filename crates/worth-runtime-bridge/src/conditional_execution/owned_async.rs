@@ -30,3 +30,6 @@ fn foreign_continuation_denial() -> crate::facade::BridgeAsyncCompletionRejectio
         "owned async continuation belongs to another Bridge runtime",
     )
 }
+#[cfg(test)]
+#[path = "owned_async_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

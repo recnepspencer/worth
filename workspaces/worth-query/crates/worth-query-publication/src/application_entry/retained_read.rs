@@ -89,3 +89,6 @@ phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvan
         Self::new(Arc::clone(&self.retained))
     }
 }
+#[cfg(test)]
+#[path = "retained_read_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

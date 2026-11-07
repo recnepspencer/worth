@@ -327,3 +327,6 @@ impl SignalConditionalServiceContractBinding {
             && std::sync::Arc::ptr_eq(&self.authority, &contract.authority)
     }
 }
+#[cfg(test)]
+#[path = "contract_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

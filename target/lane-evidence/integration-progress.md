@@ -1450,3 +1450,22 @@ Final phase tools are deliberately held at a source-ready sentinel until the rem
 - Census checkpoint committed a9e043a06f. Steps1–2 complete with the documented
   release attribution limit; step3 design and the actual stack fix are still
   integration-owned and unimplemented. No implementation rounds spent.
+
+## Type-size census turn, before layout changes
+- Commit 750f746567 applies the delivery-track payload and adversarial sentence verbatim; doc-only, no Cargo verification.
+- Measurement review rejected scalar stand-ins for constrained History/Fixed phases, inferred private layout subtraction and identifier occurrence counts as by-value evidence. No product layout fix is implemented.
+- Eight private owner-unit collectors and the existing consumer real operation/result wrappers are now the measurement batch. World public carriers are measured from Query; protected owner files remain unedited.
+- Remaining exact private generic layout gap requires the complete genuine application declaration/trait closure upstream, or a separately ruled compiler-layout diagnostic; no fake schema or production observer is added.
+- One Root selected-lib census build is running. No check/clippy or implementation verification round has run.
+
+## Measured owner batch (750f746567 plus unit-only dirty source)
+- Root type-size-root.log: 3 passed, 0 failed, 49 ignored metadata entries (none selected/executed), 741 printed rows; Query type-size-query.log: 3/0/0, 781 rows; Store type-size-store.log: 2/0/0, 265 rows. Each selected target was audited before execution.
+- Actual totals so far: 0 check/clippy, 3 focused census builds, 3 exact-name nextest runs, 8 executed tests. No implementation round spent; no ordinary main success claimed.
+- Root measurements: SignalRuntime 15552; BridgeOwnedSignalRuntime 17728; SignalConditionalExecutionSlot/SignalEvaluationPartition 11480; BridgeBoundExecutionBasis 5440, of which admitted async request identity 4432. Query admitted operation 8912, running commit 25792; legacy admitted read intent 69136. Store recovered core 65632.
+- Real private generic layouts: chosen diagnostic channel is the committed 1.99.1 compiler with child-only -Zprint-type-sizes, unchanged dev profile and owned compiler-contract capture. Retained public consumer wrapper guards remain. This was an optional tool-choice question; proceeding with compiler diagnostic after the response interval, rather than moving the genuine fixture closure solely for measurement.
+- First consumer declaration preflight refused --bin plus --tests as two roots, before compilation. Corrected to the single package test target (--tests only); type-size-consumer-selected.log now owns that build. No product correction or assertion relaxation.
+
+## One census correction round, before representation edits
+- Consumer guard passed 1/0/0 and compiler output resolves the private History Phase/Forking/Selecting layouts (45312/39872/25096). No reference factory or schema clone.
+- Extra measurement round settles all remaining constrained families and protected-private layouts together: existing sealed observation/live markers for Legacy projections, genuine Bank workflow and consumer required-correction types, plus read-only Native/World compiler layouts. The first collector excluded trait-bound types too broadly; this is a diagnostic-method correction, not product fallout. No previously green unchanged case is rerun. All five builds share one owned issuance for this planned batch; one Cargo build at a time, disk checked before each.
+- Independent type_level_stack_design_review APPROVE with no blocking findings; proposed Signal boxes are unimplemented. It confirmed original partition funding and named every restore/capture/value-transfer seam. Its consumer-outstanding note predates the completed consumer log.

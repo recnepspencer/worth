@@ -127,3 +127,6 @@ fn empty_execution(
         denial: Some(denial),
     }
 }
+#[cfg(test)]
+#[path = "staging_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

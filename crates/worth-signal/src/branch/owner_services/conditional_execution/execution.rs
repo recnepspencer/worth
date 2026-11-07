@@ -331,4 +331,7 @@ impl SignalConditionalServiceCompletion {
     }
 }
 
+#[cfg(test)]
+#[path = "execution_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
 mod request_execution;

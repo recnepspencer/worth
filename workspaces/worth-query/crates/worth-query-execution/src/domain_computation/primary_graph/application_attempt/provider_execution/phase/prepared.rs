@@ -266,3 +266,6 @@ const fn terminal<Schema, Operation, Input, Scope>(
 
 mod court_doors_for_test;
 pub use running::WorthQueryManagedPhaseStorageForTest;
+#[cfg(test)]
+#[path = "prepared_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

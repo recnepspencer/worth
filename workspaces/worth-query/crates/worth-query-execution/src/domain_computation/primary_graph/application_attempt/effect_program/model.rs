@@ -231,3 +231,6 @@ impl<Schema, Operation, Input, Scope>
 }
 
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "model_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

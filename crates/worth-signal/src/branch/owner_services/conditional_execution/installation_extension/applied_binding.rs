@@ -84,3 +84,6 @@ impl SignalConditionalDefinitionAdvanceBinding {
         }
     }
 }
+#[cfg(test)]
+#[path = "applied_binding_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

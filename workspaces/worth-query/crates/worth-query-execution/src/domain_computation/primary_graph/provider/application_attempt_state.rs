@@ -380,3 +380,6 @@ pub(in crate::domain_computation::primary_graph) use commit_preparation::{
 pub(in crate::domain_computation) use commit_preparation::QueryPreparingApplicationCommit;
 pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::RetainedQueryDurablePreparation;
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "application_attempt_state_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

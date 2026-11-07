@@ -377,3 +377,6 @@ mod advancement_tests {
         }
     }
 }
+#[cfg(test)]
+#[path = "denial_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -48,3 +48,6 @@ pub(crate) use topology::subscription_candidates;
 pub(crate) use topology::waiter_preparation_work;
 
 pub(crate) use diagnostics_access::{EpochSemanticSeed, PreparedSemanticArtifactImage};
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

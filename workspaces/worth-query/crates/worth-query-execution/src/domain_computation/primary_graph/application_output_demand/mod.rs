@@ -88,3 +88,6 @@ pub(in crate::domain_computation::primary_graph) use registry::join_observation:
 
 pub use registry::WorthQueryDiscoveredRetentionControlDenial;
 pub use registry::WorthQueryDiscoveredRetentionReservationForTest;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

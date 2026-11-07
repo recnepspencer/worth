@@ -93,3 +93,6 @@ pub(super) struct WorthQueryRoutedMutationSummary {
     pub(super) effect_expression_failure_count: usize,
     pub(super) refresh_fallback: bool,
 }
+#[cfg(test)]
+#[path = "runtime_root_state_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

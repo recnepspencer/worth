@@ -344,3 +344,6 @@ impl From<crate::basis::WorthQueryProductBranchAdmissionDenial>
 }
 
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "denial_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

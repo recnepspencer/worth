@@ -124,3 +124,6 @@ impl BridgeConditionalDenial {
         self.semantic_observation_reads
     }
 }
+#[cfg(test)]
+#[path = "denial_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

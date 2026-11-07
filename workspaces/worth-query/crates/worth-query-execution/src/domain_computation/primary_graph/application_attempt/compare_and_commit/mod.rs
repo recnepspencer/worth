@@ -38,3 +38,6 @@ pub(in crate::domain_computation::primary_graph) use commit_receipt::Materialize
 pub use commit_receipt::WorthQueryPendingApplicationCommitReceipt;
 
 pub(in crate::domain_computation) use cleanup_receipt::RetainedOriginalCleanupCommit;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

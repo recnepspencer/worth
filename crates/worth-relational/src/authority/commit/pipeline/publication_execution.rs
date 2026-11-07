@@ -289,3 +289,6 @@ impl PublishedCommitExecution {
         self.admitted.value_mut().append_diagnostics(diagnostics);
     }
 }
+#[cfg(test)]
+#[path = "publication_execution_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

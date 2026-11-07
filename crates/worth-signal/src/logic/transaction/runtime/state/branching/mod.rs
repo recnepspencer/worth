@@ -63,3 +63,6 @@ pub use targeted_transaction::{
     LoweredBranchTargetedTransactionPlan, ValidatedBranchTargetedTransactionRequest,
 };
 pub use transaction_head::SignalBranchTransactionHead;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

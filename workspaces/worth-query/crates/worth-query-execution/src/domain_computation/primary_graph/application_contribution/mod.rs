@@ -138,3 +138,6 @@ pub use producer::ProducerOutputEvaluation;
 pub(in crate::domain_computation::primary_graph) use producer::{
     ComparedProducerOutput, ProducerOutputEvaluationState,
 };
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

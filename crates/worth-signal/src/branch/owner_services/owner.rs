@@ -307,3 +307,6 @@ where
         self.lifecycle.reach_operation_boundary(boundary);
     }
 }
+#[cfg(test)]
+#[path = "owner_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

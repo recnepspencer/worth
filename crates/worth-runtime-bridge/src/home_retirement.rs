@@ -247,3 +247,6 @@ fn validate_source(
         .preflight_alias_retirement(native)
         .map_err(BridgeHomeRetirementDenial::NativeAlias)
 }
+#[cfg(test)]
+#[path = "home_retirement_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

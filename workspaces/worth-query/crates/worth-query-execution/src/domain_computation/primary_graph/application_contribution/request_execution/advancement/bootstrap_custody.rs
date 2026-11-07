@@ -150,3 +150,6 @@ impl<'scope> WorthQueryBootstrapAdvancementPhase<'scope> {
         }
     }
 }
+#[cfg(test)]
+#[path = "bootstrap_custody_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

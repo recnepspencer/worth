@@ -75,3 +75,8 @@ pub use worth_store_contracts::{
 pub use worth_store_physical_format::{
     PhysicalExtentId, PhysicalGeneration, PhysicalPageId, PhysicalSegmentId,
 };
+#[cfg(test)]
+#[path = "lib_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+#[cfg(test)]
+mod inline_type_sizes;

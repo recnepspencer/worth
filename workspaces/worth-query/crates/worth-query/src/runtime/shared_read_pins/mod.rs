@@ -20,3 +20,6 @@ pub(in crate::runtime) use hot_path_measurement::WorthQuerySharedReadHotPathMeas
 pub(in crate::runtime) use registry::WorthQuerySharedReadPinRegistry;
 pub(in crate::runtime) use retirement::collect_retired_zero_pin_generations;
 pub(in crate::runtime) use stale_basis::worth_query_shared_read_stale_basis_error;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

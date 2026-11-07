@@ -96,3 +96,6 @@ impl WorthQueryCollectionWindowBreadthDenial {
         self.kind
     }
 }
+#[cfg(test)]
+#[path = "breadth_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -126,3 +126,6 @@ macro_rules! opaque_debug {
 opaque_debug!(PreparedInitialEmptySignalStop);
 opaque_debug!(StoppedInitialEmptySignalAllocation);
 opaque_debug!(SignalInitialEmptyStopRefused);
+#[cfg(test)]
+#[path = "initial_empty_stop_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

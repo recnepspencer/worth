@@ -31,3 +31,6 @@ impl PhysicalMutationRootPreparationFailure {
         self.posture
     }
 }
+#[cfg(test)]
+#[path = "root_preparation_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -90,3 +90,6 @@ pub(crate) use signal_target_declaration::BridgeSignalSlotRequest;
 
 mod signal_failure;
 pub use signal_failure::BridgeCorrespondenceSignalFailure;
+#[cfg(test)]
+#[path = "correspondence_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

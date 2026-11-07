@@ -132,4 +132,7 @@ impl CanonicalRequiredOutputOrigin {
         self._funding = memory;
     }
 }
+#[cfg(test)]
+#[path = "required_output_origin_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
 mod source_scope_ownership;

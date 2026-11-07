@@ -168,3 +168,6 @@ impl WorthQueryConsumerSupportProfile {
         self.postures[dimension.index()]
     }
 }
+#[cfg(test)]
+#[path = "profile_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

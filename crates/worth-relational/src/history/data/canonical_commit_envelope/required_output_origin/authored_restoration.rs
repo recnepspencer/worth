@@ -277,3 +277,6 @@ impl PartialEq for CanonicalAuthoredRestoration {
     }
 }
 impl Eq for CanonicalAuthoredRestoration {}
+#[cfg(test)]
+#[path = "authored_restoration_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

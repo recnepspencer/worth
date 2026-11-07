@@ -290,3 +290,6 @@ where
         workspace: &mut WorthQueryOperationWorkspace<'_>,
     ) -> Result<WorthQueryOperationExecutionMaterial<O::Output>, WorthQueryOperationExecutorFailure>;
 }
+#[cfg(test)]
+#[path = "executor_contract_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

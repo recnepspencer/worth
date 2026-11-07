@@ -148,3 +148,6 @@ where
         (self.branch_id, self.snapshot_id, self.state)
     }
 }
+#[cfg(test)]
+#[path = "branches_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

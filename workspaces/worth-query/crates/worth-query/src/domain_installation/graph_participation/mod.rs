@@ -24,3 +24,6 @@ pub use worth_query_execution::facade::provider_session::{
     WorthQueryGraphReadMaterial, WorthQueryGraphReadRow, WorthQueryGraphReadRowConstructionDenial,
     WorthQueryGraphReadRows,
 };
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

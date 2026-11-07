@@ -342,3 +342,6 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
 }
 
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "context_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

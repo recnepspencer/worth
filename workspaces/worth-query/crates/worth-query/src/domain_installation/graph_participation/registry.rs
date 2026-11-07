@@ -345,3 +345,6 @@ impl WorthQueryInstalledGraphParticipationRegistry {
         self.get_by_marker(TypeId::of::<G>())
     }
 }
+#[cfg(test)]
+#[path = "registry_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

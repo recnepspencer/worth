@@ -62,3 +62,6 @@ impl<T> WorthQueryLiveView<T> {
         &self.subscription_installation
     }
 }
+#[cfg(test)]
+#[path = "live_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

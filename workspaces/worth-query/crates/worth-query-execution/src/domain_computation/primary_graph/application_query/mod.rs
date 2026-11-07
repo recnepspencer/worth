@@ -191,3 +191,6 @@ pub use projection::retained_projection::{
 pub(in crate::domain_computation::primary_graph) use projection::ProjectionContentComparisonFault;
 
 pub(in crate::domain_computation::primary_graph::application_query) use read_execution::dispatch_witness::DispatchWitness;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

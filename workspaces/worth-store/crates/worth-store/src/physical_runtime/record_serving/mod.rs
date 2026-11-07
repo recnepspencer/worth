@@ -286,3 +286,6 @@ mod tests {
         assert_eq!(fixed_limits.current_root_entries(), 185);
     }
 }
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

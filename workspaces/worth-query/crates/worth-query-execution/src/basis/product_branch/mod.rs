@@ -31,3 +31,6 @@ pub use read_identity::WorthQueryProductBranchReadIdentity;
 pub use selection::WorthQueryProductBranch;
 
 pub(crate) use read_position::WorthQueryProductBranchReadPosition;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

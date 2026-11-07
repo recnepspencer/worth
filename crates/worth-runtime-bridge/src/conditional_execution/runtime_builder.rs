@@ -121,3 +121,6 @@ impl BridgeConditionalRuntimeBuilder {
         }
     }
 }
+#[cfg(test)]
+#[path = "runtime_builder_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

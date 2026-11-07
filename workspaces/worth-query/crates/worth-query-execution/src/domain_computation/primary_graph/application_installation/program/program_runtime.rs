@@ -356,3 +356,6 @@ impl<Schema, Program> Clone for WorthQueryProgramApplicationRuntime<Schema, Prog
         }
     }
 }
+#[cfg(test)]
+#[path = "program_runtime_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

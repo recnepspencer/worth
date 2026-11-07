@@ -186,4 +186,7 @@ pub use yield_recovery::WorthQueryYieldRecoveryKind;
 pub use yield_recovery_evidence::WorthQueryYieldRecoveryResourceEvidence;
 pub use yield_transition_counters::WorthQueryYieldTransitionCounters;
 
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
 mod test_phase_custody;

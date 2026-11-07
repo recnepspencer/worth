@@ -332,3 +332,6 @@ pub(in crate::domain_computation::primary_graph::product_operation) fn suspended
         producer,
     }
 }
+#[cfg(test)]
+#[path = "suspend_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

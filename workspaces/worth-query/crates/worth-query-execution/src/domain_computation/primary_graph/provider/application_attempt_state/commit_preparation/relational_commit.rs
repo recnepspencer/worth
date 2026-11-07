@@ -129,3 +129,6 @@ pub(in crate::domain_computation::primary_graph) use evidence_seal::{
 
 pub(in crate::domain_computation) use commit_execution::QueryPreparingApplicationCommit;
 pub(in crate::domain_computation::primary_graph::provider) use commit_execution::RetainedQueryDurablePreparation;
+#[cfg(test)]
+#[path = "relational_commit_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -343,3 +343,6 @@ pub(in crate::domain_computation::primary_graph) use operation_control::{
 };
 
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "application_runtime_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

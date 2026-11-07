@@ -155,3 +155,6 @@ pub(super) fn assemble_commit_artifacts(
     };
     CommitPhaseBacking::new(execution, result)
 }
+#[cfg(test)]
+#[path = "artifact_execution_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

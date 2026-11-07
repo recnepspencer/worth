@@ -361,3 +361,6 @@ impl crate::capabilities::AspectPlanSource for RelationalPreparationRuntime {
             .get(&kind_id)
     }
 }
+#[cfg(test)]
+#[path = "preparation_runtime_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

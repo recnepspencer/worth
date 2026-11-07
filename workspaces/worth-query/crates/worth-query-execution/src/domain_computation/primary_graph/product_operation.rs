@@ -103,3 +103,6 @@ pub use transaction::{
     WorthQueryAdmittedChange, WorthQueryAppliedProductTransaction, WorthQueryProductTransaction,
     WorthQueryProductTransactionCommitError,
 };
+#[cfg(test)]
+#[path = "product_operation_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

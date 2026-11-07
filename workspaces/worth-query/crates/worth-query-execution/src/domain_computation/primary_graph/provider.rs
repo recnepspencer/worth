@@ -332,3 +332,6 @@ pub(in crate::domain_computation::primary_graph::provider) use application_attem
 
 pub(in crate::domain_computation::primary_graph::provider) use unpublished_idempotency::BeforeWorldQueryReservation;
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "provider_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

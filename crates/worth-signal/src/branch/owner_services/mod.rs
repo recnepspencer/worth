@@ -97,4 +97,7 @@ pub use service_ports::SignalOwnerServicePorts;
 pub use unavailable::SignalOwnerUnavailable;
 
 #[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+#[cfg(test)]
 mod tests;

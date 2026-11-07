@@ -251,3 +251,6 @@ mod deterministic {
     reason = "the frozen controller contract names the pause type for service-lane consumers"
 )]
 pub use deterministic::{SignalOwnerOperationControlForTest, SignalOwnerOperationPauseForTest};
+#[cfg(test)]
+#[path = "operation_control_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -243,3 +243,6 @@ impl AdmittedRelationalBranchBasis {
         })
     }
 }
+#[cfg(test)]
+#[path = "basis_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

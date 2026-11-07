@@ -101,3 +101,6 @@ impl SignalEvaluationPartition {
 
 #[cfg(test)]
 pub(crate) use conditional_execution::conditional_test_scope;
+#[cfg(test)]
+#[path = "evaluation_partition_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

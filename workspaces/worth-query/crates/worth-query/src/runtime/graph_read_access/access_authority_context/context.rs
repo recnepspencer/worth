@@ -336,3 +336,6 @@ fn relationship_posture_from_scope(
         }
     }
 }
+#[cfg(test)]
+#[path = "context_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

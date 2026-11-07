@@ -126,3 +126,6 @@ impl super::BridgeOwnedSignalRuntime {
         }
     }
 }
+#[cfg(test)]
+#[path = "home_retirement_slots_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -16,3 +16,6 @@ pub use product_branch::{
 };
 
 pub(crate) use product_branch::WorthQueryProductBranchReadPosition;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

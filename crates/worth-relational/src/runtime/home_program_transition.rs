@@ -161,3 +161,6 @@ impl RelationalRuntime {
         self.retain_home_program_contracts(request, schema, Arc::new(contracts), digest)
     }
 }
+#[cfg(test)]
+#[path = "home_program_transition_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

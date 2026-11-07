@@ -44,3 +44,6 @@ pub use identity::{
     SignalConditionalDecisionIdentityKind, SignalConditionalDecisionProjectionIdentity,
 };
 pub use threshold_resolution::resolve_signal_delta_threshold;
+#[cfg(test)]
+#[path = "conditional_execution_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

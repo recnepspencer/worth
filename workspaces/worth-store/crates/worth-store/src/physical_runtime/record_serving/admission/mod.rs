@@ -21,3 +21,6 @@ pub(super) mod residency_policy;
 pub(super) mod transition;
 
 pub(in crate::physical_runtime) use transition::{initialize, open};
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

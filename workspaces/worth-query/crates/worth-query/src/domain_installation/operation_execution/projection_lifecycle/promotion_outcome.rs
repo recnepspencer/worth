@@ -16,3 +16,6 @@ pub enum WorthQueryProjectionPromotionOutcome<D, O, F, L: BasisOperationLane> {
     AuthorityRevalidationRequired(WorthQueryAuthorityRevalidationDomainProjection<D, O, F, L>),
     Failed(WorthQueryProjectionPromotionStop<D, O, F, L>),
 }
+#[cfg(test)]
+#[path = "promotion_outcome_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

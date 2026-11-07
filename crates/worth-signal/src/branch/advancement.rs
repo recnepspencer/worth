@@ -108,3 +108,6 @@ pub enum SignalBranchAdvanceDenial {
         error: SignalError,
     },
 }
+#[cfg(test)]
+#[path = "advancement_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

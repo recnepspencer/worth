@@ -87,3 +87,6 @@ pub(crate) use publication::{native_birth_fixture, native_meaning_fixture};
 pub(crate) use publication::native_roles_fixture;
 
 pub(crate) use validation::ValidatedProposalState;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

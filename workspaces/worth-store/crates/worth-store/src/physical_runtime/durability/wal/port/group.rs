@@ -393,3 +393,6 @@ impl IndeterminatePhysicalWalGroupAppend {
         }
     }
 }
+#[cfg(test)]
+#[path = "group_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

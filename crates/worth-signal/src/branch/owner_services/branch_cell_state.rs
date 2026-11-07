@@ -277,3 +277,6 @@ where
         )
     }
 }
+#[cfg(test)]
+#[path = "branch_cell_state_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

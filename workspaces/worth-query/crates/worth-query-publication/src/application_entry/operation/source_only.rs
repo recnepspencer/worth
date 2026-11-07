@@ -277,3 +277,6 @@ impl<
         self.state.record_unresolved_advancement(denial);
     }
 }
+#[cfg(test)]
+#[path = "source_only_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

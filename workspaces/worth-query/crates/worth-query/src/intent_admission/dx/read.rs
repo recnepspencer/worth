@@ -289,3 +289,6 @@ impl<'a> WorthQueryAdmittedWorkspaceReadIntent<'a> {
             .open_admitted_live_binding(request_execution, name, self.execution_binding)
     }
 }
+#[cfg(test)]
+#[path = "read_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -8,6 +8,8 @@
 
 mod application_invariant_acceptance;
 mod application_program;
+#[cfg(test)]
+mod inline_type_sizes;
 mod program_deployment;
 pub mod proposal_acceptance;
 use program_deployment::ConsumerProgramDeployment;

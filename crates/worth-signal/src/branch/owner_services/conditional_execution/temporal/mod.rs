@@ -20,3 +20,6 @@ mod tests;
 pub use partition::{SignalConditionalTemporalPartition, SignalConditionalTemporalPartitionDenial};
 pub use promotion::{SignalConditionalTemporalPromotion, SignalConditionalTemporalPromotionView};
 pub(in crate::branch::owner_services) use registry::SignalConditionalTemporalRegistry;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

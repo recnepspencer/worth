@@ -113,3 +113,6 @@ impl WorthQueryInstalledProduct {
             .integration_managed_run_admission(query, &self.managed_execution_bridge)
     }
 }
+#[cfg(test)]
+#[path = "installed_product_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

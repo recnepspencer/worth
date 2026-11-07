@@ -291,3 +291,6 @@ impl WorthQueryDomainInstallationRegistry {
             .and_then(|index| self.records.get(*index))
     }
 }
+#[cfg(test)]
+#[path = "installed_registry_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

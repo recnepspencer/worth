@@ -120,3 +120,6 @@ impl<Denial> WorthQueryMutationHandlerExecutionReport<std::convert::Infallible, 
         }
     }
 }
+#[cfg(test)]
+#[path = "execution_report_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

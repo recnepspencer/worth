@@ -384,3 +384,6 @@ impl WorthQueryAcceptedOutputAuthority {
 }
 
 pub use consumer_custody::{ConsumerCustody, ConsumerHandoff};
+#[cfg(test)]
+#[path = "registry_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

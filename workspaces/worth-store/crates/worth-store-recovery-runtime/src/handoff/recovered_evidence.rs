@@ -39,3 +39,6 @@ pub(crate) struct RecoveredPhysicalRuntimeHandoffEvidence {
     pub(crate) cleanup: RecoveryCleanupPosture,
     pub(crate) integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
 }
+#[cfg(test)]
+#[path = "recovered_evidence_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
