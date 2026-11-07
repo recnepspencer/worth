@@ -321,3 +321,11 @@ One owned five-name packet now builds all selected affected Root packages togeth
 No Query/Store check or ignored/exhaustive test is selected.
 
 Root focused5/0/0 after one coherent build,including actual external public sharing inspector and operational image restoration plus untouched exact private refusal. No test or compiler failure and no rerun. Planned phase gates follow; live assertion retirement question remains pending,not assumed approved. Current0checks/1Clippy/1focusedbuild/1testrun.
+
+Reviewed root retirement/completeness source committed41ab134fa1; all5proofs pass,
+Clippy/fmt/linecaps/context green,boundary14including all3local adapters. Fresh
+review APPROVE source,fullBCnotachieved. Read-only next-family audit maps80files/
+86tests,finds external provider/public replacements and exact private pin actions/
+dictionary claims requiring owner decomposition. No broad cold edits or extra
+Cargo run. User clarification about live allocation claim still pending. See
+turn-end-state.md; counts0checks/1Clippy/1focusedbuild/1testrun.

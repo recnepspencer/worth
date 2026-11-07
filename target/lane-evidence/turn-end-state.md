@@ -1,99 +1,69 @@
-NAMED DIGESTS LANDED 2b9f13c97e
-BC9002 IN PROGRESS; reviewed source safe point 2dbd922f6f72df26a81cfce58061b9df4b71f340.
+IN PROGRESS — BC9002 not landed
+Reviewed code HEAD41ab134fa1. This evidence-only child changes no Rust source.
 
-## On this branch
--2b9f13c97e: Foundation named digest values across checkpoint image/admission,
- matching producers/consumers and capture-map keys; valid bytes unchanged.
--2dbd922f6f: three real public Native courts, retaining exact names and assertions,
- with actual prepared pending/burned reservations and caller-retained capture
- invoice. No new public API,observer,adapter,configuration entry or budget.
--This evidence-only child records final disposition; no source changes follow
- the approved source safe point. No merge,push or branch switch this turn.
+## This turn's committed source
+41ab134fa1 refactor(native): retire unused root reconstruction and extract completeness values.
+Removed readmit_for_request and its explicitly ordered whole caller test under
+coordinator ruling 'readmit_for_request has no production caller'. Its test also
+contained successful unchanged-root sharing/lifetime assertions; retirement of
+that whole test is explicit,not silently described as solely dead assertions.
+Shipping unchanged-root constructor/caller and exact refusal test remain intact.
 
-## Green evidence
-All paths below are under target/lane-evidence/. Full command,actual HEAD,dirty
-status,start/end/exit and counts are in each raw log. Counts are executed pass/
-fail/ignored; nextest filtered/ignored discovery metadata was not executed.
+Actual Root::is_complete now calls the extracted value predicate. Original
+visibility is recomputed inside it using existing descriptive Body writer. All
+nine checks remain. Tests construct no runtime or admitted envelope. No public
+API,facade,boundary-config,format/version,budget or protected-owner change.
+No additional Homes stop opening. No local provider or hook deleted prematurely.
 
-| Lane | Final result | P/F/I | Log |
+## Evidence: target/lane-evidence/
+| Lane | Result | Passed/failed/ignored | Log |
 |---|---|---|---|
-| named owner Clippy |exit0,known33lib/21lib-test warnings|0/0/0|named-digest-owner-clippy.log|
-| named focused build/run |exit0|15/0/0|named-digest-proof-root.log|
-| named line caps |16files pass|0/0/0|named-digest-line-caps.log|
-| named context |exit0|0/0/0|named-digest-agent-context.log|
-| named boundary |exit1,17assigned findings|0/0/0|named-digest-boundary.log|
-| BC initial Clippy |5caller errors,all corrected; superseded by final|0/0/0|bc-public-migrations-clippy.log|
-| BC first focused build/run |frontier and validation pass; incomplete invoice fails|2/1/0|bc-public-migrations-proof-root.log|
-| BC roster-only retry |omitted canonical controls; superseded|0/1/0|bc-public-invoice-proof-root.log|
-| BC full-invoice retry |invalid added all-New funding claim; withdrawn|0/1/0|bc-public-complete-invoice-proof-root.log|
-| BC final failed-name retry |exact invoice/restore/edit/refund pass|1/0/0|bc-public-final-invoice-proof-root.log|
-| BC final Clippy |exit0,sameknown warnings,no new warning|0/0/0|bc-public-migrations-final-clippy.log|
-| BC line caps |7files pass|0/0/0|bc-public-migrations-line-caps.log|
-| BC context |exit0|0/0/0|bc-public-migrations-agent-context.log|
-| BC boundary |exit1,14findings;3owned remain|0/0/0|bc-public-migrations-boundary.log|
-| both affected crates formatting |exit0|0/0/0|queue-final-format.log|
+| scoped Root Clippy |exit0,32lib/23lib-test warnings|0/0/0|bc-final-root-clippy.log|
+| owned focused build/run |exit0|5/0/0|bc-final-root-proof-root.log|
+| dirty line caps |5Rust files pass|0/0/0|bc-final-root-line-caps.log|
+| mandatory boundary |exit1,14findings incl3owned adapters|0/0/0|bc-final-root-boundary.log|
+| generated context |exit0|0/0/0|bc-final-root-agent-context.log|
+| formatting |exit0|0/0/0|bc-final-root-format.log|
+Exact five names are frozen in bc-final-root-proof-selection.json. No test/compiler
+failure occurred; no lane reran. A Python proof-driver preparation quoting error
+was fixed before any build/test invocation. No code/source qualification changed
+following green evidence. Full logs include exact commands,baseHEAD,dirty state,
+start/end,exit and counts. Query/Store lanes unrun because no public/wire input
+changed. No ignored,query-scale,exhaustive oracle,Home oracle or scenario ran.
 
-Final unique focused set18passed,0unfixed test failure,0ignored executed. The two
-first-packet passing BC files are unchanged after their green evidence. Their
-failed invoice name alone reran. Root workspace behaviour-name multiset2840before
-and2840after,identical; bc-public-test-name-multiset.md. Broad Query/Store lanes
-unrun: no changed public API or wire; no new consumer-workspace input.
+Standing lint skips: branch/root_region.rs::new_for_request and
+storage/residency/region_publication/full.rs::initial_for_request. Both were already
+library warning sites; deleting the sole test caller exposes them in lib-test too.
+Both have Lifecycle/master diffs against7d0e5189bc,so leave untouched under rules2/3.
+Probes in bc-final-root-lint-ownership.json. Other warnings match accepted sites;
+removed parent constructor warning reduces library33->32. No allow/suppression.
 
-## Failure causes and disposition
--The first BC Clippy batch used four private live branch-head calls and the wrong
- inspection accessor. Test callers were wrong; all five diagnostics fixed together
- through actual observed basis and inspect_what_happened. No new door.
--The old invoice counted16533frame+6962admitted payloads,omitting real funded
- controls. Independent layout invoice now adds696roster+152canonical cursor+
- 136original-byte control=24479. Exact equality and416/1MiB/1M ceilings unchanged;
- final zero follows last real recovered root custody too. Test oracle was wrong;
- actual owner funding remains unchanged.
--The roster-only correction was incomplete; source trace established the other
- 288before final correction. No fitted constant or ledger-derived expected sum.
--An added all-New funding guard was wrong:New is destination placement,not backing
- provenance. Ordinary external DATA has no caller payload ticket. The inherited
- filter_map semantics are restored; no original assertion was removed.
--Mandatory boundary remains red for three owned adapters below and11other assigned
- findings. Their ownership is the coordinator's existing split. No suppression.
+## Unresolved owned work
+HAPPY: shipping exact private unchanged-root allocation claim is still preserved
+and green. Existing public recovery does not identify that exact allocation among
+prior funded work. Allocation boundary review in bc-final-allocation-boundary-review.md
+traces actual caller,reservation layout,default-vs-funded issuer and public failure
+observations. A generic earlier refusal is insufficient. The user-facing retirement/
+owner-surface clarification is pending; no elapsed time/default option is approval.
+HAPPY: finish remaining provider consumers,remove cold_source.rs,
+cold_source/protected_reads.rs,runtime_attachment.rs and hooks,then shrink baseline.
+All three findings remain; no baseline growth or enforcement workaround. Other
+mapped root value/public-flow migrations remain as well; the allocation decision
+alone does not implement the rest of this closure.
+HAPPY: cold family audit now maps80files/86tests to external provider and identifies
+existing public replacements. Two private resident-only pin actions and exact
+resident dictionary/cache controls still need genuine owner decomposition or an
+explicit assertion-placement ruling; they are not silently replaced with reads.
+See bc-cold-consumer-boundary-review.md and closure/owner JSON. Pin/cache owner
+quiet-diffs are0; this is a design/proof issue,not a missing per-file grant.
+CLEANUP/C2: unchanged retirement court and its actual holder handoff retain prior
+coordinator disposition. No protected release owner changed or court rerun.
 
-## Open items
-HAPPY: finish BC9002 consumer migration and remove cold_source.rs,
-cold_source/protected_reads.rs,runtime_attachment.rs,their hooks and obsolete
-runtime_attachment baseline row. Baseline currently unchanged,never expanded.
-Actual consumers depend on these until root assertions migrate.
-HAPPY: actual completeness predicate extraction requires
-crates/worth-relational/src/branch/root_completeness.rs. This is outside the five
-explicit root seams and has Lifecycle changes against7d0e5189bc. It remains
-untouched. The exact source probes and consumer evidence are in
-bc-current-owner-preflight.json and bc9002-root-closure-handoff.md. A copied hash
-predicate would not preserve completeness_recomputes_visibility_commitment.
-HAPPY: preserve/resolve exact private unchanged-root allocation boundary at
-controller+size_of(root)-1,partial refund,cancellation,unchanged original; broader
-recovery refusal is not equivalent. Test unchanged. readmit_for_request currently
-has only its test caller; that fact does not authorize retiring its claim.
-CLEANUP/C2: retirement court retains original assertions/red disposition; the
-coordinator accepted trackH D13. Actual holder evidence remains in the existing
-retirement handoff. Protected release owners untouched and court not rerun.
-
-## Protected seams and changes outside the area
-P-C original_image.rs,branches.rs/branches/ remain untouched. Original-frame
-source.rs::OriginalCanonicalCommit.original_payload_digest remains raw because
-P-C original_image.rs:79 consumes that raw DATA. Named conversion occurs at the
-admission boundary; this is not an unnamed stored image field.
-Outside-area edits are only the public-court files/test mounts. In Native,
-record_identity/partition_frontier.rs changes only its moved cfg(test) module
-mount; production scan untouched. allocation.rs and semantic_result.rs likewise
-remove their moved child mounts. No root production seam or release owner edited.
-No new boundary-config entry. No format/version change,no additional Home cutoff.
-
-## Independent reviews and budget
-Fresh /root/queue_final_independent_review independently APPROVE named digest and
-three-court safe point,with no blocking source finding. Informational finding:
-full BC9002 remains open. Prior design P1 for full closure is accepted and open;
-no BC9002 LANDED claim. Resolution details in queue-final-independent-review.md
-and bc-public-migrations-review-resolution.md. Reviewers ran no builds/tests.
-This turn:0cargo checks,3Clippy invocations,5focused builds,5selected test runs;
-4mandatory tool cargo-run commands. Extra invoice retry rounds were justified
-in p3-reopen-progress.md before running them. No allowance changes. No ignored
-case,query-scale,exhaustive Home oracle or Store scenario was run. No lint-only
-source correction or new rule2/3skip was introduced.
+## Review and counters
+Fresh bc_root_retirement_final_review APPROVE source candidate,no blocking findings;
+all5tests and gates verified read-only. Full BC9002 explicitly NOT ACHIEVED.
+Boundary/design reviews approve only the relevant partial slices and identify
+remaining proof gaps. All reviewers ran0builds/tests.
+This turn0cargo check,1Clippy invocation,1focused build,1selected test run;
+2mandatory tool cargo-run commands. No rebuild after doc/evidence-only changes.
+No push,merge,branch switch,other-worktree edit or parked work.
