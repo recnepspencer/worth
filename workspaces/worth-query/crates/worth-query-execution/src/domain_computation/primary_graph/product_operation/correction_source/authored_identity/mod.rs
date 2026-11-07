@@ -89,7 +89,9 @@ impl PreparedAuthoredIdentity {
         let Some(identity) = C::authored_identity() else {
             return Ok(None);
         };
-        let declaration = identity.into_declaration();
+        let declaration = identity
+            .into_declaration()
+            .map_err(|_| Denial::UnsupportedSourceMeaning)?;
         Self::prepare_identity::<S, C>(source, request, declaration)
     }
 

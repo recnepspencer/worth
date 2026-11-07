@@ -1,73 +1,37 @@
-//! Principal roles select checked fields from records, including indexed paths.
+//! Principal requirements retain selections; schema composition checks their posture.
 use super::*;
-use crate::application_schema::fragment::{Aspect, Entity, Fragment, In, RecordField, Scalar};
-use crate::application_schema::ApplicationSchemaDeclarationDenial as Denial;
-use std::any::TypeId;
+use crate::application_schema::fragment::{Aspect, Entity, FieldSelection, Fragment, In, Scalar};
 
 impl<S, E: Entity> ApplicationPrincipalMappingIdentityRequirement<S, E> {
-    pub fn from_record<A: Aspect>(
-        field: RecordField<E, A, WorthQueryExternalPrincipalIdentity>,
-    ) -> Result<Self, Denial> {
-        posture(&field, false, true)?;
-        Ok(Self {
-            recipe: field.recipe().clone(),
-            entity: E::NAME,
-            aspect: field.locus().aspect().to_owned(),
-            field: field.locus().field().to_owned(),
-            _marker: PhantomData,
-        })
+    pub fn from_record<Field>(field: Field) -> Self
+    where
+        Field: super::super::fragment::RecordSelection<
+            Entity = E,
+            Value = WorthQueryExternalPrincipalIdentity,
+        >,
+    {
+        Self::from_field(field)
     }
 }
 impl<S, E: Entity> ApplicationPrincipalMappingStatusRequirement<S, E> {
-    pub fn from_record<A: Aspect>(
-        field: RecordField<E, A, WorthQueryPrincipalMappingStatus>,
-    ) -> Result<Self, Denial> {
-        posture(&field, true, false)?;
-        Ok(Self {
-            recipe: field.recipe().clone(),
-            aspect: field.locus().aspect().to_owned(),
-            field: field.locus().field().to_owned(),
-            _marker: PhantomData,
-        })
+    pub fn from_record<Field>(field: Field) -> Self
+    where
+        Field: super::super::fragment::RecordSelection<
+            Entity = E,
+            Value = WorthQueryPrincipalMappingStatus,
+        >,
+    {
+        Self::from_field(field)
     }
 }
 impl<S, E: Entity, T: 'static, B: ApplicationIdentityScalarValueBinding<Value = T>>
     ApplicationPrincipalIdentityRequirement<S, E, T, B>
 {
-    pub fn from_record<F: Fragment, A, EP, AP>(
-        _: F,
-        field: RecordField<E, A, T>,
-    ) -> Result<Self, Denial>
+    pub fn from_record<F: Fragment, A, EP, AP>(_: F, field: FieldSelection<F, E, A, T>) -> Self
     where
-        F::Bindings: Scalar<T, Binding = B>,
+        F::Bindings: Scalar<T, Binding = B> + super::super::fragment::Record<A::Row>,
         A: Aspect + In<F::Members, (EP, AP), (F, E)>,
     {
-        posture(&field, false, true)?;
-        if field.recipe().binding_type() != TypeId::of::<B>() {
-            return Err(Denial::InvalidRecordField {
-                field: field.locus().clone(),
-            });
-        }
-        Ok(Self {
-            aspect: field.locus().aspect().to_owned(),
-            field: field.locus().field().to_owned(),
-            scalar_family: B::SCALAR_FAMILY,
-            value_type: B::IDENTITY_NAME,
-            binding_recipe: field.recipe().clone(),
-            _marker: PhantomData,
-        })
+        Self::from_field(field)
     }
-}
-
-fn posture<E, A, T>(
-    field: &RecordField<E, A, T>,
-    writable: bool,
-    equality: bool,
-) -> Result<(), Denial> {
-    if field.writable() != writable || (equality && !field.equality_queryable()) {
-        return Err(Denial::InvalidRecordField {
-            field: field.locus().clone(),
-        });
-    }
-    Ok(())
 }

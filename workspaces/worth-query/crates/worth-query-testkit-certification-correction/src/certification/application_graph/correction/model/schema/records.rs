@@ -22,47 +22,47 @@ impl BindingSet for NumericModelBindings {
 }
 impl Scalar<BinaryCounter> for NumericModelBindings {
     type Binding = BrokenBinaryBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<CanonicalCounter> for NumericModelBindings {
     type Binding = CanonicalBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<DelegatedCounter> for NumericModelBindings {
     type Binding = DelegatedBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<WorthQueryExternalPrincipalIdentity> for NumericModelBindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl Scalar<WorthQueryPrincipalMappingStatus> for NumericModelBindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<u64> for NumericModelBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<String> for NumericModelBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<Counter> for NumericModelBindings {
     type Binding = InlineCounterBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<bool> for NumericModelBindings {
     type Binding = BoolApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 

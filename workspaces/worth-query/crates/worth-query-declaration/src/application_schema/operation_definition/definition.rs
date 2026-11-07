@@ -1,7 +1,7 @@
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 use std::marker::PhantomData;
 
-use crate::application_aftermath::PortableApplicationAftermathContract;
+use crate::application_aftermath::AssociatedAftermathContract;
 
 use super::contract_slots::DeclaredExternalEffectSlot;
 
@@ -16,7 +16,7 @@ pub struct ApplicationOperationDefinition<Schema, Operation, Input> {
     pub(super) operation: &'static str,
     pub(super) input_type: WorthQueryPortableTypeIdentity,
     pub(super) external_effect: Option<DeclaredExternalEffectSlot>,
-    pub(super) aftermath: Option<PortableApplicationAftermathContract>,
+    pub(super) aftermath: Option<AssociatedAftermathContract>,
     pub(super) body: Option<super::ApplicationOperationBodyProgram>,
     pub(super) external_emission_recipe:
         Option<super::ApplicationOperationBodyExternalEffectRecipe>,

@@ -54,7 +54,7 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
             Effect,
             crate::application_query::ApplicationQueryExpressionSnapshot,
         >,
-        query: crate::application_query::ApplicationQueryDefinition<
+        query: crate::application_query::ApplicationQueryDefinitionBuilder<
             Schema,
             Query,
             Parameters,
@@ -86,6 +86,7 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
         if self.external_emission.is_some() {
             return Err(Denial::DuplicateAttachment);
         }
+        let query = query.into_erased();
         if !query.parameters().is_empty()
             || query.cardinality()
                 != crate::application_query::ApplicationQueryCardinality::ExactlyOne
@@ -98,7 +99,7 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
         let emission = Emission {
             source: Source::QueryContext {
                 mutation_binding: Binding::IDENTITY.to_owned(),
-                query: Box::new(query.into_erased()),
+                query: Box::new(query),
             },
             effect: effect.name().to_owned(),
             input_binding: Operation::InputBinding::IDENTITY,

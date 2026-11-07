@@ -62,20 +62,16 @@ impl GroupDefinition {
     pub(super) fn of<G: OneOf>(mut cases: Vec<CaseDefinition>, optional: bool) -> Self {
         cases.sort_by_key(|case| case.name);
         let mut hash = Sha256::new();
-        for part in [
-            "worth.one-of.v1",
-            std::any::type_name::<G>(),
-            std::any::type_name::<G::Row>(),
-        ] {
-            hash.update((part.len() as u64).to_le_bytes());
-            hash.update(part.as_bytes());
-        }
+        let domain = "worth.one-of.v1";
+        hash.update((domain.len() as u64).to_le_bytes());
+        hash.update(domain.as_bytes());
         hash.update([u8::from(optional)]);
+        // Stored exclusivity depends on the roster and absence rule. Rust
+        // markers, row types and binding sets retain typed dispatch metadata;
+        // each case's own portable fields and codecs derive its row revision.
         for case in &cases {
-            for part in [case.name, case.row, case.bindings] {
-                hash.update((part.len() as u64).to_le_bytes());
-                hash.update(part.as_bytes());
-            }
+            hash.update((case.name.len() as u64).to_le_bytes());
+            hash.update(case.name.as_bytes());
         }
         Self {
             marker: TypeId::of::<G>(),

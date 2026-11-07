@@ -7,26 +7,18 @@ use worth_query_decl::facade::{
 pub type IdentityValueBinding = <Bindings as Scalar<u64>>::Binding;
 pub struct IdentityBinding;
 impl IdentityBinding {
-    pub fn reference() -> Result<
-        ApplicationPrincipalBindingRef<
-            Fixture,
-            Self,
-            Mapping,
-            Principal,
-            u64,
-            IdentityValueBinding,
-        >,
-        ApplicationSchemaDeclarationDenial,
-    > {
-        Ok(ApplicationPrincipalBindingRef::from_requirements(
+    pub fn reference(
+    ) -> ApplicationPrincipalBindingRef<Fixture, Self, Mapping, Principal, u64, IdentityValueBinding>
+    {
+        ApplicationPrincipalBindingRef::from_requirements(
             "identity",
             ApplicationPrincipalBindingRequirements {
                 mapping_identity: ApplicationPrincipalMappingIdentityRequirement::from_record(
-                    record_field(Authentication, Mapping, MappingIdentity, "external")?,
-                )?,
+                    record_field(Authentication, Mapping, MappingIdentity, "external"),
+                ),
                 mapping_status: ApplicationPrincipalMappingStatusRequirement::from_record(
-                    record_field(Authentication, Mapping, MappingIdentity, "status")?,
-                )?,
+                    record_field(Authentication, Mapping, MappingIdentity, "status"),
+                ),
                 target: ApplicationPrincipalTargetRequirement::from_relation(relation(
                     Authentication,
                     Mapping,
@@ -34,10 +26,10 @@ impl IdentityBinding {
                 )),
                 principal_identity: ApplicationPrincipalIdentityRequirement::from_record(
                     Authentication,
-                    record_field(Authentication, Principal, Identity, "id")?,
-                )?,
+                    record_field(Authentication, Principal, Identity, "id"),
+                ),
             },
-        ))
+        )
     }
 }
 impl Registration<Fixture> for IdentityBinding {
@@ -45,7 +37,7 @@ impl Registration<Fixture> for IdentityBinding {
         builder: ApplicationSchemaDeclarationBuilder<Fixture>,
     ) -> Result<ApplicationSchemaDeclarationBuilder<Fixture>, ApplicationSchemaDeclarationDenial>
     {
-        Ok(builder.principal_binding(Self::reference()?))
+        Ok(builder.principal_binding(Self::reference()))
     }
 }
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -143,7 +135,8 @@ impl Registration<Fixture> for FieldsOnly {
     ) -> Result<ApplicationSchemaDeclarationBuilder<Fixture>, ApplicationSchemaDeclarationDenial>
     {
         let operation = Self::reference();
-        let selected: RecordField<_, _, String> = record_field(Fixture, Item, Named, "text")?;
+        let selected: RecordField<_, _, String> =
+            record_field(Fixture, Item, Named, "text").resolve()?;
         Ok(builder
             .operation(
                 operation

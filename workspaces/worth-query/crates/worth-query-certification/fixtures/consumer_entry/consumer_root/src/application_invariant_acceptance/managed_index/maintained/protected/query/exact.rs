@@ -2,8 +2,8 @@
 use super::*;
 worth_query_application_query!(pub Query for Catalog, identity "maintained-catalog.protected-exact.v1", parameters source::ParametersBinding, result ResultBinding, scope Directory => "Directory", name "protected_exact");
 worth_query_application_query!(pub BlockedQuery for Catalog, identity "maintained-catalog.blocked-exact.v1", parameters source::ParametersBinding, result ResultBinding, scope Directory => "Directory", name "blocked_exact");
-pub fn definition() -> ApplicationQueryDefinition<Catalog, Query, source::Parameters, Row, Directory>
-{
+pub fn definition(
+) -> ApplicationQueryDefinitionBuilder<Catalog, Query, source::Parameters, Row, Directory> {
     definition_for(
         Query::reference(),
         ApplicationQueryInfluenceContract::permit_all(),
@@ -12,7 +12,7 @@ pub fn definition() -> ApplicationQueryDefinition<Catalog, Query, source::Parame
     )
 }
 pub fn blocked_definition(
-) -> ApplicationQueryDefinition<Catalog, BlockedQuery, source::Parameters, Row, Directory> {
+) -> ApplicationQueryDefinitionBuilder<Catalog, BlockedQuery, source::Parameters, Row, Directory> {
     definition_for(
         BlockedQuery::reference(),
         ApplicationQueryInfluenceContract::permit(

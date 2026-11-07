@@ -6,11 +6,17 @@ use crate::application_operation::{
     WorthQueryApplicationOutputRole, WorthQueryCreateOutput, WorthQueryExactlyOneOutput,
     WorthQueryRetireOutput,
 };
-use crate::application_schema::ApplicationFieldBindingRecipe;
+use crate::application_schema::{
+    ApplicationFieldBindingRecipe, ApplicationSchemaDeclarationDenial,
+};
 use std::marker::PhantomData;
 
 pub struct ApplicationAuthoredCorrection<Schema> {
-    declaration: DeclaredAuthoredCorrection,
+    compose: Box<
+        dyn Fn() -> Result<DeclaredAuthoredCorrection, ApplicationSchemaDeclarationDenial>
+            + Send
+            + Sync,
+    >,
     recipe: ApplicationFieldBindingRecipe,
     co_recipes: Vec<ApplicationFieldBindingRecipe>,
     marker: PhantomData<fn() -> Schema>,
@@ -109,9 +115,9 @@ impl<Schema: ApplicationSchema> ApplicationAuthoredCorrection<Schema> {
             .cardinality()
             == crate::application_operation::ApplicationMutationOutputRoleCardinality::AtMostOne;
         self.co_recipes.push(anchor.recipe);
-        self.declaration = self
-            .declaration
-            .with_co_anchor(anchor.declaration, optional);
+        let previous = self.compose;
+        self.compose =
+            Box::new(move || Ok(previous()?.with_co_anchor((anchor.compose)()?, optional)));
         self
     }
 
@@ -147,9 +153,9 @@ impl<Schema: ApplicationSchema> ApplicationAuthoredCorrection<Schema> {
             .cardinality()
             == crate::application_operation::ApplicationMutationOutputRoleCardinality::AtMostOne;
         self.co_recipes.push(anchor.recipe);
-        self.declaration = self
-            .declaration
-            .with_co_anchor(anchor.declaration, optional);
+        let previous = self.compose;
+        self.compose =
+            Box::new(move || Ok(previous()?.with_co_anchor((anchor.compose)()?, optional)));
         self
     }
 
@@ -159,24 +165,31 @@ impl<Schema: ApplicationSchema> ApplicationAuthoredCorrection<Schema> {
         posture: ApplicationMutationOutputPosture,
     ) -> Self {
         let key = Family::logical_key();
+        let source_role = source.to_owned();
+        let inverse_role = inverse.to_owned();
+        let binding_unit = key.recipe.unit().map(|unit| unit.as_str().to_owned());
         Self {
-            declaration: DeclaredAuthoredCorrection::from_untrusted_parts(
-                DeclaredAuthoredCorrectionParts {
-                    family: WorthQueryPortableTypeIdentity::declared(Family::IDENTITY),
-                    logical_key: Box::new(key.member),
-                    binding_unit: key.recipe.unit().map(|unit| unit.as_str().to_owned()),
-                    source_role: source.to_owned(),
-                    inverse_role: inverse.to_owned(),
-                    source_posture: posture,
-                },
-            ),
+            compose: Box::new(move || {
+                Ok(DeclaredAuthoredCorrection::from_untrusted_parts(
+                    DeclaredAuthoredCorrectionParts {
+                        family: WorthQueryPortableTypeIdentity::declared(Family::IDENTITY),
+                        logical_key: Box::new((key.resolve)()?),
+                        binding_unit: binding_unit.clone(),
+                        source_role: source_role.clone(),
+                        inverse_role: inverse_role.clone(),
+                        source_posture: posture,
+                    },
+                ))
+            }),
             recipe: key.recipe,
             co_recipes: Vec::new(),
             marker: PhantomData,
         }
     }
-    pub fn declaration(&self) -> &DeclaredAuthoredCorrection {
-        &self.declaration
+    pub fn declaration(
+        &self,
+    ) -> Result<DeclaredAuthoredCorrection, ApplicationSchemaDeclarationDenial> {
+        (self.compose)()
     }
     pub fn binding_recipes(&self) -> impl Iterator<Item = &ApplicationFieldBindingRecipe> {
         std::iter::once(&self.recipe).chain(&self.co_recipes)
@@ -184,7 +197,9 @@ impl<Schema: ApplicationSchema> ApplicationAuthoredCorrection<Schema> {
     pub fn binding_recipe(&self) -> &ApplicationFieldBindingRecipe {
         &self.recipe
     }
-    pub fn into_declaration(self) -> DeclaredAuthoredCorrection {
-        self.declaration
+    pub fn into_declaration(
+        self,
+    ) -> Result<DeclaredAuthoredCorrection, ApplicationSchemaDeclarationDenial> {
+        self.declaration()
     }
 }

@@ -22,21 +22,26 @@ impl fragment::Record<SnapshotFactsValue> for InputModelBindings {
         field("SnapshotIdentity", |row: &SnapshotFactsValue| {
             row.snapshot_identity.clone()
         })
+        .equality_queryable(true)
         .read_only()
         .and("SnapshotValue", |row: &SnapshotFactsValue| {
             row.snapshot_value
         })
+        .equality_queryable(true)
         .read_only()
         .and("SnapshotNote", |row: &SnapshotFactsValue| {
             row.snapshot_note.clone()
         })
+        .equality_queryable(true)
         .and("SnapshotLabel", |row: &SnapshotFactsValue| {
             row.snapshot_label.clone()
         })
+        .equality_queryable(true)
         .read_only()
         .and("SnapshotKind", |row: &SnapshotFactsValue| {
             row.snapshot_kind.clone()
         })
+        .equality_queryable(true)
         .read_only()
         .build(
             |snapshot_identity,
@@ -75,9 +80,11 @@ impl fragment::Record<MappingFactsValue> for InputModelBindings {
         field("ExternalIdentity", |row: &MappingFactsValue| {
             row.external_identity.clone()
         })
+        .equality_queryable(true)
         .and("MappingStatus", |row: &MappingFactsValue| {
             row.mapping_status
         })
+        .equality_queryable(true)
         .build(
             |external_identity, mapping_status, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(MappingFactsValue {
@@ -106,6 +113,7 @@ impl fragment::Record<PrincipalFactsValue> for InputModelBindings {
         field("PrincipalIdentity", |row: &PrincipalFactsValue| {
             row.principal_identity
         })
+        .equality_queryable(true)
         .read_only()
         .build(|principal_identity, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(PrincipalFactsValue { principal_identity })
@@ -132,12 +140,15 @@ impl fragment::Record<ParentFactsValue> for InputModelBindings {
         field("ParentIdentity", |row: &ParentFactsValue| {
             row.parent_identity.clone()
         })
+        .equality_queryable(true)
         .unique()
         .read_only()
         .and("Company", |row: &ParentFactsValue| row.company.clone())
+        .equality_queryable(true)
         .and("ParentRevision", |row: &ParentFactsValue| {
             row.parent_revision
         })
+        .equality_queryable(true)
         .build(
             |parent_identity, company, parent_revision, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ParentFactsValue {
@@ -168,8 +179,10 @@ impl fragment::Record<RowFactsValue> for InputModelBindings {
         field("RowIdentity", |row: &RowFactsValue| {
             row.row_identity.clone()
         })
+        .equality_queryable(true)
         .read_only()
         .and("RowValue", |row: &RowFactsValue| row.row_value)
+        .equality_queryable(true)
         .build(
             |row_identity, row_value, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(RowFactsValue {

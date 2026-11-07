@@ -20,8 +20,7 @@ impl<S: Scenario> WorthQueryApplicationRequiredOutputSource<S, program::Start>
         _: &lifecycle::Retire,
         preimage: &dyn ApplicationCorrectionPreImage<S>,
     ) -> Result<program::Demand, WorthQueryRequiredOutputConnectionDenial> {
-        let locus = DeclaredPreImageLocus::from_field(schema::value::<S>())
-            .expect("the inverse field is declared");
+        let locus = DeclaredPreImageLocus::from_field(schema::value::<S>());
         let role = <lifecycle::Retired<S> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR;
         let value = preimage
             .field_for_output(&role, &locus)

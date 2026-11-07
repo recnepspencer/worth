@@ -17,27 +17,27 @@ impl fragment::BindingSet for TopologyRecordsBindings {
 }
 impl fragment::Scalar<WorthQueryExternalPrincipalIdentity> for TopologyRecordsBindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<WorthQueryPrincipalMappingStatus> for TopologyRecordsBindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<u64> for TopologyRecordsBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<String> for TopologyRecordsBindings {
     type Binding = worth_query_decl::facade::application_schema::StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<PositiveLength> for TopologyRecordsBindings {
     type Binding = TopologyLengthBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 pub struct ExternalIdentityValue {
@@ -49,9 +49,11 @@ impl fragment::Record<ExternalIdentityValue> for TopologyRecordsBindings {
         fragment::field("ExternalIdentityField", |row: &ExternalIdentityValue| {
             row.external_identity_field.clone()
         })
+        .equality_queryable(true)
         .and("MappingStatusField", |row: &ExternalIdentityValue| {
             row.mapping_status_field
         })
+        .equality_queryable(true)
         .build(
             |external_identity_field, mapping_status_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ExternalIdentityValue {
@@ -70,6 +72,7 @@ impl fragment::Record<PrincipalFactsValue> for TopologyRecordsBindings {
         fragment::field("PrincipalIdentity", |row: &PrincipalFactsValue| {
             row.principal_identity
         })
+        .equality_queryable(true)
         .build(|principal_identity, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(PrincipalFactsValue { principal_identity })
         })
@@ -83,8 +86,11 @@ pub struct PlanarPositionValue {
 impl fragment::Record<PlanarPositionValue> for TopologyRecordsBindings {
     fn record() -> impl fragment::Shape<PlanarPositionValue, Self> {
         fragment::field("BodyKey", |row: &PlanarPositionValue| row.body_key.clone())
+            .equality_queryable(true)
             .and("PositionX", |row: &PlanarPositionValue| row.position_x)
+            .equality_queryable(true)
             .and("PositionY", |row: &PlanarPositionValue| row.position_y)
+            .equality_queryable(true)
             .build(
                 |body_key, position_x, position_y, _: &mut ValueDecodeAdmission<'_>| {
                     Ok::<_, std::convert::Infallible>(PlanarPositionValue {
@@ -101,10 +107,10 @@ pub struct GeometryValue {
 }
 impl fragment::Record<GeometryValue> for TopologyRecordsBindings {
     fn record() -> impl fragment::Shape<GeometryValue, Self> {
-        fragment::field("Length", |row: &GeometryValue| row.length).build(
-            |length, _: &mut ValueDecodeAdmission<'_>| {
+        fragment::field("Length", |row: &GeometryValue| row.length)
+            .equality_queryable(true)
+            .build(|length, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(GeometryValue { length })
-            },
-        )
+            })
     }
 }

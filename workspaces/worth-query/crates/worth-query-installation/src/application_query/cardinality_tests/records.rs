@@ -36,7 +36,6 @@ impl BindingSet for Bindings {
 }
 impl Scalar<u64> for Bindings {
     type Binding = worth_query_declaration::facade::application_schema::U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 pub(super) struct Parent;
 impl Entity for Parent {
@@ -72,6 +71,7 @@ pub(super) struct ParentFactsValue {
 impl Record<ParentFactsValue> for Bindings {
     fn record() -> impl Shape<ParentFactsValue, Self> {
         field("ParentId", |row: &ParentFactsValue| row.parent_id)
+            .equality_queryable(true)
             .read_only()
             .build(|parent_id, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ParentFactsValue { parent_id })
@@ -90,6 +90,7 @@ pub(super) struct ChildFactsValue {
 impl Record<ChildFactsValue> for Bindings {
     fn record() -> impl Shape<ChildFactsValue, Self> {
         field("ChildId", |row: &ChildFactsValue| row.child_id)
+            .equality_queryable(true)
             .read_only()
             .build(|child_id, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ChildFactsValue { child_id })

@@ -27,27 +27,27 @@ impl fragment::BindingSet for AggregateSchemaRecordsBindings {
 }
 impl fragment::Scalar<WorthQueryExternalPrincipalIdentity> for AggregateSchemaRecordsBindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<WorthQueryPrincipalMappingStatus> for AggregateSchemaRecordsBindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<u64> for AggregateSchemaRecordsBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<String> for AggregateSchemaRecordsBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<i64> for AggregateSchemaRecordsBindings {
     type Binding = I64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = true;
 }
 pub struct AggregateExternalMapping;
@@ -102,10 +102,12 @@ impl fragment::Record<AggregateExternalIdentityValue> for AggregateSchemaRecords
             "AggregateExternalIdentityField",
             |row: &AggregateExternalIdentityValue| row.aggregate_external_identity_field.clone(),
         )
+        .equality_queryable(true)
         .and(
             "AggregateMappingStatusField",
             |row: &AggregateExternalIdentityValue| row.aggregate_mapping_status_field,
         )
+        .equality_queryable(true)
         .build(
             |aggregate_external_identity_field,
              aggregate_mapping_status_field,
@@ -133,6 +135,7 @@ impl fragment::Record<AggregatePrincipalIdentityValue> for AggregateSchemaRecord
             "AggregatePrincipalIdentityField",
             |row: &AggregatePrincipalIdentityValue| row.aggregate_principal_identity_field,
         )
+        .equality_queryable(true)
         .build(
             |aggregate_principal_identity_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(AggregatePrincipalIdentityValue {
@@ -157,6 +160,7 @@ impl fragment::Record<SourceFactsValue> for AggregateSchemaRecordsBindings {
         fragment::field("SourceIdentity", |row: &SourceFactsValue| {
             row.source_identity.clone()
         })
+        .equality_queryable(true)
         .and("SourceAmount", |row: &SourceFactsValue| row.source_amount)
         .build(
             |source_identity, source_amount, _: &mut ValueDecodeAdmission<'_>| {
@@ -182,6 +186,7 @@ impl fragment::Record<TargetFactsValue> for AggregateSchemaRecordsBindings {
         fragment::field("TargetIdentity", |row: &TargetFactsValue| {
             row.target_identity.clone()
         })
+        .equality_queryable(true)
         .build(|target_identity, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(TargetFactsValue { target_identity })
         })

@@ -18,7 +18,7 @@ impl fragment::BindingSet for PrincipalBindings {
 }
 impl fragment::Scalar<u64> for PrincipalBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 
@@ -40,7 +40,7 @@ impl fragment::BindingSet for GrantBindings {
 }
 impl fragment::Scalar<u64> for GrantBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<String> for GrantBindings {
@@ -65,7 +65,7 @@ impl fragment::BindingSet for ElevationBindings {
 }
 impl fragment::Scalar<u64> for ElevationBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<String> for ElevationBindings {
@@ -74,15 +74,12 @@ impl fragment::Scalar<String> for ElevationBindings {
 
 impl fragment::Scalar<GrantKey> for GrantBindings {
     type Binding = GrantKeyBinding;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 
 impl fragment::Scalar<ElevationKey> for ElevationBindings {
     type Binding = ElevationKeyBinding;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 
 impl fragment::Scalar<AnnotationText> for ExecutionRecordsBindings {
     type Binding = AnnotationTextBinding;
-    const EQUALITY_QUERYABLE: bool = false;
 }

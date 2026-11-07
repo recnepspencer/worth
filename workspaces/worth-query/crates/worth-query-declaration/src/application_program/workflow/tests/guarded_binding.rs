@@ -29,16 +29,13 @@ impl BindingSet for ActorBindings {
 impl Scalar<u64> for ActorBindings {
     type Binding = U64ApplicationValueBinding;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl Scalar<WorthQueryExternalPrincipalIdentity> for ActorBindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl Scalar<WorthQueryPrincipalMappingStatus> for ActorBindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) struct Principal;
@@ -62,11 +59,11 @@ impl Aspect for PrincipalFacts {
 pub(super) struct PrincipalData(u64);
 impl fragment::Record<PrincipalData> for ActorBindings {
     fn record() -> impl Shape<PrincipalData, Self> {
-        field("PrincipalId", |row: &PrincipalData| row.0).build(
-            |id, _: &mut ValueDecodeAdmission<'_>| {
+        field("PrincipalId", |row: &PrincipalData| row.0)
+            .equality_queryable(true)
+            .build(|id, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(PrincipalData(id))
-            },
-        )
+            })
     }
 }
 pub(super) struct MappingFacts;
@@ -81,7 +78,9 @@ pub(super) struct MappingData {
 impl fragment::Record<MappingData> for ActorBindings {
     fn record() -> impl Shape<MappingData, Self> {
         field("ExternalId", |row: &MappingData| row.identity.clone())
+            .equality_queryable(true)
             .and("MappingStatus", |row: &MappingData| row.status)
+            .equality_queryable(true)
             .build(|identity, status, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(MappingData { identity, status })
             })

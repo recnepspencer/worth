@@ -1,6 +1,4 @@
-use worth_query_testkit_decl::fragment_auth_fixture::{
-    ChangeForm, FieldsOnly, IdentityValueBinding,
-};
+use worth_query_testkit_decl::fragment_auth_fixture::{ChangeForm, FieldsOnly};
 use worth_query_testkit_decl::fragment_fixture::*;
 
 #[test]
@@ -87,61 +85,9 @@ fn one_from_impl_cannot_make_two_same_row_cases_unambiguous() {
 }
 
 #[test]
-fn principal_identity_rejects_a_writable_record_field() {
-    let field = record_field(Fixture, Item, Metrics, "components[1]").unwrap();
-    assert!(ApplicationPrincipalIdentityRequirement::<Fixture, Item, u64, IdentityValueBinding>::from_record(Fixture, field).is_err());
-}
-
-struct NoEquality;
-struct RoleOwner;
-struct RoleIdentity;
-struct IdentityRow(u64);
-struct NoEqualityBindings;
-impl Fragment for NoEquality {
-    const NAME: &'static str = "no_equality";
-    type Bindings = NoEqualityBindings;
-    type Members = (RoleOwner,);
-}
-impl Entity for RoleOwner {
-    const NAME: &'static str = "owner";
-    type Aspects = (RoleIdentity,);
-    type Relations = ();
-}
-impl Aspect for RoleIdentity {
-    const NAME: &'static str = "identity";
-    type Row = IdentityRow;
-}
-impl BindingSet for NoEqualityBindings {
-    type Work<'a> = ValueDecodeAdmission<'a>;
-    fn with_admission<T>(
-        work: &mut Self::Work<'_>,
-        use_admission: impl FnOnce(&mut ValueDecodeAdmission<'_>) -> T,
-    ) -> T {
-        use_admission(work)
-    }
-}
-impl Scalar<u64> for NoEqualityBindings {
-    type Binding = IdentityValueBinding;
-}
-impl Record<IdentityRow> for NoEqualityBindings {
-    fn record() -> impl Shape<IdentityRow, Self> {
-        field("id", |row: &IdentityRow| row.0).read_only().build(
-            |id, _: &mut ValueDecodeAdmission<'_>| {
-                Ok::<_, std::convert::Infallible>(IdentityRow(id))
-            },
-        )
-    }
-}
-#[test]
-fn principal_identity_requires_the_bindings_equality_posture() {
-    let field = record_field(NoEquality, RoleOwner, RoleIdentity, "id").unwrap();
-    assert!(ApplicationPrincipalIdentityRequirement::<Fixture, RoleOwner, u64, IdentityValueBinding>::from_record(NoEquality, field).is_err());
-}
-
-#[test]
 fn internal_presence_columns_are_not_user_field_handles() {
     let selected: Result<RecordField<_, _, bool>, _> =
-        record_field(Fixture, Item, Noted, "__record_presence");
+        record_field(Fixture, Item, Noted, "__record_presence").resolve();
     assert!(selected.is_err());
     let declaration = declare(Fixture).unwrap();
     let selection: FieldSelection<_, _, _, bool> =

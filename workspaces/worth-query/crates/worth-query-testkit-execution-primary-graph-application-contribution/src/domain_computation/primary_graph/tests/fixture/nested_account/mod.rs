@@ -1,6 +1,5 @@
 use worth_query_declaration::facade::application_query::ApplicationQueryBasisSupport;
 use worth_query_declaration::facade::application_query::ApplicationQueryCardinality;
-use worth_query_declaration::facade::application_query::ApplicationQueryDefinition;
 use worth_query_declaration::facade::application_query::ApplicationQueryDefinitionBuilder;
 use worth_query_declaration::facade::application_query::ApplicationQueryDisclosureContract;
 use worth_query_declaration::facade::application_query::ApplicationQueryLaneEligibility;
@@ -155,7 +154,7 @@ impl
     }
 }
 
-pub fn nested_account_definition() -> ApplicationQueryDefinition<
+pub fn nested_account_definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     NestedAccountQuery,
     AccountSummaryParameters,
@@ -190,8 +189,6 @@ pub fn nested_account_definition() -> ApplicationQueryDefinition<
         .parameter(status_parameter())
         .where_equal(AccountStatus::at("AccountStatus"), status_parameter())
         .order_by(all_sequence(), ApplicationQueryOrderingDirection::Ascending)
-        .build()
-        .unwrap()
 }
 
 pub fn nested_shape<

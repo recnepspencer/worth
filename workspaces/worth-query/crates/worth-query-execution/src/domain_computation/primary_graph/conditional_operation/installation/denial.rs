@@ -19,7 +19,7 @@ pub enum WorthQueryConditionalRuntimeInstallationDenialKind {
     BridgeConditional(Box<worth_runtime_bridge::facade::BridgeConditionalDenialKind>),
     ManagedTemporal(worth_runtime_bridge::facade::BridgeManagedTemporalDenialKind),
     /// The application schema or runtime publication was rejected.
-    PrimaryGraphPublication,
+    PrimaryGraphPublication(Box<super::super::super::WorthQueryPrimaryGraphInstallationDenial>),
     /// A binding does not belong to this installation.
     ForeignBinding,
     /// A failed native terminal must be released through fresh progression before reconstitution.

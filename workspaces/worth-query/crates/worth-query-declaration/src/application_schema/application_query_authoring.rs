@@ -1,8 +1,16 @@
-use crate::application_query::{ApplicationQueryBinding, ApplicationQueryDefinition};
+use crate::application_query::{ApplicationQueryBinding, ApplicationQueryDefinitionBuilder};
 
 use super::{ApplicationSchemaDeclarationBuilder, ApplicationSchemaMember};
 
 impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
+    #[doc(hidden)]
+    pub fn in_feature(mut self, owner: &str, members: impl FnOnce(Self) -> Self) -> Self {
+        let previous = self.feature_owner.replace(owner.to_owned());
+        let mut schema = members(self);
+        schema.feature_owner = previous;
+        schema
+    }
+
     /// Attach optional inspection metadata to the complete existing query binding.
     pub fn application_query_inspection<Binding>(
         mut self,
@@ -63,8 +71,31 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
     /// member; callers cannot add query meaning after package installation.
     pub fn application_query<Query, Parameters, QueryResult, Scope>(
         mut self,
-        mut definition: ApplicationQueryDefinition<Schema, Query, Parameters, QueryResult, Scope>,
+        definition: ApplicationQueryDefinitionBuilder<
+            Schema,
+            Query,
+            Parameters,
+            QueryResult,
+            Scope,
+        >,
     ) -> Self {
+        let query = definition.name().to_owned();
+        let mut definition = match definition.build() {
+            Ok(definition) => definition,
+            Err(cause) => {
+                self.refusal.get_or_insert(
+                    super::ApplicationSchemaDeclarationDenial::InvalidQueryDefinition {
+                        owner: self
+                            .feature_owner
+                            .clone()
+                            .unwrap_or_else(|| self.name.to_owned()),
+                        query,
+                        cause,
+                    },
+                );
+                return self;
+            }
+        };
         for field in definition.take_field_expectations() {
             self.member_provenance.fragments.expect_field(field);
         }

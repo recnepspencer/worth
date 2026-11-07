@@ -77,7 +77,7 @@ impl ApplicationQueryIntent<DocumentRetentionSchema> for Input {
     }
 }
 pub fn definition(
-) -> ApplicationQueryDefinition<DocumentRetentionSchema, Query, Parameters, bool, Document> {
+) -> ApplicationQueryDefinitionBuilder<DocumentRetentionSchema, Query, Parameters, bool, Document> {
     let shape = ApplicationQueryResultShapeBuilder::<
         DocumentRetentionSchema,
         Query,
@@ -101,8 +101,6 @@ pub fn definition(
             DocumentRetentionField::at("DocumentRetentionField"),
             expected(),
         )
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<DocumentRetentionSchema, Query> for bool {
     fn project(

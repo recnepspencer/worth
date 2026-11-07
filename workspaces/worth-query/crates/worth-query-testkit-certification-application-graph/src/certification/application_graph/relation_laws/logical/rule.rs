@@ -176,7 +176,7 @@ impl<L: LawPolicy> Rule<L> {
     pub fn prepare(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, GraphSchema<L>>,
-    ) -> Result<Vec<Root<L>>, WorthQueryApplicationInvariantPreparationError> {
+    ) -> Result<Vec<Root<L>>, WorthQueryApplicationInvariantError> {
         let proposed = planner.proposed();
         let committed = planner.committed();
         // The default Logical policy exercises census; LocalLogical measures scoped reads.
@@ -212,10 +212,8 @@ impl<L: LawPolicy> Rule<L> {
         &self,
         context: &WorthQueryApplicationInvariantContext<'_, '_, GraphSchema<L>>,
         roots: &[Root<L>],
-    ) -> Result<
-        WorthQueryApplicationInvariantVerdict<()>,
-        WorthQueryApplicationInvariantExecutionError,
-    > {
+    ) -> Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>
+    {
         let proposed = context.proposed();
         let committed = context.committed();
         if L::LOGICAL_CENSUS {
@@ -223,9 +221,7 @@ impl<L: LawPolicy> Rule<L> {
             committed.graph_components(&self.set).map_err(execution)?;
         }
         for root in roots {
-            context
-                .check_live()
-                .map_err(|cause| execution(format!("{cause:?}")))?;
+            context.check_live().map_err(execution)?;
             assert_eq!(
                 self.inspect(&proposed, &root.proposed).map_err(execution)?,
                 root.proposed_answer
@@ -250,16 +246,16 @@ impl<L: LawPolicy> WorthQueryApplicationInvariantRule<GraphSchema<L>> for Rule<L
     fn prepare_scope(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, GraphSchema<L>>,
-    ) -> Result<Self::Scope, WorthQueryApplicationInvariantPreparationError> {
+    ) -> Result<Self::Scope, WorthQueryApplicationInvariantError> {
         self.prepare(planner)
     }
     fn prepare_scope_checked(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, GraphSchema<L>>,
         budget: &dyn CustomInvariantLeaseBudget,
-    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantPreparationError>> {
+    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantError>> {
         if !budget.checkpoint(1) {
-            return Some(Err(preparation("original preparation stopped")));
+            return Some(Err(WorthQueryApplicationInvariantError::Stopped));
         }
         Some(self.prepare(planner))
     }
@@ -267,10 +263,8 @@ impl<L: LawPolicy> WorthQueryApplicationInvariantRule<GraphSchema<L>> for Rule<L
         &self,
         context: &WorthQueryApplicationInvariantContext<'_, '_, GraphSchema<L>>,
         scope: &Self::Scope,
-    ) -> Result<
-        WorthQueryApplicationInvariantVerdict<()>,
-        WorthQueryApplicationInvariantExecutionError,
-    > {
+    ) -> Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>
+    {
         self.judge(context, scope)
     }
     fn evaluate_checked(
@@ -279,22 +273,21 @@ impl<L: LawPolicy> WorthQueryApplicationInvariantRule<GraphSchema<L>> for Rule<L
         scope: &Self::Scope,
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Option<
-        Result<
-            WorthQueryApplicationInvariantVerdict<()>,
-            WorthQueryApplicationInvariantExecutionError,
-        >,
+        Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>,
     > {
         if !budget.checkpoint(1) {
-            return Some(Err(execution("original evaluation stopped")));
+            return Some(Err(WorthQueryApplicationInvariantError::Stopped));
         }
         Some(self.judge(context, scope))
     }
 }
 pub fn preparation(
-    cause: impl std::fmt::Display,
-) -> WorthQueryApplicationInvariantPreparationError {
-    WorthQueryApplicationInvariantPreparationError::new(cause.to_string())
+    cause: impl Into<WorthQueryApplicationInvariantError>,
+) -> WorthQueryApplicationInvariantError {
+    cause.into()
 }
-pub fn execution(cause: impl std::fmt::Display) -> WorthQueryApplicationInvariantExecutionError {
-    WorthQueryApplicationInvariantExecutionError::new(cause.to_string())
+pub fn execution(
+    cause: impl Into<WorthQueryApplicationInvariantError>,
+) -> WorthQueryApplicationInvariantError {
+    cause.into()
 }

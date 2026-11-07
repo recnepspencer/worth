@@ -27,32 +27,32 @@ impl fragment::BindingSet for UiRecordsBindings {
 }
 impl fragment::Scalar<WorthQueryExternalPrincipalIdentity> for UiRecordsBindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<WorthQueryPrincipalMappingStatus> for UiRecordsBindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<u64> for UiRecordsBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<String> for UiRecordsBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<UiMeasurementValue> for UiRecordsBindings {
     type Binding = UiMeasurementValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<UiSizeValue> for UiRecordsBindings {
     type Binding = UiSizeValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 pub struct WorthUiExternalPrincipalMapping;
@@ -115,10 +115,12 @@ impl fragment::Record<WorthUiExternalIdentityValue> for UiRecordsBindings {
             "WorthUiExternalIdentityKey",
             |row: &WorthUiExternalIdentityValue| row.worth_ui_external_identity_key.clone(),
         )
+        .equality_queryable(true)
         .and(
             "WorthUiMappingStatus",
             |row: &WorthUiExternalIdentityValue| row.worth_ui_mapping_status,
         )
+        .equality_queryable(true)
         .build(
             |worth_ui_external_identity_key,
              worth_ui_mapping_status,
@@ -150,6 +152,7 @@ impl fragment::Record<WorthUiPrincipalIdentityValue> for UiRecordsBindings {
             "WorthUiPrincipalId",
             |row: &WorthUiPrincipalIdentityValue| row.worth_ui_principal_id,
         )
+        .equality_queryable(true)
         .read_only()
         .build(|worth_ui_principal_id, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(WorthUiPrincipalIdentityValue {
@@ -176,6 +179,7 @@ impl fragment::Record<IdentityAspectValue> for UiRecordsBindings {
         fragment::field("IdentityIdField", |row: &IdentityAspectValue| {
             row.identity_id_field.clone()
         })
+        .equality_queryable(true)
         .read_only()
         .build(|identity_id_field, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(IdentityAspectValue { identity_id_field })
@@ -200,6 +204,7 @@ impl fragment::Record<QueryTextAspectValue> for UiRecordsBindings {
         fragment::field("QueryTextStatusField", |row: &QueryTextAspectValue| {
             row.query_text_status_field.clone()
         })
+        .equality_queryable(true)
         .build(
             |query_text_status_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(QueryTextAspectValue {
@@ -228,6 +233,7 @@ impl fragment::Record<QueryRevisionAspectValue> for UiRecordsBindings {
             "QueryRevisionValueField",
             |row: &QueryRevisionAspectValue| row.query_revision_value_field,
         )
+        .equality_queryable(true)
         .build(
             |query_revision_value_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(QueryRevisionAspectValue {
@@ -257,11 +263,13 @@ impl fragment::Record<CollectionItemAspectValue> for UiRecordsBindings {
             "CollectionItemStatusField",
             |row: &CollectionItemAspectValue| row.collection_item_status_field.clone(),
         )
+        .equality_queryable(true)
         .read_only()
         .and(
             "CollectionItemKeyField",
             |row: &CollectionItemAspectValue| row.collection_item_key_field,
         )
+        .equality_queryable(true)
         .read_only()
         .build(
             |collection_item_status_field,
@@ -293,6 +301,7 @@ impl fragment::Record<MeasurementAspectValue> for UiRecordsBindings {
         fragment::field("MeasurementValueField", |row: &MeasurementAspectValue| {
             row.measurement_value_field
         })
+        .equality_queryable(true)
         .build(
             |measurement_value_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(MeasurementAspectValue {
@@ -320,6 +329,7 @@ impl fragment::Record<SizeAspectValue> for UiRecordsBindings {
         fragment::field("SizeValueField", |row: &SizeAspectValue| {
             row.size_value_field
         })
+        .equality_queryable(true)
         .build(|size_value_field, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(SizeAspectValue { size_value_field })
         })

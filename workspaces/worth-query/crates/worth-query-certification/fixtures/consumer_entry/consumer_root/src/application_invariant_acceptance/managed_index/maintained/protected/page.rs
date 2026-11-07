@@ -101,17 +101,15 @@ fn builder<
         )
         .continue_by(children())
 }
-pub fn definition() -> ApplicationQueryDefinition<Catalog, Query, source::Parameters, Row, Directory>
-{
+pub fn definition(
+) -> ApplicationQueryDefinitionBuilder<Catalog, Query, source::Parameters, Row, Directory> {
     builder(
         Query::reference(),
         ApplicationQueryInfluenceContract::permit_all(),
     )
-    .build()
-    .unwrap()
 }
 pub fn blocked_definition(
-) -> ApplicationQueryDefinition<Catalog, BlockedQuery, source::Parameters, Row, Directory> {
+) -> ApplicationQueryDefinitionBuilder<Catalog, BlockedQuery, source::Parameters, Row, Directory> {
     builder(
         BlockedQuery::reference(),
         ApplicationQueryInfluenceContract::permit(
@@ -120,8 +118,6 @@ pub fn blocked_definition(
                 .filter(|s| *s != ApplicationQueryObservableInfluence::Pagination),
         ),
     )
-    .build()
-    .unwrap()
 }
 impl<Q: ApplicationQueryMarkerIdentity<Catalog>> WorthQueryApplicationProjection<Catalog, Q>
     for Row
@@ -178,19 +174,19 @@ worth_query_query_binding!(pub BlockedBinding for ReadBlockedPage,schema Catalog
 #[test]
 fn protected_continuation_managed_shape_refuses_before_a_candidate_receiver_can_be_bypassed() {
     let probe=ApplicationQueryParameterRef::<Query,source::ProbeParameter,source::ProbeBinding>::from_query_identifier("probe");
-    assert!(matches!(
-        builder(
-            Query::reference(),
-            ApplicationQueryInfluenceContract::permit_all()
-        )
-        .managed_index(prefix::PrefixIndex::reference(), probe)
-        .build(),
-        Err(ApplicationQueryDefinitionDenial::InvalidManagedIndexShape)
-    ));
-    assert!(builder(
+    let expression = builder(
         Query::reference(),
-        ApplicationQueryInfluenceContract::permit_all()
+        ApplicationQueryInfluenceContract::permit_all(),
     )
-    .build()
-    .is_ok());
+    .managed_index(prefix::PrefixIndex::reference(), probe);
+    assert!(matches!(
+        ApplicationSchemaDeclarationBuilder::<Catalog>::for_schema()
+            .application_query(expression)
+            .build(),
+        Err(ApplicationSchemaDeclarationDenial::InvalidQueryDefinition {
+            cause: ApplicationQueryDefinitionDenial::InvalidManagedIndexShape,
+            ..
+        })
+    ));
+    assert!(Catalog::declaration().is_ok());
 }

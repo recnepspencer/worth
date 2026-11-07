@@ -84,7 +84,7 @@ fn identity_output<S: ModelSchema>() -> &'static str {
     }
 }
 pub fn source<S: ModelSchema>(
-) -> ApplicationQueryDefinition<S, SourceQuery, (), PrincipalQueryResult, Principal<S>> {
+) -> ApplicationQueryDefinitionBuilder<S, SourceQuery, (), PrincipalQueryResult, Principal<S>> {
     ApplicationQueryDefinitionBuilder::declare(SourceQuery::reference())
         .root(principal::<S>())
         .scope(principal::<S>())
@@ -94,11 +94,9 @@ pub fn source<S: ModelSchema>(
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 pub fn parent<S: ModelSchema>(
-) -> ApplicationQueryDefinition<S, ParentQuery, (), PrincipalQueryResult, Principal<S>> {
+) -> ApplicationQueryDefinitionBuilder<S, ParentQuery, (), PrincipalQueryResult, Principal<S>> {
     let query = ApplicationQueryDefinitionBuilder::declare(ParentQuery::reference())
         .root(principal::<S>())
         .scope(principal::<S>())
@@ -116,12 +114,11 @@ pub fn parent<S: ModelSchema>(
     } else {
         query.public()
     };
-    let query = if S::MODE == 1 {
+    if S::MODE == 1 {
         query.managed_index(OtherIndex::<S>::reference(), ApplicationQueryParameterRef::<ParentQuery, ProbeParameter, OtherProbeBinding>::from_query_identifier("probe"))
     } else {
         query.managed_index(ModelIndex::<S>::reference(), ApplicationQueryParameterRef::<ParentQuery, ProbeParameter, ProbeBinding>::from_query_identifier("probe"))
-    };
-    query.build().unwrap()
+    }
 }
 pub struct SourceBinding<S>(PhantomData<fn() -> S>);
 pub struct ParentBinding<S>(PhantomData<fn() -> S>);

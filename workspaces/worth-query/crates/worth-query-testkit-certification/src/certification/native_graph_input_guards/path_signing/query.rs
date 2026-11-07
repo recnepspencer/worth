@@ -149,9 +149,7 @@ pub fn declare(
         .public()
         .root_path(
             ApplicationQueryRootPath::from(Row::reference()).forward(GraphHistory::reference()),
-        )
-        .build()
-        .unwrap();
+        );
     let scope = ApplicationQueryDefinitionBuilder::declare(ScopeQuery::reference())
         .root(ScopeEvidence::reference())
         .scope(Row::reference())
@@ -173,9 +171,7 @@ pub fn declare(
         .public()
         .root_path(
             ApplicationQueryRootPath::from(Row::reference()).forward(ScopeHistory::reference()),
-        )
-        .build()
-        .unwrap();
+        );
     schema
         .application_query(graph)
         .application_query(scope)

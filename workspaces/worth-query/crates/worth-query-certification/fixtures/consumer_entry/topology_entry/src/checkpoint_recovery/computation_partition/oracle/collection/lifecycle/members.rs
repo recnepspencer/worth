@@ -22,12 +22,11 @@ impl BindingSet for SupportBindings {
 }
 impl Scalar<String> for SupportBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl Scalar<u64> for SupportBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 pub struct GeneratedSupport;
 impl Entity for GeneratedSupport {
@@ -52,7 +51,9 @@ pub struct SupportValueRow {
 impl fragment::Record<SupportValueRow> for SupportBindings {
     fn record() -> impl Shape<SupportValueRow, Self> {
         field("SupportKey", |row: &SupportValueRow| row.key.clone())
+            .equality_queryable(true)
             .and("SupportValue", |row: &SupportValueRow| row.value)
+            .equality_queryable(true)
             .build(|key, value, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(SupportValueRow { key, value })
             })

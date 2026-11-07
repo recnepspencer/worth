@@ -19,27 +19,27 @@ impl fragment::BindingSet for ContentModelBindings {
 }
 impl fragment::Scalar<WorthQueryExternalPrincipalIdentity> for ContentModelBindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<WorthQueryPrincipalMappingStatus> for ContentModelBindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<u64> for ContentModelBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<String> for ContentModelBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<ContentRefId> for ContentModelBindings {
     type Binding = ContentRefApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = true;
 }
 pub struct Mapping;
@@ -87,7 +87,9 @@ impl fragment::Record<MappingFactsValue> for ContentModelBindings {
         fragment::field("ExternalId", |row: &MappingFactsValue| {
             row.external_id.clone()
         })
+        .equality_queryable(true)
         .and("Status", |row: &MappingFactsValue| row.status)
+        .equality_queryable(true)
         .build(|external_id, status, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(MappingFactsValue {
                 external_id,
@@ -107,11 +109,11 @@ pub struct PrincipalFactsValue {
 }
 impl fragment::Record<PrincipalFactsValue> for ContentModelBindings {
     fn record() -> impl fragment::Shape<PrincipalFactsValue, Self> {
-        fragment::field("PrincipalId", |row: &PrincipalFactsValue| row.principal_id).build(
-            |principal_id, _: &mut ValueDecodeAdmission<'_>| {
+        fragment::field("PrincipalId", |row: &PrincipalFactsValue| row.principal_id)
+            .equality_queryable(true)
+            .build(|principal_id, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(PrincipalFactsValue { principal_id })
-            },
-        )
+            })
     }
 }
 pub struct Identity;
@@ -126,6 +128,7 @@ pub struct IdentityValue {
 impl fragment::Record<IdentityValue> for ContentModelBindings {
     fn record() -> impl fragment::Shape<IdentityValue, Self> {
         fragment::field("Key", |row: &IdentityValue| row.key.clone())
+            .equality_queryable(true)
             .unique()
             .build(|key, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(IdentityValue { key })

@@ -36,7 +36,6 @@ impl BindingSet for Bindings {
 }
 impl Scalar<String> for Bindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl Scalar<u64> for Bindings {
     type Binding = U64ApplicationValueBinding;
@@ -78,6 +77,7 @@ pub struct NotesValue {
 impl Record<KeyValue> for Bindings {
     fn record() -> impl Shape<KeyValue, Self> {
         field("Key", |row: &KeyValue| row.key.clone())
+            .equality_queryable(true)
             .read_only()
             .build(|key, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(KeyValue { key })
@@ -87,7 +87,9 @@ impl Record<KeyValue> for Bindings {
 impl Record<NotesValue> for Bindings {
     fn record() -> impl Shape<NotesValue, Self> {
         field("A", |row: &NotesValue| row.a.clone())
+            .equality_queryable(true)
             .and("B", |row: &NotesValue| row.b.clone())
+            .equality_queryable(true)
             .build(|a, b, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(NotesValue { a, b })
             })

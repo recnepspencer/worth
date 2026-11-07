@@ -47,9 +47,9 @@ mod world_seed;
 pub use application_definition::{
     approved_business_payment_definition, ApprovedBusinessPaymentDefinitionDenial, BankApplication,
     BankApplicationP1, BankApplicationP2, DepositAction, DepositDelivery, OpeningFundingAction,
-    OpeningFundingDelivery, ReverseJournalAction, ReverseJournalDelivery, SendMoneyAction,
-    SendMoneyDelivery, WithdrawalAction, WithdrawalDelivery, APPROVAL_LIMIT,
-    APPROVAL_LIMIT_OPERAND,
+    OpeningFundingDelivery, PostingIntegrityRefusal, PostingIntegrityRefusalBinding,
+    ReverseJournalAction, ReverseJournalDelivery, SendMoneyAction, SendMoneyDelivery,
+    WithdrawalAction, WithdrawalDelivery, APPROVAL_LIMIT, APPROVAL_LIMIT_OPERAND,
 };
 pub use application_query::{
     BankAccountActivityContinuation, BankAccountActivityHistoricalResult,

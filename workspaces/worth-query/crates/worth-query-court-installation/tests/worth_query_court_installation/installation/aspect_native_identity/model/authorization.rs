@@ -24,20 +24,16 @@ pub(super) fn declare<S: ApplicationSchema>(
         "PrincipalBinding",
         ApplicationPrincipalBindingRequirements {
             mapping_identity: ApplicationPrincipalMappingIdentityRequirement::from_record(
-                fragment::record_field(Authorization, Mapping, External, "ExternalId").unwrap(),
-            )
-            .unwrap(),
+                fragment::record_field(Authorization, Mapping, External, "ExternalId"),
+            ),
             mapping_status: ApplicationPrincipalMappingStatusRequirement::from_record(
-                fragment::record_field(Authorization, Mapping, External, "Status").unwrap(),
-            )
-            .unwrap(),
+                fragment::record_field(Authorization, Mapping, External, "Status"),
+            ),
             target: ApplicationPrincipalTargetRequirement::from_relation(target),
             principal_identity: ApplicationPrincipalIdentityRequirement::from_record(
                 Authorization,
-                fragment::record_field(Authorization, Principal, PrincipalFacts, "Identity")
-                    .unwrap(),
-            )
-            .unwrap(),
+                fragment::record_field(Authorization, Principal, PrincipalFacts, "Identity"),
+            ),
         },
     );
     let ability = ApplicationAbilityRef::<S, ApplyAbility, Principal>::from_schema_identifiers(
@@ -97,6 +93,7 @@ fn path(values: impl IntoIterator<Item = u64>) -> ApplicationAuthorizationPath {
                                 PrincipalFacts,
                                 "Identity",
                             )
+                            .resolve()
                             .unwrap()
                             .locus()
                             .aspect()

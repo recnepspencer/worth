@@ -6,6 +6,7 @@ use super::schema_member::ApplicationSchemaMember;
 mod application_query;
 mod field_path;
 mod operation_targets;
+mod principal_binding;
 pub(super) use field_path::{validate_field_identifier, validate_field_locus};
 use operation_targets::{
     validate_decision_read_target_identifiers, validate_program_target_identifiers,
@@ -200,18 +201,21 @@ pub(super) fn validate_member_identifiers(
                 principal_identity_aspect,
                 principal_identity_field,
                 ..
-            } => validate_identifiers([
+            } => principal_binding::validate(
                 binding,
                 mapping_entity,
-                identity_aspect,
-                identity_field,
-                status_aspect,
-                status_field,
                 target_relation,
                 principal_entity,
-                principal_identity_aspect,
-                principal_identity_field,
-            ])?,
+                [
+                    (mapping_entity, identity_aspect, identity_field),
+                    (mapping_entity, status_aspect, status_field),
+                    (
+                        principal_entity,
+                        principal_identity_aspect,
+                        principal_identity_field,
+                    ),
+                ],
+            )?,
             ApplicationSchemaMember::ApplicationQuery { definition } => {
                 application_query::validate(definition)?;
             }

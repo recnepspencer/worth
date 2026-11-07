@@ -37,7 +37,6 @@ impl fragment::BindingSet for AccessBindings {
 }
 impl fragment::Scalar<u64> for AccessBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 pub(super) struct Record;
 impl fragment::Entity for Record {
@@ -57,7 +56,9 @@ pub(super) struct AccessRow {
 impl fragment::Record<AccessRow> for AccessBindings {
     fn record() -> impl fragment::Shape<AccessRow, Self> {
         fragment::field("Value", |row: &AccessRow| row.value)
+            .equality_queryable(true)
             .and("InheritedValue", |row: &AccessRow| row.inherited)
+            .equality_queryable(true)
             .build(|value, inherited, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(AccessRow { value, inherited })
             })

@@ -24,22 +24,22 @@ impl BindingSet for SourceModelBindings {
 }
 impl Scalar<WorthQueryExternalPrincipalIdentity> for SourceModelBindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl Scalar<WorthQueryPrincipalMappingStatus> for SourceModelBindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<u64> for SourceModelBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<String> for SourceModelBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 #[derive(Clone, Copy)]
@@ -97,7 +97,9 @@ impl Record<MappingFactsValue> for SourceModelBindings {
         field("ExternalId", |row: &MappingFactsValue| {
             row.external_id.clone()
         })
+        .equality_queryable(true)
         .and("Status", |row: &MappingFactsValue| row.status)
+        .equality_queryable(true)
         .build(|external_id, status, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(MappingFactsValue {
                 external_id,
@@ -118,6 +120,7 @@ pub struct PrincipalFactsValue {
 impl Record<PrincipalFactsValue> for SourceModelBindings {
     fn record() -> impl Shape<PrincipalFactsValue, Self> {
         field("PrincipalId", |row: &PrincipalFactsValue| row.principal_id)
+            .equality_queryable(true)
             .read_only()
             .build(|principal_id, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(PrincipalFactsValue { principal_id })
@@ -137,8 +140,10 @@ pub struct SourceFactsValue {
 impl Record<SourceFactsValue> for SourceModelBindings {
     fn record() -> impl Shape<SourceFactsValue, Self> {
         field("SourceKey", |row: &SourceFactsValue| row.source_key.clone())
+            .equality_queryable(true)
             .unique()
             .and("SourceValue", |row: &SourceFactsValue| row.source_value)
+            .equality_queryable(true)
             .build(
                 |source_key, source_value, _: &mut ValueDecodeAdmission<'_>| {
                     Ok::<_, std::convert::Infallible>(SourceFactsValue {
@@ -164,10 +169,12 @@ impl Record<GeneratedFactsValue> for SourceModelBindings {
         field("GeneratedKey", |row: &GeneratedFactsValue| {
             row.generated_key.clone()
         })
+        .equality_queryable(true)
         .unique()
         .and("GeneratedValue", |row: &GeneratedFactsValue| {
             row.generated_value
         })
+        .equality_queryable(true)
         .build(
             |generated_key, generated_value, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(GeneratedFactsValue {

@@ -153,7 +153,6 @@ impl fragment::BindingSet for ElevationBindings {
 impl fragment::Scalar<u64> for ElevationBindings {
     type Binding = U64ApplicationValueBinding;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl fragment::Entity for Elevation {
     const NAME: &'static str = "Elevation";
@@ -168,11 +167,17 @@ pub(super) struct ElevationRow(u64, u64, u64, u64, u64, u64);
 impl fragment::Record<ElevationRow> for ElevationBindings {
     fn record() -> impl fragment::Shape<ElevationRow, Self> {
         fragment::field("ElevationStatus", |row: &ElevationRow| row.0)
+            .equality_queryable(true)
             .and("ElevationClosedAt", |row: &ElevationRow| row.1)
+            .equality_queryable(true)
             .and("ElevationIdentity", |row: &ElevationRow| row.2)
+            .equality_queryable(true)
             .and("ElevationNotAfter", |row: &ElevationRow| row.3)
+            .equality_queryable(true)
             .and("ElevationNotBefore", |row: &ElevationRow| row.4)
+            .equality_queryable(true)
             .and("ElevationReason", |row: &ElevationRow| row.5)
+            .equality_queryable(true)
             .build(|v0, v1, v2, v3, v4, v5, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ElevationRow(v0, v1, v2, v3, v4, v5))
             })
@@ -191,9 +196,13 @@ pub(super) struct ReviewRow(u64, u64, u64, u64);
 impl fragment::Record<ReviewRow> for ElevationBindings {
     fn record() -> impl fragment::Shape<ReviewRow, Self> {
         fragment::field("ReviewKind", |row: &ReviewRow| row.0)
+            .equality_queryable(true)
             .and("ReviewStatus", |row: &ReviewRow| row.1)
+            .equality_queryable(true)
             .and("ReviewIdentity", |row: &ReviewRow| row.2)
+            .equality_queryable(true)
             .and("ReviewReviewedAt", |row: &ReviewRow| row.3)
+            .equality_queryable(true)
             .build(|v0, v1, v2, v3, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ReviewRow(v0, v1, v2, v3))
             })

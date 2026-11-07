@@ -12,23 +12,24 @@ pub struct MappingData {
 impl Scalar<WorthQueryExternalPrincipalIdentity> for Bindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl Scalar<WorthQueryPrincipalMappingStatus> for Bindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
 }
 impl Record<PrincipalData> for Bindings {
     fn record() -> impl Shape<PrincipalData, Self> {
-        field("id", |row: &PrincipalData| row.id).read_only().build(
-            |id, _: &mut ValueDecodeAdmission<'_>| {
+        field("id", |row: &PrincipalData| row.id)
+            .equality_queryable(true)
+            .read_only()
+            .build(|id, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(PrincipalData { id })
-            },
-        )
+            })
     }
 }
 impl Record<MappingData> for Bindings {
     fn record() -> impl Shape<MappingData, Self> {
         field("external", |row: &MappingData| row.external.clone())
+            .equality_queryable(true)
             .unique()
             .and("status", |row: &MappingData| row.status)
             .build(|external, status, _: &mut ValueDecodeAdmission<'_>| {

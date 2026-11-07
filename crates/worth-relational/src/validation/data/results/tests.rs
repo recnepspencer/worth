@@ -241,6 +241,7 @@ fn custom_invariant_failure_fields_use_typed_phase_and_failure_labels() {
             ),
             phase: CustomInvariantFailurePhase::Execution,
             failure: CustomInvariantFailureKind::Panic,
+            cause: None,
             detail: "panic detail".to_string(),
         },
     };
@@ -250,6 +251,7 @@ fn custom_invariant_failure_fields_use_typed_phase_and_failure_labels() {
             identity,
             phase,
             failure,
+            cause: None,
             detail,
         } => {
             assert_eq!(identity.semantic_identity().rule_id.as_str(), "custom.rule");
@@ -280,6 +282,7 @@ fn custom_invariant_failure_witness_key_uses_typed_phase_and_failure_labels() {
             ),
             phase: CustomInvariantFailurePhase::Preparation,
             failure: CustomInvariantFailureKind::PreparationError,
+            cause: None,
             detail: "prepare detail".to_string(),
         },
     };
@@ -288,4 +291,47 @@ fn custom_invariant_failure_witness_key_uses_typed_phase_and_failure_labels() {
         violation.witness_key().as_str(),
         "custom_failure:custom.rule:2.3:preparation:preparation_error"
     );
+}
+
+#[test]
+fn invariant_failure_causes_round_trip_without_losing_application_or_access_evidence() {
+    use crate::validation::data::{
+        CustomInvariantAccessDenial, CustomInvariantAccessDenialKind,
+        CustomInvariantFailureCause as Cause, CustomInvariantRefusal,
+    };
+    use worth_execution::{MemoryLimitDenial, MemoryLimitLevel};
+    let mut causes = vec![Cause::DeclaredValue(
+        CustomInvariantRefusal::DeclaredValue {
+            value_identity: "sample.failure.v1".into(),
+            bytes: br#"{"Capacity":{"maximum":64,"observed":65}}"#.to_vec(),
+        },
+    )];
+    for level in [
+        MemoryLimitLevel::Policy { ancestor: 2 },
+        MemoryLimitLevel::Process,
+        MemoryLimitLevel::Declared,
+    ] {
+        for memory in [
+            MemoryLimitDenial::Capacity {
+                requested: 65,
+                admitted: 64,
+                level,
+            },
+            MemoryLimitDenial::CounterOverflow {
+                requested: 65,
+                charged: u64::MAX,
+                level,
+            },
+        ] {
+            causes.push(Cause::Access(CustomInvariantAccessDenial::new(
+                CustomInvariantAccessDenialKind::MemoryAdmission(memory),
+                "Record.Values.Amount",
+            )));
+        }
+    }
+    for cause in causes {
+        let encoded = rmp_serde::to_vec_named(&cause).unwrap();
+        let decoded: Cause = rmp_serde::from_slice(&encoded).unwrap();
+        assert_eq!(decoded, cause);
+    }
 }

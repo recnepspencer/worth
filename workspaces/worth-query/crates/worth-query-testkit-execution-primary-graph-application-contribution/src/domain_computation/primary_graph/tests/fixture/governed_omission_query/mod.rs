@@ -1,6 +1,5 @@
 use worth_query_declaration::facade::application_query::ApplicationQueryBasisSupport;
 use worth_query_declaration::facade::application_query::ApplicationQueryCardinality;
-use worth_query_declaration::facade::application_query::ApplicationQueryDefinition;
 use worth_query_declaration::facade::application_query::ApplicationQueryDefinitionBuilder;
 use worth_query_declaration::facade::application_query::ApplicationQueryDisclosureContract;
 use worth_query_declaration::facade::application_query::ApplicationQueryInfluenceContract;
@@ -86,7 +85,7 @@ worth_query_application_query!(
     name "governed_account_omission"
 );
 
-pub fn governed_account_omission_definition() -> ApplicationQueryDefinition<
+pub fn governed_account_omission_definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     GovernedAccountOmissionQuery,
     AccountSummaryParameters,
@@ -108,8 +107,6 @@ pub fn governed_account_omission_definition() -> ApplicationQueryDefinition<
                 .with_preview(),
         )
         .public()
-        .build()
-        .unwrap()
 }
 
 pub fn governed_account_shape() -> TypedApplicationQueryResultShape<

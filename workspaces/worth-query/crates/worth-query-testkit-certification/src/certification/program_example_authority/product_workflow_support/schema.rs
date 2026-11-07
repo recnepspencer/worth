@@ -2,10 +2,9 @@
 mod storage_model;
 pub use storage_model::*;
 use worth_query_host::facade::declaration::application_query::{
-    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryResultFieldRef,
-    ApplicationQueryResultShapeBuilder,
+    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
+    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder,
 };
 use worth_query_host::facade::{declaration, primary_graph};
 use worth_query_host::facade::{
@@ -288,7 +287,7 @@ worth_query_application_query!(
     name "temporal_intent_query"
 );
 
-pub fn temporal_intent_query_definition() -> ApplicationQueryDefinition<
+pub fn temporal_intent_query_definition() -> ApplicationQueryDefinitionBuilder<
     TemporalHostSchema,
     TemporalIntentQuery,
     IntentQueryParameters,
@@ -317,8 +316,6 @@ pub fn temporal_intent_query_definition() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .expect("temporal intent query is canonical")
 }
 
 impl primary_graph::WorthQueryApplicationProjection<TemporalHostSchema, TemporalIntentQuery>

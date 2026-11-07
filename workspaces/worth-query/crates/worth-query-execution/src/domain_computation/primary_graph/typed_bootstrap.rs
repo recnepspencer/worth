@@ -1,9 +1,11 @@
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
+use worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus;
 
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_query_installation::facade::{
     ApplicationEntityRef, ApplicationRelationRef, ApplicationScalarValueBinding, ApplicationSchema,
+    ApplicationValueEncodeDenial,
 };
 use worth_relational::facade::identity::KindId;
 
@@ -12,6 +14,11 @@ use super::{
     WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
 };
 
+type EncodedSeedField = Result<
+    (String, String, AspectValue),
+    (ApplicationFieldBindingLocus, ApplicationValueEncodeDenial),
+>;
+
 /// One entity to seed into the primary graph at bootstrap: its kind, key, and
 /// field values.
 ///
@@ -19,32 +26,36 @@ use super::{
 pub struct WorthQueryApplicationEntitySeed<Schema, Entity> {
     entity: &'static str,
     key: WorthQueryApplicationEntityKey<Schema, Entity>,
-    fields: Vec<
-        Result<
-            (String, String, AspectValue),
-            worth_query_installation::facade::ApplicationValueEncodeDenial,
-        >,
-    >,
+    fields: Vec<EncodedSeedField>,
 }
 
 impl<Schema, Entity> WorthQueryApplicationEntitySeed<Schema, Entity> {
     pub(super) fn migration_cost(&self) -> (usize, usize) {
         let bytes = std::mem::size_of::<Self>()
             .saturating_add(self.key.owned_allocation_capacity_bytes())
-            .saturating_add(self.fields.capacity().saturating_mul(std::mem::size_of::<
-                Result<
-                    (String, String, AspectValue),
-                    worth_query_installation::facade::ApplicationValueEncodeDenial,
-                >,
-            >()));
+            .saturating_add(
+                self.fields
+                    .capacity()
+                    .saturating_mul(std::mem::size_of::<EncodedSeedField>()),
+            );
         let bytes = self.fields.iter().fold(bytes, |bytes, field| {
-            bytes.saturating_add(field.as_ref().map_or(0, |(aspect, field, value)| {
-                aspect.capacity().saturating_add(
-                    field
-                        .capacity()
-                        .saturating_add(value.owned_allocation_capacity_bytes()),
-                )
-            }))
+            bytes.saturating_add(field.as_ref().map_or_else(
+                |(locus, cause)| {
+                    locus
+                        .entity()
+                        .len()
+                        .saturating_add(locus.aspect().len())
+                        .saturating_add(locus.field().len())
+                        .saturating_add(cause.retained_heap_bytes())
+                },
+                |(aspect, field, value)| {
+                    aspect.capacity().saturating_add(
+                        field
+                            .capacity()
+                            .saturating_add(value.owned_allocation_capacity_bytes()),
+                    )
+                },
+            ))
         });
         (1_usize.saturating_add(self.fields.len()), bytes)
     }
@@ -95,7 +106,17 @@ impl<Schema, Entity> WorthQueryApplicationEntitySeed<Schema, Entity> {
     {
         self.fields.push(
             Field::Binding::encode(&value)
-                .map(|value| (field.aspect().to_owned(), field.field().to_owned(), value)),
+                .map(|value| (field.aspect().to_owned(), field.field().to_owned(), value))
+                .map_err(|cause| {
+                    (
+                        ApplicationFieldBindingLocus::new(
+                            self.entity,
+                            field.aspect(),
+                            field.field(),
+                        ),
+                        cause,
+                    )
+                }),
         );
         self
     }
@@ -181,8 +202,10 @@ where
         }
         let mut fields = std::collections::BTreeMap::new();
         for encoded in seed.fields {
-            let (aspect, field, value) = encoded
-                .map_err(|_| invalid_seed("typed bootstrap field value failed validation"))?;
+            let (aspect, field, value) = encoded.map_err(|(field, cause)| {
+                invalid_seed("typed bootstrap field value failed validation")
+                    .with_field_encoding_denial(field, cause)
+            })?;
             let locator = self
                 .graph
                 .layout

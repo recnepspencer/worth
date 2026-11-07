@@ -26,7 +26,7 @@ impl
     > for SessionRecordsBindings
 {
     type Binding = worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl
@@ -35,19 +35,19 @@ impl
     > for SessionRecordsBindings
 {
     type Binding = worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<u64> for SessionRecordsBindings {
     type Binding =
         worth_query_host::facade::declaration::application_schema::U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<String> for SessionRecordsBindings {
     type Binding =
         worth_query_host::facade::declaration::application_schema::StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 pub struct SessionExternalMapping;
@@ -105,10 +105,12 @@ impl fragment::Record<SessionExternalIdentityValue> for SessionRecordsBindings {
             "SessionExternalIdentityField",
             |row: &SessionExternalIdentityValue| row.session_external_identity_field.clone(),
         )
+        .equality_queryable(true)
         .and(
             "SessionMappingStatusField",
             |row: &SessionExternalIdentityValue| row.session_mapping_status_field,
         )
+        .equality_queryable(true)
         .build(
             |session_external_identity_field,
              session_mapping_status_field,
@@ -140,6 +142,7 @@ impl fragment::Record<SessionPrincipalFactsValue> for SessionRecordsBindings {
             "SessionPrincipalIdentityField",
             |row: &SessionPrincipalFactsValue| row.session_principal_identity_field,
         )
+        .equality_queryable(true)
         .build(
             |session_principal_identity_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(SessionPrincipalFactsValue {
@@ -167,6 +170,7 @@ impl fragment::Record<SessionBasisFactsValue> for SessionRecordsBindings {
         fragment::field("SessionBasisValue", |row: &SessionBasisFactsValue| {
             row.session_basis_value.clone()
         })
+        .equality_queryable(true)
         .build(|session_basis_value, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(SessionBasisFactsValue {
                 session_basis_value,

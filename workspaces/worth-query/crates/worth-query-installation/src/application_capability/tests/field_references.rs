@@ -22,12 +22,10 @@ impl records::BindingSet for Bindings {
 impl records::Scalar<u64> for Bindings {
     type Binding = U64ApplicationValueBinding;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl records::Scalar<WorthQueryExternalPrincipalIdentity> for Bindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl records::Scalar<WorthQueryPrincipalMappingStatus> for Bindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
@@ -77,21 +75,33 @@ pub(super) struct GrantState {
 impl records::Record<GrantState> for Bindings {
     fn record() -> impl records::Shape<GrantState, Self> {
         records::field("Action", |row: &GrantState| row.action)
+            .equality_queryable(true)
             .and("Purpose", |row: &GrantState| row.purpose)
+            .equality_queryable(true)
             .and("Field", |row: &GrantState| row.field)
+            .equality_queryable(true)
             .and("Amount", |row: &GrantState| row.amount)
+            .equality_queryable(true)
             .and("Workflow", |row: &GrantState| row.workflow)
+            .equality_queryable(true)
             .and("Status", |row: &GrantState| row.status)
+            .equality_queryable(true)
             .and("ValidFrom", |row: &GrantState| row.valid_from)
+            .equality_queryable(true)
             .and("ValidThrough", |row: &GrantState| row.valid_through)
+            .equality_queryable(true)
             .and("DelegationLimit", |row: &GrantState| row.delegation_limit)
+            .equality_queryable(true)
             .and("ChangedWorkflow", |row: &GrantState| row.changed_workflow)
+            .equality_queryable(true)
             .and("ChangedValidFrom", |row: &GrantState| {
                 row.changed_valid_from
             })
+            .equality_queryable(true)
             .and("MappingIdentity", |row: &GrantState| {
                 row.mapping_identity.clone()
             })
+            .equality_queryable(true)
             .and("MappingStatus", |row: &GrantState| row.mapping_status)
             .build(
                 |action,
@@ -136,9 +146,11 @@ impl records::Record<ResourceState> for Bindings {
         records::field("ResourceWorkflow", |row: &ResourceState| {
             row.resource_workflow
         })
+        .equality_queryable(true)
         .and("ChangedResourceWorkflow", |row: &ResourceState| {
             row.changed_resource_workflow
         })
+        .equality_queryable(true)
         .build(
             |resource_workflow, changed_resource_workflow, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ResourceState {
@@ -157,6 +169,7 @@ impl records::Record<PrincipalState> for Bindings {
         records::field("PrincipalIdentity", |row: &PrincipalState| {
             row.principal_identity
         })
+        .equality_queryable(true)
         .build(|principal_identity, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(PrincipalState { principal_identity })
         })

@@ -83,21 +83,21 @@ impl<E, A, T> Clone for RecordField<E, A, T> {
 ///         field("value", |row: &Row| row.0).build(|value, _: &mut ValueDecodeAdmission<'_>| Ok::<_, std::convert::Infallible>(Row(value)))
 ///     }
 /// }
-/// let _: RecordField<_, _, u64> = record_field(Suite, Item, Unrelated, "value").unwrap();
+/// let _: FieldSelection<_, _, _, u64> = record_field(Suite, Item, Unrelated, "value");
 /// ```
 #[inline(always)]
 pub fn record_field<F: Fragment, E, A, T: 'static, EntityWitness, AspectWitness>(
-    _: F,
-    _: E,
-    _: A,
-    path: &str,
-) -> Result<RecordField<E, A, T>, super::super::ApplicationSchemaDeclarationDenial>
+    fragment: F,
+    entity: E,
+    aspect: A,
+    path: &'static str,
+) -> super::FieldSelection<F, E, A, T>
 where
     E: Entity,
     A: Aspect + In<F::Members, (EntityWitness, AspectWitness), (F, E)>,
     F::Bindings: Scalar<T> + Record<A::Row>,
 {
-    checked_record_field::<F::Bindings, E, A, T>(path, F::NAME)
+    super::select_field::<F, E, A, T, EntityWitness, AspectWitness>(fragment, entity, aspect, path)
 }
 
 pub(super) fn checked_record_field<Set, E: Entity, A: Aspect, T: 'static>(

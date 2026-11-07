@@ -1,6 +1,6 @@
 //! Schema-affine field locus for retained inverse material.
 use super::PortablePreImageLocus;
-use crate::application_schema::{fragment::RecordSelection, ApplicationSchemaDeclarationDenial};
+use crate::application_schema::{fragment::RecordSelection, ApplicationFieldBindingRecipe};
 use std::{
     cmp::Ordering,
     fmt,
@@ -13,22 +13,22 @@ use std::{
 /// builder associates the complete aftermath contract with that same schema.
 pub struct DeclaredPreImageLocus<Schema> {
     portable: PortablePreImageLocus,
+    pub(crate) recipe: ApplicationFieldBindingRecipe,
     schema: PhantomData<fn() -> Schema>,
 }
 
 impl<Schema> DeclaredPreImageLocus<Schema> {
-    pub fn from_field<Field: RecordSelection>(
-        field: Field,
-    ) -> Result<Self, ApplicationSchemaDeclarationDenial> {
-        field.checked()?;
-        Ok(Self {
+    /// Records an expression; the matching schema builder checks the field and codec.
+    pub fn from_field<Field: RecordSelection>(field: Field) -> Self {
+        Self {
             portable: PortablePreImageLocus {
                 entity: field.entity().to_owned(),
                 aspect: field.aspect().to_owned(),
                 field: field.field().to_owned(),
             },
+            recipe: field.expected_recipe(),
             schema: PhantomData,
-        })
+        }
     }
 
     pub fn entity(&self) -> &str {
@@ -52,6 +52,7 @@ impl<Schema> Clone for DeclaredPreImageLocus<Schema> {
     fn clone(&self) -> Self {
         Self {
             portable: self.portable.clone(),
+            recipe: self.recipe.clone(),
             schema: PhantomData,
         }
     }

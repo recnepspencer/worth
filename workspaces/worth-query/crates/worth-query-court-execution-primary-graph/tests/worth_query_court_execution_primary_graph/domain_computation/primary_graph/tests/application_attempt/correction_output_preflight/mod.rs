@@ -113,7 +113,6 @@ impl BindingSet for HostileBindings {
 }
 impl Scalar<String> for HostileBindings {
     type Binding = OtherNativeCodec;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl Scalar<u64> for HostileBindings {
     type Binding = U64ApplicationValueBinding;
@@ -123,16 +122,20 @@ impl fragment::Record<AccountPolicyValue> for HostileBindings {
         fragment::field("AccountIdentity", |row: &AccountPolicyValue| {
             row.account_identity.clone()
         })
+        .equality_queryable(true)
         .read_only()
         .and("AccountStatus", |row: &AccountPolicyValue| {
             row.account_status.clone()
         })
+        .equality_queryable(true)
         .and("AccountLabel", |row: &AccountPolicyValue| {
             row.account_label.clone()
         })
+        .equality_queryable(true)
         .and("AccountNote", |row: &AccountPolicyValue| {
             row.account_note.clone()
         })
+        .equality_queryable(true)
         .and("AccountScore", |row: &AccountPolicyValue| row.account_score)
         .build(
             |account_identity,
@@ -154,7 +157,6 @@ impl fragment::Record<AccountPolicyValue> for HostileBindings {
 }
 pub fn field() -> ApplicationCorrectionOutputField<S> {
     ApplicationCorrectionOutput::<CreatedSource, Created>::field(AccountStatus::at("AccountStatus"))
-        .expect("the native output field is declared")
 }
 pub fn other_codec() -> ApplicationCorrectionOutputField<S> {
     ApplicationCorrectionOutput::<CreatedSource, Created>::field(FieldSelection::<
@@ -163,7 +165,6 @@ pub fn other_codec() -> ApplicationCorrectionOutputField<S> {
         AccountPolicy,
         String,
     >::at("AccountStatus"))
-    .expect("record field")
 }
 
 #[test]
@@ -174,7 +175,7 @@ fn correction_output_preflight_checks_source_manifest_and_native_codec() {
     );
     let catalog = world.application.installed_schema().value_bindings();
     let field = field();
-    let manifest = [field.declaration().clone()];
+    let manifest = [field.declaration().unwrap().clone()];
     let source = TypeId::of::<CreatedSource>();
     validate_witness(source, &manifest, catalog, &field).unwrap();
     assert!(matches!(
@@ -183,16 +184,15 @@ fn correction_output_preflight_checks_source_manifest_and_native_codec() {
     ));
     let undeclared = ApplicationCorrectionOutput::<CreatedSource, Created>::field(
         AccountLabel::at("AccountLabel"),
-    )
-    .expect("record field");
+    );
     assert!(matches!(
         validate_witness(source, &manifest, catalog, &undeclared),
         Err(D::UndeclaredField)
     ));
     let other = other_codec();
     assert_eq!(
-        other.declaration(),
-        field.declaration(),
+        other.declaration().unwrap(),
+        field.declaration().unwrap(),
         "portable field meaning is identical"
     );
     assert_ne!(
@@ -213,7 +213,7 @@ fn correction_output_preflight_refusal_survives_a_successful_callback() {
     );
     let catalog = world.application.installed_schema().value_bindings();
     let field = field();
-    let manifest = [field.declaration().clone()];
+    let manifest = [field.declaration().unwrap().clone()];
     let failure = RefCell::new(None);
     let mut calls = 0;
     let mut callback = || {

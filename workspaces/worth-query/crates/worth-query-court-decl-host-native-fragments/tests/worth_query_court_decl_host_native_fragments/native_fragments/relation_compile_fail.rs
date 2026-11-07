@@ -28,8 +28,33 @@ fn linking_a_foreign_extension_relation_reports_relation_entity_and_fragment() {
     std::fs::write(
         &source,
         r#"
-use worth_query_testkit_decl::{fragment_fixture::*, fragment_extension_fixture::*};
-use worth_query_execution::facade::primary_graph::{View, Writing, CandidateEntity};
+use worth_query_host::facade::{
+    declaration::application_schema::fragment::{Fragment, Entity, Extend, Relation, NoBindings},
+    primary_graph::{View, Writing, CandidateEntity},
+};
+struct Item;
+impl Entity for Item {
+    const NAME: &'static str = "item";
+    type Aspects = ();
+    type Relations = ();
+}
+struct Annotates;
+impl Relation for Annotates {
+    const NAME: &'static str = "annotates";
+    type To = Item;
+}
+struct Classifications;
+impl Fragment for Classifications {
+    const NAME: &'static str = "classifications";
+    type Bindings = NoBindings;
+    type Members = (Item,);
+}
+struct Annotations;
+impl Fragment for Annotations {
+    const NAME: &'static str = "annotations";
+    type Bindings = NoBindings;
+    type Members = (Extend<Item, (), (Annotates,)>,);
+}
 fn foreign(view: &mut View<'_, Classifications, Writing<'_>>, item: &CandidateEntity<Item>) {
     view.link(item, Annotates, item).unwrap();
 }
@@ -52,11 +77,12 @@ fn positive(view: &mut View<'_, Annotations, Writing<'_>>, item: &CandidateEntit
         .arg(&dir)
         .arg("-L")
         .arg(format!("dependency={}", deps.display()));
-    for name in ["worth_query_testkit_decl", "worth_query_execution"] {
-        command
-            .arg("--extern")
-            .arg(format!("{name}={}", archive(name).display()));
-    }
+    // A single facade supplies both the fixture and View types. Independent
+    // newest-library choices can combine incompatible workspace build graphs.
+    command.arg("--extern").arg(format!(
+        "worth_query_host={}",
+        archive("worth_query_host").display()
+    ));
     let output = command.output().unwrap();
     let diagnostics = String::from_utf8(output.stderr).unwrap();
     assert!(!output.status.success(), "foreign extension link compiled");

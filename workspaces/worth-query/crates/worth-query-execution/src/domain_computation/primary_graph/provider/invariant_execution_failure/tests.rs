@@ -50,6 +50,7 @@ fn custom_operational_failure_preserves_identity_phase_and_kind() {
                 identity: identity.clone(),
                 phase: CustomInvariantFailurePhase::Execution,
                 failure: ResultCustomInvariantFailureKind::Panic,
+                cause: None,
                 detail: "hostile panic".to_owned(),
             },
             "custom invariant execution failed".to_owned(),
@@ -66,6 +67,7 @@ fn custom_operational_failure_preserves_identity_phase_and_kind() {
                 identity,
                 phase: CustomInvariantFailurePhase::Execution,
                 failure: ResultCustomInvariantFailureKind::Panic,
+                cause: None,
             })
         );
     });

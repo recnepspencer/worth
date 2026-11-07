@@ -3,3 +3,6 @@
 mod native_fragments;
 
 mod cost;
+
+#[path = "worth_query_court_decl_host_native_fragments/compile_fail/mod.rs"]
+mod compile_fail;

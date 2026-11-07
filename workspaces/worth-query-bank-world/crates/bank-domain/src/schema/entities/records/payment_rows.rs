@@ -18,6 +18,7 @@ impl fragment::Record<PaymentIdentityValue> for BankRecordsBindings {
         fragment::field("PaymentIdentityField", |row: &PaymentIdentityValue| {
             row.payment_identity_field
         })
+        .equality_queryable(true)
         .build(|payment_identity_field, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(PaymentIdentityValue {
                 payment_identity_field,
@@ -48,7 +49,9 @@ impl fragment::Record<PostingValueValue> for BankRecordsBindings {
         .and("PostingAccountSequence", |row: &PostingValueValue| {
             row.posting_account_sequence
         })
+        .equality_queryable(true)
         .and("Purpose", |row: &PostingValueValue| row.purpose)
+        .equality_queryable(true)
         .build(
             |posting_amount,
              posting_account_sequence,
@@ -81,6 +84,7 @@ impl fragment::Record<PostingIdentityValue> for BankRecordsBindings {
         fragment::field("PostingIdentityField", |row: &PostingIdentityValue| {
             row.posting_identity_field
         })
+        .equality_queryable(true)
         .build(|posting_identity_field, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(PostingIdentityValue {
                 posting_identity_field,
@@ -107,9 +111,11 @@ impl fragment::Record<JournalIdentityValue> for BankRecordsBindings {
         fragment::field("JournalIdentityField", |row: &JournalIdentityValue| {
             row.journal_identity_field
         })
+        .equality_queryable(true)
         .and("JournalInstitutionContext", |row: &JournalIdentityValue| {
             row.journal_institution_context
         })
+        .equality_queryable(true)
         .build(
             |journal_identity_field,
              journal_institution_context,
@@ -140,6 +146,7 @@ impl fragment::Record<JournalStateValue> for BankRecordsBindings {
         fragment::field("JournalPurpose", |row: &JournalStateValue| {
             row.journal_purpose
         })
+        .equality_queryable(true)
         .build(|journal_purpose, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(JournalStateValue { journal_purpose })
         })
@@ -163,6 +170,7 @@ impl fragment::Record<PaymentStateValue> for BankRecordsBindings {
         fragment::field("PaymentStatusField", |row: &PaymentStateValue| {
             row.payment_status_field
         })
+        .equality_queryable(true)
         .build(|payment_status_field, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(PaymentStateValue {
                 payment_status_field,

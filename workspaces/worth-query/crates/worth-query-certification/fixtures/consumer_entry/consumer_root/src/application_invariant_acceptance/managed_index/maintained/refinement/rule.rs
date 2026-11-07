@@ -67,22 +67,20 @@ impl WorthQueryApplicationInvariantRule<Catalog> for Rule {
     fn prepare_scope(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Catalog>,
-    ) -> Result<Self::Scope, WorthQueryApplicationInvariantPreparationError> {
-        planner.retain_managed_index(&self.index).map_err(|cause| {
-            WorthQueryApplicationInvariantPreparationError::new(format!("{cause:?}"))
-        })
+    ) -> Result<Self::Scope, WorthQueryApplicationInvariantError<ExactNameRefusal>> {
+        planner
+            .retain_managed_index(&self.index)
+            .map_err(WorthQueryApplicationInvariantError::from)
     }
     fn prepare_scope_checked(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Catalog>,
         budget: &dyn CustomInvariantLeaseBudget,
-    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantPreparationError>> {
+    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantError<ExactNameRefusal>>> {
         Some(if budget.checkpoint(1) {
             self.prepare_scope(planner)
         } else {
-            Err(WorthQueryApplicationInvariantPreparationError::new(
-                "original preparation stopped",
-            ))
+            Err(WorthQueryApplicationInvariantError::Stopped)
         })
     }
     fn evaluate(
@@ -91,11 +89,9 @@ impl WorthQueryApplicationInvariantRule<Catalog> for Rule {
         _: &Self::Scope,
     ) -> Result<
         WorthQueryApplicationInvariantVerdict<Self::Refusal>,
-        WorthQueryApplicationInvariantExecutionError,
+        WorthQueryApplicationInvariantError<ExactNameRefusal>,
     > {
-        Err(execution(
-            "this application requires the original checked rule budget",
-        ))
+        Err(WorthQueryApplicationInvariantError::CheckedHookRequired)
     }
     fn evaluate_checked(
         &self,
@@ -105,16 +101,14 @@ impl WorthQueryApplicationInvariantRule<Catalog> for Rule {
     ) -> Option<
         Result<
             WorthQueryApplicationInvariantVerdict<Self::Refusal>,
-            WorthQueryApplicationInvariantExecutionError,
+            WorthQueryApplicationInvariantError<ExactNameRefusal>,
         >,
     > {
         Some((|| {
             if !budget.checkpoint(1) {
-                return Err(execution("exact-name rule stopped"));
+                return Err(WorthQueryApplicationInvariantError::Stopped);
             }
-            let pair = context
-                .refined_managed_index(scope)
-                .map_err(|cause| execution(format!("{cause:?}")))?;
+            let pair = context.refined_managed_index(scope).map_err(execution)?;
             let probe = super::super::query::Probe {
                 prefix: "sha".into(),
             };
@@ -143,6 +137,8 @@ impl WorthQueryApplicationInvariantRule<Catalog> for Rule {
         })())
     }
 }
-fn execution(cause: impl std::fmt::Display) -> WorthQueryApplicationInvariantExecutionError {
-    WorthQueryApplicationInvariantExecutionError::new(cause.to_string())
+fn execution(
+    cause: impl Into<WorthQueryApplicationInvariantError<ExactNameRefusal>>,
+) -> WorthQueryApplicationInvariantError<ExactNameRefusal> {
+    cause.into()
 }

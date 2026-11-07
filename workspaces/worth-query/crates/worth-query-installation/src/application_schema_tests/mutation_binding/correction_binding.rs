@@ -122,8 +122,7 @@ fn correction_compensation_resolves_its_actual_action_and_refuses_slot_or_author
                     DeclaredAftermathPostcondition::BusinessPostcondition {
                         identity: "effect-neutralized".to_owned(),
                     },
-                )
-                .unwrap(),
+                ),
             )),
             None,
         )
@@ -152,7 +151,7 @@ fn members(
 ) -> Vec<ApplicationSchemaMember> {
     let inverse = PortableRecordedInverse::from_untrusted_fields(
         source.operation_name().to_owned(),
-        DeclaredLoweringCorrespondenceRef::new("fixture.restore.v1").unwrap(),
+        DeclaredLoweringCorrespondenceRef::new("fixture.restore.v1"),
         DeclaredAftermathPostcondition::ExactPriorTruth,
         PortablePreImageDemand::from_untrusted_fields(
             vec![PortablePreImageLocus::from_untrusted_fields(

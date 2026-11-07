@@ -38,8 +38,13 @@ fn probe() -> ApplicationQueryParameterRef<PublicQuery, source::ProbeParameter, 
 {
     ApplicationQueryParameterRef::from_query_identifier("probe")
 }
-fn definition(
-) -> ApplicationQueryDefinition<Catalog, PublicQuery, source::Parameters, source::Row, Directory> {
+fn definition() -> ApplicationQueryDefinitionBuilder<
+    Catalog,
+    PublicQuery,
+    source::Parameters,
+    source::Row,
+    Directory,
+> {
     ApplicationQueryDefinitionBuilder::declare(PublicQuery::reference())
         .root(Edge::reference())
         .scope(Directory::reference())
@@ -54,8 +59,6 @@ fn definition(
             source::identity(),
             ApplicationQueryOrderingDirection::Ascending,
         )
-        .build()
-        .unwrap()
 }
 
 #[derive(Clone, Debug, worth_foundational::facade::WorthValue)]

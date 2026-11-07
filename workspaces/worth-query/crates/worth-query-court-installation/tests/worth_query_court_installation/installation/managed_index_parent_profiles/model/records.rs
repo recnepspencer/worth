@@ -22,16 +22,15 @@ impl BindingSet for ParentBindings {
 }
 impl Scalar<WorthQueryExternalPrincipalIdentity> for ParentBindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl Scalar<WorthQueryPrincipalMappingStatus> for ParentBindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl Scalar<u64> for ParentBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl Scalar<worth_foundational::facade::ContentRefId> for ParentBindings {
@@ -85,7 +84,9 @@ impl fragment::Record<MappingRow> for ParentBindings {
         field("ExternalIdentityField", |row: &MappingRow| {
             row.identity.clone()
         })
+        .equality_queryable(true)
         .and("MappingStatus", |row: &MappingRow| row.status)
+        .equality_queryable(true)
         .build(|identity, status, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(MappingRow { identity, status })
         })
@@ -103,11 +104,11 @@ impl Aspect for PrincipalFacts<true> {
 pub struct PrincipalRow(u64);
 impl fragment::Record<PrincipalRow> for ParentBindings {
     fn record() -> impl Shape<PrincipalRow, Self> {
-        field("PrincipalIdentity", |row: &PrincipalRow| row.0).build(
-            |value, _: &mut ValueDecodeAdmission<'_>| {
+        field("PrincipalIdentity", |row: &PrincipalRow| row.0)
+            .equality_queryable(true)
+            .build(|value, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(PrincipalRow(value))
-            },
-        )
+            })
     }
 }
 pub struct ContentRow {
@@ -117,6 +118,7 @@ pub struct ContentRow {
 impl fragment::Record<ContentRow> for ParentBindings {
     fn record() -> impl Shape<ContentRow, Self> {
         field("PrincipalIdentity", |row: &ContentRow| row.identity)
+            .equality_queryable(true)
             .and("ContentSamples", |row: &ContentRow| row.samples)
             .build(|identity, samples, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ContentRow { identity, samples })

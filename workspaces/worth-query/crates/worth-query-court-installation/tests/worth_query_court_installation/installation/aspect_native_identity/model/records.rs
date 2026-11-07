@@ -14,7 +14,6 @@ impl BindingSet for Set {
 }
 impl fragment::Scalar<u64> for Set {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 pub struct Record<const I: usize, const F: usize>;
 pub struct Facts<const F: usize>;
@@ -25,11 +24,11 @@ impl<const F: usize> Aspect for Facts<F> {
 }
 impl<const F: usize> fragment::Record<Row<F>> for Set {
     fn record() -> impl fragment::Shape<Row<F>, Self> {
-        fragment::field("values", |r: &Row<F>| r.0).build(
-            |values, _: &mut ValueDecodeAdmission<'_>| {
+        fragment::field("values", |r: &Row<F>| r.0)
+            .equality_queryable(true)
+            .build(|values, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(Row(values))
-            },
-        )
+            })
     }
 }
 pub struct Owner<const I: usize, const F: usize>;

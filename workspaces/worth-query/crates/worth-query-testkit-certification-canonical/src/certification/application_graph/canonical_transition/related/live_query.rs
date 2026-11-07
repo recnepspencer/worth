@@ -59,7 +59,7 @@ pub fn children() -> ApplicationQueryResultRelationRef<
     ApplicationQueryResultRelationRef::forward_many("children", DerivedChildren::reference())
 }
 
-pub fn definition() -> ApplicationQueryDefinition<
+pub fn definition() -> ApplicationQueryDefinitionBuilder<
     CanonicalSchema,
     LiveQuery,
     query::Parameters,
@@ -99,8 +99,6 @@ pub fn definition() -> ApplicationQueryDefinition<
             ApplicationQueryOrderingDirection::Ascending,
         )
         .live_root_by::<super::cause::LiveCause>(root_identity(), root_identity())
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<CanonicalSchema, LiveQuery> for super::page_query::PageRow {
     fn project(

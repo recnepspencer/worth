@@ -113,7 +113,9 @@ impl ApplicationCorrectionBinding<NumericSchema> for UndoClone {
         >())
     }
     fn source_output_fields() -> Vec<ApplicationCorrectionOutputField<NumericSchema>> {
-        vec![ApplicationCorrectionOutput::<Binding, Created>::field(Key::at("Key")).unwrap()]
+        vec![ApplicationCorrectionOutput::<Binding, Created>::field(
+            Key::at("Key"),
+        )]
     }
     fn derive_correction(
         original: &CloneNumber,
@@ -125,10 +127,9 @@ impl ApplicationCorrectionBinding<NumericSchema> for UndoClone {
         };
         let target = StringApplicationValueBinding::decode(
             fields
-                .field(
-                    &ApplicationCorrectionOutput::<Binding, Created>::field(Key::at("Key"))
-                        .unwrap(),
-                )
+                .field(&ApplicationCorrectionOutput::<Binding, Created>::field(
+                    Key::at("Key"),
+                ))
                 .map_err(|_| UnsupportedSourceMeaning)?,
         )
         .map_err(|_| UnsupportedSourceMeaning)?;

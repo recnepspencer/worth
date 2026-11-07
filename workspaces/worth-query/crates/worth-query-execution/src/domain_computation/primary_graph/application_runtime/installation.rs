@@ -3,6 +3,7 @@
 use crate::equality_type_id::EqualityTypeId as TypeId;
 mod assembly;
 mod input;
+mod schema;
 use super::{
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphBootstrap,
     WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
@@ -14,6 +15,7 @@ use crate::domain_computation::execution_runtime::{
 };
 use assembly::assemble_application_runtime;
 pub(in crate::domain_computation::primary_graph) use input::ApplicationRuntimePublication;
+pub(in crate::domain_computation::primary_graph) use schema::validate_application_schema;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationSchema,
     WorthQueryInstalledGraphParticipationAuthority,
@@ -247,23 +249,6 @@ pub(super) struct PublishedApplicationGraph<Bridge> {
         Option<worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority>,
     checkpoint_restore_work: Option<worth_relational::facade::durability::CheckpointRestoreWork>,
 }
-fn validate_application_schema<Schema>(
-    runtime: &WorthQueryExecutionRuntime,
-    installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
-) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
-where
-    Schema: ApplicationSchema,
-{
-    runtime
-        .installed_packages()
-        .validate_application_schema(installed_schema)
-        .map_err(|denial| {
-            WorthQueryPrimaryGraphInstallationDenial::new(
-                WorthQueryPrimaryGraphInstallationDenialKind::StaleInstalledSchema,
-                denial.subject(),
-            )
-        })
-}
 fn compile_authorization<Schema>(
     bootstrap: &WorthQueryPrimaryGraphBootstrap<Schema>,
     installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
@@ -277,6 +262,7 @@ where
                 WorthQueryPrimaryGraphInstallationDenialKind::AuthorizationPolicyRejected,
                 denial.to_string(),
             )
+            .with_authorization_cause(denial)
         })
 }
 fn publish_application_graph<Schema>(
@@ -325,7 +311,7 @@ where
                 }
                 _ => WorthQueryPrimaryGraphInstallationDenialKind::RelationalSchemaRejected,
             };
-            WorthQueryPrimaryGraphInstallationDenial::new(kind, format!("{denial:?}"))
+            WorthQueryPrimaryGraphInstallationDenial::new(kind, format!("{denial:?}")).with_branch_basis_cause(denial)
         })?;
     let relational_branch_identity = graph.with_runtime(execution, |runtime| {
         runtime
@@ -389,6 +375,7 @@ fn seal_application_graph(
                 WorthQueryPrimaryGraphInstallationDenialKind::RuntimeBridgeRejected,
                 format!("{denial:?}"),
             )
+            .with_bridge_conditional_cause(denial)
         })?,
         primary_provider: graph.primary_provider,
         primary_graph_authority: graph.primary_graph_authority,

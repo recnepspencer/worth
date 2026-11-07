@@ -22,18 +22,18 @@ impl fragment::BindingSet for ExactRecordsBindings {
 }
 impl fragment::Scalar<u64> for ExactRecordsBindings {
     type Binding = worth_query_declaration::facade::application_schema::U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<String> for ExactRecordsBindings {
     type Binding =
         worth_query_declaration::facade::application_schema::StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<bool> for ExactRecordsBindings {
     type Binding = worth_query_declaration::facade::application_schema::BoolApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = false;
 }
 pub(super) struct ExactEntity;
@@ -57,6 +57,7 @@ pub(super) struct ExactAspectValue {
 impl fragment::Record<ExactAspectValue> for ExactRecordsBindings {
     fn record() -> impl fragment::Shape<ExactAspectValue, Self> {
         fragment::field("RequiredCount", |row: &ExactAspectValue| row.required_count)
+            .equality_queryable(true)
             .and("OptionalLabel", |row: &ExactAspectValue| {
                 row.optional_label.clone()
             })

@@ -1,7 +1,7 @@
 use worth_query_decl::facade::application_query::{
-    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
-    ApplicationQueryInfluenceContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
+    ApplicationQueryDisclosureContract, ApplicationQueryInfluenceContract,
+    ApplicationQueryLaneEligibility,
 };
 use worth_query_decl::facade::worth_query_application_query;
 
@@ -95,7 +95,7 @@ worth_query_decl::facade::worth_query_query_binding!(
     limits results 1_024
 );
 
-pub fn estate_customer_disclosure_definition() -> ApplicationQueryDefinition<
+pub fn estate_customer_disclosure_definition() -> ApplicationQueryDefinitionBuilder<
     BankSchema,
     EstateCustomerDisclosureQuery,
     EstateCustomerDisclosureQueryParameters,
@@ -148,6 +148,4 @@ pub fn estate_customer_disclosure_definition() -> ApplicationQueryDefinition<
                 .with_preview(),
         )
         .requires_ability(ViewEstateCase::reference())
-        .build()
-        .expect("estate customer disclosure query is statically canonical")
 }

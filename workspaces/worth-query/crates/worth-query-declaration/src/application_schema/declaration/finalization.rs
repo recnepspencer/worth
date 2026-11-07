@@ -19,6 +19,9 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
     pub fn build(
         mut self,
     ) -> Result<ApplicationSchemaDeclaration<Schema>, ApplicationSchemaDeclarationDenial> {
+        if let Some(denial) = self.refusal {
+            return Err(denial);
+        }
         crate::application_schema::fragment::expand_record_access(
             &self.member_provenance.fragments.catalog,
             &self.member_provenance.fragments.access,
@@ -34,6 +37,11 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
         validate_operation_contract_cardinality(&self.members)?;
         self.members.sort();
         self.member_provenance.normalize();
+        self.mutation_references.validate(&self.member_provenance)?;
+        self.correction_fields
+            .validate(&self.member_provenance.fragments.catalog)?;
+        self.principal_fields
+            .validate(&self.member_provenance, &self.members)?;
         self.member_provenance
             .fragments
             .validate(self.member_provenance.field_bindings())?;

@@ -80,7 +80,12 @@ where
             self.binding_identity.clone(),
         )
         .map_err(preparation_denial)?;
-        let rule_scope = self.rule.prepare_scope(&mut planner)?;
+        let rule_scope = self.rule.prepare_scope(&mut planner).map_err(|error| {
+            super::refusal::preparation_error::<Rule::RefusalBinding>(
+                error,
+                planner.refusal_budget(),
+            )
+        })?;
         Ok(InstalledApplicationInvariantScope {
             rule_scope,
             admission: planner.freeze_admission().map_err(preparation_denial)?,
@@ -107,13 +112,17 @@ where
         self.rule
             .prepare_scope_checked(&mut planner, budget)
             .map(|result| {
-                result.and_then(|rule_scope| {
-                    Ok(InstalledApplicationInvariantScope {
-                        rule_scope,
-                        admission: planner.freeze_admission().map_err(preparation_denial)?,
-                        preparation_reads: planner.reads(),
+                result
+                    .map_err(|error| {
+                        super::refusal::preparation_error::<Rule::RefusalBinding>(error, budget)
                     })
-                })
+                    .and_then(|rule_scope| {
+                        Ok(InstalledApplicationInvariantScope {
+                            rule_scope,
+                            admission: planner.freeze_admission().map_err(preparation_denial)?,
+                            preparation_reads: planner.reads(),
+                        })
+                    })
             })
     }
 
@@ -141,9 +150,13 @@ where
         self.rule
             .evaluate_checked(&context, &scope.rule_scope, budget)
             .map(|result| {
-                result.and_then(|verdict| {
-                    super::refusal::encode::<Rule::RefusalBinding>(verdict, budget)
-                })
+                result
+                    .map_err(|error| {
+                        super::refusal::execution_error::<Rule::RefusalBinding>(error, budget)
+                    })
+                    .and_then(|verdict| {
+                        super::refusal::encode::<Rule::RefusalBinding>(verdict, budget)
+                    })
             })
     }
 
@@ -166,6 +179,9 @@ where
         );
         self.rule
             .evaluate(&context, &scope.rule_scope)
+            .map_err(|error| {
+                super::refusal::execution_error::<Rule::RefusalBinding>(error, refusal_budget)
+            })
             .and_then(|verdict| {
                 super::refusal::encode::<Rule::RefusalBinding>(verdict, refusal_budget)
             })
@@ -175,5 +191,7 @@ where
 fn preparation_denial(
     denial: super::WorthQueryInvariantAccessDenial,
 ) -> CustomInvariantPreparationError {
-    CustomInvariantPreparationError::new(denial.to_string())
+    CustomInvariantPreparationError::Cause(Box::new(
+        worth_relational::facade::runtime::CustomInvariantFailureCause::Access(denial),
+    ))
 }

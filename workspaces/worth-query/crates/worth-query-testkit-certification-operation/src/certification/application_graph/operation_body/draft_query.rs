@@ -60,7 +60,7 @@ pub fn audit_source<Schema: BodySchemaBinding>(
     )
 }
 
-pub fn draft_query_definition<const DESTINATION: u64>() -> ApplicationQueryDefinition<
+pub fn draft_query_definition<const DESTINATION: u64>() -> ApplicationQueryDefinitionBuilder<
     DocumentRetentionSchema<DESTINATION>,
     DraftQuery,
     DocumentQueryParameters,
@@ -87,8 +87,6 @@ pub fn draft_query_definition<const DESTINATION: u64>() -> ApplicationQueryDefin
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl<const DESTINATION: u64>
     WorthQueryApplicationProjection<DocumentRetentionSchema<DESTINATION>, DraftQuery> for DraftRow

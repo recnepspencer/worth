@@ -19,8 +19,10 @@ impl fragment::Record<AuditFactsValue> for InputModelBindings {
         field("AuditIdentity", |row: &AuditFactsValue| {
             row.audit_identity.clone()
         })
+        .equality_queryable(true)
         .read_only()
         .and("AuditValue", |row: &AuditFactsValue| row.audit_value)
+        .equality_queryable(true)
         .read_only()
         .build(
             |audit_identity, audit_value, _: &mut ValueDecodeAdmission<'_>| {
@@ -52,10 +54,13 @@ impl fragment::Record<FactsValue> for InputModelBindings {
         field("SignedIdentity", |row: &FactsValue| {
             row.signed_identity.clone()
         })
+        .equality_queryable(true)
         .read_only()
         .and("Actor", |row: &FactsValue| row.actor)
+        .equality_queryable(true)
         .read_only()
         .and("Provenance", |row: &FactsValue| row.provenance.clone())
+        .equality_queryable(true)
         .build(
             |signed_identity, actor, provenance, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(FactsValue {
@@ -82,11 +87,11 @@ pub struct ConsequenceFactsValue {
 }
 impl fragment::Record<ConsequenceFactsValue> for InputModelBindings {
     fn record() -> impl Shape<ConsequenceFactsValue, Self> {
-        field("Record", |row: &ConsequenceFactsValue| row.record.clone()).build(
-            |record, _: &mut ValueDecodeAdmission<'_>| {
+        field("Record", |row: &ConsequenceFactsValue| row.record.clone())
+            .equality_queryable(true)
+            .build(|record, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ConsequenceFactsValue { record })
-            },
-        )
+            })
     }
 }
 pub struct JournalFacts;
@@ -109,12 +114,15 @@ impl fragment::Record<JournalFactsValue> for InputModelBindings {
         field("JournalName", |row: &JournalFactsValue| {
             row.journal_name.clone()
         })
+        .equality_queryable(true)
         .read_only()
         .and("JournalRevision", |row: &JournalFactsValue| {
             row.journal_revision
         })
+        .equality_queryable(true)
         .read_only()
         .and("JournalActor", |row: &JournalFactsValue| row.journal_actor)
+        .equality_queryable(true)
         .read_only()
         .build(
             |journal_name, journal_revision, journal_actor, _: &mut ValueDecodeAdmission<'_>| {
@@ -147,20 +155,25 @@ pub struct GraphFactsValue {
 impl fragment::Record<GraphFactsValue> for InputModelBindings {
     fn record() -> impl Shape<GraphFactsValue, Self> {
         field("SignedValue", |row: &GraphFactsValue| row.signed_value)
+            .equality_queryable(true)
             .read_only()
             .and("SignedRevision", |row: &GraphFactsValue| {
                 row.signed_revision
             })
+            .equality_queryable(true)
             .read_only()
             .and("SignedCompany", |row: &GraphFactsValue| {
                 row.signed_company.clone()
             })
+            .equality_queryable(true)
             .read_only()
             .and("GraphActor", |row: &GraphFactsValue| row.graph_actor)
+            .equality_queryable(true)
             .read_only()
             .and("GraphProvenance", |row: &GraphFactsValue| {
                 row.graph_provenance.clone()
             })
+            .equality_queryable(true)
             .build(
                 |signed_value,
                  signed_revision,
@@ -197,12 +210,15 @@ pub struct ScopeFactsValue {
 impl fragment::Record<ScopeFactsValue> for InputModelBindings {
     fn record() -> impl Shape<ScopeFactsValue, Self> {
         field("ScopeValue", |row: &ScopeFactsValue| row.scope_value)
+            .equality_queryable(true)
             .read_only()
             .and("ScopeActor", |row: &ScopeFactsValue| row.scope_actor)
+            .equality_queryable(true)
             .read_only()
             .and("ScopeProvenance", |row: &ScopeFactsValue| {
                 row.scope_provenance.clone()
             })
+            .equality_queryable(true)
             .build(
                 |scope_value, scope_actor, scope_provenance, _: &mut ValueDecodeAdmission<'_>| {
                     Ok::<_, std::convert::Infallible>(ScopeFactsValue {
@@ -232,10 +248,13 @@ pub struct CellFactsValue {
 impl fragment::Record<CellFactsValue> for InputModelBindings {
     fn record() -> impl Shape<CellFactsValue, Self> {
         field("CellIdentity", |row: &CellFactsValue| row.cell_identity)
+            .equality_queryable(true)
             .read_only()
             .and("CellKind", |row: &CellFactsValue| row.cell_kind)
+            .equality_queryable(true)
             .read_only()
             .and("CellNote", |row: &CellFactsValue| row.cell_note.clone())
+            .equality_queryable(true)
             .read_only()
             .build(
                 |cell_identity, cell_kind, cell_note, _: &mut ValueDecodeAdmission<'_>| {
@@ -266,6 +285,7 @@ impl fragment::Record<DetailFactsValue> for InputModelBindings {
         field("DetailLabel", |row: &DetailFactsValue| {
             row.detail_label.clone()
         })
+        .equality_queryable(true)
         .read_only()
         .build(|detail_label, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(DetailFactsValue { detail_label })

@@ -85,29 +85,20 @@ impl ApplicationCapabilityMutationBinding<DocumentRetentionSchema> for MonitorBi
 
 fn aftermath() -> DeclaredApplicationAftermathContract<DocumentRetentionSchema> {
     DeclaredApplicationAftermathContract::runtime_with_external_owner(
-        DeclaredCorrectionMechanism::RecordedInverse(
-            DeclaredRecordedInverse::new(
-                "neutral.recoverable-archive.retention-preimage.v1",
-                DeclaredLoweringCorrespondenceRef::new(
-                    "neutral.recoverable-archive.retention-lowering.v1",
-                )
-                .unwrap(),
-                DeclaredAftermathPostcondition::ExactPriorTruth,
-                DeclaredPreImageDemand::new(
-                    [
-                        DeclaredPreImageLocus::from_field(DocumentRetentionField::at(
-                            "DocumentRetentionField",
-                        ))
-                        .expect("retention preimage field"),
-                    ],
-                    512,
-                )
-                .unwrap(),
-            )
-            .unwrap(),
-        ),
-        DeclaredReconciliationProcedure::new("neutral.archive-owner-confirms-original-effect")
-            .unwrap(),
+        DeclaredCorrectionMechanism::RecordedInverse(DeclaredRecordedInverse::new(
+            "neutral.recoverable-archive.retention-preimage.v1",
+            DeclaredLoweringCorrespondenceRef::new(
+                "neutral.recoverable-archive.retention-lowering.v1",
+            ),
+            DeclaredAftermathPostcondition::ExactPriorTruth,
+            DeclaredPreImageDemand::new(
+                [DeclaredPreImageLocus::from_field(
+                    DocumentRetentionField::at("DocumentRetentionField"),
+                )],
+                512,
+            ),
+        )),
+        DeclaredReconciliationProcedure::new("neutral.archive-owner-confirms-original-effect"),
     )
 }
 pub struct MonitorContribution;

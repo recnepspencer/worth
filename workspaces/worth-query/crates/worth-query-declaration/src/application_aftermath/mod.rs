@@ -44,11 +44,13 @@ mod recorded_inverse_tests;
 pub use contract::{DeclaredApplicationAftermathContract, PortableApplicationAftermathContract};
 pub use correction_authority::DeclaredCorrectionAuthority;
 pub use correction_mechanism::{
-    DeclaredCompensation, DeclaredCorrectionMechanism, DeclaredLoweringCorrespondenceRef,
-    DeclaredPreImageDemand, DeclaredPreImageDemandDenial, DeclaredPreImageLocus,
-    DeclaredPreImageRelationLocus, DeclaredRecordedInverse, PortableCorrectionMechanism,
-    PortablePreImageDemand, PortablePreImageLocus, PortablePreImageRelationLocus,
-    PortableRecordedInverse,
+    DeclaredCompensation, DeclaredCorrectionMechanism, DeclaredCorrectionMechanismDenial,
+    DeclaredLoweringCorrespondenceRef, DeclaredPreImageDemand, DeclaredPreImageDemandDenial,
+    DeclaredPreImageLocus, DeclaredPreImageRelationLocus, DeclaredRecordedInverse,
+    PortableCorrectionMechanism, PortablePreImageDemand, PortablePreImageLocus,
+    PortablePreImageRelationLocus, PortableRecordedInverse,
 };
 pub use postcondition::DeclaredAftermathPostcondition;
 pub use reconciliation::DeclaredReconciliationProcedure;
+
+pub(crate) use contract::AssociatedAftermathContract;

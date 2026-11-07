@@ -1,6 +1,5 @@
 use worth_query_declaration::facade::application_query::ApplicationQueryBasisSupport;
 use worth_query_declaration::facade::application_query::ApplicationQueryCardinality;
-use worth_query_declaration::facade::application_query::ApplicationQueryDefinition;
 use worth_query_declaration::facade::application_query::ApplicationQueryDefinitionBuilder;
 use worth_query_declaration::facade::application_query::ApplicationQueryDisclosureContract;
 use worth_query_declaration::facade::application_query::ApplicationQueryInfluenceContract;
@@ -32,7 +31,7 @@ worth_query_application_query!(
     name "forbidden_hidden_ordering"
 );
 
-pub fn forbidden_hidden_ordering_definition() -> ApplicationQueryDefinition<
+pub fn forbidden_hidden_ordering_definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     ForbiddenHiddenOrderingQuery,
     AccountSummaryParameters,
@@ -82,8 +81,6 @@ pub fn forbidden_hidden_ordering_definition() -> ApplicationQueryDefinition<
             label_result_field::<ForbiddenHiddenOrderingQuery>(),
             ApplicationQueryOrderingDirection::Ascending,
         )
-        .build()
-        .unwrap()
 }
 
 pub fn encoded_disclosure(

@@ -4,6 +4,7 @@ use super::resources::{execution_policy, product_world_resources};
 use super::*;
 use std::time::Duration;
 use worth_query_decl::facade::authentication::WorthQueryPrincipalMappingStatus;
+use worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial;
 use worth_query_host::facade::runtime::WorthQueryExecutionRuntimeInstaller;
 
 #[derive(Clone, Copy)]
@@ -38,6 +39,25 @@ impl World {
             WorthQueryApplicationEntitySeed<Fixture, Item>,
         ) -> WorthQueryApplicationEntitySeed<Fixture, Item>,
     ) -> Self {
+        Self::try_seeded(mode, seed_fields).unwrap()
+    }
+    pub(super) fn try_seeded(
+        mode: Mode,
+        seed_fields: impl FnOnce(
+            WorthQueryApplicationEntitySeed<Fixture, Item>,
+        ) -> WorthQueryApplicationEntitySeed<Fixture, Item>,
+    ) -> Result<Self, WorthQueryInMemoryApplicationDenial> {
+        Self::install_seeded(mode, Box::new(seed_fields))
+    }
+    fn install_seeded(
+        mode: Mode,
+        seed_fields: Box<
+            dyn FnOnce(
+                    WorthQueryApplicationEntitySeed<Fixture, Item>,
+                ) -> WorthQueryApplicationEntitySeed<Fixture, Item>
+                + '_,
+        >,
+    ) -> Result<Self, WorthQueryInMemoryApplicationDenial> {
         worth_query_host::facade::application_contribution::with_bootstrap_advancement(
             execution_policy(),
             |phase| {
@@ -64,7 +84,7 @@ impl World {
                     .bind_application_schema(declaration)
                     .unwrap();
                 let binding = schema
-                    .principal_binding(IdentityBinding::reference().unwrap())
+                    .principal_binding(IdentityBinding::reference())
                     .unwrap();
                 let resources = product_world_resources();
                 let mut bootstrap = authority
@@ -84,7 +104,9 @@ impl World {
                     WorthQueryApplicationEntityKey::new("item").unwrap(),
                 )
                 .record_field(
-                    record_field(Fixture, Item, ItemIdentity, "id").unwrap(),
+                    record_field(Fixture, Item, ItemIdentity, "id")
+                        .resolve()
+                        .unwrap(),
                     11u64,
                 )
                 .unwrap();
@@ -96,13 +118,20 @@ impl World {
                     ("interval.end", 13),
                 ] {
                     seed = seed
-                        .record_field(record_field(Fixture, Item, Metrics, path).unwrap(), value)
+                        .record_field(
+                            record_field(Fixture, Item, Metrics, path)
+                                .resolve()
+                                .unwrap(),
+                            value,
+                        )
                         .unwrap();
                 }
                 if matches!(mode, Mode::Named | Mode::BothBroken) {
                     seed = seed
                         .record_field(
-                            record_field(Fixture, Item, Named, "text").unwrap(),
+                            record_field(Fixture, Item, Named, "text")
+                                .resolve()
+                                .unwrap(),
                             "initial".to_owned(),
                         )
                         .unwrap();
@@ -124,13 +153,17 @@ impl World {
                     ] {
                         seed = seed
                             .record_field(
-                                record_field(Fixture, Item, Measured, path).unwrap(),
+                                record_field(Fixture, Item, Measured, path)
+                                    .resolve()
+                                    .unwrap(),
                                 value,
                             )
                             .unwrap();
                     }
                 }
-                bootstrap.bind_entity(seed_fields(seed)).unwrap();
+                bootstrap
+                    .bind_entity(seed_fields(seed))
+                    .map_err(WorthQueryInMemoryApplicationDenial::InitialState)?;
                 bootstrap
                     .bind_entity(
                         WorthQueryApplicationEntitySeed::new(
@@ -139,6 +172,7 @@ impl World {
                         )
                         .record_field(
                             record_field(Authentication, OptionalItem, OptionalIdentity, "id")
+                                .resolve()
                                 .unwrap(),
                             19u64,
                         )
@@ -163,19 +197,21 @@ impl World {
                     .unwrap();
                 let invariant = bootstrap.retain_invariant_projection_authority();
                 let application = bootstrap
-                    .publish_application_runtime(
+                    .conditional_application_runtime_installation(
                         &phase,
                         runtime,
                         authority,
                         schema,
                         SignalConditionalEvaluationBudget::development(),
                     )
-                    .unwrap();
-                Self {
+                    .map_err(WorthQueryInMemoryApplicationDenial::ConditionalPublication)?
+                    .publish(&phase)
+                    .map_err(WorthQueryInMemoryApplicationDenial::ConditionalPublication)?;
+                Ok(Self {
                     application,
                     binding,
                     invariant,
-                }
+                })
             },
         )
         .unwrap()

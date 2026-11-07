@@ -10,8 +10,13 @@ fn probe() -> ApplicationQueryParameterRef<ContactQuery, source::ProbeParameter,
 {
     ApplicationQueryParameterRef::from_query_identifier("probe")
 }
-pub fn definition(
-) -> ApplicationQueryDefinition<Catalog, ContactQuery, source::Parameters, source::Row, Directory> {
+pub fn definition() -> ApplicationQueryDefinitionBuilder<
+    Catalog,
+    ContactQuery,
+    source::Parameters,
+    source::Row,
+    Directory,
+> {
     source::base(
         ContactQuery::reference(),
         ApplicationQueryLaneEligibility::one_shot().with_live(),
@@ -21,8 +26,6 @@ pub fn definition(
         source::identity(),
         ApplicationQueryOrderingDirection::Ascending,
     )
-    .build()
-    .unwrap()
 }
 #[derive(Clone, Debug, worth_foundational::facade::WorthValue)]
 pub struct FindContact {

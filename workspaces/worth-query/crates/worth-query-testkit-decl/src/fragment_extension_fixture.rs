@@ -82,8 +82,20 @@ impl Relation for ClassifiedBy {
 pub struct EdgeWeight;
 impl Aspect for EdgeWeight {
     const NAME: &'static str = "weight";
-    type Row = u64;
+    type Row = EdgeWeightRow;
 }
 
 impl OperationReads<ChangeForm> for Annotates {}
 impl OperationLinks<ChangeForm> for Annotates {}
+
+#[derive(Debug, Eq, PartialEq)]
+pub struct EdgeWeightRow(pub u64);
+impl Record<EdgeWeightRow> for Bindings {
+    fn record() -> impl Shape<EdgeWeightRow, Self> {
+        field("value", |row: &EdgeWeightRow| row.0)
+            .equality_queryable(true)
+            .build(|value, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(EdgeWeightRow(value))
+            })
+    }
+}

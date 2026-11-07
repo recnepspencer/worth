@@ -107,13 +107,10 @@ impl ApplicationCorrectionBinding<Schema> for Restore {
         Ok(ApplicationQueryParameterSet::new())
     }
     fn mechanism() -> DeclaredCorrectionMechanism<Schema> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(Values::at("Values")).expect("record field")],
-                4096,
-            )
-            .unwrap(),
-        )
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [DeclaredPreImageLocus::from_field(Values::at("Values"))],
+            4096,
+        ))
     }
     fn derive_correction(
         original: &Revise,
@@ -123,7 +120,7 @@ impl ApplicationCorrectionBinding<Schema> for Restore {
             return Err(ApplicationCorrectionDerivationDenial::UnsupportedSourceMeaning);
         };
         let value = prior
-            .field(&DeclaredPreImageLocus::from_field(Values::at("Values")).expect("record field"))
+            .field(&DeclaredPreImageLocus::from_field(Values::at("Values")))
             .ok_or(ApplicationCorrectionDerivationDenial::MissingPreImage)?;
         let id = ContentRefApplicationValueBinding::decode(value)
             .map_err(|_| ApplicationCorrectionDerivationDenial::InvalidPreImage)?;

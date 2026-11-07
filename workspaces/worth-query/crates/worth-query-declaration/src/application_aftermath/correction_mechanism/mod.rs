@@ -45,10 +45,13 @@ impl<Schema: crate::application_schema::ApplicationSchema> DeclaredCorrectionMec
     /// Derives the actual compensating operation from its concrete mutation binding.
     pub fn compensation_binding<C: super::ApplicationCorrectionBinding<Schema>>(
         postcondition: super::DeclaredAftermathPostcondition,
-    ) -> Result<Self, &'static str> {
+    ) -> Self {
         use crate::application_operation::ApplicationMutationBinding;
         let action = super::ApplicationInverseBinding::<Schema, C>::descriptor();
-        DeclaredCompensation::new(action.operation_name(), postcondition).map(Self::Compensation)
+        Self::Compensation(DeclaredCompensation::new(
+            action.operation_name(),
+            postcondition,
+        ))
     }
 }
 
@@ -123,4 +126,16 @@ impl<Schema> DeclaredCorrectionMechanism<Schema> {
 pub enum PortableCorrectionMechanism {
     RecordedInverse(PortableRecordedInverse),
     Compensation(DeclaredCompensation),
+}
+
+/// Invalid correction expression refused when associated with its operation.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum DeclaredCorrectionMechanismDenial {
+    EmptyReconciliationProcedure,
+    EmptyInverseOperation,
+    EmptyLoweringCorrespondence,
+    RecordedInverseRequiresExactPriorTruth,
+    EmptyCompensatingOperation,
+    CompensationRejectsExactPriorTruth,
+    EmptyCompensationPostcondition,
 }

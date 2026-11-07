@@ -25,17 +25,14 @@ impl BindingSet for ForeignBindings {
 impl Scalar<SignedMoney<USD>> for ForeignBindings {
     type Binding = UnitlessMoney;
     const WRITABLE: bool = <OriginalSet as Scalar<SignedMoney<USD>>>::WRITABLE;
-    const EQUALITY_QUERYABLE: bool = <OriginalSet as Scalar<SignedMoney<USD>>>::EQUALITY_QUERYABLE;
 }
 impl Scalar<Sequence> for ForeignBindings {
     type Binding = <OriginalSet as Scalar<Sequence>>::Binding;
     const WRITABLE: bool = <OriginalSet as Scalar<Sequence>>::WRITABLE;
-    const EQUALITY_QUERYABLE: bool = <OriginalSet as Scalar<Sequence>>::EQUALITY_QUERYABLE;
 }
 impl Scalar<PurposeValue> for ForeignBindings {
     type Binding = <OriginalSet as Scalar<PurposeValue>>::Binding;
     const WRITABLE: bool = <OriginalSet as Scalar<PurposeValue>>::WRITABLE;
-    const EQUALITY_QUERYABLE: bool = <OriginalSet as Scalar<PurposeValue>>::EQUALITY_QUERYABLE;
 }
 impl Record<PostingRow> for ForeignBindings {
     fn record() -> impl Shape<PostingRow, Self> {
@@ -46,7 +43,9 @@ impl Record<PostingRow> for ForeignBindings {
         .and("PostingAccountSequence", |row: &PostingRow| {
             row.posting_account_sequence
         })
+        .equality_queryable(true)
         .and("Purpose", |row: &PostingRow| row.purpose)
+        .equality_queryable(true)
         .build(
             |posting_amount,
              posting_account_sequence,

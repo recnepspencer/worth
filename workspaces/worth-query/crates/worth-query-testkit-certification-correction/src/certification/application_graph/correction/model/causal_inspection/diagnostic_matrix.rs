@@ -95,7 +95,7 @@ binding!(
 fn definition<Q>(
     reference: ApplicationQueryReference<NumericSchema, Q, (), Row, Number>,
     policy: Policy,
-) -> ApplicationQueryDefinition<NumericSchema, Q, (), Row, Number>
+) -> ApplicationQueryDefinitionBuilder<NumericSchema, Q, (), Row, Number>
 where
     Q: ApplicationQueryMarkerIdentity<NumericSchema> + 'static,
     Q::ResultBinding: ApplicationStructuredValueBinding<Value = Row>,
@@ -168,8 +168,6 @@ where
         .parameter(enabled())
         .where_equal(ReadEnabled::at("ReadEnabled"), enabled())
         .order_by(ordering(), ApplicationQueryOrderingDirection::Ascending)
-        .build()
-        .unwrap()
 }
 pub(super) fn declare(
     schema: ApplicationSchemaDeclarationBuilder<NumericSchema>,

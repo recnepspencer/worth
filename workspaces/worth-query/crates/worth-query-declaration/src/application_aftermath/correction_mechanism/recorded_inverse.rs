@@ -13,14 +13,19 @@ pub struct DeclaredLoweringCorrespondenceRef {
 }
 
 impl DeclaredLoweringCorrespondenceRef {
-    pub fn new(correspondence_slot: impl Into<String>) -> Result<Self, &'static str> {
-        let correspondence_slot = correspondence_slot.into();
-        if correspondence_slot.trim().is_empty() {
-            return Err("empty-lowering-correspondence");
+    pub fn new(correspondence_slot: impl Into<String>) -> Self {
+        Self {
+            correspondence_slot: correspondence_slot.into(),
         }
-        Ok(Self {
-            correspondence_slot,
-        })
+    }
+
+    /// Checks descriptive meaning without granting schema admission.
+    pub fn validate(&self) -> Result<(), super::DeclaredCorrectionMechanismDenial> {
+        if self.correspondence_slot.trim().is_empty() {
+            Err(super::DeclaredCorrectionMechanismDenial::EmptyLoweringCorrespondence)
+        } else {
+            Ok(())
+        }
     }
 
     pub fn correspondence_slot(&self) -> &str {
@@ -59,23 +64,13 @@ impl<Schema> DeclaredRecordedInverse<Schema> {
         lowering_correspondence: DeclaredLoweringCorrespondenceRef,
         postcondition: DeclaredAftermathPostcondition,
         preimage_demand: DeclaredPreImageDemand<Schema>,
-    ) -> Result<Self, &'static str> {
-        let inverse_operation_slot = inverse_operation_slot.into();
-        if inverse_operation_slot.trim().is_empty() {
-            return Err("empty-inverse-operation");
-        }
-        if !matches!(
-            postcondition,
-            DeclaredAftermathPostcondition::ExactPriorTruth
-        ) {
-            return Err("recorded-inverse-requires-exact-prior-truth");
-        }
-        Ok(Self {
-            inverse_operation_slot,
+    ) -> Self {
+        Self {
+            inverse_operation_slot: inverse_operation_slot.into(),
             lowering_correspondence,
             postcondition,
             preimage_demand,
-        })
+        }
     }
 
     pub fn inverse_operation_slot(&self) -> &str {

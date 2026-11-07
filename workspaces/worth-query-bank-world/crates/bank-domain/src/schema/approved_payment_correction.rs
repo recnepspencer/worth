@@ -34,13 +34,11 @@ fn journal_field() -> ApplicationCorrectionOutputField<BankSchema> {
     ApplicationCorrectionOutput::<ApprovePaymentMutationBinding, ApprovedPaymentJournal>::field(
         JournalIdentityField::at("JournalIdentityField"),
     )
-    .expect("owned record selection is valid")
 }
 fn institution_field() -> ApplicationCorrectionOutputField<BankSchema> {
     ApplicationCorrectionOutput::<ApprovePaymentMutationBinding, ApprovedPaymentJournal>::field(
         JournalInstitutionContext::at("JournalInstitutionContext"),
     )
-    .expect("owned record selection is valid")
 }
 impl ApplicationCorrectionBinding<BankSchema> for ReverseApprovedPayment {
     const IDENTITY: &'static str = "bank.correction.reverse-approved-payment-journal.v1";
@@ -77,10 +75,11 @@ impl ApplicationCorrectionBinding<BankSchema> for ReverseApprovedPayment {
                 identity: "bank.approved-payment-journal-compensated.v1".to_owned(),
             },
         )
-        .expect("the completed payment's journal has an explicit business compensation")
     }
     fn completed_external_reconciliation() -> Option<DeclaredReconciliationProcedure> {
-        Some(DeclaredReconciliationProcedure::new("confirm-approved-payment-settlement").unwrap())
+        Some(DeclaredReconciliationProcedure::new(
+            "confirm-approved-payment-settlement",
+        ))
     }
     fn source_output_fields() -> Vec<ApplicationCorrectionOutputField<BankSchema>> {
         vec![journal_field(), institution_field()]

@@ -20,7 +20,7 @@ impl BindingSet for ControlGrantsBindings {
 }
 impl Scalar<String> for ControlGrantsBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<WorkflowGrantKey> for ControlGrantsBindings {
@@ -28,7 +28,7 @@ impl Scalar<WorkflowGrantKey> for ControlGrantsBindings {
 }
 impl Scalar<u64> for ControlGrantsBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = true;
 }
 #[derive(Clone, Copy)]

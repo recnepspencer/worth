@@ -46,7 +46,7 @@ result_field!(
     ReadWrite,
     "dispatch.width"
 );
-pub fn definition() -> ApplicationQueryDefinition<Schema, Query, (), Row, Node> {
+pub fn definition() -> ApplicationQueryDefinitionBuilder<Schema, Query, (), Row, Node> {
     ApplicationQueryDefinitionBuilder::declare(Query::reference())
         .root(Node::reference())
         .scope(Node::reference())
@@ -65,8 +65,6 @@ pub fn definition() -> ApplicationQueryDefinition<Schema, Query, (), Row, Node> 
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<Schema, Query> for Row {
     fn project(

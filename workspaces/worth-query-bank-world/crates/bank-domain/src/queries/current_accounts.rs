@@ -70,7 +70,7 @@ impl ApplicationManagedIndexBinding<BankSchema> for CurrentAccountsIndex {
         ApplicationManagedIndexMembership::ExhaustiveSourceTree;
 }
 
-pub fn current_accounts_definition() -> ApplicationQueryDefinition<
+pub fn current_accounts_definition() -> ApplicationQueryDefinitionBuilder<
     BankSchema,
     CurrentAccountsQuery,
     AccountDiscoveryQueryParameters,
@@ -93,8 +93,6 @@ pub fn current_accounts_definition() -> ApplicationQueryDefinition<
         .requires_ability(DiscoverOwnAccounts::reference())
         .managed_index(CurrentAccountsIndex::reference(), all_accounts())
         .order_by(identity, ApplicationQueryOrderingDirection::Ascending)
-        .build()
-        .expect("current accounts has one exact installed Source and all probe")
 }
 impl WorthQueryApplicationProjection<BankSchema, CurrentAccountsQuery> for VisibleAccount {
     fn project(

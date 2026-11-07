@@ -286,6 +286,7 @@ impl WorthQueryApplicationCommitDenial {
                 identity,
                 phase,
                 failure,
+                ..
             } => Some((identity, *phase, *failure)),
             crate::domain_computation::WorthQueryCustomInvariantDenial::Violation { .. } => None,
         }

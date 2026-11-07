@@ -21,7 +21,7 @@ impl fragment::BindingSet for RegistryRecordsBindings {
 }
 impl fragment::Scalar<u64> for RegistryRecordsBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = false;
 }
 pub struct InstalledEntity;

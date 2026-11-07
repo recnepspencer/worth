@@ -20,17 +20,17 @@ impl BindingSet for CellModelBindings {
 }
 impl Scalar<WorthQueryExternalPrincipalIdentity> for CellModelBindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl Scalar<WorthQueryPrincipalMappingStatus> for CellModelBindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<u64> for CellModelBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 #[derive(Clone, Copy)]
@@ -100,9 +100,11 @@ impl Record<ExternalIdentityValue> for CellModelBindings {
         field("ExternalIdentityField", |row: &ExternalIdentityValue| {
             row.external_identity_field.clone()
         })
+        .equality_queryable(true)
         .and("MappingStatus", |row: &ExternalIdentityValue| {
             row.mapping_status
         })
+        .equality_queryable(true)
         .build(
             |external_identity_field, mapping_status, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ExternalIdentityValue {
@@ -131,6 +133,7 @@ impl Record<PrincipalFactsValue> for CellModelBindings {
         field("PrincipalIdentity", |row: &PrincipalFactsValue| {
             row.principal_identity
         })
+        .equality_queryable(true)
         .read_only()
         .build(|principal_identity, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(PrincipalFactsValue { principal_identity })
@@ -153,6 +156,7 @@ pub struct FeatureFactsValue {
 impl Record<FeatureFactsValue> for CellModelBindings {
     fn record() -> impl Shape<FeatureFactsValue, Self> {
         field("FeatureKey", |row: &FeatureFactsValue| row.feature_key)
+            .equality_queryable(true)
             .read_only()
             .build(|feature_key, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(FeatureFactsValue { feature_key })
@@ -176,8 +180,10 @@ pub struct CellFactsValue {
 impl Record<CellFactsValue> for CellModelBindings {
     fn record() -> impl Shape<CellFactsValue, Self> {
         field("CellKey", |row: &CellFactsValue| row.cell_key)
+            .equality_queryable(true)
             .read_only()
             .and("CellValue", |row: &CellFactsValue| row.cell_value)
+            .equality_queryable(true)
             .build(|cell_key, cell_value, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(CellFactsValue {
                     cell_key,

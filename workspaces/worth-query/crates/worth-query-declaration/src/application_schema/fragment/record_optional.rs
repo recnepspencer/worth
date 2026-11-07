@@ -11,11 +11,16 @@ impl<Set: Scalar<T>, T: 'static> ValueColumns<Option<T>, OptionalScalarColumns> 
     fn bindings(output: &mut Vec<RecordBinding>) {
         <Set as ScalarValue<T>>::bindings(output);
     }
-    fn columns(path: &str, output: &mut Vec<Column>) -> Result<(), RecordRefusal> {
+    fn columns(
+        path: &str,
+        equality_queryable: bool,
+        output: &mut Vec<Column>,
+    ) -> Result<(), RecordRefusal> {
         let first = output.len();
         <Set as ScalarValue<T>>::columns(path, output)?;
         for column in &mut output[first..] {
             column.presence = ApplicationFieldPresence::Optional;
+            column.equality = equality_queryable;
         }
         Ok(())
     }

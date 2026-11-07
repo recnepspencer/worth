@@ -194,9 +194,7 @@ pub(super) fn declare<Schema: TopologySchemaBinding>(
     .disclosure(ApplicationQueryDisclosureContract::public())
     .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
     .lanes(ApplicationQueryLaneEligibility::one_shot())
-    .public()
-    .build()
-    .unwrap();
+    .public();
     schema
         .application_query(definition)
         .application_query_binding::<Binding<Schema>>()

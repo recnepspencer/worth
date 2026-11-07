@@ -21,9 +21,11 @@ impl fragment::Record<ExternalIdentityValue> for PublicationRecordsBindings {
         fragment::field("ExternalIdentityField", |row: &ExternalIdentityValue| {
             row.external_identity_field.clone()
         })
+        .equality_queryable(true)
         .and("MappingStatusField", |row: &ExternalIdentityValue| {
             row.mapping_status_field
         })
+        .equality_queryable(true)
         .build(
             |external_identity_field, mapping_status_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ExternalIdentityValue {
@@ -52,6 +54,7 @@ impl fragment::Record<PrincipalFactsValue> for PublicationRecordsBindings {
         fragment::field("PrincipalIdentityField", |row: &PrincipalFactsValue| {
             row.principal_identity_field
         })
+        .equality_queryable(true)
         .read_only()
         .build(
             |principal_identity_field, _: &mut ValueDecodeAdmission<'_>| {
@@ -82,13 +85,16 @@ impl fragment::Record<ResourceFactsValue> for PublicationRecordsBindings {
         fragment::field("ResourceIdentityField", |row: &ResourceFactsValue| {
             row.resource_identity_field.clone()
         })
+        .equality_queryable(true)
         .read_only()
         .and("ResourceWorkflowField", |row: &ResourceFactsValue| {
             row.resource_workflow_field.clone()
         })
+        .equality_queryable(true)
         .and("ResourceLabelField", |row: &ResourceFactsValue| {
             row.resource_label_field.clone()
         })
+        .equality_queryable(true)
         .build(
             |resource_identity_field,
              resource_workflow_field,
@@ -128,6 +134,7 @@ impl fragment::Record<GrantFactsValue> for GrantBindings {
         fragment::field("GrantIdentityField", |row: &GrantFactsValue| {
             row.grant_identity_field.clone()
         })
+        .equality_queryable(true)
         .read_only()
         .and("GrantActionField", |row: &GrantFactsValue| {
             row.grant_action_field.clone()
@@ -195,6 +202,7 @@ impl fragment::Record<ActionRecordFactsValue> for PublicationRecordsBindings {
             "ActionRecordIdentityField",
             |row: &ActionRecordFactsValue| row.action_record_identity_field.clone(),
         )
+        .equality_queryable(true)
         .read_only()
         .build(
             |action_record_identity_field, _: &mut ValueDecodeAdmission<'_>| {

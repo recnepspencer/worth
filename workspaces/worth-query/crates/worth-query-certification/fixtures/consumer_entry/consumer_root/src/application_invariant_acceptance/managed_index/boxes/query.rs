@@ -57,7 +57,7 @@ fn base<Q: ApplicationQueryMarkerIdentity<Catalog, ResultBinding = ResultBinding
         .lanes(ApplicationQueryLaneEligibility::one_shot())
 }
 pub fn source_definition(
-) -> ApplicationQueryDefinition<Catalog, SourceQuery, Parameters, Row, Directory> {
+) -> ApplicationQueryDefinitionBuilder<Catalog, SourceQuery, Parameters, Row, Directory> {
     base(
         SourceQuery::reference(),
         ApplicationQueryDisclosureContract::public(),
@@ -67,8 +67,6 @@ pub fn source_definition(
         ApplicationQueryRootPath::from(Directory::reference()).forward(Contains::reference()),
     )
     .order_by(identity(), ApplicationQueryOrderingDirection::Descending)
-    .build()
-    .unwrap()
 }
 fn probe<Q>() -> ApplicationQueryParameterRef<Q, ProbeParameter, CoordinatesBinding> {
     ApplicationQueryParameterRef::from_query_identifier("probe")
@@ -78,7 +76,7 @@ fn enabled_parameter<Q>(
     ApplicationQueryParameterRef::from_query_identifier("enabled")
 }
 pub fn public_definition(
-) -> ApplicationQueryDefinition<Catalog, BoxQuery, Parameters, Row, Directory> {
+) -> ApplicationQueryDefinitionBuilder<Catalog, BoxQuery, Parameters, Row, Directory> {
     base(
         BoxQuery::reference(),
         ApplicationQueryDisclosureContract::public(),
@@ -88,11 +86,9 @@ pub fn public_definition(
     .parameter(enabled_parameter())
     .where_equal(ItemEnabled::at("ItemEnabled"), enabled_parameter())
     .order_by(identity(), ApplicationQueryOrderingDirection::Ascending)
-    .build()
-    .unwrap()
 }
 pub fn governed_definition(
-) -> ApplicationQueryDefinition<Catalog, GovernedQuery, Parameters, Row, Directory> {
+) -> ApplicationQueryDefinitionBuilder<Catalog, GovernedQuery, Parameters, Row, Directory> {
     let influence = ApplicationQueryInfluenceContract::permit_all();
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
         "catalog-box-query",
@@ -127,8 +123,6 @@ pub fn governed_definition(
         .parameter(enabled_parameter())
         .where_equal(ItemEnabled::at("ItemEnabled"), enabled_parameter())
         .order_by(identity(), ApplicationQueryOrderingDirection::Ascending)
-        .build()
-        .unwrap()
 }
 impl<Q: ApplicationQueryMarkerIdentity<Catalog>> WorthQueryApplicationProjection<Catalog, Q>
     for Row

@@ -1,4 +1,4 @@
-//! One binding contract supplies units, validation, and flat scalar storage.
+//! One binding contract supplies units, validation, and a queryable scalar field.
 use worth_query_consumer_values::PositiveLength;
 use worth_query_decl::facade::application_schema::{
     fragment::{self, *},
@@ -31,7 +31,6 @@ impl BindingSet for Bindings {
 }
 impl Scalar<PositiveLength> for Bindings {
     type Binding = BaselineBinding;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 pub(crate) struct Body;
 impl Entity for Body {
@@ -42,5 +41,18 @@ impl Entity for Body {
 pub(crate) struct Geometry;
 impl Aspect for Geometry {
     const NAME: &'static str = "Geometry";
-    type Row = PositiveLength;
+    type Row = GeometryValue;
+}
+
+pub(crate) struct GeometryValue {
+    pub value: PositiveLength,
+}
+impl Record<GeometryValue> for Bindings {
+    fn record() -> impl Shape<GeometryValue, Self> {
+        field("value", |row: &GeometryValue| row.value)
+            .equality_queryable(true)
+            .build(|value, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(GeometryValue { value })
+            })
+    }
 }

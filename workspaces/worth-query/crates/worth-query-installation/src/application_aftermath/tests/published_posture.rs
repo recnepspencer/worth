@@ -91,7 +91,7 @@ fn external_owner_publishes_reconcilable() {
         .install(
             DeclaredApplicationAftermathContract::runtime_with_external_owner(
                 compensation(),
-                DeclaredReconciliationProcedure::new("confirm-death-notice").unwrap(),
+                DeclaredReconciliationProcedure::new("confirm-death-notice"),
             ),
         )
         .expect("reconcilable installs");
@@ -138,7 +138,7 @@ fn authority_axis_drift_changes_installed_identity() {
         .install(
             DeclaredApplicationAftermathContract::runtime_with_external_owner(
                 compensation(),
-                DeclaredReconciliationProcedure::new("confirm").unwrap(),
+                DeclaredReconciliationProcedure::new("confirm"),
             ),
         )
         .unwrap();

@@ -1,6 +1,5 @@
 use worth_query_declaration::facade::application_query::ApplicationQueryBasisSupport;
 use worth_query_declaration::facade::application_query::ApplicationQueryCardinality;
-use worth_query_declaration::facade::application_query::ApplicationQueryDefinition;
 use worth_query_declaration::facade::application_query::ApplicationQueryDefinitionBuilder;
 use worth_query_declaration::facade::application_query::ApplicationQueryDisclosureContract;
 use worth_query_declaration::facade::application_query::ApplicationQueryInfluenceContract;
@@ -86,7 +85,7 @@ worth_query_application_query!(
     name "governed_hidden_ordering"
 );
 
-pub fn governed_hidden_ordering_definition() -> ApplicationQueryDefinition<
+pub fn governed_hidden_ordering_definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     GovernedHiddenOrderingQuery,
     AccountSummaryParameters,
@@ -149,8 +148,6 @@ pub fn governed_hidden_ordering_definition() -> ApplicationQueryDefinition<
             activity_sequence(),
             ApplicationQueryOrderingDirection::Ascending,
         )
-        .build()
-        .unwrap()
 }
 
 impl WorthQueryApplicationProjection<IdentityExecutionSchema, GovernedHiddenOrderingQuery>

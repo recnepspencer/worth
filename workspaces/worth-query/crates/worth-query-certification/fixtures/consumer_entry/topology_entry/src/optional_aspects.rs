@@ -23,7 +23,6 @@ impl BindingSet for OptionalBindings {
 impl Scalar<ComponentIdentifier> for OptionalBindings {
     type Binding = ComponentIdentifierBinding;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl Scalar<String> for OptionalBindings {
     type Binding = StringApplicationValueBinding;
@@ -61,6 +60,7 @@ impl fragment::Record<ComponentIdentity> for OptionalBindings {
         field("Identifier", |row: &ComponentIdentity| {
             row.identifier.clone()
         })
+        .equality_queryable(true)
         .build(|identifier, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(ComponentIdentity { identifier })
         })

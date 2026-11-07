@@ -1,4 +1,5 @@
 //! Two installed applications and a restored root share one process service.
+#![recursion_limit = "256"]
 use std::sync::{
     atomic::{AtomicBool, AtomicUsize, Ordering},
     Arc,
@@ -26,6 +27,10 @@ type Application =
     installation::WorthQueryProgramApplicationRuntime<ExampleSchema, ExampleProgram<false>>;
 
 #[cfg(not(test))]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "The example entry supplies a bootstrap stack before constructing the shared execution authority"
+)]
 fn main() {
     std::thread::Builder::new()
         .stack_size(64 * 1024 * 1024)

@@ -19,12 +19,12 @@ impl fragment::BindingSet for BoxGrantRecordsBindings {
 }
 impl fragment::Scalar<String> for BoxGrantRecordsBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<u64> for BoxGrantRecordsBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 pub struct BoxGrant;
@@ -60,31 +60,31 @@ impl fragment::Record<BoxGrantFactsValue> for BoxGrantRecordsBindings {
     fn record() -> impl fragment::Shape<BoxGrantFactsValue, Self> {
         fragment::field("GrantIdentity", |row: &BoxGrantFactsValue| {
             row.grant_identity.clone()
-        })
-        .and("GrantAction", |row: &BoxGrantFactsValue| row.grant_action)
+        }).equality_queryable(true)
+        .and("GrantAction", |row: &BoxGrantFactsValue| row.grant_action).equality_queryable(true)
         .read_only()
-        .and("GrantPurpose", |row: &BoxGrantFactsValue| row.grant_purpose)
+        .and("GrantPurpose", |row: &BoxGrantFactsValue| row.grant_purpose).equality_queryable(true)
         .read_only()
-        .and("GrantStatus", |row: &BoxGrantFactsValue| row.grant_status)
+        .and("GrantStatus", |row: &BoxGrantFactsValue| row.grant_status).equality_queryable(true)
         .and("GrantReadStatus", |row: &BoxGrantFactsValue| {
             row.grant_read_status
-        })
+        }).equality_queryable(true)
         .and("GrantScope", |row: &BoxGrantFactsValue| {
             row.grant_scope.clone()
-        })
+        }).equality_queryable(true)
         .and("GrantNotBefore", |row: &BoxGrantFactsValue| {
             row.grant_not_before
-        })
+        }).equality_queryable(true)
         .read_only()
         .and("GrantNotAfter", |row: &BoxGrantFactsValue| {
             row.grant_not_after
-        })
+        }).equality_queryable(true)
         .read_only()
-        .and("GrantDepth", |row: &BoxGrantFactsValue| row.grant_depth)
+        .and("GrantDepth", |row: &BoxGrantFactsValue| row.grant_depth).equality_queryable(true)
         .read_only()
         .and("GrantDisclosure", |row: &BoxGrantFactsValue| {
             row.grant_disclosure
-        })
+        }).equality_queryable(true)
         .read_only()
         .build(
             |grant_identity,

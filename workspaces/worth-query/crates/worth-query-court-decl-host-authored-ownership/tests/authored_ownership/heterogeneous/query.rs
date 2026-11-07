@@ -16,8 +16,8 @@ worth_query_portable_type!(Slot => "authored-ownership.body.id-slot.v1");
 fn id<S: Scenario>() -> ApplicationQueryResultFieldRef<Query, Slot, S, BodyKey> {
     ApplicationQueryResultFieldRef::new("id", BodyKey::at("BodyKey"))
 }
-pub fn definition<S: Scenario>() -> ApplicationQueryDefinition<S, Query, (), Row, Body> {
-    let query = ApplicationQueryDefinitionBuilder::declare(Query::reference())
+pub fn definition<S: Scenario>() -> ApplicationQueryDefinitionBuilder<S, Query, (), Row, Body> {
+    ApplicationQueryDefinitionBuilder::declare(Query::reference())
         .root(Body::reference())
         .scope(Body::reference())
         .result_shape(
@@ -29,8 +29,7 @@ pub fn definition<S: Scenario>() -> ApplicationQueryDefinition<S, Query, (), Row
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
-        .public();
-    query.build().unwrap()
+        .public()
 }
 impl<S: Scenario> WorthQueryApplicationProjection<S, Query> for Row {
     fn project(

@@ -43,6 +43,7 @@ where
 {
 }
 
+mod cases;
 mod relation;
 
 macro_rules! tuple_positions {

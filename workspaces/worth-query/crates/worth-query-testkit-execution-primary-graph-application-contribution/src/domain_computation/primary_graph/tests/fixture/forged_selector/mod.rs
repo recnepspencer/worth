@@ -1,6 +1,5 @@
 use worth_query_declaration::facade::application_query::ApplicationQueryBasisSupport;
 use worth_query_declaration::facade::application_query::ApplicationQueryCardinality;
-use worth_query_declaration::facade::application_query::ApplicationQueryDefinition;
 use worth_query_declaration::facade::application_query::ApplicationQueryDefinitionBuilder;
 use worth_query_declaration::facade::application_query::ApplicationQueryDisclosureContract;
 use worth_query_declaration::facade::application_query::ApplicationQueryLaneEligibility;
@@ -64,7 +63,7 @@ impl
     }
 }
 
-pub fn forged_selector_definition() -> ApplicationQueryDefinition<
+pub fn forged_selector_definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     ForgedSelectorQuery,
     AccountSummaryParameters,
@@ -99,8 +98,6 @@ pub fn forged_selector_definition() -> ApplicationQueryDefinition<
         .public()
         .parameter(status_parameter())
         .where_equal(AccountStatus::at("AccountStatus"), status_parameter())
-        .build()
-        .unwrap()
 }
 
 pub fn declared_sequence() -> SequenceSelector {

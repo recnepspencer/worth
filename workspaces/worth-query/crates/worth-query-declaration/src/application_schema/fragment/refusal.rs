@@ -19,6 +19,7 @@ pub enum RecordRefusalKind {
     UnexpectedField,
     InvalidFieldName,
     UniqueNeedsScalar,
+    QueryabilityNeedsScalar,
     WrongValueType,
 }
 

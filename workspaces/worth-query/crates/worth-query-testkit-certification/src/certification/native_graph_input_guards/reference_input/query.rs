@@ -22,7 +22,7 @@ worth_query_application_query!(pub Query for Schema,identity "SelectedParentQuer
 pub fn field() -> ApplicationQueryResultFieldRef<Query, Slot, Schema, ParentIdentity> {
     ApplicationQueryResultFieldRef::new("identity", ParentIdentity::at("ParentIdentity"))
 }
-pub fn definition() -> ApplicationQueryDefinition<Schema, Query, (), Value, Row> {
+pub fn definition() -> ApplicationQueryDefinitionBuilder<Schema, Query, (), Value, Row> {
     ApplicationQueryDefinitionBuilder::declare(Query::reference())
         .root(Parent::reference())
         .scope(Row::reference())
@@ -41,8 +41,6 @@ pub fn definition() -> ApplicationQueryDefinition<Schema, Query, (), Value, Row>
         .root_path(
             ApplicationQueryRootPath::from(Row::reference()).forward(SelectedParent::reference()),
         )
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<Schema, Query> for Value {
     fn project(

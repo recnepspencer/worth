@@ -42,8 +42,8 @@ fn value<S: SchemaBinding>() -> ApplicationQueryResultFieldRef<Query, ValueSlot,
 fn applied<S: SchemaBinding>() -> ApplicationQueryResultFieldRef<Query, AppliedSlot, S, Applied> {
     ApplicationQueryResultFieldRef::new("applied", Applied::at("Applied"))
 }
-fn definition<S: SchemaBinding>() -> ApplicationQueryDefinition<S, Query, Parameters, Result, Node>
-{
+fn definition<S: SchemaBinding>(
+) -> ApplicationQueryDefinitionBuilder<S, Query, Parameters, Result, Node> {
     let shape = ApplicationQueryResultShapeBuilder::<S, Query, Node, Result, ResultBinding>::new(
         Node::reference(),
     )
@@ -65,8 +65,6 @@ fn definition<S: SchemaBinding>() -> ApplicationQueryDefinition<S, Query, Parame
     .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
     .lanes(ApplicationQueryLaneEligibility::one_shot())
     .public()
-    .build()
-    .unwrap()
 }
 impl<S: SchemaBinding> WorthQueryApplicationProjection<S, Query> for Result {
     fn project(

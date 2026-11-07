@@ -16,7 +16,6 @@ impl<const EQ: bool> BindingSet for Bindings<EQ> {
 impl<const EQ: bool> Scalar<String> for Bindings<EQ> {
     type Binding = StringApplicationValueBinding;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = EQ;
 }
 pub struct AccountRecords<const EQ: bool>;
 impl<const EQ: bool> Fragment for AccountRecords<EQ> {
@@ -56,20 +55,20 @@ pub struct AccountIdentity(String);
 pub struct ActivityIdentity(String);
 impl<const EQ: bool> Record<AccountIdentity> for Bindings<EQ> {
     fn record() -> impl Shape<AccountIdentity, Self> {
-        field("AccountIdentity", |row: &AccountIdentity| row.0.clone()).build(
-            |key, _: &mut ValueDecodeAdmission<'_>| {
+        field("AccountIdentity", |row: &AccountIdentity| row.0.clone())
+            .equality_queryable(EQ)
+            .build(|key, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(AccountIdentity(key))
-            },
-        )
+            })
     }
 }
 impl<const EQ: bool> Record<ActivityIdentity> for Bindings<EQ> {
     fn record() -> impl Shape<ActivityIdentity, Self> {
-        field("ActivityIdentity", |row: &ActivityIdentity| row.0.clone()).build(
-            |key, _: &mut ValueDecodeAdmission<'_>| {
+        field("ActivityIdentity", |row: &ActivityIdentity| row.0.clone())
+            .equality_queryable(EQ)
+            .build(|key, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ActivityIdentity(key))
-            },
-        )
+            })
     }
 }
 pub(super) mod missing_scope_index {

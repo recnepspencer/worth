@@ -30,7 +30,6 @@ impl BindingSet for Bindings {
 impl Scalar<Vec<String>> for Bindings {
     type Binding = NestedBinding;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = false;
 }
 pub(super) struct Entity;
 impl fragment::Entity for Entity {

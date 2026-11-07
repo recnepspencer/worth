@@ -1,3 +1,4 @@
+use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantError;
 use crate::domain_computation::primary_graph::tests::application_attempt::typed_invariant_refusal::schema::Account;
 use crate::domain_computation::primary_graph::tests::application_attempt::typed_invariant_refusal::schema::AccountOwner;
 use crate::domain_computation::primary_graph::tests::application_attempt::typed_invariant_refusal::schema::AccountStatus;
@@ -6,9 +7,7 @@ use crate::domain_computation::primary_graph::tests::application_attempt::typed_
 use worth_relational::facade::runtime::CustomInvariantLeaseBudget;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantContext;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantEntity;
-use worth_relational::facade::runtime::CustomInvariantExecutionError as WorthQueryApplicationInvariantExecutionError;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantFieldBinding;
-use worth_relational::facade::runtime::CustomInvariantPreparationError as WorthQueryApplicationInvariantPreparationError;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantRelationBinding;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantRule;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantSchemaResolver;
@@ -132,20 +131,20 @@ impl WorthQueryApplicationInvariantRule<RefusalSchema> for InstalledRule {
     fn prepare_scope(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, RefusalSchema>,
-    ) -> Result<Self::Scope, WorthQueryApplicationInvariantPreparationError> {
+    ) -> Result<Self::Scope, WorthQueryApplicationInvariantError<Refusal>> {
         let proposed = planner.proposed();
         let touched = proposed
             .touched_entities(&self.status)
-            .map_err(|e| WorthQueryApplicationInvariantPreparationError::new(e.to_string()))?;
+            .map_err(WorthQueryApplicationInvariantError::from)?;
         for entity in &touched {
             proposed
                 .field(&self.status, entity)
-                .map_err(|e| WorthQueryApplicationInvariantPreparationError::new(e.to_string()))?;
+                .map_err(WorthQueryApplicationInvariantError::from)?;
         }
         for entity in &touched {
             proposed
                 .relations_to(&self.owner, entity)
-                .map_err(|e| WorthQueryApplicationInvariantPreparationError::new(e.to_string()))?;
+                .map_err(WorthQueryApplicationInvariantError::from)?;
         }
         self.record_reads(ReadStage::Prepared, planner.reads());
         Ok(touched)
@@ -154,11 +153,9 @@ impl WorthQueryApplicationInvariantRule<RefusalSchema> for InstalledRule {
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, RefusalSchema>,
         budget: &dyn CustomInvariantLeaseBudget,
-    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantPreparationError>> {
+    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantError<Refusal>>> {
         if !budget.checkpoint(1) {
-            return Some(Err(WorthQueryApplicationInvariantPreparationError::new(
-                "stopped",
-            )));
+            return Some(Err(WorthQueryApplicationInvariantError::Stopped));
         }
         Some(self.prepare_scope(planner))
     }
@@ -168,7 +165,7 @@ impl WorthQueryApplicationInvariantRule<RefusalSchema> for InstalledRule {
         scope: &Self::Scope,
     ) -> Result<
         WorthQueryApplicationInvariantVerdict<Refusal>,
-        WorthQueryApplicationInvariantExecutionError,
+        WorthQueryApplicationInvariantError<Refusal>,
     > {
         self.evaluate_under(context, scope, None)
     }
@@ -180,7 +177,7 @@ impl WorthQueryApplicationInvariantRule<RefusalSchema> for InstalledRule {
     ) -> Option<
         Result<
             WorthQueryApplicationInvariantVerdict<Refusal>,
-            WorthQueryApplicationInvariantExecutionError,
+            WorthQueryApplicationInvariantError<Refusal>,
         >,
     > {
         Some(self.evaluate_under(context, scope, Some(budget)))
@@ -194,12 +191,12 @@ impl InstalledRule {
         budget: Option<&dyn CustomInvariantLeaseBudget>,
     ) -> Result<
         WorthQueryApplicationInvariantVerdict<Refusal>,
-        WorthQueryApplicationInvariantExecutionError,
+        WorthQueryApplicationInvariantError<Refusal>,
     > {
         self.record_reads(ReadStage::EvaluationStart, context.reads());
         for entity in scope {
             if budget.is_some_and(|b| !b.checkpoint(1)) {
-                return Err(WorthQueryApplicationInvariantExecutionError::new("stopped"));
+                return Err(WorthQueryApplicationInvariantError::Stopped);
             }
             self.read_status(context, entity)?;
             self.record_reads(ReadStage::FirstView, context.reads());
@@ -209,9 +206,9 @@ impl InstalledRule {
                 self.rule.visits.lock().unwrap().push(self.rule.ordinal);
                 if let Some(source) = &self.rule.cancellation {
                     source.cancel();
-                    return Err(WorthQueryApplicationInvariantExecutionError::new(
-                        "evaluation cancelled",
-                    ));
+                    return Err(WorthQueryApplicationInvariantError::MissingRequiredField {
+                        field: "evaluation cancelled",
+                    });
                 }
                 return Ok(WorthQueryApplicationInvariantVerdict::Violation(Refusal {
                     rule: self.rule.ordinal,
@@ -228,15 +225,19 @@ impl InstalledRule {
         &self,
         context: &WorthQueryApplicationInvariantContext<'_, '_, RefusalSchema>,
         entity: &WorthQueryApplicationInvariantEntity<RefusalSchema, Account>,
-    ) -> Result<String, WorthQueryApplicationInvariantExecutionError> {
+    ) -> Result<String, WorthQueryApplicationInvariantError<Refusal>> {
         let proposed = context.proposed();
         proposed
             .relations_to(&self.owner, entity)
-            .map_err(|e| WorthQueryApplicationInvariantExecutionError::new(e.to_string()))?;
+            .map_err(WorthQueryApplicationInvariantError::from)?;
         proposed
             .field(&self.status, entity)
-            .map_err(|e| WorthQueryApplicationInvariantExecutionError::new(e.to_string()))?
-            .ok_or_else(|| WorthQueryApplicationInvariantExecutionError::new("status absent"))
+            .map_err(WorthQueryApplicationInvariantError::from)?
+            .ok_or_else(
+                || WorthQueryApplicationInvariantError::MissingRequiredField {
+                    field: "status absent",
+                },
+            )
     }
 
     pub fn record_reads(&self, stage: ReadStage, reads: WorthQueryInvariantProjectionWork) {

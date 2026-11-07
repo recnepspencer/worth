@@ -64,8 +64,13 @@ pub fn children() -> ApplicationQueryResultRelationRef<
     ApplicationQueryResultRelationRef::forward_many("children", DerivedChildren::reference())
 }
 
-pub fn definition(
-) -> ApplicationQueryDefinition<CanonicalSchema, PageQuery, query::Parameters, PageRow, Derived> {
+pub fn definition() -> ApplicationQueryDefinitionBuilder<
+    CanonicalSchema,
+    PageQuery,
+    query::Parameters,
+    PageRow,
+    Derived,
+> {
     let child = ApplicationQueryResultShapeBuilder::<
         CanonicalSchema,
         PageQuery,
@@ -99,8 +104,6 @@ pub fn definition(
             ApplicationQueryOrderingDirection::Ascending,
         )
         .continue_by(children())
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<CanonicalSchema, PageQuery> for PageRow {
     fn project(

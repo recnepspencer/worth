@@ -83,8 +83,8 @@ impl<Schema: ApplicationSchema> ApplicationCorrectionVisitor<Schema>
             || self.association.disclosure_query_type()
                 != TypeId::of::<<Correction::Disclosure as ApplicationQueryBinding<Schema>>::Query>(
                 )
-            || self.association.declaration()
-                != &DeclaredCorrectionBinding::of::<Schema, Correction>()
+            || DeclaredCorrectionBinding::of::<Schema, Correction>().as_ref()
+                != Ok(self.association.declaration())
         {
             return Err(denied(
                 "typed correction differs from its installed association",

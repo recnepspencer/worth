@@ -34,7 +34,8 @@ worth_query_application_query!(pub Query for NumericSchema, identity "numeric-co
 fn output() -> ApplicationQueryResultFieldRef<Query, OutputSlot, NumericSchema, Calculated> {
     ApplicationQueryResultFieldRef::new("calculated", Calculated::at("Calculated"))
 }
-pub fn definition() -> ApplicationQueryDefinition<NumericSchema, Query, Parameters, Row, Number> {
+pub fn definition(
+) -> ApplicationQueryDefinitionBuilder<NumericSchema, Query, Parameters, Row, Number> {
     let shape = ApplicationQueryResultShapeBuilder::<
         NumericSchema,
         Query,
@@ -70,8 +71,6 @@ pub fn definition() -> ApplicationQueryDefinition<NumericSchema, Query, Paramete
         .public()
         .parameter(enabled_parameter())
         .where_equal(ReadEnabled::at("ReadEnabled"), enabled_parameter())
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<NumericSchema, Query> for Row {
     fn project(

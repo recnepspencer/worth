@@ -1,10 +1,9 @@
 use worth_query_declaration::facade::application_query::{
-    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryOrderingDirection,
-    ApplicationQueryParameterRef, ApplicationQueryReference, ApplicationQueryResultFieldRef,
-    ApplicationQueryResultRelationRef, ApplicationQueryResultShapeBuilder, ForwardResultTraversal,
-    ManyResults,
+    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
+    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryOrderingDirection, ApplicationQueryParameterRef, ApplicationQueryReference,
+    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
+    ApplicationQueryResultShapeBuilder, ForwardResultTraversal, ManyResults,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationEntityRef, U64ApplicationValueBinding,
@@ -90,7 +89,7 @@ fn account_parameter<Query>(
 fn definition(
     direction: ApplicationQueryOrderingDirection,
     output_name: &'static str,
-) -> ApplicationQueryDefinition<
+) -> ApplicationQueryDefinitionBuilder<
     QueryTestSchema,
     ActivityQuery,
     ActivityQueryParameters,
@@ -110,7 +109,7 @@ pub(super) fn definition_with_sequence_slot<
 >(
     direction: ApplicationQueryOrderingDirection,
     output_name: &'static str,
-) -> ApplicationQueryDefinition<
+) -> ApplicationQueryDefinitionBuilder<
     QueryTestSchema,
     ActivityQuery,
     ActivityQueryParameters,
@@ -140,7 +139,7 @@ fn definition_for<
     scope: ApplicationEntityRef<QueryTestSchema, Scope>,
     direction: ApplicationQueryOrderingDirection,
     output_name: &'static str,
-) -> ApplicationQueryDefinition<
+) -> ApplicationQueryDefinitionBuilder<
     QueryTestSchema,
     Query,
     ActivityQueryParameters,
@@ -206,8 +205,6 @@ where
         .parameter(account_parameter::<Query>())
         .where_equal(AccountId::at("AccountId"), account_parameter::<Query>())
         .order_by(sequence, direction)
-        .build()
-        .unwrap()
 }
 
 fn installed_schema() -> crate::facade::WorthQueryInstalledApplicationSchema<QueryTestSchema> {

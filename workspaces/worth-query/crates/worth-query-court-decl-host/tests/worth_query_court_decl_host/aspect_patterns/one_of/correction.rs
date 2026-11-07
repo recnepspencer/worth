@@ -24,17 +24,13 @@ impl ApplicationCorrectionBinding<Schema> for Restore {
         Ok(ApplicationQueryParameterSet::new())
     }
     fn mechanism() -> DeclaredCorrectionMechanism<Schema> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [
-                    DeclaredPreImageLocus::from_field(FirstValue::at("FirstValue"))
-                        .expect("record field"),
-                ],
-                // One UInt64 atom: eight payload bytes and one scalar tag.
-                9,
-            )
-            .unwrap(),
-        )
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [DeclaredPreImageLocus::from_field(FirstValue::at(
+                "FirstValue",
+            ))],
+            // One UInt64 atom: eight payload bytes and one scalar tag.
+            9,
+        ))
     }
     fn derive_correction(
         original: &authoring::Edit,
@@ -56,10 +52,9 @@ impl ApplicationCorrectionBinding<Schema> for Restore {
         let row = query::Row {
             class: 1,
             first: Some(
-                decode(
-                    DeclaredPreImageLocus::from_field(FirstValue::at("FirstValue"))
-                        .expect("record field"),
-                )?
+                decode(DeclaredPreImageLocus::from_field(FirstValue::at(
+                    "FirstValue",
+                )))?
                 .ok_or(MissingPreImage)?,
             ),
             second: None,

@@ -34,42 +34,42 @@ impl BindingSet for InputModelBindings {
 }
 impl Scalar<String> for InputModelBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<u64> for InputModelBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<Note> for InputModelBindings {
     type Binding = NoteCodec;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<WorthQueryExternalPrincipalIdentity> for InputModelBindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl Scalar<WorthQueryPrincipalMappingStatus> for InputModelBindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<ApplicationSigningGraphSubjectProvenance> for InputModelBindings {
     type Binding = ApplicationSigningGraphSubjectProvenanceBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl Scalar<ApplicationSigningSupersession> for InputModelBindings {
     type Binding = ApplicationSigningSupersessionBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl Scalar<ApplicationSigningSubjectProvenance> for InputModelBindings {
     type Binding = ApplicationSigningSubjectProvenanceBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 

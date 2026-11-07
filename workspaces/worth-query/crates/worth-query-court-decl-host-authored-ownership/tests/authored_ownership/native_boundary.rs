@@ -27,7 +27,9 @@ impl<B: Profile> Aspect for BoundaryPosition<B> {
 pub struct BoundaryRow<B>(u64, PhantomData<fn() -> B>);
 impl<B: Profile> fragment::Record<BoundaryRow<B>> for OwnershipModelBindings {
     fn record() -> impl Shape<BoundaryRow<B>, Self> {
-        let number = fragment::field("Number", |row: &BoundaryRow<B>| row.0).read_only();
+        let number = fragment::field("Number", |row: &BoundaryRow<B>| row.0)
+            .equality_queryable(true)
+            .read_only();
         let number = if B::UNIQUE { number.unique() } else { number };
         number.build(|number, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(BoundaryRow(number, PhantomData))
@@ -54,6 +56,7 @@ pub struct ForkRow(u64);
 impl fragment::Record<ForkRow> for OwnershipModelBindings {
     fn record() -> impl Shape<ForkRow, Self> {
         fragment::field("ForkNumber", |row: &ForkRow| row.0)
+            .equality_queryable(true)
             .read_only()
             .unique()
             .build(|number, _: &mut ValueDecodeAdmission<'_>| {

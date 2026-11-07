@@ -1,7 +1,7 @@
 //! Account summary query definitions: plain, scoped, governed and ordered.
 use super::*;
 
-pub fn account_summary_definition() -> ApplicationQueryDefinition<
+pub fn account_summary_definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     AccountSummaryQuery,
     AccountSummaryParameters,
@@ -17,7 +17,7 @@ pub fn account_summary_definition() -> ApplicationQueryDefinition<
     )
 }
 
-pub fn scoped_account_summary_definition() -> ApplicationQueryDefinition<
+pub fn scoped_account_summary_definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     ScopedAccountSummaryQuery,
     AccountSummaryParameters,
@@ -43,11 +43,9 @@ pub fn scoped_account_summary_definition() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .requires_ability(ViewAccount::reference())
-        .build()
-        .unwrap()
 }
 
-pub fn governed_account_summary_definition() -> ApplicationQueryDefinition<
+pub fn governed_account_summary_definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     GovernedAccountSummaryQuery,
     AccountSummaryParameters,
@@ -82,7 +80,7 @@ pub fn governed_account_summary_definition() -> ApplicationQueryDefinition<
     )
 }
 
-pub fn ordered_account_summary_definition() -> ApplicationQueryDefinition<
+pub fn ordered_account_summary_definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     OrderedAccountSummaryQuery,
     AccountSummaryParameters,

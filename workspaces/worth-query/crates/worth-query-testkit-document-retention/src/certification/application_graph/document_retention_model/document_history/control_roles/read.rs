@@ -87,9 +87,13 @@ impl ApplicationQueryBinding<DocumentRetentionSchema> for Binding {
         DocumentPrincipalBinding::reference()
     }
 }
-pub fn definition(
-) -> ApplicationQueryDefinition<DocumentRetentionSchema, Query, Input, Row, WorkflowAuthoringGrant>
-{
+pub fn definition() -> ApplicationQueryDefinitionBuilder<
+    DocumentRetentionSchema,
+    Query,
+    Input,
+    Row,
+    WorkflowAuthoringGrant,
+> {
     let shape = ApplicationQueryResultShapeBuilder::<
         DocumentRetentionSchema,
         Query,
@@ -113,8 +117,6 @@ pub fn definition(
             WorkflowGrantIdentityField::at("WorkflowGrantIdentityField"),
             parameter(),
         )
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<DocumentRetentionSchema, Query> for Row {
     fn project(

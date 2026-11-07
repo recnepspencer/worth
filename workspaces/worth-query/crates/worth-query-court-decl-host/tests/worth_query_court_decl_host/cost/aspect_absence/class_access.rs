@@ -14,7 +14,7 @@ trait Actions<W> {
 }
 impl<A, EP, AP> Actions<(EP, AP)> for Option<A>
 where
-    A: fragment::Aspect<Row = u64>
+    A: fragment::Aspect<Row = ClassValue>
         + In<<ClassModel as fragment::Fragment>::Members, (EP, AP), (ClassModel, Record)>,
 {
     fn grant(

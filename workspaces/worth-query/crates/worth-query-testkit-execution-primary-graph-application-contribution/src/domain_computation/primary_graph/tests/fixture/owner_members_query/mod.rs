@@ -62,7 +62,7 @@ impl WorthQueryApplicationProjection<IdentityExecutionSchema, OwnerMembersQuery>
         })
     }
 }
-pub fn definition() -> ApplicationQueryDefinition<
+pub fn definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     OwnerMembersQuery,
     AccountSummaryParameters,
@@ -95,6 +95,4 @@ pub fn definition() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }

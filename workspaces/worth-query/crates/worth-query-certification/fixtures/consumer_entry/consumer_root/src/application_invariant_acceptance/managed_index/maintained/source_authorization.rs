@@ -67,9 +67,7 @@ pub(super) fn declare(
     .order_by(
         ordinary::identity(),
         ApplicationQueryOrderingDirection::Descending,
-    )
-    .build()
-    .unwrap();
+    );
     let native = ordinary::authoring(
         NativeParent::reference(),
         ApplicationQueryLaneEligibility::one_shot(),
@@ -80,9 +78,7 @@ pub(super) fn declare(
     .order_by(
         ordinary::identity(),
         ApplicationQueryOrderingDirection::Ascending,
-    )
-    .build()
-    .unwrap();
+    );
     let completed = ordinary::authoring(
         CompletedParent::reference(),
         ApplicationQueryLaneEligibility::one_shot(),
@@ -93,9 +89,7 @@ pub(super) fn declare(
     .order_by(
         ordinary::identity(),
         ApplicationQueryOrderingDirection::Ascending,
-    )
-    .build()
-    .unwrap();
+    );
     schema
         .application_query(source)
         .application_query_binding::<SourceBinding>()

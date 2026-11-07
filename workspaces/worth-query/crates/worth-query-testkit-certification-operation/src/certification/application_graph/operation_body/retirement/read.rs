@@ -27,7 +27,7 @@ pub fn identity<S: BodySchemaBinding>(
 ) -> ApplicationQueryResultFieldRef<SnapshotQuery, IdentitySlot, S, SnapshotIdentity> {
     ApplicationQueryResultFieldRef::new("identity", SnapshotIdentity::at("SnapshotIdentity"))
 }
-pub fn definition<const M: u64>() -> ApplicationQueryDefinition<
+pub fn definition<const M: u64>() -> ApplicationQueryDefinitionBuilder<
     DocumentRetentionSchema<M>,
     SnapshotQuery,
     DocumentQueryParameters,
@@ -52,8 +52,6 @@ pub fn definition<const M: u64>() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl<const M: u64> WorthQueryApplicationProjection<DocumentRetentionSchema<M>, SnapshotQuery>
     for SnapshotRow

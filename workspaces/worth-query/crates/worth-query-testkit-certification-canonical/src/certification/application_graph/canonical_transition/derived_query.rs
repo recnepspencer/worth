@@ -20,7 +20,8 @@ pub fn value_field(
 }
 
 pub fn definition(
-) -> ApplicationQueryDefinition<CanonicalSchema, ValueQuery, Parameters, DerivedValue, Derived> {
+) -> ApplicationQueryDefinitionBuilder<CanonicalSchema, ValueQuery, Parameters, DerivedValue, Derived>
+{
     let shape = ApplicationQueryResultShapeBuilder::<
         CanonicalSchema,
         ValueQuery,
@@ -39,8 +40,6 @@ pub fn definition(
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<CanonicalSchema, ValueQuery> for DerivedValue {
     fn project(

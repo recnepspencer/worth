@@ -20,7 +20,7 @@ worth_query_portable_type!(IdSlot => "relation-only-inverse.id-slot.v1");
 fn id() -> ApplicationQueryResultFieldRef<Query, IdSlot, Schema, Id> {
     ApplicationQueryResultFieldRef::new("id", Id::at("Id"))
 }
-pub fn definition() -> ApplicationQueryDefinition<Schema, Query, Parameters, Row, Node> {
+pub fn definition() -> ApplicationQueryDefinitionBuilder<Schema, Query, Parameters, Row, Node> {
     ApplicationQueryDefinitionBuilder::declare(Query::reference())
         .root(Node::reference())
         .scope(Node::reference())
@@ -34,8 +34,6 @@ pub fn definition() -> ApplicationQueryDefinition<Schema, Query, Parameters, Row
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<Schema, Query> for Row {
     fn project(

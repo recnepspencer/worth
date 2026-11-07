@@ -140,7 +140,7 @@ where
         || association.inverse_type() != TypeId::of::<ApplicationInverseBinding<Schema, C>>()
         || association.disclosure_query_type()
             != TypeId::of::<<Disclosure<Schema, C> as ApplicationQueryBinding<Schema>>::Query>()
-        || association.declaration() != &DeclaredCorrectionBinding::of::<Schema, C>()
+        || DeclaredCorrectionBinding::of::<Schema, C>().as_ref() != Ok(association.declaration())
     {
         return Err(Denial::UnsupportedSourceMeaning);
     }

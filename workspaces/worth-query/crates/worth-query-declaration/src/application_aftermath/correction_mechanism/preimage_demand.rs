@@ -6,6 +6,7 @@ pub struct DeclaredPreImageDemand<Schema> {
     loci: Vec<DeclaredPreImageLocus<Schema>>,
     relations: Vec<super::DeclaredPreImageRelationLocus<Schema>>,
     maximum_encoded_bytes: usize,
+    created_entity: bool,
 }
 
 impl<Schema> DeclaredPreImageDemand<Schema> {
@@ -14,59 +15,63 @@ impl<Schema> DeclaredPreImageDemand<Schema> {
             loci: Vec::new(),
             relations: Vec::new(),
             maximum_encoded_bytes: 0,
+            created_entity: true,
         }
     }
+    /// Records a demand expression; operation association checks its bounds.
     pub fn new(
         loci: impl IntoIterator<Item = DeclaredPreImageLocus<Schema>>,
         maximum_encoded_bytes: usize,
-    ) -> Result<Self, DeclaredPreImageDemandDenial> {
-        let loci = loci.into_iter().collect::<Vec<_>>();
-        validate_preimage_demand(&loci, maximum_encoded_bytes)?;
-        Ok(Self {
-            loci,
+    ) -> Self {
+        Self {
+            loci: loci.into_iter().collect(),
             relations: Vec::new(),
             maximum_encoded_bytes,
-        })
+            created_entity: false,
+        }
     }
 
     /// A relation-only inverse has no field correlation role.
     pub fn relations_only(
         relations: impl IntoIterator<Item = super::DeclaredPreImageRelationLocus<Schema>>,
         maximum_encoded_bytes: usize,
-    ) -> Result<Self, DeclaredPreImageDemandDenial> {
-        Self {
-            loci: Vec::new(),
-            relations: Vec::new(),
-            maximum_encoded_bytes,
-        }
-        .with_relations(relations)
+    ) -> Self {
+        Self::new([], maximum_encoded_bytes).with_relations(relations)
     }
 
-    /// Capture exact prior endpoints for each declared relation kind changed by this actor.
+    /// Records exact prior endpoints for each relation kind changed by this actor.
     pub fn with_relations(
         mut self,
         relations: impl IntoIterator<Item = super::DeclaredPreImageRelationLocus<Schema>>,
-    ) -> Result<Self, DeclaredPreImageDemandDenial> {
-        let relations = relations.into_iter().collect::<Vec<_>>();
-        if self.loci.is_empty() && relations.is_empty() {
+    ) -> Self {
+        self.created_entity = false;
+        self.relations = relations.into_iter().collect();
+        self
+    }
+
+    pub(crate) fn validate(&self) -> Result<(), DeclaredPreImageDemandDenial> {
+        if self.created_entity {
+            return Ok(());
+        }
+        if self.loci.is_empty() && self.relations.is_empty() {
             return Err(DeclaredPreImageDemandDenial::EmptyDemand);
         }
         if self.maximum_encoded_bytes == 0 {
             return Err(DeclaredPreImageDemandDenial::ZeroByteBound);
         }
-        for (index, locus) in relations.iter().enumerate() {
+        validate_loci(&self.loci)?;
+        for (index, locus) in self.relations.iter().enumerate() {
             if locus.relation().trim().is_empty()
                 || locus.from().trim().is_empty()
                 || locus.to().trim().is_empty()
             {
                 return Err(DeclaredPreImageDemandDenial::EmptyLocusAxis);
             }
-            if relations[..index].contains(locus) {
+            if self.relations[..index].contains(locus) {
                 return Err(DeclaredPreImageDemandDenial::DuplicateLocus);
             }
         }
-        self.relations = relations;
-        Ok(self)
+        Ok(())
     }
     pub fn relations(&self) -> &[super::DeclaredPreImageRelationLocus<Schema>] {
         &self.relations
@@ -97,16 +102,9 @@ impl<Schema> DeclaredPreImageDemand<Schema> {
     }
 }
 
-fn validate_preimage_demand<Schema>(
+fn validate_loci<Schema>(
     loci: &[DeclaredPreImageLocus<Schema>],
-    maximum_encoded_bytes: usize,
 ) -> Result<(), DeclaredPreImageDemandDenial> {
-    if loci.is_empty() {
-        return Err(DeclaredPreImageDemandDenial::EmptyDemand);
-    }
-    if maximum_encoded_bytes == 0 {
-        return Err(DeclaredPreImageDemandDenial::ZeroByteBound);
-    }
     if loci.iter().any(|locus| {
         locus.entity().trim().is_empty()
             || locus.aspect().trim().is_empty()
@@ -130,6 +128,7 @@ impl<Schema> Clone for DeclaredPreImageDemand<Schema> {
             loci: self.loci.clone(),
             relations: self.relations.clone(),
             maximum_encoded_bytes: self.maximum_encoded_bytes,
+            created_entity: self.created_entity,
         }
     }
 }
@@ -141,6 +140,7 @@ impl<Schema> fmt::Debug for DeclaredPreImageDemand<Schema> {
             .field("loci", &self.loci)
             .field("relations", &self.relations)
             .field("maximum_encoded_bytes", &self.maximum_encoded_bytes)
+            .field("created_entity", &self.created_entity)
             .finish()
     }
 }
@@ -150,6 +150,7 @@ impl<Schema> PartialEq for DeclaredPreImageDemand<Schema> {
         self.loci == other.loci
             && self.relations == other.relations
             && self.maximum_encoded_bytes == other.maximum_encoded_bytes
+            && self.created_entity == other.created_entity
     }
 }
 
@@ -163,11 +164,18 @@ impl<Schema> PartialOrd for DeclaredPreImageDemand<Schema> {
 
 impl<Schema> Ord for DeclaredPreImageDemand<Schema> {
     fn cmp(&self, other: &Self) -> Ordering {
-        (&self.loci, &self.relations, self.maximum_encoded_bytes).cmp(&(
-            &other.loci,
-            &other.relations,
-            other.maximum_encoded_bytes,
-        ))
+        (
+            &self.loci,
+            &self.relations,
+            self.maximum_encoded_bytes,
+            self.created_entity,
+        )
+            .cmp(&(
+                &other.loci,
+                &other.relations,
+                other.maximum_encoded_bytes,
+                other.created_entity,
+            ))
     }
 }
 
@@ -177,5 +185,4 @@ pub enum DeclaredPreImageDemandDenial {
     EmptyLocusAxis,
     ZeroByteBound,
     DuplicateLocus,
-    MultipleEntityRoles,
 }

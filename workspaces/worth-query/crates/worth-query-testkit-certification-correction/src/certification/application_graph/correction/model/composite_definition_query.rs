@@ -39,8 +39,8 @@ pub fn lifecycle_field(
 ) -> ApplicationQueryResultFieldRef<ReadQuery, LifecycleSlot, NumericSchema, Ceiling> {
     ApplicationQueryResultFieldRef::new("lifecycle", Ceiling::at("Ceiling"))
 }
-pub fn definition() -> ApplicationQueryDefinition<NumericSchema, ReadQuery, Parameters, Row, Number>
-{
+pub fn definition(
+) -> ApplicationQueryDefinitionBuilder<NumericSchema, ReadQuery, Parameters, Row, Number> {
     let shape = ApplicationQueryResultShapeBuilder::<
         NumericSchema,
         ReadQuery,
@@ -62,8 +62,6 @@ pub fn definition() -> ApplicationQueryDefinition<NumericSchema, ReadQuery, Para
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<NumericSchema, ReadQuery> for Row {
     fn project(
