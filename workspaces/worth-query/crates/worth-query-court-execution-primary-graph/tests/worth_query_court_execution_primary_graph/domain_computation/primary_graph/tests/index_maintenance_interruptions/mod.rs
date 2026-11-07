@@ -152,7 +152,9 @@ pub fn refresh_stop(
     use worth_query_execution::facade::integration::WorthQueryPrimaryGraphIndexRefreshDenialKind as Denial;
     match denial.kind() {
         Denial::Execution(stop) => Some(stop),
-        Denial::MissingCommittedMutation | Denial::IndexBuildRejected => None,
+        Denial::MissingCommittedMutation
+        | Denial::IndexBuildRejected
+        | Denial::IndexPredecessorUnavailable => None,
     }
 }
 

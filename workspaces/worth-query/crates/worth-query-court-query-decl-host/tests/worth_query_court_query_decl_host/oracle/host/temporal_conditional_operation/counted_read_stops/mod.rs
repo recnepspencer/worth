@@ -98,7 +98,8 @@ fn conditional_operation_work_stop_terminal_matches_its_typed_cause() {
             Cause::BridgeConditional(worth_runtime_bridge::facade::BridgeConditionalDenialKind::ExecutionDenied(
                 worth_runtime_bridge::facade::BridgeExecutionDenial::WorkCeiling,
             )) | Cause::ApplicationExecutionDenied {
-                stage: graph::WorthQueryApplicationCommitDenialStage::DecisionReadSet
+                stage: graph::WorthQueryApplicationCommitDenialStage::Idempotency
+                    | graph::WorthQueryApplicationCommitDenialStage::DecisionReadSet
                     | graph::WorthQueryApplicationCommitDenialStage::InvariantExecution
                     // The domain write seal charges each realized effect.
                     | graph::WorthQueryApplicationCommitDenialStage::EffectLowering,

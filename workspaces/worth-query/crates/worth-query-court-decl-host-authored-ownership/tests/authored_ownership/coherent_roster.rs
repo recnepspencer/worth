@@ -177,7 +177,7 @@ pub(super) fn corrupt_current(
     change: u8,
 ) -> WorthQueryApplicationCheckpoint {
     let bytes = checkpoint.bytes();
-    let magic = b"WORTH-REL-CHK18\n";
+    let magic = b"WORTH-REL-CHK20\n";
     let start = bytes.windows(magic.len()).position(|b| b == magic).unwrap();
     let length = u64::from_be_bytes(bytes[start - 16..start - 8].try_into().unwrap()) as usize;
     let native =
