@@ -52,13 +52,17 @@ pub(crate) fn capture_region_members(
                     checkpoint,
                 )?,
                 adjacency_kinds: capture_kinds(
+                    lane,
                     &partition.adjacency,
                     AdjacencyKindBasis::Historical,
-                ),
+                    checkpoint,
+                )?,
                 reverse_adjacency_kinds: capture_kinds(
+                    lane,
                     &partition.reverse_adjacency,
                     AdjacencyKindBasis::Historical,
-                ),
+                    checkpoint,
+                )?,
                 entities: super::history_capture::split_rows(
                     &partition.entity_arena,
                     &mut image.entity_arena.metadata_history,
@@ -80,11 +84,18 @@ pub(crate) fn capture_region_members(
                 history_frontiers: commitment
                     .history_frontiers(partition)
                     .ok_or(Cause::Damaged)?,
-                adjacency_kinds: capture_kinds(&partition.adjacency, AdjacencyKindBasis::Current),
+                adjacency_kinds: capture_kinds(
+                    lane,
+                    &partition.adjacency,
+                    AdjacencyKindBasis::Current,
+                    checkpoint,
+                )?,
                 reverse_adjacency_kinds: capture_kinds(
+                    lane,
                     &partition.reverse_adjacency,
                     AdjacencyKindBasis::Current,
-                ),
+                    checkpoint,
+                )?,
             };
             let bases = history.direct_bases();
             let history = RelationalRegionImage::encode(
@@ -128,18 +139,39 @@ pub(crate) fn capture_region_members(
 }
 
 pub(super) fn capture_kinds(
+    lane: &ReconstructionLane<'_>,
     table: &crate::storage::partition::SparseAdjacencyTable,
     basis: AdjacencyKindBasis,
-) -> Vec<RegionAdjacencyKinds> {
-    table
-        .iter()
-        .map(|(&slot, adjacency)| RegionAdjacencyKinds {
+    checkpoint: &mut super::kind_projection::ProjectionCheckpoint<'_>,
+) -> Result<Vec<RegionAdjacencyKinds>, Cause> {
+    let entries = table.iter();
+    let bytes = entries
+        .len()
+        .checked_mul(size_of::<RegionAdjacencyKinds>())
+        .and_then(|bytes| u64::try_from(bytes).ok())
+        .ok_or(Cause::MemoryExhausted)?;
+    checkpoint(0, bytes)?;
+    let mut answer = Vec::new();
+    answer
+        .try_reserve_exact(entries.len())
+        .map_err(|_| Cause::MemoryExhausted)?;
+    for (&slot, adjacency) in entries {
+        checkpoint(1, 0)?;
+        let mut kinds = adjacency.checkpoint_kind_memberships(lane, basis, checkpoint)?;
+        // Compact empty kinds in place while preserving the ordered image.
+        let mut retained = 0;
+        for index in 0..kinds.len() {
+            checkpoint(1, 0)?;
+            if !kinds[index].1.is_empty() {
+                kinds.swap(retained, index);
+                retained += 1;
+            }
+        }
+        kinds.truncate(retained);
+        answer.push(RegionAdjacencyKinds {
             slot: slot as u64,
-            kinds: adjacency
-                .checkpoint_kind_memberships(basis)
-                .into_iter()
-                .filter(|(_, ids)| !ids.is_empty())
-                .collect(),
-        })
-        .collect()
+            kinds,
+        });
+    }
+    Ok(answer)
 }

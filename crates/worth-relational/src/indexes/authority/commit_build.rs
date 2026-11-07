@@ -1,18 +1,7 @@
 use super::*;
 
 impl<'runtime> IndexAuthority<'runtime> {
-    /// Explicit recovery: build using the allocation authority and lease budget of the caller's request.
-    pub fn build_for_commit(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        request: DerivedIndexBuildRequest,
-    ) -> DerivedIndexBuildOutcome {
-        super::recovery_build::reconstruct(request, |request, lane| {
-            self.reconstruct_commit_image(execution, request, lane)
-        })
-    }
-
-    fn reconstruct_commit_image(
+    pub(super) fn reconstruct_commit_image(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: DerivedIndexBuildRequest,

@@ -21,67 +21,73 @@ pub(super) fn load_head(
     limit: u64,
 ) -> Result<Arc<ResidentRegion>, Failure> {
     ReconstructionLane::enter_reconstruction(|lane| {
-        let (mut partition, frontiers, mut historical) = (|| -> Result<_, Cause> {
-            check_member_limit(cold.head.length, limit)?;
-            let bytes = cold.source.read_member(cold.head, limit)?;
-            let frame = RelationalRegionImage::decode(
-                &bytes,
-                cold.head,
-                cold.partition_id,
-                cold.schema_carrier_digest,
-                RelationalRegionImageKind::Head,
-            )?;
-            let head: RegionHeadImage =
-                rmp_serde::from_slice(frame.payload).map_err(|_| Cause::Damaged)?;
-            super::kind_commitment::verify(lane, &head.kind_projection, cold.kind_authority.head)?;
-            super::kind_commitment::verify(
-                lane,
-                &head.history_kind_projection,
-                cold.kind_authority.history,
-            )?;
-            if head.partition.partition_id != cold.partition_id {
-                return Err(Cause::Damaged);
-            }
-            if head.partition.entity_arena.metadata_history.len()
-                != head.partition.entity_arena.generations.len()
-                || head.partition.relation_arena.metadata_history.len()
-                    != head.partition.relation_arena.generations.len()
-            {
-                return Err(Cause::Damaged);
-            }
-            let contracts = contracts(cold)?;
-            let mut partition =
-                partition_from_image(head.partition, cold.schema.aspect_plans(), &contracts)
-                    .map_err(|_| Cause::Damaged)?;
-            super::kind_projection::rebuild(
-                lane,
-                &mut partition,
-                &head.kind_projection,
-                AdjacencyKindBasis::Current,
-            )?;
-            verify_buckets(
-                &partition,
-                &head.adjacency_kinds,
-                &head.reverse_adjacency_kinds,
-                AdjacencyKindBasis::Current,
-            )?;
-            super::kind_projection::rebuild_head_history(
-                lane,
-                &mut partition,
-                &head.history_kind_projection,
-            )?;
-            let mut historical = BTreeMap::<usize, Vec<_>>::new();
-            for claim in head.history_kind_projection {
-                if claim.relation.partition_id == cold.partition_id {
-                    historical
-                        .entry(claim.relation.slot_index())
-                        .or_default()
-                        .push(claim);
+        let (mut partition, frontiers, mut historical) =
+            super::kind_admission::recover(lane, execution, cold.partition_id, |checkpoint, _| {
+                check_member_limit(cold.head.length, limit)?;
+                let bytes = cold.source.read_member(cold.head, limit)?;
+                let frame = RelationalRegionImage::decode(
+                    &bytes,
+                    cold.head,
+                    cold.partition_id,
+                    cold.schema_carrier_digest,
+                    RelationalRegionImageKind::Head,
+                )?;
+                let head: RegionHeadImage =
+                    rmp_serde::from_slice(frame.payload).map_err(|_| Cause::Damaged)?;
+                super::kind_commitment::verify(
+                    lane,
+                    &head.kind_projection,
+                    cold.kind_authority.head,
+                )?;
+                super::kind_commitment::verify(
+                    lane,
+                    &head.history_kind_projection,
+                    cold.kind_authority.history,
+                )?;
+                if head.partition.partition_id != cold.partition_id {
+                    return Err(Cause::Damaged);
                 }
-            }
-            Ok((partition, head.history_frontiers, historical))
-        })()
-        .map_err(|cause| unavailable(cold, cause))?;
+                if head.partition.entity_arena.metadata_history.len()
+                    != head.partition.entity_arena.generations.len()
+                    || head.partition.relation_arena.metadata_history.len()
+                        != head.partition.relation_arena.generations.len()
+                {
+                    return Err(Cause::Damaged);
+                }
+                let contracts = contracts(cold)?;
+                let mut partition =
+                    partition_from_image(head.partition, cold.schema.aspect_plans(), &contracts)
+                        .map_err(|_| Cause::Damaged)?;
+                super::kind_projection::rebuild(
+                    lane,
+                    &mut partition,
+                    &head.kind_projection,
+                    AdjacencyKindBasis::Current,
+                )?;
+                verify_buckets(
+                    lane,
+                    &partition,
+                    &head.adjacency_kinds,
+                    &head.reverse_adjacency_kinds,
+                    AdjacencyKindBasis::Current,
+                    checkpoint,
+                )?;
+                super::kind_projection::rebuild_head_history(
+                    lane,
+                    &mut partition,
+                    &head.history_kind_projection,
+                )?;
+                let mut historical = BTreeMap::<usize, Vec<_>>::new();
+                for claim in head.history_kind_projection {
+                    if claim.relation.partition_id == cold.partition_id {
+                        historical
+                            .entry(claim.relation.slot_index())
+                            .or_default()
+                            .push(claim);
+                    }
+                }
+                Ok((partition, head.history_frontiers, historical))
+            })?;
         let requirements =
             super::required_symbols::CapturedSymbolRequirements::capture(lane, &partition, false);
         cold.symbols.demand_symbol_ids(
@@ -173,48 +179,51 @@ pub(super) fn load_full(
             history.relations.len(),
         )?;
         drop(folder);
-        let partition = (|| -> Result<_, Cause> {
-            let contracts = contracts(cold)?;
-            let mut image = partition_to_image_with_contracts(
-                head.partition.clone(),
-                cold.schema.aspect_plans(),
-                &contracts,
-            )
-            .map_err(|_| Cause::Damaged)?;
-            for (current, mut earlier) in
-                image.entity_arena.metadata_history.iter_mut().zip(entities)
-            {
-                earlier.append(current);
-                *current = earlier;
-            }
-            for (current, mut earlier) in image
-                .relation_arena
-                .metadata_history
-                .iter_mut()
-                .zip(relations)
-            {
-                earlier.append(current);
-                *current = earlier;
-            }
-            let mut partition = partition_from_image(image, cold.schema.aspect_plans(), &contracts)
+        let partition =
+            super::kind_admission::recover(lane, execution, cold.partition_id, |checkpoint, _| {
+                let contracts = contracts(cold)?;
+                let mut image = partition_to_image_with_contracts(
+                    head.partition.clone(),
+                    cold.schema.aspect_plans(),
+                    &contracts,
+                )
                 .map_err(|_| Cause::Damaged)?;
-            partition.adjacency = head.partition.adjacency.clone();
-            partition.reverse_adjacency = head.partition.reverse_adjacency.clone();
-            super::kind_projection::rebuild(
-                lane,
-                &mut partition,
-                &history.kind_projection,
-                AdjacencyKindBasis::Historical,
-            )?;
-            verify_buckets(
-                &partition,
-                &history.adjacency_kinds,
-                &history.reverse_adjacency_kinds,
-                AdjacencyKindBasis::Historical,
-            )?;
-            Ok(partition)
-        })()
-        .map_err(|cause| unavailable(cold, cause))?;
+                for (current, mut earlier) in
+                    image.entity_arena.metadata_history.iter_mut().zip(entities)
+                {
+                    earlier.append(current);
+                    *current = earlier;
+                }
+                for (current, mut earlier) in image
+                    .relation_arena
+                    .metadata_history
+                    .iter_mut()
+                    .zip(relations)
+                {
+                    earlier.append(current);
+                    *current = earlier;
+                }
+                let mut partition =
+                    partition_from_image(image, cold.schema.aspect_plans(), &contracts)
+                        .map_err(|_| Cause::Damaged)?;
+                partition.adjacency = head.partition.adjacency.clone();
+                partition.reverse_adjacency = head.partition.reverse_adjacency.clone();
+                super::kind_projection::rebuild(
+                    lane,
+                    &mut partition,
+                    &history.kind_projection,
+                    AdjacencyKindBasis::Historical,
+                )?;
+                verify_buckets(
+                    lane,
+                    &partition,
+                    &history.adjacency_kinds,
+                    &history.reverse_adjacency_kinds,
+                    AdjacencyKindBasis::Historical,
+                    checkpoint,
+                )?;
+                Ok(partition)
+            })?;
         let requirements =
             super::required_symbols::CapturedSymbolRequirements::capture(lane, &partition, true);
         cold.symbols.demand_symbol_ids(
@@ -316,13 +325,21 @@ fn verify_leaf(
 }
 
 fn verify_buckets(
+    lane: &ReconstructionLane<'_>,
     partition: &PartitionState,
     outgoing: &[RegionAdjacencyKinds],
     incoming: &[RegionAdjacencyKinds],
     basis: AdjacencyKindBasis,
+    checkpoint: &mut super::kind_projection::ProjectionCheckpoint<'_>,
 ) -> Result<(), Cause> {
-    if super::region_capture::capture_kinds(&partition.adjacency, basis) != outgoing
-        || super::region_capture::capture_kinds(&partition.reverse_adjacency, basis) != incoming
+    if super::region_capture::capture_kinds(lane, &partition.adjacency, basis, checkpoint)?
+        != outgoing
+        || super::region_capture::capture_kinds(
+            lane,
+            &partition.reverse_adjacency,
+            basis,
+            checkpoint,
+        )? != incoming
     {
         return Err(Cause::IntegrityMismatch);
     }

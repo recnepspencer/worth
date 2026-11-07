@@ -10,21 +10,7 @@ use super::{
 };
 
 impl IndexAuthority<'_> {
-    /// Explicit recovery: build against the exact immutable root already carried by an admitted
-    /// owner basis. This path performs no historical retention reacquisition.
-    /// The caller's request supplies allocation authority and its lease budget.
-    pub fn build_for_basis(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        request: DerivedIndexBuildRequest,
-        basis: &AdmittedRelationalBranchBasis,
-    ) -> DerivedIndexBuildOutcome {
-        super::recovery_build::reconstruct(request, |request, lane| {
-            self.reconstruct_basis_image(execution, request, basis, lane)
-        })
-    }
-
-    fn reconstruct_basis_image(
+    pub(super) fn reconstruct_basis_image(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: DerivedIndexBuildRequest,

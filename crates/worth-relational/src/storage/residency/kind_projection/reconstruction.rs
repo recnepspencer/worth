@@ -21,7 +21,7 @@ pub(in crate::storage::residency) fn rebuild(
 }
 
 pub(in crate::storage::residency) fn rebuild_controlled(
-    _lane: &ReconstructionLane<'_>,
+    lane: &ReconstructionLane<'_>,
     partition: &mut PartitionState,
     projection: &[RegionRelationProjection],
     basis: AdjacencyKindBasis,
@@ -55,7 +55,7 @@ pub(in crate::storage::residency) fn rebuild_controlled(
             return Err(Cause::IntegrityMismatch);
         }
     }
-    install_projection(partition, &expected, basis, checkpoint, retain)?;
+    install_projection(lane, partition, &expected, basis, checkpoint, retain)?;
     if !historical {
         for entry in expected
             .values()
@@ -90,7 +90,7 @@ pub(in crate::storage::residency) fn rebuild_controlled(
 /// The digest is authenticated by the caller. Head can corroborate current
 /// owned claims; Full must later reconstruct all owned historical claims.
 pub(in crate::storage::residency) fn rebuild_head_history(
-    _lane: &ReconstructionLane<'_>,
+    lane: &ReconstructionLane<'_>,
     partition: &mut PartitionState,
     projection: &[RegionRelationProjection],
 ) -> Result<(), Cause> {
@@ -114,6 +114,7 @@ pub(in crate::storage::residency) fn rebuild_head_history(
         }
     }
     install_projection(
+        lane,
         partition,
         &expected,
         AdjacencyKindBasis::Historical,
@@ -123,6 +124,7 @@ pub(in crate::storage::residency) fn rebuild_head_history(
 }
 
 fn install_projection(
+    lane: &ReconstructionLane<'_>,
     partition: &mut PartitionState,
     expected: &BTreeMap<RelationId, RegionRelationProjection>,
     basis: AdjacencyKindBasis,
@@ -187,7 +189,7 @@ fn install_projection(
             for (_, adjacency) in table.iter() {
                 let ids: BTreeSet<_> = adjacency.current_ids().iter().copied().collect();
                 let indexed: BTreeSet<_> = adjacency
-                    .checkpoint_kind_memberships(basis)
+                    .checkpoint_kind_memberships(lane, basis, checkpoint)?
                     .into_iter()
                     .flat_map(|(_, ids)| ids)
                     .collect();
