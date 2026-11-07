@@ -41,6 +41,7 @@ pub(crate) struct RelationalColdRegion {
 
 #[derive(Debug)]
 pub(crate) struct ResidentRegion {
+    pub(super) history_presence: super::history_presence::HistoryPresence,
     pub(super) partition: PartitionState,
     pub(super) commitment: Option<PartitionContentCommitment>,
     pub(super) kind_indexes: Option<Arc<super::kind_incremental::RegionKindIndexes>>,
@@ -137,6 +138,7 @@ impl RelationalRegionResidency {
         kind_indexes: Option<Arc<super::kind_incremental::RegionKindIndexes>>,
     ) -> RelationalResidencyLease<Full> {
         let region = Arc::new(ResidentRegion {
+            history_presence: super::history_presence::HistoryPresence::complete(),
             partition,
             commitment,
             kind_indexes,

@@ -10,3 +10,8 @@ crates/worth-relational/src/storage/residency/checkpoint_kind_images.rs
 crates/worth-relational/src/storage/residency/region_initialization.rs
 # Generic certification oracle; never a production fallback.
 crates/worth-testkit-relational/src/maintenance.rs
+# Verified schema transition, explicit recovery, and transported index checks.
+crates/worth-relational/src/indexes/authority/maintenance/schema_transition.rs
+crates/worth-relational/src/indexes/authority/maintenance/recovery.rs
+crates/worth-relational/src/indexes/authority/recovery_build.rs
+crates/worth-relational/src/indexes/authority/checkpoint_admission.rs

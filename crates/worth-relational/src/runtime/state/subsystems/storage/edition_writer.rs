@@ -167,12 +167,12 @@ impl<'subsystem> PartitionEditionWriter<'subsystem> {
         readmission: ResidentHistoryReadmission,
         transform: impl FnOnce(PartitionState) -> PartitionState,
     ) {
-        self.begin_current_target_edit(target, readmission);
+        self.begin_current_target_edit(target, readmission.clone());
         let TargetEdit { target, edit } = self
             .edits
             .remove(&target.partition_id())
             .expect(/* Proof: Accepted target creation registers this partition edit in its owning edition writer; the private target retains that writer identity and extraction consumes the registered edit once. */ "this writer owns the accepted resident target edit");
-        let edit = edit.transform(transform);
+        let edit = edit.transform(readmission, transform);
         self.edits
             .insert(target.partition_id(), TargetEdit { target, edit });
     }

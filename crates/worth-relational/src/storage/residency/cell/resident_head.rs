@@ -13,28 +13,38 @@ impl RelationalRegionResidency {
         partition: PartitionState,
         commitment: PartitionContentCommitment,
         kind_indexes: Arc<super::super::kind_incremental::RegionKindIndexes>,
+        history_presence: super::super::history_presence::HistoryPresence,
         schema: Arc<RelationalBranchRootSchemaAuthority>,
         symbols: &crate::runtime::RuntimeSymbolTable,
     ) -> RelationalResidencyLease<Head> {
         let readmission =
             super::super::resident_history::ResidentHistoryReadmission::new(schema, symbols);
-        Self::owned_head(partition, Some(commitment), Some(kind_indexes), readmission)
+        Self::owned_head(
+            partition,
+            Some(commitment),
+            Some(kind_indexes),
+            history_presence,
+            readmission,
+        )
     }
 
     pub(in super::super) fn resident_current(
         partition: PartitionState,
+        history_presence: super::super::history_presence::HistoryPresence,
         readmission: super::super::resident_history::ResidentHistoryReadmission,
     ) -> RelationalResidencyLease<Head> {
-        Self::owned_head(partition, None, None, readmission)
+        Self::owned_head(partition, None, None, history_presence, readmission)
     }
 
     fn owned_head(
         partition: PartitionState,
         commitment: Option<PartitionContentCommitment>,
         kind_indexes: Option<Arc<super::super::kind_incremental::RegionKindIndexes>>,
+        history_presence: super::super::history_presence::HistoryPresence,
         readmission: super::super::resident_history::ResidentHistoryReadmission,
     ) -> RelationalResidencyLease<Head> {
         let region = Arc::new(ResidentRegion {
+            history_presence,
             partition,
             commitment,
             kind_indexes,

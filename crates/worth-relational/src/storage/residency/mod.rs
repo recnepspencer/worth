@@ -24,6 +24,7 @@ mod history_capture;
 pub(crate) mod history_capture_bound;
 mod history_fold;
 mod history_kind_cache;
+mod history_presence;
 mod region_capture;
 mod region_image;
 mod region_initialization;

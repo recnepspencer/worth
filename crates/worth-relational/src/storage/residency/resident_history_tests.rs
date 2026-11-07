@@ -143,6 +143,7 @@ fn owned_head_base_damage_is_sticky_and_never_invalidates_an_accepted_view() {
         original.partition.clone(),
         original.commitment.clone().unwrap(),
         original.kind_indexes.clone().unwrap(),
+        original.history_presence,
         fixture.cold.schema.clone(),
         &fixture.cold.symbols,
     );
@@ -189,6 +190,7 @@ fn head_content_inspection_hashes_its_suffix_without_loading_the_base_or_trustin
         partial,
         original.commitment.clone().unwrap(),
         original.kind_indexes.clone().unwrap(),
+        original.history_presence,
         fixture.cold.schema.clone(),
         &fixture.cold.symbols,
     );

@@ -19,13 +19,8 @@ impl RelationalResidencyLease<Full> {
 }
 
 impl ResidentFullRegionEdit {
-    pub(crate) fn transform(
-        self,
-        transform: impl FnOnce(PartitionState) -> PartitionState,
-    ) -> Self {
-        Self {
-            partition: transform(self.partition),
-        }
+    pub(crate) fn into_partition(self) -> PartitionState {
+        self.partition
     }
 
     pub(crate) fn partition(&self) -> &PartitionState {

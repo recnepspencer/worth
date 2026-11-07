@@ -19,6 +19,19 @@ impl PreparedRelationalCommitCandidate {
             .cloned()
     }
 
+    /// Actual native index-maintenance receipt for this live candidate.
+    /// A verified no-index preparation returns an empty receipt; unavailable
+    /// or consumed candidate custody returns None. No preparation is repeated.
+    pub fn prepared_index_maintenance_work(
+        &self,
+    ) -> Option<crate::indexes::data::DerivedIndexMaintenanceWork> {
+        self._payload
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .as_ref()
+            .map(|payload| payload.execution.prepared_index_maintenance_work())
+    }
+
     /// Borrows the exact, already-prepared touch graph without copying it.
     /// The callback must not reenter this candidate. Consumed or revoked
     /// candidates return `None`, distinct from an available exact-empty graph.
