@@ -33,7 +33,7 @@ fn certification_bundle_matches_equivalent_public_and_proof_outputs(
             WorthQuerySupportContributionAuthoring::declaration_traceability(
                 "worth.spatial.traceability.edge_split",
                 "declaration-scoped support remains declaration scoped",
-            )
+            )?
             .bind_to_installed_target(declaration_target.clone()),
         )?)?,
     );

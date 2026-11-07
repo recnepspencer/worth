@@ -107,7 +107,7 @@ impl WorthQueryLowerRuntimeSupportContribution {
         let requested = WorthQuerySupportContributionAuthoring::narrowed_support(
             qualify_semantic_code(self.target.authority(), &self.semantic_code),
             self.detail,
-        )
+        )?
         .bind_to_installed_target(self.target)?;
 
         Ok(materialize_common_lane(

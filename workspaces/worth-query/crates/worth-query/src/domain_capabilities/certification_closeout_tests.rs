@@ -61,7 +61,7 @@ fn certification_bundle_preserves_support_scope_and_posture_distinction(
             WorthQuerySupportContributionAuthoring::declaration_support(
                 "worth.spatial.traceability.edge_split",
                 "declaration-scoped support remains declaration scoped",
-            )
+            )?
             .bind_to_installed_target(declaration_target),
         )?)?,
     );
@@ -70,7 +70,7 @@ fn certification_bundle_preserves_support_scope_and_posture_distinction(
             WorthQuerySupportContributionAuthoring::declaration_support(
                 "worth.spatial.support.runtime_floor",
                 "runtime floor remains explicitly supported",
-            )
+            )?
             .bind_to_installed_target(admitted_plan_target),
         )?,
     ));
@@ -215,7 +215,7 @@ fn certification_bundle_boundary_and_failure_outputs_track_live_surfaces(
         WorthQuerySupportContributionAuthoring::declaration_support(
             "worth.spatial.support.failure",
             "",
-        )
+        )?
         .bind_to_installed_target(target),
     )? {
         TransitionOutcome::Denied(denial) => denial,

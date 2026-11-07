@@ -52,6 +52,41 @@ pub struct EffectExecutionOracleError {
 }
 
 impl EffectExecutionOracleError {
+    pub(crate) fn with_subject_derivation(
+        kind: EffectExecutionOracleErrorKind,
+        message: impl Into<String>,
+        subject: Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>,
+        oracle: Option<&WorthQueryEvidenceIdentity>,
+    ) -> Self {
+        match subject {
+            Ok(subject) => Self::new(kind, message, &subject, oracle),
+            Err(cause) => Self {
+                kind,
+                message: message.into(),
+                execution_subject_identity: None,
+                oracle_identity: oracle.cloned(),
+                error_identity: Err(cause),
+            },
+        }
+    }
+    pub(crate) fn with_oracle_derivation(
+        kind: EffectExecutionOracleErrorKind,
+        message: impl Into<String>,
+        subject: &WorthQueryEvidenceIdentity,
+        oracle: Result<Option<WorthQueryEvidenceIdentity>, IdentityDerivationDenial>,
+    ) -> Self {
+        match oracle {
+            Ok(oracle) => Self::new(kind, message, subject, oracle.as_ref()),
+            Err(cause) => Self {
+                kind,
+                message: message.into(),
+                execution_subject_identity: Some(subject.clone()),
+                oracle_identity: None,
+                error_identity: Err(cause),
+            },
+        }
+    }
+
     pub(crate) fn new(
         kind: EffectExecutionOracleErrorKind,
         message: impl Into<String>,

@@ -63,7 +63,7 @@ pub(super) fn preview_certification_evidence(
                 )
                 .seal()?],
                 performance_receipt_identity: lifecycle_absent_performance_receipt_identity(),
-            })?
+            })
         }
         SubscriptionLifecyclePreviewCertification::Discard {
             isolation,
@@ -191,7 +191,7 @@ pub(super) fn preview_certification_evidence(
                     .performance_receipt()
                     .performance_receipt_identity()
                     .clone(),
-            })?
+            })
         }
         SubscriptionLifecyclePreviewCertification::Promotion {
             isolation,
@@ -317,7 +317,7 @@ pub(super) fn preview_certification_evidence(
                     .performance_receipt()
                     .performance_receipt_identity()
                     .clone(),
-            })?
+            })
         }
     }
 }

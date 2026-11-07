@@ -135,7 +135,7 @@ fn admission_local_support_and_support_traceability_rows_stay_distinct(
         ready_support(WorthQuerySupportContributionAuthoring::declaration_support(
             "spatial.shared.support",
             "same support detail through shared runtime family",
-        ))?,
+        )?)?,
     ));
 
     assert_eq!(admission_row.support_detail(), support_row.support_detail());

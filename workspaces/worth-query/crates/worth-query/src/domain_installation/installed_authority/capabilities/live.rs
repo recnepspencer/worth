@@ -267,7 +267,7 @@ impl<D: 'static> WorthQueryInstalledDomainLiveHandle<D> {
                     },
                 )
             }
-        })?
+        })
     }
 
     pub fn close(

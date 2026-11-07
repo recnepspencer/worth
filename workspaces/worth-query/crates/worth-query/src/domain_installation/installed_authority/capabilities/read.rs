@@ -63,16 +63,6 @@ impl<D: 'static> WorthQueryInstalledDomainReadRequest<D> {
                 cause,
             )
         })?;
-        let refusal_witness = self.witness.clone();
-        let refusal_declaration = declaration_identity.clone();
-        let identity_refused = |cause| {
-            WorthQueryInstalledDomainCapabilityStop::identity_refused(
-                refusal_witness.clone(),
-                WorthQueryInstalledDomainCapabilityKind::Read,
-                Some(refusal_declaration.clone()),
-                cause,
-            )
-        };
 
         WorthQueryInstalledDomainExecutionDrift::validate::<D>(&self.witness, workspace).map_err(
             |drift| {
@@ -136,15 +126,24 @@ impl<D> WorthQueryInstalledDomainReadOutcome<D> {
             )
         })?;
         let lower_receipt = completion.result().receipt();
+        let operational_identity = WorthQueryInstalledDomainExecutionReceipt::label_identity(
+            "read-result",
+            lower_receipt.result_digest(),
+        )
+        .map_err(|cause| {
+            WorthQueryInstalledDomainCapabilityStop::identity_refused(
+                witness.clone(),
+                WorthQueryInstalledDomainCapabilityKind::Read,
+                Some(declaration_identity.clone()),
+                cause,
+            )
+        })?;
         let receipt = WorthQueryInstalledDomainExecutionReceipt::new(
             witness,
             WorthQueryInstalledDomainCapabilityKind::Read,
             declaration_identity,
             lower_receipt.snapshot_evidence_identity(),
-            WorthQueryInstalledDomainExecutionReceipt::label_identity(
-                "read-result",
-                lower_receipt.result_digest(),
-            ),
+            operational_identity,
         );
         Ok(WorthQueryInstalledDomainReadCompletion {
             completion,

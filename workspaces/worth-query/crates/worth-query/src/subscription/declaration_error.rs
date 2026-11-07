@@ -6,6 +6,7 @@ use super::diagnostic::{QuerySubscriptionDiagnosticEvidence, QuerySubscriptionDi
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum QuerySubscriptionDeclarationDenialKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     UnsupportedMaskedSlice,
     UnsupportedGroupingSlice,
     UnsupportedBoundedMaterializationSlice,
@@ -18,6 +19,7 @@ pub enum QuerySubscriptionDeclarationDenialKind {
 impl QuerySubscriptionDeclarationDenialKind {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => "evidence_identity_derivation_denied",
             Self::UnsupportedMaskedSlice => "unsupported_masked_slice",
             Self::UnsupportedGroupingSlice => "unsupported_grouping_slice",
             Self::UnsupportedBoundedMaterializationSlice => {
@@ -40,6 +42,22 @@ pub struct QuerySubscriptionDeclarationDenial {
 }
 
 impl QuerySubscriptionDeclarationDenial {
+    pub(super) fn identity_refused(
+        cause: IdentityDerivationDenial,
+        mut counters: QuerySubscriptionDeclarationCounters,
+    ) -> Self {
+        counters.declaration_count = 0;
+        counters.declaration_denial_count += 1;
+        Self {
+            denial_kind: QuerySubscriptionDeclarationDenialKind::EvidenceIdentityDerivationDenied(
+                cause,
+            ),
+            message: "subscription evidence identity exceeded its digest bounds".to_owned(),
+            diagnostic: Err(cause),
+            counters,
+        }
+    }
+
     pub(super) fn new(
         denial_kind: QuerySubscriptionDeclarationDenialKind,
         message: impl Into<String>,

@@ -178,6 +178,7 @@ impl WorthQueryInspectionCompletion {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInspectionStopSource {
+    Construction,
     BasisMismatch,
     InvalidOutcomeEvidence,
     MissingEvidence,
@@ -186,6 +187,8 @@ pub enum WorthQueryInspectionStopSource {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInspectionUnavailableSource {
+    EvidenceIdentityDerivationDenied,
+    Construction,
     Runtime,
     Materialization,
 }
@@ -202,7 +205,7 @@ pub enum WorthQueryInspectionNextAction {
 
 pub struct WorthQueryInspectionStop {
     source: WorthQueryInspectionStopSource,
-    evidence_for_reporting: String,
+    error: crate::runtime::CausalInspectionPlanError,
     counters: WorthQueryInspectionCounters,
 }
 
@@ -211,8 +214,11 @@ impl WorthQueryInspectionStop {
         self.source
     }
 
-    pub fn evidence_for_reporting(&self) -> &str {
-        &self.evidence_for_reporting
+    pub fn evidence_for_reporting(&self) -> Option<&str> {
+        self.error.failure_digest()
+    }
+    pub fn error(&self) -> &crate::runtime::CausalInspectionPlanError {
+        &self.error
     }
 
     pub fn counters(&self) -> &WorthQueryInspectionCounters {
@@ -230,7 +236,8 @@ impl WorthQueryInspectionStop {
             WorthQueryInspectionStopSource::MissingEvidence => {
                 WorthQueryInspectionNextAction::RequestAvailableEvidence
             }
-            WorthQueryInspectionStopSource::InvalidRequest => {
+            WorthQueryInspectionStopSource::Construction
+            | WorthQueryInspectionStopSource::InvalidRequest => {
                 WorthQueryInspectionNextAction::ReviseDeclaration
             }
         }
@@ -238,18 +245,19 @@ impl WorthQueryInspectionStop {
 
     pub(crate) fn new(
         source: WorthQueryInspectionStopSource,
-        evidence_for_reporting: impl Into<String>,
+        error: crate::runtime::CausalInspectionPlanError,
         counters: WorthQueryInspectionCounters,
     ) -> Self {
         Self {
             source,
-            evidence_for_reporting: evidence_for_reporting.into(),
+            error,
             counters,
         }
     }
 }
 
 pub struct WorthQueryInspectionUnavailable {
+    cause: Option<crate::runtime::WorthQueryBackendInspectionError>,
     source: WorthQueryInspectionUnavailableSource,
     message: String,
     receipt: WorthQueryInspectionReceipt,
@@ -258,6 +266,20 @@ pub struct WorthQueryInspectionUnavailable {
 }
 
 impl WorthQueryInspectionUnavailable {
+    pub fn cause(&self) -> Option<&crate::runtime::WorthQueryBackendInspectionError> {
+        self.cause.as_ref()
+    }
+    pub(crate) fn from_backend(
+        source: WorthQueryInspectionUnavailableSource,
+        error: crate::runtime::WorthQueryBackendInspectionError,
+        receipt: WorthQueryInspectionReceipt,
+        estimated_cost: WorthQueryInspectionCost,
+        counters: WorthQueryInspectionCounters,
+    ) -> Self {
+        let mut result = Self::new(source, error.message(), receipt, estimated_cost, counters);
+        result.cause = Some(error);
+        result
+    }
     pub fn source(&self) -> WorthQueryInspectionUnavailableSource {
         self.source
     }
@@ -283,7 +305,9 @@ impl WorthQueryInspectionUnavailable {
             WorthQueryInspectionUnavailableSource::Runtime => {
                 WorthQueryInspectionNextAction::ConfigureRuntime
             }
-            WorthQueryInspectionUnavailableSource::Materialization => {
+            WorthQueryInspectionUnavailableSource::EvidenceIdentityDerivationDenied
+            | WorthQueryInspectionUnavailableSource::Construction
+            | WorthQueryInspectionUnavailableSource::Materialization => {
                 WorthQueryInspectionNextAction::UseOperationalReceipt
             }
         }
@@ -297,6 +321,7 @@ impl WorthQueryInspectionUnavailable {
         counters: WorthQueryInspectionCounters,
     ) -> Self {
         Self {
+            cause: None,
             source,
             message: message.into(),
             receipt,

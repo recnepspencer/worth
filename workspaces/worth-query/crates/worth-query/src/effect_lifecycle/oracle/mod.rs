@@ -80,7 +80,7 @@ impl ExecutedEffectBatchPlan {
             )
         })?;
         verify_relational_subject(
-            self.batch_identity(),
+            self.batch_identity()?,
             target_branch.0,
             aggregate.outcome().commit.commit_id.0,
             aggregate.outcome().commit.version_id.0,
@@ -199,7 +199,7 @@ fn relational_target_branch_for_batch(
         return Err(EffectExecutionOracleError::new(
             EffectExecutionOracleErrorKind::RelationalOracleUnsupportedEffect,
             "relational batch oracle verification requires at least one executed component",
-            executed.batch_identity(),
+            executed.batch_identity()?,
             None,
         ));
     };
@@ -207,7 +207,7 @@ fn relational_target_branch_for_batch(
         return Err(EffectExecutionOracleError::new(
             EffectExecutionOracleErrorKind::BatchOracleMixedTargetBranch,
             "relational batch oracle verification requires one target branch across all components",
-            executed.batch_identity(),
+            executed.batch_identity()?,
             None,
         ));
     }

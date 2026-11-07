@@ -193,8 +193,8 @@ impl WorthQueryRuntime {
         self.backend
             .release_query_merge_snapshot(execution, &outcome.commit.snapshot);
         let executed =
-            ExecutedEffectPlan::new(lowered, ExecutedEffectAuthorityArtifact::Merge(outcome), 1)?;
-        let receipt = executed.receipt()?;
+            ExecutedEffectPlan::new(lowered, ExecutedEffectAuthorityArtifact::Merge(outcome), 1);
+        let receipt = executed.receipt();
         let diagnostics = materialize_inspection
             .then(|| receipt.materialize_diagnostics(EffectDiagnosticsRequest::forensic()))
             .transpose()?;

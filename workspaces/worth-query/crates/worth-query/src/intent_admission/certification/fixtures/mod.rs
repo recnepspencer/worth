@@ -185,7 +185,7 @@ pub(super) fn certified_admitted_intent_fixture(
             }
         }
         other => panic!("expected admitted decision, got {other:?}"),
-    })?
+    })
 }
 
 pub(super) fn certified_advisory_intent_fixture(

@@ -152,55 +152,47 @@ fn matching_bridge_oracle_for_plan(
             )
         })?;
     let outcome_digest = record.outcome_digest().ok_or_else(|| {
-        EffectExecutionOracleError::new(
+        EffectExecutionOracleError::with_oracle_derivation(
             EffectExecutionOracleErrorKind::BridgeObservationIncompleteWritebackRecord,
             format!(
                 "matching bridge writeback record `{}` is missing outcome digest",
                 record.digest()
             ),
             executed.effect_execution_identity(),
-            Some(&bridge_observation_execution_record_subject_identity(
-                record.digest(),
-            )),
+            bridge_observation_execution_record_subject_identity(record.digest()).map(Some),
         )
     })?;
     let outcome_class = record.outcome_class().ok_or_else(|| {
-        EffectExecutionOracleError::new(
+        EffectExecutionOracleError::with_oracle_derivation(
             EffectExecutionOracleErrorKind::BridgeObservationIncompleteWritebackRecord,
             format!(
                 "matching bridge writeback record `{}` is missing outcome class",
                 record.digest()
             ),
             executed.effect_execution_identity(),
-            Some(&bridge_observation_execution_record_subject_identity(
-                record.digest(),
-            )),
+            bridge_observation_execution_record_subject_identity(record.digest()).map(Some),
         )
     })?;
     let request_digest = record.request_digest().ok_or_else(|| {
-        EffectExecutionOracleError::new(
+        EffectExecutionOracleError::with_oracle_derivation(
             EffectExecutionOracleErrorKind::BridgeObservationIncompleteWritebackRecord,
             format!(
                 "matching bridge writeback record `{}` is missing request digest",
                 record.digest()
             ),
             executed.effect_execution_identity(),
-            Some(&bridge_observation_execution_record_subject_identity(
-                record.digest(),
-            )),
+            bridge_observation_execution_record_subject_identity(record.digest()).map(Some),
         )
     })?;
     let receipt_digest = record.receipt_digest().ok_or_else(|| {
-        EffectExecutionOracleError::new(
+        EffectExecutionOracleError::with_oracle_derivation(
             EffectExecutionOracleErrorKind::BridgeObservationIncompleteWritebackRecord,
             format!(
                 "matching bridge writeback record `{}` is missing receipt digest",
                 record.digest()
             ),
             executed.effect_execution_identity(),
-            Some(&bridge_observation_execution_record_subject_identity(
-                record.digest(),
-            )),
+            bridge_observation_execution_record_subject_identity(record.digest()).map(Some),
         )
     })?;
     let oracle = BridgeExecutionOracle::new(

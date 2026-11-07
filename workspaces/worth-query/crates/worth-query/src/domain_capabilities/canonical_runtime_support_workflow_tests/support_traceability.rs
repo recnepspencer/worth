@@ -19,7 +19,7 @@ fn support_traceability_materializer_builds_domain_scoped_report(
         ready_support(WorthQuerySupportContributionAuthoring::declaration_support(
             "spatial.arbitration.support",
             "multiple candidates remain admissible",
-        ))?,
+        )?)?,
     ));
 
     assert_eq!(report.rows().len(), 1);
@@ -51,7 +51,7 @@ fn equivalent_support_meaning_materializes_same_traceability_digest(
             WorthQuerySupportContributionAuthoring::declaration_traceability(
                 "spatial.traceability",
                 "query admission support is declaration-scoped",
-            ),
+            )?,
         )?,
     ));
     let direct = success(materialize_intent_admission_support_traceability_report(

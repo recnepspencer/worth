@@ -50,7 +50,9 @@ pub struct QuerySubscriptionLifecycleClassVariationSet {
 macro_rules! variation_set_impl {
     ($name:ident, $prefix:literal) => {
         impl $name {
-            pub(super) fn from_identities<'a, I>(values: I) -> Self
+            pub(super) fn from_identities<'a, I>(
+                values: I,
+            ) -> Result<Self, IdentityDerivationDenial>
             where
                 I: IntoIterator<Item = &'a WorthQueryEvidenceIdentity>,
             {
@@ -62,12 +64,12 @@ macro_rules! variation_set_impl {
                     .map(|identity| identity.as_str().to_string())
                     .collect::<Vec<_>>();
                 let variation_identity =
-                    coverage_evidence_variation_set_identity($prefix, identities.iter());
-                Self {
+                    coverage_evidence_variation_set_identity($prefix, identities.iter())?;
+                Ok(Self {
                     digests,
                     identities,
                     variation_identity,
-                }
+                })
             }
 
             pub(crate) fn digests(&self) -> &[String] {

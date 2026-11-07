@@ -81,9 +81,11 @@ where
         Ok(owner
             .with_advancement(|phase| self.execute_in_advancement(&phase, workspace))
             .unwrap_or_else(|cause| {
-                TransitionOutcome::Denied(WorthQueryBoundExecutionDenial::from_advancement_denial(
-                    cause,
-                ))
+                Ok({
+                    TransitionOutcome::Denied(
+                        WorthQueryBoundExecutionDenial::from_advancement_denial(cause),
+                    )
+                })
             })?)
     }
 

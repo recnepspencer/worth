@@ -249,7 +249,7 @@ pub struct ExecutedEffectBatchPlan {
     authority_owner: EffectAuthorityOwner,
     aggregate_artifact: ExecutedEffectAuthorityArtifact,
     components: Vec<ExecutedEffectPlan>,
-    batch_identity: WorthQueryEvidenceIdentity,
+    batch_identity: Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>,
     counters: EffectLifecycleCounters,
 }
 
@@ -261,9 +261,12 @@ impl ExecutedEffectBatchPlan {
         authority_owner: EffectAuthorityOwner,
         aggregate_artifact: ExecutedEffectAuthorityArtifact,
         components: Vec<ExecutedEffectPlan>,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let batch_identity =
-            WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
+            (|| -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+                Ok(WorthQueryEvidenceIdentity::compose(
+                    WorthQueryEvidenceScope::WorkflowMutationLowering,
+                )
                 .field_shape(
                     WorthQueryEvidenceTag::new("identity_family"),
                     "executed_effect_batch_plan_v2",
@@ -283,7 +286,7 @@ impl ExecutedEffectBatchPlan {
                 )
                 .field_evidence_identity(
                     WorthQueryEvidenceTag::new("aggregate"),
-                    &executed_authority_artifact_identity(&aggregate_artifact)?,
+                    &executed_authority_artifact_identity(&aggregate_artifact),
                 )
                 .field_evidence_identity_sequence(
                     WorthQueryEvidenceTag::new("component"),
@@ -291,7 +294,8 @@ impl ExecutedEffectBatchPlan {
                         .iter()
                         .map(ExecutedEffectPlan::effect_execution_identity),
                 )
-                .seal()?;
+                .seal()?)
+            })();
         let counters = EffectLifecycleCounters::executed_batch(
             components.len(),
             components
@@ -304,7 +308,7 @@ impl ExecutedEffectBatchPlan {
                 .sum(),
             1,
         );
-        Ok(Self {
+        Self {
             lowered,
             authority_lane,
             basis_family,
@@ -313,7 +317,7 @@ impl ExecutedEffectBatchPlan {
             components,
             batch_identity,
             counters,
-        })
+        }
     }
 
     pub fn authority_lane(&self) -> EffectAuthorityLane {
@@ -349,20 +353,20 @@ impl ExecutedEffectBatchPlan {
         &self.components
     }
 
-    pub fn batch_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.batch_identity
+    pub fn batch_identity(&self) -> Result<&WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        self.batch_identity.as_ref().map_err(|cause| *cause)
     }
 
-    pub fn batch_for_reporting(&self) -> &str {
-        self.batch_identity.as_str()
+    pub fn batch_for_reporting(&self) -> Result<&str, IdentityDerivationDenial> {
+        Ok(self.batch_identity()?.as_str())
     }
 
     pub fn counters(&self) -> &EffectLifecycleCounters {
         &self.counters
     }
 
-    pub fn receipt(&self) -> Result<EffectExecutionReceipt, IdentityDerivationDenial> {
-        Ok(EffectExecutionReceipt::from_batch(self)?)
+    pub fn receipt(&self) -> EffectExecutionReceipt {
+        EffectExecutionReceipt::from_batch(self)
     }
 
     pub(crate) fn published_snapshot(

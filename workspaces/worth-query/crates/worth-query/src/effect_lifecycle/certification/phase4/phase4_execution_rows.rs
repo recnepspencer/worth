@@ -246,7 +246,7 @@ pub(super) fn batch_execution_row(
         EffectLifecyclePhase4LaneOutcome::Executed,
         basis.family(),
         EffectFamily::Mutation,
-        executed.batch_for_reporting().to_string(),
+        executed.batch_for_reporting()?.to_string(),
         format!(
             "support:{};width:{}",
             support.discovery_for_reporting(),

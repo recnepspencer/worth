@@ -246,8 +246,8 @@ impl WorthQueryRuntime {
             lowered,
             ExecutedEffectAuthorityArtifact::Writeback { execution },
             1,
-        )?
-        .receipt()?;
+        )
+        .receipt();
         let diagnostics = materialize_inspection
             .then(|| receipt.materialize_diagnostics(EffectDiagnosticsRequest::forensic()))
             .transpose()?;

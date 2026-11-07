@@ -194,12 +194,12 @@ where
     let source_label = workflow_source_label(target, payload);
     let request_family = preview_request_family(payload.posture());
     let request_family_label = request_family.as_str();
-    let binding_identity = target.binding_identity();
     let request_identity = domain_contribution.request_identity();
     let identity_refused = |cause| {
         WorthQueryDomainCapabilityProgressionDenial::new(crate::domain_capabilities::WorthQueryDomainCapabilityProgressionDenialKind::EvidenceIdentityDerivationDenied(cause), "workflow-preview", target.kind(), request_identity.clone(), "preview workflow evidence identity exceeded its digest bounds")
     };
 
+    let binding_identity = target.binding_identity().map_err(&identity_refused)?;
     let canonical_query_identity = preview_canonical_query_identity(
         &source_label,
         &binding_identity,

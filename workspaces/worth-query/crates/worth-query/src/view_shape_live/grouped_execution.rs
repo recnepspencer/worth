@@ -225,7 +225,9 @@ pub fn materialize_grouped_execution_surface_from_truth_view(
     let plan_evidence_identity = plan.view_plan_digest().evidence_identity();
     let basis_evidence_identity = basis.proof().digest().evidence_identity();
     let grouped_truth_view_evidence_identity =
-        bridge_grouped_truth_view_digest_evidence_identity(truth_view.digest());
+        bridge_grouped_truth_view_digest_evidence_identity(truth_view.digest()).map_err(
+            |cause| ViewShapeLiveError::identity_refused(cause, ViewShapeLiveCounters::default()),
+        )?;
     let identity = WorthQueryEvidenceIdentity::compose(
         WorthQueryEvidenceScope::GroupedExecutionSurfaceArtifact,
     )
@@ -239,7 +241,10 @@ pub fn materialize_grouped_execution_surface_from_truth_view(
         &grouped_truth_view_evidence_identity,
     )
     .field_usize(WorthQueryEvidenceTag::new("members"), member_rows.len())
-    .seal();
+    .seal()
+    .map_err(|cause| {
+        ViewShapeLiveError::identity_refused(cause, ViewShapeLiveCounters::default())
+    })?;
 
     Ok(GroupedExecutionSurfaceArtifact {
         identity,

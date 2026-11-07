@@ -144,7 +144,13 @@ impl QuerySubscriptionFamilyCoverageRow {
             diagnostic.bundle_identity(),
             None,
             lifecycle_class,
-        )?)
+        )
+        .map_err(|cause| {
+            QuerySubscriptionRuntimeCertificationError::identity_refused(
+                cause,
+                QuerySubscriptionRuntimeCertificationCounters::default(),
+            )
+        })?)
     }
 
     pub fn hostile(
@@ -185,7 +191,13 @@ impl QuerySubscriptionFamilyCoverageRow {
             diagnostic.bundle_identity(),
             Some(failure.failure_identity()),
             lifecycle_class,
-        )?)
+        )
+        .map_err(|cause| {
+            QuerySubscriptionRuntimeCertificationError::identity_refused(
+                cause,
+                QuerySubscriptionRuntimeCertificationCounters::default(),
+            )
+        })?)
     }
 
     fn new(

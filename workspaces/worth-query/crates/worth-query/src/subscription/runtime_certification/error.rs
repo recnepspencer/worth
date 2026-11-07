@@ -45,6 +45,13 @@ pub struct QuerySubscriptionRuntimeCertificationCounters {
 }
 
 impl QuerySubscriptionRuntimeCertificationCounters {
+    pub(crate) fn coverage_handle_refusal(posture_requires_scan_debt: bool) -> Self {
+        Self {
+            family_coverage_matrix_scan_debt_count: u64::from(posture_requires_scan_debt),
+            ..Self::default()
+        }
+    }
+
     pub fn counter_identity(&self) -> WorthQueryEvidenceIdentity {
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
             .field_shape(

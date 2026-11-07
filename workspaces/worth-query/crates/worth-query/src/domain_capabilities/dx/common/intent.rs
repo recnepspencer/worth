@@ -123,14 +123,14 @@ impl WorthQueryIntentSupportContribution {
                 WorthQuerySupportContributionAuthoring::declaration_support(
                     semantic_code,
                     self.detail,
-                )
+                )?
                 .bind_to_installed_target(self.target)
             }
             WorthQuerySupportContributionPosture::DeclarationTraceability => {
                 WorthQuerySupportContributionAuthoring::declaration_traceability(
                     semantic_code,
                     self.detail,
-                )
+                )?
                 .bind_to_installed_target(self.target)
             }
             WorthQuerySupportContributionPosture::NarrowedSupport => unreachable!(),

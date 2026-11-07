@@ -11,11 +11,14 @@ use crate::intent_admission::{
 
 pub fn materialize_intent_admission_support_traceability_report<T>(
     contribution: WorthQueryMaterializationReadySupportContribution<T>,
-) -> WorthQueryDomainCapabilityTransitionOutcome<WorthQueryIntentAdmissionSupportTraceabilityReport>
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<WorthQueryIntentAdmissionSupportTraceabilityReport>,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+>
 where
     T: WorthQueryAdmittedPlanContributionTargetBinding,
 {
-    match support_traceability_row(&contribution) {
+    Ok(match support_traceability_row(&contribution)? {
         TransitionOutcome::Success(row) => TransitionOutcome::Success(
             WorthQueryIntentAdmissionSupportTraceabilityReport::from_rows(vec![row]),
         ),
@@ -24,13 +27,16 @@ where
         TransitionOutcome::RebindRequired(rebind) => TransitionOutcome::RebindRequired(rebind),
         TransitionOutcome::Failed(failure) => TransitionOutcome::Failed(failure),
         TransitionOutcome::Deferred(never) => match never {},
-    }
+    })
 }
 
 #[cfg(test)]
 pub fn materialize_intent_admission_support_traceability_row<T>(
     contribution: WorthQueryMaterializationReadySupportContribution<T>,
-) -> WorthQueryDomainCapabilityTransitionOutcome<WorthQueryIntentAdmissionSupportTraceabilityRow>
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<WorthQueryIntentAdmissionSupportTraceabilityRow>,
+    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+>
 where
     T: WorthQueryAdmittedPlanContributionTargetBinding,
 {

@@ -51,7 +51,7 @@ fn common_lower_runtime_support_lane_matches_proof_lane_materialization(
     let proof_requested = WorthQuerySupportContributionAuthoring::narrowed_support(
         "worth.spatial.routing.signal_invalidation",
         "lower-runtime routing narrows the supported authority seam",
-    )
+    )?
     .bind_to_installed_target(target);
     let proof_admitted = success(admit_eligible_domain_capability_contribution(success(
         evaluate_requested_domain_capability_contribution(proof_requested)?,

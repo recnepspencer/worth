@@ -5,6 +5,7 @@ use crate::runtime::CausalInspectionMaterializationError;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryBackendInspectionErrorKind {
     EvidenceIdentityDerivationDenied,
+    Construction,
     Unavailable,
     Materialization,
 }
@@ -12,6 +13,9 @@ pub enum WorthQueryBackendInspectionErrorKind {
 #[derive(Debug)]
 pub enum WorthQueryBackendInspectionError {
     EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
+    Construction(
+        worth_query_execution::facade::causal_inspection::CausalInspectionConstructionStop,
+    ),
     Unavailable(WorthQueryWorkspaceError),
     Materialization(CausalInspectionMaterializationError),
 }
@@ -22,6 +26,7 @@ impl WorthQueryBackendInspectionError {
             Self::EvidenceIdentityDerivationDenied(_) => {
                 WorthQueryBackendInspectionErrorKind::EvidenceIdentityDerivationDenied
             }
+            Self::Construction(_) => WorthQueryBackendInspectionErrorKind::Construction,
             Self::Unavailable(_) => WorthQueryBackendInspectionErrorKind::Unavailable,
             Self::Materialization(_) => WorthQueryBackendInspectionErrorKind::Materialization,
         }
@@ -32,6 +37,7 @@ impl WorthQueryBackendInspectionError {
             Self::EvidenceIdentityDerivationDenied(cause) => {
                 format!("evidence identity refused: {cause:?}")
             }
+            Self::Construction(error) => format!("{error:?}"),
             Self::Unavailable(error) => error.to_string(),
             Self::Materialization(error) => format!("{error:?}"),
         }
@@ -51,5 +57,15 @@ impl From<CausalInspectionMaterializationError> for WorthQueryBackendInspectionE
 impl From<IdentityDerivationDenial> for WorthQueryBackendInspectionError {
     fn from(cause: IdentityDerivationDenial) -> Self {
         Self::EvidenceIdentityDerivationDenied(cause)
+    }
+}
+
+impl From<worth_query_execution::facade::causal_inspection::CausalInspectionConstructionStop>
+    for WorthQueryBackendInspectionError
+{
+    fn from(
+        cause: worth_query_execution::facade::causal_inspection::CausalInspectionConstructionStop,
+    ) -> Self {
+        Self::Construction(cause)
     }
 }

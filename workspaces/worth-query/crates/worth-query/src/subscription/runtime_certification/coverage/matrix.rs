@@ -166,20 +166,72 @@ pub fn build_certified_family_coverage_handle(
         }
     }
 
-    let basis_variations =
-        QuerySubscriptionBasisVariationSet::from_identities(basis_identities.iter());
-    let policy_variations =
-        QuerySubscriptionPolicyVariationSet::from_identities(policy_identities.iter());
-    let tenant_variations =
-        QuerySubscriptionTenantVariationSet::from_identities(tenant_identities.iter());
+    let basis_variations = QuerySubscriptionBasisVariationSet::from_identities(
+        basis_identities.iter(),
+    )
+    .map_err(|cause| {
+        QuerySubscriptionRuntimeCertificationError::identity_refused(
+            cause,
+            QuerySubscriptionRuntimeCertificationCounters::coverage_handle_refusal(
+                posture == CoverageResolutionPosture::MatrixScanDebtExplicit,
+            ),
+        )
+    })?;
+    let policy_variations = QuerySubscriptionPolicyVariationSet::from_identities(
+        policy_identities.iter(),
+    )
+    .map_err(|cause| {
+        QuerySubscriptionRuntimeCertificationError::identity_refused(
+            cause,
+            QuerySubscriptionRuntimeCertificationCounters::coverage_handle_refusal(
+                posture == CoverageResolutionPosture::MatrixScanDebtExplicit,
+            ),
+        )
+    })?;
+    let tenant_variations = QuerySubscriptionTenantVariationSet::from_identities(
+        tenant_identities.iter(),
+    )
+    .map_err(|cause| {
+        QuerySubscriptionRuntimeCertificationError::identity_refused(
+            cause,
+            QuerySubscriptionRuntimeCertificationCounters::coverage_handle_refusal(
+                posture == CoverageResolutionPosture::MatrixScanDebtExplicit,
+            ),
+        )
+    })?;
     let relationship_proof_variations =
         QuerySubscriptionRelationshipProofVariationSet::from_identities(
             relationship_identities.iter(),
-        );
+        )
+        .map_err(|cause| {
+            QuerySubscriptionRuntimeCertificationError::identity_refused(
+                cause,
+                QuerySubscriptionRuntimeCertificationCounters::coverage_handle_refusal(
+                    posture == CoverageResolutionPosture::MatrixScanDebtExplicit,
+                ),
+            )
+        })?;
     let view_shape_variations =
-        QuerySubscriptionViewShapeVariationSet::from_identities(view_shape_identities.iter());
-    let lifecycle_class_variations =
-        QuerySubscriptionLifecycleClassVariationSet::from_set(lifecycle_classes)?;
+        QuerySubscriptionViewShapeVariationSet::from_identities(view_shape_identities.iter())
+            .map_err(|cause| {
+                QuerySubscriptionRuntimeCertificationError::identity_refused(
+                    cause,
+                    QuerySubscriptionRuntimeCertificationCounters::coverage_handle_refusal(
+                        posture == CoverageResolutionPosture::MatrixScanDebtExplicit,
+                    ),
+                )
+            })?;
+    let lifecycle_class_variations = QuerySubscriptionLifecycleClassVariationSet::from_set(
+        lifecycle_classes,
+    )
+    .map_err(|cause| {
+        QuerySubscriptionRuntimeCertificationError::identity_refused(
+            cause,
+            QuerySubscriptionRuntimeCertificationCounters::coverage_handle_refusal(
+                posture == CoverageResolutionPosture::MatrixScanDebtExplicit,
+            ),
+        )
+    })?;
 
     let family_coverage_identity = certified_family_coverage_handle_identity(
         family.as_str(),
@@ -190,10 +242,18 @@ pub fn build_certified_family_coverage_handle(
         tenant_variations.variation_identity(),
         relationship_proof_variations.variation_identity(),
         view_shape_variations.variation_identity(),
-        lifecycle_class_variations?.variation_identity(),
+        lifecycle_class_variations.variation_identity(),
         admitted_rows.len(),
         hostile_rows.len(),
-    )?;
+    )
+    .map_err(|cause| {
+        QuerySubscriptionRuntimeCertificationError::identity_refused(
+            cause,
+            QuerySubscriptionRuntimeCertificationCounters::coverage_handle_refusal(
+                posture == CoverageResolutionPosture::MatrixScanDebtExplicit,
+            ),
+        )
+    })?;
 
     Ok(CertifiedFamilyCoverageHandle {
         family: family.clone(),

@@ -57,24 +57,24 @@ impl RelationalExecutionOracle {
         branch: &BranchId,
     ) -> Result<Self, EffectExecutionOracleError> {
         let identity = runtime.branch_identity(branch).map_err(|_| {
-            EffectExecutionOracleError::new(
+            EffectExecutionOracleError::with_subject_derivation(
                 EffectExecutionOracleErrorKind::RelationalObservationMissingBranchHead,
                 format!(
                     "independent relational oracle inspection could not resolve branch head for `{}`",
                     branch.0
                 ),
-                &relational_branch_observation_subject(branch),
+                relational_branch_observation_subject(branch),
                 None,
             )
         })?;
         let (_, basis) = runtime.observe_branch(&identity).map_err(|_| {
-            EffectExecutionOracleError::new(
+            EffectExecutionOracleError::with_subject_derivation(
                 EffectExecutionOracleErrorKind::RelationalObservationMissingBranchHead,
                 format!(
                     "independent relational oracle could not admit branch `{}`",
                     branch.0
                 ),
-                &relational_branch_observation_subject(branch),
+                relational_branch_observation_subject(branch),
                 None,
             )
         })?;
@@ -83,24 +83,24 @@ impl RelationalExecutionOracle {
         let observed = history
             .branch_head_for_observation(&observation)
             .map_err(|_| {
-                EffectExecutionOracleError::new(
+                EffectExecutionOracleError::with_subject_derivation(
                     EffectExecutionOracleErrorKind::RelationalObservationMissingBranchHead,
                     format!(
                         "independent relational oracle rejected branch basis `{}`",
                         branch.0
                     ),
-                    &relational_branch_observation_subject(branch),
+                    relational_branch_observation_subject(branch),
                     None,
                 )
             })?
             .ok_or_else(|| {
-                EffectExecutionOracleError::new(
+                EffectExecutionOracleError::with_subject_derivation(
                     EffectExecutionOracleErrorKind::RelationalObservationMissingBranchHead,
                     format!(
                         "independent relational oracle inspection found no head for `{}`",
                         branch.0
                     ),
-                    &relational_branch_observation_subject(branch),
+                    relational_branch_observation_subject(branch),
                     None,
                 )
             })?;

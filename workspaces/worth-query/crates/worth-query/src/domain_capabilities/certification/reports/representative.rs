@@ -295,7 +295,7 @@ pub(crate) fn worth_query_domain_capability_representative_report_in(
         WorthQuerySupportContributionAuthoring::declaration_support(
             "worth.spatial.support.failure",
             "",
-        )
+        )?
         .bind_to_installed_target(declaration_target.clone())?,
     )? {
         worth_proof::TransitionOutcome::Denied(denial) => denial,

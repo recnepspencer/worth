@@ -69,7 +69,7 @@ pub struct EffectReceiptDecisionTrace {
 }
 
 impl EffectReceiptDecisionTrace {
-    pub(super) fn scalar(executed: &ExecutedEffectPlan) -> Result<Self, IdentityDerivationDenial> {
+    pub(super) fn scalar(executed: &ExecutedEffectPlan) -> Self {
         let admitted_or_batch_identity = executed
             .lowered()
             .authority_scoped_plan()
@@ -80,23 +80,21 @@ impl EffectReceiptDecisionTrace {
             .lowered()
             .lowered_effect_execution_plan_identity()
             .clone();
-        Ok(Self::new(
+        Self::new(
             admitted_or_batch_identity,
             lowered_identity,
             executed.authority_owner(),
             "admitted",
-        )?)
+        )
     }
 
-    pub(super) fn batch(
-        executed: &ExecutedEffectBatchPlan,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+    pub(super) fn batch(executed: &ExecutedEffectBatchPlan) -> Self {
+        Self::new(
             executed.lowered().admitted_batch_identity().clone(),
             executed.lowered().batch_identity().clone(),
             executed.authority_owner(),
             "admitted_batch",
-        )?)
+        )
     }
 
     fn new(
@@ -104,7 +102,7 @@ impl EffectReceiptDecisionTrace {
         lowered_identity: WorthQueryEvidenceIdentity,
         authority_owner: EffectAuthorityOwner,
         admitted_tag: &'static str,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    ) -> Self {
         let decision_trace_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
                 .field_shape(
@@ -120,13 +118,13 @@ impl EffectReceiptDecisionTrace {
                     WorthQueryEvidenceTag::new("authority_owner"),
                     authority_owner.as_str(),
                 )
-                .seal()?;
-        Ok(Self {
+                .seal().expect("fixed performed artifact grammar: closed labels, primitive coordinates, sealed identities, and Bridge-owned SHA256 output tokens");
+        Self {
             admitted_or_batch_identity,
             lowered_identity,
             authority_owner,
             decision_trace_identity,
-        })
+        }
     }
 
     pub fn admitted_or_batch_identity(&self) -> &WorthQueryEvidenceIdentity {
@@ -164,8 +162,8 @@ impl EffectReceiptIntegrityMarkers {
         authority_artifact: &ExecutedEffectAuthorityArtifact,
         counters: &EffectLifecycleCounters,
         receipt_identity: &WorthQueryEvidenceIdentity,
-    ) -> Result<Self, IdentityDerivationDenial> {
-        let authority_artifact_identity = executed_authority_artifact_identity(authority_artifact)?;
+    ) -> Self {
+        let authority_artifact_identity = executed_authority_artifact_identity(authority_artifact);
         let counter_snapshot_identity = counters.evidence_identity();
         let integrity_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
@@ -182,12 +180,12 @@ impl EffectReceiptIntegrityMarkers {
                     &counter_snapshot_identity,
                 )
                 .field_evidence_identity(WorthQueryEvidenceTag::new("receipt"), receipt_identity)
-                .seal()?;
-        Ok(Self {
+                .seal().expect("fixed performed artifact grammar: closed labels, primitive coordinates, sealed identities, and Bridge-owned SHA256 output tokens");
+        Self {
             authority_artifact_identity,
             counter_snapshot_identity,
             integrity_identity,
-        })
+        }
     }
 
     pub fn authority_artifact_identity(&self) -> &WorthQueryEvidenceIdentity {

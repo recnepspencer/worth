@@ -30,6 +30,9 @@ impl WorthQueryInspectionRequest {
             Ok(plan) => plan,
             Err(error) => {
                 let source = match error.kind() {
+                    CausalInspectionPlanErrorKind::Construction => {
+                        WorthQueryInspectionStopSource::Construction
+                    }
                     CausalInspectionPlanErrorKind::BasisMismatch => {
                         WorthQueryInspectionStopSource::BasisMismatch
                     }
@@ -44,7 +47,7 @@ impl WorthQueryInspectionRequest {
                     }
                 };
                 return Ok(WorthQueryInspectionOutcome::Stopped(
-                    WorthQueryInspectionStop::new(source, error.failure_digest(), counters),
+                    WorthQueryInspectionStop::new(source, error, counters),
                 ));
             }
         };
@@ -60,6 +63,12 @@ impl WorthQueryInspectionRequest {
                 ),
                 Err(error) => {
                     let source = match error.kind() {
+                        WorthQueryBackendInspectionErrorKind::EvidenceIdentityDerivationDenied => {
+                            WorthQueryInspectionUnavailableSource::EvidenceIdentityDerivationDenied
+                        }
+                        WorthQueryBackendInspectionErrorKind::Construction => {
+                            WorthQueryInspectionUnavailableSource::Construction
+                        }
                         WorthQueryBackendInspectionErrorKind::Unavailable => {
                             WorthQueryInspectionUnavailableSource::Runtime
                         }
@@ -68,12 +77,8 @@ impl WorthQueryInspectionRequest {
                         }
                     };
                     return Ok(WorthQueryInspectionOutcome::Unavailable(
-                        WorthQueryInspectionUnavailable::new(
-                            source,
-                            error.message(),
-                            receipt,
-                            cost,
-                            attempted,
+                        WorthQueryInspectionUnavailable::from_backend(
+                            source, error, receipt, cost, attempted,
                         ),
                     ));
                 }

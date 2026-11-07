@@ -36,9 +36,7 @@ pub struct EffectExecutionReceipt {
 }
 
 impl EffectExecutionReceipt {
-    pub(super) fn from_scalar(
-        executed: &ExecutedEffectPlan,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    pub(super) fn from_scalar(executed: &ExecutedEffectPlan) -> Self {
         let receipt_family = match executed.artifact() {
             ExecutedEffectAuthorityArtifact::Writeback { .. } => {
                 EffectReceiptArtifactKind::WorthQueryWriteReceipt
@@ -56,7 +54,7 @@ impl EffectExecutionReceipt {
             .admitted()
             .normalized()
             .basis_family();
-        let execution_identity = scalar_execution_receipt_identity(executed, receipt_family)?;
+        let execution_identity = scalar_execution_receipt_identity(executed, receipt_family);
         let receipt_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
                 .field_shape(
@@ -71,16 +69,16 @@ impl EffectExecutionReceipt {
                     WorthQueryEvidenceTag::new("execution"),
                     &execution_identity,
                 )
-                .seal()?;
-        let decision_trace = EffectReceiptDecisionTrace::scalar(executed)?;
+                .seal().expect("fixed performed artifact grammar: closed labels, primitive coordinates, sealed identities, and Bridge-owned SHA256 output tokens");
+        let decision_trace = EffectReceiptDecisionTrace::scalar(executed);
         let integrity_markers = EffectReceiptIntegrityMarkers::new(
             executed.artifact(),
             executed.counters(),
             &receipt_identity,
-        )?;
+        );
         let counters = executed.counters().clone();
-        let target_evidence = scalar_target_evidence(executed)?;
-        Ok(Self {
+        let target_evidence = scalar_target_evidence(executed);
+        Self {
             target_evidence,
             write_count: 1,
             receipt_family,
@@ -91,17 +89,15 @@ impl EffectExecutionReceipt {
             decision_trace,
             integrity_markers,
             counters,
-        })
+        }
     }
 
-    pub(super) fn from_batch(
-        executed: &ExecutedEffectBatchPlan,
-    ) -> Result<Self, IdentityDerivationDenial> {
+    pub(super) fn from_batch(executed: &ExecutedEffectBatchPlan) -> Self {
         let receipt_family = EffectReceiptArtifactKind::WorthQueryBatchWriteReceipt;
         let declared_effect_family = EffectFamily::Mutation;
         let authority_lane = executed.authority_lane();
         let basis_family = executed.basis_family();
-        let execution_identity = batch_execution_receipt_identity(executed)?;
+        let execution_identity = batch_execution_receipt_identity(executed);
         let receipt_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
                 .field_shape(
@@ -116,13 +112,13 @@ impl EffectExecutionReceipt {
                     WorthQueryEvidenceTag::new("execution"),
                     &execution_identity,
                 )
-                .seal()?;
-        let decision_trace = EffectReceiptDecisionTrace::batch(executed)?;
+                .seal().expect("fixed performed artifact grammar: closed labels, primitive coordinates, sealed identities, and Bridge-owned SHA256 output tokens");
+        let decision_trace = EffectReceiptDecisionTrace::batch(executed);
         let integrity_markers = EffectReceiptIntegrityMarkers::new(
             executed.aggregate_artifact(),
             executed.counters(),
             &receipt_identity,
-        )?;
+        );
         let counters = executed.counters().clone();
         let aggregate = executed
             .aggregate_mutation()
@@ -132,7 +128,7 @@ impl EffectExecutionReceipt {
             version_id: aggregate.outcome().commit.version_id.0,
             component_count: executed.components().len(),
         };
-        Ok(Self {
+        Self {
             target_evidence,
             write_count: executed.components().len(),
             receipt_family,
@@ -143,7 +139,7 @@ impl EffectExecutionReceipt {
             decision_trace,
             integrity_markers,
             counters,
-        })
+        }
     }
 
     pub fn receipt_family(&self) -> EffectReceiptArtifactKind {
@@ -223,10 +219,8 @@ impl EffectExecutionReceipt {
     }
 }
 
-fn scalar_target_evidence(
-    executed: &ExecutedEffectPlan,
-) -> Result<EffectReceiptTargetEvidence, IdentityDerivationDenial> {
-    Ok(match executed.artifact() {
+fn scalar_target_evidence(executed: &ExecutedEffectPlan) -> EffectReceiptTargetEvidence {
+    match executed.artifact() {
         ExecutedEffectAuthorityArtifact::Mutation(result) => {
             EffectReceiptTargetEvidence::MutationCommit {
                 commit_id: result.outcome().commit.commit_id.0,
@@ -244,67 +238,63 @@ fn scalar_target_evidence(
                 outcome_identity: writeback_bridge_evidence_identity(
                     "outcome",
                     execution.outcome(),
-                )?,
+                ),
                 authority_receipt_identity: writeback_bridge_receipt_evidence_identity(
                     "authority_receipt",
                     execution.authority_receipt(),
-                )?,
+                ),
                 execution_receipt_identity: writeback_bridge_execution_receipt_evidence_identity(
                     "execution_receipt",
                     execution.execution_receipt(),
-                )?,
+                ),
             }
         }
-    })
+    }
 }
 
 fn scalar_execution_receipt_identity(
     executed: &ExecutedEffectPlan,
     receipt_family: EffectReceiptArtifactKind,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "effect_execution_receipt_execution_v1",
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("family"),
-                receipt_family.as_str(),
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("lowered"),
-                executed.lowered().lowered_effect_execution_plan_identity(),
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("authority_artifact"),
-                &executed_authority_artifact_identity(executed.artifact())?,
-            )
-            .seal()?,
-    )
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "effect_execution_receipt_execution_v1",
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("family"),
+            receipt_family.as_str(),
+        )
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("lowered"),
+            executed.lowered().lowered_effect_execution_plan_identity(),
+        )
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("authority_artifact"),
+            &executed_authority_artifact_identity(executed.artifact()),
+        )
+        .seal().expect("fixed performed artifact grammar: closed labels, primitive coordinates, sealed identities, and Bridge-owned SHA256 output tokens")
 }
 
 fn batch_execution_receipt_identity(
     executed: &ExecutedEffectBatchPlan,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "effect_execution_receipt_execution_v1",
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("family"),
-                EffectReceiptArtifactKind::WorthQueryBatchWriteReceipt.as_str(),
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("lowered"),
-                executed.lowered().batch_identity(),
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("authority_artifact"),
-                &executed_authority_artifact_identity(executed.aggregate_artifact())?,
-            )
-            .seal()?,
-    )
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "effect_execution_receipt_execution_v1",
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("family"),
+            EffectReceiptArtifactKind::WorthQueryBatchWriteReceipt.as_str(),
+        )
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("lowered"),
+            executed.lowered().batch_identity(),
+        )
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("authority_artifact"),
+            &executed_authority_artifact_identity(executed.aggregate_artifact()),
+        )
+        .seal().expect("fixed performed artifact grammar: closed labels, primitive coordinates, sealed identities, and Bridge-owned SHA256 output tokens")
 }

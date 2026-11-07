@@ -99,7 +99,7 @@ impl<D: 'static> WorthQueryInstalledDomainLiveContinuation<D> {
                     },
                 )
             }
-        })?
+        })
     }
 }
 

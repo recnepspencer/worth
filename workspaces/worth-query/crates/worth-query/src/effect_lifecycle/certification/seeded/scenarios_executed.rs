@@ -267,7 +267,7 @@ pub(super) fn batch_mutation_row(
         admitted_digest,
         None,
         Some(lowered_digest),
-        Some(executed.batch_for_reporting().to_string()),
+        Some(executed.batch_for_reporting()?.to_string()),
         None,
         executed.counters().clone(),
     ))

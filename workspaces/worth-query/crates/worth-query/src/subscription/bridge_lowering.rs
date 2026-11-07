@@ -179,7 +179,10 @@ pub fn lower_query_subscription_to_bridge(
 
     let basis_request = QuerySubscriptionBasisBindingRequest::from_declaration(&declaration);
     let signal_strategy_request =
-        QuerySubscriptionSignalStrategyRequest::for_bridge_family(family_map.bridge_family());
+        QuerySubscriptionSignalStrategyRequest::for_bridge_family(family_map.bridge_family())
+            .map_err(|cause| {
+                QuerySubscriptionBridgeLoweringError::identity_refused(cause, counters.clone())
+            })?;
     counters.bridge_lowering_count = 1;
     counters.bridge_slice_count = slice_map.bridge_slices().len() as u64;
     counters.basis_binding_request_count = 1;
@@ -192,7 +195,10 @@ pub fn lower_query_subscription_to_bridge(
         basis_request.evidence_identity(),
         signal_strategy_request.evidence_identity(),
         slice_map.bridge_slices(),
-    );
+    )
+    .map_err(|cause| {
+        QuerySubscriptionBridgeLoweringError::identity_refused(cause, counters.clone())
+    })?;
 
     Ok(BridgeSubscriptionLoweringPlan {
         query_declaration_identity,

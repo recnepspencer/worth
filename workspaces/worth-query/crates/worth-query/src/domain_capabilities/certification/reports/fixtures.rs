@@ -217,7 +217,7 @@ pub(super) fn support_traceability_requested(
         WorthQuerySupportContributionAuthoring::declaration_traceability(
             "worth.spatial.traceability.edge_split",
             "declaration-scoped support remains declaration scoped",
-        )
+        )?
         .bind_to_installed_target(target)?,
     )
 }
@@ -231,7 +231,7 @@ pub(super) fn plain_support_requested(
     Ok(WorthQuerySupportContributionAuthoring::declaration_support(
         "worth.spatial.traceability.edge_split",
         "declaration-scoped support remains declaration scoped",
-    )
+    )?
     .bind_to_installed_target(target)?)
 }
 
@@ -244,7 +244,7 @@ pub(super) fn plan_support_requested(
     Ok(WorthQuerySupportContributionAuthoring::declaration_support(
         "worth.spatial.support.runtime_floor",
         "runtime floor remains explicitly supported",
-    )
+    )?
     .bind_to_installed_target(target)?)
 }
 
