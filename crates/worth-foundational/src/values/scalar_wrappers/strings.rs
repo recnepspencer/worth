@@ -3,12 +3,24 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct Symbol(pub u32);
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Clone, Deserialize)]
 #[serde(from = "StoredStringWire")]
 pub enum InternedString {
     Raw(String),
     Symbol(Symbol),
     Stored(crate::value_shape::StoredValueText),
+}
+
+// The process-local seal is transparent to the established textual value.
+// Existing diagnostic projections must retain Raw's spelling after a decode.
+impl std::fmt::Debug for InternedString {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Raw(text) => formatter.debug_tuple("Raw").field(text).finish(),
+            Self::Stored(text) => formatter.debug_tuple("Raw").field(&text.as_str()).finish(),
+            Self::Symbol(symbol) => formatter.debug_tuple("Symbol").field(symbol).finish(),
+        }
+    }
 }
 
 // A cache is never a wire variant: preserve both the original name and
@@ -189,7 +201,7 @@ mod tests {
     fn stored_text_preserves_the_original_string_key_hash_and_equality() {
         use super::{InternedString, Symbol};
         use std::hash::{DefaultHasher, Hash, Hasher};
-        #[derive(Hash)]
+        #[derive(Debug, Hash)]
         enum LegacyString {
             Raw(String),
             Symbol(Symbol),
@@ -204,6 +216,11 @@ mod tests {
             let stored =
                 InternedString::Stored(crate::value_shape::StoredValueText::new(text.to_owned()));
             assert_eq!(raw, stored);
+            assert_eq!(
+                format!("{raw:?}"),
+                format!("{:?}", LegacyString::Raw(text.to_owned()))
+            );
+            assert_eq!(format!("{stored:?}"), format!("{raw:?}"));
             assert_eq!(hash(&raw), hash(&LegacyString::Raw(text.to_owned())));
             assert_eq!(hash(&stored), hash(&raw));
         }
