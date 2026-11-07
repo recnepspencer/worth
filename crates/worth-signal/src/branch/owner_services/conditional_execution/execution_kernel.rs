@@ -48,7 +48,9 @@ pub(in crate::branch::owner_services) fn execute_conditional_against_graph(
                 &mut evaluation_state.admission_custody,
             )
             .map_err(Denial::SlotAdmission)?;
-        evaluation_state.slot = Some(SignalConditionalExecutionSlot { partition });
+        evaluation_state.slot = Some(SignalConditionalExecutionSlot {
+            partition: Box::new(partition),
+        });
     }
     let execution = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         evaluation_state

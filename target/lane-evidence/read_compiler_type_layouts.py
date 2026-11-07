@@ -2,7 +2,8 @@
 import json,re
 from pathlib import Path
 e=Path('target/lane-evidence'); rows=[];current=None
-for line in (e/'type-size-consumer/compiler-layouts.log').read_text(encoding='utf8').splitlines():
+logs=[e/'type-size-consumer/compiler-layouts.log']+sorted(e.glob('type-size-*-layout/compiler-layouts.log'))
+for line in (line.rstrip('\n') for log in logs for line in log.open(encoding='utf8')):
  match=re.fullmatch(r'print-type-size type: `(.+)`: (\d+) bytes, alignment: (\d+) bytes',line)
  if match:
   current=dict(type=match[1],bytes=int(match[2]),alignment=int(match[3]),members=[]);rows.append(current)

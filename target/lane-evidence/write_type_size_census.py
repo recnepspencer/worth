@@ -51,7 +51,7 @@ for function in source['functions']:
 families={}; observations=[]
 def family(head):
  return families.setdefault(head,dict(head=head,maximum=0,instances=set(),sizes=set(),source=set(),members=[],use_count=None,exemplar=''))
-for workspace in ('root','query','store'):
+for workspace in ('root','query','store','legacy-layout'):
  rows=json.loads((e/('type-size-'+workspace+'-rows.json')).read_text())
  observations.extend(rows)
  groups=collections.defaultdict(list)
@@ -65,7 +65,7 @@ for workspace in ('root','query','store'):
     fields=sorted((x for x in groups[(row[1],row[2])] if x[3]),key=lambda x:-int(x[5]))
     f['members']=[x[3]+': '+x[5] for x in fields[:3]]
   if not row[3]:f['source'].add(row[1]);f['use_count']=len(uses[(row[1],row[2])])
-consumer=json.loads((e/'type-size-consumer-rows.json').read_text())
+consumer=json.loads((e/'type-size-consumer-layout-rows.json').read_text())+json.loads((e/'type-size-bank-layout-rows.json').read_text())
 for row in consumer:
  f=family(row[1].split('<',1)[0]);f['instances'].add(row[1]);f['sizes'].add(int(row[2]))
  if int(row[2])>f['maximum']:f['maximum']=int(row[2]);f['exemplar']=row[1]
@@ -93,9 +93,9 @@ for f in ordered:
  payload.append(f)
 (e/'type-size-families.json').write_text(json.dumps(payload,indent=2))
 lines=['# Type-size census before the layout batch','',
- 'Source: HEAD `750f746567` plus the retained unit-only census changes. All measurements use the committed 1.99.1 compiler and dev profile. No runtime, proof, witness or authority value is constructed by a census test.','',
- 'Root 3/0/49 (49 ignored metadata entries, none selected or executed); Query 3/0/0; Store 2/0/0; consumer 1/0/0. Exact commands, HEAD, dirty status, times and exit codes are in `type-size-{root,query,store}.log` and `type-size-consumer-selected.log`. The first consumer preflight log records a two-target declaration refusal before compilation; the corrected selection has one test root.','',
- f'The eight owner units printed {len(observations):,} type/field observations; the real consumer printed {len(consumer)} concrete public carrier/return layouts. The compiler diagnostic retains {len(compiler):,} distinct rendered layouts, including {len(selected):,} layouts of WORTH data or wrappers containing it at least 1 KiB. Exact generic instances, alignment and members are in `compiler-type-layouts.json`; raw compiler output is `type-size-consumer/compiler-layouts.log`.','',
+ 'Source: baseline HEAD `750f746567` plus retained unit-only census changes; correction measurements at committed HEAD `805533bb7f`. All measurements use the committed 1.99.1 compiler and dev profile. No runtime, proof, witness or authority value is constructed by a census test.','',
+ 'Root 3/0/49 (49 ignored metadata entries, none selected or executed); Query 3/0/0; Store 2/0/0; baseline consumer 1/0/0. Correction: Legacy, Bank and updated consumer 1/0/0 each; Native and World compiler layout builds execute no tests. Exact commands, HEAD, dirty status, times and exit codes are in `type-size-{root,query,store}.log` and `type-size-consumer-selected.log`. The first consumer preflight log records a two-target declaration refusal before compilation; the corrected selection has one test root.','',
+ f'The owner-unit captures printed {len(observations):,} type/field observations; the real consumer and Bank guards printed {len(consumer)} concrete public carrier/return layouts. The compiler diagnostic retains {len(compiler):,} distinct rendered layouts, including {len(selected):,} layouts of WORTH data or wrappers containing it at least 1 KiB. Exact generic instances, alignment and members are in `compiler-type-layouts.json`; raw compiler output is in `type-size-consumer/compiler-layouts.log` and `type-size-{{native,world,legacy,bank,consumer}}-layout/compiler-layouts.log`. Correction driver refusals were artifact-selection metadata defects, not compiler/product defects; corrected logs preserve the successful compiles.','',
  'The table groups by rendered nominal constructor (generic arguments elided) and reports the maximum observed size, not an assertion that its instantiations share one layout. Aliases printed by the compiler remain separate labels unless a unit observation supplies their canonical type name. Closures with one displayed source span may have several reported layouts; every distinct layout is retained. Sizes can differ between unit cfg and dependency cfg. No padding subtraction or guessed private size is used.','',
  'The use count is an explicit-source lower bound over the 172 selected source functions (top 100 plus 12 per additional owner), deduplicated by symbol. It counts owning receivers, typed parameters/results/locals and named struct constructors; references and heap-indirected generic payloads are excluded. Inferred locals and implicit copies are not counted. A dash means the constructor has no unique definition attribution in this source inventory, not that it is absent or unused. This is not a complete inferred by-value count across all 1,658 frame functions.','',
  'Definition paths below are direct owner observations or unique declaration-name matches. Unresolved aliases/wrappers retain their exact compiler label and raw layout, rather than acquiring a fabricated source location. Private protected owner carriers are observed where their public containers require their layout; no protected source file is edited.','',
@@ -107,7 +107,7 @@ for f in payload:
  lines.append(f'| {f["maximum"]:,} | `{label}` | {len(f["instances"])} | {f["use_count"] if f["use_count"] is not None else "—"} | {path} | {members} |')
 lines+=['','## Coverage still requiring qualification','',
  'This inventory exhausts the recorded observations, not every possible generic instantiation. Source candidates not instantiated by these owner units or the real consumer remain explicit gaps. Do not label the source-type inventory exhaustive until those gaps are measured or routed. The compiler diagnostic resolves the private History Phase/Forking/Selecting layouts; the existing Memory host remains the real reference, with no artificial application factory.','',
- 'Protected Native storage/checkpoint/root and World/Lifecycle/transition carriers remain owner-held. The remaining constrained measurements are integration-owned and must be completed before the representation batch. C2 owns residual frame/future ceilings; it is not a waiver of this census.','']
+ 'Protected Native storage/checkpoint/root and World/Lifecycle/transition carriers remain owner-held. All remaining unobserved constrained candidates are listed below; a zero gap count is limited to the recorded source candidate plan. C2 owns residual frame/future ceilings; it is not a waiver of this census.','']
 observed_names={row['type'].split('<',1)[0].split('::')[-1] for row in compiler}
 observed_names.update(row[4].split('<',1)[0].split('::')[-1] for row in observations)
 plan=json.loads((e/'type-census-plan.json').read_text())

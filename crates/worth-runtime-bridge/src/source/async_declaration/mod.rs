@@ -32,6 +32,7 @@ pub use declaration::{
     BridgeAsyncSourceLegacyDeclarationIdentity, ValidatedBridgeAsyncSourceDeclaration,
 };
 pub use family::{BridgeAsyncSignalLoweringFamilyKind, BridgeAsyncSourceDeclarationFamilyKind};
+pub(crate) use lowering::OriginalLoweringStorage;
 pub use lowering::{BridgeAsyncSourceLoweringIdentity, LoweredBridgeAsyncSourceDeclaration};
 pub use rejection::{
     BridgeAsyncSourceDeclarationRejection, BridgeAsyncSourceDeclarationRejectionKind,

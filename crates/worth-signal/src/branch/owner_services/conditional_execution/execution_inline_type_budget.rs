@@ -6,10 +6,10 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
         let mut owner = census.owner::<SignalConditionalExecutionSlot>(
             "crates/worth-signal/src/branch/owner_services/conditional_execution/execution.rs",
             "SignalConditionalExecutionSlot",
-            128 * 1024,
+            64,
         );
         owner
-            .field::<crate::data::graph::storage::evaluation_partition::SignalEvaluationPartition>(
+            .field::<Box<crate::data::graph::storage::evaluation_partition::SignalEvaluationPartition>>(
                 "partition",
             );
     }

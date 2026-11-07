@@ -1,105 +1,61 @@
-# Main-thread layout batch (design, not implemented)
+# Original-funded type storage (revised design, not implemented)
 
-The ordinary Windows examples require a genuine 1 MiB main stack in the
-committed dev profile. Delivery-track H10 requires those entries to pass;
-closing every frame/future ceiling remains C2. No Native storage/checkpoint/root
-or World/Lifecycle/transition file is in this implementation batch.
+H10 requires the ordinary Windows dev example mains on their genuine 1 MiB stack.
+Other frame ceilings are C2. Protected Native/World files remain untouched.
 
-## Measured boundary
+## Findings accepted from follow-up review
 
-Root's three retained owner units passed once, Query's three passed once, and
-Store's two passed once. They print 1,787 concrete size observations, including
-field types, without constructing runtime values or authorities. Scalar generic
-instances are labeled by their actual compiler type name. They are not claims
-about every application instantiation. The real consumer wrapper/return sizes
-and private generic layout diagnostic are still being collected; the final
-inventory must preserve that distinction.
+The initial complete design is REJECTED: three SignalRuntime boxes allocate
+on ordinary Bridge lowering; the exclusivity reservation is not heap funding;
+the early FixedOperation denial does not reach the conditional slot. Withdraw
+runtime boxes. Keep the already-funded partition box. No product edit exists.
 
-The measured common carriers are:
+## Causal owner fix
 
-| Carrier | Dev unit bytes | Dominant inline storage |
-|---|---:|---|
-| SignalRuntime<(),(),(),()> | 15,552 | checkpoint 4,000; event bus 4,048; telemetry 3,856 |
-| BridgeOwnedSignalRuntime | 17,728 | optional SignalRuntime under a mutex: 15,568 |
-| BridgeSealedRuntimeAssembly | 20,432 | owned Signal runtime assembly |
-| BridgeAssemblyRetirement | 39,376 | prepared and stopped Signal allocations, each 15,552 |
-| SignalConditionalExecutionSlot | 11,480 | complete evaluation partition |
-| SignalConditionalEvaluationState | 11,520 | optional slot, even while absent |
-| SignalConditionalEvaluationAdmission | 11,928 | mutex/state: 11,528 |
-| BridgeConditionalEvaluationSession | 11,960 | admitted Signal evaluation |
+LoweredBridgeAsyncSourceDeclaration is 3160 bytes (body 2992), embedded in the
+4432-byte AdmittedBridgeAsyncRequestIdentity and 5440-byte bound basis. Query
+FixedOperation cleanup/denials carry these. Put its immutable body in a private
+Arc payload at the definition. Keep identity, counters and per-instance digest
+on the outer value; live runtime/attempt custody remains outside unchanged.
 
-Query also carries a 69,136-byte admitted legacy read intent and a 25,792-byte
-running application commit. Store's recovered core is 65,632 bytes. These are
-reported; they are not all selected for representation changes in this batch.
+The payload owns body, original template digest and optional original
+ExecutionMemoryReservation. Debug/Eq exclude the ticket and preserve meaning.
+Operational managed/atomic factories require a private reservation obtained
+from their actual original ExecutionRequest::reserve_retained_memory before
+allocating. Map refusal through existing ExecutionDenied(BridgeExecutionDenial),
+retaining the exact cause. Quote Arc payload/control block plus newly retained
+fixed-length template digest Arc<str>, using checked layouts and SHA-256 output
+length plus the existing prefix. Ticket lives until the final Arc drops.
+Native-only None is the existing request contract, never a fresh grant/fallback.
+Nearest analogue: recorded_baseline/json.rs reserves before allocating.
 
-## Representation changes
+Existing public lower() and owned-async installation construction remain cold
+owner routes using the same semantic lowerer; only operational factory requires
+the original reservation. No new public door or authority. Split lowering storage
+and construction into named responsibilities, <=400 lines.
 
-1. At `SignalRuntime`'s definition in
-   `crates/worth-signal/src/logic/transaction/runtime/state/runtime_state/mod.rs`,
-   make `checkpoint`, `event_bus` and `telemetry` owned boxes. Keep all public
-   methods and the runtime's ownership shape. Do not add Deref, a public backing
-   type, a second runtime wrapper, or a new phase proof.
+Readmission already owns the original lowering. Re-instantiate its shared body
+for the fresh intent instead of rebuilding/allocating a new body. Store the
+original template digest so it never hashes the previous instance digest.
+Result must equal fresh lowering of the same contract for the same fresh intent.
+Keep all runtime, operation, source-profile, attempt, Signal and queue checks.
+No readmission request/grant is invented.
 
-   These are three fixed installation-lifetime allocations. Allocate them while
-   assembling the runtime, before it enters service, alongside the existing
-   owned graph box. They do not allocate on an application mutation or during
-   close. Snapshot/capture continues to copy the same telemetry value and clone
-   the same checkpoint state; restoring updates the existing boxed object.
-   Never replace a runtime box with a fresh allocation on restore/reset.
+Box SignalConditionalExecutionSlot.partition at its definition and the two
+constructors: execution_kernel.rs and evaluation_reuse/readmission.rs. Initial
+partition admission already reserves capacity<Self>(1) before construction.
+Both storage/slot reservations remain inside it; no duplicate charge.
 
-   Trace/update owned construction, snapshot projection, branch transfer and
-   telemetry value access. Borrowed field calls use Box's built-in projection;
-   keep independent field borrows and exact destruction order. Prepared/stopped
-   Signal owners still carry the same runtime, so their inline size shrinks
-   automatically without a new retirement protocol.
+## Expected evidence
 
-2. At `SignalConditionalExecutionSlot`'s definition in
-   `crates/worth-signal/src/branch/owner_services/conditional_execution/execution.rs`,
-   make `partition` an owned box. Construct it only after the existing original
-   admission completes, in `execution_kernel.rs` and
-   `evaluation_reuse/readmission.rs`.
+Lowered declaration ~176 bytes (guard <=256), bound basis ~2456, slot pointer
+size (guard <=64). SignalRuntime stays15552; other ceilings are C2. Update
+metadata expressions to the real field types. Genuine SerialRequest and
+SerialMemoryBudget tests prove original charge retention until last body share,
+refusal without backing, and canonical template re-instantiation equivalence.
 
-   Funding already exists: `SignalEvaluationPartition::initial_heap_charge`
-   includes `Charge::capacity::<Self>(1)`. Execution-basis partition admission
-   reserves that storage (plus observation and reservation backing) and its
-   original work before constructing the partition. The canonical partition's
-   storage and slot reservations remain inside the boxed partition until its
-   owned destruction. Do not add a grant or a second reservation; do not alter
-   charged partition visits, unwind release, retry or denial outcomes.
-
-   The admission itself ceases reserving space inline for a not-yet-created
-   partition. Any footprint assertion must use the owner's actual current
-   reported footprint, retaining its original claim.
-
-## Expected drops and invariants
-
-- SignalRuntime: approximately 15,552 -> 3,672 bytes (guard <=4 KiB).
-- Each inline runtime occurrence in Bridge/Query shrinks by approximately
-  11,880 bytes. Composite-enum maxima will be remeasured, not inferred as fact.
-- SignalConditionalExecutionSlot: 11,480 -> pointer width (guard <=64 bytes).
-- Evaluation state/admission: approximately 48/456 bytes; Bridge session ~488.
-- RuntimeTelemetry remains Copy, with unchanged independent value semantics.
-- No new public type, permission, control door, branch root, feature or macro.
-- No new mutable sharing. Boxes retain unique ownership and field destruction
-  order. Live custody remains inside the same native owners on every refusal.
-- No changed serialized meaning or checkpoint format; this is live storage.
-
-## Verification plan
-
-Before the first check, finish every reached constructor/value transfer and
-inspect the complete diff. Tighten the two measured owner ceilings and update
-field-size observations to their actual new declarations.
-
-One coherent verification round checks each touched workspace once, then builds
-only the selected census targets, real consumer entries and Bank parents through
-the owned build/nextest runners. Audit all selected names before execution:
-no ignored test, query-scale, exhaustive oracle or scenario. Run the three
-ordinary examples as their real mains with RUST_MIN_STACK absent, consumer-root,
-the two Bank parents and the retained type-size tests. Confirm the PE stack
-reservation stays 1,048,576 bytes for all three examples, and rerun the existing
-whole-frame census on the final artifacts. Unchanged independent Store physical
-inputs may reuse their green census evidence; do not rebuild them without a
-changed input or unresolved concern.
-
-Three implementation rounds are available. Before any additional round, record
-the remaining risk and selected failed names in integration-progress.md.
+Finish all callers/constructors before checks. Three implementation rounds:
+one check/reached workspace, owned focused builds/runs of changed tests, type
+guards, actual example mains, consumer-root and Bank parents. Audit exclusions.
+No stack override; verify unchanged 1048576 PE reserve. Reuse unchanged Store
+measurements. Rerun seven-binary frame census. Record risk before extra rounds.
