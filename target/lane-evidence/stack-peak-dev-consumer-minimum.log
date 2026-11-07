@@ -1,0 +1,265 @@
+COMMAND: ["python", "target/lane-evidence/stack_peak/measure.py", "dev", "worth-query-consumer-root"]
+HEAD: 7eeb6fa326b46f1924c1defe9670261245cb1d92
+CLEAN: true
+START: 2026-11-07T09:43:26.888899+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+EXACT ENTRY RVAS {'entry': 75866512, 'probe': 208694880} PROFILE dev SHA256 2c90ebedae72d31ab79ab8fbaee1fa992385e3b5242b9769fde73aa646ef4c6c
+DIAGNOSTIC COMMAND ["C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\target\\debug\\worth-query-consumer-root.exe"]
+EVENT 3 24760 78472
+EVENT 2 24760 60024
+EVENT 2 24760 17168
+EVENT 2 24760 18684
+BREAK 0x7ffc68e626c9 entry 0x7ff74609a190
+EVENT 2 24760 68240
+BREAK 0x7ff74609a190 entry 0x7ff74609a190
+ENTRY 24760 68240 original
+CREATE_REMOTE_BEGIN
+CREATE_REMOTE_END 80676
+EVENT 2 24760 80676
+BREAK 0x7ff74609a190 entry 0x7ff74609a190
+ENTRY 24760 80676 entry
+BREAK 0x7ff74609a190 entry 0x7ff74609a190
+ENTRY 24760 80676 limits
+STACK_LIMITS 0 0x830700000 0x834700000 committed 0x830701000
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+BREAK 0x7ff75df40052 entry 0x7ff74609a190
+TIMEOUT_STATE body
+TIMEOUT_THREAD 78472 0x7ffc68ea1dd4 0x82f96f678 0x0
+TIMEOUT_PATH [{"pc": 140722068659668, "sp": 35158161016, "external_symbol": "NtWaitForSingleObject", "symbol_address": 140722068659648, "live_frame_bytes": 8}, {"pc": 140722024791711, "sp": 35158161024, "external_symbol": "WaitForSingleObjectEx", "symbol_address": 140722024791536, "live_frame_bytes": 160}, {"pc": 140700078368737, "sp": 35158161184, "symbol_path": "std::sys::thread::windows::Thread::join", "symbol_exact": true, "function_rva": 145549248, "rva": 145549281, "static_frame": 88, "live_frame_bytes": 96}, {"pc": 140700097579397, "sp": 35158161280, "symbol_path": "std::thread::lifecycle::JoinInner::join", "symbol_exact": true, "function_rva": 164759904, "rva": 164759941, "static_frame": 136, "live_frame_bytes": 144}, {"pc": 140700047055215, "sp": 35158161424, "symbol_path": "std::thread::join_handle::JoinHandle::join", "symbol_exact": true, "function_rva": 114235728, "rva": 114235759, "static_frame": 56, "live_frame_bytes": 64}, {"pc": 140700008686604, "sp": 35158161488, "symbol_path": "worth_query_consumer_root::main", "symbol_exact": true, "function_rva": 75866928, "rva": 75867148, "static_frame": 280, "live_frame_bytes": 288}, {"pc": 140699935784454, "sp": 35158161776, "symbol_path": "core::ops::function::FnOnce::call_once", "symbol_exact": true, "function_rva": 2964992, "rva": 2964998, "static_frame": 40, "live_frame_bytes": 48}, {"pc": 140700020603945, "sp": 35158161824, "symbol_path": "std::sys::backtrace::__rust_begin_short_backtrace", "symbol_exact": true, "function_rva": 87784480, "rva": 87784489, "static_frame": 40, "live_frame_bytes": 48}, {"pc": 140699998388652, "sp": 35158161872, "symbol_path": "std::rt::lang_start::closure$0", "symbol_exact": true, "function_rva": 65569184, "rva": 65569196, "static_frame": 40, "live_frame_bytes": 48}, {"pc": 140700078376720, "sp": 35158161920, "symbol_path": "std::rt::lang_start_internal", "symbol_exact": true, "function_rva": 145557088, "rva": 145557264, "static_frame": 136, "live_frame_bytes": 144}, {"pc": 140699998330967, "sp": 35158162064, "symbol_path": "std::rt::lang_start", "symbol_exact": true, "function_rva": 65511472, "rva": 65511511, "static_frame": 56, "live_frame_bytes": 64}, {"pc": 140700008792969, "sp": 35158162128, "symbol_path": "main", "symbol_exact": true, "function_rva": 75973488, "rva": 75973513, "static_frame": 40, "live_frame_bytes": 48}]
+TIMEOUT_THREAD 60024 0x7ffc68ea5a24 0x82fcff7c8 0x0
+TIMEOUT_PATH [{"pc": 140722068675108, "sp": 35161896904, "external_symbol": "ZwWaitForWorkViaWorkerFactory", "symbol_address": 140722068675088, "live_frame_bytes": 8}, {"pc": 140722067361038, "sp": 35161896912, "external_symbol": "TpCallbackMayRunLong", "symbol_address": 140722067354368, "live_frame_bytes": 864}, {"pc": 140722044525991, "sp": 35161897776, "live_frame_bytes": 48}, {"pc": 140722067729996, "sp": 35161897824, "external_symbol": "RtlUserThreadStart", "symbol_address": 140722067729952}]
+TIMEOUT_THREAD 17168 0x7ffc68ea5a24 0x82fdff658 0x0
+TIMEOUT_PATH [{"pc": 140722068675108, "sp": 35162945112, "external_symbol": "ZwWaitForWorkViaWorkerFactory", "symbol_address": 140722068675088, "live_frame_bytes": 8}, {"pc": 140722067361038, "sp": 35162945120, "external_symbol": "TpCallbackMayRunLong", "symbol_address": 140722067354368, "live_frame_bytes": 864}, {"pc": 140722044525991, "sp": 35162945984, "live_frame_bytes": 48}, {"pc": 140722067729996, "sp": 35162946032, "external_symbol": "RtlUserThreadStart", "symbol_address": 140722067729952}]
+TIMEOUT_THREAD 18684 0x7ffc68ea5a24 0x82feff688 0x0
+TIMEOUT_PATH [{"pc": 140722068675108, "sp": 35163993736, "external_symbol": "ZwWaitForWorkViaWorkerFactory", "symbol_address": 140722068675088, "live_frame_bytes": 8}, {"pc": 140722067361038, "sp": 35163993744, "external_symbol": "TpCallbackMayRunLong", "symbol_address": 140722067354368, "live_frame_bytes": 864}, {"pc": 140722044525991, "sp": 35163994608, "live_frame_bytes": 48}, {"pc": 140722067729996, "sp": 35163994656, "external_symbol": "RtlUserThreadStart", "symbol_address": 140722067729952}]
+TIMEOUT_THREAD 68240 0x7ff74609a191 0x8306ff728 0x0
+TIMEOUT_PATH [{"pc": 140700008685969, "sp": 35172382504, "symbol_path": "worth_query_consumer_root::run", "symbol_exact": true, "function_rva": 75866512, "rva": 75866513, "static_frame": 1368, "live_frame_bytes": 16}, {"pc": 124710979121678, "sp": 35172382520}]
+TIMEOUT_THREAD 80676 0x7ff74a2a38d1 0x8344ebd90 0x404
+TIMEOUT_PATH [{"pc": 140700077930705, "sp": 35237313936, "symbol_path": "core::ptr::drop_glue", "symbol_exact": true, "function_rva": 145111248, "rva": 145111249, "static_frame": 56, "live_frame_bytes": 16}, {"pc": 140700077930024, "sp": 35237313952, "symbol_path": "core::ptr::drop_glue", "symbol_exact": true, "function_rva": 145110496, "rva": 145110568, "static_frame": 72, "live_frame_bytes": 80}, {"pc": 140700077906485, "sp": 35237314032, "symbol_path": "core::ptr::drop_glue", "symbol_exact": true, "function_rva": 145086992, "rva": 145087029, "static_frame": 56, "live_frame_bytes": 64}, {"pc": 140700077922345, "sp": 35237314096, "symbol_path": "core::ptr::drop_glue", "symbol_exact": true, "function_rva": 145102880, "rva": 145102889, "static_frame": 40, "live_frame_bytes": 48}, {"pc": 140700059654555, "sp": 35237314144, "symbol_path": "core::ptr::drop_glue", "symbol_exact": true, "function_rva": 126835040, "rva": 126835099, "static_frame": 40, "live_frame_bytes": 48}, {"pc": 140700059654701, "sp": 35237314192, "symbol_path": "core::ptr::drop_glue", "symbol_exact": true, "function_rva": 126835120, "rva": 126835245, "static_frame": 72, "live_frame_bytes": 80}, {"pc": 140700059798970, "sp": 35237314272, "symbol_path": "core::ptr::drop_glue", "symbol_exact": true, "function_rva": 126979440, "rva": 126979514, "static_frame": 72, "live_frame_bytes": 80}, {"pc": 140700060508004, "sp": 35237314352, "symbol_path": "alloc::vec::drop", "symbol_exact": true, "function_rva": 127688528, "rva": 127688548, "static_frame": 40, "live_frame_bytes": 48}, {"pc": 140700059255419, "sp": 35237314400, "symbol_path": "core::ptr::drop_glue", "symbol_exact": true, "function_rva": 126435936, "rva": 126435963, "static_frame": 56, "live_frame_bytes": 64}, {"pc": 140700059654377, "sp": 35237314464, "symbol_path": "core::ptr::drop_glue", "symbol_exact": true, "function_rva": 126834912, "rva": 126834921, "static_frame": 40, "live_frame_bytes": 48}, {"pc": 140700080548829, "sp": 35237314512, "symbol_path": "worth_relational::publication::patch::data::published_authoritative_patch::PublishedAuthoritativePatch::new", "symbol_exact": true, "function_rva": 147729312, "rva": 147729373, "static_frame": 88, "live_frame_bytes": 96}, {"pc": 140700064595510, "sp": 35237314608, "symbol_path": "worth_relational::authority::mutation::canonical_deltas::published_patch_projection::published_patch_from_foundational_patch", "symbol_exact": true, "function_rva": 131775600, "rva": 131776054, "static_frame": 536, "live_frame_bytes": 544}]
+Traceback (most recent call last):
+  File "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\stack_peak\measure.py", line 23, in <module>
+    first=Session(a,symbols).launch();(out/(key+'-paint.json')).write_text(json.dumps(first,indent=2))
+  File "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\stack_peak\debug_session.py", line 15, in launch
+    try:self.loop()
+        ~~~~~~~~~^^
+  File "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\stack_peak\debug_session.py", line 58, in loop
+    raise TimeoutError('no debugger event for15seconds')
+TimeoutError: no debugger event for15seconds
+
+END: 2026-11-07T09:44:12.326556+00:00
+EXIT: 1

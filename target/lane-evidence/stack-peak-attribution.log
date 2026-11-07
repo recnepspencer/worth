@@ -1,0 +1,18 @@
+COMMAND: ["python", "target/lane-evidence/stack_peak/attribute.py"]
+HEAD: 7eeb6fa326b46f1924c1defe9670261245cb1d92
+CLEAN: false
+START: 2026-11-07T09:56:10.406162+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+dev-bank PDB 1216417792 extra publics 181 module functions 150 unresolved 2
+dev-invariant_reads PDB 586256384 extra publics 101 module functions 30 unresolved 9
+dev-required_feature PDB 585162752 extra publics 94 module functions 16 unresolved 8
+dev-shared_execution PDB 585715712 extra publics 96 module functions 14 unresolved 8
+dev-worth-query-consumer-root PDB 1772204032 extra publics 130 module functions 89 unresolved 3
+release-bank PDB 74166272 extra publics 67 module functions 0 unresolved 7
+release-invariant_reads PDB 46116864 extra publics 44 module functions 0 unresolved 5
+release-required_feature PDB 45957120 extra publics 44 module functions 0 unresolved 4
+release-shared_execution PDB 46047232 extra publics 43 module functions 0 unresolved 4
+release-worth-query-consumer-root PDB 78254080 extra publics 79 module functions 0 unresolved 8
+
+END: 2026-11-07T09:56:35.295872+00:00
+EXIT: 0
