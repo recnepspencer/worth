@@ -3,42 +3,42 @@
   "purpose": "telemetry-only scheduling; never a correctness or timing gate",
   "aggregation": "maximum recommendation from every successful complete sample per exact identity",
   "status": "partial",
-  "complete_samples": 6772,
-  "scheduler_samples": 6772,
+  "complete_samples": 7763,
+  "scheduler_samples": 7763,
   "standalone_complete_samples": 0,
   "unmeasured_samples": 3,
-  "failed_child_samples": 60,
-  "sample_count": 6835,
-  "measured_identities": 4807,
-  "policy_identities": 67,
+  "failed_child_samples": 77,
+  "sample_count": 7843,
+  "measured_identities": 4816,
+  "policy_identities": 69,
   "retired_identities": 451,
   "inventory_basis": {
     "scope": "explicit complete current inventory",
     "identities": 4408,
     "sha256": "3435da974bde9300e64bf594331e2989128cfd44eb9b6e148da23a70315a90be"
   },
-  "source_count": 12,
+  "source_count": 13,
   "pending_claim_count": 0,
   "catalogs": {
     "sources": {
-      "file": "sources-00-000000-8335c9b46a57668d.jsonl",
-      "sha256": "8335c9b46a57668d733a51099fd4e8abb7e644cca354becb0571d1f0e2658dd0",
-      "records": 12
+      "file": "sources-00-000000-652cdb6e66b3bf89.jsonl",
+      "sha256": "652cdb6e66b3bf89990a0b13d4a08a6f49289c34603d987358b8f09e0f19a55c",
+      "records": 13
     },
     "samples": {
-      "file": "samples-01-000000-94b06fae3d41980f.jsonl",
-      "sha256": "94b06fae3d41980f858e2a8385d39dbb13dd7f364340d032684c9a2462e74212",
-      "records": 6835
+      "file": "samples-01-000000-15e9e3e6a9d1882b.jsonl",
+      "sha256": "15e9e3e6a9d1882b79e567c97551efc1b3da499a6b8a0a13f4f307c8c94aa1e6",
+      "records": 7843
     },
     "rules": {
-      "file": "rules-00-000000-fe50167250cda55f.jsonl",
-      "sha256": "fe50167250cda55f108582f7d2df260dd134e4e24cefc80aa7273cb0dfa2eb10",
-      "records": 67
+      "file": "rules-00-000000-28f3b05966fbfada.jsonl",
+      "sha256": "28f3b05966fbfada4f2bf7a15103ecff5e9540f5e87e7a72baca4df5175e4f2c",
+      "records": 69
     },
     "baselines": {
-      "file": "baselines-01-000000-1b9fce1ebc1b5da1.jsonl",
-      "sha256": "1b9fce1ebc1b5da188d31708f88b9cafe954d7ff972557665d547c75d46e7730",
-      "records": 4807
+      "file": "baselines-01-000000-c71701229ac86a11.jsonl",
+      "sha256": "c71701229ac86a111b70891ab95fd5a757442aa412cb39e05c6c3c8575907da8",
+      "records": 4816
     },
     "retired": {
       "file": "retired-01-000000-cf6dddf3cc0096e8.jsonl",

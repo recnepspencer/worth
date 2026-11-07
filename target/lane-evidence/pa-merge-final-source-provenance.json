@@ -1,0 +1,352 @@
+{
+  "reviewed_source_head": "5fa81663ff0af70dbf6c65747b7ebba6587820d8",
+  "source_since_merge": [
+    {
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/index_decode_stops.rs",
+      "sha256_git_lf": "59b44eeb8a718d6eee6d815cb839c019ad5ec898bf9a54765b66fe3cefc20581",
+      "lines": 175
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/canonical_commit_envelope/required_output_origin.rs",
+      "sha256_git_lf": "46129052eaaf1157360b2069112f5e6b733e7e6efb61fa65d10b38b00ddb512e",
+      "lines": 139
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/canonical_commit_envelope/required_output_origin/authored_cascade.rs",
+      "sha256_git_lf": "a73608c5e74a5725c309f62270a7b7ba2736f1e1bc43ebdcefc99d90e2777be9",
+      "lines": 202
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/canonical_commit_envelope/required_output_origin/authored_restoration.rs",
+      "sha256_git_lf": "82554ac336969ffed5d4b63183ece7a1aebda95d8810c96700da8b7fd872deb8",
+      "lines": 282
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/canonical_commit_envelope/required_output_origin/history_request.rs",
+      "sha256_git_lf": "a461f6a4e28d5f0fc090e21cfc3ca3abb391cb4501f4675a640752e4578a64d8",
+      "lines": 57
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/canonical_commit_envelope/required_output_origin/installation.rs",
+      "sha256_git_lf": "392446ee6d6a1064bd2e72f4681054f0d735f8f164c79bf403a9f16584a3ba70",
+      "lines": 283
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/canonical_commit_envelope/required_output_origin/installation/predecessor.rs",
+      "sha256_git_lf": "094fcce78b03ae31548530252a837fff57d362ba2ac6102892356f144d20d000",
+      "lines": 105
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/canonical_commit_envelope/required_output_origin/installation/producer_cascade.rs",
+      "sha256_git_lf": "294a65870b1a9ca47fbdf896e5b7322f843c7adf16d2c679d3918e02aaeb66b8",
+      "lines": 278
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/canonical_commit_envelope/required_output_origin/installation/route_completion.rs",
+      "sha256_git_lf": "5c4dfd97106f6782da5bbf0012506475de121442503f3da989970eb57caaa5a1",
+      "lines": 223
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/canonical_commit_envelope/required_output_origin/installation/scope_dependents.rs",
+      "sha256_git_lf": "0d9e775ad2a8f126829f07a245ddf8aba1d030c88e2b1585a20efdc9c8b94fda",
+      "lines": 90
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/canonical_commit_envelope/required_output_origin/members.rs",
+      "sha256_git_lf": "5d658891ac194e54a3be7bee4650cd05e6ecd0ca5bd2ec895811e0ed46f1d978",
+      "lines": 265
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/canonical_commit_envelope/required_output_origin/relations.rs",
+      "sha256_git_lf": "b12dba4cfc1ffba7a3420aa0a67a0748506f8ce5fcb2a86ccd42e376273eca84",
+      "lines": 272
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/codec_retirement_closure.rs",
+      "sha256_git_lf": "27757428b684d95af60babaa00e767bf63574ea131393c083cedb11707f43447",
+      "lines": 335
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/codec_retirement_closure/authored_cascade.rs",
+      "sha256_git_lf": "2ee518a6663d92cf8577ebba0d3a082ec71d63a892d4cf8b551478a4af733731",
+      "lines": 222
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/codec_retirement_closure/authored_restoration.rs",
+      "sha256_git_lf": "dd34875375717ca56bfc5751ed3e6f721e35e2acc47e61ad669a041f968a7524",
+      "lines": 296
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/codec_retirement_closure/authored_retirement.rs",
+      "sha256_git_lf": "b4797374ff03c8df715e932ef60d4283f117221e421716ad1f85b7f0cdd40766",
+      "lines": 223
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/codec_retirement_closure/codec_disposition.rs",
+      "sha256_git_lf": "487a2d5ab4ce1df01f983a6905dcf8b2427347003525126b55c60c7417a994c5",
+      "lines": 255
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/codec_retirement_closure/codec_disposition/activation.rs",
+      "sha256_git_lf": "87cf2767fa328abf1f7c05063a5d4057e2315c2cafd4fd964f60875549ff472c",
+      "lines": 130
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/codec_retirement_closure/codec_disposition/deletion_grammar.rs",
+      "sha256_git_lf": "1b3585b1de33a1d4a827aa0b948a3c72a39f9e25be5e828d03595b57d7f97c0a",
+      "lines": 102
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/codec_retirement_closure/history_request.rs",
+      "sha256_git_lf": "ed67e67883d832cc6a9cb6caf33513324070d6f1480aacb423a9187b76b8dc8e",
+      "lines": 47
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/codec_retirement_closure/materialization.rs",
+      "sha256_git_lf": "376476e9ccf20187d88263655a45d5b24127b5e45dde34667b4b066c306ee199",
+      "lines": 71
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/codec_retirement_closure/materialization/capture.rs",
+      "sha256_git_lf": "5ab8b95f437ed9ff8a1e318cbcee792f1aefc5a1196ff4f327f41e2e5f4ddf73",
+      "lines": 269
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/codec_retirement_closure/materialization/capture/selection.rs",
+      "sha256_git_lf": "0c5570d2fc0f543676be83fc3c72f8c338b0bed63e00a9ba63c8be52b4bc8061",
+      "lines": 117
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/codec_retirement_closure/materialization/header.rs",
+      "sha256_git_lf": "2f7502771950a8dcfa9b77c232bb6f0b66153ce5df9bc905e0e8fb36cc68ccec",
+      "lines": 278
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/codec_retirement_closure/materialization/payload.rs",
+      "sha256_git_lf": "5fa217f7300730de8a0331c10075e8f8b959a4640c95462d7b8bf10d823c1a35",
+      "lines": 280
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/codec_retirement_closure/membership.rs",
+      "sha256_git_lf": "cafee17da7c0f1f40107ed303e5b9cfeb93c312cd815b166128d7959b1b2a7c5",
+      "lines": 341
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/codec_retirement_closure/output_correspondence.rs",
+      "sha256_git_lf": "cc39e6cc90fafbf6767ce6dd2d5d7873c5c1f91a878fc11e4963c2ebe21042f6",
+      "lines": 156
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/codec_retirement_closure/producer_retirement.rs",
+      "sha256_git_lf": "203f201702a2f2f795f5cabc66ca249e5ea9873d75d6bdf69cfe592410244d29",
+      "lines": 105
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/codec_retirement_closure/publication_succession.rs",
+      "sha256_git_lf": "a90316f304bb1311ac8a3536ee9519c1b0fa2bd448ee5deb5344e127cb2b7cdb",
+      "lines": 288
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/codec_retirement_closure/relation_payload.rs",
+      "sha256_git_lf": "e8e177906a13cce9d09fdc247049b4d035d654b13cf9347c87558791f0a21a07",
+      "lines": 222
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/codec_retirement_closure/relations.rs",
+      "sha256_git_lf": "0b4f9e3d0f5c4aee51bb9be9523baec602a6a4e7d59d7d3acf52f130315feeef",
+      "lines": 113
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/codec_retirement_closure/relations/association.rs",
+      "sha256_git_lf": "5cb2143ece1d3eaf517b7b8b3bedbdbf28371247a13fa56b104ad5f836bef71b",
+      "lines": 48
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/codec_retirement_closure/restoration_payload.rs",
+      "sha256_git_lf": "6885acee3df2925bfe7efed2b5082f8d866d8eafc56099e3cf5e72af89be672a",
+      "lines": 332
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/codec_retirement_closure/route_selection.rs",
+      "sha256_git_lf": "f962ca85d018923c3e847920013201aa265ec1d9bea4845e5b5e0f77eb4f67ed",
+      "lines": 127
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/codec_retirement_closure/scope_dependents.rs",
+      "sha256_git_lf": "699d47dbf3d861d81db7368e998d91e26e3c1a28c471b651702915772872bb01",
+      "lines": 60
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/codec_retirement_closure/source_scope_closure.rs",
+      "sha256_git_lf": "e59cb052a35a5d4748a12be3560ef73d1b0c18b1060fb39031162881edd76ccc",
+      "lines": 148
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/publication_relations.rs",
+      "sha256_git_lf": "3ccf9e54265ddeab71b132c379e5f870dadb5acf70017a8a18ca43f82a490707",
+      "lines": 173
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/publication_relations/creation.rs",
+      "sha256_git_lf": "310b4571b24b64e352733315927bf2a3e07537722a23af849522d71add36454d",
+      "lines": 288
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/publication_relations/creation/tests.rs",
+      "sha256_git_lf": "2c33c36700acb808eabb2c9365fcddcf30e508a3e6be5fa28bbee4551ff4f07c",
+      "lines": 385
+    },
+    {
+      "path": "crates/worth-relational/src/history/data/publication_relations/incidence.rs",
+      "sha256_git_lf": "e6515d579e5ed91a7e59266f51b418bef878e778ae69dbfad70d548a749a0715",
+      "lines": 106
+    },
+    {
+      "path": "crates/worth-relational/src/mvcc/publication/application_publication/authored_retirement.rs",
+      "sha256_git_lf": "7bce00dd95915254a650c1f7d4ccf8e55e9a30726b3a48810628d319525508cd",
+      "lines": 297
+    },
+    {
+      "path": "crates/worth-relational/src/runtime/state/subsystems/canonical_publication_routes/indexed_catalog.rs",
+      "sha256_git_lf": "3d4b087e24b15c7e439cba21e86c9edeb3cc7bb91b4a9b8b10ac5ad15a6c4423",
+      "lines": 223
+    },
+    {
+      "path": "crates/worth-relational/src/runtime/state/subsystems/history_canonical_routes.rs",
+      "sha256_git_lf": "6c8c4b993b014d9ae8d2db4be6737922655d4e41ec10628911006ab47fc6bb83",
+      "lines": 277
+    },
+    {
+      "path": "crates/worth-relational/src/runtime/state/subsystems/history_preparation_binding.rs",
+      "sha256_git_lf": "6ca95c52b413b398f13ae83495b407dbee49155315b1c67979e890151195c77a",
+      "lines": 266
+    },
+    {
+      "path": "crates/worth-relational/src/storage/residency/head_probe_tests.rs",
+      "sha256_git_lf": "63e2fbf0b021c0eee797160d37ab71c98b160e0e94aa664a4e9ebbc72c7d589e",
+      "lines": 156
+    },
+    {
+      "path": "crates/worth-relational/src/storage/residency/member_custody_tests.rs",
+      "sha256_git_lf": "d47423edd37752f868035e4ac30bc1638b96fac650bfbe959556c2e2edac2672",
+      "lines": 154
+    },
+    {
+      "path": "crates/worth-relational/src/storage/residency/region_fixture.rs",
+      "sha256_git_lf": "d6bd9422be0417b04063c47a95c7e48df9abcf611e4213752dacd2228e1b81de",
+      "lines": 337
+    },
+    {
+      "path": "crates/worth-relational/src/storage/residency/request_stop_tests.rs",
+      "sha256_git_lf": "cfe8ebc521a8d54856d01cedca9186e8ad6eb69981c48043d099d3db482ff480",
+      "lines": 86
+    },
+    {
+      "path": "crates/worth-relational/src/test_execution_policy.rs",
+      "sha256_git_lf": "7cd373adc63c9df73acdc7a014a9a48cb5a7686a571eba858dc75d72b7a628aa",
+      "lines": 14
+    },
+    {
+      "path": "scripts/test_cost/test_unit_plan.py",
+      "sha256_git_lf": "7cf324991b8a9cb8ab72e25e4d3f49f4317066042b4114d1f91a4fa1e4cd6580",
+      "lines": 297
+    },
+    {
+      "path": "scripts/test_cost/unit_plan.py",
+      "sha256_git_lf": "031090af41e8c7fb5ab6c2c81465f414c97663931d205d1d50ff3125c8010d8b",
+      "lines": 206
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-certification/examples/application_correction.rs",
+      "sha256_git_lf": "fcefebcf0911d460daf55aaa8b683920471ff8cdde8382b996e541f257808e77",
+      "lines": 316
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/installation/checkpoint_restore.rs",
+      "sha256_git_lf": "4d74c3f6cab1cd405d33361740cc4383fe79e5f39958a651415d5c7c37881441",
+      "lines": 48
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/host.rs",
+      "sha256_git_lf": "8f35d6d2e3380aa239ed8c8de0c827265bd930499a932dd23f6743c38bd50b9e",
+      "lines": 261
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/fixed_replay/restored_fulfillment.rs",
+      "sha256_git_lf": "4e819b077f67d77c09f5e1e03170df47b46393c4badb6a041ff01c68463bf445",
+      "lines": 181
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/resources.rs",
+      "sha256_git_lf": "d974e8ec5ec7e91e83f0c9dee5d9be6c7d513cc1d9affed5341ca9ec5c47562e",
+      "lines": 160
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/native_operation_bodies/operation_body/output/portable/mod.rs",
+      "sha256_git_lf": "3cd7c25d0699de05efb172340a8226a11546012515276e11196d18f56a544cbb",
+      "lines": 157
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/certification/application_graph/canonical_transition/related/companion_transition/mod.rs",
+      "sha256_git_lf": "8aef9a4d47e5eb3160c8a0b2d1595b0172b43275fa1ed164898301217c468c0d",
+      "lines": 177
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-testkit-certification-application-graph/src/certification/application_graph/producer_predicate_checkpoint.rs",
+      "sha256_git_lf": "94da7e1d2eb2191d334bccebe53b0f9c9cec2e433d92d8147637a0e5d3e0c463",
+      "lines": 53
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_transition/capture_child.rs",
+      "sha256_git_lf": "95db424cfb80b1513238ca40292d85aca233f1ef1da9d6120182f15ffd357bf8",
+      "lines": 69
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_transition/related/companion/host.rs",
+      "sha256_git_lf": "44ded564b24442e5d6295258e79fb698d1f72102afcba5a89f10461352a57be2",
+      "lines": 210
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_transition/related/host.rs",
+      "sha256_git_lf": "8d78b697014389b62f8a3c08f9aab0aa0f3f89e0fa615457eb62dfd77b6b9448",
+      "lines": 330
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_transition/related/journey.rs",
+      "sha256_git_lf": "b5ccd4f8065c8d5f32e0f5bc912ddcd6d2bb34246c4a513f29cd592d25fb734e",
+      "lines": 174
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/relational/relational_home/residency_agreement/mod.rs",
+      "sha256_git_lf": "d5d7b88bf4123c0035cddb3b1dca5ec3b79840dc1a6fdcdc9d0554313cf939bd",
+      "lines": 201
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/relational/relational_home/residency_reopen/mod.rs",
+      "sha256_git_lf": "37f324744bc93c3e8e38ab3c932c3d916832252a52466c8d5fab77d1754fce8a",
+      "lines": 322
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/support/durable_run/world.rs",
+      "sha256_git_lf": "d0ffa49957ca302ce13fffe87e8875082baec941252aad397245fdf572dc0f1c",
+      "lines": 60
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/support/residency_capture/declarations.rs",
+      "sha256_git_lf": "a73cc61db46c163b13bf7b0da6fd429b726d1d07a235d41c1c174d17625109b3",
+      "lines": 43
+    }
+  ],
+  "incoming_ancestor_exit": 0,
+  "base_ancestor_exit": 0,
+  "ui_diff_from_base": "",
+  "input_reuse": [
+    "First Tier2 logs qualify merge source 589f6fce9c, not a claim of green final source.",
+    "Initial Rust repair batch dirty contents have LF hashes in pa-merge-repair-rust-source-hashes.json.",
+    "Native production last changed in 7a12fb36a9. Later Native edits are test providers only; Bank default-stack parent evidence remains applicable.",
+    "Query final metadata fixture evidence: round6/query 11 passing; consumer evidence: followup/fixture 3 passing.",
+    "Final boundary correction only changes member-custody provider placement and removes five Topology funding edits. boundary-closure Root/fixture checks and exact 4/5 cases cover it.",
+    "Final lint input changes are covered by closure Native/Topology lints. Other final scoped lint inputs remain unchanged.",
+    "Evidence and generated telemetry commits change no Rust compiler inputs."
+  ]
+}
