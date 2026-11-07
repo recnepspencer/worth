@@ -254,7 +254,9 @@ impl WorthQueryRuntime {
         IdentityDerivationDenial,
     > {
         let target = WorthQueryLiveArtifactTarget::from_view_name(view_name);
-        let state = self.live_subscriptions.get(&target)?;
+        let Some(state) = self.live_subscriptions.get(&target) else {
+            return Ok(None);
+        };
         Ok(Some(
             materialized_fact_posture_from_live_subscription_state(state, basis_identity)?,
         ))

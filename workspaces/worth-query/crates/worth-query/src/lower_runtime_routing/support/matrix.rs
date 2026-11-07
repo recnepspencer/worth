@@ -42,7 +42,7 @@ impl WorthQueryLowerRuntimeSupportMatrix {
                 WorthQueryEvidenceIdentity::compose(
                     WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
                 )
-                .field_value(WorthQueryEvidenceTag::new("support_row"), row.row_digest())
+                .field_value(WorthQueryEvidenceTag::new("support_row"), row.row_digest()?)
                 .seal()
             })
             .collect::<Result<Vec<_>, _>>()?;

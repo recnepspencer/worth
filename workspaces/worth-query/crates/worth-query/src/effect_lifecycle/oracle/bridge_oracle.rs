@@ -285,7 +285,8 @@ fn writeback_outcome_class_label(outcome_class: BridgeWritebackOutcomeClass) -> 
 fn incomplete_bridge_record_error(
     missing_field: &str,
     record_digest: &str,
-) -> Result<EffectExecutionOracleError, IdentityDerivationDenial> {
+) -> EffectExecutionOracleError {
+    (|| -> Result<EffectExecutionOracleError, IdentityDerivationDenial> {
     Ok(EffectExecutionOracleError::new(
         EffectExecutionOracleErrorKind::BridgeObservationIncompleteWritebackRecord,
         format!(
@@ -294,4 +295,6 @@ fn incomplete_bridge_record_error(
         &bridge_oracle_observation_subject(),
         Some(&bridge_observation_execution_record_subject_identity(record_digest)?),
     ))
+
+ })().unwrap_or_else(EffectExecutionOracleError::from)
 }

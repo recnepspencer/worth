@@ -88,21 +88,23 @@ fn summarize_existing_truth_modes(
             )
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let digest = (!mode_parts.is_empty()).then(|| {
-        let identity = crate::evidence_identity::worth_query_evidence_identity(
-            crate::evidence_identity::WorthQueryEvidenceScope::MutationEvidenceAggregateDigest,
-        )
-        .field_shape(
-            crate::evidence_identity::WorthQueryEvidenceTag::new("role"),
-            "batch-existing-truth-mode",
-        )
-        .field_evidence_identity_sequence(
-            crate::evidence_identity::WorthQueryEvidenceTag::new("entry"),
-            mode_parts.iter(),
-        )
-        .seal();
-        WorthQueryMutationEvidenceDigest::aggregate("batch-existing-truth-mode", identity)
-    })?;
+    let digest = (!mode_parts.is_empty())
+        .then(|| {
+            let identity = crate::evidence_identity::worth_query_evidence_identity(
+                crate::evidence_identity::WorthQueryEvidenceScope::MutationEvidenceAggregateDigest,
+            )
+            .field_shape(
+                crate::evidence_identity::WorthQueryEvidenceTag::new("role"),
+                "batch-existing-truth-mode",
+            )
+            .field_evidence_identity_sequence(
+                crate::evidence_identity::WorthQueryEvidenceTag::new("entry"),
+                mode_parts.iter(),
+            )
+            .seal()?;
+            WorthQueryMutationEvidenceDigest::aggregate("batch-existing-truth-mode", identity)
+        })
+        .transpose()?;
     Ok((
         retained_authoritative_assertion_count,
         backend_verified_assertion_count,

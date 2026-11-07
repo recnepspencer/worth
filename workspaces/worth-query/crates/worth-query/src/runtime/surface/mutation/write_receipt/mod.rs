@@ -135,14 +135,14 @@ impl WorthQueryWriteReceipt {
         let existing_truth_binding_evidence = existing_truth_binding
             .as_ref()
             .map(WorthQueryExistingTruthBindingEvidence::from_binding)
-            .transpose()?
             .or_else(|| {
                 inner
                     .bridge_authority
                     .as_ref()
                     .and_then(|bundle| bundle.existing_truth_binding())
                     .map(WorthQueryExistingTruthBindingEvidence::from_bridge)
-            })?;
+            })
+            .transpose()?;
         let existing_truth_assertion_evidence = assertion_evidence(
             mutation_family,
             existing_truth_binding.as_ref(),
@@ -266,14 +266,14 @@ impl WorthQueryWriteReceipt {
         let existing_truth_binding_evidence = existing_truth_binding
             .as_ref()
             .map(WorthQueryExistingTruthBindingEvidence::from_binding)
-            .transpose()?
             .or_else(|| {
                 inner
                     .bridge_authority
                     .as_ref()
                     .and_then(|bundle| bundle.existing_truth_binding())
                     .map(WorthQueryExistingTruthBindingEvidence::from_bridge)
-            })?;
+            })
+            .transpose()?;
         let existing_truth_assertion_evidence = assertion_evidence(
             mutation_family,
             existing_truth_binding.as_ref(),

@@ -82,7 +82,7 @@ impl WorthQueryInstalledDomainExecutionIndex {
         let operation_graph_participations = operation_graph_participation_index(artifacts);
         let operation_required_domains = operation_required_domain_index(artifacts);
         let domain_operation_identity_parts = domain_operation_identity_parts(&domain_operations);
-        let semantics_by_marker = installed_domain_semantics_index(artifacts);
+        let semantics_by_marker = installed_domain_semantics_index(artifacts)?;
         let declaration_families = declaration_family_index(artifacts);
         let contribution_policies = contribution_policy_index(artifacts);
         let invariant_slots = invariant_slot_index(artifacts);
@@ -225,14 +225,14 @@ fn graph_read_operation_index(
 
 fn installed_domain_semantics_index(
     artifacts: &[WorthQueryInstalledDomainArtifact],
-) -> HashMap<TypeId, Arc<WorthQueryInstalledDomainSemantics>> {
+) -> Result<HashMap<TypeId, Arc<WorthQueryInstalledDomainSemantics>>, IdentityDerivationDenial> {
     artifacts
         .iter()
         .map(|artifact| {
-            (
+            Ok((
                 artifact.marker_type,
-                Arc::new(WorthQueryInstalledDomainSemantics::from_artifact(artifact)),
-            )
+                Arc::new(WorthQueryInstalledDomainSemantics::from_artifact(artifact)?),
+            ))
         })
         .collect()
 }

@@ -113,7 +113,8 @@ impl WorthQueryNamingMutationEvidence {
                 .map(|collection| {
                     WorthQueryMutationTargetCollectionIdentity::new("naming-target", collection)
                 })
-                .or_else(|| target_collection.cloned())?,
+                .transpose()?
+                .or_else(|| target_collection.cloned()),
         })
     }
 

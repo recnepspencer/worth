@@ -37,10 +37,10 @@ pub(super) fn build_batch_write_receipt_inspection_digest(
     inputs: WorthQueryBatchWriteDigestInputs<'_>,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let component_artifact_identities =
-        batch_write_digest_components::component_artifact_identities(inputs.component_operations);
+        batch_write_digest_components::component_artifact_identities(inputs.component_operations)?;
     let graph_resolution_identities = batch_write_digest_components::graph_resolution_identities(
         inputs.graph_composition_resolution_map,
-    );
+    )?;
     let commit_identities = inputs
         .commit_identities
         .iter()

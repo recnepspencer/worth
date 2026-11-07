@@ -185,7 +185,7 @@ pub(super) fn preview_certification_evidence(
                         crate::evidence_identity::WorthQueryEvidenceTag::new("discard"),
                         discard_closeout.closeout_identity(),
                     )
-                    .seal(),
+                    .seal()?,
                 ],
                 performance_receipt_identity: discard_closeout
                     .performance_receipt()
@@ -311,7 +311,7 @@ pub(super) fn preview_certification_evidence(
                         crate::evidence_identity::WorthQueryEvidenceTag::new("promotion"),
                         promotion_handoff.handoff_identity(),
                     )
-                    .seal(),
+                    .seal()?,
                 ],
                 performance_receipt_identity: promotion_handoff
                     .performance_receipt()

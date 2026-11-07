@@ -74,9 +74,9 @@ impl WorthQueryGraphCompositionEvidence {
                         collection.evidence_identity(),
                     );
                 }
-                entry_identity.seal()?
+                entry_identity.seal()
             })
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
         let graph_symbolic_resolution_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
                 .field_shape(

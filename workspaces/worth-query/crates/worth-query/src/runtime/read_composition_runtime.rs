@@ -169,13 +169,10 @@ pub(super) fn materialized_fact_posture_for_read_graph(
     read_graph: &WorthQueryReadGraph,
     basis_identity: &crate::WorthQueryEvidenceIdentity,
 ) -> Result<Option<ProjectionMaterializedFactPosture>, IdentityDerivationDenial> {
-    let lower_declaration_digest =
-        canonicalize_declarative_request(read_graph.declarative_request())
-            .ok()?
-            .query()
-            .digest()
-            .as_str()
-            .to_string();
+    let Ok(canonical) = canonicalize_declarative_request(read_graph.declarative_request()) else {
+        return Ok(None);
+    };
+    let lower_declaration_digest = canonical.query().digest().as_str().to_string();
     let mut exact_request_matches = runtime
         .live_subscriptions
         .values()
@@ -189,7 +186,9 @@ pub(super) fn materialized_fact_posture_for_read_graph(
         let mut canonical_matches = runtime.live_subscriptions.values().filter(|state| {
             state.installation.query_projection().label() == lower_declaration_digest.as_str()
         });
-        let state = canonical_matches.next()?;
+        let Some(state) = canonical_matches.next() else {
+            return Ok(None);
+        };
         if canonical_matches.next().is_some() {
             return Ok(None);
         }

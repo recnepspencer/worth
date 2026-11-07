@@ -249,7 +249,8 @@ impl WorthQueryRuntime {
         )?
         .receipt()?;
         let diagnostics = materialize_inspection
-            .then(|| receipt.materialize_diagnostics(EffectDiagnosticsRequest::forensic()))?;
+            .then(|| receipt.materialize_diagnostics(EffectDiagnosticsRequest::forensic()))
+            .transpose()?;
         Ok(WorthQueryLowerRuntimeWritebackExecution {
             admitted_effect_identity,
             lowered_plan_identity,

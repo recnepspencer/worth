@@ -187,7 +187,7 @@ fn plan_incremental(
             workspace,
         },
         &mut counters,
-    ) {
+    )? {
         Ok(preview) => preview,
         Err(outcome) => return Ok(outcome),
     };
@@ -280,25 +280,27 @@ fn preview_or_reset(
     state: &mut WorthQueryCollectionConsumerWindow,
     context: PreviewContext<'_>,
     counters: &mut WorthQueryCollectionDeliveryCounters,
-) -> Result<super::index::WorthQueryCollectionIndexPreview, WorthQueryCollectionDeliveryOutcome> {
-    let preview = state
-        .index
-        .preview(
-            execution,
-            super::index::WorthQueryCollectionPreviewRequest {
-                window: &state.window,
-                affected: context.affected,
-                keys: context.delta.affected_native_keys(),
-                workspace: context.workspace,
-            },
-            counters,
-        )
-        .map_err(|()| {
+) -> Result<
+    Result<super::index::WorthQueryCollectionIndexPreview, WorthQueryCollectionDeliveryOutcome>,
+    IdentityDerivationDenial,
+> {
+    let preview = match state.index.preview(
+        execution,
+        super::index::WorthQueryCollectionPreviewRequest {
+            window: &state.window,
+            affected: context.affected,
+            keys: context.delta.affected_native_keys(),
+            workspace: context.workspace,
+        },
+        counters,
+    ) {
+        Ok(preview) => preview,
+        Err(()) => {
             counters.operations_materialized = 1;
             let impact = WorthQueryImpactClass::UnsupportedEscalation;
             let reset = reset_for(impact, state.window.rows().len())
                 .expect("unsupported escalation always requires reset");
-            reset_patch(
+            return Ok(Err(reset_patch(
                 state,
                 context.delta,
                 ResetPatchSpec {
@@ -306,8 +308,9 @@ fn preview_or_reset(
                     operation: reset,
                     counters: *counters,
                 },
-            )
-        })?;
+            )?));
+        }
+    };
     if preview.has_more
         && state.index.window_policy() == WorthQueryOperationWindowPolicy::CompleteCollection
     {
@@ -319,7 +322,7 @@ fn preview_or_reset(
                 maximum_replacement_rows: state.window.admitted_width(),
             },
         };
-        return Err(reset_patch(
+        return Ok(Err(reset_patch(
             state,
             context.delta,
             ResetPatchSpec {
@@ -327,9 +330,9 @@ fn preview_or_reset(
                 operation: reset,
                 counters: *counters,
             },
-        ));
+        )?));
     }
-    Ok(preview)
+    Ok(Ok(preview))
 }
 
 struct ResetPatchSpec {

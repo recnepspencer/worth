@@ -23,31 +23,34 @@ impl WorthQuerySupportContributionAuthoring {
     pub fn declaration_support(
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self::new(
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        Ok(Self::new(
             WorthQuerySupportContributionPosture::DeclarationSupport,
             semantic_code,
             detail,
-        )
+        )?)
     }
 
     pub fn declaration_traceability(
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self::new(
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        Ok(Self::new(
             WorthQuerySupportContributionPosture::DeclarationTraceability,
             semantic_code,
             detail,
-        )
+        )?)
     }
 
-    pub fn narrowed_support(semantic_code: impl Into<String>, detail: impl Into<String>) -> Self {
-        Self::new(
+    pub fn narrowed_support(
+        semantic_code: impl Into<String>,
+        detail: impl Into<String>,
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        Ok(Self::new(
             WorthQuerySupportContributionPosture::NarrowedSupport,
             semantic_code,
             detail,
-        )
+        )?)
     }
 
     pub fn for_intent_declaration(

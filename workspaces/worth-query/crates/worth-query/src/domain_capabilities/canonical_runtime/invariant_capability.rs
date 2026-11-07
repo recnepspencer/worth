@@ -204,7 +204,7 @@ where
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("binding"),
-                &domain_contribution.target().binding_identity(),
+                &domain_contribution.target().binding_identity()?,
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("request"),

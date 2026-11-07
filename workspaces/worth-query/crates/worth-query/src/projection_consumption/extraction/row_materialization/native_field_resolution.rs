@@ -20,7 +20,7 @@ pub(in crate::projection_consumption::extraction) fn native_value_or_absence(
                 family.field_path().expect("field family carries a path"),
                 family.kind(),
             )
-        })?;
+        });
     };
     let Some(value) = value else {
         return match native_contract.absence() {
@@ -113,16 +113,19 @@ pub(super) fn missing_declared_field(
     row_identity: &str,
     field_path: &ProjectionFactFieldPath,
     fact_kind: ProjectionFactKind,
-) -> Result<ProjectionFactExtractionError, IdentityDerivationDenial> {
-    Ok(
-        ProjectionFactExtractionError::MissingDeclaredFieldEvidence {
-            source_family: contract.source_family(),
-            source_identity: compose_scoped_row_source_identity(
-                contract.source_identity(),
-                row_identity,
-            )?,
-            field_key: field_path.terminal_projection_for_boundary().to_string(),
-            fact_kind,
-        },
-    )
+) -> ProjectionFactExtractionError {
+    (|| -> Result<ProjectionFactExtractionError, IdentityDerivationDenial> {
+        Ok(
+            ProjectionFactExtractionError::MissingDeclaredFieldEvidence {
+                source_family: contract.source_family(),
+                source_identity: compose_scoped_row_source_identity(
+                    contract.source_identity(),
+                    row_identity,
+                )?,
+                field_key: field_path.terminal_projection_for_boundary().to_string(),
+                fact_kind,
+            },
+        )
+    })()
+    .unwrap_or_else(ProjectionFactExtractionError::from)
 }

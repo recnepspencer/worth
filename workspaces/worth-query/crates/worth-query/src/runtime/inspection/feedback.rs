@@ -89,7 +89,9 @@ impl WorthQueryFeedbackPhaseGraphInspection {
     pub(in crate::runtime) fn from_effect_runtime(
         runtime: &WorthQueryEffectRuntime,
     ) -> Result<Option<Self>, IdentityDerivationDenial> {
-        let latest = runtime.latest_delivery()?;
+        let Some(latest) = runtime.latest_delivery() else {
+            return Ok(None);
+        };
         let phase_nodes = latest
             .phase_evidence()
             .phases()

@@ -7,7 +7,9 @@ pub(crate) fn project_downstream_delivery(
     contract: &WorthQueryRuntimeDownstreamDeliveryContract,
     state: &WorthQueryRuntimeLiveSubscriptionState,
 ) -> Result<Option<WorthQueryRuntimeDownstreamDelivery>, IdentityDerivationDenial> {
-    let delivery = state.last_delivery.as_ref();
+    let Some(delivery) = state.last_delivery.as_ref() else {
+        return Ok(None);
+    };
     let delivery_class = classify_delivery(delivery, state.async_result_state.as_ref());
     let support_posture = classify_support_posture(state.remask_posture.as_ref());
     let mixed_cause_identity = matches!(

@@ -51,9 +51,9 @@ pub(super) fn build_write_receipt_inspection_digest(
         .entity_identity()
         .map(|identity| identity.evidence_identity());
     let declared_operations =
-        digest_components::declared_aspect_operation_identities(declared_aspect_operations);
+        digest_components::declared_aspect_operation_identities(declared_aspect_operations)?;
     let mutation_metadata_entries =
-        digest_components::mutation_metadata_entry_identities(mutation_metadata);
+        digest_components::mutation_metadata_entry_identities(mutation_metadata)?;
 
     let encoder =
         worth_query_evidence_identity(WorthQueryEvidenceScope::WriteReceiptInspectionArtifact)

@@ -158,14 +158,17 @@ impl WorthQueryRuntime {
         binding: &WorthQueryExistingTruthTargetBinding,
     ) -> Result<Option<WorthQueryExistingTruthProbeDenial>, IdentityDerivationDenial> {
         let support_profile = self.backend.support_profile();
-        let row = support_profile
+        let Some(row) = support_profile
             .bridge_backed_verification_support_rows()
             .iter()
             .find(|row| {
                 row.operation_family() == "probe_existing"
                     && row.target_binding_family()
                         == binding.family().bridge_backed_support_family()
-            })?;
+            })
+        else {
+            return Ok(None);
+        };
         let supported = match support_profile.posture() {
             WorthQueryRuntimeBackendPosture::Scaffold => row.scaffold_profile_supported(),
             WorthQueryRuntimeBackendPosture::Primary => {

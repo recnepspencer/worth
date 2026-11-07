@@ -233,7 +233,7 @@ where
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("binding"),
-                &domain_contribution.target().binding_identity(),
+                &domain_contribution.target().binding_identity()?,
             )
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("request"),
@@ -271,7 +271,7 @@ where
     else {
         unreachable!("lower-runtime target should preserve lower-runtime semantics");
     };
-    let envelope_identity = domain_contribution.target().binding_identity();
+    let envelope_identity = domain_contribution.target().binding_identity()?;
     let materialization_identity = domain_capability_scope_encoder(
         "worth_query_lower_runtime_support_traceability_artifact_v1",
     )
@@ -298,7 +298,7 @@ where
     .field_evidence_identity(WorthQueryEvidenceTag::new("envelope"), &envelope_identity)
     .field_evidence_identity(
         WorthQueryEvidenceTag::new("binding"),
-        &domain_contribution.target().binding_identity(),
+        &domain_contribution.target().binding_identity()?,
     )
     .field_evidence_identity(
         WorthQueryEvidenceTag::new("request"),

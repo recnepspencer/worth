@@ -196,7 +196,8 @@ impl WorthQueryRuntime {
             ExecutedEffectPlan::new(lowered, ExecutedEffectAuthorityArtifact::Merge(outcome), 1)?;
         let receipt = executed.receipt()?;
         let diagnostics = materialize_inspection
-            .then(|| receipt.materialize_diagnostics(EffectDiagnosticsRequest::forensic()))?;
+            .then(|| receipt.materialize_diagnostics(EffectDiagnosticsRequest::forensic()))
+            .transpose()?;
         Ok(WorthQueryLowerRuntimeMergeExecution {
             admitted_effect_identity,
             lowered_plan_identity,
