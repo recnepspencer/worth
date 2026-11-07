@@ -101,9 +101,8 @@ fn validate(
     if matches!(
         change,
         SignalAuthoredBranchChange::SnapshotCaptured | SignalAuthoredBranchChange::Restored
-    ) && descriptor.snapshot().is_none()
-    {
-        return Err(D::SnapshotRequired);
+    ) {
+        descriptor.require_snapshot()?;
     }
     match change {
         SignalAuthoredBranchChange::Created { name, parent } => {

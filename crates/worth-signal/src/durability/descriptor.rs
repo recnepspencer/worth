@@ -50,6 +50,9 @@ impl SignalDurableBranchDescriptor {
     pub const fn snapshot(&self) -> Option<DurableSignalSnapshotIdentity> {
         self.snapshot
     }
+    pub(super) fn require_snapshot(&self) -> Result<DurableSignalSnapshotIdentity, D> {
+        self.snapshot.ok_or(D::SnapshotRequired)
+    }
     pub const fn admission(&self) -> DurableSignalAdmissionIdentity {
         self.admission
     }

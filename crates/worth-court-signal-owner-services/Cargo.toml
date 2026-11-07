@@ -8,6 +8,7 @@
 "license" = { "workspace" = true }
 
 [dependencies]
+sha2 = "0.10"
 "worth-testkit-compiler" = { "path" = "../worth-testkit-compiler" }
 "serde" = { "version" = "^1", "features" = ["derive", "rc"] }
 "serde_json" = { "version" = "^1", "features" = ["arbitrary_precision"] }

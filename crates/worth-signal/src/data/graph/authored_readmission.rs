@@ -137,11 +137,23 @@ impl SignalGraph {
         })
     }
     fn rebuild_authored_topology(&mut self) -> Result<(), crate::data::error::SignalError> {
-        for node in self.live_node_ids() {
-            let declarations = self.arena.definitions[node.index() as usize]
-                .declared_dependencies
-                .clone()
-                .unwrap_or_else(|| CanonicalDependencies::new([]));
+        let declarations = self
+            .live_node_ids()
+            .into_iter()
+            .map(|node| {
+                (
+                    node,
+                    self.arena.definitions[node.index() as usize]
+                        .declared_dependencies
+                        .clone()
+                        .unwrap_or_else(|| CanonicalDependencies::new([])),
+                )
+            })
+            .collect::<Vec<_>>();
+        // Use the same complete-set validation as ordinary authored edits before
+        // installing any adjacency or derived index into the reconstructed graph.
+        self.validate_declared_edits(&declarations)?;
+        for (node, declarations) in declarations {
             let edges = CanonicalDependencies::new(declarations.as_slice().iter().map(|edge| {
                 match edge.scope_ref().cloned() {
                     Some(scope) => {

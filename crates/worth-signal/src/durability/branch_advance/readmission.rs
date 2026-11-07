@@ -133,8 +133,14 @@ fn inspect(bytes: &[u8]) -> Result<Fields<'_>, D> {
             ChangeFields::Created { name, parent }
         }
         1 => ChangeFields::Advanced,
-        2 => ChangeFields::SnapshotCaptured,
-        3 => ChangeFields::Restored,
+        2 => {
+            descriptor.require_snapshot()?;
+            ChangeFields::SnapshotCaptured
+        }
+        3 => {
+            descriptor.require_snapshot()?;
+            ChangeFields::Restored
+        }
         4 => ChangeFields::Retired,
         _ => return Err(D::Malformed),
     };

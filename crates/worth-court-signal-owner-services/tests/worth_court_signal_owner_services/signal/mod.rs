@@ -1,4 +1,5 @@
 //! Fast integration courts.
+mod authored_frame_refusal;
 mod authored_image;
 mod authored_readmission;
 mod bulk_read_currentness;
