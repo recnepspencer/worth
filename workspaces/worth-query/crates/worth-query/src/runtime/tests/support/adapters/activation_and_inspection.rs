@@ -113,7 +113,8 @@ impl WorthQueryRuntimePreviewBasisAdapter for TestPreviewBasis {
             [WorthQueryBasisAdmissionEvidenceRow::tagged(
                 "preview-basis-admission",
                 "test-preview-basis",
-            )],
+            )
+            .expect("fixture digest must fit")],
         )
         .expect("fixture digest must fit"))
     }

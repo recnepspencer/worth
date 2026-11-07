@@ -189,7 +189,8 @@ fn stale_basis_cannot_cross_a_managed_resume_boundary() {
     );
     let name = continuation.checkpoint().resource_name().to_string();
     let (_, generation) = live_subscription_async_identity(&workspace.runtime, &name);
-    let drifted_basis = runtime_async_checkpoint_label_identity("basis:drifted-after-checkpoint");
+    let drifted_basis = runtime_async_checkpoint_label_identity("basis:drifted-after-checkpoint")
+        .expect("fixture digest must fit");
     workspace
         .runtime
         .project_async_result_state(
@@ -199,7 +200,8 @@ fn stale_basis_cannot_cross_a_managed_resume_boundary() {
                     BridgeAsyncCompletionDenialClass::SignalLifecycleDenied,
                 ),
                 "async:stale-resume",
-            ),
+            )
+            .expect("fixture digest must fit"),
             &drifted_basis,
             &generation,
         )

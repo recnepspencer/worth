@@ -246,7 +246,8 @@ impl HostileExecutionState {
                 })
                 .expect("preview staging should succeed");
             preview.discard()
-        };
+        }
+        .expect("fixture digest must fit");
         self.delivery_residue_count += hostile_preview_delivery_residue_count(&discarded);
         self.preview_closeouts
             .push(hostile_preview_closeout_digest(&discarded));

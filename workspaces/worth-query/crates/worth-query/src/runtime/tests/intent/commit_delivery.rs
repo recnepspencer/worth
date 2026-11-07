@@ -118,12 +118,14 @@ fn strategy_intent_commit_routes_query_delivery_and_returns_canonical_receipt() 
         receipt
             .commit_identity()
             .terminal_projection_for_reporting(),
-    );
+    )
+    .expect("fixture digest must fit");
     let copied_snapshot = crate::memory_workspace::admit_external_snapshot_label(
         receipt
             .snapshot_identity()
             .terminal_projection_for_reporting(),
-    );
+    )
+    .expect("fixture digest must fit");
     assert!(!receipt
         .commit_identity()
         .is_same_current_identity_as(&copied_commit));

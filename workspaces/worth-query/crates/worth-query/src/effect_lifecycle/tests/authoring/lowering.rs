@@ -183,7 +183,7 @@ fn lowering_denials_stay_typed_for_admitted_but_invalid_merge_pairs() {
     );
     assert_eq!(
         denial.staleness_class(),
-        &WorkflowStalenessClass::ExactBasisPreserved
+        Some(&WorkflowStalenessClass::ExactBasisPreserved)
     );
     assert_eq!(denial.counters().lowering_denied_count(), 1);
     assert_eq!(denial.counters().effect_lowering_width(), 1);

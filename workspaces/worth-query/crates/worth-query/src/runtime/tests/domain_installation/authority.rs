@@ -78,7 +78,10 @@ fn contribution_authority_denies_foreign_targets_and_uninstalled_categories_firs
         .for_intent_target(foreign_target)
         .unwrap_err();
     assert_eq!(
-        denial.kind(),
+        denial
+            .handle_denial()
+            .expect("handle denial retained")
+            .kind(),
         WorthQueryDomainHandleDenialKind::ForeignRuntime
     );
     let policy_denial = left_handle
@@ -106,7 +109,10 @@ fn foreign_handle_and_stale_generation_deny_before_contribution_successors_are_i
     let owner_handle = owner.domain(InstalledDomain).unwrap();
     let foreign_denial = owner_handle.contributions(&foreign).unwrap_err();
     assert_eq!(
-        foreign_denial.kind(),
+        foreign_denial
+            .handle_denial()
+            .expect("handle denial retained")
+            .kind(),
         WorthQueryDomainHandleDenialKind::ForeignRuntime
     );
 
@@ -121,14 +127,20 @@ fn foreign_handle_and_stale_generation_deny_before_contribution_successors_are_i
     assert!(current_handle.installation_generation() > stale_generation);
     let stale_denial = stale_handle.contributions(&current).unwrap_err();
     assert_eq!(
-        stale_denial.kind(),
+        stale_denial
+            .handle_denial()
+            .expect("handle denial retained")
+            .kind(),
         WorthQueryDomainHandleDenialKind::StaleInstallationGeneration
     );
     let stale_denial = stale_surface
         .for_intent(&contribution_declaration("stale-surface"))
         .unwrap_err();
     assert_eq!(
-        stale_denial.kind(),
+        stale_denial
+            .handle_denial()
+            .expect("handle denial retained")
+            .kind(),
         WorthQueryDomainHandleDenialKind::StaleInstallationGeneration
     );
     current_handle
@@ -250,7 +262,8 @@ fn contribution_target_mismatch_requires_rebind_without_a_ready_successor() {
         prepare_admitted_domain_capability_contribution_for_materialization(
             admitted,
             current_target
-        ),
+        )
+        .expect("fixture digest must fit"),
         worth_proof::TransitionOutcome::RebindRequired(_)
     ));
 }

@@ -55,7 +55,7 @@ fn every_contribution_family_materializes_under_one_installed_authority(
             "worth.spatial.admission.matrix",
             "admission remains installed",
         )?
-        .bind_to_installed_target(admitted_target.clone()),
+        .bind_to_installed_target(admitted_target.clone())?,
     )?));
     assert_installed_authority!(materialize_canonical_support_traceability_artifact(
         admitted_ready(
@@ -63,7 +63,7 @@ fn every_contribution_family_materializes_under_one_installed_authority(
                 "worth.spatial.support.matrix",
                 "support remains installed",
             )?
-            .bind_to_installed_target(declaration_target.clone()),
+            .bind_to_installed_target(declaration_target.clone())?,
         )?,
     ));
     assert_installed_authority!(materialize_canonical_invariant_capability_artifact(
@@ -72,7 +72,7 @@ fn every_contribution_family_materializes_under_one_installed_authority(
                 "worth.spatial.invariant.matrix",
                 "invariant posture remains installed",
             )?
-            .bind_to_installed_target(declaration_target.clone()),
+            .bind_to_installed_target(declaration_target.clone())?,
         )?,
     ));
     assert_installed_authority!(materialize_canonical_workflow_artifact(admitted_ready(
@@ -80,28 +80,28 @@ fn every_contribution_family_materializes_under_one_installed_authority(
             "worth.spatial.workflow.matrix",
             "workflow remains installed",
         )?
-        .bind_to_installed_target(declaration_target.clone()),
+        .bind_to_installed_target(declaration_target.clone())?,
     )?));
     assert_installed_authority!(materialize_canonical_continuity_artifact(admitted_ready(
         WorthQueryContinuityContributionAuthoring::preserved(
             "worth.spatial.continuity.matrix",
             "continuity remains installed",
         )?
-        .bind_to_installed_target(declaration_target),
+        .bind_to_installed_target(declaration_target)?,
     )?));
     assert_installed_authority!(materialize_canonical_aftermath_artifact(admitted_ready(
         WorthQueryAftermathContributionAuthoring::establishes_fact(
             "worth.spatial.aftermath.matrix",
             "aftermath remains installed",
         )?
-        .bind_to_installed_target(admitted_target),
+        .bind_to_installed_target(admitted_target)?,
     )?));
     assert_installed_authority!(materialize_canonical_explanation_artifact(admitted_ready(
         WorthQueryExplanationContributionAuthoring::requires_context(
             "worth.spatial.explanation.matrix",
             "explanation remains installed",
         )?
-        .bind_to_installed_target(lower_runtime_target),
+        .bind_to_installed_target(lower_runtime_target)?,
     )?));
 
     Ok(())

@@ -108,7 +108,10 @@ fn canonical_row(
     perturbation_class: RuntimeApiStabilizationPerturbationClass,
     transcript: fn(
         &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> crate::runtime::WorthQueryRuntimePublicApiTranscriptEvidence,
+    ) -> Result<
+        crate::runtime::WorthQueryRuntimePublicApiTranscriptEvidence,
+        IdentityDerivationDenial,
+    >,
     surfaces: impl IntoIterator<Item = &'static str> + Clone,
     meaningful_assertion_count: usize,
 ) -> Result<
@@ -118,7 +121,7 @@ fn canonical_row(
     >,
     IdentityDerivationDenial,
 > {
-    let transcript_evidence = transcript(request_execution);
+    let transcript_evidence = transcript(request_execution)?;
     Ok(CanonicalCertificationRow {
         row_name,
         perturbation_class,

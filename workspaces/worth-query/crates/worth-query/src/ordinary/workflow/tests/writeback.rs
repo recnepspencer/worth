@@ -301,7 +301,10 @@ fn explicit_writeback(
         1,
     )
     .receipt();
-    let diagnostics = materialize_diagnostics
-        .then(|| receipt.materialize_diagnostics(EffectDiagnosticsRequest::forensic()));
+    let diagnostics = materialize_diagnostics.then(|| {
+        receipt
+            .materialize_diagnostics(EffectDiagnosticsRequest::forensic())
+            .expect("fixture digest must fit")
+    });
     (receipt, diagnostics)
 }

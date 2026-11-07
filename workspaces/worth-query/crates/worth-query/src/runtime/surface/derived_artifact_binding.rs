@@ -243,7 +243,7 @@ mod tests {
         let Some(value) = (value).raw_text() else {
             panic!("expected retained string value, got {value:?}");
         };
-        value.clone()
+        value.to_owned()
     }
 
     #[test]

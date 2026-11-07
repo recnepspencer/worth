@@ -196,7 +196,8 @@ fn runtime_compact_posture_keeps_basis_sensitive_denied_async_state_typed_on_sca
         )
         .expect("live view should declare");
     let (basis_digest, generation_digest) = live_subscription_async_identity(&runtime, view.name());
-    let drifted_basis = runtime_async_checkpoint_label_identity("basis:drifted");
+    let drifted_basis =
+        runtime_async_checkpoint_label_identity("basis:drifted").expect("fixture digest must fit");
     runtime
         .project_async_result_state(
             view.name(),
@@ -205,7 +206,8 @@ fn runtime_compact_posture_keeps_basis_sensitive_denied_async_state_typed_on_sca
                     BridgeAsyncCompletionDenialClass::SignalLifecycleDenied,
                 ),
                 "async:compact-denied",
-            ),
+            )
+            .expect("fixture digest must fit"),
             &drifted_basis,
             &generation_digest,
         )
@@ -232,8 +234,7 @@ fn runtime_compact_posture_keeps_basis_sensitive_denied_async_state_typed_on_sca
         WorthQueryOrdinaryRuntimeBasisPostureKind::BasisDrift
     );
     assert_ne!(basis_digest, drifted_basis)
-        .expect("positive fixture identity fits canonical digest bounds")
-        .expect("positive fixture identity fits canonical digest bounds")
+        .expect("fixture digest must fit")
         .expect("fixture digest must fit");
     assert_eq!(
         posture.support_evidence_digest(),

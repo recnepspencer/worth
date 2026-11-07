@@ -117,6 +117,7 @@ fn completion_or_panic(
             "inspection stopped at {:?}: {}",
             stop.source(),
             stop.evidence_for_reporting()
+                .expect("stop retains evidence")
         );
     }
     if let Some(unavailable) = outcome.unavailable() {

@@ -122,10 +122,14 @@ fn receipt_derives_self_describing_projection_consumption_envelope() {
 fn receipt_and_envelope_surfaces_are_publicly_reachable() {
     let _receipt_issue: fn(
         &super::super::super::ConsumedProjectionFactSet,
-    ) -> ProjectionConsumptionReceipt =
-        super::super::super::ConsumedProjectionFactSet::issue_receipt;
+    ) -> Result<
+        ProjectionConsumptionReceipt,
+        crate::WorthQueryEvidenceIdentityDerivationDenial,
+    > = super::super::super::ConsumedProjectionFactSet::issue_receipt;
     let _envelope_derive: fn(
         &ProjectionConsumptionReceipt,
-    ) -> SelfDescribingProjectionConsumptionEnvelope =
-        ProjectionConsumptionReceipt::projection_consumption_envelope;
+    ) -> Result<
+        SelfDescribingProjectionConsumptionEnvelope,
+        crate::WorthQueryEvidenceIdentityDerivationDenial,
+    > = ProjectionConsumptionReceipt::projection_consumption_envelope;
 }

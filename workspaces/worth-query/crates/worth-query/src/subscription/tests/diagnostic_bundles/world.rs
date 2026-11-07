@@ -135,7 +135,8 @@ pub(super) fn runtime_artifacts_for_with_basis(
                 attachment.lane_digest().clone(),
                 "affected-scope",
                 MaintenanceDeltaWidth::measured(1),
-            ),
+            )
+            .expect("fixture digest must fit"),
             None,
             window,
         )

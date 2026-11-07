@@ -67,13 +67,16 @@ fn state_snapshot_with_optional_postures_remains_in_canonical_migration_coverage
     .expect("fixture digest must fit");
     let async_result_state = WorthQueryRuntimeAsyncResultState::new(
         WorthQueryRuntimeAsyncResultStateKind::Revalidating,
-        &crate::runtime::async_result_state::runtime_async_causality_from_label("causality|digest"),
+        &crate::runtime::async_result_state::runtime_async_causality_from_label("causality|digest")
+            .expect("fixture digest must fit"),
         &crate::runtime::async_result_state::runtime_async_checkpoint_label_identity(
             "basis|digest",
-        ),
+        )
+        .expect("fixture digest must fit"),
         &crate::runtime::async_result_state::runtime_async_checkpoint_label_identity(
             "generation|digest",
-        ),
+        )
+        .expect("fixture digest must fit"),
     );
     let remask_projection = WorthQueryRuntimeRemaskProjection::remasked(
         WorthQueryRuntimeRemaskReasonKind::SchemaContextDrift,
@@ -98,7 +101,7 @@ fn state_snapshot_with_optional_postures_remains_in_canonical_migration_coverage
             .expect("fixture digest must fit"),
         ),
     )
-    .expect("positive fixture identity fits canonical digest bounds");
+    .expect("fixture digest must fit");
     let snapshot = WorthQueryRuntimeStateSnapshot::ready(
         runtime_state_snapshot_basis_label_identity(
             &crate::runtime::evidence_identities::runtime_state_snapshot_test_subject_identity(
@@ -121,7 +124,7 @@ fn state_snapshot_with_optional_postures_remains_in_canonical_migration_coverage
     .with_async_result_state(async_result_state)
     .expect("fixture digest must fit")
     .with_remask_posture(remask_posture)
-    .expect("positive fixture identity fits canonical digest bounds");
+    .expect("fixture digest must fit");
 
     assert_canonical_evidence_identity_token(
         snapshot.state_digest().terminal_projection_for_reporting(),

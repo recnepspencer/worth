@@ -14,7 +14,8 @@ pub(in super::super) fn compose_basis_admission_identity(
     authority_lane: WorthQueryAuthorityLane,
     evidence: impl IntoIterator<Item = impl Into<String>>,
 ) -> crate::WorthQueryEvidenceIdentity {
-    let evidence_rows = WorthQueryBasisAdmissionEvidenceRow::rows_from_values(evidence);
+    let evidence_rows = WorthQueryBasisAdmissionEvidenceRow::rows_from_values(evidence)
+        .expect("fixture digest must fit");
     crate::WorthQueryEvidenceIdentity::compose(scope)
         .field_value(
             crate::WorthQueryEvidenceTag::new("session_label_identity"),

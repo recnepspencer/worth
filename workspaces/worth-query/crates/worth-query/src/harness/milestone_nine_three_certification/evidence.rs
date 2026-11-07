@@ -247,7 +247,7 @@ pub(super) fn denied_runtime_certification_failure(
     Ok(MilestoneNineThreeRejectionBundle {
         failure_class: MilestoneNineThreeFailureClass::RuntimeCertificationDenied,
         failure_kind: error.error_kind().as_str().to_string(),
-        failure_digest: error.failure_projection().label().to_string(),
+        failure_digest: error.failure_projection()?.label().to_string(),
         denied_bundle_digest: "none".to_string(),
         counter_snapshot: error.counters().counter_projection().label().to_string(),
         compile_fail_boundary_digest: compile_fail_boundary_digest(&[
@@ -300,7 +300,7 @@ pub(super) fn denied_cross_family_scope_failure(
     Ok(MilestoneNineThreeRejectionBundle {
         failure_class: MilestoneNineThreeFailureClass::RuntimeCertificationDenied,
         failure_kind: error.error_kind().as_str().to_string(),
-        failure_digest: error.failure_projection().label().to_string(),
+        failure_digest: error.failure_projection()?.label().to_string(),
         denied_bundle_digest: "none".to_string(),
         counter_snapshot: error.counters().counter_projection().label().to_string(),
         compile_fail_boundary_digest: compile_fail_boundary_digest(&[

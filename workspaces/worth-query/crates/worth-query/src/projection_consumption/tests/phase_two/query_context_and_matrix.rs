@@ -173,7 +173,8 @@ fn query_context_source_reference_requires_bound_source_reference_evidence() {
     .expect("query-context source-reference declaration should be valid");
 
     assert!(matches!(
-        evaluate_projection_consumption_eligibility(&admitted_declaration),
+        evaluate_projection_consumption_eligibility(&admitted_declaration)
+            .expect("fixture digest must fit"),
         ProjectionConsumptionEligibility::AdmittedWithWarnings(_, _)
     ));
 
@@ -190,7 +191,8 @@ fn query_context_source_reference_requires_bound_source_reference_evidence() {
     .expect("query-context declaration should be valid");
 
     assert!(matches!(
-        evaluate_projection_consumption_eligibility(&denied_declaration),
+        evaluate_projection_consumption_eligibility(&denied_declaration)
+            .expect("fixture digest must fit"),
         ProjectionConsumptionEligibility::SourceMismatch(_)
     ));
 }
@@ -269,7 +271,8 @@ fn support_discovery_and_eligibility_stay_in_sync_for_first_slice_source_instanc
                 request_for_kind(fact_kind),
             )
             .expect("declaration should be valid");
-            let eligibility = evaluate_projection_consumption_eligibility(&declaration);
+            let eligibility = evaluate_projection_consumption_eligibility(&declaration)
+                .expect("fixture digest must fit");
 
             match (row.posture(), eligibility) {
                 (

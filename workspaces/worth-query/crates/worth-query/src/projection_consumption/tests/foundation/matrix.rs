@@ -26,7 +26,8 @@ fn support_discovery_and_eligibility_stay_in_sync_for_all_lanes() {
                 request_for_kind(fact_kind),
             )
             .expect("matrix declaration should be structurally valid");
-            let eligibility = evaluate_projection_consumption_eligibility(&declaration);
+            let eligibility = evaluate_projection_consumption_eligibility(&declaration)
+                .expect("fixture digest must fit");
             match (row.posture(), eligibility) {
                 (
                     ProjectionConsumptionSupportPosture::Admitted,

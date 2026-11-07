@@ -273,8 +273,10 @@ pub(in super::super) fn preview_promotion_rebinding_required_error(
                     BridgeAsyncCompletionDenialClass::SignalLifecycleDenied,
                 ),
                 "async:preview-stop-class-mismatch",
-            ),
-            &runtime_async_checkpoint_label_identity("basis:drifted"),
+            )
+            .expect("fixture digest must fit"),
+            &runtime_async_checkpoint_label_identity("basis:drifted")
+                .expect("fixture digest must fit"),
             &generation_digest,
         )
         .expect("preview mismatch should remain typed");

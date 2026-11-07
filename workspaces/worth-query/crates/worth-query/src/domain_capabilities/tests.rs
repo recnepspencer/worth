@@ -123,15 +123,15 @@ fn lower_runtime_boundary_drift_is_stale_not_rebind() {
         .expect("fixture digest must fit"),
     )
     .expect("fixture digest must fit");
-    let eligible = success(evaluate_requested_domain_capability_contribution(requested))
-        .expect("fixture digest must fit");
-    let admitted = success(admit_eligible_domain_capability_contribution(eligible))
-        .expect("fixture digest must fit");
+    let eligible = success(evaluate_requested_domain_capability_contribution(requested));
+    let admitted = success(admit_eligible_domain_capability_contribution(eligible));
 
     match prepare_admitted_domain_capability_contribution_for_materialization(
         admitted,
-        lower_runtime_target("envelope-b"),
-    ) {
+        lower_runtime_target("envelope-b").expect("fixture digest must fit"),
+    )
+    .expect("fixture digest must fit")
+    {
         TransitionOutcome::Stale(stale) => {
             assert_eq!(stale.category(), "support-traceability");
             assert_ne!(

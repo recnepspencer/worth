@@ -246,6 +246,7 @@ fn receipt_with_evidence(
                     *family,
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(digest),
                 )
+                .expect("fixture digest must fit")
             })
             .collect(),
     )

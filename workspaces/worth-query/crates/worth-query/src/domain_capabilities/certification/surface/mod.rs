@@ -93,7 +93,7 @@ impl WorthQueryDomainCapabilityCertifiedSurfaceInventory {
         Ok(compose_public_surface_digest(
             self.rows
                 .iter()
-                .map(WorthQueryDomainCapabilityCertifiedSurfaceRow::row_digest)
+                .map(|row| row.row_digest().expect("fixture digest must fit"))
                 .collect::<Result<Vec<_>, _>>()?,
         )?)
     }
@@ -219,10 +219,10 @@ mod tests {
             inventory
                 .rows()
                 .iter()
-                .map(WorthQueryDomainCapabilityCertifiedSurfaceRow::row_digest),
+                .map(|row| row.row_digest().expect("fixture digest must fit")),
         )?;
 
-        assert_eq!(inventory.public_surface_digest(), expected);
+        assert_eq!(inventory.public_surface_digest()?, expected);
 
         Ok(())
     }

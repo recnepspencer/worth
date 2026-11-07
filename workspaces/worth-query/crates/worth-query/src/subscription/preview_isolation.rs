@@ -165,11 +165,18 @@ pub fn admit_preview_subscription_isolation(
     preview_epoch: impl Into<String>,
     preview_residue_budget_width: PreviewResidueWidth,
 ) -> Result<PreviewSubscriptionIsolationArtifact, PreviewSubscriptionIsolationError> {
-    Ok(PreviewSubscriptionIsolationArtifact::new(
+    PreviewSubscriptionIsolationArtifact::new(
         attachment,
         preview_epoch,
         preview_residue_budget_width,
-    )?)
+    )
+    .map_err(|cause| {
+        PreviewSubscriptionIsolationError::identity_refused(
+            cause,
+            attachment.attachment_digest().evidence_identity().clone(),
+            ActiveSubscriptionCounters::default(),
+        )
+    })
 }
 
 pub fn deny_preview_authoritative_sharing(

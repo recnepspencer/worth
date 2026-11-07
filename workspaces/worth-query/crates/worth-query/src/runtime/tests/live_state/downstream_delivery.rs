@@ -238,7 +238,8 @@ fn runtime_downstream_delivery_fails_closed_for_stale_basis_and_preserves_remask
     assert_eq!(
         delivery
             .negotiate_runtime_resume(Some(&runtime_state_snapshot_basis_label_identity(
-                &runtime_state_snapshot_test_subject_identity("basis:drifted"),
+                &runtime_state_snapshot_test_subject_identity("basis:drifted")
+                    .expect("fixture digest must fit"),
             )))
             .kind(),
         WorthQueryRuntimeDownstreamResumePostureKind::StaleBasisDenied

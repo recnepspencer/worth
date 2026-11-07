@@ -199,12 +199,14 @@ fn preview_helper_matches_generic_signal_orchestration_path() {
     let helper = handle
         .geometry_helpers()
         .prepare_preview_for_active_face_selection_checked(helper_progressed)
+        .expect("fixture digest must fit")
         .expect("fixture digest must fit");
     let generic = handle
         .orchestrate_signal_compatibility_checked(
             generic_signal_orchestration_input(&handle, generic_progressed)
                 .with_bridge_request(preview_request()),
         )
+        .expect("fixture digest must fit")
         .expect("fixture digest must fit");
 
     assert_eq!(
@@ -271,9 +273,11 @@ fn material_attachment_helper_matches_generic_composed_path() {
     let helper = handle
         .geometry_helpers()
         .orchestrate_material_attachment_for_active_face_selection_proof(helper_input)
+        .expect("fixture digest must fit")
         .expect("fixture digest must fit");
     let generic = handle
         .orchestrate_declaration_with_contributions_proof(generic_input)
+        .expect("fixture digest must fit")
         .expect("fixture digest must fit");
 
     assert_eq!(helper.request_digest(), generic.request_digest());
@@ -290,11 +294,14 @@ fn helper_wrong_world_matches_generic_path() {
     let right = admitted_handle(request_execution, "right");
     let helper = right
         .geometry_helpers()
-        .prepare_runtime_route_for_active_face_selection_outcome(progressed(&left, "face-e"));
-    let generic = right.orchestrate_signal_compatibility_outcome(
-        generic_signal_orchestration_input(&right, progressed(&left, "face-e"))
-            .with_bridge_request(runtime_route_request()),
-    );
+        .prepare_runtime_route_for_active_face_selection_outcome(progressed(&left, "face-e"))
+        .expect("fixture digest must fit");
+    let generic = right
+        .orchestrate_signal_compatibility_outcome(
+            generic_signal_orchestration_input(&right, progressed(&left, "face-e"))
+                .with_bridge_request(runtime_route_request()),
+        )
+        .expect("fixture digest must fit");
 
     match (helper, generic) {
         (

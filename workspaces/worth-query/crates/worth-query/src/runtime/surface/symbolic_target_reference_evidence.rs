@@ -53,6 +53,7 @@ impl WorthQuerySymbolicTargetReferenceEvidence {
                 .or(target_collection)
                 .map(|collection| {
                     WorthQueryMutationTargetCollectionIdentity::new("symbolic-target", collection)
+                        .expect("fixture digest must fit")
                 })
                 .transpose()?,
         })
@@ -105,10 +106,11 @@ impl WorthQuerySymbolicTargetReferenceEvidence {
                 crate::runtime::WorthQuerySymbolicTargetReferenceFamily::SameBatchDeclaredTarget,
             outcome: WorthQuerySymbolicTargetReferenceOutcome::SameBatchSymbolicTarget,
             symbol: WorthQueryMutationSymbolIdentity::new("symbolic-target-reference", symbol)
-                .expect("positive fixture identity fits canonical digest bounds"),
+                .expect("fixture digest must fit"),
             resolved_entity_identity,
             target_collection: target_collection.map(|collection| {
                 WorthQueryMutationTargetCollectionIdentity::new("symbolic-target", collection)
+                    .expect("fixture digest must fit")
             }),
         }
     }

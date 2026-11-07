@@ -174,7 +174,7 @@ fn digest_intent_denial_output(errors: &[WorthQueryRuntimeError]) -> String {
                 evidence, source, ..
             } => Some(format!(
                 "routing:{}:{}",
-                evidence.failure_digest(),
+                evidence.failure_digest().expect("fixture digest must fit"),
                 stop_class_variant_key(source.stop_class())
             )),
             _ => None,

@@ -339,7 +339,7 @@ impl WorthQueryWriteReceipt {
                     symbol,
                     target_entity_identity.clone().unwrap_or_else(|| {
                         crate::memory_workspace::admit_authored_entity_label("resolved-target:test")
-                            .expect("positive fixture identity fits canonical digest bounds")
+                            .expect("fixture digest must fit")
                     }),
                     target_collection,
                 )
@@ -347,13 +347,16 @@ impl WorthQueryWriteReceipt {
             symbolic_aspect_resolution_evidence: Vec::new(),
             naming_mutation_evidence: None,
             continuity_mutation_evidence: continuity,
-            provenance_evidence: provenance_execution_record_digest
-                .map(WorthQueryMutationProvenanceEvidence::test_only),
+            provenance_evidence: provenance_execution_record_digest.map(|digest| {
+                WorthQueryMutationProvenanceEvidence::test_only(digest)
+                    .expect("fixture digest must fit")
+            }),
             declared_collection_identity: target_collection.map(|collection| {
                 crate::runtime::WorthQueryMutationTargetCollectionIdentity::new(
                     "write-receipt-test-declared",
                     collection,
                 )
+                .expect("fixture digest must fit")
             }),
             declared_entity_identity: target_entity_identity.clone(),
             target_collection_identity: target_collection.map(|collection| {
@@ -361,6 +364,7 @@ impl WorthQueryWriteReceipt {
                     "write-receipt-test-target",
                     collection,
                 )
+                .expect("fixture digest must fit")
             }),
             target_entity_identity,
             declared_aspect_operations: Vec::new(),

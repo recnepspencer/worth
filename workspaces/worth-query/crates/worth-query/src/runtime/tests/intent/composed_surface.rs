@@ -125,12 +125,14 @@ fn composed_runtime_surface_proves_facade_handles_stay_proof_bearing_across_prev
     }));
     assert_eq!(
         preview_outcome
+            .as_ref()
             .expect("fixture digest must fit")
             .pending_write_intent_residue_count(),
         1
     );
     assert_eq!(
         preview_outcome
+            .as_ref()
             .expect("fixture digest must fit")
             .authoritative_residue_count(),
         0

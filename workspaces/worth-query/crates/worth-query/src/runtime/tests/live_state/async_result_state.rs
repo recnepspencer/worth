@@ -242,7 +242,8 @@ fn runtime_async_result_state_fails_closed_for_generation_drift_and_preview_mism
             &WorthQueryRuntimeAsyncResultProjection::completion_state(
                 BridgeAsyncCompletionState::Admitted(BridgeAsyncCompletionClass::Fulfilled),
                 "async:generation-drift",
-            ),
+            )
+            .expect("fixture digest must fit"),
             &basis_identity,
             &drifted_checkpoint,
         )
@@ -253,7 +254,8 @@ fn runtime_async_result_state_fails_closed_for_generation_drift_and_preview_mism
             &WorthQueryRuntimeAsyncResultProjection::completion_state(
                 BridgeAsyncCompletionState::Admitted(BridgeAsyncCompletionClass::Fulfilled),
                 "async:preview-mismatch",
-            ),
+            )
+            .expect("fixture digest must fit"),
             &drifted_basis,
             &checkpoint_identity,
         )
@@ -261,7 +263,8 @@ fn runtime_async_result_state_fails_closed_for_generation_drift_and_preview_mism
     let superseded = runtime
         .project_async_result_state(
             view.name(),
-            &WorthQueryRuntimeAsyncResultProjection::supersession("async:superseded-drift"),
+            &WorthQueryRuntimeAsyncResultProjection::supersession("async:superseded-drift")
+                .expect("fixture digest must fit"),
             &basis_identity,
             &drifted_checkpoint,
         )
@@ -274,7 +277,8 @@ fn runtime_async_result_state_fails_closed_for_generation_drift_and_preview_mism
                     BridgeAsyncCompletionDenialClass::SignalLifecycleDenied,
                 ),
                 "async:denied-preview",
-            ),
+            )
+            .expect("fixture digest must fit"),
             &drifted_basis,
             &checkpoint_identity,
         )

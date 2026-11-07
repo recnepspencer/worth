@@ -84,7 +84,9 @@ fn compose_authoritative_intent_receipt_identity_with_effect_trigger(
         )
         .optional_evidence_identity(
             WorthQueryEvidenceTag::new("effect_trigger_digest"),
-            effect_trigger_identity.as_ref(),
+            effect_trigger_identity
+                .as_ref()
+                .map(|value| value.as_ref().expect("fixture digest must fit")),
         )
         .field_evidence_identity(
             WorthQueryEvidenceTag::new("commit_evidence_identity"),

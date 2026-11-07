@@ -47,6 +47,7 @@ impl WorthQueryContinuityMutationEvidence {
             resolved_target_entity_identity,
             target_collection: target_collection.map(|collection| {
                 WorthQueryMutationTargetCollectionIdentity::new("continuity-target", collection)
+                    .expect("fixture digest must fit")
             }),
             lineage_digest: test_only_digest("continuity-lineage", "lineage:test")?,
             continuity_resolution_digest: test_only_digest(

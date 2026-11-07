@@ -25,6 +25,7 @@ pub(in crate::runtime::tests) fn causal_test_reference_digest(
             reference_label.as_ref(),
         )
         .seal()
+        .expect("fixture digest must fit")
         .into()
 }
 

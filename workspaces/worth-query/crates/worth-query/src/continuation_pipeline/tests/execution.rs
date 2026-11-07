@@ -107,7 +107,9 @@ fn continuation_ordinary_outcome_keeps_execution_topology_honest() {
     };
 
     assert!(matches!(
-        handle.execute_prepared_continuation_outcome(prepared),
+        handle
+            .execute_prepared_continuation_outcome(prepared)
+            .expect("fixture digest must fit"),
         WorthQueryOrdinaryOutcome::Bound(_)
     ));
 

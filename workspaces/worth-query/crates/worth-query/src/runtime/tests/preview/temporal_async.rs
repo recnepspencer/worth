@@ -245,8 +245,8 @@ fn preview_promotion_denies_with_typed_rebinding_recovery_posture() {
                     worth_runtime_bridge::facade::BridgeAsyncCompletionDenialClass::SignalLifecycleDenied,
                 ),
                 "async:preview-mismatch",
-            ),
-            &runtime_async_checkpoint_label_identity("basis:drifted"),
+            ).expect("fixture digest must fit"),
+            &runtime_async_checkpoint_label_identity("basis:drifted").expect("fixture digest must fit"),
             &generation_digest,
         )
         .expect("preview mismatch should remain typed");

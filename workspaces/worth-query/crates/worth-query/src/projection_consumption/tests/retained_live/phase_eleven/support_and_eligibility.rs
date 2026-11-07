@@ -31,7 +31,8 @@ fn assert_support_and_eligibility_sync_for_retained_binding() {
                 request_for_kind(fact_kind),
             )
             .expect("retained declaration should remain structurally valid");
-        let eligibility = evaluate_projection_consumption_eligibility(&declaration);
+        let eligibility = evaluate_projection_consumption_eligibility(&declaration)
+            .expect("fixture digest must fit");
 
         match (support_row.posture(), eligibility) {
             (
@@ -79,7 +80,8 @@ fn assert_support_and_eligibility_sync_for_live_binding() {
                 request_for_kind(fact_kind),
             )
             .expect("live declaration should remain structurally valid");
-        let eligibility = evaluate_projection_consumption_eligibility(&declaration);
+        let eligibility = evaluate_projection_consumption_eligibility(&declaration)
+            .expect("fixture digest must fit");
 
         match (support_row.posture(), eligibility) {
             (
