@@ -1,6 +1,6 @@
 # P-A merge cleanup reds
 
-Latest source `5fa81663ff0af70dbf6c65747b7ebba6587820d8`. Each court is retained. Exact original and focused failures remain in the linked JSON and originating logs.
+Latest source `79de5c7ad597cb207fa17a2d38ec1b80da748bba`. Each court is retained. Exact original and focused failures remain in the linked JSON and originating logs.
 
 ## worth-court-relational-certification::worth_court_relational_certification$content::durable_publication::content_durable_artifact_memory_refuses_before_the_medium_and_selected_commit
 

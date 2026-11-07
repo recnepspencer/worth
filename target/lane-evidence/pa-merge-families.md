@@ -1,6 +1,6 @@
 # Final P-A merge family status
 
-Source HEAD: `5fa81663ff0af70dbf6c65747b7ebba6587820d8`. Incoming: `2a51552fc5`; base: `7b35408444`.
+Source HEAD: `79de5c7ad597cb207fa17a2d38ec1b80da748bba`. Incoming: `2a51552fc5`; base: `7b35408444`.
 
 The first-pass classification is immutable in `pa-merge-classified-failures.json`. This table follows each original outcome to its latest focused evidence; it is not a rerun of Tier2.
 

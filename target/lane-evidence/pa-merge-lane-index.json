@@ -1,5 +1,5 @@
 {
-  "source_head": "5fa81663ff0af70dbf6c65747b7ebba6587820d8",
+  "source_head": "79de5c7ad597cb207fa17a2d38ec1b80da748bba",
   "counts": {
     "check": 22,
     "clippy": 16,
@@ -6043,6 +6043,213 @@
       "exit": 0,
       "clean": "False",
       "counts": null
+    },
+    {
+      "kind": "legacy-fixture-lane",
+      "head": "589f6fce9c002fa7ef44082808137bac7b03516f",
+      "start": "2026-11-07T16:01:35.559629+00:00",
+      "command": [
+        "C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+        "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\pa_merge_permitted_gate.py",
+        "fixture",
+        "--census",
+        "--out",
+        "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\pa-merge-fixture-tier2"
+      ],
+      "logs": [
+        "target/lane-evidence/pa-merge-fixture-tier2-driver.log"
+      ],
+      "end": "2026-11-07T16:23:55.291827+00:00",
+      "exit": 1,
+      "clean": "false",
+      "counts": {
+        "passed": 578,
+        "failed": 19,
+        "ignored_metadata": 0,
+        "incomplete": 2
+      },
+      "child_chunks": 308,
+      "child_detail": "target/lane-evidence/pa-merge-fixture-tier2/fixture.json"
+    },
+    {
+      "kind": "diagnostic-child",
+      "head": "589f6fce9c002fa7ef44082808137bac7b03516f",
+      "start": "2026-11-07T13:26:43.314796+00:00",
+      "command": [
+        "python",
+        "target/lane-evidence/pa_merge_preimage_probe.py"
+      ],
+      "logs": [
+        "target/lane-evidence/pa-merge-preimage-child-exit.log"
+      ],
+      "end": "2026-11-07T13:26:47.916885+00:00",
+      "exit": 1,
+      "clean": "false",
+      "counts": {
+        "passed": 0,
+        "failed": 1,
+        "ignored_metadata": 0
+      }
+    },
+    {
+      "kind": "diagnostic-child",
+      "head": "589f6fce9c002fa7ef44082808137bac7b03516f",
+      "start": "2026-11-07T15:40:26.696126+00:00",
+      "command": [
+        "python",
+        "target/lane-evidence/pa_merge_memory_child_probe.py"
+      ],
+      "logs": [
+        "target/lane-evidence/pa-merge-memory-child-exit.log"
+      ],
+      "end": "2026-11-07T15:40:29.533908+00:00",
+      "exit": 1,
+      "clean": "false",
+      "counts": {
+        "passed": 0,
+        "failed": 1,
+        "ignored_metadata": 0
+      }
+    },
+    {
+      "kind": "diagnostic-child",
+      "head": "589f6fce9c002fa7ef44082808137bac7b03516f",
+      "start": "2026-11-07T16:26:39.956238+00:00",
+      "command": [
+        "python",
+        "target/lane-evidence/pa_merge_fixture_retention_probe.py"
+      ],
+      "logs": [
+        "target/lane-evidence/pa-merge-fixture-retention-child.log"
+      ],
+      "end": "2026-11-07T16:26:45.637488+00:00",
+      "exit": 1,
+      "clean": "false",
+      "counts": null
+    },
+    {
+      "kind": "diagnostic-child",
+      "head": "589f6fce9c002fa7ef44082808137bac7b03516f",
+      "start": "2026-11-07T16:29:09.275316+00:00",
+      "command": [
+        "python",
+        "target/lane-evidence/pa_merge_fixture_retention_owned_probe.py"
+      ],
+      "logs": [
+        "target/lane-evidence/pa-merge-fixture-retention-owned.log"
+      ],
+      "end": "2026-11-07T16:29:11.924250+00:00",
+      "exit": 1,
+      "clean": "false",
+      "counts": {
+        "passed": 0,
+        "failed": 1,
+        "ignored_metadata": 0
+      }
+    },
+    {
+      "kind": "python-unit-test",
+      "head": "589f6fce9c002fa7ef44082808137bac7b03516f",
+      "start": "2026-11-07T17:50:44.681839+00:00",
+      "command": [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "scripts/test_cost",
+        "-p",
+        "test_unit_plan.py"
+      ],
+      "logs": [
+        "target/lane-evidence/pa-merge-unit-plan-tests.log"
+      ],
+      "end": "2026-11-07T17:50:46.124328+00:00",
+      "exit": 0,
+      "clean": "false",
+      "counts": {
+        "passed": 20,
+        "failed": 0,
+        "ignored_metadata": 0
+      }
+    },
+    {
+      "kind": "python-unit-test",
+      "head": "5a67931500d0bbd305d25a045e476f9cd3a1b15f",
+      "start": "2026-11-07T17:56:39.212249+00:00",
+      "command": [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "scripts/test_cost",
+        "-p",
+        "test_unit_plan.py"
+      ],
+      "logs": [
+        "target/lane-evidence/pa-merge-unit-plan-example-tests.log"
+      ],
+      "end": "2026-11-07T17:56:40.526912+00:00",
+      "exit": 0,
+      "clean": "false",
+      "counts": {
+        "passed": 22,
+        "failed": 0,
+        "ignored_metadata": 0
+      }
+    },
+    {
+      "kind": "python-unit-test",
+      "head": "5a67931500d0bbd305d25a045e476f9cd3a1b15f",
+      "start": "2026-11-07T18:00:11.952564+00:00",
+      "command": [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "scripts/test_cost",
+        "-p",
+        "test_unit_plan.py"
+      ],
+      "logs": [
+        "target/lane-evidence/pa-merge-unit-plan-mixed-example-tests.log"
+      ],
+      "end": "2026-11-07T18:00:13.785836+00:00",
+      "exit": 0,
+      "clean": "false",
+      "counts": {
+        "passed": 21,
+        "failed": 0,
+        "ignored_metadata": 0
+      }
+    },
+    {
+      "kind": "python-unit-test",
+      "head": "5a67931500d0bbd305d25a045e476f9cd3a1b15f",
+      "start": "2026-11-07T17:58:27.943268+00:00",
+      "command": [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "scripts/test_cost",
+        "-p",
+        "test_unit_plan.py"
+      ],
+      "logs": [
+        "target/lane-evidence/pa-merge-unit-plan-paired-example-tests.log"
+      ],
+      "end": "2026-11-07T17:58:29.369767+00:00",
+      "exit": 0,
+      "clean": "false",
+      "counts": {
+        "passed": 21,
+        "failed": 0,
+        "ignored_metadata": 0
+      }
     }
   ]
 }

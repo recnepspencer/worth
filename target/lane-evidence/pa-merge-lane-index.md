@@ -1,6 +1,6 @@
 # P-A merge lane evidence index
 
-Reviewed source: `5fa81663ff0af70dbf6c65747b7ebba6587820d8`. All commands, HEADs, start/end times, dirty flags and raw paths are in pa-merge-lane-index.json and the logs. First Tier2 is at 589f6fce9c; later evidence applies only to its named inputs.
+Reviewed source: `79de5c7ad597cb207fa17a2d38ec1b80da748bba`. All commands, HEADs, start/end times, dirty flags and raw paths are in pa-merge-lane-index.json and the logs. First Tier2 is at 589f6fce9c; later evidence applies only to its named inputs.
 
 Counts below are actual distinct invocations, including failed attribution/tool attempts. Metadata/list/declaration operations do not run test bodies. A missing test count is N/A, never a green zero-test claim.
 
@@ -125,6 +125,15 @@ Operation counts: `{"build": 3, "cargo-metadata": 20, "cargo-rustc": 2, "cargo-t
 |native-execution|589f6fce9c|0|N/A|target/lane-evidence/pa-merge-store-tier2/telemetry.log|
 |nextest-build|589f6fce9c|0|N/A|target/lane-evidence/pa-merge-store-tier2/build/binaries-build.log|
 |build|589f6fce9c|0|N/A|target/lane-evidence/pa-merge-store-tier2/prebuilt/store/executables-build.log|
+|legacy-fixture-lane|589f6fce9c|1|578/19/0|target/lane-evidence/pa-merge-fixture-tier2-driver.log|
+|diagnostic-child|589f6fce9c|1|0/1/0|target/lane-evidence/pa-merge-preimage-child-exit.log|
+|diagnostic-child|589f6fce9c|1|0/1/0|target/lane-evidence/pa-merge-memory-child-exit.log|
+|diagnostic-child|589f6fce9c|1|N/A|target/lane-evidence/pa-merge-fixture-retention-child.log|
+|diagnostic-child|589f6fce9c|1|0/1/0|target/lane-evidence/pa-merge-fixture-retention-owned.log|
+|python-unit-test|589f6fce9c|0|20/0/0|target/lane-evidence/pa-merge-unit-plan-tests.log|
+|python-unit-test|5a67931500|0|22/0/0|target/lane-evidence/pa-merge-unit-plan-example-tests.log|
+|python-unit-test|5a67931500|0|21/0/0|target/lane-evidence/pa-merge-unit-plan-mixed-example-tests.log|
+|python-unit-test|5a67931500|0|21/0/0|target/lane-evidence/pa-merge-unit-plan-paired-example-tests.log|
 
 Original aggregate suite/body counts: pa-merge-initial-lane-counts.json. Zero-selected Query/Bank compile-fail and Bank determinism are UNRUN, not green. Aggregate gate exits propagate a workspace failure even for suites whose bodies passed.
 
@@ -133,3 +142,7 @@ Focused nextest selections execute no ignored body; nextest emits ignored metada
 Formal model inputs unchanged: reused lifecycle-store-formal-toolchain.log; no formal rerun.
 
 Primary validation total: 22 cargo checks, 16 clippy passes/attempts; 17 focused nextest builds plus one legacy fixture no-run build, 3 production/bin builds and 2 IR diagnostic rustc invocations; 30 nextest run invocations. Actual native executions, doctests and the one frozen-door test are separately enumerated.
+
+Additional non-Cargo lane evidence is indexed above: one legacy fixture lane (308 child chunks, 578 passed/19 failed/2 incomplete), four diagnostic child probes, and four Python unit-plan runs. Final Python suite is21passed; the earlier22case draft modeled the compiler graph incorrectly and is superseded. Child fragment logs belong to their parent lane header; per-child timestamps were not recorded and are not invented.
+
+Test-run accounting: 30 nextest invocations + one legacy fixture lane + 11 direct court/example commands (10 native and one cargo run) + four diagnostic children + four documentation commands + four Python unit suites + one frozen-door test =55 top-level test/probe commands. The legacy lane launches308 chunks; child processes spawned inside courts are not counted again. Four native phase_telemetry commands are bookkeeping, not tests.
