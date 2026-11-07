@@ -2,7 +2,7 @@
 use super::{SignalBranchAdvanceArtifact, SignalDefinitionTransitionArtifact};
 use worth_execution::{ExecutionImmutableBytes, ExecutionRequest};
 use worth_foundational::facade::{
-    ApplicationBuildIdentity, DurableSignalOwnerIdentity, SignalDurableJournal,
+    ApplicationBuildIdentity, DurableSignalOwnerIdentity, HomeIncarnation, SignalDurableJournal,
 };
 mod completion;
 pub use completion::SignalPublicationCompletion;
@@ -10,18 +10,33 @@ pub use completion::SignalPublicationCompletion;
 #[derive(Clone, Debug)]
 pub struct SignalDurableHomeBinding {
     owner: DurableSignalOwnerIdentity,
+    incarnation: HomeIncarnation,
+    program_revision: [u8; 32],
     build: ApplicationBuildIdentity,
 }
 impl SignalDurableHomeBinding {
     /// Trusted admitted adapter data, never a filesystem attachment witness.
     pub const fn from_admitted_adapter(
         owner: DurableSignalOwnerIdentity,
+        incarnation: HomeIncarnation,
+        program_revision: [u8; 32],
         build: ApplicationBuildIdentity,
     ) -> Self {
-        Self { owner, build }
+        Self {
+            owner,
+            incarnation,
+            program_revision,
+            build,
+        }
     }
     pub const fn owner(&self) -> DurableSignalOwnerIdentity {
         self.owner
+    }
+    pub const fn incarnation(&self) -> HomeIncarnation {
+        self.incarnation
+    }
+    pub const fn program_revision(&self) -> [u8; 32] {
+        self.program_revision
     }
     pub const fn build_identity(&self) -> ApplicationBuildIdentity {
         self.build

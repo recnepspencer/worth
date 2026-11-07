@@ -1,5 +1,6 @@
 //! Fast integration courts.
 mod authored_image;
+mod authored_readmission;
 mod bulk_read_currentness;
 mod durable_artifacts;
 #[allow(unused_imports)]

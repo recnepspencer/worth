@@ -52,6 +52,12 @@ pub(super) fn open(
     let serving = Arc::new(serving);
     let binding = SignalDurableHomeBinding::from_admitted_adapter(
         owner(),
+        if fresh {
+            worth_foundational::facade::HomeIncarnation::initial()
+        } else {
+            worth_foundational::facade::HomeIncarnation::from_recorded(2).unwrap()
+        },
+        [8; 32],
         ApplicationBuildIdentity::parse("11111111-1111-4111-8111-111111111111").unwrap(),
     );
     let medium =
@@ -91,7 +97,14 @@ pub(super) fn definition(
     if predecessor.is_some() {
         graph.create_node();
     }
-    let image = graph.capture_authored_image(execution).unwrap();
+    let branch = DurableSignalBranchIdentity::from_recorded(owner(), 5);
+    let image = graph.capture_authored_image(execution, branch).unwrap();
+    let vocabulary =
+        worth_signal::facade::durability::SignalDurableTierVocabulary::declare([((), "base")])
+            .unwrap();
+    let runtime = worth_signal::facade::runtime::RuntimeConfig::<()>::new()
+        .capture_authored_image(&graph, &vocabulary, branch, execution)
+        .unwrap();
     let payload = b"opaque Bridge-owned source section";
     let mut bytes = ExecutionRequestArrayBuilder::allocate(*execution, payload.len()).unwrap();
     bytes.extend_from_slice(payload).unwrap();
@@ -105,6 +118,8 @@ pub(super) fn definition(
         DurableSignalBranchIdentity::from_recorded(owner(), 5),
         predecessor.map(|p| p.reference()),
         &image,
+        &runtime,
+        &[],
         &bridge,
     )
     .unwrap()
@@ -117,7 +132,7 @@ pub(super) fn advance(
     let cell = DurableSignalCellIncarnation::from_recorded(branch, 7);
     let descriptor = SignalDurableBranchDescriptor::from_recorded(
         DurableSignalGeneration::from_recorded(cell, 0),
-        DurableSignalSnapshotIdentity::from_recorded(owner(), 11),
+        Some(DurableSignalSnapshotIdentity::from_recorded(owner(), 11)),
         DurableSignalAdmissionIdentity::from_recorded(owner(), 13),
         definition.reference(),
     )

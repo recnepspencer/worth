@@ -98,6 +98,13 @@ fn validate(
     {
         return Err(D::ForeignOwner);
     }
+    if matches!(
+        change,
+        SignalAuthoredBranchChange::SnapshotCaptured | SignalAuthoredBranchChange::Restored
+    ) && descriptor.snapshot().is_none()
+    {
+        return Err(D::SnapshotRequired);
+    }
     match change {
         SignalAuthoredBranchChange::Created { name, parent } => {
             if name.trim().is_empty() || name.len() > 256 {

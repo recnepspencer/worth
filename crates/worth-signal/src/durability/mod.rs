@@ -5,9 +5,11 @@ mod definition_transition;
 mod descriptor;
 mod frame;
 mod medium;
+mod tier_vocabulary;
 pub use authored_image::{
-    SignalAuthoredImage, SignalAuthoredImageDenial, SIGNAL_AUTHORED_IMAGE_PROTOCOL,
-    SIGNAL_AUTHORED_IMAGE_VERSION,
+    SignalAuthoredImage, SignalAuthoredImageDenial, SignalRuntimeAuthoredImage,
+    SIGNAL_AUTHORED_IMAGE_PROTOCOL, SIGNAL_AUTHORED_IMAGE_VERSION,
+    SIGNAL_RUNTIME_AUTHORED_IMAGE_PROTOCOL,
 };
 pub use branch_advance::{SignalAuthoredBranchChange, SignalBranchAdvanceArtifact};
 pub use definition_transition::{SignalBridgeAuthoredSection, SignalDefinitionTransitionArtifact};
@@ -21,3 +23,4 @@ pub use medium::{
     SignalDurableReadSource, SignalPublicationCompletion, SignalPublicationObservation,
     SignalPublicationTaskPosture,
 };
+pub use tier_vocabulary::{SignalDurableTierVocabulary, SignalDurableTierVocabularyDenial};

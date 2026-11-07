@@ -22,7 +22,14 @@ fn subject(execution: &ExecutionRequest<'_, '_>, ordinal: u64) -> SignalPublicat
         SignalOwnerSlotIdentity::from_recorded(2),
     );
     let graph = Box::new(worth_signal::facade::SignalGraph::new());
-    let image = graph.capture_authored_image(execution).unwrap();
+    let branch = DurableSignalBranchIdentity::from_recorded(owner, 3);
+    let image = graph.capture_authored_image(execution, branch).unwrap();
+    let vocabulary =
+        worth_signal::facade::durability::SignalDurableTierVocabulary::declare([((), "base")])
+            .unwrap();
+    let runtime = worth_signal::facade::runtime::RuntimeConfig::<()>::new()
+        .capture_authored_image(&graph, &vocabulary, branch, execution)
+        .unwrap();
     let bytes = ExecutionRequestArrayBuilder::allocate(*execution, 0).unwrap();
     let bridge = SignalBridgeAuthoredSection::from_bridge_bytes(
         bytes.seal().unwrap().into_immutable_bytes(),
@@ -32,9 +39,11 @@ fn subject(execution: &ExecutionRequest<'_, '_>, ordinal: u64) -> SignalPublicat
         SignalDefinitionTransitionArtifact::capture(
             execution,
             SignalDefinitionTransitionIdentity::from_recorded(owner, ordinal),
-            DurableSignalBranchIdentity::from_recorded(owner, 3),
+            branch,
             None,
             &image,
+            &runtime,
+            &[],
             &bridge,
         )
         .unwrap(),

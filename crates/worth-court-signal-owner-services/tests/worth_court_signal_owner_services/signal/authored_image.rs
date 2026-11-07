@@ -60,11 +60,11 @@ fn retiring_a_source_removes_declarations_after_evaluation_changes_the_read_set(
             );
             assert_eq!(
                 actual
-                    .capture_authored_image(&execution)
+                    .capture_authored_image(&execution, branch())
                     .unwrap()
                     .as_bytes(),
                 reference
-                    .capture_authored_image(&execution)
+                    .capture_authored_image(&execution, branch())
                     .unwrap()
                     .as_bytes()
             );
@@ -119,7 +119,7 @@ fn authored_bytes_exclude_evaluated_edges_versions_and_node_state() {
             )],
         )
         .unwrap();
-    let authored = graph.capture_authored_image(&execution).unwrap();
+    let authored = graph.capture_authored_image(&execution, branch()).unwrap();
     let mut runtime = SignalRuntime::build_for::<()>(graph);
     let evaluate = |view: &mut EvaluationContext<'_, ()>| -> Result<AspectVersion, SignalError> {
         if view.node() == consumer {
@@ -143,7 +143,7 @@ fn authored_bytes_exclude_evaluated_edges_versions_and_node_state() {
         graph.dependencies_of(consumer).unwrap()[0].source(),
         discovered
     );
-    let after_evaluation = graph.capture_authored_image(&execution).unwrap();
+    let after_evaluation = graph.capture_authored_image(&execution, branch()).unwrap();
     assert_eq!(authored.as_bytes(), after_evaluation.as_bytes());
     assert!(!authored
         .as_bytes()
@@ -157,7 +157,7 @@ fn authored_bytes_exclude_evaluated_edges_versions_and_node_state() {
         authored.as_bytes(),
         runtime
             .graph()
-            .capture_authored_image(&execution)
+            .capture_authored_image(&execution, branch())
             .unwrap()
             .as_bytes()
     );
@@ -169,17 +169,21 @@ fn authored_image_has_explicit_empty_payload_and_refuses_unknown_versions() {
     let funding = request();
     let execution = ExecutionRequest::serial(&funding);
     let image = SignalGraph::new()
-        .capture_authored_image(&execution)
+        .capture_authored_image(&execution, branch())
         .unwrap();
     let bytes = image.as_bytes();
     assert_eq!(&bytes[..8], b"WSIGAUTH");
     assert_eq!(&bytes[8..12], &1_u32.to_le_bytes());
-    assert_eq!(&bytes[16..24], &8_u64.to_le_bytes());
+    assert_eq!(&bytes[16..24], &40_u64.to_le_bytes());
     assert_eq!(
-        &bytes[56..],
+        &bytes[88..],
         &[0; 8],
         "zero slots and zero allocator free entries"
     );
+    assert_eq!(&bytes[56..72], &branch().owner().home().bytes());
+    assert_eq!(&bytes[72..80], &branch().owner().slot().get().to_le_bytes());
+    assert_eq!(&bytes[80..88], &branch().ordinal().to_le_bytes());
+    assert_eq!(image.branch(), branch());
     let mut future = bytes.to_vec();
     future[8..12].copy_from_slice(&2_u32.to_le_bytes());
     assert!(
@@ -194,7 +198,7 @@ fn checksum_and_exact_length_cover_the_authored_frame() {
     let execution = ExecutionRequest::serial(&funding);
     let mut graph = SignalGraph::new();
     graph.node().build();
-    let image = graph.capture_authored_image(&execution).unwrap();
+    let image = graph.capture_authored_image(&execution, branch()).unwrap();
     let mut changed = image.as_bytes().to_vec();
     *changed.last_mut().unwrap() ^= 1;
     assert!(matches!(
@@ -214,7 +218,7 @@ fn definition_policy_changes_are_source_even_when_cached_versions_match() {
     let execution = ExecutionRequest::serial(&funding);
     let mut graph = SignalGraph::new();
     let node = graph.node().build();
-    let before = graph.capture_authored_image(&execution).unwrap();
+    let before = graph.capture_authored_image(&execution, branch()).unwrap();
     let mut changed = SignalGraph::new();
     let changed_node = changed
         .node()
@@ -225,7 +229,9 @@ fn definition_policy_changes_are_source_even_when_cached_versions_match() {
         graph.node_aspect_version(node).unwrap(),
         changed.node_aspect_version(changed_node).unwrap()
     );
-    let after = changed.capture_authored_image(&execution).unwrap();
+    let after = changed
+        .capture_authored_image(&execution, branch())
+        .unwrap();
     assert_ne!(before.as_bytes(), after.as_bytes());
     assert!(after
         .as_bytes()
@@ -276,7 +282,7 @@ fn bulk_declarations_are_captured_and_rejected_batches_preserve_the_source() {
         graph.declared_dependencies_of(consumer).unwrap()[0].source(),
         source
     );
-    let before = graph.capture_authored_image(&execution).unwrap();
+    let before = graph.capture_authored_image(&execution, branch()).unwrap();
     let rejected = DependencyBatchEdit::from_pairs([
         (source, vec![DependencyEdge::new(consumer, Aspect::new(0))]),
         (consumer, vec![DependencyEdge::new(source, Aspect::new(0))]),
@@ -284,6 +290,20 @@ fn bulk_declarations_are_captured_and_rejected_batches_preserve_the_source() {
     assert!(graph.apply_dependency_batch_edit(&rejected).is_err());
     assert_eq!(
         before.as_bytes(),
-        graph.capture_authored_image(&execution).unwrap().as_bytes()
+        graph
+            .capture_authored_image(&execution, branch())
+            .unwrap()
+            .as_bytes()
     );
+}
+
+fn branch() -> worth_foundational::facade::DurableSignalBranchIdentity {
+    use worth_foundational::facade::*;
+    DurableSignalBranchIdentity::from_recorded(
+        DurableSignalOwnerIdentity::from_recorded(
+            HomeIdentity::from_observed_bytes([4; 16]).unwrap(),
+            SignalOwnerSlotIdentity::from_recorded(3),
+        ),
+        0,
+    )
 }

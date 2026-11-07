@@ -20,6 +20,8 @@ pub enum SignalDurableFrameDenial {
     SizeLimit,
     ChecksumMismatch,
     ForeignOwner,
+    ForeignBranch,
+    SnapshotRequired,
     UnsupportedVersion(worth_foundational::facade::BoundaryProtocolUnsupportedVersion),
     Image(SignalAuthoredImageDenial),
     Request(worth_execution::WorkCeilingDenial),

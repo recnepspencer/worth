@@ -216,6 +216,7 @@ impl SignalGraph {
         let warm = self.warm_ref(id)?;
         let cold = self.cold_ref(id)?;
         Ok(CheckpointNodeImage::from_parts(CheckpointNodeImageParts {
+            conditional_definition: self.definition_ref(id)?.conditional_definition.clone(),
             declared_dependencies: self.definition_ref(id)?.declared_dependencies.clone(),
             state: hot.state,
             dirty_aspects: hot.dirty_aspects,

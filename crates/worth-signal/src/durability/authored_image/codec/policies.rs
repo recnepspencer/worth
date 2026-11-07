@@ -34,6 +34,7 @@ pub(super) fn write_condition(
         }
         EvaluationCondition::Installed(identity) => {
             out.byte(6)?;
+            out.node(out.scope_node(identity.node()))?;
             out.byte(match identity.role() {
                 InstalledSignalConditionRole::Predicate => 0,
                 InstalledSignalConditionRole::TemporalWake => 1,
@@ -50,6 +51,7 @@ pub(super) fn read_condition(read: &mut Read<'_>) -> Result<EvaluationCondition,
         4 => EvaluationCondition::Temporal(super::temporal::read(read)?),
         5 => EvaluationCondition::Custom(read.text()?),
         6 => {
+            let node = read.node_id()?;
             let role = match read.byte()? {
                 0 => InstalledSignalConditionRole::Predicate,
                 1 => InstalledSignalConditionRole::TemporalWake,
@@ -57,7 +59,7 @@ pub(super) fn read_condition(read: &mut Read<'_>) -> Result<EvaluationCondition,
             };
             EvaluationCondition::Installed(InstalledSignalConditionIdentity::new(
                 read.graph_instance,
-                read.node,
+                node,
                 role,
             ))
         }
@@ -81,6 +83,7 @@ pub(super) fn write_comparator(
         }
         VersionComparatorPolicy::Installed { identity } => {
             out.byte(4)?;
+            out.node(out.scope_node(identity.node()))?;
             out.byte(match identity.role() {
                 InstalledSignalComparatorRole::DependencyVersion => 0,
                 InstalledSignalComparatorRole::OutputEquivalence => 1,
@@ -98,6 +101,7 @@ pub(super) fn read_comparator(read: &mut Read<'_>) -> Result<VersionComparatorPo
         2 => VersionComparatorPolicy::OutputIdentity,
         3 => VersionComparatorPolicy::Custom { key: read.text()? },
         4 => {
+            let node = read.node_id()?;
             let role = match read.byte()? {
                 0 => InstalledSignalComparatorRole::DependencyVersion,
                 1 => InstalledSignalComparatorRole::OutputEquivalence,
@@ -105,11 +109,7 @@ pub(super) fn read_comparator(read: &mut Read<'_>) -> Result<VersionComparatorPo
                 _ => return Err(Denial::Malformed),
             };
             VersionComparatorPolicy::Installed {
-                identity: InstalledSignalComparatorIdentity::new(
-                    read.graph_instance,
-                    read.node,
-                    role,
-                ),
+                identity: InstalledSignalComparatorIdentity::new(read.graph_instance, node, role),
             }
         }
         _ => return Err(Denial::Malformed),
@@ -130,7 +130,10 @@ pub(super) fn write_output(
             out.byte(3)?;
             out.text(key)
         }
-        OutputEquivalencePolicy::Installed { identity: _ } => out.byte(4),
+        OutputEquivalencePolicy::Installed { identity } => {
+            out.byte(4)?;
+            out.node(out.scope_node(identity.comparator_identity().node()))
+        }
     }
 }
 pub(super) fn read_output(read: &mut Read<'_>) -> Result<OutputEquivalencePolicy, Denial> {
@@ -141,16 +144,19 @@ pub(super) fn read_output(read: &mut Read<'_>) -> Result<OutputEquivalencePolicy
         },
         2 => OutputEquivalencePolicy::OutputIdentity,
         3 => OutputEquivalencePolicy::Custom { key: read.text()? },
-        4 => OutputEquivalencePolicy::Installed {
-            identity: InstalledOutputEquivalenceIdentity::from_installed_comparator(
-                InstalledSignalComparatorIdentity::new(
-                    read.graph_instance,
-                    read.node,
-                    InstalledSignalComparatorRole::OutputEquivalence,
-                ),
-            )
-            .ok_or(Denial::Malformed)?,
-        },
+        4 => {
+            let node = read.node_id()?;
+            OutputEquivalencePolicy::Installed {
+                identity: InstalledOutputEquivalenceIdentity::from_installed_comparator(
+                    InstalledSignalComparatorIdentity::new(
+                        read.graph_instance,
+                        node,
+                        InstalledSignalComparatorRole::OutputEquivalence,
+                    ),
+                )
+                .ok_or(Denial::Malformed)?,
+            }
+        }
         _ => return Err(Denial::Malformed),
     })
 }

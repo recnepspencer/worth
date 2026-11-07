@@ -1,27 +1,46 @@
 use super::codec::Write;
-use super::{
-    SignalAuthoredImage, SignalAuthoredImageDenial as Denial, SIGNAL_AUTHORED_IMAGE_VERSION,
-};
+use super::{SignalAuthoredImageDenial as Denial, SIGNAL_AUTHORED_IMAGE_VERSION};
 use sha2::{Digest, Sha256};
-use worth_execution::{ExecutionRequest, ExecutionRequestArrayBuilder};
-use worth_foundational::facade::{BoundaryProtocolCompatibilityWindow, BoundaryProtocolVersion};
+use worth_execution::{ExecutionImmutableBytes, ExecutionRequest, ExecutionRequestArrayBuilder};
+use worth_foundational::facade::{
+    BoundaryProtocolCompatibilityWindow, BoundaryProtocolVersion, DurableSignalBranchIdentity,
+};
 
-const MAGIC: &[u8; 8] = b"WSIGAUTH";
+pub(crate) enum AuthoredSectionKind {
+    Graph,
+    Runtime,
+}
+impl AuthoredSectionKind {
+    fn magic(&self) -> &'static [u8; 8] {
+        match self {
+            Self::Graph => b"WSIGAUTH",
+            Self::Runtime => b"WSIGCONF",
+        }
+    }
+}
 const HEADER: usize = 56;
 const MAXIMUM: usize = 64 << 20;
 
 pub(crate) fn encode(
+    kind: AuthoredSectionKind,
+    branch: DurableSignalBranchIdentity,
     execution: &ExecutionRequest<'_, '_>,
     emit: &mut dyn FnMut(&mut Write<'_>) -> Result<(), Denial>,
-) -> Result<SignalAuthoredImage, Denial> {
+) -> Result<ExecutionImmutableBytes, Denial> {
+    execution.consult().map_err(Denial::Request)?;
+    let mut emit_scoped = |out: &mut Write<'_>| {
+        out.prefix()?;
+        emit(out)
+    };
     let mut size = 0usize;
-    emit(&mut Write::new(&mut |bytes| {
+    emit_scoped(&mut Write::new(branch, &mut |bytes| {
         size = size
             .checked_add(bytes.len())
             .filter(|n| *n <= MAXIMUM - HEADER)
             .ok_or(Denial::SizeLimit)?;
         Ok(())
     }))?;
+    admit_work(execution, size.saturating_mul(3))?;
     let version = SIGNAL_AUTHORED_IMAGE_VERSION.get().to_le_bytes();
     let profile = (crate::data::aspect::MAX_ASPECTS as u32).to_le_bytes();
     let length = (size as u64).to_le_bytes();
@@ -29,29 +48,33 @@ pub(crate) fn encode(
     checksum.update(version);
     checksum.update(profile);
     checksum.update(length);
-    emit(&mut Write::new(&mut |bytes| {
+    emit_scoped(&mut Write::new(branch, &mut |bytes| {
         checksum.update(bytes);
         Ok(())
     }))?;
     let checksum: [u8; 32] = checksum.finalize().into();
     let mut out = ExecutionRequestArrayBuilder::allocate(*execution, HEADER + size)
         .map_err(Denial::Backing)?;
-    for field in [MAGIC.as_slice(), &version, &profile, &length, &checksum] {
+    for field in [
+        kind.magic().as_slice(),
+        &version,
+        &profile,
+        &length,
+        &checksum,
+    ] {
         out.extend_from_slice(field).map_err(Denial::Backing)?;
     }
-    emit(&mut Write::new(&mut |bytes| {
+    emit_scoped(&mut Write::new(branch, &mut |bytes| {
         out.extend_from_slice(bytes).map_err(Denial::Backing)
     }))?;
-    Ok(SignalAuthoredImage::from_encoded(
-        out.seal().map_err(Denial::Backing)?.into_immutable_bytes(),
-    ))
+    Ok(out.seal().map_err(Denial::Backing)?.into_immutable_bytes())
 }
 
-pub(super) fn payload(bytes: &[u8]) -> Result<&[u8], Denial> {
+pub(super) fn payload(kind: AuthoredSectionKind, bytes: &[u8]) -> Result<&[u8], Denial> {
     if bytes.len() > MAXIMUM {
         return Err(Denial::SizeLimit);
     }
-    if bytes.len() < HEADER || &bytes[..8] != MAGIC {
+    if bytes.len() < HEADER || &bytes[..8] != kind.magic() {
         return Err(Denial::Malformed);
     }
     let produced =
@@ -83,4 +106,12 @@ pub(super) fn payload(bytes: &[u8]) -> Result<&[u8], Denial> {
         return Err(Denial::ChecksumMismatch);
     }
     Ok(&bytes[HEADER..])
+}
+
+pub(crate) fn admit_work(execution: &ExecutionRequest<'_, '_>, bytes: usize) -> Result<(), Denial> {
+    execution
+        .run_native_with_checkpoint(|context| context.checkpoint(bytes as u64))
+        .map_err(Denial::Request)?
+        .0
+        .map_err(|cause| Denial::Request(worth_execution::WorkCeilingDenial::Stopped(cause)))
 }

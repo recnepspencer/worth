@@ -1,4 +1,6 @@
 mod authored_image;
+mod authored_readmission;
+pub use authored_readmission::SignalAuthoredGraphReadmission;
 mod compaction;
 mod construction;
 mod diagnostics_access;

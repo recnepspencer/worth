@@ -1,11 +1,13 @@
 //! Signal declarations and Bridge's opaque authored section move together.
-use super::{frame, SignalAuthoredImage, SignalDurableFrameDenial as D};
+use super::{
+    frame, SignalAuthoredImage, SignalDurableFrameDenial as D, SignalRuntimeAuthoredImage,
+};
 use sha2::{Digest, Sha256};
 use std::ops::Range;
 use worth_execution::{ExecutionImmutableBytes, ExecutionRequest};
 use worth_foundational::facade::{
-    DurableSignalBranchIdentity, SignalDefinitionTransitionIdentity,
-    SignalDefinitionTransitionReference,
+    DurableSignalBranchIdentity, DurableSignalConditionalDefinitionOccurrence,
+    SignalDefinitionTransitionIdentity, SignalDefinitionTransitionReference,
 };
 
 /// The contents and version are defined and readmitted by Bridge, never Store.
@@ -33,6 +35,8 @@ pub struct SignalDefinitionTransitionArtifact {
     branch: DurableSignalBranchIdentity,
     predecessor: Option<SignalDefinitionTransitionReference>,
     image: Range<usize>,
+    runtime: Range<usize>,
+    conditional: Range<usize>,
     bridge: Range<usize>,
 }
 impl SignalDefinitionTransitionArtifact {
@@ -42,6 +46,8 @@ impl SignalDefinitionTransitionArtifact {
         branch: DurableSignalBranchIdentity,
         predecessor: Option<SignalDefinitionTransitionReference>,
         image: &SignalAuthoredImage,
+        runtime: &SignalRuntimeAuthoredImage,
+        conditional: &[DurableSignalConditionalDefinitionOccurrence],
         bridge: &SignalBridgeAuthoredSection,
     ) -> Result<Self, D> {
         if identity.ordinal() == 0 {
@@ -52,6 +58,27 @@ impl SignalDefinitionTransitionArtifact {
         {
             return Err(D::ForeignOwner);
         }
+        if image.branch().owner() != identity.owner()
+            || runtime.branch().owner() != identity.owner()
+        {
+            return Err(D::ForeignOwner);
+        }
+        if image.branch() != branch || runtime.branch() != branch {
+            return Err(D::ForeignBranch);
+        }
+        let mut previous = None;
+        for row in conditional {
+            if row.node().branch().owner() != identity.owner() {
+                return Err(D::ForeignOwner);
+            }
+            if row.node().branch() != branch {
+                return Err(D::ForeignBranch);
+            }
+            if row.occurrence().ordinal() == 0 || previous.is_some_and(|node| node >= row.node()) {
+                return Err(D::Malformed);
+            }
+            previous = Some(row.node());
+        }
         let bytes = frame::encode(1, execution, &mut |out| {
             out.owner(identity.owner())?;
             out.number(identity.ordinal())?;
@@ -61,6 +88,11 @@ impl SignalDefinitionTransitionArtifact {
                 out.definition(previous)?;
             }
             out.blob(image.as_bytes())?;
+            out.blob(runtime.as_bytes())?;
+            out.number(conditional.len() as u64)?;
+            for row in conditional {
+                out.conditional_definition(*row)?;
+            }
             out.blob(bridge.as_bytes())
         })?;
         frame::admit_work(execution, bytes.bytes().len().saturating_mul(2))?;
@@ -84,6 +116,8 @@ impl SignalDefinitionTransitionArtifact {
             branch,
             predecessor,
             image,
+            runtime,
+            conditional,
             bridge,
         } = fields;
         Self {
@@ -93,6 +127,8 @@ impl SignalDefinitionTransitionArtifact {
             branch,
             predecessor,
             image,
+            runtime,
+            conditional,
             bridge,
         }
     }
@@ -115,8 +151,38 @@ impl SignalDefinitionTransitionArtifact {
             return Err(D::ForeignOwner);
         }
         let image_bytes = input.blob()?;
-        super::authored_image::validate_bytes(image_bytes).map_err(D::Image)?;
+        let image_branch = super::authored_image::validate_bytes(image_bytes).map_err(D::Image)?;
         let image = (input.position - image_bytes.len())..input.position;
+        let runtime_bytes = input.blob()?;
+        let runtime_branch =
+            super::authored_image::validate_runtime_bytes(runtime_bytes).map_err(D::Image)?;
+        let runtime = (input.position - runtime_bytes.len())..input.position;
+        if image_branch.owner() != identity.owner() || runtime_branch.owner() != identity.owner() {
+            return Err(D::ForeignOwner);
+        }
+        if image_branch != branch || runtime_branch != branch {
+            return Err(D::ForeignBranch);
+        }
+        let count: usize = input.number()?.try_into().map_err(|_| D::SizeLimit)?;
+        if count > input.bytes.len() / 80 {
+            return Err(D::Malformed);
+        }
+        let start = input.position;
+        let mut previous = None;
+        for _ in 0..count {
+            let row = input.conditional_definition()?;
+            if row.node().branch().owner() != identity.owner() {
+                return Err(D::ForeignOwner);
+            }
+            if row.node().branch() != branch {
+                return Err(D::ForeignBranch);
+            }
+            if previous.is_some_and(|node| node >= row.node()) {
+                return Err(D::Malformed);
+            }
+            previous = Some(row.node());
+        }
+        let conditional = start..input.position;
         let bridge_bytes = input.blob()?;
         if bridge_bytes.len() > 16 << 20 {
             return Err(D::SizeLimit);
@@ -128,6 +194,8 @@ impl SignalDefinitionTransitionArtifact {
             branch,
             predecessor,
             image,
+            runtime,
+            conditional,
             bridge,
         })
     }
@@ -149,6 +217,31 @@ impl SignalDefinitionTransitionArtifact {
     pub fn image_bytes(&self) -> &[u8] {
         &self.bytes.bytes()[self.image.clone()]
     }
+    pub fn runtime_bytes(&self) -> &[u8] {
+        &self.bytes.bytes()[self.runtime.clone()]
+    }
+    pub fn authored_image(&self) -> SignalAuthoredImage {
+        SignalAuthoredImage::from_frame_bytes(self.bytes.clone(), self.image.clone(), self.branch)
+    }
+    pub fn authored_runtime_image(&self) -> SignalRuntimeAuthoredImage {
+        SignalRuntimeAuthoredImage::from_frame_bytes(
+            self.bytes.clone(),
+            self.runtime.clone(),
+            self.branch,
+        )
+    }
+    pub fn conditional_occurrences(
+        &self,
+    ) -> impl ExactSizeIterator<Item = DurableSignalConditionalDefinitionOccurrence> + '_ {
+        self.bytes.bytes()[self.conditional.clone()]
+            .chunks_exact(80)
+            .map(|bytes| {
+                let mut input = frame::Reader { bytes, position: 0 };
+                input
+                    .conditional_definition()
+                    .expect("validated immutable conditional occurrence")
+            })
+    }
     pub fn bridge_bytes(&self) -> &[u8] {
         &self.bytes.bytes()[self.bridge.clone()]
     }
@@ -161,6 +254,8 @@ struct DefinitionFields {
     branch: DurableSignalBranchIdentity,
     predecessor: Option<SignalDefinitionTransitionReference>,
     image: Range<usize>,
+    runtime: Range<usize>,
+    conditional: Range<usize>,
     bridge: Range<usize>,
 }
 impl worth_foundational::facade::DurableArtifactRetention for SignalDefinitionTransitionArtifact {

@@ -2,7 +2,8 @@ use super::SignalDurableFrameDenial as D;
 use worth_foundational::facade::{
     CompositeAttemptAssociation, DurableCompositePublicationAttemptIdentity, DurableIdentity,
     DurableProductBranchIdentity, DurableProductBranchIncarnation, DurableSignalBranchIdentity,
-    DurableSignalOwnerIdentity, DurableWorldOwnerIdentity, HomeIdentity,
+    DurableSignalConditionalDefinitionOccurrence, DurableSignalConditionalOccurrence,
+    DurableSignalNodeIdentity, DurableSignalOwnerIdentity, DurableWorldOwnerIdentity, HomeIdentity,
     SignalDefinitionTransitionIdentity, SignalDefinitionTransitionReference,
     SignalOwnerSlotIdentity, WorldOwnerSlotIdentity,
 };
@@ -25,6 +26,17 @@ impl<'a> Writer<'a> {
     pub(in crate::durability) fn blob(&mut self, bytes: &[u8]) -> Result<(), D> {
         self.number(bytes.len() as u64)?;
         self.fixed(bytes)
+    }
+    pub(in crate::durability) fn conditional_definition(
+        &mut self,
+        row: DurableSignalConditionalDefinitionOccurrence,
+    ) -> Result<(), D> {
+        durable(row);
+        self.branch(row.node().branch())?;
+        self.number(row.node().index() as u64)?;
+        self.number(row.node().generation() as u64)?;
+        self.owner(row.occurrence().owner())?;
+        self.number(row.occurrence().ordinal())
     }
     pub(in crate::durability) fn owner(
         &mut self,
@@ -98,6 +110,24 @@ impl<'a> Reader<'a> {
         self.bytes = tail;
         self.position += length;
         Ok(head)
+    }
+    pub(in crate::durability) fn conditional_definition(
+        &mut self,
+    ) -> Result<DurableSignalConditionalDefinitionOccurrence, D> {
+        let branch = self.branch()?;
+        let index = self.number()?.try_into().map_err(|_| D::Malformed)?;
+        let generation = self.number()?.try_into().map_err(|_| D::Malformed)?;
+        let node = DurableSignalNodeIdentity::from_recorded(branch, index, generation);
+        let owner = self.owner()?;
+        let ordinal = self.number()?;
+        if ordinal == 0 {
+            return Err(D::Malformed);
+        }
+        DurableSignalConditionalDefinitionOccurrence::from_recorded(
+            node,
+            DurableSignalConditionalOccurrence::from_recorded(owner, ordinal),
+        )
+        .map_err(|_| D::ForeignOwner)
     }
     pub(in crate::durability) fn owner(&mut self) -> Result<DurableSignalOwnerIdentity, D> {
         let home = HomeIdentity::from_observed_bytes(self.fixed()?).map_err(|_| D::Malformed)?;

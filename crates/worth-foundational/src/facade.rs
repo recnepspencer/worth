@@ -405,7 +405,8 @@ pub use crate::durability::{
     DurableProductReferenceGeneration, DurableProductReferenceOwnerMismatch,
     DurableProductUnpublishedOwnerEffectsIdentity, DurableQueryOutputSettlement,
     DurableSignalAdmissionIdentity, DurableSignalBranchIdentity, DurableSignalCellIncarnation,
-    DurableSignalConditionalOccurrence, DurableSignalGeneration, DurableSignalOwnerIdentity,
+    DurableSignalConditionalDefinitionOccurrence, DurableSignalConditionalOccurrence,
+    DurableSignalGeneration, DurableSignalNodeIdentity, DurableSignalOwnerIdentity,
     DurableSignalSnapshotIdentity, DurableStateFamily, DurableWorldBootstrapAttemptIdentity,
     DurableWorldOwnerIdentity, HomeIdentity, HomeIdentityDenial, HomeIncarnation,
     HomeIncarnationExhausted, HomeProgramBinding, HomeProgramTransitionBodyDigest,
@@ -417,9 +418,10 @@ pub use crate::durability::{
     MemoryProductBranchReference, NativeCheckpointBranchObservation,
     NativeCheckpointBranchReference, NativeCheckpointBranchTarget,
     RecordedCompositePublicationAttemptIdentity, RecordedProductBranchReference, RetentionClass,
-    SignalBranchAdvanceIdentity, SignalDefinitionTransitionIdentity,
-    SignalDefinitionTransitionReference, SignalDurableJournal, SignalOwnerSlotIdentity,
-    UnsupportedDurableOwnerTag, WorldDurableJournal, WorldOwnerCoordinate, WorldOwnerSlotIdentity,
+    SignalBranchAdvanceIdentity, SignalConditionalDefinitionOwnerMismatch,
+    SignalDefinitionTransitionIdentity, SignalDefinitionTransitionReference, SignalDurableJournal,
+    SignalOwnerSlotIdentity, UnsupportedDurableOwnerTag, WorldDurableJournal, WorldOwnerCoordinate,
+    WorldOwnerSlotIdentity,
 };
 pub use crate::durable_publication::DurablePublicationFate;
 pub use crate::execution::{

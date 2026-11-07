@@ -10,19 +10,19 @@ use worth_foundational::facade::{
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SignalDurableBranchDescriptor {
     generation: DurableSignalGeneration,
-    snapshot: DurableSignalSnapshotIdentity,
+    snapshot: Option<DurableSignalSnapshotIdentity>,
     admission: DurableSignalAdmissionIdentity,
     definition: SignalDefinitionTransitionReference,
 }
 impl SignalDurableBranchDescriptor {
     pub fn from_recorded(
         generation: DurableSignalGeneration,
-        snapshot: DurableSignalSnapshotIdentity,
+        snapshot: Option<DurableSignalSnapshotIdentity>,
         admission: DurableSignalAdmissionIdentity,
         definition: SignalDefinitionTransitionReference,
     ) -> Result<Self, D> {
         let owner = generation.cell().branch().owner();
-        if snapshot.owner() != owner
+        if snapshot.is_some_and(|snapshot| snapshot.owner() != owner)
             || admission.owner() != owner
             || definition.identity().owner() != owner
         {
@@ -47,7 +47,7 @@ impl SignalDurableBranchDescriptor {
     pub const fn generation(&self) -> DurableSignalGeneration {
         self.generation
     }
-    pub const fn snapshot(&self) -> DurableSignalSnapshotIdentity {
+    pub const fn snapshot(&self) -> Option<DurableSignalSnapshotIdentity> {
         self.snapshot
     }
     pub const fn admission(&self) -> DurableSignalAdmissionIdentity {
@@ -60,7 +60,10 @@ impl SignalDurableBranchDescriptor {
         out.branch(self.branch())?;
         out.number(self.cell().ordinal())?;
         out.number(self.generation.ordinal())?;
-        out.number(self.snapshot.ordinal())?;
+        out.byte(u8::from(self.snapshot.is_some()))?;
+        if let Some(snapshot) = self.snapshot {
+            out.number(snapshot.ordinal())?;
+        }
         out.number(self.admission.ordinal())?;
         out.definition(self.definition)
     }
@@ -68,8 +71,14 @@ impl SignalDurableBranchDescriptor {
         let branch = input.branch()?;
         let cell = DurableSignalCellIncarnation::from_recorded(branch, input.number()?);
         let generation = DurableSignalGeneration::from_recorded(cell, input.number()?);
-        let snapshot =
-            DurableSignalSnapshotIdentity::from_recorded(branch.owner(), input.number()?);
+        let snapshot = match input.byte()? {
+            0 => None,
+            1 => Some(DurableSignalSnapshotIdentity::from_recorded(
+                branch.owner(),
+                input.number()?,
+            )),
+            _ => return Err(D::Malformed),
+        };
         let admission =
             DurableSignalAdmissionIdentity::from_recorded(branch.owner(), input.number()?);
         Self::from_recorded(generation, snapshot, admission, input.definition()?)

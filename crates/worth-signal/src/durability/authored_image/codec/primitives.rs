@@ -2,13 +2,33 @@ use super::Denial;
 use crate::data::aspect::{Aspect, AspectMask, MAX_ASPECTS};
 use crate::data::handle::NodeId;
 use crate::data::output::{PartitionSubscription, ScopeCoverage, ScopePath};
+use worth_foundational::facade::{
+    DurableIdentity, DurableSignalBranchIdentity, DurableSignalNodeIdentity,
+    DurableSignalOwnerIdentity, HomeIdentity, SignalOwnerSlotIdentity,
+};
 
 pub(crate) struct Write<'a> {
+    branch: DurableSignalBranchIdentity,
     emit: &'a mut dyn FnMut(&[u8]) -> Result<(), Denial>,
 }
 impl<'a> Write<'a> {
-    pub(crate) fn new(emit: &'a mut dyn FnMut(&[u8]) -> Result<(), Denial>) -> Self {
-        Self { emit }
+    pub(crate) fn new(
+        branch: DurableSignalBranchIdentity,
+        emit: &'a mut dyn FnMut(&[u8]) -> Result<(), Denial>,
+    ) -> Self {
+        durable(branch);
+        Self { branch, emit }
+    }
+    pub(crate) fn prefix(&mut self) -> Result<(), Denial> {
+        (self.emit)(&self.branch.owner().home().bytes())?;
+        self.number(self.branch.owner().slot().get())?;
+        self.number(self.branch.ordinal())
+    }
+    pub(crate) fn scope_node(&self, node: NodeId) -> DurableSignalNodeIdentity {
+        DurableSignalNodeIdentity::from_recorded(self.branch, node.index(), node.generation())
+    }
+    pub(super) fn fixed(&mut self, value: &[u8]) -> Result<(), Denial> {
+        (self.emit)(value)
     }
     pub(crate) fn byte(&mut self, value: u8) -> Result<(), Denial> {
         (self.emit)(&[value])
@@ -36,7 +56,11 @@ impl<'a> Write<'a> {
         }
         Ok(())
     }
-    pub(crate) fn node(&mut self, node: NodeId) -> Result<(), Denial> {
+    pub(crate) fn node(&mut self, node: DurableSignalNodeIdentity) -> Result<(), Denial> {
+        durable(node);
+        if node.branch() != self.branch {
+            return Err(Denial::ForeignBranch);
+        }
         self.small_number(node.index())?;
         self.small_number(node.generation())
     }
@@ -74,19 +98,33 @@ impl<'a> Write<'a> {
 
 pub(super) struct Read<'a> {
     bytes: &'a [u8],
+    pub(super) branch: DurableSignalBranchIdentity,
     /// Validation scans allocate no variable-size declaration payloads.
     pub(super) materialize: bool,
     pub(super) graph_instance: u64,
-    pub(super) node: NodeId,
 }
 impl<'a> Read<'a> {
-    pub(super) fn new(bytes: &'a [u8]) -> Self {
+    pub(super) fn new(bytes: &'a [u8], branch: DurableSignalBranchIdentity) -> Self {
         Self {
             bytes,
+            branch,
             materialize: false,
             graph_instance: 0,
-            node: NodeId::new(0, 0),
         }
+    }
+    pub(super) fn image(bytes: &'a [u8]) -> Result<Self, Denial> {
+        let prefix = bytes.get(..32).ok_or(Denial::Malformed)?;
+        let home = HomeIdentity::from_observed_bytes(prefix[..16].try_into().unwrap())
+            .map_err(|_| Denial::Malformed)?;
+        let slot = SignalOwnerSlotIdentity::from_recorded(u64::from_le_bytes(
+            prefix[16..24].try_into().unwrap(),
+        ));
+        let owner = DurableSignalOwnerIdentity::from_recorded(home, slot);
+        let branch = DurableSignalBranchIdentity::from_recorded(
+            owner,
+            u64::from_le_bytes(prefix[24..32].try_into().unwrap()),
+        );
+        Ok(Self::new(&bytes[32..], branch))
     }
     pub(super) fn fixed<const N: usize>(&mut self) -> Result<[u8; N], Denial> {
         let (value, rest) = self
@@ -119,6 +157,15 @@ impl<'a> Read<'a> {
         }
         Ok(count)
     }
+    pub(super) fn blob(&mut self) -> Result<&'a [u8], Denial> {
+        let length = self.count()?;
+        let (value, rest) = self
+            .bytes
+            .split_at_checked(length)
+            .ok_or(Denial::Malformed)?;
+        self.bytes = rest;
+        Ok(value)
+    }
     pub(super) fn text(&mut self) -> Result<String, Denial> {
         let length = self.count()?;
         let (text, rest) = self
@@ -141,7 +188,13 @@ impl<'a> Read<'a> {
         }
     }
     pub(super) fn node_id(&mut self) -> Result<NodeId, Denial> {
-        Ok(NodeId::new(self.small_number()?, self.small_number()?))
+        let node = DurableSignalNodeIdentity::from_recorded(
+            self.branch,
+            self.small_number()?,
+            self.small_number()?,
+        );
+        durable(node);
+        Ok(NodeId::new(node.index(), node.generation()))
     }
     pub(super) fn aspect(&mut self) -> Result<Aspect, Denial> {
         let index = self.byte()?;
@@ -237,3 +290,5 @@ impl<'a> Read<'a> {
         }
     }
 }
+
+fn durable<T: DurableIdentity>(_: T) {}

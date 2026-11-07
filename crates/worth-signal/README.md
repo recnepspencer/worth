@@ -225,11 +225,20 @@ outside this narrow seed contract.
 ### Authored graph image
 
 `SignalGraph::capture_authored_image` emits the declaration section through
-`facade::durability::SignalAuthoredImage`. It records node-slot generations and
-allocation order, node configuration, conditional definition coordinates and
+`facade::durability::SignalAuthoredImage`. Capture requires an explicit
+Home-scoped branch. It records node-slot generations and allocation order, node
+configuration, full conditional definitions and
 declared static dependency edges. Evaluation-discovered edges remain separate
 from those declarations. Values, aspect and dirty versions, dependency snapshots,
 pending causes, traces, telemetry, resources and temporal runtime state are absent.
+Local conditional binding counters are also absent; fresh installation remints
+them. Authored literal thresholds remain part of their definitions.
+
+`facade::runtime::RuntimeConfig::capture_authored_image` records runtime
+registrations in a separate `WSIGCONF` frame. Tier keys use explicitly declared
+stable names, and keyed computations use semantic family/key text. Interner
+ordinals, memo-only keys and cached results are absent. Readmission resolves
+the tier names through the fresh program's vocabulary.
 
 The current-format-only binary frame uses `WSIGAUTH`, protocol version 1, the
 aspect storage profile, a payload length and SHA-256 integrity. Integer fields
@@ -244,6 +253,12 @@ and comparator roles carry no graph-instance identity. Their operational binding
 must be reconstructed by owner admission with the installed program and Bridge's
 definition section. This graph section alone does not enable authored Home reopen;
 the attached-Home seed contract above still applies.
+
+`SignalGraph::readmit_authored_image` consumes the fresh installation graph and
+returns a cold graph plus freshly installed conditional contracts. It reconstructs
+declared topology once; it does not admit an owner or mint a branch basis.
+The owner must still readmit its ordered journals and Bridge section before
+serving recovered branches.
 
 ## One Continuous Story
 

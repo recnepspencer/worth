@@ -39,7 +39,7 @@ pub(super) fn write(out: &mut Write<'_>, value: &NodeContract) -> Result<(), Den
     if let Some(inputs) = bounded_inputs {
         out.count(inputs.as_slice().len())?;
         for input in inputs.as_slice() {
-            out.node(input.source)?;
+            out.node(out.scope_node(input.source))?;
             out.byte(input.aspect.index() as u8)?;
             out.scope(input.scope.as_ref())?;
         }

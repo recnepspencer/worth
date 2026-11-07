@@ -8,8 +8,9 @@ impl SignalGraph {
     pub fn capture_authored_image(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        branch: worth_foundational::facade::DurableSignalBranchIdentity,
     ) -> Result<SignalAuthoredImage, SignalAuthoredImageDenial> {
-        crate::durability::authored_image::encode(execution, &mut |out| {
+        crate::durability::authored_image::encode(execution, branch, &mut |out| {
             out.count(self.arena.nodes.len())?;
             for (index, slot) in self.arena.nodes.iter().enumerate() {
                 out.small_number(slot.generation)?;
