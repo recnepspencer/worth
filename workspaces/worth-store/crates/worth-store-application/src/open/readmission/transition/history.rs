@@ -25,6 +25,33 @@ impl ReadmittedHomeProgramTransitions {
             .map(|last| self.intents.elements()[last].intent.plan().target_meaning()))
     }
 
+    pub(crate) fn installation_binding(
+        &self,
+        current: &ApplicationHomeBinding,
+    ) -> Result<Option<worth_foundational::facade::HomeProgramTransitionInstallationBinding>, Denial>
+    {
+        let Some(target) = self.acknowledged_target(current)? else {
+            return Ok(None);
+        };
+        Ok(Some(
+            worth_foundational::facade::HomeProgramTransitionInstallationBinding::from_recorded(
+                self.initial_binding_or(current),
+                current,
+                target,
+            ),
+        ))
+    }
+
+    pub(crate) fn initial_binding_or<'a>(
+        &'a self,
+        fallback: &'a ApplicationHomeBinding,
+    ) -> &'a ApplicationHomeBinding {
+        self.intents
+            .elements()
+            .first()
+            .map_or(fallback, |first| first.intent.predecessor())
+    }
+
     pub(crate) fn completed_binding(&self, binding: &ApplicationHomeBinding) -> bool {
         self.intents
             .elements()

@@ -203,10 +203,15 @@ fn prepared_identity_bounds_include_later_schema_roles_beyond_the_initial_instal
             source,
             maximum_kind,
             maximum_aspect,
+            installation,
         } = home.prepare_native_schema_for_home(&execution).unwrap()
         else {
             panic!("same directory cannot initialize");
         };
+        assert!(
+            installation.is_none(),
+            "a pending unbound transition grants no successor installation"
+        );
         assert_eq!(source.authority_snapshot(), initial);
         assert_eq!(maximum_kind, Some(KindId(2000)));
         assert_eq!(maximum_aspect, Some(AspectIdentity(u64::MAX)));

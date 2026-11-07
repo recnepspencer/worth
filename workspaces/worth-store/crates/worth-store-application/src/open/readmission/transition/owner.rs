@@ -12,6 +12,7 @@ pub(crate) struct HomeTransitionOwner {
 struct SettledHomeTransition {
     acknowledged: worth_proof::HomeProgramTransitionBindingCommitted,
     _catalog: worth_relational::facade::runtime::RelationalHomeProgramCatalogReceipt,
+    installation: worth_foundational::facade::HomeProgramTransitionInstallationBinding,
 }
 
 impl HomeTransitionOwner {
@@ -88,14 +89,41 @@ impl HomeTransitionOwner {
         self.admission.history().reserved_attempt_frontier()
     }
 
-    pub(crate) fn acknowledged_target(
+    pub(crate) fn successor_installation(
         &self,
-        binding: &worth_foundational::facade::ApplicationHomeBinding,
+        intent: &super::HomeProgramTransitionIntent,
+    ) -> worth_foundational::facade::HomeProgramTransitionInstallationBinding {
+        worth_foundational::facade::HomeProgramTransitionInstallationBinding::from_recorded(
+            self.admission
+                .history()
+                .initial_binding_or(intent.predecessor()),
+            intent.successor(),
+            intent.plan().target_meaning(),
+        )
+    }
+
+    pub(crate) fn installation_binding(
+        &self,
+        current: &worth_foundational::facade::ApplicationHomeBinding,
     ) -> Result<
-        Option<worth_foundational::facade::HomeProgramTransitionTargetMeaning>,
+        Option<
+            worth_proof::AdmittedHomeProgramTransitionSuccessor<
+                worth_foundational::facade::HomeProgramTransitionInstallationBinding,
+            >,
+        >,
         super::ApplicationHomeTransitionIntentDenial,
     > {
-        self.admission.history().acknowledged_target(binding)
+        let installation = match &self.settled {
+            None => self.admission.history().installation_binding(current)?,
+            Some(settled) => {
+                self.settled(current)?;
+                Some(settled.installation)
+            }
+        };
+        Ok(installation.map(|binding| {
+            self.seal
+                .admit_successor(crate::descriptor::binding::commitment(current), binding)
+        }))
     }
 
     pub(crate) fn observation(&self) -> super::ApplicationHomeTransitionAdmissionObservation {
@@ -208,10 +236,12 @@ impl HomeTransitionOwner {
         &mut self,
         acknowledged: worth_proof::HomeProgramTransitionBindingCommitted,
         catalog: worth_relational::facade::runtime::RelationalHomeProgramCatalogReceipt,
+        installation: worth_foundational::facade::HomeProgramTransitionInstallationBinding,
     ) {
         self.settled = Some(SettledHomeTransition {
             acknowledged,
             _catalog: catalog,
+            installation,
         });
         // The final Native/World guards have ended. The actual intent is
         // durable; its live preparation is no longer an owner operation.

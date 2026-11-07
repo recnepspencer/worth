@@ -217,5 +217,12 @@ application-home-recovered-finalization workspaces/worth-store/crates/worth-stor
 query-world-commit-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_indexes/publication.rs
 
 query-world-commit-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_indexes/promotion.rs
+query-world-commit-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/transition/publication.rs
+# D16: exact production consumers of the same predecessor/Target and registered Source.
+query-home-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/transition/opening.rs
+query-home-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/transition/preparation.rs
+query-home-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/transition/source_attachment.rs
+native-home-query-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/transition/planning.rs
+native-home-query-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/transition/source_attachment.rs
 
 application-home-owner-admission workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_indexes/promotion.rs

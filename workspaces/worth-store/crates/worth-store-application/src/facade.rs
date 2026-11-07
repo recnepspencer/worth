@@ -28,7 +28,8 @@ pub use crate::open::physical_admission::{
     ApplicationHomePhysicalStage,
 };
 pub use crate::open::readmission::transition::{
-    AdmittedApplicationHomeProgramStep, ApplicationHomeOwnerAdmissionDenial,
+    select_home_program_opening, AdmittedApplicationHomeProgramStep,
+    ApplicationHomeOwnerAdmissionDenial, ApplicationHomeProgramOpening,
     ApplicationHomeTransitionAdmissionObservation, ApplicationHomeTransitionCompletionDenial,
     ApplicationHomeTransitionIntentDenial, ApplicationHomeTransitionIntentOutcome,
     ApplicationHomeTransitionPlanningDenial, ApplicationHomeTransitionStartRefused,

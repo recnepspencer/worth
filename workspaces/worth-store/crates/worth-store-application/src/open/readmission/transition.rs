@@ -8,10 +8,12 @@ mod history;
 mod intent;
 pub(crate) use history::{HomeTransitionAdmission, ReadmittedHomeProgramTransitions};
 pub(crate) mod completion;
+mod opening;
 mod owner;
 pub use completion::{
     ApplicationHomeTransitionCompletionDenial, ApplicationHomeTransitionStepRejected,
 };
+pub use opening::{select_home_program_opening, ApplicationHomeProgramOpening};
 mod publication;
 use publication::HomeIntentPublication;
 pub use publication::{

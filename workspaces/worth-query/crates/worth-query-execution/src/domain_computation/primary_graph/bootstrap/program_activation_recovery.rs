@@ -48,7 +48,7 @@ pub(in crate::domain_computation::primary_graph) fn recover_program_activation<S
 }
 
 /// Reads the activation on the caller's exact branch view, with native scan accounting.
-pub(super) fn read_activation(
+pub(in crate::domain_computation::primary_graph) fn read_activation(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     branch: &worth_relational::facade::runtime::VisibilityProjectionView,
     layout: &super::super::schema_layout::WorthQueryProgramActivationLayout,

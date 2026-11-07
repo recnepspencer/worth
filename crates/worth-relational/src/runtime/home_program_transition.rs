@@ -21,6 +21,7 @@ mod catalog_source;
 pub use catalog_source::RelationalHomeProgramCatalogReadmissionSource;
 pub(in crate::runtime) mod configuration;
 mod coverage;
+mod installation_readmission;
 mod promotion;
 pub use promotion::RelationalHomeProgramPromotionRefused;
 mod schema_compilation_denial;

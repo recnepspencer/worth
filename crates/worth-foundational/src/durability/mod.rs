@@ -7,6 +7,8 @@ pub use native_checkpoint_reference::{
     NativeCheckpointBranchTarget,
 };
 mod home_binding;
+mod home_installation_transition;
+pub use home_installation_transition::HomeProgramTransitionInstallationBinding;
 mod home_program_revision;
 mod home_program_transition;
 pub use home_program_revision::HomeProgramRevisionBoundary;

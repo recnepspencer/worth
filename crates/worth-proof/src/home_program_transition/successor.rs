@@ -30,6 +30,22 @@ impl HomeProgramTransitionOwner {
     }
 }
 impl HomeProgramTransitionAuthority {
+    /// The actual Home owner supplies completed recorded meaning. There is no
+    /// pending requirement on an ordinary successor reopen, but the original
+    /// Home occurrence and serving incarnation must still match this receiver.
+    pub fn admit_recorded_successor<Binding>(
+        &self,
+        successor: &AdmittedHomeProgramTransitionSuccessor<Binding>,
+    ) -> Result<(), HomeProgramTransitionAdmissionDenial> {
+        self.admit(
+            &successor.occurrence,
+            successor.home,
+            successor.incarnation,
+            &successor.commitment,
+            &successor.commitment,
+        )
+    }
+
     pub fn admit_successor<Binding>(
         &self,
         required: &HomeProgramTransitionRequired,

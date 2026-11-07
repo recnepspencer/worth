@@ -47,12 +47,14 @@ fn prepare(
             source,
             maximum_kind,
             maximum_aspect,
+            installation,
         } => query.prepare_home_native_receiver_schema(
             phase,
             native,
             source,
             maximum_kind,
             maximum_aspect,
+            installation,
         ),
         ApplicationHomeNativeSchemaPreparation::Fresh { .. } => {
             panic!("existing Directory fixture selected fresh initialization")

@@ -19,12 +19,17 @@ pub enum WorthQueryApplicationHomeLocation {
     Directory(std::path::PathBuf),
 }
 
-pub struct WorthQueryApplicationHomeRequest<'authoring, Schema, Program>
-where
+pub struct WorthQueryApplicationHomeRequest<
+    'authoring,
+    Schema,
+    Program,
+    Transition = super::transition::NoHomeProgramTransition,
+> where
     Schema: ApplicationSchemaComposition,
     Program: ApplicationProgramDefinition<Schema>,
     Program::Contributions: WorthQueryApplicationContributionTuple<Schema>,
 {
+    pub(super) transition: Transition,
     pub(super) location: WorthQueryApplicationHomeLocation,
     pub(super) program: ValidatedApplicationProgram<Schema, Program>,
     pub(super) roster: WorthQueryApplicationProgramRoster<'authoring, Schema>,
@@ -69,6 +74,7 @@ where
             + 'authoring,
     ) -> Self {
         Self {
+            transition: super::transition::NoHomeProgramTransition,
             location,
             program,
             roster,
@@ -82,6 +88,14 @@ where
             initial_state: Box::new(initial_state),
         }
     }
+}
+impl<'authoring, Schema, Program, Transition>
+    WorthQueryApplicationHomeRequest<'authoring, Schema, Program, Transition>
+where
+    Schema: ApplicationSchemaComposition,
+    Program: ApplicationProgramDefinition<Schema>,
+    Program::Contributions: WorthQueryApplicationContributionTuple<Schema>,
+{
     /// Count or payload bytes in any one Native/World journal make a checkpoint
     /// due. Both thresholds are finite and nonzero; the original request still
     /// controls all work and memory. Defaults are 4096 entries or 64 MiB.

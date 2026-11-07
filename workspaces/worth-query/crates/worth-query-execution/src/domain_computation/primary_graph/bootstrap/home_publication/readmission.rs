@@ -20,6 +20,8 @@ use worth_relational::facade::{
 };
 use worth_runtime_world::facade::ProductBranchObservation;
 
+mod transition;
+
 struct DecodedCompletion {
     binding: codec::BootstrapInstallationBinding,
     terminal: CommitId,
@@ -34,12 +36,18 @@ pub(in crate::domain_computation::primary_graph) fn readmit<Schema: ApplicationS
     roster: &WorthQueryProgramSupportRoster<Schema>,
     selected: &ApplicationProgramRevision,
     root: &ProductBranchObservation,
+    transition: Option<
+        &worth_proof::AdmittedHomeProgramTransitionSuccessor<
+            worth_foundational::facade::HomeProgramTransitionInstallationBinding,
+        >,
+    >,
 ) -> Result<WorthQueryPrimaryGraphPublication, Denial> {
     let execution = phase.execution_request();
     bootstrap
         .graph
         .integration_handle()
         .with_runtime(&execution, |native| {
+            let expected = transition::expected_binding(native, installed, selected, transition)?;
             let basis = root.basis().relational_basis();
             let view = native
                 .read_truth()
@@ -53,7 +61,7 @@ pub(in crate::domain_computation::primary_graph) fn readmit<Schema: ApplicationS
                 created,
                 counts,
             } = decode_selected_row(&view, &bootstrap.graph.layout, &execution)?;
-            admit_binding(installed, roster, selected, binding)?;
+            admit_binding(roster, selected, binding, expected)?;
             admit_receipts(native, basis, terminal, created)?;
             let activation = admit_activation(bootstrap, &view, &execution, selected)?;
             let publication = publication(installed, terminal, counts);
@@ -62,8 +70,15 @@ pub(in crate::domain_computation::primary_graph) fn readmit<Schema: ApplicationS
                 .as_ref()
                 .ok_or_else(|| denial("Home activation cell is missing"))?;
             execution.consult().map_err(request)?;
-            cell.publish(activation)
-                .map_err(|_| denial("Home activation was already published"))?;
+            match cell.published() {
+                None => cell
+                    .publish(activation)
+                    .map_err(|_| denial("Home activation was already published"))?,
+                Some(published) if transition.is_some() && published == activation => (),
+                Some(_) => return Err(denial(
+                    "Home activation was already published outside this acknowledged transition",
+                )),
+            }
             Ok(publication)
         })
 }
@@ -79,8 +94,15 @@ pub(in crate::domain_computation::primary_graph) fn inspect_native_completion<
     native: &RelationalRuntime,
     layout: &super::super::super::schema_layout::WorthQueryPrimaryGraphLayout,
     installed: &WorthQueryInstalledApplicationSchema<Schema>,
+    selected: &ApplicationProgramRevision,
+    transition: Option<
+        &worth_proof::AdmittedHomeProgramTransitionSuccessor<
+            worth_foundational::facade::HomeProgramTransitionInstallationBinding,
+        >,
+    >,
     execution: &ExecutionRequest<'_, '_>,
 ) -> Result<RecoveredBootstrapPublication, Denial> {
+    let expected = transition::expected_binding(native, installed, selected, transition)?;
     let (_, basis) = native
         .observe_branch(&native.main_branch_identity())
         .map_err(|cause| denial(format!("Home completion Native basis denied: {cause:?}")))?;
@@ -91,11 +113,7 @@ pub(in crate::domain_computation::primary_graph) fn inspect_native_completion<
     match decode_optional_selected_row(&view, layout, execution)? {
         None => Ok(RecoveredBootstrapPublication::Incomplete),
         Some(completion) => {
-            if completion.binding
-                != codec::BootstrapInstallationBinding::from_installed(
-                    &installed.binding_identity(),
-                )
-            {
+            if completion.binding != expected {
                 return Err(denial(
                     "Home completion binding is foreign: installed package/schema mismatch",
                 ));
@@ -187,13 +205,12 @@ fn numeric_field(fields: &StructAspectValue, locator: &AspectFieldLocator) -> Re
     }
 }
 fn admit_binding<Schema: ApplicationSchema>(
-    installed: &WorthQueryInstalledApplicationSchema<Schema>,
     roster: &WorthQueryProgramSupportRoster<Schema>,
     selected: &ApplicationProgramRevision,
     binding: codec::BootstrapInstallationBinding,
+    expected: codec::BootstrapInstallationBinding,
 ) -> Result<(), Denial> {
-    if binding != codec::BootstrapInstallationBinding::from_installed(&installed.binding_identity())
-    {
+    if binding != expected {
         return Err(denial(
             "Home completion binding is foreign: installed package/schema mismatch",
         ));

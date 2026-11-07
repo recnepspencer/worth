@@ -252,7 +252,7 @@ guidance = "M3 D1: only Query Host composes Store Application; other Query packa
 [[source_dependency_allowlists]]
 workspace_manifest = "workspaces/worth-query/Cargo.toml"
 sources = ["worth-query-host"]
-allowed_targets = ["worth-query-admission", "worth-query-declaration", "worth-query-execution", "worth-query-installation", "worth-query-publication", "worth-query-decl", "worth-runtime-bridge", "worth-execution", "worth-harness", "worth-foundational", "worth-proof", "worth-relational", "worth-store-application"]
+allowed_targets = ["worth-query-admission", "worth-query-declaration", "worth-query-execution", "worth-query-installation", "worth-query-publication", "worth-query-decl", "worth-runtime-bridge", "worth-runtime-world", "worth-execution", "worth-harness", "worth-foundational", "worth-proof", "worth-relational", "worth-store-application", "sha2"]
 guidance = "M3 D1: Host may compose only Store Application, never another Store implementation owner"
 
 [[source_identifier_denials]]

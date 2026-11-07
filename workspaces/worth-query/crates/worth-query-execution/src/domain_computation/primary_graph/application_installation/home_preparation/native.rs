@@ -66,11 +66,20 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Sche
         source: &worth_relational::facade::schema::RelationalSchemaRegistry,
         maximum_kind: Option<worth_relational::facade::identity::KindId>,
         maximum_aspect: Option<worth_foundational::facade::AspectIdentity>,
+        installation: Option<
+            worth_proof::AdmittedHomeProgramTransitionSuccessor<
+                worth_foundational::facade::HomeProgramTransitionInstallationBinding,
+            >,
+        >,
     ) -> Result<
         PreparedHomeNativeMeaning<Schema, Program>,
         QueryHomeNativeInstallationRefused<Schema, Program>,
     > {
-        let Self { state, invariants } = self;
+        let Self {
+            mut state,
+            invariants,
+        } = self;
+        state.transition_installation = installation;
         match state.authority.prepare_native_schema_from_original(
             phase,
             &state.runtime,

@@ -38,9 +38,9 @@ where
 }
 
 mod custody;
-mod existing;
+pub(super) mod existing;
 mod fresh;
-mod initialization;
+pub(super) mod initialization;
 mod memory;
-mod preparation;
-mod service;
+pub(super) mod preparation;
+pub(super) mod service;

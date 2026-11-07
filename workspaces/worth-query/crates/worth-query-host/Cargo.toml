@@ -9,6 +9,10 @@ description = "Query host audience facade over the production authority graph."
 publish = false
 
 [dependencies]
+sha2.workspace = true
+worth-relational = { path = "../../../../crates/worth-relational" }
+worth-runtime-world = { path = "../../../../crates/worth-runtime-world" }
+worth-runtime-bridge = { path = "../../../../crates/worth-runtime-bridge" }
 worth-store-application = { path = "../../../worth-store/crates/worth-store-application" }
 worth-execution = { path = "../../../../crates/worth-execution" }
 worth-foundational = { path = "../../../../crates/worth-foundational" }

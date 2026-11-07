@@ -60,6 +60,8 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeNativeMeaning<Sc
                 native,
                 &self.schema.layout,
                 &self.state.installed,
+                &self.state.support.initial_revision,
+                self.state.transition_installation.as_ref(),
                 &execution,
             )? {
                 RecoveredBootstrapPublication::Incomplete => (),
@@ -88,6 +90,26 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeNativeMeaning<Sc
 impl<Schema: ApplicationSchemaComposition, Program>
     ReadmittedExistingHomeNativeMeaning<Schema, Program>
 {
+    pub(super) fn from_transition(
+        state: HomeApplicationState<Schema, Program>,
+        schema: InstalledNativeSchemaMeaning,
+    ) -> Self {
+        Self {
+            state,
+            schema,
+            restore_work: None,
+        }
+    }
+
+    pub(super) fn predecessor_activation(
+        &self,
+    ) -> (
+        &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
+        &WorthQueryProgramActivationCell,
+    ) {
+        (&self.state.support.initial_revision, &self.state.activation)
+    }
+
     pub(super) fn predecessor_native_meaning(
         &self,
     ) -> (

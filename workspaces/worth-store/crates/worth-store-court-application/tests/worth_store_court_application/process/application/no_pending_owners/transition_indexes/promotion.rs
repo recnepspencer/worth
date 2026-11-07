@@ -1,5 +1,6 @@
 //! The same real Home promotes only after its original positioned publication.
 use super::target;
+mod installation;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::{
     HomeProgramTransitionPlanDigest, HomeProgramTransitionStepAssociation,
@@ -61,6 +62,12 @@ fn home_binding_promotes_the_original_receiver_only_after_all_actual_steps() {
         .runtime()
         .history()
         .historical_latest_commit();
+    let matching_preparation =
+        installation::matching_preparation(&fixture.home, &source, &execution);
+    assert_eq!(
+        matching_preparation.catalog_digest(),
+        contracts.catalog_digest()
+    );
     assert!(matches!(
         fixture
             .home
@@ -233,6 +240,14 @@ fn home_binding_promotes_the_original_receiver_only_after_all_actual_steps() {
     );
     assert_ne!(fixture.home.binding(), &original_binding);
     let installed_binding = fixture.home.binding().clone();
+    let installation = installation::current(&fixture.home, &original_binding);
+    installation::admit_exact_target(
+        &fixture.home,
+        &contracts,
+        &matching_preparation,
+        &receipt,
+        &installation,
+    );
     fixture.home = fixture
         .home
         .readmit_no_pending_owners(&execution)
@@ -302,6 +317,7 @@ fn home_binding_promotes_the_original_receiver_only_after_all_actual_steps() {
     let reopened = worth_store_testkit_application_oracle::world_home::open(request, &execution)
         .unwrap_or_else(|cause| panic!("ordinary B reopen uses the original Home: {cause:?}"));
     assert_eq!(reopened.home.binding(), &installed_binding);
+    installation::reopened(&reopened.home, installation);
     assert_eq!(
         reopened
             .home

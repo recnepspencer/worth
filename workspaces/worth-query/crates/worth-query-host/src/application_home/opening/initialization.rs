@@ -1,7 +1,7 @@
 //! The Store origin gate alone can consume the original initializer.
 use super::*;
 #[inline(never)]
-pub(super) fn initialize_directory<'authoring, Schema, Program>(
+pub(in crate::application_home) fn initialize_directory<'authoring, Schema, Program>(
     phase: &WorthQueryBootstrapAdvancementPhase<'_>,
     opening: preparation::DirectoryOpening<'authoring, Schema, Program>,
 ) -> Result<

@@ -22,6 +22,11 @@ pub enum ApplicationHomeNativeSchemaPreparation<'runtime> {
         source: &'runtime worth_relational::facade::schema::RelationalSchemaRegistry,
         maximum_kind: Option<worth_relational::facade::identity::KindId>,
         maximum_aspect: Option<worth_foundational::facade::AspectIdentity>,
+        installation: Option<
+            worth_proof::AdmittedHomeProgramTransitionSuccessor<
+                worth_foundational::facade::HomeProgramTransitionInstallationBinding,
+            >,
+        >,
     },
 }
 impl UnrecoveredApplicationHome {
@@ -44,11 +49,12 @@ impl UnrecoveredApplicationHome {
                 })
             }
             HomeInitializationOrigin::Available(RecoveryStorePresence::ExistingArtifacts) => {
-                let target = self.context.transition.acknowledged_target(&self.context.descriptor.binding)
+                let installation = self.context.transition.installation_binding(&self.context.descriptor.binding)
                     .map_err(Denial::Transition)?;
+                let target = installation.as_ref().map(|binding| binding.binding().target());
                 let (native, source, maximum_kind, maximum_aspect) = self.relational.prepare_home_existing_schema_source(request, target)
                     .map_err(Denial::Source)?;
-                Ok(ApplicationHomeNativeSchemaPreparation::Existing { native, source, maximum_kind, maximum_aspect })
+                Ok(ApplicationHomeNativeSchemaPreparation::Existing { native, source, maximum_kind, maximum_aspect, installation })
             }
             HomeInitializationOrigin::ConsumedNewHome => Err(Denial::Initialization(
                 worth_relational::facade::runtime::RelationalInitialSchemaInstallationDenial::from_initial_inputs(

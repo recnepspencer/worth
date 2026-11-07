@@ -34,6 +34,24 @@ where
     Ctx: Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    /// Recorded original installation and current target, sealed by this same
+    /// Home owner. This grants no initialization or program-transition step.
+    pub fn home_program_transition_installation_binding(
+        &self,
+    ) -> Result<
+        Option<
+            worth_proof::AdmittedHomeProgramTransitionSuccessor<
+                worth_foundational::facade::HomeProgramTransitionInstallationBinding,
+            >,
+        >,
+        crate::ApplicationHomeTransitionIntentDenial,
+    > {
+        self.home
+            .context
+            .transition
+            .installation_binding(&self.home.context.descriptor.binding)
+    }
+
     pub fn accept_home_program_transition_step(
         &mut self,
         performed: PerformedCompositePublication,
@@ -64,6 +82,7 @@ where
             .committed_intent(&context.descriptor.binding)
             .map_err(Denial::Intent)?
             .ok_or(Denial::ReceiverConfigurationRequired)?;
+        let installation = context.transition.successor_installation(intent);
         let required = context
             .transition
             .required()
@@ -126,6 +145,7 @@ where
             actual_acknowledgement
                 .expect("a successful original promotion consumed the actual acknowledgement"),
             target.catalog_receipt(),
+            installation,
         );
         Ok(receipt)
     }

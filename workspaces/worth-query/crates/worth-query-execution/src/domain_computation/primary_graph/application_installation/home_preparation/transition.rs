@@ -5,6 +5,17 @@ use super::super::super::bootstrap::native_meaning::{
 };
 use super::super::super::WorthQueryBootstrapAdvancementPhase;
 use super::*;
+mod activation;
+mod authored_body;
+mod bridge;
+mod indexes;
+mod promotion;
+pub use authored_body::WorthQueryHomeProgramTransitionBodyDenial;
+mod author_source;
+pub use author_source::{
+    WorthQueryHomeProgramTransitionReadSource, WorthQueryHomeProgramTransitionTarget,
+};
+pub use promotion::QueryHomeTransitionPromotionRefused;
 use worth_relational::facade::{
     branch::AdmittedRelationalBranchBasis,
     runtime::{PreparedRelationalHomeProgramContracts, RelationalHomeProgramContractDenial},
@@ -13,6 +24,8 @@ use worth_relational::facade::{
 pub struct PreparedHomeProgramTransitionTarget<Schema: ApplicationSchemaComposition, Program> {
     _pending: HomeTransitionTargetCustody<Schema, Program>,
     pub(super) contracts: PreparedRelationalHomeProgramContracts,
+    before_indexes: std::sync::Arc<[worth_relational::facade::indexes::DerivedIndexId]>,
+    target_indexes: std::sync::Arc<[worth_relational::facade::indexes::DerivedIndexId]>,
 }
 struct HomeTransitionTargetCustody<Schema: ApplicationSchemaComposition, Program> {
     _state: HomeApplicationState<Schema, Program>,
@@ -82,6 +95,9 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Sche
                 ),
             });
         }
+        let before_indexes = super::super::super::root::index_installation::primary_index_inventory(
+            predecessor_layout,
+        );
         let CompiledNativeSchemaMeaning {
             layout,
             additions,
@@ -175,10 +191,18 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Sche
                 .map_err(QueryHomeTransitionPreparationDenial::Native)
         })();
         match compiled {
-            Ok(contracts) => Ok(PreparedHomeProgramTransitionTarget {
-                _pending: pending,
-                contracts,
-            }),
+            Ok(contracts) => {
+                let target_indexes =
+                    super::super::super::root::index_installation::primary_index_inventory(
+                        &pending._layout,
+                    );
+                Ok(PreparedHomeProgramTransitionTarget {
+                    _pending: pending,
+                    contracts,
+                    before_indexes,
+                    target_indexes,
+                })
+            }
             Err(cause) => Err(QueryHomeTransitionPreparationRefused {
                 _custody: TransitionPreparationCustody::Compiled { _pending: pending },
                 cause,

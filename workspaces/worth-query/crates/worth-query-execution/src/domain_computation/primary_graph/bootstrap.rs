@@ -39,6 +39,7 @@ pub(super) mod native_meaning;
 mod preparation;
 pub(super) mod prepared_native;
 mod program_activation_recovery;
+pub(in crate::domain_computation::primary_graph) use program_activation_recovery::read_activation;
 mod program_activation_seeding;
 mod publication;
 mod publication_target;
