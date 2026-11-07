@@ -10,6 +10,8 @@ mod collections;
 mod composition;
 pub mod contracts;
 mod durable_publication;
+mod signal_branch_readmission;
+pub use signal_branch_readmission::SignalBranchReadmitted;
 mod dx;
 mod effect;
 mod home_binding;

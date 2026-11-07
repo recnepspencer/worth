@@ -52,6 +52,19 @@ impl Slot {
         self.occupied = true;
         self.generation
     }
+    /// Allocation may issue only an incarnation newer than every recorded one.
+    /// This is called on a vacant slot immediately before occupation.
+    pub(crate) fn resume_recorded_issuance(&mut self, recorded: Option<u32>) -> bool {
+        if let Some(recorded) = recorded
+            && self.generation <= recorded
+        {
+            match recorded.checked_add(1) {
+                Some(generation) => self.generation = generation,
+                None => self.retired = true,
+            }
+        }
+        !self.retired
+    }
 
     /// Vacate this slot, bumping the generation and retiring on wrap.
     pub(crate) fn vacate(&mut self) {

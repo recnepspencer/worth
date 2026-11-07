@@ -15,6 +15,8 @@ mod committed_patch;
 mod conditional_capture;
 mod conditional_execution;
 mod conditional_owned_async;
+mod durable_advance;
+mod durable_coordinates;
 use conditional_capture::SignalPublishedConditionalExecutionBasis;
 
 /// The one canonical mutable state payload for a sealed live branch.
@@ -36,6 +38,7 @@ where
     head_generation: u64,
     restore_snapshot_id: Option<SignalSnapshotId>,
     conditional_execution_basis: Option<SignalPublishedConditionalExecutionBasis>,
+    durable_coordinates: Option<durable_coordinates::SignalDurableCellCoordinates>,
 }
 
 pub(crate) struct SignalPreparedBranchSnapshot<D, I, T>
@@ -99,6 +102,7 @@ where
             head_generation,
             restore_snapshot_id,
             conditional_execution_basis: None,
+            durable_coordinates: None,
         }
     }
 
@@ -267,14 +271,16 @@ where
     where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
     {
-        self.state.execute_canonical_transaction(
-            execution,
-            &mut self.head_generation,
-            &mut self.restore_snapshot_id,
-            Some(conditional_operation_scope),
-            runtime_ctx,
-            apply,
-        )
+        self.state
+            .execute_canonical_transaction(
+                execution,
+                &mut self.head_generation,
+                &mut self.restore_snapshot_id,
+                Some(conditional_operation_scope),
+                runtime_ctx,
+                apply,
+            )
+            .map(|outcome| outcome.map(|transaction| *transaction))
     }
 }
 #[cfg(test)]

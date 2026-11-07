@@ -1753,6 +1753,7 @@ dependencies = [
  "tempfile",
  "worth-execution",
  "worth-foundational",
+ "worth-proof",
  "worth-signal",
  "worth-store",
  "worth-store-application",

@@ -121,6 +121,7 @@ impl SignalGraph {
             initial_empty_origin: false,
             lifecycle_token: Default::default(),
             instance_id,
+            recorded_node_issuance: Default::default(),
             arena: restore_node_arena(&authority.arena, free_slots),
             topology: EdgeTopology {
                 declared_dependents: Default::default(),

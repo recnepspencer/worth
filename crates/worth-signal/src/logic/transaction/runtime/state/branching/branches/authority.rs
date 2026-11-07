@@ -12,8 +12,10 @@ use super::super::super::merge::{BranchMergeKind, BranchMergeStrategy, BranchMut
 use super::super::super::reconstructability::{AuthorityState, DerivedState};
 use super::super::super::temporal::TemporalRuntimeState;
 
+mod authored_readmission;
 #[path = "authority/conditional_owned_async.rs"]
 mod conditional_owned_async;
+mod durable_successor;
 mod initial_empty;
 #[cfg(test)]
 #[path = "authority/replacement_test_observation.rs"]
@@ -146,7 +148,7 @@ where
     T: Copy + Ord,
 {
     pub(super) authority: AuthorityState<T>,
-    pub(super) derived: DerivedState<D, I>,
+    pub(super) derived: Box<DerivedState<D, I>>,
     ancestry: BranchAncestryState,
     pub(super) mutation_ledger: BranchMutationLedger,
     pub(super) installed_definition: Option<
@@ -168,8 +170,11 @@ where
         let (graph, work) = self.authority.graph.fork_owner_branch();
         let config = self.authority.config.fork_persistent();
         let mut fork = Self::new(
-            AuthorityState { graph, config },
-            self.derived.fork_persistent(),
+            AuthorityState {
+                graph: Box::new(graph),
+                config,
+            },
+            Box::new(self.derived.fork_persistent()),
             BranchAncestryState::new(
                 destination.id,
                 Some(parent.id),
@@ -206,7 +211,7 @@ where
 
     pub(in crate::logic::transaction::runtime) fn new(
         authority: AuthorityState<T>,
-        derived: DerivedState<D, I>,
+        derived: Box<DerivedState<D, I>>,
         ancestry: BranchAncestryState,
         mutation_ledger: BranchMutationLedger,
     ) -> Self {
@@ -297,7 +302,7 @@ where
         self,
     ) -> (
         AuthorityState<T>,
-        DerivedState<D, I>,
+        Box<DerivedState<D, I>>,
         BranchAncestryState,
         BranchMutationLedger,
     ) {

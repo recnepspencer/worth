@@ -7382,6 +7382,16 @@ v3 fields. Graph equality, a source profile or an old process identifier cannot
 readmit component authority. Native recovery, Signal seed admission, Bridge
 baseline admission and World reconciliation retain that order.
 
+Signal's standalone owner recovery now reads authored definitions, topology and
+branch generations from its own journals. Values, versions, pending causes,
+telemetry and resource/temporal runtime state start cold and recompute on demand;
+a different build never inherits the previous owner's derived cache. The
+[owner contract](../crates/worth-signal/README.md#standalone-authored-owner-readmission)
+has Store-backed graceful-reopen and quiescent-kill evidence. Home's ordered
+Signal admission and Bridge/mixed publication integration are still pending, so
+Directory applications retain the InitialEmpty restrictions above. Applications
+continue to enter through the Query declaration and Host facades.
+
 The fresh Native-only Directory Host journey now opens the actual Home,
 initializes once, reads seeded data, publishes an ordinary mutation through the
 same World, and closes through the owning Home. A genuine retained runtime

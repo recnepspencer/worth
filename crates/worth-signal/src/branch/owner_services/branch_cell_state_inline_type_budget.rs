@@ -14,6 +14,9 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
         owner.field::<BranchState<(), (), ()>>("state");
         owner.field::<u64>("head_generation");
         owner.field::<Option<SignalSnapshotId>>("restore_snapshot_id");
+        owner.field::<Option<durable_coordinates::SignalDurableCellCoordinates>>(
+            "durable_coordinates",
+        );
         owner.field::<Option<SignalPublishedConditionalExecutionBasis>>(
             "conditional_execution_basis",
         );

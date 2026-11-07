@@ -120,13 +120,13 @@ where
         mutation_ledger: BranchMutationLedger,
     ) -> BranchState<D, I, T> {
         self.observe_allocator_state(&authority.graph);
-        BranchState::new(authority, derived, ancestry, mutation_ledger)
+        BranchState::new(authority, Box::new(derived), ancestry, mutation_ledger)
     }
 
     pub fn restore_active_state(
         &mut self,
         mut state: BranchState<D, I, T>,
-        graph: &mut SignalGraph,
+        graph: &mut Box<SignalGraph>,
         config: &mut SignalRuntimeConfig<T>,
         checkpoint: &mut CheckpointRuntime<D, I>,
         resource: &mut super::super::super::resource::ResourceRuntimeState,

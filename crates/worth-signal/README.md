@@ -260,6 +260,38 @@ declared topology once; it does not admit an owner or mint a branch basis.
 The owner must still readmit its ordered journals and Bridge section before
 serving recovered branches.
 
+### Standalone authored owner readmission
+
+`Box<SignalRuntime>::readmit_authored_owner` consumes the fresh program runtime,
+the `SignalDurableMedium`, stable tier vocabulary and recorded identity bounds.
+It reads the protected journal cut, validates ordered source references, restores
+live branches and snapshots, and installs one cold canonical owner partition.
+Every definition body contributes node-incarnation bounds, including unselected
+bodies and vacant or retired slots. Home composition must also supply bounds
+from its original World opens and intents; standalone owners supply an explicit
+empty contribution.
+
+The returned `SignalDurableOwner` retains the runtime. Its weak source port
+readmits descriptors against actual branch cells and the current Home incarnation.
+Foreign owners, unknown frame versions and stale live handles have typed refusals.
+`take_installation_contracts` transfers freshly installed conditional contracts
+paired with their durable occurrences for Bridge installation.
+
+The standalone mutation port stages an ordinary advance with the canonical
+transaction engine exactly once. Its original task retains the candidate and
+result across pending media work without retaining the invoking request. Exact
+original definition and branch completions precede canonical movement. A demand
+that only recomputes derived values reuses its original definition reference.
+Committed, proven-no-effect and indeterminate outcomes remain distinct.
+
+Store-backed courts cover three branches, runtime-published keyed definitions,
+conditional source, graceful reopen and quiescent process termination. Values
+recompute on first demand after both same-build and changed-build readmission.
+This entry does not yet enable authored Home bootstrap, durable fork or mixed
+World publication. Dedicated conditional-definition publication and Bridge's
+section interpretation remain subsequent work; ordinary advances refuse changes
+to conditional definitions.
+
 ## One Continuous Story
 
 The flagship story looks like this:

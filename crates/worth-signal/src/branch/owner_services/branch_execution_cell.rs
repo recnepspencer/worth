@@ -23,6 +23,8 @@ mod conditional_issuance;
 mod conditional_owned_async;
 mod conditional_retirement;
 mod conditional_topology;
+mod durable_advance;
+mod durable_source;
 pub(crate) mod fork;
 #[path = "branch_execution_cell/fork_custody.rs"]
 mod fork_custody;

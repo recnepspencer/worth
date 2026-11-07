@@ -14,8 +14,10 @@ use worth_signal::facade::durability::{
 };
 use worth_signal::facade::SignalGraph;
 use worth_store::physical_runtime::{
-    OrderedJournalRegistry, PhysicalDurabilityCloseoutOutcome, PhysicalReadProtectionDisposition,
-    PhysicalRecordInitialization, PhysicalRecordOpen, ServingPhysicalRuntime,
+    FilesystemAccessPosture, FilesystemMediaAdmission, OrderedJournalRegistry,
+    PhysicalDurabilityCloseoutOutcome, PhysicalReadProtectionDisposition,
+    PhysicalRecordInitialization, PhysicalRecordOpen, PhysicalRuntimeAdmission, PhysicalStore,
+    ServingPhysicalRuntime,
 };
 use worth_store_application::StoreSignalMedium;
 use worth_store_testkit_store::physical_record_journeys as physical;
@@ -31,11 +33,54 @@ pub(super) fn open(
     fresh: bool,
     execution: &ExecutionRequest<'_, '_>,
 ) -> (Arc<ServingPhysicalRuntime>, Arc<StoreSignalMedium>) {
+    open_with_identity(
+        root,
+        fresh,
+        if fresh { 1 } else { 2 },
+        "11111111-1111-4111-8111-111111111111",
+        execution,
+    )
+}
+pub(super) fn open_with_identity(
+    root: &Path,
+    fresh: bool,
+    incarnation: u64,
+    build: &str,
+    execution: &ExecutionRequest<'_, '_>,
+) -> (Arc<ServingPhysicalRuntime>, Arc<StoreSignalMedium>) {
     let (format, placement, access) = physical::configuration();
     let registry =
         OrderedJournalRegistry::declare(3, &["signal.definitions", "signal.advances"], &[])
             .unwrap();
-    let media = physical::media(root);
+    let admitted = PhysicalStore::admit(PhysicalRuntimeAdmission::new(root).unwrap()).unwrap();
+    let media = match admitted
+        .try_admit_filesystem_media(FilesystemMediaAdmission::production(
+            FilesystemAccessPosture::CoordinatedServiceAccount,
+        ))
+        .into_raw()
+    {
+        worth_proof::TransitionOutcome::Success(media) => media,
+        worth_proof::TransitionOutcome::Denied(denial) => panic!(
+            "Signal filesystem admission denied at {root:?}: {:?}",
+            denial.reason()
+        ),
+        worth_proof::TransitionOutcome::Deferred(denial) => panic!(
+            "Signal filesystem admission deferred at {root:?}: {:?}",
+            denial.reason()
+        ),
+        worth_proof::TransitionOutcome::Stale(denial) => panic!(
+            "Signal filesystem admission stale at {root:?}: {:?}",
+            denial.reason()
+        ),
+        worth_proof::TransitionOutcome::RebindRequired(denial) => panic!(
+            "Signal filesystem admission requires rebind at {root:?}: {:?}",
+            denial.reason()
+        ),
+        worth_proof::TransitionOutcome::Failed(denial) => panic!(
+            "Signal filesystem admission requires inspection at {root:?}: {:?}",
+            denial.cause()
+        ),
+    };
     let durability = physical::durability(&media);
     let serving = if fresh {
         physical::success(
@@ -52,13 +97,9 @@ pub(super) fn open(
     let serving = Arc::new(serving);
     let binding = SignalDurableHomeBinding::from_admitted_adapter(
         owner(),
-        if fresh {
-            worth_foundational::facade::HomeIncarnation::initial()
-        } else {
-            worth_foundational::facade::HomeIncarnation::from_recorded(2).unwrap()
-        },
+        worth_foundational::facade::HomeIncarnation::from_recorded(incarnation).unwrap(),
         [8; 32],
-        ApplicationBuildIdentity::parse("11111111-1111-4111-8111-111111111111").unwrap(),
+        ApplicationBuildIdentity::parse(build).unwrap(),
     );
     let medium =
         StoreSignalMedium::from_serving(serving.clone(), binding, placement, execution).unwrap();

@@ -15,6 +15,22 @@ pub struct SignalDurableBranchDescriptor {
     definition: SignalDefinitionTransitionReference,
 }
 impl SignalDurableBranchDescriptor {
+    pub fn encode_bytes(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<worth_execution::ExecutionImmutableBytes, D> {
+        super::frame::encode(3, execution, &mut |out| self.write(out))
+    }
+    pub fn readmit_bytes(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        bytes: &[u8],
+    ) -> Result<Self, D> {
+        super::frame::admit_work(execution, bytes.len())?;
+        let mut input = super::frame::payload(bytes, 3)?;
+        let descriptor = Self::read(&mut input)?;
+        input.finish()?;
+        Ok(descriptor)
+    }
     pub fn from_recorded(
         generation: DurableSignalGeneration,
         snapshot: Option<DurableSignalSnapshotIdentity>,

@@ -56,7 +56,7 @@ where
         >,
         runtime_ctx: &mut Ctx,
         apply: F,
-    ) -> Result<Result<TransactionResult, SignalError>, SignalCanonicalCallerUnwind>
+    ) -> Result<Result<Box<TransactionResult>, SignalError>, SignalCanonicalCallerUnwind>
     where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
     {
@@ -97,7 +97,7 @@ where
             commit_posture: TransactionCommitPosture::Visible,
         };
         match catch_unwind(AssertUnwindSafe(|| apply(&mut transaction))) {
-            Ok(Ok(())) => Ok(transaction.commit()),
+            Ok(Ok(())) => Ok(transaction.commit().map(Box::new)),
             Ok(Err(error)) => match transaction.rollback_for_canonical_owner() {
                 Ok(_) => Ok(Err(error)),
                 Err(rollback_error) => panic!(

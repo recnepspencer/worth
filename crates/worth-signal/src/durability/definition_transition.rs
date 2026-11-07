@@ -15,16 +15,18 @@ use worth_foundational::facade::{
 #[derive(Clone, Debug)]
 pub struct SignalBridgeAuthoredSection {
     bytes: ExecutionImmutableBytes,
+    range: Range<usize>,
 }
 impl SignalBridgeAuthoredSection {
     pub fn from_bridge_bytes(bytes: ExecutionImmutableBytes) -> Result<Self, D> {
         if bytes.bytes().len() > 16 << 20 {
             return Err(D::SizeLimit);
         }
-        Ok(Self { bytes })
+        let range = 0..bytes.bytes().len();
+        Ok(Self { bytes, range })
     }
     pub fn as_bytes(&self) -> &[u8] {
-        self.bytes.bytes()
+        &self.bytes.bytes()[self.range.clone()]
     }
 }
 #[derive(Clone, Debug)]
@@ -244,6 +246,12 @@ impl SignalDefinitionTransitionArtifact {
     }
     pub fn bridge_bytes(&self) -> &[u8] {
         &self.bytes.bytes()[self.bridge.clone()]
+    }
+    pub(crate) fn bridge_section(&self) -> SignalBridgeAuthoredSection {
+        SignalBridgeAuthoredSection {
+            bytes: self.bytes.clone(),
+            range: self.bridge.clone(),
+        }
     }
     pub fn reference(&self) -> SignalDefinitionTransitionReference {
         SignalDefinitionTransitionReference::from_recorded(self.identity, self.digest)

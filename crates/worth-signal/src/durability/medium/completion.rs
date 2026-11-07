@@ -9,6 +9,14 @@ pub struct SignalPublicationCompletion {
     location: Option<(SignalDurableJournal, u64, [u8; 32])>,
 }
 impl SignalPublicationCompletion {
+    pub(crate) fn into_original_parts(
+        self,
+    ) -> (
+        DurablePublicationFate<SignalDurableMediumDenial>,
+        Option<(SignalDurableJournal, u64, [u8; 32])>,
+    ) {
+        (self.fate, self.location)
+    }
     pub fn committed(
         journal: SignalDurableJournal,
         position: std::num::NonZeroU64,

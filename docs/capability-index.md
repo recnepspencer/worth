@@ -1541,6 +1541,13 @@ cleanup. Undelivered publication refuses Home close before teardown; recover
 its original delivery through `recovery_port().recover_performed` and consume it
 before retrying. Independent Native reads retain their own close obligations.
 
+Signal's [standalone authored owner readmission](../crates/worth-signal/README.md#standalone-authored-owner-readmission)
+now restores several branches through its Store-backed port and leaves derived
+values cold, including under a changed build. This platform owner entry is not
+yet wired into Directory Home admission. Authored bootstrap, durable forks,
+Bridge section readmission and mixed World publication remain pending; the
+InitialEmpty Directory restriction above still applies.
+
 World's durable open retains its original identities and one Native preparation,
 and its prepared wrapper executes through `execute_durable_without_signal`.
 The original occurrence backing is admitted before Native effects, then filled

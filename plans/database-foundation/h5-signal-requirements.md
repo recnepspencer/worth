@@ -13,28 +13,38 @@ This map separates the preparatory byte contracts from operational readmission.
 | Phase 5: full conditional source, including literal threshold parameters and provider roles | `full_conditional_definition_round_trips_literal_parameters_and_provider_roles`; `literal_threshold_payloads_round_trip_without_node_result_storage` | Passing pure codec courts |
 | Phase 5: process-local binding counters are excluded from source | `authored_declarations_exclude_process_local_conditional_binding_counters` | Passing pure codec court |
 | Phase 5: missing conditional definitions and foreign comparator bindings cannot stand in for source | `lowered_conditional_roles_cannot_replace_a_missing_definition`; `runtime_comparator_readmission_requires_its_full_definition_and_rebinds_current_installation` | Passing graph and configuration source courts |
-| Phase 5: fresh source graph installs conditional contracts and derives values on first demand | `conditional_source_reinstalls_with_fresh_bindings_after_graph_reconstitution`; `authored_readmission_keeps_values_cold_until_first_demand` | Passing source reconstruction courts; owner and journal replay remain pending |
+| Phase 5: fresh source graph installs conditional contracts and derives values on first demand | `conditional_source_reinstalls_with_fresh_bindings_after_graph_reconstitution`; `authored_readmission_keeps_values_cold_until_first_demand` | Passing source reconstruction courts; standalone owner replay is covered below |
 | Phase 5: runtime registrations, keyed nodes and stable tier names survive with cold memoization | `runtime_declarations_rebind_stable_tier_names_and_keep_memo_values_cold` | Passing pure configuration table court |
 | Phase 5: full conditional source survives node memory/checkpoint projections and unrelated metadata changes | `node_memory_and_checkpoint_projections_retain_the_full_conditional_source`; `unrelated_node_metadata_preserves_conditional_source_and_a_changed_condition_retires_it` | Passing storage courts |
 | Source reconstruction: decoder and constructor snapshot invariants agree | `branch_decoder_refuses_snapshot_effects_without_a_snapshot`; existing valid snapshot round trips | Passing |
 | Source reconstruction: declared topology stays legal | `graph_readmission_refuses_stale_declarations_and_declaration_cycles`; `graph_readmission_reconstructs_valid_scoped_declarations` | Passing |
 | D2: Signal owns the definition envelope, including an opaque Bridge-owned section | `definition_transition_retains_exact_authored_image_bridge_section_and_predecessor` | Passing descriptive artifact court; Bridge section interpretation pending |
-| D5: original association and exact branch coordinates travel in branch bytes | `branch_effect_preserves_original_attempt_association_and_all_recorded_axes` | Passing descriptive artifact court; operational publication pending |
-| D6/D17: Home-scoped descriptive identity vocabulary cannot carry process identity | Sealed `DurableIdentity` implementations; exact typed descriptor fields; `foreign_definition_owner_and_foreign_attempt_home_refuse_as_typed_data` | Passing descriptive artifact court; live issuer cutover pending |
+| D5: original association and exact branch coordinates travel in branch bytes | `branch_effect_preserves_original_attempt_association_and_all_recorded_axes` | Passing descriptive artifact court; standalone publication deliberately has no World association; mixed publication pending |
+| D6/D17: Home-scoped descriptive identity vocabulary cannot carry process identity | Sealed `DurableIdentity` implementations; exact typed descriptor fields; `foreign_definition_owner_and_foreign_attempt_home_refuse_as_typed_data` | Passing descriptive artifact court; recovered standalone advance/admission/definition issuers resume recorded bounds |
 | D2: wasm-safe port, shared three-way publication fate | `SignalDurableMedium` has no Store/filesystem dependency; `SignalPublicationCompletion` has private fields | Passing `worth-signal-wasm` check for `wasm32-unknown-unknown` with the port present |
-| D17: durable before live | Actual medium-binding `DurablyCommitted` consumption | Pending; descriptive bytes mint no witness |
-| Phase 5: multi-branch owner readmission, cold derived state and recovered-owner descriptor admission | Real Store-backed Signal owner close/reopen courts | Pending |
+| D17: durable before live | Private concrete `DurablyCommitted<SignalCommittedBranchAdvance>` consumption; `candidate_unwind_and_proven_absence_preserve_the_head_and_release_the_original_reservation` | Passing Store-backed standalone owner court |
+| Phase 5: multi-branch owner readmission and cold derived state | `several_branches_reopen_with_authored_definitions_and_values_recompute_on_first_demand` | Passing Store-backed standalone owner court; actual memory owner supplies the reference |
+| D6/D8: recovered-owner descriptor admission and incarnation fencing | `descriptors_refuse_foreign_owners_unknown_versions_and_old_live_incarnations` | Passing Store-backed owner court |
+| D6: every recorded node incarnation bounds future allocation without changing recovered source | `runtime_published_keyed_definitions_reopen_without_reissuing_unused_body_incarnations`; `recovered_node_bounds_change_future_issuance_without_changing_authored_source`; `exhausted_recorded_node_slots_are_retired_only_when_allocation_reaches_them`; `unused_body_vacancies_and_retired_slots_bound_future_node_issuance` | Passing Store-backed allocator courts |
 | Phase 5 / R4: Bridge conditional definitions, fresh lowering/retention and typed diagnostic absence | Bridge installation and replay courts | Pending |
-| Phase 5: same/changed build, graceful close and quiescent kill | Store-backed owner courts | Pending |
+| Phase 5: same/changed build, graceful close and quiescent kill | `several_branches_reopen_with_authored_definitions_and_values_recompute_on_first_demand`; `quiescent_kill_reopens_all_branch_sources_and_recomputes_values` | Passing Store-backed standalone owner courts; Home admission remains pending |
 | D15 / Phase 5: mixed publication and Home/World/Host admission | Granted integration seams and mixed-operation courts | Deferred to coordinator's exact seam grant |
 
 The graph-section codec does not encode values, dirty/aspect versions, cause
 sets, traces, telemetry, resource or temporal runtime. Its bytes are descriptive
-source and do not admit a durable Signal owner. No Home reopen, mixed operation,
-Store-backed owner recovery or oracle result is inferred from codec courts. The
-wasm result comes from its separate target check.
+source and do not admit a durable Signal owner. Store-backed owner recovery is
+proved by the separately named owner courts. No Home reopen, mixed operation or
+oracle result is inferred from codec or standalone owner courts. The wasm result
+comes from its separate target check. Fresh durable bootstrap, fork and Bridge
+readmission remain pending.
 
 Logs live under `target/lane-evidence/`. The first codec review rejected missing
 authored retirement propagation; the reverse declaration index and the named
 retirement court above address that finding. An approving review of the corrected
 range is still required before a safe point is reported.
+
+The three allocator tests moved from a source unit module to the Store owner
+court under test-convention v3's runtime-root rule. Their names and claims are
+preserved. The external court checks exact live-set membership through public
+owner contracts and node-count/liveness APIs, and produces the exhausted source
+slot through an actual canonical allocation before testing unused-body replay.

@@ -68,19 +68,15 @@ impl SignalGraph {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         image: &SignalAuthoredImage,
     ) -> Result<SignalAuthoredGraphReadmission, Denial> {
+        super::SignalGraphInstallationBindings::consume(self).readmit(execution, image)
+    }
+    pub(in crate::data::graph) fn readmit_authored_rows(
+        mut cold: Box<Self>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        image: &SignalAuthoredImage,
+    ) -> Result<SignalAuthoredGraphReadmission, Denial> {
         crate::durability::authored_image::admit_work(execution, image.as_bytes().len())?;
-        let rows = image.read_graph_rows(self.instance_id)?;
-        let mut cold = Box::new(Self::new());
-        // These come from THIS program installation, not durable evaluation state.
-        cold.instance_id = self.instance_id;
-        cold.lifecycle_token = self.lifecycle_token.clone();
-        cold.schema_registry = self.schema_registry.clone();
-        cold.aspect_lowering_owner = self.aspect_lowering_owner.clone();
-        cold.authorization_policy_identities = self.authorization_policy_identities.clone();
-        cold.observation
-            .install_policy(self.observation.installed_policy());
-        cold.rebind_observation_capture_state();
-        cold.initial_empty_origin = false;
+        let rows = image.read_graph_rows(cold.instance_id)?;
         for row in rows.slots {
             let (definition, hot, warm, diagnostic) = match row.definition {
                 Some(definition) => {

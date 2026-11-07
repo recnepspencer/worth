@@ -29,7 +29,21 @@ macro_rules! map_admission_denial {
 }
 
 map_admission_denial!(map_fork_admission_denial, SignalBranchForkOperationDenial);
-map_admission_denial!(map_advance_admission_denial, SignalBranchAdvanceDenial);
+pub(in crate::branch::owner_services) fn map_advance_admission_denial(
+    denial: SignalOwnerAdmissionDenial,
+) -> SignalBranchAdvanceDenial {
+    match denial {
+        SignalOwnerAdmissionDenial::ForeignOwner | SignalOwnerAdmissionDenial::OwnerUnavailable => {
+            SignalBranchAdvanceDenial::OwnerUnavailable(SignalOwnerUnavailable)
+        }
+        SignalOwnerAdmissionDenial::OperationCapacityExhausted {
+            maximum_in_flight_operations,
+        } => SignalBranchAdvanceDenial::OperationCapacityExhausted {
+            maximum_in_flight_operations,
+        },
+        SignalOwnerAdmissionDenial::OwnerReentry => SignalBranchAdvanceDenial::OwnerReentry,
+    }
+}
 map_admission_denial!(
     map_capture_admission_denial,
     SignalBranchSnapshotCaptureDenial
@@ -70,7 +84,7 @@ pub(super) fn map_fork_registry_denial(
     }
 }
 
-pub(super) fn map_advance_registry_denial(
+pub(in crate::branch::owner_services) fn map_advance_registry_denial(
     denial: SignalBranchRegistryDenial,
     branch_id: SignalBranchId,
 ) -> SignalBranchAdvanceDenial {

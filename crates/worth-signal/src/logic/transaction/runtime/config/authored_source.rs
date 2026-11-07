@@ -14,6 +14,14 @@ use worth_execution::ExecutionRequest;
 mod tests;
 
 impl<T: Copy + Ord> SignalRuntimeConfig<T> {
+    pub(crate) fn shares_authored_storage_with(&self, other: &Self) -> bool {
+        self.node_meta.shares_storage_with(&other.node_meta)
+            && self.tier_policies.shares_storage_with(&other.tier_policies)
+            && self.computations.ptr_eq(&other.computations)
+            && self.keyed_nodes.ptr_eq(&other.keyed_nodes)
+            && self.fallback_comparator == other.fallback_comparator
+            && self.resource_runtime_deadline == other.resource_runtime_deadline
+    }
     /// Capture semantic registrations, not runtime string IDs or cached results.
     pub fn capture_authored_image(
         &self,
@@ -94,7 +102,7 @@ impl<T: Copy + Ord> SignalRuntimeConfig<T> {
         graph: &SignalGraph,
         vocabulary: &SignalDurableTierVocabulary<T>,
     ) -> Result<Self, Denial> {
-        let config = Self::readmit_authored_nodes(
+        let mut config = Self::readmit_authored_nodes(
             execution,
             image,
             vocabulary,
@@ -102,6 +110,7 @@ impl<T: Copy + Ord> SignalRuntimeConfig<T> {
             |node| graph.is_alive(node),
         )?;
         config.validate_authored_bindings(graph)?;
+        config.sync_graph_capacity(graph);
         Ok(config)
     }
     fn validate_authored_bindings(&self, graph: &SignalGraph) -> Result<(), Denial> {

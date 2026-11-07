@@ -20,10 +20,20 @@ mod compatibility;
 pub(crate) mod conditional_execution;
 mod counters;
 mod definition_publication_port;
+mod durable_branch_handle;
+mod durable_source_port;
 mod lifecycle_observation;
 mod lifecycle_port;
 mod lifecycle_state;
 mod mutation_port;
+pub use durable_branch_handle::SignalDurableBranchHandle;
+pub(crate) mod durable_publication;
+pub use durable_publication::{
+    SignalDurableAdvanceCompletion, SignalDurableAdvanceDenial, SignalDurableAdvanceDriveRefusal,
+    SignalDurableAdvanceOutput, SignalDurableAdvanceProgress, SignalDurableAdvanceTask,
+    SignalDurableBranchMutationPort, SignalDurableTransactionResult,
+};
+pub use durable_source_port::{SignalDurableBranchSourcePort, SignalDurableSourceDenial};
 mod operation_control;
 pub(super) mod owner;
 mod owner_metadata;
