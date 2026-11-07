@@ -9,3 +9,5 @@ mod schema_projection;
 
 mod incremental_indexes;
 mod kind_maintenance;
+
+mod pinned_projection;

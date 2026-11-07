@@ -9,7 +9,10 @@ use std::sync::Arc;
 /// this selected basis keeps those exact leases alive, even if a later fresh
 /// transport discovers damage. This is accepted truth, not a new demand.
 #[derive(Clone, Debug)]
-pub(crate) struct ResidentVisibilitySnapshotBasis(VisibilitySnapshotBasis);
+pub(crate) struct ResidentVisibilitySnapshotBasis {
+    basis: VisibilitySnapshotBasis,
+    symbols: crate::runtime::RuntimeSymbolTable,
+}
 impl ResidentVisibilitySnapshotBasis {
     pub(crate) fn admit(
         basis: VisibilitySnapshotBasis,
@@ -18,19 +21,27 @@ impl ResidentVisibilitySnapshotBasis {
     ) -> Result<Self, crate::execution::RelationalExecutionDenialCause> {
         crate::execution::check_request(request)?;
         basis.root().demand_all_full(request, symbols)?;
-        Ok(Self(basis))
+        Ok(Self {
+            basis,
+            symbols: symbols.detached_owner_snapshot(),
+        })
     }
     pub(crate) fn basis(&self) -> &VisibilitySnapshotBasis {
-        &self.0
+        &self.basis
+    }
+    /// One isolated dictionary owner per pin; projections retain its shared
+    /// persistent maps instead of reconstructing all symbol entries per read.
+    pub(crate) fn symbols(&self) -> &crate::runtime::RuntimeSymbolTable {
+        &self.symbols
     }
     pub(crate) fn root(&self) -> &Arc<RelationalBranchRoot> {
-        self.0.root()
+        self.basis.root()
     }
     pub(crate) fn version_id(&self) -> VersionId {
-        self.0.version_id()
+        self.basis.version_id()
     }
     pub(crate) fn branch_id(&self) -> &crate::history::data::BranchId {
-        self.0.branch_id()
+        self.basis.branch_id()
     }
     pub(crate) fn head_region(&self, id: PartitionId) -> Option<RelationalRegionHeadView<'_>> {
         self.root().accepted_head_region_view(id)

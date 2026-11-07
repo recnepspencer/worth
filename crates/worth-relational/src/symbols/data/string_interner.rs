@@ -170,6 +170,7 @@ impl StringInterner {
             .map(|(value, symbol)| (*symbol, value.clone()))
             .collect::<Vec<_>>();
         entries.sort_by(|left, right| left.1.cmp(&right.1));
+        super::snapshot_observation::materialized(entries.len());
         SymbolTableSnapshot { entries }
     }
 

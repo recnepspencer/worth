@@ -66,12 +66,19 @@ fn pinned_read_shares_native_custody_and_outlives_the_runtime() {
         &generation
     ));
     let old_symbol = read.symbols().symbol("name");
+    let projection = read.project_read();
+    assert_eq!(projection.retain_pinning_metadata().2, *read.symbols());
     runtime.services.symbols.with_write(|symbols| {
         symbols
             .intern("after-pin")
             .expect("symbol fixture has identity capacity");
     });
     assert_eq!(read.symbols().symbol("after-pin"), None);
+    assert_eq!(projection.retain_pinning_metadata().2, *read.symbols());
+    assert_eq!(
+        read.project_read().retain_pinning_metadata().2,
+        *read.symbols()
+    );
     drop(basis);
     drop(runtime);
     assert_eq!(read.query_context().version_id, VersionId(1));

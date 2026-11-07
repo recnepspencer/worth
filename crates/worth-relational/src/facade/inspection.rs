@@ -47,3 +47,5 @@ pub use crate::runtime::{
 };
 
 pub use crate::storage::substrate::observe_history_prefix_traversal;
+
+pub use crate::symbols::data::observe_symbol_snapshot_materialization;
