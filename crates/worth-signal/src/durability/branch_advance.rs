@@ -1,6 +1,7 @@
 //! A durable branch effect records coordinates and source references, never values.
 use super::{frame, SignalDurableBranchDescriptor, SignalDurableFrameDenial as D};
-use worth_execution::{ExecutionImmutableBytes, ExecutionRequest};
+use std::sync::Arc;
+use worth_execution::{ExecutionImmutableBytes, ExecutionMemoryReservation, ExecutionRequest};
 use worth_foundational::facade::{CompositeAttemptAssociation, SignalBranchAdvanceIdentity};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -16,12 +17,19 @@ pub enum SignalAuthoredBranchChange {
 }
 #[derive(Clone, Debug)]
 pub struct SignalBranchAdvanceArtifact {
+    original: Arc<BranchAdvanceMeaning>,
+}
+#[derive(Debug)]
+struct BranchAdvanceMeaning {
     bytes: ExecutionImmutableBytes,
+    digest: [u8; 32],
     identity: SignalBranchAdvanceIdentity,
     descriptor: SignalDurableBranchDescriptor,
     association: Option<CompositeAttemptAssociation>,
     change: SignalAuthoredBranchChange,
+    _funding: Option<ExecutionMemoryReservation>,
 }
+mod readmission;
 impl SignalBranchAdvanceArtifact {
     pub fn capture(
         execution: &ExecutionRequest<'_, '_>,
@@ -52,39 +60,28 @@ impl SignalBranchAdvanceArtifact {
             }
             Ok(())
         })?;
-        Ok(Self {
-            bytes,
-            identity,
-            descriptor,
-            association,
-            change,
-        })
+        readmission::from_owned(execution, bytes)
     }
     pub fn readmit_bytes(execution: &ExecutionRequest<'_, '_>, bytes: &[u8]) -> Result<Self, D> {
-        frame::admit_work(execution, bytes.len())?;
-        let (identity, descriptor, association, change) = inspect(bytes)?;
-        Ok(Self {
-            bytes: frame::copy_bytes(execution, bytes)?,
-            identity,
-            descriptor,
-            association,
-            change,
-        })
+        readmission::from_bytes(execution, bytes)
     }
     pub fn as_bytes(&self) -> &[u8] {
-        self.bytes.bytes()
+        self.original.bytes.bytes()
     }
-    pub const fn identity(&self) -> SignalBranchAdvanceIdentity {
-        self.identity
+    pub fn digest(&self) -> [u8; 32] {
+        self.original.digest
+    }
+    pub fn identity(&self) -> SignalBranchAdvanceIdentity {
+        self.original.identity
     }
     pub fn descriptor(&self) -> &SignalDurableBranchDescriptor {
-        &self.descriptor
+        &self.original.descriptor
     }
     pub fn association(&self) -> Option<&CompositeAttemptAssociation> {
-        self.association.as_ref()
+        self.original.association.as_ref()
     }
     pub fn change(&self) -> &SignalAuthoredBranchChange {
-        &self.change
+        &self.original.change
     }
 }
 fn validate(
@@ -119,47 +116,6 @@ fn validate(
         | SignalAuthoredBranchChange::Retired => {}
     }
     Ok(())
-}
-fn inspect(
-    bytes: &[u8],
-) -> Result<
-    (
-        SignalBranchAdvanceIdentity,
-        SignalDurableBranchDescriptor,
-        Option<CompositeAttemptAssociation>,
-        SignalAuthoredBranchChange,
-    ),
-    D,
-> {
-    let mut input = frame::payload(bytes, 2)?;
-    let identity = SignalBranchAdvanceIdentity::from_recorded(input.owner()?, input.number()?);
-    let descriptor = SignalDurableBranchDescriptor::read(&mut input)?;
-    let association = input.association()?;
-    let change = match input.byte()? {
-        0 => {
-            let name = input.blob()?;
-            if name.len() > 256 {
-                return Err(D::Malformed);
-            }
-            let name = std::str::from_utf8(name)
-                .map_err(|_| D::Malformed)?
-                .to_owned();
-            let parent = match input.byte()? {
-                0 => None,
-                1 => Some(SignalDurableBranchDescriptor::read(&mut input)?),
-                _ => return Err(D::Malformed),
-            };
-            SignalAuthoredBranchChange::Created { name, parent }
-        }
-        1 => SignalAuthoredBranchChange::Advanced,
-        2 => SignalAuthoredBranchChange::SnapshotCaptured,
-        3 => SignalAuthoredBranchChange::Restored,
-        4 => SignalAuthoredBranchChange::Retired,
-        _ => return Err(D::Malformed),
-    };
-    input.finish()?;
-    validate(identity, &descriptor, association.as_ref(), &change)?;
-    Ok((identity, descriptor, association, change))
 }
 impl worth_foundational::facade::DurableArtifactRetention for SignalBranchAdvanceArtifact {
     const RETENTION_CLASS: worth_foundational::facade::RetentionClass =

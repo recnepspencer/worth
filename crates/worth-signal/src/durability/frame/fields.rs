@@ -124,9 +124,9 @@ impl<'a> Reader<'a> {
             self.fixed()?,
         ))
     }
-    pub(in crate::durability) fn association(
+    pub(in crate::durability) fn association_fields(
         &mut self,
-    ) -> Result<Option<CompositeAttemptAssociation>, D> {
+    ) -> Result<Option<AssociationFields<'a>>, D> {
         match self.byte()? {
             0 => Ok(None),
             1 => {
@@ -144,17 +144,17 @@ impl<'a> Reader<'a> {
                 if name.len() > 256 {
                     return Err(D::Malformed);
                 }
-                let name = std::str::from_utf8(name)
-                    .map_err(|_| D::Malformed)?
-                    .to_owned();
-                let branch = DurableProductBranchIdentity::from_recorded(owner, name)
-                    .map_err(|_| D::Malformed)?;
+                let name = std::str::from_utf8(name).map_err(|_| D::Malformed)?;
+                if name.trim().is_empty() {
+                    return Err(D::Malformed);
+                }
                 let incarnation =
                     DurableProductBranchIncarnation::from_recorded(owner, self.number()?);
-                Ok(Some(
-                    CompositeAttemptAssociation::from_recorded(attempt, branch, incarnation)
-                        .map_err(|_| D::Malformed)?,
-                ))
+                Ok(Some(AssociationFields {
+                    attempt,
+                    name,
+                    incarnation,
+                }))
             }
             _ => Err(D::Malformed),
         }
@@ -165,5 +165,19 @@ impl<'a> Reader<'a> {
         } else {
             Err(D::Malformed)
         }
+    }
+}
+pub(in crate::durability) struct AssociationFields<'a> {
+    pub(in crate::durability) attempt: DurableCompositePublicationAttemptIdentity,
+    pub(in crate::durability) name: &'a str,
+    incarnation: DurableProductBranchIncarnation,
+}
+impl AssociationFields<'_> {
+    pub(in crate::durability) fn materialize(self) -> Result<CompositeAttemptAssociation, D> {
+        let branch =
+            DurableProductBranchIdentity::from_recorded(self.attempt.owner(), self.name.to_owned())
+                .map_err(|_| D::Malformed)?;
+        CompositeAttemptAssociation::from_recorded(self.attempt, branch, self.incarnation)
+            .map_err(|_| D::Malformed)
     }
 }

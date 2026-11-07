@@ -28,6 +28,7 @@ impl SignalBridgeAuthoredSection {
 #[derive(Clone, Debug)]
 pub struct SignalDefinitionTransitionArtifact {
     bytes: ExecutionImmutableBytes,
+    digest: [u8; 32],
     identity: SignalDefinitionTransitionIdentity,
     branch: DurableSignalBranchIdentity,
     predecessor: Option<SignalDefinitionTransitionReference>,
@@ -62,36 +63,40 @@ impl SignalDefinitionTransitionArtifact {
             out.blob(image.as_bytes())?;
             out.blob(bridge.as_bytes())
         })?;
+        frame::admit_work(execution, bytes.bytes().len().saturating_mul(2))?;
         Self::readmit_owned(bytes)
     }
     pub fn readmit_bytes(execution: &ExecutionRequest<'_, '_>, bytes: &[u8]) -> Result<Self, D> {
-        frame::admit_work(execution, bytes.len().saturating_mul(2))?;
-        Self::inspect(bytes)?;
-        Self::readmit_owned(frame::copy_bytes(execution, bytes)?)
+        frame::admit_work(execution, bytes.len().saturating_mul(3))?;
+        let fields = Self::inspect(bytes)?;
+        Ok(Self::from_fields(
+            frame::copy_bytes(execution, bytes)?,
+            fields,
+        ))
     }
     pub(super) fn readmit_owned(bytes: ExecutionImmutableBytes) -> Result<Self, D> {
-        let (identity, branch, predecessor, image, bridge) = Self::inspect(bytes.bytes())?;
-        Ok(Self {
+        let fields = Self::inspect(bytes.bytes())?;
+        Ok(Self::from_fields(bytes, fields))
+    }
+    fn from_fields(bytes: ExecutionImmutableBytes, fields: DefinitionFields) -> Self {
+        let DefinitionFields {
+            identity,
+            branch,
+            predecessor,
+            image,
+            bridge,
+        } = fields;
+        Self {
+            digest: Sha256::digest(bytes.bytes()).into(),
             bytes,
             identity,
             branch,
             predecessor,
             image,
             bridge,
-        })
+        }
     }
-    fn inspect(
-        bytes: &[u8],
-    ) -> Result<
-        (
-            SignalDefinitionTransitionIdentity,
-            DurableSignalBranchIdentity,
-            Option<SignalDefinitionTransitionReference>,
-            Range<usize>,
-            Range<usize>,
-        ),
-        D,
-    > {
+    fn inspect(bytes: &[u8]) -> Result<DefinitionFields, D> {
         let mut input = frame::payload(bytes, 1)?;
         let identity =
             SignalDefinitionTransitionIdentity::from_recorded(input.owner()?, input.number()?);
@@ -118,10 +123,19 @@ impl SignalDefinitionTransitionArtifact {
         }
         let bridge = (input.position - bridge_bytes.len())..input.position;
         input.finish()?;
-        Ok((identity, branch, predecessor, image, bridge))
+        Ok(DefinitionFields {
+            identity,
+            branch,
+            predecessor,
+            image,
+            bridge,
+        })
     }
     pub fn as_bytes(&self) -> &[u8] {
         self.bytes.bytes()
+    }
+    pub const fn digest(&self) -> [u8; 32] {
+        self.digest
     }
     pub const fn identity(&self) -> SignalDefinitionTransitionIdentity {
         self.identity
@@ -139,11 +153,15 @@ impl SignalDefinitionTransitionArtifact {
         &self.bytes.bytes()[self.bridge.clone()]
     }
     pub fn reference(&self) -> SignalDefinitionTransitionReference {
-        SignalDefinitionTransitionReference::from_recorded(
-            self.identity,
-            Sha256::digest(self.as_bytes()).into(),
-        )
+        SignalDefinitionTransitionReference::from_recorded(self.identity, self.digest)
     }
+}
+struct DefinitionFields {
+    identity: SignalDefinitionTransitionIdentity,
+    branch: DurableSignalBranchIdentity,
+    predecessor: Option<SignalDefinitionTransitionReference>,
+    image: Range<usize>,
+    bridge: Range<usize>,
 }
 impl worth_foundational::facade::DurableArtifactRetention for SignalDefinitionTransitionArtifact {
     const RETENTION_CLASS: worth_foundational::facade::RetentionClass =

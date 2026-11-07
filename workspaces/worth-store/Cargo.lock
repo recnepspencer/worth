@@ -1736,12 +1736,14 @@ dependencies = [
  "worth-relational",
  "worth-runtime-bridge",
  "worth-runtime-world",
+ "worth-signal",
  "worth-store",
  "worth-store-application",
  "worth-store-physical-format",
  "worth-store-relational",
  "worth-store-testkit-application-oracle",
  "worth-store-testkit-executables",
+ "worth-store-testkit-store",
  "worth-store-testkit-sweep",
 ]
 

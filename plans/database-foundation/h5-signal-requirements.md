@@ -13,7 +13,7 @@ This map separates the preparatory byte contracts from operational readmission.
 | D2: Signal owns the definition envelope, including an opaque Bridge-owned section | `definition_transition_retains_exact_authored_image_bridge_section_and_predecessor` | Passing descriptive artifact court; Bridge section interpretation pending |
 | D5: original association and exact branch coordinates travel in branch bytes | `branch_effect_preserves_original_attempt_association_and_all_recorded_axes` | Passing descriptive artifact court; operational publication pending |
 | D6/D17: Home-scoped descriptive identity vocabulary cannot carry process identity | Sealed `DurableIdentity` implementations; exact typed descriptor fields; `foreign_definition_owner_and_foreign_attempt_home_refuse_as_typed_data` | Passing descriptive artifact court; live issuer cutover pending |
-| D2: wasm-safe port, shared three-way publication fate | `SignalDurableMedium` has no Store/filesystem dependency; `SignalPublicationCompletion` has private fields | Compiles natively; wasm proof pending |
+| D2: wasm-safe port, shared three-way publication fate | `SignalDurableMedium` has no Store/filesystem dependency; `SignalPublicationCompletion` has private fields | Passing `worth-signal-wasm` check for `wasm32-unknown-unknown` with the port present |
 | D17: durable before live | Actual medium-binding `DurablyCommitted` consumption | Pending; descriptive bytes mint no witness |
 | Phase 5: multi-branch owner readmission, cold derived state and recovered-owner descriptor admission | Real Store-backed Signal owner close/reopen courts | Pending |
 | Phase 5 / R4: Bridge conditional definitions, fresh lowering/retention and typed diagnostic absence | Bridge installation and replay courts | Pending |
@@ -23,7 +23,8 @@ This map separates the preparatory byte contracts from operational readmission.
 The graph-section codec does not encode values, dirty/aspect versions, cause
 sets, traces, telemetry, resource or temporal runtime. Its bytes are descriptive
 source and do not admit a durable Signal owner. No Home reopen, mixed operation,
-Store-backed owner recovery, wasm or oracle result is inferred from codec courts.
+Store-backed owner recovery or oracle result is inferred from codec courts. The
+wasm result comes from its separate target check.
 
 Logs live under `target/lane-evidence/`. The first codec review rejected missing
 authored retirement propagation; the reverse declaration index and the named

@@ -6,7 +6,7 @@ use worth_foundational::facade::{
     BoundaryProtocolCompatibilityWindow, BoundaryProtocolIdentity, BoundaryProtocolVersion,
 };
 mod fields;
-pub(super) use fields::{Reader, Writer};
+pub(super) use fields::{AssociationFields, Reader, Writer};
 pub const SIGNAL_OWNER_FRAME_PROTOCOL: BoundaryProtocolIdentity =
     BoundaryProtocolIdentity::new("worth.signal.owner-frame");
 pub const SIGNAL_OWNER_FRAME_VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(1);
