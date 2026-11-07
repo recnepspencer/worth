@@ -12,3 +12,5 @@ pub mod fragment_relation_fixture;
 pub mod fragment_revision_fixture;
 
 pub mod fragment_extension_fixture;
+
+pub mod principal_requirements_fixture;

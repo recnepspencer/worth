@@ -64,7 +64,7 @@ impl World {
                     .bind_application_schema(declaration)
                     .unwrap();
                 let binding = schema
-                    .principal_binding(IdentityBinding::reference().unwrap())
+                    .principal_binding(IdentityBinding::reference())
                     .unwrap();
                 let resources = product_world_resources();
                 let mut bootstrap = authority
@@ -84,7 +84,9 @@ impl World {
                     WorthQueryApplicationEntityKey::new("item").unwrap(),
                 )
                 .record_field(
-                    record_field(Fixture, Item, ItemIdentity, "id").unwrap(),
+                    record_field(Fixture, Item, ItemIdentity, "id")
+                        .resolve()
+                        .unwrap(),
                     11u64,
                 )
                 .unwrap();
@@ -96,13 +98,20 @@ impl World {
                     ("interval.end", 13),
                 ] {
                     seed = seed
-                        .record_field(record_field(Fixture, Item, Metrics, path).unwrap(), value)
+                        .record_field(
+                            record_field(Fixture, Item, Metrics, path)
+                                .resolve()
+                                .unwrap(),
+                            value,
+                        )
                         .unwrap();
                 }
                 if matches!(mode, Mode::Named | Mode::BothBroken) {
                     seed = seed
                         .record_field(
-                            record_field(Fixture, Item, Named, "text").unwrap(),
+                            record_field(Fixture, Item, Named, "text")
+                                .resolve()
+                                .unwrap(),
                             "initial".to_owned(),
                         )
                         .unwrap();
@@ -124,7 +133,9 @@ impl World {
                     ] {
                         seed = seed
                             .record_field(
-                                record_field(Fixture, Item, Measured, path).unwrap(),
+                                record_field(Fixture, Item, Measured, path)
+                                    .resolve()
+                                    .unwrap(),
                                 value,
                             )
                             .unwrap();
@@ -139,6 +150,7 @@ impl World {
                         )
                         .record_field(
                             record_field(Authentication, OptionalItem, OptionalIdentity, "id")
+                                .resolve()
                                 .unwrap(),
                             19u64,
                         )

@@ -65,7 +65,7 @@ Selections remain local to the extending fragment's membership witness and use
 the existing field and View APIs. See [shared entity extensions](build-an-application.md#add-optional-aspects-to-a-shared-entity).
 Fragment `View::read` preserves typed record refusals and complete field paths for damaged stored rows; the [installed corruption courts](../workspaces/worth-query/crates/worth-query-court-decl-host-native-fragments/tests/worth_query_court_decl_host_native_fragments/native_fragments/stored_value_corruption.rs) cover owned and extension aspects.
 Aspect contract revisions derive from portable fields, codec identities, absence and exclusive membership; the [revision courts](../workspaces/worth-query/crates/worth-query-court-decl-host-native-fragments/tests/worth_query_court_decl_host_native_fragments/native_fragments/contract_revisions.rs) cover contract changes and stability under declaration order and Rust marker renames, including relation payloads.
-Preimage loci and authored logical keys record unchecked selections; operation association and schema build refuse invalid correction fields with the correction identity and full field path, including codec mismatches.
+Preimage loci, historical correction-output fields and authored logical keys record unchecked selections; operation association and schema build refuse invalid correction fields with the correction identity and full field path, including codec mismatches. Principal record requirements are also infallible selections; composition refuses missing fields, codec mismatches and invalid write/equality posture with the principal binding name and field path.
 `fragment::relation_integrity::<R>()` derives descriptive integrity from that relation declaration for operation and query metadata.
 
 
@@ -81,7 +81,7 @@ For a new installed feature, use the
 first: `host::worth_query_application_contribution! { pub feature ... }` projects
 schema members, action meaning, typed runtime configuration, required roles and
 delivery roots. Supply actual handlers and domain configuration through the
-generated runtime constructor. Use lower-level builders for specialized composition.
+generated runtime constructor. An `action_ref` member names an operation already declared by a correction member, with the same action and runtime projections. Use lower-level builders for specialized composition.
 For tracked numerical work, use the
 [managed/partitioned computation lifecycle](build-an-application.md#36-declare-and-install-a-partitioned-managed-computation):
 declare semantic membership, gather tracked inputs, compute with the original

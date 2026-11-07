@@ -36,6 +36,8 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
         self.member_provenance.normalize();
         self.correction_fields
             .validate(&self.member_provenance.fragments.catalog)?;
+        self.principal_fields
+            .validate(&self.member_provenance, &self.members)?;
         self.member_provenance
             .fragments
             .validate(self.member_provenance.field_bindings())?;

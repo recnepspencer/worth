@@ -29,12 +29,14 @@ pub(super) fn read_damaged(
     let locus = match location {
         Location::Owned => {
             record_field::<_, _, _, Number, _, _>(Fixture, Item, OwnedValue, "value")
+                .resolve()
                 .unwrap()
                 .locus()
                 .clone()
         }
         Location::Extension => {
             record_field::<_, _, _, Number, _, _>(Annotations, Item, ExtendedValue, "value")
+                .resolve()
                 .unwrap()
                 .locus()
                 .clone()

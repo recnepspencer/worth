@@ -5,10 +5,10 @@ use worth_query_host::facade::declaration::{
 };
 pub struct RecordIssued;
 pub fn key_field() -> ApplicationCorrectionOutputField<NumericSchema> {
-    ApplicationCorrectionOutput::<IssueBinding, Actual>::field(Key::at("Key")).unwrap()
+    ApplicationCorrectionOutput::<IssueBinding, Actual>::field(Key::at("Key"))
 }
 pub fn payload_field() -> ApplicationCorrectionOutputField<NumericSchema> {
-    ApplicationCorrectionOutput::<IssueBinding, Actual>::field(Primary::at("Primary")).unwrap()
+    ApplicationCorrectionOutput::<IssueBinding, Actual>::field(Primary::at("Primary"))
 }
 pub static DERIVATIONS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
 pub fn derivations() -> usize {

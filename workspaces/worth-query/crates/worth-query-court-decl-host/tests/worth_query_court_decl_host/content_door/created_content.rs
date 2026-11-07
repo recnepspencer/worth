@@ -117,12 +117,11 @@ impl OperationHandler<Schema, Binding> for Handler {
         }
     }
 }
-pub struct Capture;
+pub struct Capture<const DAMAGE: u8 = 0>;
 fn output() -> ApplicationCorrectionOutputField<Schema> {
     ApplicationCorrectionOutput::<Binding, Actual>::content_field(samples())
-        .expect("record content field")
 }
-impl ApplicationCorrectionBinding<Schema> for Capture {
+impl<const DAMAGE: u8> ApplicationCorrectionBinding<Schema> for Capture<DAMAGE> {
     const IDENTITY: &'static str = "created-content.capture.v1";
     type Source = Binding;
     type InverseIntent = revision::Revise;
@@ -148,7 +147,23 @@ impl ApplicationCorrectionBinding<Schema> for Capture {
         .unwrap()
     }
     fn source_output_fields() -> Vec<ApplicationCorrectionOutputField<Schema>> {
-        vec![output()]
+        if DAMAGE == 1 {
+            vec![
+                ApplicationCorrectionOutput::<Binding, Actual>::content_field(content_field(
+                    Values::at("MissingValues"),
+                    codec::GridFormat,
+                )),
+            ]
+        } else if DAMAGE == 2 {
+            vec![
+                ApplicationCorrectionOutput::<Binding, Actual>::content_field(content_field(
+                    Values::at("Values"),
+                    codec::Impostor,
+                )),
+            ]
+        } else {
+            vec![output()]
+        }
     }
     fn derive_correction(
         _: &Issue,
@@ -176,4 +191,39 @@ impl ApplicationCorrectionBinding<Schema> for Capture {
     ) -> V::Output {
         dispatch.conventional()
     }
+}
+
+fn refused_content_selection<const DAMAGE: u8>(path: &'static str) {
+    let expression = Capture::<DAMAGE>::source_output_fields();
+    let field = expression[0].binding_recipe().locus().clone();
+    assert_eq!(field.field(), path);
+    let denial = ApplicationSchemaDeclarationBuilder::<Schema>::from_fragment(ContentModel)
+        .unwrap()
+        .correction::<Capture<DAMAGE>>()
+        .build()
+        .unwrap_err();
+    assert_eq!(
+        denial,
+        ApplicationSchemaDeclarationDenial::InvalidCorrectionField {
+            correction: "created-content.capture.v1".into(),
+            field: field.clone(),
+        }
+    );
+    let message = denial.to_string();
+    for part in [
+        "created-content.capture.v1",
+        field.entity(),
+        field.aspect(),
+        field.field(),
+    ] {
+        assert!(message.contains(part), "{message}");
+    }
+}
+#[test]
+fn a_misspelled_content_output_is_refused_at_composition() {
+    refused_content_selection::<1>("MissingValues");
+}
+#[test]
+fn a_content_output_codec_mismatch_is_refused_at_composition() {
+    refused_content_selection::<2>("Values");
 }

@@ -97,23 +97,42 @@ impl DeclaredCorrectionOutputField {
     }
 }
 
-/// Schema-affine witness made from a concrete source, declared role and field.
-/// Native identities qualify the portable declaration; they grant no read authority.
+/// An unchecked schema-affine selection of an original output field.
 #[derive(Clone, Debug)]
 pub struct ApplicationCorrectionOutputField<Schema> {
-    declaration: DeclaredCorrectionOutputField,
+    metadata: std::sync::Arc<OutputFieldMetadata>,
     source: TypeId,
     output_contract: TypeId,
     entity: TypeId,
     entity_name: &'static str,
     recipe: ApplicationFieldBindingRecipe,
-    content: Option<crate::application_schema::ApplicationContentBindingRecipe>,
     schema: PhantomData<fn() -> Schema>,
 }
-
+struct OutputFieldMetadata {
+    resolve: Box<dyn Fn() -> Result<ResolvedOutputField, Denial> + Send + Sync>,
+    value: std::sync::OnceLock<Result<ResolvedOutputField, Denial>>,
+}
+struct ResolvedOutputField {
+    declaration: DeclaredCorrectionOutputField,
+    content: Option<crate::application_schema::ApplicationContentBindingRecipe>,
+}
+use crate::application_schema::ApplicationSchemaDeclarationDenial as Denial;
+impl std::fmt::Debug for OutputFieldMetadata {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OutputFieldMetadata")
+            .finish_non_exhaustive()
+    }
+}
 impl<S> ApplicationCorrectionOutputField<S> {
-    pub fn declaration(&self) -> &DeclaredCorrectionOutputField {
-        &self.declaration
+    fn checked(&self) -> Result<&ResolvedOutputField, Denial> {
+        self.metadata
+            .value
+            .get_or_init(|| (self.metadata.resolve)())
+            .as_ref()
+            .map_err(Clone::clone)
+    }
+    pub fn declaration(&self) -> Result<&DeclaredCorrectionOutputField, Denial> {
+        Ok(&self.checked()?.declaration)
     }
     pub fn source_binding_type(&self) -> TypeId {
         self.source
@@ -129,19 +148,18 @@ impl<S> ApplicationCorrectionOutputField<S> {
     }
     pub fn content_recipe(
         &self,
-    ) -> Option<&crate::application_schema::ApplicationContentBindingRecipe> {
-        self.content.as_ref()
+    ) -> Result<Option<&crate::application_schema::ApplicationContentBindingRecipe>, Denial> {
+        Ok(self.checked()?.content.as_ref())
     }
     pub fn binding_recipe(&self) -> &ApplicationFieldBindingRecipe {
         &self.recipe
     }
-    pub fn into_declaration(self) -> DeclaredCorrectionOutputField {
-        self.declaration
+    pub fn into_declaration(self) -> Result<DeclaredCorrectionOutputField, Denial> {
+        self.declaration().cloned()
     }
 }
 
 /// Typed construction context for one source mutation's exactly-one created role.
-/// The field's entity and schema are fixed by that role.
 pub struct ApplicationCorrectionOutput<Source, Role>(PhantomData<fn() -> (Source, Role)>);
 impl<Source, Role> ApplicationCorrectionOutput<Source, Role>
 where
@@ -153,71 +171,82 @@ where
 {
     pub fn content_field<Field, C>(
         field: crate::application_schema::ApplicationContentFieldRef<Field, C>,
-    ) -> Result<
-        ApplicationCorrectionOutputField<Role::Schema>,
-        crate::application_schema::ApplicationSchemaDeclarationDenial,
-    >
+    ) -> ApplicationCorrectionOutputField<Role::Schema>
     where
         Field::Binding: crate::application_schema::ApplicationContentReferenceBinding,
         Field: crate::application_schema::fragment::RecordSelection<Entity = Role::Entity>,
         C: crate::application_schema::ApplicationContentBinding,
     {
-        let witness = Self::field(field.field())?;
-        let requested = crate::application_schema::ApplicationContentBindingRecipe::of::<C>();
-        if witness.content.as_ref() != Some(&requested) {
-            return Err(
-                crate::application_schema::ApplicationSchemaDeclarationDenial::InvalidRecordField {
-                    field: witness.recipe.locus().clone(),
-                },
-            );
-        }
-        Ok(witness)
+        Self::selection(
+            field.field(),
+            Some(crate::application_schema::ApplicationContentBindingRecipe::of::<C>()),
+        )
     }
-    pub fn field<Field>(
-        field: Field,
-    ) -> Result<
-        ApplicationCorrectionOutputField<Role::Schema>,
-        crate::application_schema::ApplicationSchemaDeclarationDenial,
-    >
+    pub fn field<Field>(field: Field) -> ApplicationCorrectionOutputField<Role::Schema>
     where
         Field: crate::application_schema::fragment::RecordSelection<Entity = Role::Entity>,
     {
-        let checked = field.checked()?;
+        Self::selection(field, None)
+    }
+    fn selection<Field>(
+        field: Field,
+        requested: Option<crate::application_schema::ApplicationContentBindingRecipe>,
+    ) -> ApplicationCorrectionOutputField<Role::Schema>
+    where
+        Field: crate::application_schema::fragment::RecordSelection<Entity = Role::Entity>,
+    {
         const { <Role as WorthQueryApplicationDeclaredOutputRole>::DECLARED };
-        let recipe = checked.recipe().clone();
-        Ok(ApplicationCorrectionOutputField {
-            declaration: DeclaredCorrectionOutputField::from_untrusted_parts(
-                DeclaredCorrectionOutputFieldParts {
-                    source_binding: Source::descriptor()
-                        .description()
-                        .binding_identity()
-                        .clone(),
-                    role: Role::NAME.to_owned(),
-                    entity:
-                        <Role::Entity as ApplicationEntityMarkerIdentity<Role::Schema>>::IDENTIFIER
-                            .to_owned(),
-                    aspect: field.aspect().to_owned(),
-                    field: field.field().to_owned(),
-                    presence: checked.presence(),
-                    scalar_family: recipe.scalar_family(),
-                    value_binding: recipe.binding_identity().clone(),
-                    unit: recipe.unit().map(|unit| unit.as_str().to_owned()),
-                    binding_unit: recipe.unit().map(|unit| unit.as_str().to_owned()),
-                    frame: recipe.frame().map(|frame| frame.as_str().to_owned()),
-                    canonical: recipe.canonical_contract().cloned(),
-                    content_format: checked
-                        .content_format()
-                        .map(|recipe| recipe.declaration().identity),
-                },
-            ),
+        ApplicationCorrectionOutputField {
+            metadata: std::sync::Arc::new(OutputFieldMetadata {
+                value: std::sync::OnceLock::new(),
+                resolve: Box::new(move || {
+                    let checked = field.checked()?;
+                    if requested
+                        .as_ref()
+                        .is_some_and(|requested| checked.content_format() != Some(requested))
+                    {
+                        return Err(Denial::InvalidRecordField {
+                            field: field.expected_recipe().locus().clone(),
+                        });
+                    }
+                    let recipe = checked.recipe();
+                    Ok(ResolvedOutputField {
+                        declaration: DeclaredCorrectionOutputField::from_untrusted_parts(
+                            DeclaredCorrectionOutputFieldParts {
+                                source_binding: Source::descriptor()
+                                    .description()
+                                    .binding_identity()
+                                    .clone(),
+                                role: Role::NAME.to_owned(),
+                                entity: <Role::Entity as ApplicationEntityMarkerIdentity<
+                                    Role::Schema,
+                                >>::IDENTIFIER
+                                    .to_owned(),
+                                aspect: field.aspect().to_owned(),
+                                field: field.field().to_owned(),
+                                presence: checked.presence(),
+                                scalar_family: recipe.scalar_family(),
+                                value_binding: recipe.binding_identity().clone(),
+                                unit: recipe.unit().map(|unit| unit.as_str().to_owned()),
+                                binding_unit: recipe.unit().map(|unit| unit.as_str().to_owned()),
+                                frame: recipe.frame().map(|frame| frame.as_str().to_owned()),
+                                canonical: recipe.canonical_contract().cloned(),
+                                content_format: checked
+                                    .content_format()
+                                    .map(|recipe| recipe.declaration().identity),
+                            },
+                        ),
+                        content: checked.content_format().cloned(),
+                    })
+                }),
+            }),
             source: TypeId::of::<Source>(),
             output_contract: TypeId::of::<Role::Contract>(),
             entity: TypeId::of::<Role::Entity>(),
             entity_name:
                 <Role::Entity as ApplicationEntityMarkerIdentity<Role::Schema>>::IDENTIFIER,
-            recipe,
-            content: checked.content_format().cloned(),
+            recipe: field.expected_recipe(),
             schema: PhantomData,
-        })
+        }
     }
 }

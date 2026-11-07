@@ -47,10 +47,7 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for UndoCreate<S> {
         DeclaredCorrectionMechanism::recorded_create_inverse_binding::<Self>()
     }
     fn source_output_fields() -> Vec<ApplicationCorrectionOutputField<S>> {
-        vec![
-            ApplicationCorrectionOutput::<CreateBinding<S>, Created<S>>::field(schema::id::<S>())
-                .expect("record output field"),
-        ]
+        vec![ApplicationCorrectionOutput::<CreateBinding<S>, Created<S>>::field(schema::id::<S>())]
     }
     fn derive_correction(
         original: &Create,
@@ -65,8 +62,7 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for UndoCreate<S> {
                 .field(
                     &ApplicationCorrectionOutput::<CreateBinding<S>, Created<S>>::field(
                         schema::id::<S>(),
-                    )
-                    .expect("record output field"),
+                    ),
                 )
                 .map_err(|_| UnsupportedSourceMeaning)?,
         )

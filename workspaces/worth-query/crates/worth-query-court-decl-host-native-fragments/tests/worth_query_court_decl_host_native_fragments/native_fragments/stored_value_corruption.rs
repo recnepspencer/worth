@@ -51,12 +51,16 @@ impl Location {
 fn lawful_world() -> World {
     World::seeded(Mode::Named, |seed| {
         seed.record_field(
-            record_field(Fixture, Item, OwnedValue, "value").unwrap(),
+            record_field(Fixture, Item, OwnedValue, "value")
+                .resolve()
+                .unwrap(),
             Number { number: 7 },
         )
         .unwrap()
         .record_field(
-            record_field(Annotations, Item, ExtendedValue, "value").unwrap(),
+            record_field(Annotations, Item, ExtendedValue, "value")
+                .resolve()
+                .unwrap(),
             Number { number: 7 },
         )
         .unwrap()

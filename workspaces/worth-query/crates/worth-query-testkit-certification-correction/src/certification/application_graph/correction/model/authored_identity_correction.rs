@@ -44,7 +44,7 @@ impl ApplicationCorrectionBinding<NumericSchema> for UndoCreate {
         DeclaredCorrectionMechanism::recorded_create_inverse_binding::<Self>()
     }
     fn source_output_fields() -> Vec<ApplicationCorrectionOutputField<NumericSchema>> {
-        vec![ApplicationCorrectionOutput::<CreateBinding, Created>::field(Key::at("Key")).unwrap()]
+        vec![ApplicationCorrectionOutput::<CreateBinding, Created>::field(Key::at("Key"))]
     }
     fn derive_correction(
         original: &Create,
@@ -57,8 +57,7 @@ impl ApplicationCorrectionBinding<NumericSchema> for UndoCreate {
         let key = StringApplicationValueBinding::decode(
             fields
                 .field(
-                    &ApplicationCorrectionOutput::<CreateBinding, Created>::field(Key::at("Key"))
-                        .unwrap(),
+                    &ApplicationCorrectionOutput::<CreateBinding, Created>::field(Key::at("Key")),
                 )
                 .map_err(|_| UnsupportedSourceMeaning)?,
         )

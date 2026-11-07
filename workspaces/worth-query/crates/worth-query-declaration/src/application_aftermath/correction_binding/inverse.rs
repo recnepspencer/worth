@@ -187,7 +187,10 @@ impl DeclaredCorrectionBinding {
 
     pub fn of<Schema: ApplicationSchema, Correction: ApplicationCorrectionBinding<Schema>>(
     ) -> Result<Self, ApplicationSchemaDeclarationDenial> {
-        Self::from_expression::<Schema, Correction>(Correction::authored_identity())
+        Self::from_expression::<Schema, Correction>(
+            Correction::authored_identity(),
+            Correction::source_output_fields(),
+        )
     }
 
     pub(crate) fn compose<
@@ -195,11 +198,13 @@ impl DeclaredCorrectionBinding {
         Correction: ApplicationCorrectionBinding<Schema>,
     >() -> Result<super::ComposedCorrectionBinding, ApplicationSchemaDeclarationDenial> {
         let expression = Correction::authored_identity();
-        let fields = expression
+        let mut fields: Vec<_> = expression
             .as_ref()
             .map(|identity| identity.binding_recipes().cloned().collect())
             .unwrap_or_default();
-        Self::from_expression::<Schema, Correction>(expression)
+        let outputs = Correction::source_output_fields();
+        fields.extend(outputs.iter().map(|field| field.binding_recipe().clone()));
+        Self::from_expression::<Schema, Correction>(expression, outputs)
             .map(|binding| super::ComposedCorrectionBinding { binding, fields })
     }
 
@@ -208,6 +213,7 @@ impl DeclaredCorrectionBinding {
         Correction: ApplicationCorrectionBinding<Schema>,
     >(
         expression: Option<super::ApplicationAuthoredCorrection<Schema>>,
+        outputs: Vec<super::ApplicationCorrectionOutputField<Schema>>,
     ) -> Result<Self, ApplicationSchemaDeclarationDenial> {
         let source = Correction::Source::descriptor();
         let inverse = ApplicationInverseBinding::<Schema, Correction>::descriptor();
@@ -243,10 +249,24 @@ impl DeclaredCorrectionBinding {
             },
             completed_external_reconciliation: Correction::completed_external_reconciliation(),
             reapplication_source: super::reapplication::declared_source::<Schema, Correction>(),
-            source_output_fields: Correction::source_output_fields()
+            source_output_fields: outputs
                 .into_iter()
-                .map(super::ApplicationCorrectionOutputField::into_declaration)
-                .collect(),
+                .map(|field| {
+                    let requested = field.binding_recipe().locus().clone();
+                    field.into_declaration().map_err(|cause| {
+                        let field = match cause {
+                            ApplicationSchemaDeclarationDenial::InvalidRecordField { field } => {
+                                field
+                            }
+                            _ => requested,
+                        };
+                        ApplicationSchemaDeclarationDenial::InvalidCorrectionField {
+                            correction: Correction::IDENTITY.to_owned(),
+                            field,
+                        }
+                    })
+                })
+                .collect::<Result<_, _>>()?,
         })
     }
 

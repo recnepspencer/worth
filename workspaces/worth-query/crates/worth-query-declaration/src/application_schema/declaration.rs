@@ -161,6 +161,7 @@ pub struct ApplicationSchemaDeclarationBuilder<Schema> {
     members: Vec<ApplicationSchemaMember>,
     contributions: Vec<AuthoredApplicationSchemaContribution>,
     pub(super) member_provenance: ApplicationSchemaMemberProvenance,
+    pub(super) principal_fields: super::principal_fields::PrincipalFieldExpectations,
     pub(super) correction_fields: super::correction_fields::CorrectionFieldExpectations,
     _schema: PhantomData<fn() -> Schema>,
 }
@@ -211,6 +212,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             contributions: Vec::new(),
             member_provenance: ApplicationSchemaMemberProvenance::default(),
             correction_fields: Default::default(),
+            principal_fields: Default::default(),
             _schema: PhantomData,
         }
     }
@@ -266,6 +268,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             contributions: Vec::new(),
             member_provenance: ApplicationSchemaMemberProvenance::default(),
             correction_fields: Default::default(),
+            principal_fields: Default::default(),
             _schema: PhantomData,
         }
     }
@@ -287,6 +290,14 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             PrincipalIdentityBinding,
         >,
     ) -> Self {
+        self.principal_fields.expect(
+            binding.name(),
+            [
+                &binding.mapping_field_bindings()[0],
+                &binding.mapping_field_bindings()[1],
+                binding.principal_identity_binding_recipe(),
+            ],
+        );
         for field in binding.mapping_field_bindings() {
             self.member_provenance.fragments.expect_field(field.clone());
         }

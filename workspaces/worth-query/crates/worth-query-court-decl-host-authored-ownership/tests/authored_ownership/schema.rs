@@ -256,7 +256,7 @@ impl<S: Scenario> WorthQueryApplicationContribution<S> for Contribution {
                 sheet_boundary::split_walk::Handler,
             )?;
         }
-        setup.handler::<lifecycle::CreateBinding<S>, _>(lifecycle_handlers::Handler)?;
+        super::owned_action_feature::configure_create::<S>(setup)?;
         setup.handler::<lifecycle::RetireBinding<S>, _>(lifecycle_handlers::Handler)?;
         setup.handler::<lifecycle::RestoreBinding<S>, _>(lifecycle_handlers::Handler)?;
         setup.handler::<lifecycle::PlainBinding<S>, _>(lifecycle_handlers::Handler)?;

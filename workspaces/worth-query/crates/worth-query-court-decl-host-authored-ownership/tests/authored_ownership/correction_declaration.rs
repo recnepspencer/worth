@@ -62,8 +62,31 @@ impl<const DAMAGE: u8> ApplicationCorrectionBinding<S> for Correction<DAMAGE> {
             DeclaredPreImageDemand::new([locus], 16).unwrap(),
         )
     }
+    fn source_output_fields() -> Vec<ApplicationCorrectionOutputField<S>> {
+        if DAMAGE == 9 {
+            OUTPUT_EXPRESSION.with(|evaluated| {
+                assert!(
+                    !evaluated.replace(true),
+                    "output expression was evaluated twice"
+                )
+            });
+        }
+
+        if DAMAGE < 7 {
+            return Vec::new();
+        }
+        vec![
+            ApplicationCorrectionOutput::<CreateBinding<S>, Created<S>>::field(RawId::<false>::at(
+                if matches!(DAMAGE, 7 | 9) {
+                    "output_typo"
+                } else {
+                    "Id"
+                },
+            )),
+        ]
+    }
     fn authored_identity() -> Option<ApplicationAuthoredCorrection<S>> {
-        (DAMAGE >= 3).then(
+        (matches!(DAMAGE, 3..=6)).then(
             ApplicationAuthoredCorrection::retire_created::<
                 Self,
                 Family<DAMAGE>,
@@ -254,4 +277,26 @@ impl Drop for KeyExpressionScope {
 fn composition_refuses_one_authored_key_expression_without_evaluating_it_again() {
     let _scope = KeyExpressionScope;
     refused::<6>(false, "id_typo");
+}
+
+#[test]
+fn a_misspelled_output_field_is_refused_at_schema_composition() {
+    refused::<7>(false, "output_typo");
+}
+#[test]
+fn an_output_aspect_outside_its_entity_is_refused_at_schema_composition() {
+    refused::<8>(true, "Id");
+}
+
+thread_local! { static OUTPUT_EXPRESSION: std::cell::Cell<bool> = const { std::cell::Cell::new(false) }; }
+#[test]
+fn composition_checks_one_output_expression_without_evaluating_it_again() {
+    struct Reset;
+    impl Drop for Reset {
+        fn drop(&mut self) {
+            OUTPUT_EXPRESSION.with(|value| value.set(false));
+        }
+    }
+    let _reset = Reset;
+    refused::<9>(false, "output_typo");
 }

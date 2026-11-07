@@ -23,14 +23,12 @@ fn journal_field() -> ApplicationCorrectionOutputField<BankSchema> {
     ApplicationCorrectionOutput::<SendMoneyMutationBinding, SendMoneyJournal>::field(
         JournalIdentityField::at("JournalIdentityField"),
     )
-    .expect("owned record selection is valid")
 }
 
 fn institution_field() -> ApplicationCorrectionOutputField<BankSchema> {
     ApplicationCorrectionOutput::<SendMoneyMutationBinding, SendMoneyJournal>::field(
         JournalInstitutionContext::at("JournalInstitutionContext"),
     )
-    .expect("owned record selection is valid")
 }
 
 impl ApplicationCorrectionBinding<BankSchema> for ReverseSentMoney {

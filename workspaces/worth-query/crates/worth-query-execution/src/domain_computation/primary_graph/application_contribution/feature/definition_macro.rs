@@ -41,7 +41,17 @@ macro_rules! __worth_query_complete_feature {
         }; $($rest:tt)*
     ) => {
         $crate::__worth_query_complete_feature!(@members $head
-            [$($actions)* ($field, $Binding, $Delivery, $Handler, $operation)]
+            [$($actions)* ($field, $Binding, $Delivery, $Handler, [declare $operation])]
+            [$($roles)*] [$($spec)* action($Binding, $Delivery) { $($clauses)* };]; $($rest)*
+        );
+    };
+    (@members $head:tt [$($actions:tt)*] [$($roles:tt)*] [$($spec:tt)*];
+        action_ref $field:ident($Binding:ty, $Delivery:ty, $Handler:ty) {
+            $($clauses:tt)*
+        }; $($rest:tt)*
+    ) => {
+        $crate::__worth_query_complete_feature!(@members $head
+            [$($actions)* ($field, $Binding, $Delivery, $Handler, [owned])]
             [$($roles)*] [$($spec)* action($Binding, $Delivery) { $($clauses)* };]; $($rest)*
         );
     };
@@ -71,7 +81,7 @@ macro_rules! __worth_query_complete_feature {
     (@descriptive managed_computation) => {};
     (@members
         [$vis:vis $Definition:ident $Schema:ident $Bound:path, $Feature:ty, $Runtime:ident, $schema:ident $body:block]
-        [$(($field:ident, $Binding:ty, $Delivery:ty, $Handler:ty, $operation:expr))*]
+        [$(($field:ident, $Binding:ty, $Delivery:ty, $Handler:ty, $operation:tt))*]
         [$(($role:ident, $Roles:ty, $IH:ty, $PH:ty, $initial:expr, $preserve:expr))*]
         [$($spec:tt)*];
     ) => {
@@ -99,9 +109,7 @@ macro_rules! __worth_query_complete_feature {
                 $schema: $crate::facade::declaration::application_schema::ApplicationSchemaDeclarationBuilder<$Schema>,
             ) -> $crate::facade::declaration::application_schema::ApplicationSchemaDeclarationBuilder<$Schema> {
                 let $schema = $body;
-                $(let $schema = $schema
-                    .declared_operation::<<$Binding as $crate::facade::declaration::application_operation::ApplicationMutationBinding<$Schema>>::Operation>($operation)
-                    .application_mutation_binding::<$Binding>();)*
+                $(let $schema = $crate::__worth_query_complete_feature!(@declare $schema, $Schema, $Binding, $operation);)*
                 $(let $schema = $schema
                     .declared_operation::<<<$Roles as $crate::facade::declaration::application_program::ApplicationRequiredFeatureRoles<$Schema>>::InitialMutation as $crate::facade::declaration::application_operation::ApplicationMutationBinding<$Schema>>::Operation>($initial)
                     .application_mutation_binding::<<$Roles as $crate::facade::declaration::application_program::ApplicationRequiredFeatureRoles<$Schema>>::InitialMutation>()
@@ -135,6 +143,11 @@ macro_rules! __worth_query_complete_feature {
                 Ok(())
             }
         }
+    };
+    (@declare $schema:ident, $Schema:ident, $Binding:ty, [owned]) => { $schema };
+    (@declare $schema:ident, $Schema:ident, $Binding:ty, [declare $operation:expr]) => {
+        $schema.declared_operation::<<$Binding as $crate::facade::declaration::application_operation::ApplicationMutationBinding<$Schema>>::Operation>($operation)
+            .application_mutation_binding::<$Binding>()
     };
     (@roots) => { $crate::facade::declaration::application_program::ApplicationNoOutputGraph };
     (@roots ($Binding:ty, $Delivery:ty) $($rest:tt)*) => {

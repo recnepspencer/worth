@@ -74,12 +74,16 @@ During schema authoring, select a field from that same record:
 
 ```rust
 let coordinate: RecordField<_, _, u64> =
-    record_field(Fixture, Item, Metrics, "components[1]")?;
+    record_field(Fixture, Item, Metrics, "components[1]").resolve()?;
 let schema = declare(Fixture)?;
 ```
 
-Selection checks the actual lowered path, value type and binding type. Schema
-finalization checks registered field expectations against installed declarations.
+`record_field` returns the existing unchecked `FieldSelection` expression.
+Principal requirements and correction declarations accept selections directly;
+schema composition checks their path, codec and required posture. Explicit
+`resolve()` checks the actual lowered path, value type and binding type when
+ordinary authoring needs a checked `RecordField`. Schema finalization checks
+registered field expectations against installed declarations.
 This is a checked path lookup: stable Rust closures do not expose named typed
 field handles without a second declaration or a declaration macro.
 

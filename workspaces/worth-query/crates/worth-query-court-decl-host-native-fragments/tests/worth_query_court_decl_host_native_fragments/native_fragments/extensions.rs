@@ -15,7 +15,9 @@ fn inspect(world: &World) -> (Option<OptionalText>, Option<Caption>) {
                             .fragment(Fixture)
                             .unwrap()
                             .resolve(
-                                record_field(Fixture, Item, ItemIdentity, "id").unwrap(),
+                                record_field(Fixture, Item, ItemIdentity, "id")
+                                    .resolve()
+                                    .unwrap(),
                                 11u64,
                             )
                             .unwrap();
@@ -111,7 +113,9 @@ fn extension_relation_links_and_traverses_through_view() {
                         .fragment(Fixture)
                         .unwrap()
                         .resolve(
-                            record_field(Fixture, Item, ItemIdentity, "id").unwrap(),
+                            record_field(Fixture, Item, ItemIdentity, "id")
+                                .resolve()
+                                .unwrap(),
                             11u64,
                         )
                         .unwrap();
