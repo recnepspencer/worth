@@ -44,6 +44,15 @@ pub(super) fn prepare(
 ) -> Result<PreparedRelationalBranchRootCapture, RelationalBranchRootCaptureDenial> {
     let root_id = issuer.issue_root_id()?;
     let prepared_schema = prepare_schema(issuer, previous, &envelope, registry)?;
+    let change = crate::storage::substrate::maintenance::CommitChange::from_publication(
+        execution,
+        previous.map(Arc::as_ref),
+        published_delta,
+        Arc::clone(&envelope),
+        previous.is_none_or(|root| {
+            root.schema_authority().authority_digest() != prepared_schema.schema_root
+        }),
+    )?;
     let prepared_regions = prepare_regions(
         execution,
         issuer,
@@ -53,6 +62,7 @@ pub(super) fn prepare(
         previous,
         symbols,
         &prepared_schema.authority,
+        &change,
     )?;
     let publication_cost = prepared_schema.apply_cost(prepared_regions.publication_cost);
     let correctness_index = RelationalRootCorrectnessIndex::AuthoritativeFallback;
@@ -89,6 +99,7 @@ pub(super) fn prepare(
         },
         schema_authority: prepared_schema.authority,
         committed: Some(RelationalCommittedBranchRoot {
+            commit_change: Some(change),
             descriptor: super::RelationalBranchRootDescriptor::new(
                 axes.storage_root,
                 axes.schema_root,
@@ -111,6 +122,7 @@ fn prepare_regions(
     previous: Option<&Arc<RelationalBranchRoot>>,
     symbols: &crate::runtime::RuntimeSymbolTable,
     schema: &Arc<RelationalBranchRootSchemaAuthority>,
+    change: &Arc<crate::storage::substrate::maintenance::CommitChange>,
 ) -> Result<PreparedRootRegions, RelationalBranchRootCaptureDenial> {
     let (regions, publication_cost) = match previous {
         Some(previous) if previous.committed.is_some() => capture::build_incremental_regions(
@@ -121,6 +133,7 @@ fn prepare_regions(
             previous,
             symbols,
             schema,
+            Some(change),
         )?,
         _ => {
             let projected = published_delta.projected_partitions_from_access(partitions);

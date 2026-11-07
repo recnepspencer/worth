@@ -76,32 +76,68 @@ impl KindIndex {
         checkpoint: &mut ProjectionCheckpoint<'_>,
     ) -> Result<(), Cause> {
         checkpoint(self.relations.navigation_work_bound() as u64, 0)?;
-        let mut incidence = self.relations.get(&relation).cloned().unwrap_or(KindIncidence {
-            kind,
-            outgoing: DigestIndex::default(),
-            incoming: DigestIndex::default(),
-        });
+        let mut incidence = self
+            .relations
+            .get(&relation)
+            .cloned()
+            .unwrap_or(KindIncidence {
+                kind,
+                outgoing: DigestIndex::default(),
+                incoming: DigestIndex::default(),
+            });
         if incidence.kind != kind {
             return Err(Cause::IntegrityMismatch);
         }
         let old_bytes = incidence.allocation_bytes();
-        let selected = if incoming { &mut incidence.incoming } else { &mut incidence.outgoing };
-        if selected.contains_key(slot as u128) == present {
+        let selected = if incoming {
+            &mut incidence.incoming
+        } else {
+            &mut incidence.outgoing
+        };
+        if selected
+            .contains_key(slot as u128)
+            .map_err(|_| Cause::IntegrityMismatch)?
+            == present
+        {
             return Ok(());
         }
-        // Two 128-bit Patricia paths plus the AVL value path coexist with the
-        // predecessor. The caller admits scratch before any persistent edits.
-        checkpoint(512, 131_072)?;
-        selected.set(slot as u128, present.then(|| membership_digest(slot)))
+        let membership_quote = selected.edit_quote(slot as u128);
+        let relation_quote = self.digest.edit_quote(relation_key(relation));
+        let map_bytes = self
+            .relations
+            .adoption_allocation_bound()
+            .ok_or(Cause::MemoryExhausted)?;
+        checkpoint(
+            membership_quote.0 + relation_quote.0,
+            membership_quote
+                .1
+                .checked_add(relation_quote.1)
+                .and_then(|bytes| bytes.checked_add(map_bytes))
+                .ok_or(Cause::MemoryExhausted)?,
+        )?;
+        selected
+            .set(slot as u128, present.then(|| membership_digest(slot)))
             .map_err(|_| Cause::IntegrityMismatch)?;
         let empty = incidence.outgoing.is_empty() && incidence.incoming.is_empty();
-        self.incidence_bytes = self.incidence_bytes.checked_sub(old_bytes)
-            .and_then(|bytes| bytes.checked_add(if empty { 0 } else { incidence.allocation_bytes() }))
+        self.incidence_bytes = self
+            .incidence_bytes
+            .checked_sub(old_bytes)
+            .and_then(|bytes| {
+                bytes.checked_add(if empty {
+                    0
+                } else {
+                    incidence.allocation_bytes()
+                })
+            })
             .ok_or(Cause::MemoryExhausted)?;
-        self.digest.set(relation_key(relation), (!empty).then(|| incidence.digest()))
+        self.digest
+            .set(relation_key(relation), (!empty).then(|| incidence.digest()))
             .map_err(|_| Cause::IntegrityMismatch)?;
-        if empty { self.relations.remove(&relation); }
-        else { self.relations.insert(relation, incidence); }
+        if empty {
+            self.relations.remove(&relation);
+        } else {
+            self.relations.insert(relation, incidence);
+        }
         Ok(())
     }
 
@@ -118,12 +154,13 @@ impl KindIndex {
 
     pub(super) fn visit_allocations(&self, visitor: &mut dyn StorageAllocationVisitor) {
         self.digest.visit_allocations(visitor);
-        self.relations.visit_allocations(false, visitor, &mut |incidence, allocation, visitor| {
-            if visitor.visit(allocation) {
-                incidence.outgoing.visit_allocations(visitor);
-                incidence.incoming.visit_allocations(visitor);
-            }
-        });
+        self.relations
+            .visit_allocations(false, visitor, &mut |incidence, allocation, visitor| {
+                if visitor.visit(allocation) {
+                    incidence.outgoing.visit_allocations(visitor);
+                    incidence.incoming.visit_allocations(visitor);
+                }
+            });
     }
 }
 
@@ -150,5 +187,6 @@ fn membership_digest(slot: usize) -> [u8; 32] {
 
 fn relation_key(id: RelationId) -> u128 {
     ((id.partition_id.as_u32() as u128) << 96)
-        | ((id.slot_index() as u128) << 32) | id.generation_value() as u128
+        | ((id.slot_index() as u128) << 32)
+        | id.generation_value() as u128
 }

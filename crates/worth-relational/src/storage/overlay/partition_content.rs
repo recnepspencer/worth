@@ -22,7 +22,9 @@ pub(crate) enum PartitionContentDigestError {
 }
 
 impl From<crate::storage::substrate::DigestIndexError> for PartitionContentDigestError {
-    fn from(_: crate::storage::substrate::DigestIndexError) -> Self { Self::InvalidHistoryCoverage }
+    fn from(_: crate::storage::substrate::DigestIndexError) -> Self {
+        Self::InvalidHistoryCoverage
+    }
 }
 
 /// Derived, destroyable commitment acceleration. Exact storage identities and

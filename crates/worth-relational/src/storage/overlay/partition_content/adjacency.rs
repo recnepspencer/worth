@@ -1,6 +1,6 @@
 use super::{hash_value, PartitionContentDigestError};
-use crate::storage::substrate::DigestIndex;
 use crate::storage::partition::SparseAdjacencyTable;
+use crate::storage::substrate::DigestIndex;
 use crate::storage::substrate::{SharedMap, StorageAllocationVisitor};
 
 #[derive(Debug, Clone, Default)]

@@ -9,32 +9,35 @@ impl RelationalRegionResidency {
             })
         })
     }
-    pub(crate) fn resident_head(
+    pub(in crate::storage::residency) fn resident_head(
         partition: PartitionState,
         commitment: PartitionContentCommitment,
+        kind_indexes: Arc<super::super::kind_incremental::RegionKindIndexes>,
         schema: Arc<RelationalBranchRootSchemaAuthority>,
         symbols: &crate::runtime::RuntimeSymbolTable,
     ) -> RelationalResidencyLease<Head> {
         let readmission =
             super::super::resident_history::ResidentHistoryReadmission::new(schema, symbols);
-        Self::owned_head(partition, Some(commitment), readmission)
+        Self::owned_head(partition, Some(commitment), Some(kind_indexes), readmission)
     }
 
     pub(in super::super) fn resident_current(
         partition: PartitionState,
         readmission: super::super::resident_history::ResidentHistoryReadmission,
     ) -> RelationalResidencyLease<Head> {
-        Self::owned_head(partition, None, readmission)
+        Self::owned_head(partition, None, None, readmission)
     }
 
     fn owned_head(
         partition: PartitionState,
         commitment: Option<PartitionContentCommitment>,
+        kind_indexes: Option<Arc<super::super::kind_incremental::RegionKindIndexes>>,
         readmission: super::super::resident_history::ResidentHistoryReadmission,
     ) -> RelationalResidencyLease<Head> {
         let region = Arc::new(ResidentRegion {
             partition,
             commitment,
+            kind_indexes,
         });
         let cell = Arc::new(Self {
             partition_id: region.partition.partition_id,

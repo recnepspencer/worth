@@ -1,7 +1,10 @@
 //! Rebuildable canonical Patricia commitment. Shape depends only on keys, never
 //! insertion order, allocation identity, balancing history, or retained roots.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum DigestIndexError { OpaqueBranch }
+pub enum DigestIndexError {
+    OpaqueBranch,
+    NonCanonicalKeys,
+}
 use crate::storage::substrate::{StorageAllocation as Arc, StorageAllocationVisitor};
 use sha2::{Digest, Sha256};
 
@@ -10,7 +13,7 @@ mod append_frontier;
 mod tests;
 
 #[derive(Debug, Clone, Default)]
-pub(crate) struct DigestIndex {
+pub struct DigestIndex {
     root: Option<Arc<Node>>,
     history_last_value: Option<Arc<HistoryLastValue>>,
 }
@@ -31,6 +34,17 @@ struct Node {
 }
 
 impl DigestIndex {
+    /// Rebuild at an explicit trust boundary. Cost: entries plus tree nodes.
+    pub fn cold(
+        _lane: &super::maintenance::ReconstructionLane<'_>,
+        entries: &[(u128, [u8; 32])],
+    ) -> Result<Self, DigestIndexError> {
+        if !entries.windows(2).all(|pair| pair[0].0 < pair[1].0) {
+            return Err(DigestIndexError::NonCanonicalKeys);
+        }
+        Ok(Self::from_sorted_entries(entries))
+    }
+
     /// Cold reconstruction of the same key-shaped Patricia commitment without
     /// copying an immutable path for every successive insertion.
     pub(crate) fn from_sorted_entries(entries: &[(u128, [u8; 32])]) -> Self {
@@ -44,29 +58,53 @@ impl DigestIndex {
         }
     }
 
-    pub(crate) fn is_empty(&self) -> bool { self.root.is_none() }
-
-    pub(crate) fn contains_key(&self, key: u128) -> bool {
-        let mut node = self.root.as_deref();
-        while let Some(current) = node {
-            if (current.key ^ key).leading_zeros() < current.bit { return false; }
-            if current.bit == 128 { return true; }
-            node = current.children.as_ref().map(|children| &*children[direction(key, current.bit)]);
-        }
-        false
+    pub fn is_empty(&self) -> bool {
+        self.root.is_none()
     }
 
-    pub(crate) fn digest(&self) -> [u8; 32] {
+    /// An opaque historical sibling cannot answer absence inside its range.
+    pub fn contains_key(&self, key: u128) -> Result<bool, DigestIndexError> {
+        let mut node = self.root.as_deref();
+        while let Some(current) = node {
+            if (current.key ^ key).leading_zeros() < current.bit {
+                return Ok(false);
+            }
+            if current.bit == 128 {
+                return Ok(true);
+            }
+            let children = current
+                .children
+                .as_ref()
+                .ok_or(DigestIndexError::OpaqueBranch)?;
+            node = Some(&children[direction(key, current.bit)]);
+        }
+        Ok(false)
+    }
+
+    /// Existing paths plus at most a split and new leaf coexist with the predecessor.
+    pub(crate) fn edit_quote(&self, key: u128) -> (u64, u64) {
+        let mut nodes = 2_u64;
+        let mut current = self.root.as_deref();
+        while let Some(node) = current {
+            nodes += 1;
+            if (node.key ^ key).leading_zeros() < node.bit || node.bit == 128 {
+                break;
+            }
+            current = node
+                .children
+                .as_ref()
+                .map(|children| &*children[direction(key, node.bit)]);
+        }
+        (nodes * 128, nodes * Arc::<Node>::layout_bytes())
+    }
+
+    pub fn digest(&self) -> [u8; 32] {
         self.root
             .as_ref()
             .map_or_else(|| hash(0, &[]), |root| root.digest)
     }
 
-    pub(crate) fn set(
-        &mut self,
-        key: u128,
-        value: Option<[u8; 32]>,
-    ) -> Result<(), DigestIndexError> {
+    pub fn set(&mut self, key: u128, value: Option<[u8; 32]>) -> Result<(), DigestIndexError> {
         let changed = match value {
             Some(digest) => insert(self.root.take(), key, digest).map(Some),
             None => remove(self.root.take(), key),
@@ -88,7 +126,7 @@ impl DigestIndex {
         Ok(())
     }
 
-    pub(crate) fn allocation_bytes(&self) -> u64 {
+    pub fn allocation_bytes(&self) -> u64 {
         self.root
             .as_ref()
             .map_or(0, |root| root.nodes as u64 * Arc::<Node>::layout_bytes())

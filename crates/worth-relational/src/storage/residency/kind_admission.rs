@@ -2,7 +2,6 @@
 use super::{
     kind_commitment, kind_projection, RegionContentFailure, RelationalRegionKindCommitment,
 };
-use crate::execution::request_stage;
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use crate::storage::overlay::PartitionState;
 use crate::storage::partition::AdjacencyKindBasis;
@@ -11,72 +10,79 @@ mod retained_admission;
 #[path = "kind_admission_tests.rs"]
 mod tests;
 
-pub(super) fn normalize(
+mod maintained;
+use super::kind_incremental::RegionKindIndexes;
+use crate::storage::substrate::maintenance::{ChangeWork, CommitChange, MaintenanceRefusal};
+use std::sync::Arc;
+
+/// Reconstruct only at a cold trust boundary, under the original request.
+pub(super) fn reconstruct(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    partition: &PartitionState,
+) -> Result<Arc<RegionKindIndexes>, super::RelationalResidencyDemandFailure> {
+    use super::RelationalResidencyDemandFailure as Failure;
+    use crate::storage::substrate::maintenance::ReconstructionLane;
+    ReconstructionLane::recover(execution, |_, work| {
+        maintained::controlled(
+            execution,
+            &mut |units, bytes| work.prepare(units, bytes),
+            &mut |checkpoint, _| RegionKindIndexes::capture_controlled(partition, checkpoint),
+        )
+    })
+    .map(Arc::new)
+    .map_err(|error| match error {
+        maintained::KindMaintenanceError::Admission(MaintenanceRefusal::Execution(cause)) => {
+            Failure::Request(cause)
+        }
+        other => Failure::StorageUnavailable(crate::storage::data::RelationalStorageUnavailable {
+            subject: crate::storage::data::RelationalStorageSubject::Region(partition.partition_id),
+            cause: match other {
+                maintained::KindMaintenanceError::Storage(cause) => cause,
+                _ => Cause::SourceUnavailable,
+            },
+        }),
+    })
+}
+
+/// Cost: journal-selected membership paths and newly appended metadata only.
+pub(super) fn update(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     partition: &mut PartitionState,
-) -> Result<RelationalRegionKindCommitment, RegionContentFailure> {
-    let first_stop = std::cell::Cell::new(None);
-    let result = request_stage::optional_stage(
-        execution,
-        |context, memory| {
-            let mut checkpoint = |work, bytes| {
-                if first_stop.get().is_some() {
-                    return Err(Cause::SourceUnavailable);
-                }
-                let admission = request_stage::checkpoint(context, work)
-                    .map_err(crate::execution::RelationalExecutionDenialCause::from)
-                    .and_then(|()| memory.claim(bytes));
-                if let Err(cause) = admission {
-                    first_stop.set(Some(cause));
-                    return Err(Cause::SourceUnavailable);
-                }
-                Ok(())
-            };
-            let mut retain = |prior: Option<&crate::storage::partition::HistoricalKindCustody>,
-                              bytes: u64| {
-                if first_stop.get().is_some() {
-                    return Err(Cause::SourceUnavailable);
-                }
-                match retained_admission::admit(prior, bytes, &mut |bytes| {
-                    execution
-                        .reserve_retained_memory(bytes)
-                        .map_err(crate::execution::RelationalExecutionDenialCause::from)
-                }) {
-                    Ok(custody) => Ok(custody),
-                    Err(cause) => {
-                        first_stop.set(Some(cause));
-                        Err(Cause::SourceUnavailable)
-                    }
-                }
-            };
-            normalize_value(partition, &mut checkpoint, &mut retain)
-        },
-        |_| 0,
-    );
-    // The internal source sentinel is never a public request refusal. Concrete
-    // original stops win; only its nested sentinel may yield to the first cause.
-    let result = match result {
-        Err(crate::execution::RelationalExecutionDenialCause::NestedStopped) => {
-            let cause = match first_stop.get() {
-                Some(cause) => cause,
-                None => crate::execution::RelationalExecutionDenialCause::NestedStopped,
-            };
-            return Err(RegionContentFailure::Execution(cause));
+    previous: &PartitionState,
+    prior: &Arc<RegionKindIndexes>,
+    journal: &crate::storage::overlay::PartitionMutationJournal,
+    change: Option<&CommitChange>,
+) -> Result<Arc<RegionKindIndexes>, RegionContentFailure> {
+    let id = partition.partition_id;
+    let mut owner = maintained::KindMaintainer::new(execution, partition, previous);
+    let result = ChangeWork::run(execution, |work| match change {
+        Some(change) => crate::storage::substrate::maintenance::apply_change(
+            &mut owner,
+            Some(prior),
+            change,
+            work,
+        ),
+        // Unpublished candidate images have storage-owner journals but no
+        // canonical commit artifact. They use the same private delta engine.
+        None => owner.apply_journal(prior, journal, work),
+    });
+    result.map_err(|error| match error {
+        maintained::KindMaintenanceError::Admission(MaintenanceRefusal::Execution(cause)) => {
+            RegionContentFailure::Execution(cause)
         }
-        Err(cause) => return Err(RegionContentFailure::Execution(cause)),
-        Ok(value) => value,
-    };
-    if let Some(cause) = first_stop.get() {
-        return Err(RegionContentFailure::Execution(cause));
-    }
-    let commitment = result.map_err(|cause| {
-        RegionContentFailure::Storage(crate::storage::data::RelationalStorageUnavailable {
-            subject: crate::storage::data::RelationalStorageSubject::Region(partition.partition_id),
-            cause,
-        })
-    })?;
-    partition.clear_runtime_pin_counters();
-    Ok(commitment)
+        maintained::KindMaintenanceError::Admission(_) => {
+            RegionContentFailure::Storage(crate::storage::data::RelationalStorageUnavailable {
+                subject: crate::storage::data::RelationalStorageSubject::Region(id),
+                cause: Cause::SourceUnavailable,
+            })
+        }
+        maintained::KindMaintenanceError::Storage(cause) => {
+            RegionContentFailure::Storage(crate::storage::data::RelationalStorageUnavailable {
+                subject: crate::storage::data::RelationalStorageSubject::Region(id),
+                cause,
+            })
+        }
+    })
 }
 
 /// One reconstruction engine over owned values. The driver supplies admission.

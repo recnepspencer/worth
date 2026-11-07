@@ -129,3 +129,13 @@ fn assert_integrity_refusal(failure: crate::storage::data::RelationalStorageUnav
             && matches!(failure.subject, RelationalStorageSubject::Region(_))
     );
 }
+
+#[test]
+fn tampered_carried_kind_commitment_is_refused_during_cold_restore() {
+    let fixture = region_with_history();
+    let mut cold = fixture.cold.clone();
+    cold.kind_authority.history[0] ^= 1;
+    let cell = RelationalRegionResidency::cold(cold).unwrap();
+    let failure = head_demand(&cell, 1 << 24).unwrap_err();
+    assert_eq!(failure.cause, Cause::IntegrityMismatch);
+}

@@ -20,6 +20,7 @@ impl RelationalBranchRoot {
             previous,
             symbols,
             &previous.schema_authority,
+            None,
         )?;
         let (entity_slot_count, relation_slot_count) =
             capture_preparation::root_slot_counts(&regions, Some(previous), delta);
