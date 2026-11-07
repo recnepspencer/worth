@@ -12,21 +12,26 @@ fn support_matrix_and_state_snapshot_remain_in_canonical_migration_coverage() {
     let runtime = bridge_backed_runtime_with_support(request_execution, intent_support_profile());
     let workspace =
         WorthQueryWorkspace::new("phase-two-evidence-identity", runtime).expect("workspace builds");
-    let matrix = workspace.public_support_matrix();
+    let matrix = workspace
+        .public_support_matrix()
+        .expect("fixture digest must fit");
     let snapshot = WorthQueryRuntimeStateSnapshot::ready(
         runtime_state_snapshot_basis_label_identity(
             &crate::runtime::evidence_identities::runtime_state_snapshot_test_subject_identity(
                 "basis|digest",
-            ),
+            )
+            .expect("fixture digest must fit"),
         ),
         runtime_state_snapshot_result_shape_label_identity(
             &crate::runtime::evidence_identities::runtime_state_snapshot_test_subject_identity(
                 "result:shape",
-            ),
+            )
+            .expect("fixture digest must fit"),
         ),
         WorthQueryAuthorityLane::PreviewTruth,
         "state explanation with | and : punctuation",
-    );
+    )
+    .expect("fixture digest must fit");
 
     assert_canonical_evidence_identity_token(
         matrix.matrix_digest().terminal_projection_for_reporting(),
@@ -82,28 +87,33 @@ fn state_snapshot_with_optional_postures_remains_in_canonical_migration_coverage
         &runtime_state_snapshot_basis_label_identity(
             &crate::runtime::evidence_identities::runtime_state_snapshot_test_subject_identity(
                 "support|evidence|digest",
-            ),
+            )
+            .expect("fixture digest must fit"),
         ),
         &runtime_state_snapshot_basis_label_identity(
             &crate::runtime::evidence_identities::runtime_state_snapshot_test_subject_identity(
                 "basis|digest",
-            ),
+            )
+            .expect("fixture digest must fit"),
         ),
     );
     let snapshot = WorthQueryRuntimeStateSnapshot::ready(
         runtime_state_snapshot_basis_label_identity(
             &crate::runtime::evidence_identities::runtime_state_snapshot_test_subject_identity(
                 "basis|digest",
-            ),
+            )
+            .expect("fixture digest must fit"),
         ),
         runtime_state_snapshot_result_shape_label_identity(
             &crate::runtime::evidence_identities::runtime_state_snapshot_test_subject_identity(
                 "result:shape",
-            ),
+            )
+            .expect("fixture digest must fit"),
         ),
         WorthQueryAuthorityLane::BridgeExternalState,
         "state explanation with optional posture pressure",
     )
+    .expect("fixture digest must fit")
     .with_ordinary_runtime_posture(ordinary_runtime_posture)
     .with_async_result_state(async_result_state)
     .with_remask_posture(remask_posture);
@@ -123,7 +133,9 @@ fn public_api_contract_transcript_and_support_report_emit_canonical_evidence_tok
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = stateful_bridge_task_runtime(request_execution);
-    let contract = runtime.public_api_contract();
+    let contract = runtime
+        .public_api_contract()
+        .expect("fixture digest must fit");
     assert_canonical_evidence_identity_token(contract.contract_digest());
     assert_eq!(
         contract.contract_identity().as_str(),
@@ -146,7 +158,7 @@ fn public_api_contract_transcript_and_support_report_emit_canonical_evidence_tok
     }
 
     let transcript =
-        crate::harness::RuntimeApiStabilizationAdapter::composed_runtime_hostile_transcript_evidence(request_execution);
+        crate::harness::RuntimeApiStabilizationAdapter::composed_runtime_hostile_transcript_evidence(request_execution).expect("fixture digest must fit");
     assert_canonical_evidence_identity_token(transcript.transcript_digest());
     assert_eq!(
         transcript.transcript_identity().as_str(),
@@ -169,8 +181,9 @@ fn public_api_contract_transcript_and_support_report_emit_canonical_evidence_tok
         "ordinary runtime-backed transcript should remain a certification-grade proof artifact"
     );
 
-    let report =
-        crate::application::WorthQueryApplicationFacade::runtime_backed_default().support_report();
+    let report = crate::application::WorthQueryApplicationFacade::runtime_backed_default()
+        .support_report()
+        .expect("fixture digest must fit");
     assert_canonical_evidence_identity_token(report.report_digest());
     assert_eq!(report.report_identity().as_str(), report.report_digest());
     for posture in report.section_postures() {
@@ -192,7 +205,8 @@ fn public_api_contract_transcript_and_support_report_emit_canonical_evidence_tok
             .with_relational(crate::application::WorthQueryRelationalConfig::disabled()),
     )
     .expect("query-disabled facade config should remain valid")
-    .support_report();
+    .support_report()
+    .expect("fixture digest must fit");
     assert_canonical_evidence_identity_token(query_disabled_report.report_digest());
     assert_eq!(
         query_disabled_report.report_digest(),

@@ -16,49 +16,7 @@ use crate::runtime::{WorthQueryAspectTouch, WorthQueryAuthoredAspectValue};
 use crate::session_label::WorthQuerySessionLabel;
 use crate::tenant_basis::{SchemaVariantSnapshot, TenantBasisEpoch, TenantBindingSnapshot};
 
-#[test]
-fn installed_read_projection_and_receipts_carry_one_authority_witness() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = installed_runtime(request_execution);
-    let handle = runtime.domain(InstalledDomain).unwrap();
-    let expected = handle.authority_witness().witness_identity().clone();
-    let mut workspace = runtime.workspace("installed-domain-read").unwrap();
-
-    let completion = handle
-        .read(identity_read)
-        .unwrap()
-        .using(current())
-        .run(request_execution, &mut workspace)
-        .unwrap()
-        .into_result()
-        .unwrap();
-    assert_eq!(
-        completion.receipt().capability(),
-        WorthQueryInstalledDomainCapabilityKind::Read
-    );
-    assert_eq!(
-        completion
-            .receipt()
-            .installed_authority()
-            .witness_identity(),
-        &expected
-    );
-
-    let projection = completion.project(project_facts().entity_identities());
-    assert_eq!(
-        projection.receipt().capability(),
-        WorthQueryInstalledDomainCapabilityKind::Projection
-    );
-    assert_eq!(
-        projection
-            .receipt()
-            .installed_authority()
-            .witness_identity(),
-        &expected
-    );
-}
+mod installed_read_projection_and_receipts_carry_one_authority_witness;
 
 #[test]
 fn foreign_workspace_denies_before_the_ordinary_read_journey_begins() {
@@ -77,7 +35,7 @@ fn foreign_workspace_denies_before_the_ordinary_read_journey_begins() {
         .run(request_execution, &mut workspace)
         .unwrap_err();
     assert_eq!(
-        stop.stop().kind(),
+        stop.stop().expect("fixture digest must fit").kind(),
         WorthQueryInstalledDomainExecutionDriftKind::ForeignRuntime
     );
     assert_eq!(
@@ -85,12 +43,30 @@ fn foreign_workspace_denies_before_the_ordinary_read_journey_begins() {
         handle.authority_witness().witness_identity()
     );
     assert_eq!(
-        stop.stop().next_action(),
+        stop.stop().expect("fixture digest must fit").next_action(),
         WorthQueryInstalledDomainExecutionNextAction::UseOwningRuntime
     );
-    assert_eq!(stop.stop().counters().planning_attempts(), 0);
-    assert_eq!(stop.stop().counters().lower_runtime_attempts(), 0);
-    assert_eq!(stop.stop().counters().execution_attempts(), 0);
+    assert_eq!(
+        stop.stop()
+            .expect("fixture digest must fit")
+            .counters()
+            .planning_attempts(),
+        0
+    );
+    assert_eq!(
+        stop.stop()
+            .expect("fixture digest must fit")
+            .counters()
+            .lower_runtime_attempts(),
+        0
+    );
+    assert_eq!(
+        stop.stop()
+            .expect("fixture digest must fit")
+            .counters()
+            .execution_attempts(),
+        0
+    );
 }
 
 #[test]
@@ -138,12 +114,19 @@ fn installed_read_preserves_authority_across_an_ordinary_cross_basis_stop() {
         WorthQueryInstalledDomainCapabilityKind::Read
     );
     assert_eq!(
-        stop.stop().next_action(),
+        stop.stop().expect("fixture digest must fit").next_action(),
         WorthQueryReadNextAction::SupplyFreshBasis
     );
-    assert_eq!(stop.stop().journey_counters().planning_attempt_count(), 0);
     assert_eq!(
         stop.stop()
+            .expect("fixture digest must fit")
+            .journey_counters()
+            .planning_attempt_count(),
+        0
+    );
+    assert_eq!(
+        stop.stop()
+            .expect("fixture digest must fit")
             .journey_counters()
             .lower_runtime_execution_attempt_count(),
         0
@@ -199,6 +182,7 @@ fn installed_read_preserves_authority_across_changed_policy_denial() {
     };
     let denial = stopped
         .stop()
+        .expect("fixture digest must fit")
         .context_denial()
         .expect("changed policy must remain a contextual denial");
     let WorthQueryReadContextDenialSource::PolicyTenant(policy_denial) = denial.source() else {
@@ -211,16 +195,24 @@ fn installed_read_preserves_authority_across_changed_policy_denial() {
         PolicyTenantAdmissionFailureClass::StalePolicyAuthority
     );
     assert_eq!(
-        stopped.stop().next_action(),
+        stopped
+            .stop()
+            .expect("fixture digest must fit")
+            .next_action(),
         WorthQueryReadNextAction::SupplyPolicyAuthority
     );
     assert_eq!(
-        stopped.stop().journey_counters().planning_attempt_count(),
+        stopped
+            .stop()
+            .expect("fixture digest must fit")
+            .journey_counters()
+            .planning_attempt_count(),
         0
     );
     assert_eq!(
         stopped
             .stop()
+            .expect("fixture digest must fit")
             .journey_counters()
             .lower_runtime_execution_attempt_count(),
         0

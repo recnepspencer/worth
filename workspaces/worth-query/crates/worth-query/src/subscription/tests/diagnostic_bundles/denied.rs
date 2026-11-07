@@ -9,10 +9,15 @@ fn selection_denied_diagnostic_bundle_localizes_family_selection_failure_and_omi
         LiveQueryFamily::Detail,
         Some(LiveViewShapeFamily::KanbanGrouped),
         QuerySubscriptionConstructionSource::Direct,
-    );
-    let selection_error =
-        select_query_subscription_family(live.clone(), roomy_budget()).unwrap_err();
-    let failure = QuerySubscriptionDiagnosticFailure::from_family_selection_error(&selection_error);
+    )
+    .expect("fixture digest must fit");
+    let selection_error = select_query_subscription_family(
+        live.clone().expect("fixture digest must fit"),
+        roomy_budget(),
+    )
+    .unwrap_err();
+    let failure = QuerySubscriptionDiagnosticFailure::from_family_selection_error(&selection_error)
+        .expect("fixture digest must fit");
     let selection_context =
         QuerySubscriptionDiagnosticSelectionContext::from_selection_denial(&live, &selection_error);
     let trace = trace_denied_query_subscription_diagnostics(
@@ -21,7 +26,7 @@ fn selection_denied_diagnostic_bundle_localizes_family_selection_failure_and_omi
         None,
         None,
         None,
-        failure.clone(),
+        failure.clone().expect("fixture digest must fit"),
     )
     .unwrap();
 
@@ -79,11 +84,13 @@ fn denied_bundle_rejects_trace_that_claims_runtime_admission_without_admission_a
             QuerySubscriptionSupportSubject::activation(
                 &artifacts.declaration,
                 &prepare_subscription_activation(artifacts.admission.clone()),
-            ),
+            )
+            .expect("fixture digest must fit"),
             QuerySubscriptionSupportEvidence::declaration(&artifacts.declaration),
         )
         .unwrap_err(),
-    );
+    )
+    .expect("fixture digest must fit");
     let selection_context =
         QuerySubscriptionDiagnosticSelectionContext::from_selection(&artifacts.selection);
     let trace = trace_denied_query_subscription_diagnostics(
@@ -92,7 +99,7 @@ fn denied_bundle_rejects_trace_that_claims_runtime_admission_without_admission_a
         Some(&artifacts.lowering),
         Some(&artifacts.admission),
         None,
-        failure.clone(),
+        failure.clone().expect("fixture digest must fit"),
     )
     .unwrap();
 
@@ -122,21 +129,29 @@ fn selection_denied_trace_rejects_mismatched_failure_source() {
         LiveQueryFamily::Detail,
         Some(LiveViewShapeFamily::KanbanGrouped),
         QuerySubscriptionConstructionSource::Direct,
-    );
+    )
+    .expect("fixture digest must fit");
     let second_live = LiveQueryAdmissionArtifact::for_test(
         LiveQueryFamily::BoundedMaterialization,
         Some(LiveViewShapeFamily::InspectorDetailFocused),
         QuerySubscriptionConstructionSource::Direct,
     );
-    let first_error =
-        select_query_subscription_family(first_live.clone(), roomy_budget()).unwrap_err();
-    let second_error =
-        select_query_subscription_family(second_live.clone(), roomy_budget()).unwrap_err();
+    let first_error = select_query_subscription_family(
+        first_live.clone().expect("fixture digest must fit"),
+        roomy_budget(),
+    )
+    .unwrap_err();
+    let second_error = select_query_subscription_family(
+        second_live.clone().expect("fixture digest must fit"),
+        roomy_budget(),
+    )
+    .unwrap_err();
     let selection_context = QuerySubscriptionDiagnosticSelectionContext::from_selection_denial(
         &first_live,
         &first_error,
     );
-    let failure = QuerySubscriptionDiagnosticFailure::from_family_selection_error(&second_error);
+    let failure = QuerySubscriptionDiagnosticFailure::from_family_selection_error(&second_error)
+        .expect("fixture digest must fit");
 
     let error = trace_denied_query_subscription_diagnostics(
         &selection_context,
@@ -163,11 +178,13 @@ fn denied_trace_preserves_runtime_backed_admission_stage_before_support_failure(
             QuerySubscriptionSupportSubject::activation(
                 &artifacts.declaration,
                 &prepare_subscription_activation(artifacts.admission.clone()),
-            ),
+            )
+            .expect("fixture digest must fit"),
             QuerySubscriptionSupportEvidence::declaration(&artifacts.declaration),
         )
         .unwrap_err(),
-    );
+    )
+    .expect("fixture digest must fit");
     let selection_context =
         QuerySubscriptionDiagnosticSelectionContext::from_selection(&artifacts.selection);
 

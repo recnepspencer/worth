@@ -7,45 +7,53 @@ fn bridge_projection_for(
     match kind {
         WorthQueryRuntimeAsyncResultStateKind::Pending => {
             WorthQueryRuntimeAsyncResultProjection::pending("async:pending")
+                .expect("fixture digest must fit")
         }
         WorthQueryRuntimeAsyncResultStateKind::Current => {
             WorthQueryRuntimeAsyncResultProjection::completion_state(
                 BridgeAsyncCompletionState::Admitted(BridgeAsyncCompletionClass::Fulfilled),
                 "async:current",
             )
+            .expect("fixture digest must fit")
         }
         WorthQueryRuntimeAsyncResultStateKind::Failed => {
             WorthQueryRuntimeAsyncResultProjection::completion_state(
                 BridgeAsyncCompletionState::Denied(BridgeAsyncCompletionDenialClass::Rejected),
                 "async:failed",
             )
+            .expect("fixture digest must fit")
         }
         WorthQueryRuntimeAsyncResultStateKind::Stale => {
             WorthQueryRuntimeAsyncResultProjection::completion_state(
                 BridgeAsyncCompletionState::Denied(BridgeAsyncCompletionDenialClass::StaleDenied),
                 "async:stale",
             )
+            .expect("fixture digest must fit")
         }
         WorthQueryRuntimeAsyncResultStateKind::Cancelled => {
             WorthQueryRuntimeAsyncResultProjection::completion_state(
                 BridgeAsyncCompletionState::Denied(BridgeAsyncCompletionDenialClass::Cancelled),
                 "async:cancelled",
             )
+            .expect("fixture digest must fit")
         }
         WorthQueryRuntimeAsyncResultStateKind::Retried => {
             WorthQueryRuntimeAsyncResultProjection::forward_causality(
                 BridgeAsyncForwardCausalityClass::RetryAfterTimeout,
                 "async:retried",
             )
+            .expect("fixture digest must fit")
         }
         WorthQueryRuntimeAsyncResultStateKind::Revalidating => {
             WorthQueryRuntimeAsyncResultProjection::forward_causality(
                 BridgeAsyncForwardCausalityClass::RevalidationAfterTruthBasisDrift,
                 "async:revalidating",
             )
+            .expect("fixture digest must fit")
         }
         WorthQueryRuntimeAsyncResultStateKind::Superseded => {
             WorthQueryRuntimeAsyncResultProjection::supersession("async:superseded")
+                .expect("fixture digest must fit")
         }
         WorthQueryRuntimeAsyncResultStateKind::Denied => {
             WorthQueryRuntimeAsyncResultProjection::completion_state(
@@ -54,6 +62,7 @@ fn bridge_projection_for(
                 ),
                 "async:denied",
             )
+            .expect("fixture digest must fit")
         }
         WorthQueryRuntimeAsyncResultStateKind::Unresolved => {
             WorthQueryRuntimeAsyncResultProjection::completion_state(
@@ -62,6 +71,7 @@ fn bridge_projection_for(
                 ),
                 "async:unresolved",
             )
+            .expect("fixture digest must fit")
         }
     }
 }

@@ -144,7 +144,7 @@ impl runtime::WorthQueryRuntimeSchemaAdapter for SchemaAdapter {
         foundation::WorthQueryWorkspaceError,
     > {
         let receipt = self.build_live_view_declaration_admission_receipt(name, request);
-        Ok(self.build_live_view_declaration_boundary_receipt(name, request, receipt))
+        Ok(self.build_live_view_declaration_boundary_receipt(name, request, receipt?)?)
     }
 }
 
@@ -184,6 +184,7 @@ pub struct SubscriptionActivation;
 impl runtime::WorthQueryRuntimeSubscriptionActivationAdapter for SubscriptionActivation {
     fn support_evidence_identity(&self) -> runtime::WorthQueryEvidenceIdentity {
         runtime::runtime_subscription_support_evidence_identity("restored-primary-backend")
+            .expect("fixture digest must fit")
     }
 
     fn admit_activation(
@@ -193,7 +194,7 @@ impl runtime::WorthQueryRuntimeSubscriptionActivationAdapter for SubscriptionAct
     ) -> Result<runtime::SubscriptionActivationBoundaryReceipt, foundation::WorthQueryWorkspaceError>
     {
         let receipt = self.build_subscription_activation_receipt(view_name, activation);
-        Ok(self.build_subscription_activation_boundary_receipt(view_name, activation, receipt))
+        Ok(self.build_subscription_activation_boundary_receipt(view_name, activation, receipt?)?)
     }
 }
 
@@ -213,8 +214,8 @@ impl runtime::WorthQueryRuntimePreviewBasisAdapter for PreviewBasis {
             effect_policy,
             runtime::WorthQueryBasisAdmissionEvidenceRow::rows_from_values([
                 "restored-primary-backend",
-            ]),
-        ))
+            ])?,
+        )?)
     }
 }
 

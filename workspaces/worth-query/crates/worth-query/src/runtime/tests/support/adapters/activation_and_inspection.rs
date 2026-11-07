@@ -7,6 +7,7 @@ pub(in crate::runtime::tests) struct TestSubscriptionActivation;
 impl WorthQueryRuntimeSubscriptionActivationAdapter for TestSubscriptionActivation {
     fn support_evidence_identity(&self) -> WorthQueryEvidenceIdentity {
         runtime_subscription_support_evidence_identity("test-subscription-activation")
+            .expect("fixture digest must fit")
     }
 
     fn admit_activation(
@@ -14,8 +15,12 @@ impl WorthQueryRuntimeSubscriptionActivationAdapter for TestSubscriptionActivati
         view_name: &str,
         activation: &crate::subscription::SubscriptionActivationInput,
     ) -> Result<SubscriptionActivationBoundaryReceipt, WorthQueryWorkspaceError> {
-        let receipt = self.build_subscription_activation_receipt(view_name, activation);
-        Ok(self.build_subscription_activation_boundary_receipt(view_name, activation, receipt))
+        let receipt = self
+            .build_subscription_activation_receipt(view_name, activation)
+            .expect("fixture digest must fit");
+        Ok(self
+            .build_subscription_activation_boundary_receipt(view_name, activation, receipt)
+            .expect("fixture digest must fit"))
     }
 }
 
@@ -24,6 +29,7 @@ pub(in crate::runtime::tests) struct DenyingSubscriptionActivation;
 impl WorthQueryRuntimeSubscriptionActivationAdapter for DenyingSubscriptionActivation {
     fn support_evidence_identity(&self) -> WorthQueryEvidenceIdentity {
         runtime_subscription_support_evidence_identity("denying-subscription-activation")
+            .expect("fixture digest must fit")
     }
 
     fn admit_activation(
@@ -42,6 +48,7 @@ pub(in crate::runtime::tests) struct DriftingSubscriptionActivation;
 impl WorthQueryRuntimeSubscriptionActivationAdapter for DriftingSubscriptionActivation {
     fn support_evidence_identity(&self) -> WorthQueryEvidenceIdentity {
         runtime_subscription_support_evidence_identity("drifting-subscription-activation")
+            .expect("fixture digest must fit")
     }
 
     fn admit_activation(
@@ -49,14 +56,12 @@ impl WorthQueryRuntimeSubscriptionActivationAdapter for DriftingSubscriptionActi
         _view_name: &str,
         activation: &crate::subscription::SubscriptionActivationInput,
     ) -> Result<SubscriptionActivationBoundaryReceipt, WorthQueryWorkspaceError> {
-        let receipt = self.build_subscription_activation_receipt("drifted.view", activation);
-        Ok(
-            self.build_subscription_activation_boundary_receipt(
-                "drifted.view",
-                activation,
-                receipt,
-            ),
-        )
+        let receipt = self
+            .build_subscription_activation_receipt("drifted.view", activation)
+            .expect("fixture digest must fit");
+        Ok(self
+            .build_subscription_activation_boundary_receipt("drifted.view", activation, receipt)
+            .expect("fixture digest must fit"))
     }
 }
 
@@ -67,6 +72,7 @@ pub(in crate::runtime::tests) struct RemaskingSubscriptionActivation {
 impl WorthQueryRuntimeSubscriptionActivationAdapter for RemaskingSubscriptionActivation {
     fn support_evidence_identity(&self) -> WorthQueryEvidenceIdentity {
         runtime_subscription_support_evidence_identity("test-subscription-activation")
+            .expect("fixture digest must fit")
     }
 
     fn remask_projection(
@@ -82,8 +88,12 @@ impl WorthQueryRuntimeSubscriptionActivationAdapter for RemaskingSubscriptionAct
         view_name: &str,
         activation: &crate::subscription::SubscriptionActivationInput,
     ) -> Result<SubscriptionActivationBoundaryReceipt, WorthQueryWorkspaceError> {
-        let receipt = self.build_subscription_activation_receipt(view_name, activation);
-        Ok(self.build_subscription_activation_boundary_receipt(view_name, activation, receipt))
+        let receipt = self
+            .build_subscription_activation_receipt(view_name, activation)
+            .expect("fixture digest must fit");
+        Ok(self
+            .build_subscription_activation_boundary_receipt(view_name, activation, receipt)
+            .expect("fixture digest must fit"))
     }
 }
 
@@ -104,7 +114,8 @@ impl WorthQueryRuntimePreviewBasisAdapter for TestPreviewBasis {
                 "preview-basis-admission",
                 "test-preview-basis",
             )],
-        ))
+        )
+        .expect("fixture digest must fit"))
     }
 }
 

@@ -10,6 +10,7 @@ use super::witness::BridgeWitnessAssemblyPosture;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum QuerySubscriptionBridgeParityClass {
+    EvidenceIdentityDerivationDenied,
     ExactParity,
     FamilyDistinctBridgeShared,
     DeniedSourceMismatch,
@@ -19,6 +20,7 @@ pub enum QuerySubscriptionBridgeParityClass {
 impl QuerySubscriptionBridgeParityClass {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::EvidenceIdentityDerivationDenied => "evidence_identity_derivation_denied",
             Self::ExactParity => "exact_parity",
             Self::FamilyDistinctBridgeShared => "family_distinct_bridge_shared",
             Self::DeniedSourceMismatch => "denied_source_mismatch",
@@ -303,7 +305,7 @@ impl QuerySubscriptionBridgeParityError {
                     QuerySubscriptionBridgeParityFailureKind::EvidenceIdentityDerivationDenied(
                         cause,
                     ),
-                parity_class: QuerySubscriptionBridgeParityClass::DeniedUnsupported,
+                parity_class: QuerySubscriptionBridgeParityClass::EvidenceIdentityDerivationDenied,
                 reason: "canonical digest bounds refused manual bridge witness evidence".into(),
                 source_identity,
                 failure_identity: Err(cause),

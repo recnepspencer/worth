@@ -57,7 +57,11 @@ fn certification_denies_activation_from_different_admission() {
         error.denial_kind(),
         &QuerySubscriptionCertificationDenialKind::ActivationAdmissionMismatch
     );
-    assert!(!error.failure_projection().label().is_empty());
+    assert!(!error
+        .failure_projection()
+        .expect("fixture digest must fit")
+        .label()
+        .is_empty());
 }
 
 #[test]
@@ -75,7 +79,11 @@ fn certification_denies_scale_report_from_different_activation() {
         error.denial_kind(),
         &QuerySubscriptionCertificationDenialKind::ScaleSlopeSourceMismatch
     );
-    assert!(!error.failure_projection().label().is_empty());
+    assert!(!error
+        .failure_projection()
+        .expect("fixture digest must fit")
+        .label()
+        .is_empty());
 }
 
 #[test]
@@ -86,17 +94,20 @@ fn scale_slope_certification_admits_row_count_only_variation() {
             QuerySubscriptionScaleFixtureSize::Small,
             1,
             &activation,
-        ),
+        )
+        .expect("fixture digest must fit"),
         QuerySubscriptionScaleCounterSnapshot::from_activation(
             QuerySubscriptionScaleFixtureSize::Medium,
             10,
             &activation,
-        ),
+        )
+        .expect("fixture digest must fit"),
         QuerySubscriptionScaleCounterSnapshot::from_activation(
             QuerySubscriptionScaleFixtureSize::Large,
             100,
             &activation,
-        ),
+        )
+        .expect("fixture digest must fit"),
     )
     .unwrap();
 
@@ -127,17 +138,20 @@ fn scale_slope_certification_denies_mixed_activation_sources() {
             QuerySubscriptionScaleFixtureSize::Small,
             1,
             &activation,
-        ),
+        )
+        .expect("fixture digest must fit"),
         QuerySubscriptionScaleCounterSnapshot::from_activation(
             QuerySubscriptionScaleFixtureSize::Medium,
             10,
             &foreign_activation,
-        ),
+        )
+        .expect("fixture digest must fit"),
         QuerySubscriptionScaleCounterSnapshot::from_activation(
             QuerySubscriptionScaleFixtureSize::Large,
             100,
             &activation,
-        ),
+        )
+        .expect("fixture digest must fit"),
     )
     .unwrap_err();
 
@@ -145,7 +159,11 @@ fn scale_slope_certification_denies_mixed_activation_sources() {
         error.denial_kind(),
         &QuerySubscriptionCertificationDenialKind::ScaleSlopeDrift
     );
-    assert!(!error.failure_projection().label().is_empty());
+    assert!(!error
+        .failure_projection()
+        .expect("fixture digest must fit")
+        .label()
+        .is_empty());
 }
 
 #[test]
@@ -157,17 +175,20 @@ fn scale_slope_certification_denies_zero_row_baseline() {
             QuerySubscriptionScaleFixtureSize::Small,
             0,
             &activation,
-        ),
+        )
+        .expect("fixture digest must fit"),
         QuerySubscriptionScaleCounterSnapshot::from_activation(
             QuerySubscriptionScaleFixtureSize::Medium,
             10,
             &activation,
-        ),
+        )
+        .expect("fixture digest must fit"),
         QuerySubscriptionScaleCounterSnapshot::from_activation(
             QuerySubscriptionScaleFixtureSize::Large,
             100,
             &activation,
-        ),
+        )
+        .expect("fixture digest must fit"),
     )
     .unwrap_err();
 
@@ -175,7 +196,11 @@ fn scale_slope_certification_denies_zero_row_baseline() {
         error.denial_kind(),
         &QuerySubscriptionCertificationDenialKind::ScaleSlopeDrift
     );
-    assert!(!error.failure_projection().label().is_empty());
+    assert!(!error
+        .failure_projection()
+        .expect("fixture digest must fit")
+        .label()
+        .is_empty());
 }
 
 #[test]
@@ -185,18 +210,21 @@ fn scale_slope_certification_denies_structural_counter_drift() {
         QuerySubscriptionScaleFixtureSize::Small,
         1,
         &activation,
-    );
+    )
+    .expect("fixture digest must fit");
     let medium = QuerySubscriptionScaleCounterSnapshot::from_activation(
         QuerySubscriptionScaleFixtureSize::Medium,
         10,
         &activation,
     )
+    .expect("fixture digest must fit")
     .with_bridge_slice_count_for_test(&activation, activation.counters().bridge_slice_count() + 1);
     let large = QuerySubscriptionScaleCounterSnapshot::from_activation(
         QuerySubscriptionScaleFixtureSize::Large,
         100,
         &activation,
-    );
+    )
+    .expect("fixture digest must fit");
 
     let error = certify_query_subscription_scale_slope(small, medium, large).unwrap_err();
 
@@ -204,5 +232,9 @@ fn scale_slope_certification_denies_structural_counter_drift() {
         error.denial_kind(),
         &QuerySubscriptionCertificationDenialKind::ScaleSlopeDrift
     );
-    assert!(!error.failure_projection().label().is_empty());
+    assert!(!error
+        .failure_projection()
+        .expect("fixture digest must fit")
+        .label()
+        .is_empty());
 }

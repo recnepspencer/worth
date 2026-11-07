@@ -9,8 +9,12 @@ fn runtime_public_read_composition_phase_gate_freezes_completion_and_blockers() 
         .workspace("task.read-composition-phase-gate")
         .expect("task runtime should open a named workspace");
     let support = workspace.public_read_composition_support_report();
-    let closeout = workspace.public_read_composition_phase_one_closeout();
-    let gate = workspace.public_read_composition_phase_gate();
+    let closeout = workspace
+        .public_read_composition_phase_one_closeout()
+        .expect("fixture digest must fit");
+    let gate = workspace
+        .public_read_composition_phase_gate()
+        .expect("fixture digest must fit");
 
     assert_eq!(
         gate.backend_posture(),
@@ -20,7 +24,11 @@ fn runtime_public_read_composition_phase_gate_freezes_completion_and_blockers() 
     assert_eq!(gate.phase_one_closeout_digest(), closeout.closeout_digest());
     assert_eq!(
         gate.support_matrix_digest(),
-        workspace.public_support_matrix().matrix_digest().as_str()
+        workspace
+            .public_support_matrix()
+            .expect("fixture digest must fit")
+            .matrix_digest()
+            .as_str()
     );
     assert_eq!(gate.phase_two_start_family(), "loop_cycle_neighborhood");
     assert_gate_row(

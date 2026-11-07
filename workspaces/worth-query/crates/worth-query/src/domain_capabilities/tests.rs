@@ -31,6 +31,7 @@ use crate::target_binding::{
 fn requested_contribution_denies_empty_semantic_code() {
     let declaration = sample_declaration("rotate");
     let requested = WorthQueryAdmissionContributionAuthoring::advisory("", "needs clarification")
+        .expect("fixture digest must fit")
         .for_intent_declaration(&declaration);
 
     match evaluate_requested_domain_capability_contribution(requested) {
@@ -56,6 +57,7 @@ fn request_digest_survives_successful_progression() {
         "arbitration.requires_clarification",
         "multiple candidates remain admissible",
     )
+    .expect("fixture digest must fit")
     .for_intent_declaration(&declaration);
     let request_digest = requested.payload().request_digest().to_string();
     let eligible = success(evaluate_requested_domain_capability_contribution(requested));
@@ -64,7 +66,8 @@ fn request_digest_survives_successful_progression() {
         prepare_admitted_domain_capability_contribution_for_materialization(
             admitted,
             WorthQueryDeclarationBoundContributionTarget::for_intent_declaration(&declaration),
-        ),
+        )
+        .expect("fixture digest must fit"),
     );
 
     assert_eq!(ready.payload().request_digest(), request_digest);
@@ -77,11 +80,16 @@ fn declaration_drift_requires_rebind() {
         "spatial.target_binding_changed",
         "the original intent declaration no longer matches the contribution binding",
     )
+    .expect("fixture digest must fit")
     .for_intent_declaration(&declaration);
     let eligible = success(evaluate_requested_domain_capability_contribution(requested));
     let admitted = success(admit_eligible_domain_capability_contribution(eligible));
     let rebound_target = declaration_target("different-intent-digest");
-    let rebound_target_for_reporting = rebound_target.target_identity().as_str().to_string();
+    let rebound_target_for_reporting = rebound_target
+        .target_identity()
+        .expect("fixture digest must fit")
+        .as_str()
+        .to_string();
 
     match prepare_admitted_domain_capability_contribution_for_materialization(
         admitted,
@@ -107,7 +115,8 @@ fn lower_runtime_boundary_drift_is_stale_not_rebind() {
             "runtime.boundary.support",
             "support posture comes from a lower-runtime seam",
         ),
-    );
+    )
+    .expect("fixture digest must fit");
     let eligible = success(evaluate_requested_domain_capability_contribution(requested));
     let admitted = success(admit_eligible_domain_capability_contribution(eligible));
 
@@ -137,6 +146,7 @@ fn every_category_reaches_admitted_form_through_the_same_lifecycle() {
             "admission.advisory",
             "admission detail",
         )
+        .expect("fixture digest must fit")
         .bind_to_declaration_target(declaration_target.clone()),
     );
     assert_admitted(
@@ -144,6 +154,7 @@ fn every_category_reaches_admitted_form_through_the_same_lifecycle() {
             "support.declaration",
             "support detail",
         )
+        .expect("fixture digest must fit")
         .bind_to_declaration_target(declaration_target.clone()),
     );
     assert_admitted(
@@ -151,6 +162,7 @@ fn every_category_reaches_admitted_form_through_the_same_lifecycle() {
             "invariant.capability_gap",
             "invariant detail",
         )
+        .expect("fixture digest must fit")
         .bind_to_lower_runtime_boundary_target(envelope_target.clone()),
     );
     assert_admitted(
@@ -158,6 +170,7 @@ fn every_category_reaches_admitted_form_through_the_same_lifecycle() {
             "workflow.promotion_eligible",
             "workflow detail",
         )
+        .expect("fixture digest must fit")
         .bind_to_admitted_plan_target(admitted_plan_target.clone()),
     );
     assert_admitted(
@@ -165,6 +178,7 @@ fn every_category_reaches_admitted_form_through_the_same_lifecycle() {
             "continuity.preserved",
             "continuity detail",
         )
+        .expect("fixture digest must fit")
         .bind_to_admitted_plan_target(admitted_plan_target.clone()),
     );
     assert_admitted(
@@ -172,6 +186,7 @@ fn every_category_reaches_admitted_form_through_the_same_lifecycle() {
             "aftermath.residue",
             "aftermath detail",
         )
+        .expect("fixture digest must fit")
         .bind_to_lower_runtime_boundary_target(envelope_target),
     );
     assert_admitted(
@@ -179,6 +194,7 @@ fn every_category_reaches_admitted_form_through_the_same_lifecycle() {
             "explanation.context",
             "explanation detail",
         )
+        .expect("fixture digest must fit")
         .bind_to_declaration_target(declaration_target),
     );
 }
@@ -200,7 +216,8 @@ fn compatibility_targets_share_digests_with_the_shared_binding_core() {
         shared_declaration.target_digest()
     );
 
-    let plan = admitted_plan("admitted-plan-a.request-a.eligibility-a.decision-a");
+    let plan = admitted_plan("admitted-plan-a.request-a.eligibility-a.decision-a")
+        .expect("fixture digest must fit");
     let plan_target =
         WorthQueryAdmittedPlanBoundContributionTarget::for_admitted_intent_plan(&plan);
     let shared_plan = WorthQueryAdmittedIntentPlanBindingTarget::for_admitted_intent_plan(&plan);
@@ -209,7 +226,7 @@ fn compatibility_targets_share_digests_with_the_shared_binding_core() {
         shared_plan.binding_digest()
     );
 
-    let envelope = lower_runtime_envelope("boundary-envelope-a");
+    let envelope = lower_runtime_envelope("boundary-envelope-a").expect("fixture digest must fit");
     let envelope_target =
         WorthQueryLowerRuntimeBoundaryBoundContributionTarget::for_lower_runtime_boundary_envelope(
             &envelope,

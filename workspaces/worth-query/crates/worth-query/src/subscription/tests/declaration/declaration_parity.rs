@@ -17,7 +17,8 @@ fn equivalent_construction_sources_declare_identical_subscription_digest() {
     ]
     .into_iter()
     .map(|source| {
-        let input = LiveQueryAdmissionArtifact::for_test(LiveQueryFamily::Detail, None, source);
+        let input = LiveQueryAdmissionArtifact::for_test(LiveQueryFamily::Detail, None, source)
+            .expect("fixture digest must fit");
         let selection = select_query_subscription_family(input, roomy_budget()).unwrap();
         declare_query_subscription(selection, roomy_slice_budget()).unwrap()
     });
@@ -42,40 +43,44 @@ fn declaration_digest_changes_for_policy_tenant_or_relationship_proof_context() 
         LiveQueryFamily::Detail,
         None,
         QuerySubscriptionConstructionSource::Direct,
-    );
+    )
+    .expect("fixture digest must fit");
     let changed_policy = LiveQueryAdmissionArtifact::for_test_with_context(
         LiveQueryFamily::Detail,
         None,
         QuerySubscriptionConstructionSource::Direct,
         QuerySubscriptionBasisPosture::CurrentHead,
-        QuerySubscriptionFutureSelection::ordinary(),
+        QuerySubscriptionFutureSelection::ordinary().expect("fixture digest must fit"),
         Some("policy-v2".to_string()),
         Some("tenant".to_string()),
         Some("relationship-proof".to_string()),
         QuerySubscriptionRelationshipProofPosture::Admitted,
-    );
+    )
+    .expect("fixture digest must fit");
     let changed_tenant = LiveQueryAdmissionArtifact::for_test_with_context(
         LiveQueryFamily::Detail,
         None,
         QuerySubscriptionConstructionSource::Direct,
         QuerySubscriptionBasisPosture::CurrentHead,
-        QuerySubscriptionFutureSelection::ordinary(),
+        QuerySubscriptionFutureSelection::ordinary().expect("fixture digest must fit"),
         Some("policy".to_string()),
         Some("tenant-beta".to_string()),
         Some("relationship-proof".to_string()),
         QuerySubscriptionRelationshipProofPosture::Admitted,
-    );
+    )
+    .expect("fixture digest must fit");
     let changed_proof = LiveQueryAdmissionArtifact::for_test_with_context(
         LiveQueryFamily::Detail,
         None,
         QuerySubscriptionConstructionSource::Direct,
         QuerySubscriptionBasisPosture::CurrentHead,
-        QuerySubscriptionFutureSelection::ordinary(),
+        QuerySubscriptionFutureSelection::ordinary().expect("fixture digest must fit"),
         Some("policy".to_string()),
         Some("tenant".to_string()),
         Some("relationship-proof-v2".to_string()),
         QuerySubscriptionRelationshipProofPosture::Admitted,
-    );
+    )
+    .expect("fixture digest must fit");
 
     let baseline = declare(baseline);
     let changed_policy = declare(changed_policy);
@@ -98,80 +103,98 @@ fn declaration_digest_changes_for_policy_tenant_or_relationship_proof_context() 
 
 #[test]
 fn temporal_basis_and_async_request_identity_change_declaration_meaning_explicitly() {
-    let temporal_current = declare(LiveQueryAdmissionArtifact::for_test_with_context(
-        LiveQueryFamily::OrderedCollection,
-        None,
-        QuerySubscriptionConstructionSource::Direct,
-        QuerySubscriptionBasisPosture::CurrentHead,
-        QuerySubscriptionFutureSelection::temporal(),
-        Some("policy".to_string()),
-        Some("tenant".to_string()),
-        Some("relationship-proof".to_string()),
-        QuerySubscriptionRelationshipProofPosture::Admitted,
-    ));
-    let temporal_branch = declare(LiveQueryAdmissionArtifact::for_test_with_context(
-        LiveQueryFamily::OrderedCollection,
-        None,
-        QuerySubscriptionConstructionSource::Direct,
-        QuerySubscriptionBasisPosture::BranchHead,
-        QuerySubscriptionFutureSelection::temporal(),
-        Some("policy".to_string()),
-        Some("tenant".to_string()),
-        Some("relationship-proof".to_string()),
-        QuerySubscriptionRelationshipProofPosture::Admitted,
-    ));
-    let async_edge_42 = declare(LiveQueryAdmissionArtifact::for_test_with_context(
-        LiveQueryFamily::Detail,
-        None,
-        QuerySubscriptionConstructionSource::Direct,
-        QuerySubscriptionBasisPosture::CurrentHead,
-        QuerySubscriptionFutureSelection::async_resource_with_identity(
-            true,
-            vec![
-                QuerySubscriptionAsyncRequestIdentityPart::new("edge", "edge:42"),
-                QuerySubscriptionAsyncRequestIdentityPart::new("material", "mat:blue"),
-            ],
-        ),
-        Some("policy".to_string()),
-        Some("tenant".to_string()),
-        Some("relationship-proof".to_string()),
-        QuerySubscriptionRelationshipProofPosture::Admitted,
-    ));
-    let async_edge_77 = declare(LiveQueryAdmissionArtifact::for_test_with_context(
-        LiveQueryFamily::Detail,
-        None,
-        QuerySubscriptionConstructionSource::Direct,
-        QuerySubscriptionBasisPosture::CurrentHead,
-        QuerySubscriptionFutureSelection::async_resource_with_identity(
-            true,
-            vec![
-                QuerySubscriptionAsyncRequestIdentityPart::new("edge", "edge:77"),
-                QuerySubscriptionAsyncRequestIdentityPart::new("material", "mat:blue"),
-            ],
-        ),
-        Some("policy".to_string()),
-        Some("tenant".to_string()),
-        Some("relationship-proof".to_string()),
-        QuerySubscriptionRelationshipProofPosture::Admitted,
-    ));
-    let async_edge_42_reordered = declare(LiveQueryAdmissionArtifact::for_test_with_context(
-        LiveQueryFamily::Detail,
-        None,
-        QuerySubscriptionConstructionSource::Direct,
-        QuerySubscriptionBasisPosture::CurrentHead,
-        QuerySubscriptionFutureSelection::async_resource_with_identity(
-            true,
-            vec![
-                QuerySubscriptionAsyncRequestIdentityPart::new("material", "mat:blue"),
-                QuerySubscriptionAsyncRequestIdentityPart::new("edge", "edge:42"),
-                QuerySubscriptionAsyncRequestIdentityPart::new("edge", "edge:42"),
-            ],
-        ),
-        Some("policy".to_string()),
-        Some("tenant".to_string()),
-        Some("relationship-proof".to_string()),
-        QuerySubscriptionRelationshipProofPosture::Admitted,
-    ));
+    let temporal_current = declare(
+        LiveQueryAdmissionArtifact::for_test_with_context(
+            LiveQueryFamily::OrderedCollection,
+            None,
+            QuerySubscriptionConstructionSource::Direct,
+            QuerySubscriptionBasisPosture::CurrentHead,
+            QuerySubscriptionFutureSelection::temporal().expect("fixture digest must fit"),
+            Some("policy".to_string()),
+            Some("tenant".to_string()),
+            Some("relationship-proof".to_string()),
+            QuerySubscriptionRelationshipProofPosture::Admitted,
+        )
+        .expect("fixture digest must fit"),
+    );
+    let temporal_branch = declare(
+        LiveQueryAdmissionArtifact::for_test_with_context(
+            LiveQueryFamily::OrderedCollection,
+            None,
+            QuerySubscriptionConstructionSource::Direct,
+            QuerySubscriptionBasisPosture::BranchHead,
+            QuerySubscriptionFutureSelection::temporal().expect("fixture digest must fit"),
+            Some("policy".to_string()),
+            Some("tenant".to_string()),
+            Some("relationship-proof".to_string()),
+            QuerySubscriptionRelationshipProofPosture::Admitted,
+        )
+        .expect("fixture digest must fit"),
+    );
+    let async_edge_42 = declare(
+        LiveQueryAdmissionArtifact::for_test_with_context(
+            LiveQueryFamily::Detail,
+            None,
+            QuerySubscriptionConstructionSource::Direct,
+            QuerySubscriptionBasisPosture::CurrentHead,
+            QuerySubscriptionFutureSelection::async_resource_with_identity(
+                true,
+                vec![
+                    QuerySubscriptionAsyncRequestIdentityPart::new("edge", "edge:42"),
+                    QuerySubscriptionAsyncRequestIdentityPart::new("material", "mat:blue"),
+                ],
+            )
+            .expect("fixture digest must fit"),
+            Some("policy".to_string()),
+            Some("tenant".to_string()),
+            Some("relationship-proof".to_string()),
+            QuerySubscriptionRelationshipProofPosture::Admitted,
+        )
+        .expect("fixture digest must fit"),
+    );
+    let async_edge_77 = declare(
+        LiveQueryAdmissionArtifact::for_test_with_context(
+            LiveQueryFamily::Detail,
+            None,
+            QuerySubscriptionConstructionSource::Direct,
+            QuerySubscriptionBasisPosture::CurrentHead,
+            QuerySubscriptionFutureSelection::async_resource_with_identity(
+                true,
+                vec![
+                    QuerySubscriptionAsyncRequestIdentityPart::new("edge", "edge:77"),
+                    QuerySubscriptionAsyncRequestIdentityPart::new("material", "mat:blue"),
+                ],
+            )
+            .expect("fixture digest must fit"),
+            Some("policy".to_string()),
+            Some("tenant".to_string()),
+            Some("relationship-proof".to_string()),
+            QuerySubscriptionRelationshipProofPosture::Admitted,
+        )
+        .expect("fixture digest must fit"),
+    );
+    let async_edge_42_reordered = declare(
+        LiveQueryAdmissionArtifact::for_test_with_context(
+            LiveQueryFamily::Detail,
+            None,
+            QuerySubscriptionConstructionSource::Direct,
+            QuerySubscriptionBasisPosture::CurrentHead,
+            QuerySubscriptionFutureSelection::async_resource_with_identity(
+                true,
+                vec![
+                    QuerySubscriptionAsyncRequestIdentityPart::new("material", "mat:blue"),
+                    QuerySubscriptionAsyncRequestIdentityPart::new("edge", "edge:42"),
+                    QuerySubscriptionAsyncRequestIdentityPart::new("edge", "edge:42"),
+                ],
+            )
+            .expect("fixture digest must fit"),
+            Some("policy".to_string()),
+            Some("tenant".to_string()),
+            Some("relationship-proof".to_string()),
+            QuerySubscriptionRelationshipProofPosture::Admitted,
+        )
+        .expect("fixture digest must fit"),
+    );
 
     assert_ne!(
         temporal_current.declaration_projection().label(),

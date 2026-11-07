@@ -79,7 +79,17 @@ impl worth_query::facade::runtime::WorthQueryRuntimeExistingTruthVerificationAda
                 WorthQueryExistingTruthProbeField::from_admitted_aspect_touch(
                     aspect_touch.clone(),
                     value.clone(),
-                ),
+                )
+                .map_err(|cause| {
+                    WorthQueryExistingTruthProbeDenial::new(
+                        request.binding(),
+                        WorthQueryExistingTruthProbeDenialKind::EvidenceIdentityDerivationDenied(
+                            cause,
+                        ),
+                        Some(aspect_touch.clone()),
+                        "probe field identity exceeded canonical digest bounds",
+                    )
+                })?,
             );
         }
         Ok(fields)

@@ -36,7 +36,8 @@ fn causal_inspection_certification_bundle_closes_runtime_backed_rows() {
         &changed,
         &representatives,
         &boundary_audit,
-    );
+    )
+    .expect("fixture digest must fit");
     let proof_shape_digest = proof_shape.proof_shape_digest().to_string();
     let phase_progression_digest = proof_shape.phase_progression_digest().to_string();
     let witness_authority_digest = proof_shape.witness_authority_digest().to_string();
@@ -47,15 +48,18 @@ fn causal_inspection_certification_bundle_closes_runtime_backed_rows() {
     let small = CausalInspectionScaleCounterSnapshot::from_artifact(
         CausalInspectionScaleFixtureSize::Small,
         &changed,
-    );
+    )
+    .expect("fixture digest must fit");
     let medium = CausalInspectionScaleCounterSnapshot::from_artifact(
         CausalInspectionScaleFixtureSize::Medium,
         &changed,
-    );
+    )
+    .expect("fixture digest must fit");
     let large = CausalInspectionScaleCounterSnapshot::from_artifact(
         CausalInspectionScaleFixtureSize::Large,
         &changed,
-    );
+    )
+    .expect("fixture digest must fit");
 
     let scope = build_causal_inspection_certification_scope(
         &changed,
@@ -99,7 +103,7 @@ fn causal_inspection_certification_bundle_closes_runtime_backed_rows() {
         .performance_certification()
         .materialization_slope_digest()
         .to_string();
-    let bundle = certify_causal_inspection_runtime_path(scope);
+    let bundle = certify_causal_inspection_runtime_path(scope).expect("fixture digest must fit");
 
     assert_eq!(bundle.certification_row_count(), 35);
     assert_eq!(bundle.hostile_row_count(), 10);
@@ -160,20 +164,24 @@ fn causal_inspection_certification_rejects_bridge_envelope_slope_drift() {
         &changed,
         &representatives,
         &boundary_audit,
-    );
+    )
+    .expect("fixture digest must fit");
     let small = CausalInspectionScaleCounterSnapshot::from_artifact(
         CausalInspectionScaleFixtureSize::Small,
         &changed,
     )
+    .expect("fixture digest must fit")
     .with_bridge_envelope_slope_for_tests(2);
     let medium = CausalInspectionScaleCounterSnapshot::from_artifact(
         CausalInspectionScaleFixtureSize::Medium,
         &changed,
-    );
+    )
+    .expect("fixture digest must fit");
     let large = CausalInspectionScaleCounterSnapshot::from_artifact(
         CausalInspectionScaleFixtureSize::Large,
         &changed,
-    );
+    )
+    .expect("fixture digest must fit");
 
     let error = build_causal_inspection_certification_scope(
         &changed,
@@ -221,19 +229,23 @@ fn causal_inspection_certification_rejects_redaction_identity_drift() {
         &changed,
         &representatives,
         &boundary_audit,
-    );
+    )
+    .expect("fixture digest must fit");
     let small = CausalInspectionScaleCounterSnapshot::from_artifact(
         CausalInspectionScaleFixtureSize::Small,
         &changed,
-    );
+    )
+    .expect("fixture digest must fit");
     let medium = CausalInspectionScaleCounterSnapshot::from_artifact(
         CausalInspectionScaleFixtureSize::Medium,
         &changed,
-    );
+    )
+    .expect("fixture digest must fit");
     let large = CausalInspectionScaleCounterSnapshot::from_artifact(
         CausalInspectionScaleFixtureSize::Large,
         &changed,
-    );
+    )
+    .expect("fixture digest must fit");
 
     let error = build_causal_inspection_certification_scope(
         &changed,
@@ -294,19 +306,7 @@ fn causal_inspection_certification_rejects_mislabeled_missing_evidence() {
     ));
 }
 
-#[test]
-fn causal_inspection_certification_rejects_mislabeled_failure_row() {
-    let error = CausalInspectionRepresentativeEvidence::from_failure(
-        CausalInspectionRepresentativeKind::ChangedResult,
-        "typed-failure-digest",
-    )
-    .unwrap_err();
-
-    assert!(matches!(
-        error.kind(),
-        CausalInspectionCertificationErrorKind::RepresentativeMatrixMismatch
-    ));
-}
+mod causal_inspection_certification_rejects_mislabeled_failure_row;
 
 #[test]
 fn causal_inspection_certification_requires_typed_failure_evidence_digest() {

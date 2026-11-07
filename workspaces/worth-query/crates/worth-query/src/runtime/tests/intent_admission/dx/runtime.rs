@@ -97,17 +97,21 @@ fn effect_write_intent_common_path_helper_executes_through_canonical_handoff() {
         )
         .expect("live should declare");
     let effect = runtime
-        .declare_effect::<WorthQueryUnrefinedLiveShape>(WorthQueryEffectDeclaration::write_intent(
-            "effects.reconcile-dx",
-            WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title.value"])),
-            "strategy.intent.reconcile",
-        ))
+        .declare_effect::<WorthQueryUnrefinedLiveShape>(
+            WorthQueryEffectDeclaration::write_intent(
+                "effects.reconcile-dx",
+                WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title.value"])),
+                "strategy.intent.reconcile",
+            )
+            .expect("fixture digest must fit"),
+        )
         .expect("write-intent effect should declare");
     runtime
         .write(
             request_execution,
             test_update_string_aspect_command(
-                crate::memory_workspace::admit_authored_entity_label("task-1"),
+                crate::memory_workspace::admit_authored_entity_label("task-1")
+                    .expect("fixture digest must fit"),
                 "title.value",
                 "title from helper",
             ),
@@ -134,7 +138,8 @@ fn write_intent_common_path_helper_executes_through_canonical_handoff() {
     let mut runtime = intent_runtime_with_authority(request_execution, TestIntentAuthority);
     let receipt = runtime
         .write_intent(test_update_string_aspect_command(
-            crate::memory_workspace::admit_authored_entity_label("task-1"),
+            crate::memory_workspace::admit_authored_entity_label("task-1")
+                .expect("fixture digest must fit"),
             "title.value",
             "title from write helper",
         ))
@@ -168,7 +173,8 @@ fn write_intent_advanced_path_helper_exposes_request_eligibility_decision_and_ha
     let mut runtime = intent_runtime_with_authority(request_execution, TestIntentAuthority);
     let review = runtime
         .write_intent(test_update_string_aspect_command(
-            crate::memory_workspace::admit_authored_entity_label("task-1"),
+            crate::memory_workspace::admit_authored_entity_label("task-1")
+                .expect("fixture digest must fit"),
             "title.value",
             "title from advanced write helper",
         ))
@@ -223,7 +229,8 @@ fn canonical_admission_decision_round_trips_to_public_handoff_type() {
         WorthQueryIntentAdmissionDecision::Admitted(plan) => {
             let handoff: WorthQueryAdmittedIntentExecutionHandoff = plan
                 .into_execution_handoff()
-                .expect("runtime admitted plan should still mint a handoff");
+                .expect("runtime admitted plan should still mint a handoff")
+                .expect("fixture digest must fit");
             assert_eq!(
                 handoff.entrypoint(),
                 WorthQueryIntentAdmissionCoveredEntrypoint::ExecuteIntent
@@ -250,7 +257,8 @@ fn advisory_review_data_preserves_non_panicking_trace_shape() {
         .expect("authoritative request should build");
     let eligibility = crate::intent_admission::WorthQueryIntentAdmissionEligibility::from_request(
         request.clone(),
-    );
+    )
+    .expect("fixture digest must fit");
     let advisory = crate::intent_admission::WorthQueryIntentAdvisoryDecision::new(
         request.family(),
         request.entrypoint(),
@@ -263,7 +271,8 @@ fn advisory_review_data_preserves_non_panicking_trace_shape() {
         crate::intent_admission::dx::WorthQueryRuntimeIntentAdmissionReviewData::from_decision(
             request,
             WorthQueryIntentAdmissionDecision::Advisory(advisory),
-        );
+        )
+        .expect("fixture digest must fit");
     let decision_trace = review
         .decision_trace_envelope()
         .expect("advisory review should still produce a trace");
@@ -327,7 +336,8 @@ fn advisory_consumer_lane_stays_on_shared_lattice_surface() {
     .expect("authoritative request should build");
     let eligibility = crate::intent_admission::WorthQueryIntentAdmissionEligibility::from_request(
         request.clone(),
-    );
+    )
+    .expect("fixture digest must fit");
     let advisory = crate::intent_admission::WorthQueryIntentAdvisoryDecision::new(
         request.family(),
         request.entrypoint(),
@@ -340,7 +350,8 @@ fn advisory_consumer_lane_stays_on_shared_lattice_surface() {
         crate::intent_admission::dx::WorthQueryRuntimeIntentAdmissionReviewData::from_decision(
             request,
             WorthQueryIntentAdmissionDecision::Advisory(advisory),
-        );
+        )
+        .expect("fixture digest must fit");
     let consumer = crate::facade::runtime::WorthQueryIntentConsumerInspection::from_review(
         review.request().intent_name(),
         review.decision(),

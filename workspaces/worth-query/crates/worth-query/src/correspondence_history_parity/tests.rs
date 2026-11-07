@@ -100,7 +100,8 @@ fn historical_denial_bundle_reports_failure_digest() {
         2,
         2,
         HistoricalPathReuseDescriptor::no_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let capability = HistoricalCapabilityDescriptor::new_for_test(
         "basis:replay",
         None,
@@ -109,9 +110,13 @@ fn historical_denial_bundle_reports_failure_digest() {
         true,
         false,
         HistoricalPathReuseDescriptor::no_reuse(),
-    );
-    let error = admit_historical_evaluation_path(denied_request.clone(), capability)
-        .expect_err("admission should fail");
+    )
+    .expect("fixture digest must fit");
+    let error = admit_historical_evaluation_path(
+        denied_request.clone().expect("fixture digest must fit"),
+        capability,
+    )
+    .expect_err("admission should fail");
     let envelope =
         compose_historical_admission_denied_envelope(correspondence, denied_request, error.clone());
     let preflight = detail_preflight_bundle();
@@ -173,25 +178,7 @@ fn denied_bundle_requires_query_and_basis_digest_overrides() {
     );
 }
 
-#[test]
-fn correspondence_denied_bundle_stays_pathless() {
-    let envelope = correspondence_denied_envelope();
-    let preflight = detail_preflight_bundle();
-    let bundle = build_correspondence_historical_parity_bundle(
-        &envelope,
-        Some(preflight.plan().query().validated_query_digest().clone()),
-        Some(preflight.basis().proof().digest().clone()),
-    )
-    .expect("correspondence denial bundle should build");
-
-    assert_eq!(bundle.parity_variant().as_str(), "correspondence_denied");
-    assert!(bundle.failure_digest().is_some());
-    assert!(bundle.requested_path_digest().is_none());
-    assert!(bundle.admitted_path_digest().is_none());
-    assert!(bundle.resolved_path_digest().is_none());
-    assert!(bundle.historical_cost_posture_digest().is_none());
-    assert!(bundle.historical_compatibility_outcome().is_none());
-}
+mod correspondence_denied_bundle_stays_pathless;
 
 fn success_envelope_for(
     requested: RequestedHistoricalPathClass,
@@ -219,7 +206,8 @@ fn success_envelope_for(
         RequestedHistoricalPathClass::RequestedFullReconstructionPath => {
             HistoricalEvaluationRequest::full_reconstruction_for_test("basis:a", 4, 8, reuse)
         }
-    };
+    }
+    .expect("fixture digest must fit");
     let capability = HistoricalCapabilityDescriptor::new_for_test(
         "basis:a",
         Some(admitted),
@@ -228,12 +216,14 @@ fn success_envelope_for(
         true,
         true,
         request.reuse_descriptor().clone(),
-    );
+    )
+    .expect("fixture digest must fit");
     let admission =
         admit_historical_evaluation_path(request, capability).expect("admission should succeed");
     let resolved = resolve_historical_materialization_path(
         admission,
-        HistoricalMaterializationDescriptor::new_for_test("basis:a", resolved),
+        HistoricalMaterializationDescriptor::new_for_test("basis:a", resolved)
+            .expect("fixture digest must fit"),
     )
     .expect("resolution should succeed");
 
@@ -256,7 +246,8 @@ fn ambiguous_envelope() -> CorrespondenceHistoricalEnvelope {
         4,
         8,
         HistoricalPathReuseDescriptor::with_replay_tail_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let capability = HistoricalCapabilityDescriptor::new_for_test(
         "basis:replay",
         Some(AdmittedHistoricalPathClass::AdmittedDeltaReplayPath),
@@ -265,7 +256,8 @@ fn ambiguous_envelope() -> CorrespondenceHistoricalEnvelope {
         false,
         true,
         HistoricalPathReuseDescriptor::with_replay_tail_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let admission =
         admit_historical_evaluation_path(request, capability).expect("admission should succeed");
     let resolved = resolve_historical_materialization_path(
@@ -273,7 +265,8 @@ fn ambiguous_envelope() -> CorrespondenceHistoricalEnvelope {
         HistoricalMaterializationDescriptor::new_for_test(
             "basis:replay",
             ResolvedHistoricalPathClass::ResolvedDeltaReplayPath,
-        ),
+        )
+        .expect("fixture digest must fit"),
     )
     .expect("resolution should succeed");
 
@@ -297,7 +290,8 @@ fn disagreement_envelope() -> CorrespondenceHistoricalEnvelope {
         1,
         1,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let capability = HistoricalCapabilityDescriptor::new_for_test(
         "basis:a",
         Some(AdmittedHistoricalPathClass::AdmittedRetainedSnapshotPath),
@@ -306,7 +300,8 @@ fn disagreement_envelope() -> CorrespondenceHistoricalEnvelope {
         true,
         false,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let admission =
         admit_historical_evaluation_path(request, capability).expect("admission should succeed");
     let resolved = resolve_historical_materialization_path(
@@ -314,7 +309,8 @@ fn disagreement_envelope() -> CorrespondenceHistoricalEnvelope {
         HistoricalMaterializationDescriptor::new_for_test(
             "basis:a",
             ResolvedHistoricalPathClass::ResolvedRetainedSnapshotPath,
-        ),
+        )
+        .expect("fixture digest must fit"),
     )
     .expect("resolution should succeed");
 
@@ -337,7 +333,8 @@ fn correspondence_denied_envelope() -> CorrespondenceHistoricalEnvelope {
         1,
         1,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let capability = HistoricalCapabilityDescriptor::new_for_test(
         "basis:a",
         Some(AdmittedHistoricalPathClass::AdmittedRetainedSnapshotPath),
@@ -346,7 +343,8 @@ fn correspondence_denied_envelope() -> CorrespondenceHistoricalEnvelope {
         true,
         false,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let admission =
         admit_historical_evaluation_path(request, capability).expect("admission should succeed");
     let resolved = resolve_historical_materialization_path(
@@ -354,7 +352,8 @@ fn correspondence_denied_envelope() -> CorrespondenceHistoricalEnvelope {
         HistoricalMaterializationDescriptor::new_for_test(
             "basis:a",
             ResolvedHistoricalPathClass::ResolvedRetainedSnapshotPath,
-        ),
+        )
+        .expect("fixture digest must fit"),
     )
     .expect("resolution should succeed");
 

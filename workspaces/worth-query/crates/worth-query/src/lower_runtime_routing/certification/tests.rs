@@ -28,7 +28,7 @@ fn certification_bundle_contains_lanes() {
     let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
-    let bundle = certify_lower_runtime_routing(&resource_request);
+    let bundle = certify_lower_runtime_routing(&resource_request).expect("fixture digest must fit");
 
     for lane in [
         WorthQueryLowerRuntimeCertificationLane::CrossingsSurface,
@@ -52,13 +52,15 @@ fn certification_bundle_emits_required_outputs() {
     let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
-    let bundle = certify_lower_runtime_routing(&resource_request);
+    let bundle = certify_lower_runtime_routing(&resource_request).expect("fixture digest must fit");
     let crossings = worth_query_lower_runtime_crossing_inventory();
     let support = worth_query_lower_runtime_support_matrix();
     let non_bypass = certify_lower_runtime_non_bypass().expect("non-bypass should pass");
     let reconciliation = worth_query_lower_runtime_boundary_reconciliation_report();
-    let synthetic_tail = worth_query_lower_runtime_synthetic_tail_report(&resource_request);
-    let surface = worth_query_lower_runtime_representative_surface(&resource_request);
+    let synthetic_tail = worth_query_lower_runtime_synthetic_tail_report(&resource_request)
+        .expect("fixture digest must fit");
+    let surface = worth_query_lower_runtime_representative_surface(&resource_request)
+        .expect("fixture digest must fit");
     let slopes = certify_lower_runtime_performance_slopes(&surface);
     let reconciliation_width = reconciliation.rows().len().to_string();
     let synthetic_tail_width = synthetic_tail.rows().len().to_string();
@@ -90,11 +92,21 @@ fn certification_bundle_emits_required_outputs() {
     );
     assert_eq!(
         bundle.output_digest("crossing_inventory_digest"),
-        Some(crossings.inventory_digest().as_str())
+        Some(
+            crossings
+                .inventory_digest()
+                .expect("fixture digest must fit")
+                .as_str()
+        )
     );
     assert_eq!(
         bundle.output_digest("route_support_matrix_digest"),
-        Some(support.matrix_digest().as_str())
+        Some(
+            support
+                .matrix_digest()
+                .expect("fixture digest must fit")
+                .as_str()
+        )
     );
     assert_eq!(
         bundle.output_digest("route_non_bypass_digest"),
@@ -224,7 +236,8 @@ fn stabilization_closeout_report_is_public_and_consumes_final_phase_artifacts() 
     let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
-    let report = worth_query_lower_runtime_closeout_report(&resource_request);
+    let report = worth_query_lower_runtime_closeout_report(&resource_request)
+        .expect("fixture digest must fit");
 
     assert_eq!(
         report
@@ -255,7 +268,9 @@ fn stabilization_closeout_report_is_public_and_consumes_final_phase_artifacts() 
     );
     assert_eq!(
         report.closure_test().suite_digest(),
-        worth_query_lower_runtime_closure_test(&resource_request).suite_digest()
+        worth_query_lower_runtime_closure_test(&resource_request)
+            .expect("fixture digest must fit")
+            .suite_digest()
     );
     assert_eq!(
         report
@@ -293,8 +308,9 @@ fn certification_bundle_acceptance_lane_matches_named_suite() {
     let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
-    let bundle = certify_lower_runtime_routing(&resource_request);
-    let suite = worth_query_lower_runtime_acceptance_suite(&resource_request);
+    let bundle = certify_lower_runtime_routing(&resource_request).expect("fixture digest must fit");
+    let suite = worth_query_lower_runtime_acceptance_suite(&resource_request)
+        .expect("fixture digest must fit");
     let row = bundle
         .rows()
         .iter()
@@ -317,7 +333,7 @@ fn certification_bundle_failure_digest_is_hostile_row_aggregate() {
     let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
-    let bundle = certify_lower_runtime_routing(&resource_request);
+    let bundle = certify_lower_runtime_routing(&resource_request).expect("fixture digest must fit");
     let expected = hash_parts(
         &bundle
             .rows()
@@ -337,7 +353,7 @@ fn parity_digest_changes_when_intentionally_different_route_families_are_compare
     let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
-    let bundle = certify_lower_runtime_routing(&resource_request);
+    let bundle = certify_lower_runtime_routing(&resource_request).expect("fixture digest must fit");
     let route_parity = bundle
         .output_digest("route_parity_digest")
         .expect("route parity output should exist");
@@ -354,35 +370,24 @@ fn parity_digest_changes_when_intentionally_different_route_families_are_compare
     );
 }
 
-#[test]
-fn proof_shape_and_slope_surfaces_stay_exported() {
-    let host_request = crate::bridge_host_request::serial_request();
-    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
-
-    let proof = worth_query_lower_runtime_proof_shape_audit();
-    let surface = worth_query_lower_runtime_representative_surface(&resource_request);
-    let slopes = certify_lower_runtime_performance_slopes(&surface);
-
-    assert_eq!(proof.rows().len(), 5);
-    assert_eq!(slopes.rows().len(), 6);
-    assert!(slopes
-        .digest_for_output("debt_registry_lookup_slope_digest")
-        .is_some());
-    assert_eq!(slopes.profiles().len(), 3);
-}
+mod proof_shape_and_slope_surfaces_stay_exported;
 
 #[test]
 fn compatibility_debt_registry_digest_tracks_closed_gap_registry() {
     let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
-    let bundle = certify_lower_runtime_routing(&resource_request);
+    let bundle = certify_lower_runtime_routing(&resource_request).expect("fixture digest must fit");
     let gaps = worth_query_lower_runtime_gap_registry();
 
     assert_eq!(gaps.rows().len(), 0);
     assert_eq!(
         bundle.output_digest("compatibility_debt_registry_digest"),
-        Some(gaps.registry_digest().as_str())
+        Some(
+            gaps.registry_digest()
+                .expect("fixture digest must fit")
+                .as_str()
+        )
     );
 }
 

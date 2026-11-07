@@ -16,7 +16,9 @@ fn authoritative_admitted_handoff_materializes_execution_binding() {
         ))
         .expect("authoritative handoff should admit");
 
-    let binding = runtime.prepare_authoritative_intent_execution_binding(handoff.clone());
+    let binding = runtime
+        .prepare_authoritative_intent_execution_binding(handoff.clone())
+        .expect("fixture digest must fit");
 
     assert_eq!(binding.family(), handoff.family());
     assert_eq!(binding.entrypoint(), handoff.entrypoint());
@@ -40,17 +42,21 @@ fn effect_admitted_handoff_materializes_self_contained_execution_binding() {
         )
         .expect("live should declare");
     let effect = runtime
-        .declare_effect::<WorthQueryUnrefinedLiveShape>(WorthQueryEffectDeclaration::write_intent(
-            "effects.phase-four-binding",
-            WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title.value"])),
-            "strategy.intent.reconcile",
-        ))
+        .declare_effect::<WorthQueryUnrefinedLiveShape>(
+            WorthQueryEffectDeclaration::write_intent(
+                "effects.phase-four-binding",
+                WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title.value"])),
+                "strategy.intent.reconcile",
+            )
+            .expect("fixture digest must fit"),
+        )
         .expect("write-intent effect should declare");
     runtime
         .write(
             request_execution,
             test_update_string_aspect_command(
-                crate::memory_workspace::admit_authored_entity_label("task-1"),
+                crate::memory_workspace::admit_authored_entity_label("task-1")
+                    .expect("fixture digest must fit"),
                 "title.value",
                 "title from binding",
             ),
@@ -64,8 +70,9 @@ fn effect_admitted_handoff_materializes_self_contained_execution_binding() {
             "effect.intent.input.v1",
         )
         .expect("effect handoff should admit");
-    let binding =
-        runtime.prepare_effect_intent_execution_binding(handoff.clone(), &pending_delivery);
+    let binding = runtime
+        .prepare_effect_intent_execution_binding(handoff.clone(), &pending_delivery)
+        .expect("fixture digest must fit");
 
     assert_eq!(binding.family(), handoff.family());
     assert_eq!(binding.entrypoint(), handoff.entrypoint());
@@ -95,17 +102,21 @@ fn effect_receipt_surfaces_provenance_without_nested_receipt_spelunking() {
         )
         .expect("live should declare");
     let effect = runtime
-        .declare_effect::<WorthQueryUnrefinedLiveShape>(WorthQueryEffectDeclaration::write_intent(
-            "effects.phase-four-surface",
-            WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title.value"])),
-            "strategy.intent.reconcile",
-        ))
+        .declare_effect::<WorthQueryUnrefinedLiveShape>(
+            WorthQueryEffectDeclaration::write_intent(
+                "effects.phase-four-surface",
+                WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title.value"])),
+                "strategy.intent.reconcile",
+            )
+            .expect("fixture digest must fit"),
+        )
         .expect("write-intent effect should declare");
     runtime
         .write(
             request_execution,
             test_update_string_aspect_command(
-                crate::memory_workspace::admit_authored_entity_label("task-1"),
+                crate::memory_workspace::admit_authored_entity_label("task-1")
+                    .expect("fixture digest must fit"),
                 "title.value",
                 "title from outer receipt",
             ),
@@ -196,7 +207,9 @@ fn post_execution_routing_failure_preserves_proof_chain() {
     let handoff = runtime
         .admit_authoritative_intent_for_execution(declaration.clone())
         .expect("authoritative handoff should admit");
-    let binding = runtime.prepare_authoritative_intent_execution_binding(handoff.clone());
+    let binding = runtime
+        .prepare_authoritative_intent_execution_binding(handoff.clone())
+        .expect("fixture digest must fit");
     let execution = runtime
         .backend
         .execute_intent(request_execution, binding.declaration())
@@ -216,7 +229,8 @@ fn post_execution_routing_failure_preserves_proof_chain() {
             binding.binding_digest(),
             execution.outcome_digest(),
             &snapshot_evidence_identity,
-        );
+        )
+        .expect("fixture digest must fit");
     let decision_trace_envelope = WorthQueryIntentDecisionTraceEnvelope::for_admitted_execution(
         &admitted_handoff,
         &execution,
@@ -224,7 +238,9 @@ fn post_execution_routing_failure_preserves_proof_chain() {
     let error = runtime.intent_execution_routing_error(
         &declaration,
         &execution,
-        execution_provenance.clone(),
+        execution_provenance
+            .clone()
+            .expect("fixture digest must fit"),
         decision_trace_envelope.clone(),
         WorthQueryRuntimeError::LiveSubscriptionInstallation {
             view_name: "tasks.phase-four-routing".to_string(),
@@ -274,17 +290,21 @@ fn stale_effect_execution_binding_fails_as_typed_handoff_violation() {
         )
         .expect("live should declare");
     let effect = runtime
-        .declare_effect::<WorthQueryUnrefinedLiveShape>(WorthQueryEffectDeclaration::write_intent(
-            "effects.phase-four-stale",
-            WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title.value"])),
-            "strategy.intent.reconcile",
-        ))
+        .declare_effect::<WorthQueryUnrefinedLiveShape>(
+            WorthQueryEffectDeclaration::write_intent(
+                "effects.phase-four-stale",
+                WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title.value"])),
+                "strategy.intent.reconcile",
+            )
+            .expect("fixture digest must fit"),
+        )
         .expect("write-intent effect should declare");
     runtime
         .write(
             request_execution,
             test_update_string_aspect_command(
-                crate::memory_workspace::admit_authored_entity_label("task-1"),
+                crate::memory_workspace::admit_authored_entity_label("task-1")
+                    .expect("fixture digest must fit"),
                 "title.value",
                 "title before stale execution",
             ),
@@ -298,7 +318,9 @@ fn stale_effect_execution_binding_fails_as_typed_handoff_violation() {
             "effect.intent.input.v1",
         )
         .expect("effect handoff should admit");
-    let binding = runtime.prepare_effect_intent_execution_binding(handoff, &pending_delivery);
+    let binding = runtime
+        .prepare_effect_intent_execution_binding(handoff, &pending_delivery)
+        .expect("fixture digest must fit");
     let effect_target = WorthQueryEffectTarget::from_name(effect.name());
     runtime.remove_pending_effect_delivery(&effect_target, 0, &pending_delivery);
 

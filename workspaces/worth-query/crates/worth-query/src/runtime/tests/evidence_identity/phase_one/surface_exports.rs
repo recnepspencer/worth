@@ -14,7 +14,8 @@ fn runtime_evidence_identity_surface_is_exported_through_public_facades() {
         crate::WorthQueryEvidenceScope::RuntimeStateSnapshot,
     )
     .field_shape(crate::WorthQueryEvidenceTag::new("kind"), "ready")
-    .seal();
+    .seal()
+    .expect("fixture digest must fit");
     assert_canonical_evidence_identity_token(manual.as_str());
 }
 
@@ -26,21 +27,26 @@ fn support_matrix_and_state_snapshot_emit_canonical_evidence_tokens() {
     let runtime = bridge_backed_runtime_with_support(request_execution, intent_support_profile());
     let workspace =
         WorthQueryWorkspace::new("evidence-identity-support", runtime).expect("workspace builds");
-    let matrix = workspace.public_support_matrix();
+    let matrix = workspace
+        .public_support_matrix()
+        .expect("fixture digest must fit");
     let snapshot = WorthQueryRuntimeStateSnapshot::ready(
         runtime_state_snapshot_basis_label_identity(
             &crate::runtime::evidence_identities::runtime_state_snapshot_test_subject_identity(
                 "basis|digest",
-            ),
+            )
+            .expect("fixture digest must fit"),
         ),
         runtime_state_snapshot_result_shape_label_identity(
             &crate::runtime::evidence_identities::runtime_state_snapshot_test_subject_identity(
                 "result:shape",
-            ),
+            )
+            .expect("fixture digest must fit"),
         ),
         WorthQueryAuthorityLane::PreviewTruth,
         "state explanation with | and : punctuation",
-    );
+    )
+    .expect("fixture digest must fit");
 
     assert_canonical_evidence_identity_token(
         matrix.matrix_digest().terminal_projection_for_reporting(),
@@ -102,28 +108,33 @@ fn state_snapshot_with_optional_postures_recomposes_exactly() {
         &runtime_state_snapshot_basis_label_identity(
             &crate::runtime::evidence_identities::runtime_state_snapshot_test_subject_identity(
                 "support|evidence|digest",
-            ),
+            )
+            .expect("fixture digest must fit"),
         ),
         &runtime_state_snapshot_basis_label_identity(
             &crate::runtime::evidence_identities::runtime_state_snapshot_test_subject_identity(
                 "basis|digest",
-            ),
+            )
+            .expect("fixture digest must fit"),
         ),
     );
     let snapshot = WorthQueryRuntimeStateSnapshot::ready(
         runtime_state_snapshot_basis_label_identity(
             &crate::runtime::evidence_identities::runtime_state_snapshot_test_subject_identity(
                 "basis|digest",
-            ),
+            )
+            .expect("fixture digest must fit"),
         ),
         runtime_state_snapshot_result_shape_label_identity(
             &crate::runtime::evidence_identities::runtime_state_snapshot_test_subject_identity(
                 "result:shape",
-            ),
+            )
+            .expect("fixture digest must fit"),
         ),
         WorthQueryAuthorityLane::BridgeExternalState,
         "state explanation with optional posture pressure",
     )
+    .expect("fixture digest must fit")
     .with_ordinary_runtime_posture(ordinary_runtime_posture)
     .with_async_result_state(async_result_state)
     .with_remask_posture(remask_posture);

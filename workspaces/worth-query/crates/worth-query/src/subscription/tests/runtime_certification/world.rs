@@ -34,9 +34,15 @@ pub(super) fn runtime_certification_artifacts_for_source(
     view_family: Option<LiveViewShapeFamily>,
     source: QuerySubscriptionConstructionSource,
 ) -> RuntimeCertificationArtifacts {
-    let live = LiveQueryAdmissionArtifact::for_test(live_family, view_family, source);
-    let selection = select_query_subscription_family(live.clone(), roomy_budget()).unwrap();
-    let context = SubscriptionLifecycleCertificationContext::from_live_selection(&live, &selection);
+    let live = LiveQueryAdmissionArtifact::for_test(live_family, view_family, source)
+        .expect("fixture digest must fit");
+    let selection = select_query_subscription_family(
+        live.clone().expect("fixture digest must fit"),
+        roomy_budget(),
+    )
+    .unwrap();
+    let context = SubscriptionLifecycleCertificationContext::from_live_selection(&live, &selection)
+        .expect("fixture digest must fit");
     let declaration = declare_query_subscription(selection.clone(), roomy_slice_budget()).unwrap();
     let lowering =
         lower_query_subscription_to_bridge(declaration.clone(), roomy_lowering_budget()).unwrap();
@@ -58,17 +64,20 @@ pub(super) fn runtime_certification_artifacts_for_source(
             QuerySubscriptionScaleFixtureSize::Small,
             10,
             &activation,
-        ),
+        )
+        .expect("fixture digest must fit"),
         QuerySubscriptionScaleCounterSnapshot::from_activation(
             QuerySubscriptionScaleFixtureSize::Medium,
             100,
             &activation,
-        ),
+        )
+        .expect("fixture digest must fit"),
         QuerySubscriptionScaleCounterSnapshot::from_activation(
             QuerySubscriptionScaleFixtureSize::Large,
             1000,
             &activation,
-        ),
+        )
+        .expect("fixture digest must fit"),
     )
     .unwrap();
     let mut runtime = ActiveSubscriptionRuntime::new();
@@ -86,7 +95,8 @@ pub(super) fn runtime_certification_artifacts_for_source(
     let attachment = attach_subscription_consumer(
         &mut runtime,
         &handle,
-        SubscriptionConsumerAttachmentRequest::admitted("runtime-certification", "cursor"),
+        SubscriptionConsumerAttachmentRequest::admitted("runtime-certification", "cursor")
+            .expect("fixture digest must fit"),
         SubscriptionConsumerAttachmentBudget::admitted(
             ActiveFanoutWidth::measured(1),
             ConsumerDeliveryPacingWidth::measured(1),
@@ -113,7 +123,8 @@ pub(super) fn runtime_certification_artifacts_for_source(
         attachment.lane_digest().clone(),
         "affected-scope",
         MaintenanceDeltaWidth::measured(1),
-    );
+    )
+    .expect("fixture digest must fit");
     let _delivery_window_digest = window.delivery_window_projection().label().to_string();
     let (delta, lowering_report, _) = lower_query_subscription_maintenance_delta(delta).unwrap();
     let work_packet = build_active_delivery_work_packet(
@@ -169,7 +180,8 @@ pub(super) fn runtime_certification_artifacts_for_source(
             &declaration,
             &admission,
             &active_admission,
-        ),
+        )
+        .expect("fixture digest must fit"),
         QuerySubscriptionSupportEvidence::admission(&declaration, &admission).unwrap(),
     )
     .unwrap()
@@ -221,11 +233,13 @@ pub(super) fn hostile_support_failure_for(
             QuerySubscriptionSupportSubject::activation(
                 &artifacts.declaration,
                 &prepare_subscription_activation(artifacts.admission.clone()),
-            ),
+            )
+            .expect("fixture digest must fit"),
             QuerySubscriptionSupportEvidence::declaration(&artifacts.declaration),
         )
         .unwrap_err(),
-    );
+    )
+    .expect("fixture digest must fit");
     let selection_context =
         QuerySubscriptionDiagnosticSelectionContext::from_selection(&artifacts.selection);
     let denied_trace = trace_denied_query_subscription_diagnostics(
@@ -234,7 +248,7 @@ pub(super) fn hostile_support_failure_for(
         Some(&artifacts.lowering),
         Some(&artifacts.admission),
         None,
-        failure.clone(),
+        failure.clone().expect("fixture digest must fit"),
     )
     .unwrap();
     let denied_bundle = bundle_denied_query_subscription_diagnostics(
@@ -244,7 +258,7 @@ pub(super) fn hostile_support_failure_for(
         Some(&artifacts.lowering),
         Some(&artifacts.admission),
         None,
-        failure.clone(),
+        failure.clone().expect("fixture digest must fit"),
     )
     .unwrap()
     .0;

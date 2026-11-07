@@ -19,13 +19,21 @@ fn checkpoint_resume_replays_queued_delivery_and_preserves_one_shot_meaning() {
 
     let mut workspace = task_workspace(request_execution, "managed-live-resume-replay");
     let handle = open_task_resource(request_execution, &mut workspace, "tasks.resume-replay");
-    let checkpoint = checkpointed(handle.checkpoint(&mut workspace));
+    let checkpoint = checkpointed(
+        handle
+            .checkpoint(&mut workspace)
+            .expect("fixture digest must fit"),
+    );
 
     workspace
         .write(request_execution, task_insert("Arrived while suspended"))
         .expect("write should remain Query-routed while the continuation owns the resource");
 
-    let resumed = resumed(checkpoint.resume(&mut workspace));
+    let resumed = resumed(
+        checkpoint
+            .resume(&mut workspace)
+            .expect("fixture digest must fit"),
+    );
     assert_eq!(resumed.receipt().pending_delivery_batch_count(), 1);
     assert_eq!(resumed.receipt().resumed_delivery_sequence(), Some(1));
     let handle = resumed.into_handle();
@@ -64,7 +72,11 @@ fn checkpoint_and_resume_receipts_preserve_delivery_already_waiting_at_checkpoin
         .write(request_execution, task_insert("Queued before checkpoint"))
         .expect("write should queue a delivery before checkpoint");
 
-    let continuation = checkpointed(handle.checkpoint(&mut workspace));
+    let continuation = checkpointed(
+        handle
+            .checkpoint(&mut workspace)
+            .expect("fixture digest must fit"),
+    );
     assert_eq!(continuation.checkpoint().pending_delivery_batch_count(), 1);
     assert_eq!(continuation.checkpoint().last_delivery_sequence(), Some(1));
     assert_eq!(
@@ -72,7 +84,11 @@ fn checkpoint_and_resume_receipts_preserve_delivery_already_waiting_at_checkpoin
         WorthQueryManagedLiveContinuationDurability::RuntimeBound
     );
 
-    let resumed = resumed(continuation.resume(&mut workspace));
+    let resumed = resumed(
+        continuation
+            .resume(&mut workspace)
+            .expect("fixture digest must fit"),
+    );
     assert_eq!(resumed.receipt().pending_delivery_batch_count(), 1);
     assert_eq!(resumed.receipt().resumed_delivery_sequence(), Some(1));
     let handle = resumed.into_handle();
@@ -96,10 +112,15 @@ fn foreign_workspace_resume_stops_without_consuming_recovery_authority() {
     let mut foreign = task_workspace(request_execution, "managed-live-resume-foreign");
     let continuation = checkpointed(
         open_task_resource(request_execution, &mut owner, "tasks.resume-owner")
-            .checkpoint(&mut owner),
+            .checkpoint(&mut owner)
+            .expect("fixture digest must fit"),
     );
 
-    let stop = stopped(continuation.resume(&mut foreign));
+    let stop = stopped(
+        continuation
+            .resume(&mut foreign)
+            .expect("fixture digest must fit"),
+    );
     assert_eq!(
         stop.kind(),
         WorthQueryManagedLiveResumeStopKind::ForeignWorkspace
@@ -108,39 +129,15 @@ fn foreign_workspace_resume_stops_without_consuming_recovery_authority() {
         stop.next_action(),
         WorthQueryManagedLiveResumeNextAction::UseOwningWorkspace
     );
-    let resumed = resumed(stop.into_continuation().resume(&mut owner));
+    let resumed = resumed(
+        stop.into_continuation()
+            .resume(&mut owner)
+            .expect("fixture digest must fit"),
+    );
     assert!(closed(resumed.into_handle().close(&mut owner)).lane_terminal());
 }
 
-#[test]
-fn policy_drift_requires_authority_rebind_before_resume() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let mut workspace = policy_drift_workspace(request_execution);
-    let continuation = checkpointed(
-        open_task_resource(
-            request_execution,
-            &mut workspace,
-            "tasks.resume-policy-drift",
-        )
-        .checkpoint(&mut workspace),
-    );
-
-    let stop = stopped(continuation.resume(&mut workspace));
-    assert_eq!(
-        stop.kind(),
-        WorthQueryManagedLiveResumeStopKind::AuthorityRebindRequired
-    );
-    assert_eq!(
-        stop.next_action(),
-        WorthQueryManagedLiveResumeNextAction::RebindAuthority
-    );
-    assert!(matches!(
-        stop.close(&mut workspace),
-        crate::ordinary::live::WorthQueryManagedLiveCloseOutcome::Closed(_)
-    ));
-}
+mod policy_drift_requires_authority_rebind_before_resume;
 
 #[test]
 fn stale_basis_cannot_cross_a_managed_resume_boundary() {
@@ -154,7 +151,8 @@ fn stale_basis_cannot_cross_a_managed_resume_boundary() {
             &mut workspace,
             "tasks.resume-stale-basis",
         )
-        .checkpoint(&mut workspace),
+        .checkpoint(&mut workspace)
+        .expect("fixture digest must fit"),
     );
     let name = continuation.checkpoint().resource_name().to_string();
     let (_, generation) = live_subscription_async_identity(&workspace.runtime, &name);
@@ -174,7 +172,11 @@ fn stale_basis_cannot_cross_a_managed_resume_boundary() {
         )
         .expect("hostile async basis drift should project");
 
-    let stop = stopped(continuation.resume(&mut workspace));
+    let stop = stopped(
+        continuation
+            .resume(&mut workspace)
+            .expect("fixture digest must fit"),
+    );
     assert_eq!(stop.kind(), WorthQueryManagedLiveResumeStopKind::StaleBasis);
     assert_eq!(
         stop.next_action(),
@@ -215,7 +217,8 @@ fn managed_observation_keeps_temporal_and_async_causes_distinct() {
             &WorthQueryRuntimeAsyncResultProjection::completion_state(
                 BridgeAsyncCompletionState::Admitted(BridgeAsyncCompletionClass::Fulfilled),
                 "async:managed-current",
-            ),
+            )
+            .expect("fixture digest must fit"),
             &basis,
             &generation,
         )
@@ -265,7 +268,10 @@ fn preview_binding_never_moves_managed_authority_or_delivery_into_preview_truth(
             )
             .expect("preview should open");
         let binding = preview.use_view(handle.view());
-        assert!(preview.discard().discarded());
+        assert!(preview
+            .discard()
+            .expect("fixture digest must fit")
+            .discarded());
         binding
     };
 
@@ -303,7 +309,8 @@ fn abandoned_continuation_is_reaped_before_subsequent_runtime_work() {
             &mut workspace,
             "tasks.abandoned-continuation",
         )
-        .checkpoint(&mut workspace),
+        .checkpoint(&mut workspace)
+        .expect("fixture digest must fit"),
     );
     drop(continuation);
 

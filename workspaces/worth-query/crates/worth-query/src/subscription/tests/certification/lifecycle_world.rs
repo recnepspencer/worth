@@ -15,9 +15,15 @@ pub(super) fn active_lifecycle_certification_for(
         live_family,
         view_family,
         QuerySubscriptionConstructionSource::FacadeLive,
-    );
-    let selection = select_query_subscription_family(live.clone(), roomy_budget()).unwrap();
-    let context = SubscriptionLifecycleCertificationContext::from_live_selection(&live, &selection);
+    )
+    .expect("fixture digest must fit");
+    let selection = select_query_subscription_family(
+        live.clone().expect("fixture digest must fit"),
+        roomy_budget(),
+    )
+    .unwrap();
+    let context = SubscriptionLifecycleCertificationContext::from_live_selection(&live, &selection)
+        .expect("fixture digest must fit");
     let declaration = declare_query_subscription(selection, roomy_slice_budget()).unwrap();
     let lowering =
         lower_query_subscription_to_bridge(declaration, roomy_lowering_budget()).unwrap();
@@ -28,17 +34,20 @@ pub(super) fn active_lifecycle_certification_for(
             QuerySubscriptionScaleFixtureSize::Small,
             10 + patch_width + continuation_width,
             &activation,
-        ),
+        )
+        .expect("fixture digest must fit"),
         QuerySubscriptionScaleCounterSnapshot::from_activation(
             QuerySubscriptionScaleFixtureSize::Medium,
             (10 + patch_width + continuation_width) * 10,
             &activation,
-        ),
+        )
+        .expect("fixture digest must fit"),
         QuerySubscriptionScaleCounterSnapshot::from_activation(
             QuerySubscriptionScaleFixtureSize::Large,
             (10 + patch_width + continuation_width) * 100,
             &activation,
-        ),
+        )
+        .expect("fixture digest must fit"),
     )
     .unwrap();
     let mut runtime = ActiveSubscriptionRuntime::new();
@@ -56,7 +65,8 @@ pub(super) fn active_lifecycle_certification_for(
     let attachment = attach_subscription_consumer(
         &mut runtime,
         &handle,
-        SubscriptionConsumerAttachmentRequest::admitted("employee-dashboard", "cursor"),
+        SubscriptionConsumerAttachmentRequest::admitted("employee-dashboard", "cursor")
+            .expect("fixture digest must fit"),
         SubscriptionConsumerAttachmentBudget::admitted(
             ActiveFanoutWidth::measured(1),
             ConsumerDeliveryPacingWidth::measured(1),
@@ -151,7 +161,9 @@ pub(super) fn active_lifecycle_certification_for(
             None,
         )
     };
-    let (delta, lowering_report, _) = lower_query_subscription_maintenance_delta(delta).unwrap();
+    let (delta, lowering_report, _) =
+        lower_query_subscription_maintenance_delta(delta.expect("fixture digest must fit"))
+            .unwrap();
     let work_packet = build_active_delivery_work_packet(
         &mut runtime,
         &attachment,

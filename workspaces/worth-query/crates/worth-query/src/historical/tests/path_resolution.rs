@@ -32,7 +32,8 @@ fn hidden_path_substitution_is_denied() {
         4,
         8,
         HistoricalPathReuseDescriptor::with_replay_tail_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let capability = super::super::bridge_lowering::lower_policy_resolution(
         &declaration,
         &runtime.resolve_truth_view_policy(&declaration),
@@ -49,7 +50,8 @@ fn hidden_path_substitution_is_denied() {
             .bridge_admission_evidence()
             .terminal_projection_for_reporting(),
         ResolvedHistoricalPathClass::ResolvedFullReconstructionPath,
-    );
+    )
+    .expect("fixture digest must fit");
 
     let error = resolve_historical_materialization_path(admission, wrong_path)
         .expect_err("hidden substitution should be denied");
@@ -67,7 +69,8 @@ fn resolved_historical_counters_preserve_admission_lane_and_metadata() {
         4,
         8,
         HistoricalPathReuseDescriptor::with_replay_tail_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let capability = super::super::request::HistoricalCapabilityDescriptor::new_for_test(
         "basis:counts",
         Some(AdmittedHistoricalPathClass::AdmittedDeltaReplayPath),
@@ -76,7 +79,8 @@ fn resolved_historical_counters_preserve_admission_lane_and_metadata() {
         false,
         true,
         HistoricalPathReuseDescriptor::with_replay_tail_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let admission =
         admit_historical_evaluation_path(request, capability).expect("admission should succeed");
     let resolved = resolve_historical_materialization_path(
@@ -84,7 +88,8 @@ fn resolved_historical_counters_preserve_admission_lane_and_metadata() {
         HistoricalMaterializationDescriptor::new_for_test(
             "basis:counts",
             ResolvedHistoricalPathClass::ResolvedDeltaReplayPath,
-        ),
+        )
+        .expect("fixture digest must fit"),
     )
     .expect("resolution should succeed");
 
@@ -115,17 +120,20 @@ fn retained_reuse_counter_only_increments_when_capability_proves_reuse() {
         3,
         5,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let capability =
         super::super::request::HistoricalCapabilityDescriptor::retained_snapshot_for_test(
             "basis:retained-reuse",
             HistoricalPathReuseDescriptor::retained_reuse(),
-        );
+        )
+        .expect("fixture digest must fit");
     let admission =
         admit_historical_evaluation_path(request, capability).expect("admission should succeed");
     let resolved = resolve_historical_materialization_path(
         admission,
-        HistoricalMaterializationDescriptor::retained_snapshot_for_test("basis:retained-reuse"),
+        HistoricalMaterializationDescriptor::retained_snapshot_for_test("basis:retained-reuse")
+            .expect("fixture digest must fit"),
     )
     .expect("resolution should succeed");
 

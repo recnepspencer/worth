@@ -197,6 +197,7 @@ pub fn settle_primary_projection(
         .admit_execution_resources((), resource_request(), &*workspace)
         .unwrap()
         .execute(workspace)
+        .expect("certification execution identity fits digest bounds")
         .unwrap()
         .publish()
         .unwrap()

@@ -17,22 +17,27 @@ fn route_plan_envelope_preserves_inventory_authority_and_support() {
         "frontier-evidence-intake",
         WorthQueryLowerRuntimeSubjectIdentity::compose("test-subject")
             .field_value(WorthQueryEvidenceTag::new("test_subject"), "subject-1")
-            .seal(),
-    );
+            .seal()
+            .expect("fixture digest must fit"),
+    )
+    .expect("fixture digest must fit");
     let detail_identity =
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_value(WorthQueryEvidenceTag::new("test_detail"), "detail-1")
-            .seal();
+            .seal()
+            .expect("fixture digest must fit");
     let eligibility = WorthQueryLowerRuntimeCapabilityEligibility::admitted_with_evidence_identity(
         request,
         &detail_identity,
-    );
+    )
+    .expect("fixture digest must fit");
     let plan = WorthQueryLowerRuntimeRoutePlan::new(
         eligibility,
         WorthQueryLowerRuntimeRouteSubjectIdentity::from_evidence_identity(
             "test-route",
             &detail_identity,
-        ),
+        )
+        .expect("fixture digest must fit"),
     );
     let retained_evidence =
         crate::lower_runtime_routing::worth_query_lower_runtime_retained_evidence_identity(
@@ -41,8 +46,10 @@ fn route_plan_envelope_preserves_inventory_authority_and_support() {
                 WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
             )
             .field_value(WorthQueryEvidenceTag::new("test_retained"), "evidence-1")
-            .seal(),
-        );
+            .seal()
+            .expect("fixture digest must fit"),
+        )
+        .expect("fixture digest must fit");
     let boundary =
         WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(&plan, &retained_evidence);
     let envelope = WorthQueryLowerRuntimeBoundaryEnvelope::from_route_plan(
@@ -76,8 +83,10 @@ fn readmission_envelope_keeps_handoff_failure_topology_distinct() {
         "live-view-schema-admission",
         WorthQueryLowerRuntimeSubjectIdentity::compose("test-subject")
             .field_value(WorthQueryEvidenceTag::new("test_subject"), "subject-2")
-            .seal(),
-    );
+            .seal()
+            .expect("fixture digest must fit"),
+    )
+    .expect("fixture digest must fit");
     let detail_identity =
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_value(WorthQueryEvidenceTag::new("test_detail"), "detail-2")
@@ -85,7 +94,8 @@ fn readmission_envelope_keeps_handoff_failure_topology_distinct() {
     let eligibility = WorthQueryLowerRuntimeCapabilityEligibility::admitted_with_evidence_identity(
         request,
         &detail_identity,
-    );
+    )
+    .expect("fixture digest must fit");
     let retained_evidence =
         crate::lower_runtime_routing::worth_query_lower_runtime_retained_evidence_identity(
             "envelope-test",
@@ -93,7 +103,8 @@ fn readmission_envelope_keeps_handoff_failure_topology_distinct() {
                 WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
             )
             .field_value(WorthQueryEvidenceTag::new("test_retained"), "evidence-2")
-            .seal(),
+            .seal()
+            .expect("fixture digest must fit"),
         );
     let readmission =
         WorthQueryLowerRuntimeReadmissionReceipt::new(eligibility, &retained_evidence);

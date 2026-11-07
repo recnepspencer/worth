@@ -116,7 +116,10 @@ impl CollectionDeliveryWorld {
             &admitted,
             &self.workspace,
         );
-        let foundational = admitted.delta().foundational_projection();
+        let foundational = admitted
+            .delta()
+            .foundational_projection()
+            .expect("fixture digest must fit");
         assert_move_patch(&patch, &self.moved, &foundational);
         let duplicate = required_patch(
             request_execution,

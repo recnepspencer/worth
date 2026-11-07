@@ -117,6 +117,7 @@ pub fn settle_native_lane(
         )
         .unwrap()
         .execute(workspace)
+        .expect("positive invalidation execution identity fits digest bounds")
         .unwrap()
         .publish()
         .unwrap()

@@ -8,8 +8,12 @@ fn runtime_public_support_matrix_freezes_stable_deferred_and_unsupported_rows() 
     let workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("task.support-matrix")
         .expect("task runtime should open a named workspace");
-    let matrix = workspace.public_support_matrix();
-    let contract = workspace.public_api_contract();
+    let matrix = workspace
+        .public_support_matrix()
+        .expect("fixture digest must fit");
+    let contract = workspace
+        .public_api_contract()
+        .expect("fixture digest must fit");
 
     assert_eq!(
         matrix.backend_posture(),
@@ -68,12 +72,14 @@ fn runtime_public_support_matrix_freezes_stable_deferred_and_unsupported_rows() 
         shared_read_pinning.support_contract_digest(),
         Some(
             WorthQuerySharedReadPinningCertification::support_gate_required()
+                .expect("fixture digest must fit")
                 .closure()
                 .closure_digest()
         )
     );
     assert_ne!(
         WorthQuerySharedReadPinningCertification::support_gate_required()
+            .expect("fixture digest must fit")
             .closure()
             .posture()
             .as_str(),
@@ -84,7 +90,8 @@ fn runtime_public_support_matrix_freezes_stable_deferred_and_unsupported_rows() 
         .row("milestone-9.7-derived-closure-posture")
         .expect("milestone 9.7 derived closure row must be explicit");
     let expected_closure =
-        WorthQueryMilestoneNineSevenDerivedClosure::support_profile_publication_contract();
+        WorthQueryMilestoneNineSevenDerivedClosure::support_profile_publication_contract()
+            .expect("fixture digest must fit");
     assert_eq!(
         milestone_nine_seven_closure.support_contract_digest(),
         Some(expected_closure.closure_digest())

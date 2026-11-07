@@ -113,23 +113,39 @@ fn compose_graph_supports_symbolic_entity_followup_and_relation_retirement() {
         .expect("graph composition receipt should expose composition program");
     let lifecycle = receipt
         .graph_composition_lifecycle_outcomes()
-        .expect("graph composition receipt should expose lifecycle outcomes");
+        .expect("graph composition receipt should expose lifecycle outcomes")
+        .expect("fixture digest must fit");
     let composition_evidence = receipt
         .graph_composition_evidence()
-        .expect("graph composition receipt should expose composition evidence");
+        .expect("graph composition receipt should expose composition evidence")
+        .expect("fixture digest must fit");
 
     assert_eq!(receipt.write_receipts().len(), 4);
-    assert_eq!(receipt.batch_mutation_evidence().component_count(), 4);
-    assert_eq!(receipt.batch_mutation_evidence().resolved_target_count(), 4);
     assert_eq!(
         receipt
             .batch_mutation_evidence()
+            .expect("fixture digest must fit")
+            .component_count(),
+        4
+    );
+    assert_eq!(
+        receipt
+            .batch_mutation_evidence()
+            .expect("fixture digest must fit")
+            .resolved_target_count(),
+        4
+    );
+    assert_eq!(
+        receipt
+            .batch_mutation_evidence()
+            .expect("fixture digest must fit")
             .symbolic_resolution_count(),
         3
     );
     assert_eq!(
         receipt
             .batch_mutation_evidence()
+            .expect("fixture digest must fit")
             .symbolic_target_reference_count(),
         2
     );
