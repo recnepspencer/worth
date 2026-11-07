@@ -43,6 +43,23 @@ impl Aspect for Metrics {
 for each distinct case row type. `Exclusive` has a separate name because Rust
 places traits and struct types in the same namespace.
 
+Case lists compose without a case-count cap through `JoinCases<Left, Right>`.
+Either side is an existing case tuple or another join:
+
+```rust
+impl OneOf for Form {
+    type Row = FormValue;
+    type Cases = JoinCases<(A, B, C, D, E, F, G, H), (I, J)>;
+}
+```
+
+Each leaf case still supplies `From<CaseRow>` for the same outer value. Joins
+flatten into the ordinary case roster; they introduce no nested stored shape,
+selector or runtime view. Case order and join parentheses do not change the
+group contract. The roster and whole-group absence rule do; each case's fields
+and codecs retain their own contract. Balance larger join trees to stay within
+Rust's ordinary type-recursion limits. Unused joins generate no application code.
+
 A fragment's `BindingSet` supplies the original checked-constructor context through
 `Work<'a>` and its scalar admission callback through `with_admission`. Implement
 `Scalar<T>` on the set for each scalar value and `Record<T>` once for each row.
@@ -78,8 +95,10 @@ lowers to `interval.start` and `interval.end`. These remain ordinary scalar fiel
 Native scalar decoding borrows Query's original admission separately from domain
 work. Decode invokes the owner's checked constructor and retains its typed error.
 Scalar refusals identify the full leaf path; constructor refusals identify their
-owning record prefix. Membership and case tuples support arities 1 through 8, with nested membership
-tuples and empty membership tuples. Records support up to 16 constructor arguments.
+owning record prefix. Membership tuples support arities 1 through 8, with nested
+and empty membership tuples. Case tuples have arities 1 through 8 and compose
+through `JoinCases` without an SDK case-count limit. Records support up to 16
+constructor arguments.
 
 During schema authoring, select a field from that same record:
 

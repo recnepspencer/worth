@@ -35,3 +35,5 @@ mod relation_compile_fail;
 mod admission;
 mod field_queryability;
 mod installation_refusals;
+
+mod large_one_of;

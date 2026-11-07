@@ -54,7 +54,9 @@ Use these entry points to find an API and its worked use.
 Declare application graph membership with the type-owned
 [native schema fragment API](native-schema-fragments.md): entities list aspects
 and outgoing relations, fragments list entities and nested fragments, and one
-binding set supplies reusable records. Arrays and nested records become the
+binding set supplies reusable records. One-of case tuples compose with
+`JoinCases<Left, Right>` without an SDK case-count cap; nesting and order do not
+change the flat group contract. Arrays and nested records become the
 existing flat scalar fields. Typed record field handles serve operation bodies,
 requirements, principal bindings, bootstrap seeds and authorization predicates without a second field declaration.
 A feature fragment may add optional aspects to an entity declared by another
