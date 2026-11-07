@@ -72,6 +72,7 @@ type ReadResult = Result<Option<u64>, WorthQueryPredecessorReadDenial>;
 struct Probe {
     wrong_scope: bool,
     undeclared: bool,
+    foreign: bool,
     after_read: Option<Box<dyn FnOnce()>>,
     around_read: Option<Box<dyn FnOnce(&mut dyn FnMut() -> ReadResult) -> ReadResult>>,
     values: Vec<Result<Option<u64>, WorthQueryPredecessorReadDenial>>,
@@ -81,6 +82,15 @@ pub fn observe<B: ApplicationMutationBinding<Schema>>(
     reader: &mut DecisionReader<'_, '_, '_, Schema, B>,
     source: &WorthQueryInvariantEntityIdentity<Schema, Model>,
 ) {
+    let foreign = PROBE.with(|probe| probe.borrow().foreign);
+    // Resolving B observes only its identity/key at C. Its value is read only
+    // through the historical operation, so later value edits must not invalidate A.
+    let foreign_source = foreign.then(|| {
+        reader
+            .resolve_entity(ModelKey::at("ModelKey"), "b".to_owned())
+            .unwrap()
+    });
+    let source = foreign_source.as_ref().unwrap_or(source);
     let wrong = PROBE.with(|probe| probe.borrow().wrong_scope);
     let undeclared = PROBE.with(|probe| probe.borrow().undeclared);
     let mut read = || {
@@ -117,6 +127,7 @@ pub fn observe<B: ApplicationMutationBinding<Schema>>(
 }
 mod control;
 mod courts;
+mod foreign;
 pub(super) mod program;
 type Host = WorthQueryProgramApplicationRuntime<Schema, program::Program>;
 fn install(worker: bool) -> Host {

@@ -105,9 +105,7 @@ pub fn declare(
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
         .parameter(expected())
-        .where_equal(ModelKey::at("ModelKey"), expected())
-        .build()
-        .unwrap();
+        .where_equal(ModelKey::at("ModelKey"), expected());
     schema
         .application_query(definition)
         .application_query_binding::<Binding>()

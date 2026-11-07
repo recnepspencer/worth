@@ -6,7 +6,7 @@ impl ApplicationAuthoredCorrectionFamily<Schema> for Family {
     const IDENTITY: &'static str = "owned-outputs.authored-member-family.v1";
     type Entity = Member;
     fn logical_key() -> ApplicationAuthoredLogicalKey<Schema, Member> {
-        ApplicationAuthoredLogicalKey::from_field(MemberKey::at("MemberKey")).unwrap()
+        ApplicationAuthoredLogicalKey::from_field(MemberKey::at("MemberKey"))
     }
 }
 pub struct UndoRetire;
@@ -46,16 +46,14 @@ impl ApplicationCorrectionBinding<Schema> for UndoRetire {
         DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
             DeclaredPreImageDemand::new(
                 vec![
-                    DeclaredPreImageLocus::from_field(MemberKey::at("MemberKey")).unwrap(),
-                    DeclaredPreImageLocus::from_field(MemberValue::at("MemberValue")).unwrap(),
+                    DeclaredPreImageLocus::from_field(MemberKey::at("MemberKey")),
+                    DeclaredPreImageLocus::from_field(MemberValue::at("MemberValue")),
                 ],
                 4096,
             )
-            .unwrap()
             .with_relations([DeclaredPreImageRelationLocus::from_relation(
                 ModelMember::reference(),
-            )])
-            .unwrap(),
+            )]),
         )
     }
     fn derive_correction(
@@ -70,13 +68,17 @@ impl ApplicationCorrectionBinding<Schema> for UndoRetire {
         };
         let key = StringApplicationValueBinding::decode(
             fields
-                .field(&DeclaredPreImageLocus::from_field(MemberKey::at("MemberKey")).unwrap())
+                .field(&DeclaredPreImageLocus::from_field(MemberKey::at(
+                    "MemberKey",
+                )))
                 .ok_or(MissingPreImage)?,
         )
         .map_err(|_| InvalidPreImage)?;
         let value = U64ApplicationValueBinding::decode(
             fields
-                .field(&DeclaredPreImageLocus::from_field(MemberValue::at("MemberValue")).unwrap())
+                .field(&DeclaredPreImageLocus::from_field(MemberValue::at(
+                    "MemberValue",
+                )))
                 .ok_or(MissingPreImage)?,
         )
         .map_err(|_| InvalidPreImage)?;

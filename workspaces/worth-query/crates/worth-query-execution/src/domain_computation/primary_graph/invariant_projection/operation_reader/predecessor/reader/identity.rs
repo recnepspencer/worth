@@ -1,6 +1,33 @@
 //! Historical read handles cannot pass as a current mutation projection identity.
 use super::*;
 
+/// A historical entity is descriptive read data, never a current mutation handle.
+/// The current counterpart is accepted by the ordinary reader:
+///
+/// ```
+/// use worth_query_declaration::facade::application_schema::ApplicationSchema;
+/// use worth_query_execution::facade::primary_graph::{
+///     WorthQueryApplicationOperationInvariantProjectionReader as Reader,
+///     WorthQueryInvariantEntityIdentity as CurrentEntity, PredecessorEntity,
+/// };
+/// fn current<S: ApplicationSchema, E, O>(reader: &Reader<'_, '_, S, O>, entity: &CurrentEntity<S, E>) {
+///     let _ = reader.mutation_target(entity);
+///     let _historical_type: Option<&PredecessorEntity<S, E>> = None;
+/// }
+/// ```
+///
+/// Historical identities cannot take that path:
+///
+/// ```compile_fail
+/// use worth_query_declaration::facade::application_schema::ApplicationSchema;
+/// use worth_query_execution::facade::primary_graph::{
+///     WorthQueryApplicationOperationInvariantProjectionReader as Reader,
+///     PredecessorEntity,
+/// };
+/// fn historical<S: ApplicationSchema, E, O>(reader: &Reader<'_, '_, S, O>, entity: &PredecessorEntity<S, E>) {
+///     let _ = reader.mutation_target(entity);
+/// }
+/// ```
 pub struct PredecessorEntity<S, E> {
     pub(super) identity: WorthQueryInvariantEntityIdentity<S, E>,
 }

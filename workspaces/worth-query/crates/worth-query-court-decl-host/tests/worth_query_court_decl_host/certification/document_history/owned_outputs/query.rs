@@ -36,9 +36,7 @@ pub fn declare(schema: ApplicationSchemaDeclarationBuilder<Schema>) -> Applicati
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
-        .$authorization($($ability)?)
-        .build()
-        .unwrap();
+        .$authorization($($ability)?);
     schema
         .application_query(definition)
         .application_query_binding::<Binding>()

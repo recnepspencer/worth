@@ -20,12 +20,10 @@ impl BindingSet for GrantBindings {
 }
 impl Scalar<String> for GrantBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
     const WRITABLE: bool = false;
 }
 impl Scalar<u64> for GrantBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
     const WRITABLE: bool = false;
 }
 #[derive(Clone, Copy)]
@@ -57,12 +55,19 @@ pub struct GrantRow {
 impl Record<GrantRow> for GrantBindings {
     fn record() -> impl Shape<GrantRow, Self> {
         field("Action", |row: &GrantRow| row.action.clone())
+            .equality_queryable(true)
             .and("Purpose", |row: &GrantRow| row.purpose.clone())
+            .equality_queryable(true)
             .and("Status", |row: &GrantRow| row.status.clone())
+            .equality_queryable(true)
             .and("Workflow", |row: &GrantRow| row.workflow.clone())
+            .equality_queryable(true)
             .and("Before", |row: &GrantRow| row.before.clone())
+            .equality_queryable(true)
             .and("After", |row: &GrantRow| row.after.clone())
+            .equality_queryable(true)
             .and("Depth", |row: &GrantRow| row.depth.clone())
+            .equality_queryable(true)
             .build(
                 |action,
                  purpose,

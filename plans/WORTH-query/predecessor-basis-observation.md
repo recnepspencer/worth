@@ -83,3 +83,17 @@ HistoricalSelection and AuthoredRestoration refuse predecessor-basis unavailabil
 with the origin kind; their fresh precommit basis is never consumed-input evidence.
 Follow-up #94 owns that future capability. Courts cover independent permissions,
 scope mismatch and restored-origin refusal, with a skip-read-admission mutant.
+
+## Merged-master qualification
+
+The generic public fixture reads a foreign model's old value while its own C
+value changes. Editing only that foreign value afterwards must not contact the
+producer: historical keys are not current dependencies. READ permission remains
+current support, independently authorized through the operation owner.
+
+Checkpoint reuse retains the existing SourceReadAuthorization policy: these
+facts are deliberately nonreusable in the checkpoint encoder. Reopening can
+therefore run the real producer again. Its old-root lookup then refuses typed
+PredecessorBasisUnavailable, as D1260 requires; an application may explicitly
+choose full computation, but never substitute C values for historical values.
+No operational root hold or old authorization is serialized by this slice.
