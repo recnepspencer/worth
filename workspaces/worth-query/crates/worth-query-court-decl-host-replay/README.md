@@ -97,18 +97,81 @@ Every new failing metric or axis fails the gate. A healed coordinate fails
 until its owning lane removes the stale exception in its landing change.
 Kind commitment and root admission have no exception.
 
+At the retained specimen sizes, installed-index doubling yields **1.706x**
+whole-commit work and **1.750x** index-maintenance work. Kind commitment
+independently yields **1.072x** under model doubling and **1.000x** under
+history doubling. These are recorded measurements, not exact-count test
+assertions.
+
 The injected-loop fixture charges actual whole-state visits through Execution.
 It checks every phase and every axis, rejects the loop through both the growth
 comparison and registry admission, and accepts the corresponding fixed-change
 operation. It does not pretend that this tests instrumentation inside every
 production phase; owner-specific mutations still belong to the fixing lanes.
 
-## Qualification limitation
+## Baseline qualification (D1308)
 
-The ordinary Query suites currently refuse on clean `origin/master` as well
-as this branch: `worth-query-court-execution/tests/compile_fail.rs` launches
-Cargo inside a test, contrary to the governed compiler-prebuild boundary.
-There is no registered Query prebuild path for that fixture. Consequently the
-required full Query runtime test diff remains unmeasured. The focused scale
-court, workspace builds and static checks are separate evidence, not a
-replacement for that missing qualification.
+Baseline: clean `origin/master` at
+`5f454efe0341d3527c43471ce219aa5005abb194`, using its own detached checkout
+and target directory. Both were removed after preserving the results.
+Candidate implementation: `392abe8c9bb8800dec765e3a22b736d61f898a01`,
+including P1 `1158697177`. Landing remains ordered after P1's contract slice
+certifies.
+
+The exact full-gate command, run from each checkout root, was:
+
+```sh
+python3 scripts/ci/query_gate.py relational,query-execution,query-rest,query-process,boundary --out target/sc-qualification
+```
+
+Both runs exited **1**. The Query execution, rest and process suites have the
+same source-census refusal, with zero executed tests and zero new refusals:
+`worth-query-court-execution/tests/compile_fail.rs:12`, function
+`foreign_schema_member_reports_the_schema_requirement`, invokes
+`Command::new("cargo")`. D1308 accepts this baseline comparison for this lane;
+the census and test remain unchanged. The independent owner tracks the
+baseline red in [#92](https://github.com/recnepspencer/worth/issues/92).
+Query runtime coverage remains unmeasured by those three suites.
+
+The initial candidate run also exposed an obsolete private unique-index
+refresh assertion retired by P1. After deleting that one test, the exact
+final relational command was:
+
+```sh
+python3 scripts/ci/query_gate.py relational --out target/sc-relational-final
+```
+
+It exited **1**: 2,540 of 2,542 tests passed, with the same two historical-kind
+custody/funding failures as clean master (2,532 of 2,534 passed), tracked in
+[#64](https://github.com/recnepspencer/worth/issues/64). There are **zero new
+failures**. Boundary suites pass on both checkouts. Root and Query workspace
+builds, boundary-check, agent-context, both rustfmt checks, dirty Rust line
+caps and `git diff --check` pass. The focused court's three tests pass, and an
+actual injected-loop mutation fails before SHA-256-verified restoration.
+
+The preserved machine comparison is
+`../build-cache/sc-test-diff.json` relative to the checkout root; raw baseline
+and candidate evidence is in the adjacent `sc-final-baseline-evidence` and
+`sc-final-current-evidence` directories.
+
+## Isolated runtime (D1308)
+
+Each court test ran **once**, in its own process, on 2026-11-06 at 18:23
+America/Denver. The runner waited for the one-minute load average to fall
+below 15 and recorded `uptime` immediately before each sample. N, H and K
+were unchanged. All three tests passed and remained below 20 seconds.
+
+| Test | Starting load (1 / 5 / 15 min) | Wall seconds | User / system seconds |
+|---|---|---|---|
+| Public document edit/read/page/undo | 11.69 / 45.23 / 47.96 | 8.695 | 8.366 / 0.100 |
+| Native fixed edit and independent doublings | 10.60 / 43.89 / 47.46 | 1.087 | 1.052 / 0.022 |
+| Injected whole-state loop sensitivity | 10.60 / 43.89 / 47.46 | 0.008 | 0.005 / 0.001 |
+
+These measurements exclude compilation and execute the already-built
+canonical court binary. Each invocation used
+`RUST_MIN_STACK=67108864 <binary> --exact <full-test-name> --nocapture --test-threads=1`
+from the checkout root and exited **0**. Exact commands, uptime output, CPU
+times and per-test logs are preserved in
+`../build-cache/sc-final-current-evidence/d1308-isolated/results.json`.
+Elapsed times remain telemetry; only deterministic work growth decides the
+court result.
