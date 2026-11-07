@@ -12,25 +12,25 @@ impl WorthQueryAdmittedOperation {
         work: worth_query_installation::facade::WorthQueryCanonicalWorkEvidence,
     ) -> Result<Self, WorthQueryOperationAuthorizationDenial> {
         if !matches!(
-            self.authorization_basis,
+            self.data.authorization_basis,
             ErasedAuthorizationBasis::Capability
         ) {
             return Err(WorthQueryOperationAuthorizationDenial::new(
                 WorthQueryOperationAuthorizationDenialKind::Refused(
                     AuthorizationRefusal::InconsistentDecision,
                 ),
-                &self.operation,
+                &self.data.operation,
             ));
         }
-        self.canonical_work = self.canonical_work.with_execution_work(work);
-        self.authorization_basis = ErasedAuthorizationBasis::CapabilityRevocation { binding };
+        self.data.canonical_work = self.data.canonical_work.with_execution_work(work);
+        self.data.authorization_basis = ErasedAuthorizationBasis::CapabilityRevocation { binding };
         Ok(self)
     }
 
     pub(in crate::domain_computation) fn capability_revocation_binding(
         &self,
     ) -> Option<&WorthQueryCapabilityRevocationBinding> {
-        match &self.authorization_basis {
+        match &self.data.authorization_basis {
             ErasedAuthorizationBasis::CapabilityRevocation { binding } => Some(binding),
             _ => None,
         }

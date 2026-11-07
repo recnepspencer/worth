@@ -266,52 +266,55 @@ fn construct_admitted_operation<Schema, Principal, PrincipalIdentity, Operation,
         preparation.operation.operation_type_id(),
         preparation.operation.input_type_id(),
     );
-    let core = WorthQueryAdmittedOperation {
-        home_owner: preparation
+    let core = WorthQueryAdmittedOperation::retain_original(
+        execution,
+        preparation
             .runtime
             .runtime
             .product_runtime
             .owner
             .owner_identity(),
-        runtime_authority,
-        binding_identity: preparation.operation.binding_identity().clone(),
-        operation: preparation.operation.operation().to_string(),
-        operation_authority_identity: preparation.operation.authority_identity().into(),
-        operation_authority_identity_bytes: preparation.operation.authority_identity_bytes(),
-        operation_definition_identity: preparation.operation.definition_identity_bytes(),
-        admission_identity: preparation.admission_identity,
-        resource_binding_identity: preparation.resource_binding_identity,
-        operation_scope_binding:
-            crate::domain_computation::authorization::admission::operation_scope_binding(
-                preparation.runtime,
-                preparation.principal,
+        WorthQueryAdmittedOperationData {
+            runtime_authority,
+            binding_identity: preparation.operation.binding_identity().clone(),
+            operation: preparation.operation.operation().to_string(),
+            operation_authority_identity: preparation.operation.authority_identity().into(),
+            operation_authority_identity_bytes: preparation.operation.authority_identity_bytes(),
+            operation_definition_identity: preparation.operation.definition_identity_bytes(),
+            admission_identity: preparation.admission_identity,
+            resource_binding_identity: preparation.resource_binding_identity,
+            operation_scope_binding:
+                crate::domain_computation::authorization::admission::operation_scope_binding(
+                    preparation.runtime,
+                    preparation.principal,
+                    preparation.scope,
+                    preparation.operation,
+                ),
+            original_scope: super::original_input::retain_original_scope(
+                execution,
                 preparation.scope,
-                preparation.operation,
-            ),
-        original_scope: super::original_input::retain_original_scope(
-            execution,
-            preparation.scope,
-            &contracts,
-        )?,
-        canonical_work,
-        scope_entity_id: preparation.scope.entity_id(),
-        scope_entity_kind: preparation.scope.entity_kind(),
-        scope_entity_name: preparation.scope.entity_name().to_string(),
-        authentication_valid_until: preparation.principal.valid_until(),
-        request_scope: preparation.request.clone(),
-        contracts,
-        mutation_preconditions: preparation.preconditions,
-        authorization: Some(authorization),
-        governed_input_identity: None,
-        original_input: None,
-        original_inspection_disclosure: None,
-        authorization_basis: ErasedAuthorizationBasis::Conventional,
-        graph_work: preparation.graph_work,
-        source_partition_identity: None,
-        source_expectation_kind: None,
-        source_facts: Vec::new(),
-        query_context: None,
-        required_output_demand: None,
-    };
+                &contracts,
+            )?,
+            canonical_work,
+            scope_entity_id: preparation.scope.entity_id(),
+            scope_entity_kind: preparation.scope.entity_kind(),
+            scope_entity_name: preparation.scope.entity_name().to_string(),
+            authentication_valid_until: preparation.principal.valid_until(),
+            request_scope: preparation.request.clone(),
+            contracts,
+            mutation_preconditions: preparation.preconditions,
+            authorization: Some(authorization),
+            governed_input_identity: None,
+            original_input: None,
+            original_inspection_disclosure: None,
+            authorization_basis: ErasedAuthorizationBasis::Conventional,
+            graph_work: preparation.graph_work,
+            source_partition_identity: None,
+            source_expectation_kind: None,
+            source_facts: Vec::new(),
+            query_context: None,
+            required_output_demand: None,
+        },
+    )?;
     WorthQueryAdmittedApplicationOperation::mint(core, tag, None)
 }

@@ -20,7 +20,7 @@ use super::identity_admitted::mint_operation_identity_admitted;
 use super::identity_admitted::AdmittedOperationIdentityStop;
 use super::ErasedAuthorizationBasis;
 use super::WorthQueryAdmittedApplicationOperation;
-use super::WorthQueryAdmittedOperation;
+use super::{WorthQueryAdmittedOperation, WorthQueryAdmittedOperationData};
 use crate::domain_computation::authorization::admission::validate_static_authority_retained;
 use crate::domain_computation::authorization::admission::WorthQueryRetainedMutationStaticStop;
 use crate::domain_computation::authorization::start_selected_operation_graph_work_admitted;
@@ -215,49 +215,54 @@ where
         operation.operation_type_id(),
         operation.input_type_id(),
     );
-    let core = WorthQueryAdmittedOperation {
-        runtime_authority: runtime.runtime.authority_identity(),
-        home_owner: runtime.runtime.product_runtime.owner.owner_identity(),
-        binding_identity: operation.binding_identity().clone(),
-        operation: operation.operation().to_owned(),
-        operation_authority_identity: Arc::from(operation.authority_identity()),
-        operation_authority_identity_bytes: operation.authority_identity_bytes(),
-        operation_definition_identity: operation.definition_identity_bytes(),
-        admission_identity,
-        resource_binding_identity,
-        operation_scope_binding: WorthQueryOperationScopeBinding::mint(
-            runtime.runtime.authority_identity(),
-            operation.binding_identity(),
-            operation.authority_identity(),
-            principal.principal().principal_entity_id(),
-            scope.scope().entity_id(),
-        ),
-        original_scope: super::original_input::retain_original_scope(
-            execution,
-            scope.scope(),
-            &contracts,
-        )
-        .map_err(Stop::Authorization)?,
-        canonical_work,
-        scope_entity_id: scope.scope().entity_id(),
-        scope_entity_kind: scope.scope().entity_kind(),
-        scope_entity_name: scope.scope().entity_name().to_owned(),
-        authentication_valid_until: principal.principal().valid_until(),
-        request_scope: request.clone(),
-        contracts,
-        mutation_preconditions: preconditions,
-        authorization: Some(authorization),
-        governed_input_identity: None,
-        original_input: None,
-        original_inspection_disclosure: None,
-        authorization_basis: ErasedAuthorizationBasis::Conventional,
-        graph_work,
-        source_partition_identity: None,
-        source_expectation_kind: None,
-        source_facts: Vec::new(),
-        query_context: None,
-        required_output_demand: None,
-    };
+    let core = WorthQueryAdmittedOperation::retain_original(
+        execution,
+        runtime.runtime.product_runtime.owner.owner_identity(),
+        WorthQueryAdmittedOperationData {
+            runtime_authority: runtime.runtime.authority_identity(),
+
+            binding_identity: operation.binding_identity().clone(),
+            operation: operation.operation().to_owned(),
+            operation_authority_identity: Arc::from(operation.authority_identity()),
+            operation_authority_identity_bytes: operation.authority_identity_bytes(),
+            operation_definition_identity: operation.definition_identity_bytes(),
+            admission_identity,
+            resource_binding_identity,
+            operation_scope_binding: WorthQueryOperationScopeBinding::mint(
+                runtime.runtime.authority_identity(),
+                operation.binding_identity(),
+                operation.authority_identity(),
+                principal.principal().principal_entity_id(),
+                scope.scope().entity_id(),
+            ),
+            original_scope: super::original_input::retain_original_scope(
+                execution,
+                scope.scope(),
+                &contracts,
+            )
+            .map_err(Stop::Authorization)?,
+            canonical_work,
+            scope_entity_id: scope.scope().entity_id(),
+            scope_entity_kind: scope.scope().entity_kind(),
+            scope_entity_name: scope.scope().entity_name().to_owned(),
+            authentication_valid_until: principal.principal().valid_until(),
+            request_scope: request.clone(),
+            contracts,
+            mutation_preconditions: preconditions,
+            authorization: Some(authorization),
+            governed_input_identity: None,
+            original_input: None,
+            original_inspection_disclosure: None,
+            authorization_basis: ErasedAuthorizationBasis::Conventional,
+            graph_work,
+            source_partition_identity: None,
+            source_expectation_kind: None,
+            source_facts: Vec::new(),
+            query_context: None,
+            required_output_demand: None,
+        },
+    )
+    .map_err(Stop::Authorization)?;
     let admitted = WorthQueryAdmittedApplicationOperation::mint(core, tag, None)
         .map_err(Stop::Authorization)?;
     if let Some(interruption) = request.interruption() {

@@ -20,7 +20,7 @@ impl<Schema, Operation, Input, Scope>
         let Some(WorthQueryRetainedAuthorizationDecisionFacts::Abilities {
             principal,
             decisions,
-        }) = &self.core.authorization
+        }) = &self.core.data.authorization
         else {
             panic!("ViewAccount must retain conventional observations");
         };
@@ -53,7 +53,7 @@ impl<Schema, Operation, Input, Scope>
         source: &CancellationSource,
     ) {
         let Some(WorthQueryRetainedAuthorizationDecisionFacts::Abilities { decisions, .. }) =
-            &self.core.authorization
+            &self.core.data.authorization
         else {
             panic!("ViewAccount must retain conventional observations");
         };
