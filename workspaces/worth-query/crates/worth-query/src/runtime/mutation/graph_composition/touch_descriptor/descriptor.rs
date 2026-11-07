@@ -125,7 +125,7 @@ impl WorthQueryGraphTouchDescriptor {
             declared_collection: Some(WorthQueryMutationTargetCollectionIdentity::new(
                 "graph-touch-descriptor-declared",
                 collection,
-            )),
+            )?),
             relation_kind_id: None,
             declared_symbol: None,
             declared_aspect_operations: sorted_unique_operations(declared_aspect_operations),
@@ -133,9 +133,9 @@ impl WorthQueryGraphTouchDescriptor {
             has_symbolic_target_reference: false,
             has_existing_truth_binding: false,
             symbolic_aspect_reference_count: 0,
-        });
+        })?;
         let breadth = WorthQueryGraphCompositionBreadth::empty();
-        let program = WorthQueryGraphCompositionProgram::empty();
+        let program = WorthQueryGraphCompositionProgram::empty()?;
         Self::from_rows(
             WorthQueryGraphTouchDescriptorKind::AuthoritativeMutationBatch,
             vec![row],
@@ -152,7 +152,7 @@ impl WorthQueryGraphTouchDescriptor {
         commands: &[WorthQueryWriteCommand],
     ) -> Result<Self, WorthQueryGraphTouchDescriptorDenial> {
         validate_graph_touch_descriptor_inputs(program, breadth, commands)?;
-        let rows = derive_command_touch_rows(program, commands);
+        let rows = derive_command_touch_rows(program, commands)?;
         Self::from_rows(kind, rows, breadth, program, commands.len())
     }
 
@@ -169,9 +169,9 @@ impl WorthQueryGraphTouchDescriptor {
                 "read graph touch descriptor requires a collection",
             ));
         }
-        let rows = derive_read_touch_rows(&collection, verbs, &shape);
+        let rows = derive_read_touch_rows(&collection, verbs, &shape)?;
         let breadth = WorthQueryGraphCompositionBreadth::empty();
-        let program = WorthQueryGraphCompositionProgram::empty();
+        let program = WorthQueryGraphCompositionProgram::empty()?;
         Self::from_rows(kind, rows, &breadth, &program, 0)
     }
 
@@ -237,7 +237,7 @@ impl WorthQueryGraphTouchDescriptor {
                     inventory.touched_aspect_count(),
                 )
                 .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("row"), row_digests)
-                .seal();
+                .seal()?;
         Ok(Self {
             kind,
             rows,

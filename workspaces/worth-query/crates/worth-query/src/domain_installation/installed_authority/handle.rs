@@ -143,7 +143,7 @@ impl<D> WorthQueryInstalledDomainHandle<D> {
             .validate_installed_domain_handle(self)
             .map_err(WorthQueryInstalledDomainDeclarationContextDenial::handle)?;
         WorthQueryInstalledDomainDeclarationContext::admit(
-            self.authority_witness(),
+            self.authority_witness()?,
             operating_context,
         )
     }
@@ -160,7 +160,7 @@ impl<D> WorthQueryInstalledDomainHandle<D> {
         D: crate::application::WorthQueryDomainEntryMarker + 'static,
         C: crate::application::WorthQueryDomainOperatingContext<D>,
     {
-        let witness = self.authority_witness();
+        let witness = self.authority_witness()?;
         workspace
             .validate_installed_domain_witness::<D>(&witness)
             .map_err(WorthQueryInstalledDomainDeclarationContextDenial::handle)?;

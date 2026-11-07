@@ -179,7 +179,7 @@ impl WorthQueryMemoryWorkspace {
             .map(|mutation| {
                 self.receipt_from_prepared(mutation, &changed, &commit_identity, &snapshot_identity)
             })
-            .collect())
+            .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?)
     }
 
     fn attach_inserted_entities(

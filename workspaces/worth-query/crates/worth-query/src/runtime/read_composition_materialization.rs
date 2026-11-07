@@ -177,7 +177,7 @@ fn admit_materialized_read_view(
         .backend
         .admit_live_view_declaration(view_name, request, schema_view)
         .map_err(execution_denial_from_workspace_error)?;
-    if let Some(message) = admission_receipt.drift_from_request(view_name, request) {
+    if let Some(message) = admission_receipt.drift_from_request(view_name, request)? {
         return Err(WorthQueryReadDenial::new(
             WorthQueryReadDenialKind::ExecutionDenied,
             message,

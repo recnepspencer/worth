@@ -96,10 +96,12 @@ impl WorthQueryRuntime {
         let basis_binding_identity = async_source_binding
             .as_ref()
             .map(WorthQueryRuntimeAsyncSourceBinding::current_basis_identity)
+            .transpose()?
             .unwrap_or_else(|| activation.installation.basis_binding_identity().clone());
         let checkpoint_identity = async_source_binding
             .as_ref()
             .map(WorthQueryRuntimeAsyncSourceBinding::current_generation_identity)
+            .transpose()?
             .unwrap_or_else(|| activation.active_lane_handle.checkpoint_identity().clone());
         let live_target =
             WorthQueryLiveArtifactTarget::from_subscription_installation(&activation.installation);
@@ -267,7 +269,7 @@ pub(super) fn admit_live_view_declaration_receipt(
                 message: error.to_string(),
             },
         )?;
-    if let Some(message) = admission_receipt.drift_from_request(view_name, request) {
+    if let Some(message) = admission_receipt.drift_from_request(view_name, request)? {
         return Err(WorthQueryRuntimeError::LiveSubscriptionInstallation {
             view_name: view_name.to_string(),
             stage: "backend-live-admission-receipt",

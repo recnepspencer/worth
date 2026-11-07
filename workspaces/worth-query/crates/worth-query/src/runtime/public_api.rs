@@ -165,7 +165,7 @@ impl WorthQueryRuntimePublicApiContract {
         let families: Vec<_> = profile
             .rows()
             .map(WorthQueryRuntimePublicApiFamilyContract::from_support_row)
-            .collect()?;
+            .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?;
         let stable_family_count = families
             .iter()
             .filter(|family| family.status() == WorthQueryRuntimeFamilySupportStatus::Supported)

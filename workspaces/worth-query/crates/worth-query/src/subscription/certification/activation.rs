@@ -114,19 +114,19 @@ pub fn certify_query_subscription_activation(
             QuerySubscriptionCertificationDenialKind::ActivationAdmissionMismatch,
             "subscription activation input does not match the admitted subscription artifact",
             &[
-                validation_role_evidence_identity("admission", admission.evidence_identity())?,
+                validation_role_evidence_identity("admission", admission.evidence_identity()),
                 validation_role_evidence_identity(
                     "activation_admission",
                     activation.admission_identity(),
-                )?,
+                ),
                 validation_role_evidence_identity(
                     "admission_query",
                     admission.query_declaration_identity(),
-                )?,
+                ),
                 validation_role_evidence_identity(
                     "activation_query",
                     activation.query_declaration_identity(),
-                )?,
+                ),
             ],
         ));
     }
@@ -142,19 +142,19 @@ pub fn certify_query_subscription_activation(
             QuerySubscriptionCertificationDenialKind::ScaleSlopeSourceMismatch,
             "subscription scale slope report does not certify this activation source",
             &[
-                validation_role_evidence_identity("activation", activation.evidence_identity())?,
+                validation_role_evidence_identity("activation", activation.evidence_identity()),
                 validation_role_evidence_identity(
                     "scale_activation",
                     scale_report.activation_identity(),
-                )?,
+                ),
                 validation_role_evidence_identity(
                     "activation_admission",
                     activation.admission_identity(),
-                )?,
+                ),
                 validation_role_evidence_identity(
                     "scale_admission",
                     scale_report.admission_identity(),
-                )?,
+                ),
             ],
         ));
     }

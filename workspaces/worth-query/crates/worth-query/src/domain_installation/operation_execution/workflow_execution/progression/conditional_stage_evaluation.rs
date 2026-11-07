@@ -45,6 +45,10 @@ pub(super) fn evaluate<D: 'static, O: 'static, F: 'static, L: BasisOperationLane
     super::workflow_conditional_counters::add_conditional_counters(run_counters, counters);
     match outcome {
         Ok(conditional) => Ok(conditional),
+        Err(crate::domain_installation::WorthQueryConditionalEvaluationStop::EvidenceIdentityDerivationDenied(cause)) => {
+            Err(ConditionalStageStop::Denied(super::WorthQueryWorkflowAdvanceDenialKind::EvidenceIdentityDerivationDenied(cause)))
+        }
+
         Err(crate::domain_installation::WorthQueryConditionalEvaluationStop::Deferred(
             conditional,
         )) => Err(ConditionalStageStop::Deferred(conditional)),

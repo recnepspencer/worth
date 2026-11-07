@@ -129,12 +129,16 @@ fn slope_digest(
     scaled: &[super::scaled::WorthQueryDomainCapabilityScaledEvidence; 3],
     projector: impl Fn(&super::scaled::WorthQueryDomainCapabilityScaledEvidence) -> (usize, &str),
 ) -> Result<String, IdentityDerivationDenial> {
-    Ok(compose_slope_digest(scaled.iter().enumerate().map(
-        |(index, evidence)| {
-            let (width, digest) = projector(evidence);
-            compose_slope_scale_entry_digest(label, index + 1, width, digest)
-        },
-    ))?)
+    Ok(compose_slope_digest(
+        scaled
+            .iter()
+            .enumerate()
+            .map(|(index, evidence)| {
+                let (width, digest) = projector(evidence);
+                compose_slope_scale_entry_digest(label, index + 1, width, digest)
+            })
+            .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?,
+    )?)
 }
 
 #[cfg(test)]

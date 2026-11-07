@@ -224,7 +224,7 @@ pub(crate) fn authoritative_mutation_input_identity(
         .into_iter()
         .map(declared_aspect_operation_identity)
         .collect::<Result<Vec<_>, _>>()?;
-    let metadata_identities = metadata_identities(command);
+    let metadata_identities = metadata_identities(command)?;
     let naming_identity = naming_identity(command)?;
     let continuity_identity = continuity_identity(command)?;
     let mut identity =

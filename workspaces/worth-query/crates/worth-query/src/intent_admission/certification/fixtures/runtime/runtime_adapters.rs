@@ -52,7 +52,7 @@ impl WorthQueryRuntimePreviewBasisAdapter for CertificationPreviewBasis {
             authority,
             label.clone(),
             effect_policy,
-            WorthQueryBasisAdmissionEvidenceRow::rows_from_values(["certification-preview-basis"]),
+            WorthQueryBasisAdmissionEvidenceRow::rows_from_values(["certification-preview-basis"])?,
         )?)
     }
 }

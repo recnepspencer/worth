@@ -120,7 +120,7 @@ impl WorthQueryBatchWriteReceipt {
                 )
                 .field_evidence_identity_sequence(
                     WorthQueryEvidenceTag::new("touched_aspect"),
-                    terminal_touch_projection_identities("batch-touched-aspect", &touched_aspects)
+                    terminal_touch_projection_identities("batch-touched-aspect", &touched_aspects)?
                         .iter(),
                 )
                 .field_evidence_identity_sequence(
@@ -128,7 +128,7 @@ impl WorthQueryBatchWriteReceipt {
                     evidence_value_identities(
                         "batch-affected-live-view",
                         &terminal_live_view_ids(&affected_live_view_targets),
-                    )
+                    )?
                     .iter(),
                 )
                 .field_evidence_identity_sequence(
@@ -136,7 +136,7 @@ impl WorthQueryBatchWriteReceipt {
                     evidence_value_identities(
                         "batch-affected-derived-view",
                         &terminal_derived_view_ids(&affected_derived_view_targets),
-                    )
+                    )?
                     .iter(),
                 )
                 .seal()?;

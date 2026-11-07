@@ -33,7 +33,7 @@ pub fn worth_query_intent_admission_representative_output_report(
 ) -> Result<WorthQueryIntentAdmissionRepresentativeOutputReport, IdentityDerivationDenial> {
     let fixtures = RepresentativeOutputFixtures::load(execution)?;
     let eligibility = fixtures.eligibility();
-    let outputs = representative_outputs(&fixtures, &eligibility);
+    let outputs = representative_outputs(&fixtures, &eligibility)?;
     let report_digest = digest_output_rows(&outputs);
     Ok(WorthQueryIntentAdmissionRepresentativeOutputReport {
         outputs,

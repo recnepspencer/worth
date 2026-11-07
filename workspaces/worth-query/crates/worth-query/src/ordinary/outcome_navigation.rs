@@ -169,7 +169,8 @@ impl WorthQueryOutcomeNavigation for workflow::WorthQueryWritebackOutcome {
         match self {
             Self::Completed(_) => WorthQueryOutcomePosture::Completed,
             Self::Stopped(stop) => match stop.source() {
-                workflow::WorthQueryWritebackStopSource::InspectionUnavailable
+                workflow::WorthQueryWritebackStopSource::EvidenceIdentityDerivationDenied(_)
+                | workflow::WorthQueryWritebackStopSource::InspectionUnavailable
                 | workflow::WorthQueryWritebackStopSource::BridgeExecution => {
                     WorthQueryOutcomePosture::Unavailable
                 }

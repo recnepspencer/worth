@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 #[path = "phase4_boundary_rows.rs"]
 mod phase4_boundary_rows;
 #[path = "phase4_execution_rows.rs"]
@@ -186,8 +187,8 @@ impl EffectLifecyclePhase4CertificationBundle {
 
 pub fn certify_effect_lifecycle_phase4(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> EffectLifecyclePhase4CertificationBundle {
-    let seeded = super::certify_effect_lifecycle_seeded(execution, 17, 12);
+) -> Result<EffectLifecyclePhase4CertificationBundle, IdentityDerivationDenial> {
+    let seeded = super::certify_effect_lifecycle_seeded(execution, 17, 12)?;
     let rows = vec![
         branch_mutation_execution_row(execution),
         relational_merge_execution_row(execution),
@@ -203,5 +204,5 @@ pub fn certify_effect_lifecycle_phase4(
         bridge_oracle_row(execution),
         seeded_replay_row(&seeded),
     ];
-    EffectLifecyclePhase4CertificationBundle::new(rows, &seeded)
+    Ok(EffectLifecyclePhase4CertificationBundle::new(rows, &seeded))
 }

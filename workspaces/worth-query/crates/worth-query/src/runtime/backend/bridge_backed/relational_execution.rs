@@ -65,13 +65,13 @@ impl WorthQueryBridgeBackedRuntimeBackend {
                 .write(execution, &self.runtime_bridge, None, mutation)?,
         };
         if let Some(message) =
-            write_execution.drift_from_backend_admissible_mutation(&expected_mutation)
+            write_execution.drift_from_backend_admissible_mutation(&expected_mutation)?
         {
             return Err(WorthQueryWorkspaceError::new(message));
         }
         let receipt = write_execution.mutation_receipt().clone();
         let routed = self.signal_sink.route_write_receipt(&receipt)?;
-        if let Some(message) = routed.drift_from_mutation_receipt(&receipt) {
+        if let Some(message) = routed.drift_from_mutation_receipt(&receipt)? {
             return Err(WorthQueryWorkspaceError::new(message));
         }
         Ok(receipt)
@@ -102,14 +102,14 @@ impl WorthQueryBridgeBackedRuntimeBackend {
             )?,
         };
         for (mutation, execution) in expected_mutations.iter().zip(write_executions.iter()) {
-            if let Some(message) = execution.drift_from_backend_admissible_mutation(mutation) {
+            if let Some(message) = execution.drift_from_backend_admissible_mutation(mutation)? {
                 return Err(WorthQueryWorkspaceError::new(message));
             }
         }
         let receipts = write_executions
             .iter()
             .map(|execution| execution.mutation_receipt().clone())
-            .collect::<Result<Vec<_>, _>>()?;
+            .collect::<Vec<_>>();
         let routed = self.signal_sink.route_write_batch(&receipts)?;
         if routed.len() != receipts.len() {
             return Err(WorthQueryWorkspaceError::new(format!(
@@ -119,7 +119,7 @@ impl WorthQueryBridgeBackedRuntimeBackend {
             )));
         }
         for (receipt, routed_receipt) in receipts.iter().zip(routed.iter()) {
-            if let Some(message) = routed_receipt.drift_from_mutation_receipt(receipt) {
+            if let Some(message) = routed_receipt.drift_from_mutation_receipt(receipt)? {
                 return Err(WorthQueryWorkspaceError::new(message));
             }
         }

@@ -115,23 +115,23 @@ pub(super) fn preview_certification_evidence(
                         validation_role_evidence_identity(
                             "lane",
                             active_lane_handle.lane_digest().evidence_identity(),
-                        )?,
+                        ),
                         validation_role_evidence_identity(
                             "attachment",
                             attachment.attachment_digest().evidence_identity(),
-                        )?,
+                        ),
                         validation_role_evidence_identity(
                             "preview_lane",
                             isolation.active_lane_digest().evidence_identity(),
-                        )?,
+                        ),
                         validation_role_evidence_identity(
                             "preview_attachment",
                             isolation.attachment_digest().evidence_identity(),
-                        )?,
+                        ),
                         validation_role_evidence_identity(
                             "discard_attachment",
                             discard_closeout.attachment_digest().evidence_identity(),
-                        )?,
+                        ),
                     ],
                 ));
             }
@@ -243,15 +243,15 @@ pub(super) fn preview_certification_evidence(
                         validation_role_evidence_identity(
                             "lane",
                             active_lane_handle.lane_digest().evidence_identity(),
-                        )?,
+                        ),
                         validation_role_evidence_identity(
                             "attachment",
                             attachment.attachment_digest().evidence_identity(),
-                        )?,
+                        ),
                         validation_role_evidence_identity(
                             "promotion_lane",
                             promotion_handoff.preview_lane_digest().evidence_identity(),
-                        )?,
+                        ),
                     ],
                 ));
             }

@@ -185,81 +185,95 @@ pub(super) fn bind_preview_foundation(
             WorkflowPreviewEvaluationClass::PromotionEligible
         }
     };
-    let source_identity =
-        workflow_context_source_identity(&preview_workflow_foundation_source_identity(foundation));
-    let query_identity = workflow_context_query_identity(
-        &workflow_validated_query_digest_evidence(foundation.validated_query_digest()),
-    );
-    let basis_identity = workflow_context_basis_identity(
-        &WorkflowBasisFamily::PreviewFoundation,
-        &preview_workflow_foundation_basis_inner_identity(foundation),
-    );
-    let binding_identity = workflow_context_binding_identity(
-        &source_identity,
-        &query_identity,
-        WorkflowBasisFamily::PreviewFoundation,
-        &basis_identity,
-        None,
-        None,
-    );
+    let error_counters = WorkflowCounters {
+        workflow_basis_binding_count: 1,
+        workflow_basis_binding_width: 1,
+        workflow_executor_rediscovery_count: 0,
+        ..WorkflowCounters::default()
+    };
+    let result: Result<WorkflowContextBinding, IdentityDerivationDenial> = (|| {
+        let source_identity = workflow_context_source_identity(
+            &preview_workflow_foundation_source_identity(foundation)?,
+        );
+        let query_identity = workflow_context_query_identity(
+            &workflow_validated_query_digest_evidence(foundation.validated_query_digest()),
+        );
+        let basis_identity = workflow_context_basis_identity(
+            &WorkflowBasisFamily::PreviewFoundation,
+            &preview_workflow_foundation_basis_inner_identity(foundation)?,
+        );
+        let binding_identity = workflow_context_binding_identity(
+            &source_identity,
+            &query_identity,
+            WorkflowBasisFamily::PreviewFoundation,
+            &basis_identity,
+            None,
+            None,
+        )?;
 
-    Ok(WorkflowContextBinding {
-        binding_identity,
-        source_identity,
-        query_identity,
-        basis_family: WorkflowBasisFamily::PreviewFoundation,
-        basis_identity,
-        runtime_snapshot_identity: None,
-        runtime_target_branch: None,
-        preview_evaluation_class: Some(evaluation_class),
-        preview_request_family: Some(foundation.request_family().clone()),
-        preview_session_identity: Some(foundation.preview_session_identity().clone()),
-        counters: WorkflowCounters {
-            workflow_basis_binding_count: 1,
-            workflow_basis_binding_width: 1,
-            workflow_executor_rediscovery_count: 0,
-            ..WorkflowCounters::default()
-        },
+        Ok(WorkflowContextBinding {
+            binding_identity,
+            source_identity,
+            query_identity,
+            basis_family: WorkflowBasisFamily::PreviewFoundation,
+            basis_identity,
+            runtime_snapshot_identity: None,
+            runtime_target_branch: None,
+            preview_evaluation_class: Some(evaluation_class),
+            preview_request_family: Some(foundation.request_family().clone()),
+            preview_session_identity: Some(foundation.preview_session_identity().clone()),
+            counters: error_counters.clone(),
+        })
+    })();
+    result.map_err(|cause| {
+        super::admission_reporting::WorkflowAdmissionError::identity_refused(cause, error_counters)
     })
 }
 
 pub(super) fn bind_preview_promotion_comparison(
     comparison: &PromotionParityPreviewComparisonAdmission,
 ) -> Result<WorkflowContextBinding, super::admission_reporting::WorkflowAdmissionError> {
-    let source_identity =
-        workflow_context_source_identity(&preview_promotion_comparison_source_identity(comparison));
-    let query_identity = workflow_context_query_identity(
-        &workflow_validated_query_digest_evidence(comparison.validated_query_digest()),
-    );
-    let basis_identity = workflow_context_basis_identity(
-        &WorkflowBasisFamily::PreviewPromotionComparison,
-        &preview_promotion_comparison_basis_inner_identity(comparison),
-    );
-    let binding_identity = workflow_context_binding_identity(
-        &source_identity,
-        &query_identity,
-        WorkflowBasisFamily::PreviewPromotionComparison,
-        &basis_identity,
-        None,
-        None,
-    );
+    let error_counters = WorkflowCounters {
+        workflow_basis_binding_count: 1,
+        workflow_basis_binding_width: 1,
+        workflow_executor_rediscovery_count: 0,
+        ..WorkflowCounters::default()
+    };
+    let result: Result<WorkflowContextBinding, IdentityDerivationDenial> = (|| {
+        let source_identity = workflow_context_source_identity(
+            &preview_promotion_comparison_source_identity(comparison)?,
+        );
+        let query_identity = workflow_context_query_identity(
+            &workflow_validated_query_digest_evidence(comparison.validated_query_digest()),
+        );
+        let basis_identity = workflow_context_basis_identity(
+            &WorkflowBasisFamily::PreviewPromotionComparison,
+            &preview_promotion_comparison_basis_inner_identity(comparison)?,
+        );
+        let binding_identity = workflow_context_binding_identity(
+            &source_identity,
+            &query_identity,
+            WorkflowBasisFamily::PreviewPromotionComparison,
+            &basis_identity,
+            None,
+            None,
+        )?;
 
-    Ok(WorkflowContextBinding {
-        binding_identity,
-        source_identity,
-        query_identity,
-        basis_family: WorkflowBasisFamily::PreviewPromotionComparison,
-        basis_identity,
-        runtime_snapshot_identity: None,
-        runtime_target_branch: None,
-        preview_evaluation_class: Some(WorkflowPreviewEvaluationClass::PromotionEligible),
-        preview_request_family: None,
-        preview_session_identity: None,
-        counters: WorkflowCounters {
-            workflow_basis_binding_count: 1,
-            workflow_basis_binding_width: 1,
-            workflow_executor_rediscovery_count: 0,
-            ..WorkflowCounters::default()
-        },
+        Ok(WorkflowContextBinding {
+            binding_identity,
+            source_identity,
+            query_identity,
+            basis_family: WorkflowBasisFamily::PreviewPromotionComparison,
+            basis_identity,
+            runtime_snapshot_identity: None,
+            runtime_target_branch: None,
+            preview_evaluation_class: Some(WorkflowPreviewEvaluationClass::PromotionEligible),
+            preview_request_family: None,
+            preview_session_identity: None,
+            counters: error_counters.clone(),
+        })
+    })();
+    result.map_err(|cause| {
+        super::admission_reporting::WorkflowAdmissionError::identity_refused(cause, error_counters)
     })
 }

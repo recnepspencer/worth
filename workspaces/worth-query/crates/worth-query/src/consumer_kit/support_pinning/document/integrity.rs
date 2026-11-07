@@ -24,11 +24,11 @@ pub(super) fn rebuild_contract_digest(
     let requirement_identities = requirements
         .iter()
         .map(derive_support_pin_requirement_identity)
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?;
     let observed_identities = observed_rows
         .iter()
         .map(derive_support_pin_observed_row_identity)
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?;
     Ok(derive_support_pin_contract_identity(
         consumer_name,
         contract_schema_identity,

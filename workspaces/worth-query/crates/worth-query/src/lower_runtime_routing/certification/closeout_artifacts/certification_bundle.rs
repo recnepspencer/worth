@@ -188,7 +188,7 @@ pub fn certify_lower_runtime_routing(
         &non_bypass,
         &slopes,
         &rows,
-    );
+    )?;
 
     Ok(WorthQueryLowerRuntimeCertificationBundle::new(
         rows,

@@ -45,7 +45,7 @@ pub(super) fn build_batch_write_receipt_inspection_digest(
         .commit_identities
         .iter()
         .map(|identity| identity.evidence_identity())
-        .collect::<Result<Vec<_>, _>>()?;
+        .collect::<Vec<_>>();
 
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::BatchWriteReceiptInspectionArtifact)
@@ -327,7 +327,7 @@ pub(super) fn build_batch_write_receipt_inspection_digest(
                 terminal_touch_projection_identities(
                     "batch-inspection-touched-aspect",
                     inputs.touched_aspects,
-                )
+                )?
                 .iter(),
             )
             .field_evidence_identity_sequence(
@@ -335,7 +335,7 @@ pub(super) fn build_batch_write_receipt_inspection_digest(
                 evidence_value_identities(
                     "batch-inspection-affected-live-view",
                     inputs.affected_live_view_ids,
-                )
+                )?
                 .iter(),
             )
             .field_evidence_identity_sequence(
@@ -343,7 +343,7 @@ pub(super) fn build_batch_write_receipt_inspection_digest(
                 evidence_value_identities(
                     "batch-inspection-affected-derived-view",
                     inputs.affected_derived_view_ids,
-                )
+                )?
                 .iter(),
             )
             .seal()?,

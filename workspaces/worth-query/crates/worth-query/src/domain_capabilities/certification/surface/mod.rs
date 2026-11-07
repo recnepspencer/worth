@@ -90,9 +90,12 @@ impl WorthQueryDomainCapabilityCertifiedSurfaceInventory {
     }
 
     pub fn public_surface_digest(&self) -> Result<String, IdentityDerivationDenial> {
-        Ok(compose_public_surface_digest(self.rows.iter().map(
-            WorthQueryDomainCapabilityCertifiedSurfaceRow::row_digest,
-        ))?)
+        Ok(compose_public_surface_digest(
+            self.rows
+                .iter()
+                .map(WorthQueryDomainCapabilityCertifiedSurfaceRow::row_digest)
+                .collect::<Result<Vec<_>, _>>()?,
+        )?)
     }
 }
 

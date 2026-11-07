@@ -61,7 +61,26 @@ impl<D: 'static> WorthQueryInstalledDomainLiveRequest<D> {
         let declaration_identity = WorthQueryInstalledDomainExecutionReceipt::label_identity(
             "live-declaration",
             self.request.declaration_identity().as_str(),
-        );
+        )
+        .map_err(|cause| {
+            WorthQueryInstalledDomainCapabilityStop::identity_refused(
+                self.witness.clone(),
+                WorthQueryInstalledDomainCapabilityKind::LiveOpen,
+                None,
+                cause,
+            )
+        })?;
+        let refusal_witness = self.witness.clone();
+        let refusal_declaration = declaration_identity.clone();
+        let identity_refused = |cause| {
+            WorthQueryInstalledDomainCapabilityStop::identity_refused(
+                refusal_witness.clone(),
+                WorthQueryInstalledDomainCapabilityKind::LiveOpen,
+                Some(refusal_declaration.clone()),
+                cause,
+            )
+        };
+
         WorthQueryInstalledDomainExecutionDrift::validate::<D>(&self.witness, workspace).map_err(
             |drift| {
                 WorthQueryInstalledDomainCapabilityStop::new(
@@ -87,7 +106,8 @@ impl<D: 'static> WorthQueryInstalledDomainLiveRequest<D> {
                     WorthQueryInstalledDomainExecutionReceipt::label_identity(
                         "live-context-admission",
                         &context_receipt_digest,
-                    ),
+                    )
+                    .map_err(&identity_refused)?,
                     handle.resource_identity().clone(),
                 );
                 WorthQueryInstalledDomainLiveOpenOutcome::Opened(

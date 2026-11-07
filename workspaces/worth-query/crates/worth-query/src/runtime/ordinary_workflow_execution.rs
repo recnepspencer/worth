@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod merge;
 
 pub(crate) use merge::{
@@ -41,25 +42,26 @@ pub(crate) enum WorthQueryOrdinaryWritebackFailureStage {
     BridgeExecution,
 }
 
-pub(crate) struct WorthQueryOrdinaryWritebackExecutionError {
-    stage: WorthQueryOrdinaryWritebackFailureStage,
-    message: String,
+pub(crate) enum WorthQueryOrdinaryWritebackExecutionError {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
+    Denied {
+        stage: WorthQueryOrdinaryWritebackFailureStage,
+        message: String,
+    },
 }
 
 impl WorthQueryOrdinaryWritebackExecutionError {
     fn new(stage: WorthQueryOrdinaryWritebackFailureStage, message: impl Into<String>) -> Self {
-        Self {
+        Self::Denied {
             stage,
             message: message.into(),
         }
     }
+}
 
-    pub(crate) fn stage(&self) -> WorthQueryOrdinaryWritebackFailureStage {
-        self.stage
-    }
-
-    pub(crate) fn message(&self) -> &str {
-        &self.message
+impl From<IdentityDerivationDenial> for WorthQueryOrdinaryWritebackExecutionError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
     }
 }
 
@@ -156,7 +158,7 @@ impl WorthQueryRuntime {
             "ordinary-declarative-writeback",
             &scope,
             authority.snapshot_identity().clone(),
-        );
+        )?;
         let basis = basis_lifecycle()
             .branch_head("main", true)
             .prepare_mutation()
@@ -187,7 +189,7 @@ impl WorthQueryRuntime {
                 denial.message(),
             )
         })?;
-        let eligibility = match evaluate_effect_eligibility(normalized) {
+        let eligibility = match evaluate_effect_eligibility(normalized)? {
             EffectEligibilityOutcome::Admitted(eligibility) => eligibility,
             EffectEligibilityOutcome::Advisory(outcome) => {
                 return Err(WorthQueryOrdinaryWritebackExecutionError::new(
@@ -216,7 +218,7 @@ impl WorthQueryRuntime {
         };
         let admitted = admit_effect_intent(eligibility);
         let admitted_effect_identity = admitted.admitted_identity().clone();
-        let lowered = scope_admitted_effect_plan(admitted)
+        let lowered = scope_admitted_effect_plan(admitted)?
             .lower()
             .map_err(|denial| {
                 WorthQueryOrdinaryWritebackExecutionError::new(
@@ -244,10 +246,10 @@ impl WorthQueryRuntime {
             lowered,
             ExecutedEffectAuthorityArtifact::Writeback { execution },
             1,
-        )
-        .receipt();
+        )?
+        .receipt()?;
         let diagnostics = materialize_inspection
-            .then(|| receipt.materialize_diagnostics(EffectDiagnosticsRequest::forensic()));
+            .then(|| receipt.materialize_diagnostics(EffectDiagnosticsRequest::forensic()))?;
         Ok(WorthQueryLowerRuntimeWritebackExecution {
             admitted_effect_identity,
             lowered_plan_identity,
@@ -335,10 +337,7 @@ fn preview_request_identity(
     family: &'static str,
     label: &WorthQuerySessionLabel,
     declaration_identity: &WorthQueryEvidenceIdentity,
-) -> Result<
-    WorthQueryEvidenceIdentity,
-    crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
-> {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     Ok(
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
             .field_shape(

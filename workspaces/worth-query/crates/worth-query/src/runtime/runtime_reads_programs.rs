@@ -137,6 +137,7 @@ impl WorthQueryRuntime {
         self.effects
             .get(&effect_target)
             .map(WorthQueryEffectInspectionEvidence::from_runtime)
+            .transpose()?
             .ok_or_else(|| WorthQueryRuntimeError::MissingEffect(effect_name.to_string()))?
     }
 

@@ -203,15 +203,21 @@ pub(crate) fn scoped_runtime_preflight_workflow_binding_for_binding_identity(
 ) -> Result<WorkflowContextBinding, super::admission_reporting::WorkflowAdmissionError> {
     let mut binding = bind_runtime_preflight(preflight)?;
     let binding_scope = WorkflowBindingScopeField::Identity(binding_scope_identity);
-    binding.binding_identity = workflow_context_binding_identity(
-        &binding.source_identity,
-        &binding.query_identity,
-        binding.basis_family.clone(),
-        &binding.basis_identity,
-        binding.runtime_snapshot_identity.as_ref(),
-        Some(&binding_scope),
-    );
-    Ok(binding)
+    let error_counters = binding.counters.clone();
+    let result: Result<WorkflowContextBinding, IdentityDerivationDenial> = (|| {
+        binding.binding_identity = workflow_context_binding_identity(
+            &binding.source_identity,
+            &binding.query_identity,
+            binding.basis_family.clone(),
+            &binding.basis_identity,
+            binding.runtime_snapshot_identity.as_ref(),
+            Some(&binding_scope),
+        )?;
+        Ok(binding)
+    })();
+    result.map_err(|cause| {
+        super::admission_reporting::WorkflowAdmissionError::identity_refused(cause, error_counters)
+    })
 }
 
 pub(super) fn bind_runtime_preflight(
@@ -245,31 +251,37 @@ pub(super) fn bind_runtime_preflight(
     let runtime_snapshot_identity = WorthQuerySnapshotIdentity::preview(
         preflight.basis().identity().snapshot_identity().clone(),
     );
-    let binding_identity = workflow_context_binding_identity(
-        &source_identity,
-        &query_identity,
-        WorkflowBasisFamily::RuntimePreflight,
-        &basis_identity,
-        Some(&runtime_snapshot_identity),
-        None,
-    );
+    let error_counters = WorkflowCounters {
+        workflow_basis_binding_count: 1,
+        workflow_basis_binding_width: 1,
+        workflow_executor_rediscovery_count: 0,
+        ..WorkflowCounters::default()
+    };
+    let result: Result<WorkflowContextBinding, IdentityDerivationDenial> = (|| {
+        let binding_identity = workflow_context_binding_identity(
+            &source_identity,
+            &query_identity,
+            WorkflowBasisFamily::RuntimePreflight,
+            &basis_identity,
+            Some(&runtime_snapshot_identity),
+            None,
+        )?;
 
-    Ok(WorkflowContextBinding {
-        binding_identity,
-        source_identity,
-        query_identity,
-        basis_family: WorkflowBasisFamily::RuntimePreflight,
-        basis_identity,
-        runtime_snapshot_identity: Some(runtime_snapshot_identity),
-        runtime_target_branch: Some(BranchId("main".to_string())),
-        preview_evaluation_class: None,
-        preview_request_family: None,
-        preview_session_identity: None,
-        counters: WorkflowCounters {
-            workflow_basis_binding_count: 1,
-            workflow_basis_binding_width: 1,
-            workflow_executor_rediscovery_count: 0,
-            ..WorkflowCounters::default()
-        },
+        Ok(WorkflowContextBinding {
+            binding_identity,
+            source_identity,
+            query_identity,
+            basis_family: WorkflowBasisFamily::RuntimePreflight,
+            basis_identity,
+            runtime_snapshot_identity: Some(runtime_snapshot_identity),
+            runtime_target_branch: Some(BranchId("main".to_string())),
+            preview_evaluation_class: None,
+            preview_request_family: None,
+            preview_session_identity: None,
+            counters: error_counters.clone(),
+        })
+    })();
+    result.map_err(|cause| {
+        super::admission_reporting::WorkflowAdmissionError::identity_refused(cause, error_counters)
     })
 }

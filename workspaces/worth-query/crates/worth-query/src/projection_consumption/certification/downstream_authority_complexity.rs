@@ -160,17 +160,19 @@ fn requirement_width_row(
     let counters = scale
         .iter()
         .map(|width| {
-            let completed = control_row_set_lifecycle(2).into_completed();
+            let completed = control_row_set_lifecycle(2)?.into_completed();
             let contract = ProjectionAuthorityContract::certification(
                 completed.declaration().requested().clone(),
                 all[..*width].iter().copied(),
             );
-            seal_completed_consumption_with_contract(completed, contract)
-                .expect("scaled requirements must admit")
-                .counters()
-                .clone()
+            Ok(
+                seal_completed_consumption_with_contract(completed, contract)
+                    .expect("scaled requirements must admit")
+                    .counters()
+                    .clone(),
+            )
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?;
     let satisfied = counters.iter().zip(&scale).all(|(counter, width)| {
         counter.requirement_checks() == *width
             && counter.relationship_checks() == 10
@@ -189,11 +191,11 @@ fn fact_width_row() -> Result<ConsumedProjectionAuthorityComplexityRow, Identity
     let counters = scale
         .iter()
         .map(|width| {
-            super::downstream_authority_bundle::seal_control(*width)
+            Ok(super::downstream_authority_bundle::seal_control(*width)?
                 .counters()
-                .clone()
+                .clone())
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?;
     let satisfied = counters.iter().zip(&scale).all(|(counter, width)| {
         counter.consumed_fact_visits() == width * 2
             && counter.relationship_checks() == 10
@@ -216,11 +218,11 @@ fn irrelevant_growth_row(
         .iter()
         .map(|width| {
             let unrelated = (0..*width).collect::<Vec<_>>();
-            let authority = super::downstream_authority_bundle::seal_control(2);
+            let authority = super::downstream_authority_bundle::seal_control(2)?;
             assert_eq!(unrelated.len(), *width);
-            authority.counters().clone()
+            Ok(authority.counters().clone())
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?;
     let baseline = &counters[0];
     let satisfied = counters.iter().all(|counter| counter == baseline);
     Ok(row(axis, scale.to_vec(), counters, satisfied)?)

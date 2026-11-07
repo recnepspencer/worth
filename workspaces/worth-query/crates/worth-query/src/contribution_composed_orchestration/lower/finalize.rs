@@ -98,14 +98,17 @@ pub(crate) fn build_composed_artifact<
     envelope: crate::application::WorthQueryDeclarationEnvelope<D, I>,
     intent_results: Vec<WorthQueryContributionComposedIntentResult>,
 ) -> Result<
-    WorthQueryContributionComposedOrchestration<D, I>,
-    (WorthQueryContributionComposedStop, String),
+    Result<
+        WorthQueryContributionComposedOrchestration<D, I>,
+        (WorthQueryContributionComposedStop, String),
+    >,
+    IdentityDerivationDenial,
 > {
     let classification = classify_intent_results(&intent_results);
     let composition = WorthQueryContributionComposedComposition::from_intent_results(
         classification,
         &intent_results,
-    );
+    )?;
     let contribution_composition = WorthQueryDeclarationEntryContributionComposition::new(
         composition.admitted_evidence().to_vec(),
         composition.rejected_category_families().to_vec(),
@@ -115,18 +118,18 @@ pub(crate) fn build_composed_artifact<
         .filter_map(|value| value.contribution().cloned())
         .collect::<Vec<WorthQueryContributionComposedContribution>>();
     if contributions.is_empty() && !intent_results.is_empty() {
-        return Err((
+        return Ok(Err((
             strongest_stop(&intent_results),
             composition.composition_for_reporting().to_string(),
-        ));
+        )));
     }
-    Ok(WorthQueryContributionComposedOrchestration::new(
+    Ok(Ok(WorthQueryContributionComposedOrchestration::new(
         envelope,
         contribution_composition,
         contributions,
         intent_results,
         composition,
-    ))
+    )))
 }
 
 pub(crate) fn stop_reason(

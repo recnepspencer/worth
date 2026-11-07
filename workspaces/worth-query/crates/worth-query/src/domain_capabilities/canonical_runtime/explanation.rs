@@ -161,7 +161,7 @@ where
                 Ok(artifact) => TransitionOutcome::Success(artifact),
                 Err(error) => TransitionOutcome::Denied(WorthQueryDomainCapabilityProgressionDenial::new(
                     causal_stop_progression_kind(
-                        &error,
+                        &crate::runtime::CausalInspectionConstructionStop::Digest(error),
                         WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture,
                     ),
                     "explanation-inspection",

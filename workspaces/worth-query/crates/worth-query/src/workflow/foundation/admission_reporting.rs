@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::workflow::WorkflowCounters;
 
 use super::context_binding::{WorkflowBasisFamily, WorkflowContextBinding};
@@ -9,6 +10,7 @@ use super::declaration_model::{
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum WorkflowPredictionDriftOutcome {
+    EvidenceIdentityDerivationDenied,
     WithinBudget,
     ExplicitBroadeningDenied,
     ExplicitRebindRequired,
@@ -17,6 +19,7 @@ pub enum WorkflowPredictionDriftOutcome {
 impl WorkflowPredictionDriftOutcome {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::EvidenceIdentityDerivationDenied => "evidence_identity_derivation_denied",
             Self::WithinBudget => "within_budget",
             Self::ExplicitBroadeningDenied => "explicit_broadening_denied",
             Self::ExplicitRebindRequired => "explicit_rebind_required",
@@ -26,6 +29,7 @@ impl WorkflowPredictionDriftOutcome {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorkflowAdmissionFailureClass {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     UnsupportedWorkflowFamily,
     UnsupportedBasisFamily,
     InvalidBasisPairing,
@@ -44,6 +48,19 @@ pub struct WorkflowAdmissionError {
 }
 
 impl WorkflowAdmissionError {
+    pub(super) fn identity_refused(
+        cause: IdentityDerivationDenial,
+        mut counters: WorkflowCounters,
+    ) -> Self {
+        counters.workflow_denial_count = counters.workflow_denial_count.saturating_add(1);
+        Self::new(
+            WorkflowAdmissionFailureClass::EvidenceIdentityDerivationDenied(cause),
+            "workflow binding evidence identity exceeded its digest bounds",
+            WorkflowPredictionDriftOutcome::EvidenceIdentityDerivationDenied,
+            counters,
+        )
+    }
+
     pub(super) fn new(
         failure_class: WorkflowAdmissionFailureClass,
         message: &'static str,

@@ -25,8 +25,8 @@ use super::{
 pub fn certify_effect_execution_pipeline(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<EffectExecutionCertificationBundle, IdentityDerivationDenial> {
-    let seeded = certify_effect_lifecycle_seeded(execution, 17, 12);
-    let phase4 = certify_effect_lifecycle_phase4(execution);
+    let seeded = certify_effect_lifecycle_seeded(execution, 17, 12)?;
+    let phase4 = certify_effect_lifecycle_phase4(execution)?;
     let mutation = mutation_receipt_surface(execution)?;
     let writeback = writeback_receipt_surface(execution)?;
     let batch = batch_receipt_surface(execution)?;

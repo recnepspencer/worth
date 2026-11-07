@@ -120,7 +120,9 @@ impl LiveQueryAdmissionArtifact {
         let collection_identity = descriptor
             .collection_digest()
             .map(crate::identity::collection_plan_evidence_identity)
-            .unwrap_or_else(lifecycle_context_collection_absent_identity)?;
+            .unwrap_or_else::<Result<Vec<_>, IdentityDerivationDenial>>(
+                lifecycle_context_collection_absent_identity,
+            )?;
         let relevance_identity =
             live_relevance_identity(descriptor.family(), &query_identity, &plan_identity);
         let delivery_intent_identity =

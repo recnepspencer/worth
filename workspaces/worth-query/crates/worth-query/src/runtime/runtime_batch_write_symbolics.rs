@@ -74,7 +74,7 @@ pub(super) fn symbolic_aspect_resolution_evidence_for_references(
             Ok(WorthQuerySymbolicAspectResolutionEvidence::from_reference(
                 reference,
                 resolved_target.entity_identity(),
-            ))
+            )?)
         })
         .collect::<Result<Vec<_>, _>>()?
 }

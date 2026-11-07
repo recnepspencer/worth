@@ -21,7 +21,7 @@ pub(super) fn semantic_evidence_identity(
     let establishing_target_identities = establishing_entity_targets
         .iter()
         .map(crate::memory_workspace::WorthQueryEntityIdentity::evidence_identity)
-        .collect::<Result<Vec<_>, _>>()?;
+        .collect::<Vec<_>>();
     Ok(identity
         .field_evidence_identity_sequence(
             crate::evidence_identity::WorthQueryEvidenceTag::new("establishing_entity_target"),

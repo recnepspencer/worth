@@ -55,7 +55,7 @@ pub(super) fn batch_existing_truth_assertion_digest(
         .iter()
         .flatten()
         .map(existing_truth_assertion_identity)
-        .collect::<Result<Vec<_>, _>>()?;
+        .collect::<Vec<_>>();
     if assertions.is_empty() {
         return Ok(None);
     }

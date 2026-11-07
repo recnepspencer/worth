@@ -51,7 +51,7 @@ fn derive_field_inventory_identities(
     fields
         .iter()
         .map(derive_field_inventory_or_diagnostic_identity)
-        .collect()
+        .collect::<Result<Vec<_>, IdentityDerivationDenial>>()
 }
 
 fn select_participating_inventory_identities<'a>(
@@ -119,7 +119,7 @@ fn derive_participating_field_value_identities(
         .iter()
         .filter(|field| field.participation().participates_in_report_identity())
         .map(derive_field_value_identity)
-        .collect()
+        .collect::<Result<Vec<_>, IdentityDerivationDenial>>()
 }
 
 fn derive_report_value_identity(

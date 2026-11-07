@@ -214,17 +214,17 @@ impl WorthQueryRuntimeMixedCauseDelivery {
             .ordered_causes()
             .iter()
             .map(runtime_mixed_cause_ordered_cause_identity)
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?;
         let suppressed_cause_identities = ordering
             .suppressed()
             .iter()
             .map(runtime_mixed_cause_suppressed_cause_identity)
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?;
         let denied_cause_identities = ordering
             .denied()
             .iter()
             .map(runtime_mixed_cause_denied_cause_identity)
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?;
         let coalescing_kind = if ordered_member_kinds.len() > 1 {
             WorthQueryRuntimeDeliveryCoalescingKind::Coalesced
         } else {

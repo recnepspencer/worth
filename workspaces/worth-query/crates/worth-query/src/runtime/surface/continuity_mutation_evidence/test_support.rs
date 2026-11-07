@@ -39,7 +39,7 @@ impl WorthQueryContinuityMutationEvidence {
                 .map(|identity| {
                     WorthQueryMutationAuthorityIdentity::new("continuity-successor", identity)
                 })
-                .collect(),
+                .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?,
             basis_binding_digest: Some(test_only_digest(
                 "continuity-basis-binding",
                 "basis-binding:test",

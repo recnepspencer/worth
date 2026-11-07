@@ -2,6 +2,7 @@ use crate::application::{
     WorthQueryApplicationFacade, WorthQueryDeclarationEntryContributionCategoryFamily,
     WorthQueryDomainEntryMarker, WorthQueryDomainEntrySupportSnapshot,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -37,16 +38,22 @@ pub enum WorthQueryDomainPackageAdmissionDenialKind {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryDomainPackageAdmissionDenial {
+    identity_derivation_denial: Option<IdentityDerivationDenial>,
     kind: WorthQueryDomainPackageAdmissionDenialKind,
     subject: String,
 }
 
 impl WorthQueryDomainPackageAdmissionDenial {
+    pub fn identity_derivation_denial(&self) -> Option<&IdentityDerivationDenial> {
+        self.identity_derivation_denial.as_ref()
+    }
+
     pub(crate) fn new(
         kind: WorthQueryDomainPackageAdmissionDenialKind,
         subject: impl Into<String>,
     ) -> Self {
         Self {
+            identity_derivation_denial: None,
             kind,
             subject: subject.into(),
         }
@@ -111,7 +118,7 @@ pub(crate) fn admit_domain_package_with_artifact_support<D: WorthQueryDomainEntr
     let facade = WorthQueryApplicationFacade::runtime_backed_default();
     let support_matrix = facade.support_matrix();
     let support_snapshot =
-        WorthQueryDomainEntrySupportSnapshot::from_support_report(facade.support_report());
+        WorthQueryDomainEntrySupportSnapshot::from_support_report(facade.support_report()?)?;
     let portable_package = super::admission_profile::admit_portable_package(
         package.portable_package,
         &package.required_capabilities,
@@ -159,4 +166,14 @@ pub(crate) fn admit_domain_package_with_artifact_support<D: WorthQueryDomainEntr
         operation_required_domains: package.operation_required_domains,
         contribution_policy: package.contribution_policy,
     })
+}
+
+impl From<IdentityDerivationDenial> for WorthQueryDomainPackageAdmissionDenial {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self {
+            kind: WorthQueryDomainPackageAdmissionDenialKind::CanonicalDigestSlotRejected,
+            subject: format!("{:?}", cause.scope),
+            identity_derivation_denial: Some(cause),
+        }
+    }
 }

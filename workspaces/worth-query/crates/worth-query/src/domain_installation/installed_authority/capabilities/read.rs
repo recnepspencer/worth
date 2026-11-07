@@ -54,7 +54,26 @@ impl<D: 'static> WorthQueryInstalledDomainReadRequest<D> {
         let declaration_identity = WorthQueryInstalledDomainExecutionReceipt::label_identity(
             "read-declaration",
             self.request.declaration_identity().as_str(),
-        );
+        )
+        .map_err(|cause| {
+            WorthQueryInstalledDomainCapabilityStop::identity_refused(
+                self.witness.clone(),
+                WorthQueryInstalledDomainCapabilityKind::Read,
+                None,
+                cause,
+            )
+        })?;
+        let refusal_witness = self.witness.clone();
+        let refusal_declaration = declaration_identity.clone();
+        let identity_refused = |cause| {
+            WorthQueryInstalledDomainCapabilityStop::identity_refused(
+                refusal_witness.clone(),
+                WorthQueryInstalledDomainCapabilityKind::Read,
+                Some(refusal_declaration.clone()),
+                cause,
+            )
+        };
+
         WorthQueryInstalledDomainExecutionDrift::validate::<D>(&self.witness, workspace).map_err(
             |drift| {
                 WorthQueryInstalledDomainCapabilityStop::new(

@@ -135,6 +135,7 @@ impl WorthQueryWriteReceipt {
         let existing_truth_binding_evidence = existing_truth_binding
             .as_ref()
             .map(WorthQueryExistingTruthBindingEvidence::from_binding)
+            .transpose()?
             .or_else(|| {
                 inner
                     .bridge_authority
@@ -265,6 +266,7 @@ impl WorthQueryWriteReceipt {
         let existing_truth_binding_evidence = existing_truth_binding
             .as_ref()
             .map(WorthQueryExistingTruthBindingEvidence::from_binding)
+            .transpose()?
             .or_else(|| {
                 inner
                     .bridge_authority

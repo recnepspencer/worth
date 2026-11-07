@@ -14,13 +14,11 @@ pub(crate) fn validation_evidence_identity_label(
 pub(crate) fn validation_role_evidence_identity(
     role: &'static str,
     identity: &WorthQueryEvidenceIdentity,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
-            .field_shape(WorthQueryEvidenceTag::new("role"), role)
-            .field_evidence_identity(WorthQueryEvidenceTag::new("subject"), identity)
-            .seal()?,
-    )
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
+        .field_shape(WorthQueryEvidenceTag::new("role"), role)
+        .field_evidence_identity(WorthQueryEvidenceTag::new("subject"), identity)
+        .seal().expect("closed validation roles encode a literal role and one sealed token or primitive counter")
 }
 
 pub(crate) fn validation_shape_role_evidence_identity(
@@ -38,25 +36,21 @@ pub(crate) fn validation_shape_role_evidence_identity(
 pub(crate) fn validation_u64_role_evidence_identity(
     role: &'static str,
     value: u64,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
-            .field_shape(WorthQueryEvidenceTag::new("role"), role)
-            .field_usize(WorthQueryEvidenceTag::new("subject"), value as usize)
-            .seal()?,
-    )
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
+        .field_shape(WorthQueryEvidenceTag::new("role"), role)
+        .field_usize(WorthQueryEvidenceTag::new("subject"), value as usize)
+        .seal().expect("closed validation roles encode a literal role and one sealed token or primitive counter")
 }
 
 pub(crate) fn validation_usize_role_evidence_identity(
     role: &'static str,
     value: usize,
-) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
-            .field_shape(WorthQueryEvidenceTag::new("role"), role)
-            .field_usize(WorthQueryEvidenceTag::new("subject"), value)
-            .seal()?,
-    )
+) -> WorthQueryEvidenceIdentity {
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
+        .field_shape(WorthQueryEvidenceTag::new("role"), role)
+        .field_usize(WorthQueryEvidenceTag::new("subject"), value)
+        .seal().expect("closed validation roles encode a literal role and one sealed token or primitive counter")
 }
 
 #[cfg(test)]

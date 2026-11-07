@@ -44,8 +44,8 @@ impl WorthQueryInstalledDomainCapabilityKind {
 pub struct WorthQueryInstalledDomainCapabilityStop<S> {
     installed_authority: WorthQueryInstalledDomainAuthorityWitness,
     capability: WorthQueryInstalledDomainCapabilityKind,
-    declaration_identity: WorthQueryEvidenceIdentity,
-    stop: S,
+    declaration_identity: Option<WorthQueryEvidenceIdentity>,
+    stop: Result<S, IdentityDerivationDenial>,
 }
 
 impl<S> WorthQueryInstalledDomainCapabilityStop<S> {
@@ -58,8 +58,8 @@ impl<S> WorthQueryInstalledDomainCapabilityStop<S> {
         Self {
             installed_authority,
             capability,
-            declaration_identity,
-            stop,
+            declaration_identity: Some(declaration_identity),
+            stop: Ok(stop),
         }
     }
 
@@ -71,15 +71,29 @@ impl<S> WorthQueryInstalledDomainCapabilityStop<S> {
         self.capability
     }
 
-    pub fn declaration_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.declaration_identity
+    pub(crate) fn identity_refused(
+        installed_authority: WorthQueryInstalledDomainAuthorityWitness,
+        capability: WorthQueryInstalledDomainCapabilityKind,
+        declaration_identity: Option<WorthQueryEvidenceIdentity>,
+        cause: IdentityDerivationDenial,
+    ) -> Self {
+        Self {
+            installed_authority,
+            capability,
+            declaration_identity,
+            stop: Err(cause),
+        }
     }
 
-    pub fn stop(&self) -> &S {
-        &self.stop
+    pub fn declaration_identity(&self) -> Option<&WorthQueryEvidenceIdentity> {
+        self.declaration_identity.as_ref()
     }
 
-    pub fn into_stop(self) -> S {
+    pub fn stop(&self) -> Result<&S, IdentityDerivationDenial> {
+        self.stop.as_ref().map_err(|cause| *cause)
+    }
+
+    pub fn into_stop(self) -> Result<S, IdentityDerivationDenial> {
         self.stop
     }
 }

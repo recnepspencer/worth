@@ -102,7 +102,7 @@ impl LiveViewDeclarationAdmissionBoundaryReceipt {
     ) -> Result<Option<String>, IdentityDerivationDenial> {
         if let Some(message) = self
             .admission_receipt
-            .drift_from_request(view_name, request)
+            .drift_from_request(view_name, request)?
         {
             return Ok(Some(message));
         }
@@ -206,7 +206,7 @@ impl SignalInvalidationBoundaryReceipt {
     ) -> Result<Option<String>, IdentityDerivationDenial> {
         if let Some(message) = self
             .routing_receipt
-            .drift_from_mutation_receipt(mutation_receipt)
+            .drift_from_mutation_receipt(mutation_receipt)?
         {
             return Ok(Some(message));
         }

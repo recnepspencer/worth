@@ -330,7 +330,7 @@ pub(crate) fn representative_preview_basis_row(
         WorthQueryBasisAdmissionEvidenceRow::rows_from_values([
             "preview-basis-evidence-a",
             "preview-basis-evidence-b",
-        ]),
+        ])?,
     )?;
     let request = WorthQueryLowerRuntimeCapabilityRequest::new(
         WorthQueryLowerRuntimeSeamKey::PreviewBasisAdmission,

@@ -18,6 +18,7 @@ use super::{
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInstalledDomainDeclarationContextDenialKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     HandleAuthority,
     UndeclaredCapability,
     UndeclaredConfiguration,
@@ -98,7 +99,7 @@ where
         operating_context: C,
     ) -> Result<Self, WorthQueryInstalledDomainDeclarationContextDenial> {
         validate_context_requirements::<D, C>(&installed_authority, &operating_context)?;
-        let operating_context_identity = operating_context_identity(&operating_context);
+        let operating_context_identity = operating_context_identity(&operating_context)?;
         let context_identity = worth_query_evidence_identity(
             WorthQueryEvidenceScope::InstalledDomainDeclarationContext,
         )
@@ -110,7 +111,7 @@ where
             WorthQueryEvidenceTag::new("operating_context"),
             &operating_context_identity,
         )
-        .seal();
+        .seal()?;
         Ok(Self {
             installed_authority,
             operating_context,
@@ -326,4 +327,15 @@ where
             )
             .seal()?,
     )
+}
+
+impl From<IdentityDerivationDenial> for WorthQueryInstalledDomainDeclarationContextDenial {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::for_requirement(
+            WorthQueryInstalledDomainDeclarationContextDenialKind::EvidenceIdentityDerivationDenied(
+                cause,
+            ),
+            "canonical declaration context identity",
+        )
+    }
 }

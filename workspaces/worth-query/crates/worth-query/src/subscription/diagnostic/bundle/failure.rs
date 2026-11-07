@@ -13,6 +13,7 @@ use super::evidence::QuerySubscriptionDiagnosticCounters;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum QuerySubscriptionDiagnosticBundleErrorKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     MissingRequiredStage,
     SelectionContextMismatch,
     DeclarationSourceMismatch,
@@ -26,6 +27,7 @@ pub enum QuerySubscriptionDiagnosticBundleErrorKind {
 impl QuerySubscriptionDiagnosticBundleErrorKind {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => "evidence_identity_derivation_denied",
             Self::MissingRequiredStage => "missing_required_stage",
             Self::SelectionContextMismatch => "selection_context_mismatch",
             Self::DeclarationSourceMismatch => "declaration_source_mismatch",
@@ -47,6 +49,19 @@ pub struct QuerySubscriptionDiagnosticBundleError {
 }
 
 impl QuerySubscriptionDiagnosticBundleError {
+    pub(in crate::subscription) fn identity_refused(
+        cause: IdentityDerivationDenial,
+        counters: QuerySubscriptionDiagnosticCounters,
+    ) -> Self {
+        Self {
+            error_kind:
+                QuerySubscriptionDiagnosticBundleErrorKind::EvidenceIdentityDerivationDenied(cause),
+            message: "diagnostic bundle evidence identity exceeded its digest bounds",
+            failure_identity: Err(cause),
+            counters,
+        }
+    }
+
     pub(crate) fn new(
         error_kind: QuerySubscriptionDiagnosticBundleErrorKind,
         message: &'static str,

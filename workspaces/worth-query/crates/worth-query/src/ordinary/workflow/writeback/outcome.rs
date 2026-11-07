@@ -1,6 +1,7 @@
 use crate::effect_lifecycle::{
     EffectDiagnosticsMaterialization, EffectExecutionReceipt, EffectReceiptTargetEvidence,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::{
     WorthQueryOrdinaryWritebackExecutionError, WorthQueryOrdinaryWritebackFailureStage,
 };
@@ -11,6 +12,7 @@ use super::{
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWritebackStopSource {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     ForeignAuthority,
     StaleAuthority,
     InspectionUnavailable,
@@ -59,7 +61,8 @@ impl WorthQueryWritebackStop {
             WorthQueryWritebackStopSource::InspectionUnavailable => {
                 WorthQueryWritebackNextAction::UseOperationalReceipt
             }
-            WorthQueryWritebackStopSource::Basis
+            WorthQueryWritebackStopSource::EvidenceIdentityDerivationDenied(_)
+            | WorthQueryWritebackStopSource::Basis
             | WorthQueryWritebackStopSource::Intent
             | WorthQueryWritebackStopSource::Eligibility
             | WorthQueryWritebackStopSource::Lowering
@@ -85,7 +88,18 @@ impl WorthQueryWritebackStop {
         error: WorthQueryOrdinaryWritebackExecutionError,
         counters: WorthQueryWorkflowCounters,
     ) -> Self {
-        Self::denied(source_for_stage(error.stage()), error.message(), counters)
+        match error {
+            WorthQueryOrdinaryWritebackExecutionError::EvidenceIdentityDerivationDenied(cause) => {
+                Self::denied(
+                    WorthQueryWritebackStopSource::EvidenceIdentityDerivationDenied(cause),
+                    "writeback evidence identity exceeded its digest bounds",
+                    counters,
+                )
+            }
+            WorthQueryOrdinaryWritebackExecutionError::Denied { stage, message } => {
+                Self::denied(source_for_stage(stage), message, counters)
+            }
+        }
     }
 }
 

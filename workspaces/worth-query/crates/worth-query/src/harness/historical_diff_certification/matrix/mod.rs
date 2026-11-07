@@ -42,11 +42,11 @@ impl MilestoneSixHistoricalDiffCertificationAdapter {
                         &current_historical_diff,
                     )
                 })
-                .collect(),
+                .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?,
             rejection_rows: HISTORICAL_DIFF_REJECTION_ROW_SPECS
                 .iter()
                 .map(rejection_row)
-                .collect(),
+                .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?,
         })
     }
 }

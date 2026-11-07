@@ -339,7 +339,8 @@ impl WorthQueryRuntime {
             &combined_receipt,
             &WorthQueryMutationMetadata::default(),
         )?;
-        let write_receipts = self.build_batch_component_write_receipts(receipts, command_summaries);
+        let write_receipts =
+            self.build_batch_component_write_receipts(receipts, command_summaries)?;
         let mut touched_aspects = std::collections::BTreeSet::new();
         for touch in combined_receipt
             .deltas

@@ -29,7 +29,7 @@ fn compose_inventory_identity(
 
 pub fn effect_lifecycle_family_inventory(
 ) -> Result<EffectLifecycleFamilyInventory, IdentityDerivationDenial> {
-    let rows = effect_lifecycle_family_rows();
+    let rows = effect_lifecycle_family_rows()?;
     let row_identities = rows
         .iter()
         .map(|row| row.row_identity().clone())
@@ -44,7 +44,7 @@ pub fn effect_lifecycle_family_inventory(
 
 pub fn effect_lifecycle_public_surface_inventory(
 ) -> Result<EffectLifecyclePublicSurfaceInventory, IdentityDerivationDenial> {
-    let rows = effect_lifecycle_public_surface_rows();
+    let rows = effect_lifecycle_public_surface_rows()?;
     let row_identities = rows
         .iter()
         .map(|row| row.row_identity().clone())

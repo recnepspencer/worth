@@ -188,7 +188,7 @@ impl WorthQuerySupportReport {
             )?,
         ]
         .into_iter()
-        .collect::<Result<Vec<_>, _>>()?;
+        .collect::<Vec<_>>();
         let query_composition_support_profile = support_matrix
             .descriptor(WorthQueryCapabilityFamily::QueryComposition)
             .filter(|descriptor| descriptor.status() == WorthQueryCapabilityStatus::Admitted)

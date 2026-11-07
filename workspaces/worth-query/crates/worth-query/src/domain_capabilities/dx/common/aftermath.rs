@@ -261,7 +261,10 @@ impl WorthQueryAdmittedPlanAftermathContribution {
             crate::domain_capabilities::WorthQueryMaterializationReadyAftermathContribution<
                 crate::domain_capabilities::WorthQueryInstalledAdmittedPlanContributionTarget,
             >,
-        ) -> crate::domain_capabilities::WorthQueryDomainCapabilityTransitionOutcome<Success>,
+        ) -> Result<
+            crate::domain_capabilities::WorthQueryDomainCapabilityTransitionOutcome<Success>,
+            IdentityDerivationDenial,
+        >,
     ) -> Result<WorthQueryCheckedDomainCapabilityOutcome<Success>, IdentityDerivationDenial> {
         let posture = self.posture;
         let target = self.target.clone();
@@ -279,7 +282,7 @@ impl WorthQueryAdmittedPlanAftermathContribution {
                     admitted, target,
                 )
             },
-            |ready| Ok(materialize(ready)),
+            materialize,
         )?)
     }
 }

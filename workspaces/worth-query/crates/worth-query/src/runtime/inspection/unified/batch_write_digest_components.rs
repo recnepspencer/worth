@@ -58,8 +58,8 @@ fn component_artifact_identity(
     index: usize,
     component: &WorthQueryBatchWriteComponentInspection,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    let symbolic_aspect_resolution_identities = symbolic_aspect_resolution_identities(component);
-    let declared_aspect_operation_identities = declared_aspect_operation_identities(component);
+    let symbolic_aspect_resolution_identities = symbolic_aspect_resolution_identities(component)?;
+    let declared_aspect_operation_identities = declared_aspect_operation_identities(component)?;
     let target_declared_entity_identity = component
         .target_evidence()
         .declared()
@@ -77,7 +77,7 @@ fn component_artifact_identity(
         .entity_identities()
         .iter()
         .map(|identity| identity.evidence_identity())
-        .collect::<Result<Vec<_>, _>>()?;
+        .collect::<Vec<_>>();
     Ok(
         worth_query_evidence_identity(WorthQueryEvidenceScope::BatchWriteReceiptComponent)
             .field_usize(WorthQueryEvidenceTag::new("index"), index)
@@ -197,7 +197,7 @@ fn component_artifact_identity(
             )
             .field_evidence_identity_sequence(
                 WorthQueryEvidenceTag::new("collection"),
-                evidence_value_identities("component-collection", component.collections()).iter(),
+                evidence_value_identities("component-collection", component.collections())?.iter(),
             )
             .field_evidence_identity_sequence(
                 WorthQueryEvidenceTag::new("entity_identity"),
@@ -212,7 +212,7 @@ fn component_artifact_identity(
                 terminal_touch_projection_identities(
                     "component-touched-aspect",
                     component.admitted_touched_aspects(),
-                )
+                )?
                 .iter(),
             )
             .seal()?,

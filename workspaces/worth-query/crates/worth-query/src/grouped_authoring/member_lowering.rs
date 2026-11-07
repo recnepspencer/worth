@@ -104,7 +104,7 @@ pub(crate) fn lower_grouped_members_on_handle<
 
             let checked =
                 handle.orchestrate_envelope_from_progressed_checked(member.progression().clone());
-            if let WorthQueryDeclarationEnvelopeChecked::Enveloped(envelope) = checked {
+            if let WorthQueryDeclarationEnvelopeChecked::Enveloped(envelope) = checked? {
                 member_envelopes.push(WorthQueryGroupedEnvelopeMember::new(
                     member.member_index(),
                     member.role(),

@@ -62,7 +62,7 @@ impl WorthQueryDomainInstallationRegistry {
             &generation_lease,
             &execution_index,
             portable_index.as_ref(),
-        );
+        )?;
         Ok(Self {
             runtime_authority,
             generation,

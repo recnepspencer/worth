@@ -30,7 +30,7 @@ fn replay_gap_inputs(
     )
     .expect("historical replay observation should anchor");
     let CausalEvidenceReferenceResolution::Resolved { reference_set, .. } =
-        resolve_causal_evidence_references(anchor, &[CausalEvidenceFamily::QueryInspection])
+        resolve_causal_evidence_references(anchor, &[CausalEvidenceFamily::QueryInspection])?
     else {
         panic!("query-inspection-only replay evidence should resolve");
     };

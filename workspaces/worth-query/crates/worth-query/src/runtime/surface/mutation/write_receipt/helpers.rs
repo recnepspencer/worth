@@ -37,14 +37,15 @@ pub(super) fn symbolic_target_reference_evidence(
             )
         })
         .or_else(|| {
-            authored_reference.zip(resolved_entity_identity).map(
-                |(reference, resolved_entity_identity)| {
+            authored_reference
+                .zip(resolved_entity_identity)
+                .map(|(reference, resolved_entity_identity)| {
                     WorthQuerySymbolicTargetReferenceEvidence::from_reference(
                         reference,
                         resolved_entity_identity,
                     )
-                },
-            )
+                })
+                .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?
         })?)
 }
 
