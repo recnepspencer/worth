@@ -100,15 +100,15 @@ pub(super) fn inherited_effects(
             maximum_work_units: 2,
             relations: nodes,
         });
-        let Some(AspectValue::String(InternedString::Raw(path))) = observe_field_value(
+        let Some(path) = (observe_field_value(
             runtime,
             execution,
             snapshot,
             node,
             layout.node.entity_kind,
             &layout.node.path,
-        )?
-        else {
+        )?)
+        .and_then(|value| value.into_raw_text()) else {
             return Err(unmapped("a prior effect's node path is unavailable"));
         };
         facts.push(WorthQueryApplicationObservedFact::Field {

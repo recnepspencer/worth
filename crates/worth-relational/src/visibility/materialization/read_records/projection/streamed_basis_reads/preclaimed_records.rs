@@ -3,14 +3,13 @@ use super::super::super::materialization;
 use super::ProjectionRecordSource;
 use crate::identity::data::{EntityId, RelationId};
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
-use crate::storage::overlay::PartitionAccess;
 
 pub(super) fn entity(
     source: &(impl ProjectionRecordSource + ?Sized),
     id: EntityId,
 ) -> Option<EntityReadRecord> {
     let root = source.selected_root()?;
-    let partition = root.get_partition(id.partition_id)?;
+    let partition = source.selected_storage()?.get_partition(id.partition_id)?;
     let registry = root.schema_authority().registry();
     let record = if source.is_exact_basis() {
         materialization::materialize_current_authoritative_entity_record(
@@ -36,7 +35,7 @@ pub(super) fn relation(
     id: RelationId,
 ) -> Option<RelationReadRecord> {
     let root = source.selected_root()?;
-    let partition = root.get_partition(id.partition_id)?;
+    let partition = source.selected_storage()?.get_partition(id.partition_id)?;
     let registry = root.schema_authority().registry();
     let record = if source.is_exact_basis() {
         materialization::materialize_current_authoritative_relation_record(

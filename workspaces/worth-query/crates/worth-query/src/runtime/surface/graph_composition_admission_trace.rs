@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -49,7 +50,7 @@ impl WorthQueryGraphCompositionAdmissionTrace {
     pub(in crate::runtime) fn new(
         stages: Vec<WorthQueryGraphCompositionAdmissionTraceStage>,
         failure_stage: WorthQueryGraphCompositionAdmissionTraceStage,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         assert!(
             !stages.is_empty(),
             "graph composition admission trace must include at least one stage"
@@ -82,12 +83,12 @@ impl WorthQueryGraphCompositionAdmissionTrace {
                     WorthQueryEvidenceTag::new("failure_stage"),
                     failure_stage.as_str(),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             stages,
             failure_stage,
             admission_trace_digest,
-        }
+        })
     }
 
     pub fn stages(&self) -> &[WorthQueryGraphCompositionAdmissionTraceStage] {
@@ -122,7 +123,8 @@ mod tests {
                 WorthQueryGraphCompositionAdmissionTraceStage::DeniedBeforeExecution,
             ],
             WorthQueryGraphCompositionAdmissionTraceStage::SymbolsValidated,
-        );
+        )
+        .expect("fixture digest must fit");
     }
 
     #[test]
@@ -131,6 +133,7 @@ mod tests {
         let _ = WorthQueryGraphCompositionAdmissionTrace::new(
             vec![WorthQueryGraphCompositionAdmissionTraceStage::ProgramParsed],
             WorthQueryGraphCompositionAdmissionTraceStage::ProgramParsed,
-        );
+        )
+        .expect("fixture digest must fit");
     }
 }

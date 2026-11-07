@@ -143,10 +143,8 @@ unwind-safety bounds as its installed rule.
         context: &WorthQueryApplicationInvariantContext<'_, '_, Schema>,
         scope: &<Self as WorthQueryApplicationInvariantRule<Schema>>::Scope,
         budget: Option<&dyn CustomInvariantLeaseBudget>,
-    ) -> Result<
-        WorthQueryApplicationInvariantVerdict<()>,
-        WorthQueryApplicationInvariantExecutionError,
-    > {
+    ) -> Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>
+    {
         let outcome = self.evaluate_inner(context, scope, budget);
         self.observe(PlanarInvariantReadEvent::Evaluated {
             reads: context.reads(),

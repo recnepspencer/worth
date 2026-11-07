@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod merge_validation_denial;
 use super::{
     WorthQueryBackendMergeAuthority, WorthQueryEffectPolicy, WorthQueryInspection,
@@ -30,6 +31,7 @@ pub(crate) enum WorthQueryOrdinaryAuthorityDrift {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum WorthQueryMergeAuthorityValidationError {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     ForeignPhase(
         worth_query_execution::facade::application_contribution::WorthQueryForeignAdvancementPhase,
     ),
@@ -153,7 +155,7 @@ impl WorthQueryRuntime {
             None,
             None,
             None,
-        ))
+        )?)
     }
 
     pub(crate) fn admit_ordinary_rich_inspection(&self) -> Result<(), WorthQueryRuntimeError> {
@@ -172,7 +174,7 @@ impl WorthQueryRuntime {
             None,
             None,
             None,
-        ))
+        )?)
     }
 
     pub(crate) fn capture_ordinary_merge_authority(
@@ -191,7 +193,7 @@ impl WorthQueryRuntime {
             None,
             None,
             Some(merge_authority),
-        ))
+        )?)
     }
 
     pub(crate) fn capture_ordinary_preview_authority(
@@ -227,7 +229,7 @@ impl WorthQueryRuntime {
             Some(label),
             Some(preview_basis),
             None,
-        ))
+        )?)
     }
 
     pub(crate) fn ordinary_authority_drift(
@@ -277,9 +279,9 @@ impl WorthQueryRuntime {
     ) -> Result<WorthQueryLowerRuntimeMutationExecution, WorthQueryRuntimeError> {
         let admitted = self.write_intent(command).admit(execution)?;
         let request_identity =
-            workflow_lower_identity("request", admitted.handoff().request_digest());
+            workflow_lower_identity("request", admitted.handoff().request_digest())?;
         let handoff_identity =
-            workflow_lower_identity("handoff", admitted.handoff().handoff_digest());
+            workflow_lower_identity("handoff", admitted.handoff().handoff_digest())?;
         let receipt = admitted.execute(execution)?;
         let receipt_identity = receipt.commit_evidence_identity().clone();
         let inspection_identity = if materialize_inspection {
@@ -307,7 +309,7 @@ impl WorthQueryRuntime {
         session_label: Option<WorthQuerySessionLabel>,
         preview_basis: Option<WorthQueryPreviewBasisAdmission>,
         merge_authority: Option<WorthQueryBackendMergeAuthority>,
-    ) -> WorthQueryOrdinaryAuthorityAdmission {
+    ) -> Result<WorthQueryOrdinaryAuthorityAdmission, IdentityDerivationDenial> {
         let snapshot_identity = merge_authority
             .as_ref()
             .map(|authority| authority.target_snapshot_identity().clone())
@@ -345,21 +347,26 @@ impl WorthQueryRuntime {
                 authority.authority_identity(),
             );
         }
-        WorthQueryOrdinaryAuthorityAdmission {
+        Ok(WorthQueryOrdinaryAuthorityAdmission {
             family,
             runtime_identity: self.authority_identity,
             snapshot_identity,
             session_label,
             preview_basis,
             merge_authority,
-            admission_identity: identity.seal(),
-        }
+            admission_identity: identity.seal()?,
+        })
     }
 }
 
-fn workflow_lower_identity(role: &'static str, digest: &str) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
-        .field_shape(WorthQueryEvidenceTag::new("role"), role)
-        .field_value(WorthQueryEvidenceTag::new("digest"), digest)
-        .seal()
+fn workflow_lower_identity(
+    role: &'static str,
+    digest: &str,
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
+            .field_shape(WorthQueryEvidenceTag::new("role"), role)
+            .field_value(WorthQueryEvidenceTag::new("digest"), digest)
+            .seal()?,
+    )
 }

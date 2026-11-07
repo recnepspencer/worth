@@ -14,7 +14,8 @@ fn lowering_for(
         live_family,
         view_family,
         QuerySubscriptionConstructionSource::FacadeLive,
-    );
+    )
+    .expect("fixture digest must fit");
     let selection = select_query_subscription_family(input, roomy_budget()).unwrap();
     let declaration = declare_query_subscription(selection, roomy_slice_budget()).unwrap();
     lower_query_subscription_to_bridge(declaration, roomy_lowering_budget()).unwrap()
@@ -104,6 +105,7 @@ fn admission_digest_binds_exact_counter_evidence() {
         admission.admission_projection().label(),
         admission
             .recomputed_evidence_identity(&counters.evidence_identity())
+            .expect("fixture digest must fit")
             .terminal_projection_for_reporting()
     );
 
@@ -114,6 +116,7 @@ fn admission_digest_binds_exact_counter_evidence() {
         admission.admission_projection().label(),
         admission
             .recomputed_evidence_identity(&altered_counters.evidence_identity())
+            .expect("fixture digest must fit")
             .terminal_projection_for_reporting()
     );
 }

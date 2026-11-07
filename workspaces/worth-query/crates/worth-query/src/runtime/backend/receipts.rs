@@ -1,4 +1,5 @@
 use crate::declarative_live::{DeclarativeLiveQueryRequest, DeclarativeLiveViewShape};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -28,9 +29,9 @@ impl LiveViewDeclarationAdmissionReceipt {
     pub(crate) fn from_request(
         view_name: impl Into<String>,
         request: &DeclarativeLiveQueryRequest,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let view_name = view_name.into();
-        let target_collection = request.target_collection_identity();
+        let target_collection = request.target_collection_identity()?;
         let view_shape = request.view_shape().clone();
         let query_projection_count = request.query_projection().len();
         let result_field_count = request.result_fields().len();
@@ -67,9 +68,9 @@ impl LiveViewDeclarationAdmissionReceipt {
             traversal_count,
         )
         .field_usize(WorthQueryEvidenceTag::new("ordering_count"), ordering_count)
-        .seal();
+        .seal()?;
 
-        Self {
+        Ok(Self {
             view_name,
             target_collection,
             view_shape,
@@ -79,7 +80,7 @@ impl LiveViewDeclarationAdmissionReceipt {
             traversal_count,
             ordering_count,
             receipt_identity,
-        }
+        })
     }
 
     pub fn view_name(&self) -> &str {
@@ -130,23 +131,23 @@ impl LiveViewDeclarationAdmissionReceipt {
         &self,
         expected_view_name: &str,
         request: &DeclarativeLiveQueryRequest,
-    ) -> Option<String> {
+    ) -> Result<Option<String>, IdentityDerivationDenial> {
         if self.view_name() != expected_view_name {
-            return Some(format!(
+            return Ok(Some(format!(
                 "live-view admission receipt view drifted: expected `{expected_view_name}`, found `{}`",
                 self.view_name()
-            ));
+            )));
         }
-        let request_target_collection = request.target_collection_identity();
+        let request_target_collection = request.target_collection_identity()?;
         if !self
             .target_collection
             .same_target_collection_as(&request_target_collection)
         {
-            return Some(format!(
+            return Ok(Some(format!(
                 "live-view admission receipt target drifted: expected `{}`, found `{}`",
                 request_target_collection.as_str(),
                 self.target_collection.as_str()
-            ));
+            )));
         }
         if self.view_shape() != request.view_shape()
             || self.query_projection_count() != request.query_projection().len()
@@ -155,11 +156,11 @@ impl LiveViewDeclarationAdmissionReceipt {
             || self.traversal_count() != request.traversal().len()
             || self.ordering_count() != request.ordering().len()
         {
-            return Some(
+            return Ok(Some(
                 "live-view admission receipt shape drifted from the declared request".to_string(),
-            );
+            ));
         }
-        None
+        Ok(None)
     }
 }
 
@@ -182,7 +183,7 @@ impl SubscriptionActivationReceipt {
         activation: &SubscriptionActivationInput,
         support_evidence_identity: WorthQueryEvidenceIdentity,
         remask_projection: Option<WorthQueryRuntimeRemaskProjection>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let view_name = view_name.into();
         let activation_identity = activation.evidence_identity().clone();
         let query_declaration_identity = activation.query_declaration_identity().clone();
@@ -190,14 +191,16 @@ impl SubscriptionActivationReceipt {
         let basis_binding_identity = activation.basis_binding_identity().clone();
         let signal_strategy_identity = activation.signal_strategy_identity().clone();
         let support_identity =
-            subscription_activation_receipt_source_identity("support", &support_evidence_identity);
-        let remask_posture = remask_projection.map(|projection| {
-            WorthQueryRuntimeRemaskPosture::from_activation_projection(
-                &projection,
-                &support_identity,
-                &basis_binding_identity,
-            )
-        });
+            subscription_activation_receipt_source_identity("support", &support_evidence_identity)?;
+        let remask_posture = remask_projection
+            .map(|projection| {
+                WorthQueryRuntimeRemaskPosture::from_activation_projection(
+                    &projection,
+                    &support_identity,
+                    &basis_binding_identity,
+                )
+            })
+            .transpose()?;
         let receipt_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::SubscriptionActivationReceipt,
         )
@@ -233,9 +236,9 @@ impl SubscriptionActivationReceipt {
                 .as_ref()
                 .map(WorthQueryRuntimeRemaskPosture::remask_identity),
         )
-        .seal();
+        .seal()?;
 
-        Self {
+        Ok(Self {
             view_name,
             activation_identity,
             query_declaration_identity,
@@ -245,7 +248,7 @@ impl SubscriptionActivationReceipt {
             support_identity,
             remask_posture,
             receipt_identity,
-        }
+        })
     }
 
     pub fn view_name(&self) -> &str {
@@ -363,15 +366,17 @@ fn typed_identity_drift(
 fn subscription_activation_receipt_source_identity(
     role: &str,
     source_identity: &WorthQueryEvidenceIdentity,
-) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            "subscription_activation_receipt_source_v1",
-        )
-        .field_shape(WorthQueryEvidenceTag::new("role"), role)
-        .field_evidence_identity(WorthQueryEvidenceTag::new("source"), source_identity)
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                "subscription_activation_receipt_source_v1",
+            )
+            .field_shape(WorthQueryEvidenceTag::new("role"), role)
+            .field_evidence_identity(WorthQueryEvidenceTag::new("source"), source_identity)
+            .seal()?,
+    )
 }
 
 #[cfg(test)]

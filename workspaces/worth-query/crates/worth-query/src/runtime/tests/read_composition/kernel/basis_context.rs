@@ -263,16 +263,19 @@ fn retained_historical_context_for_family(
         1,
         1,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let capability = HistoricalCapabilityDescriptor::retained_snapshot_for_test(
         snapshot_token,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let admission =
         admit_historical_evaluation_path(request, capability).expect("history should admit");
     let resolved = resolve_historical_materialization_path(
         admission.clone(),
-        HistoricalMaterializationDescriptor::retained_snapshot_for_test(snapshot_token),
+        HistoricalMaterializationDescriptor::retained_snapshot_for_test(snapshot_token)
+            .expect("fixture digest must fit"),
     )
     .expect("history should resolve");
     let metadata = materialization_metadata_from_resolved(resolved);
@@ -332,7 +335,9 @@ fn runtime_preflight_for_family(
     let identity = ResolvedSnapshotIdentity::new(
         BasisAuthorityFamily::Runtime,
         None,
-        crate::memory_workspace::admit_external_snapshot_label(snapshot_token).evidence_identity(),
+        crate::memory_workspace::admit_external_snapshot_label(snapshot_token)
+            .expect("fixture digest must fit")
+            .evidence_identity(),
         family.read_graph().schema_basis().clone(),
         lineage_class,
     );

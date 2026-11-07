@@ -23,6 +23,7 @@ mod co_roles;
 mod content;
 mod correction;
 mod correction_courts;
+mod correction_declaration;
 mod coupled;
 mod lifecycle;
 mod lifecycle_handlers;
@@ -120,3 +121,9 @@ mod currentness_guards;
 mod support_currentness;
 
 mod native_boundary;
+
+mod owned_action_feature;
+
+mod principal_callbacks;
+
+mod query_feature;

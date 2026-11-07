@@ -5,7 +5,7 @@ impl Rule {
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, WalkSchema>,
         budget: Option<&dyn CustomInvariantLeaseBudget>,
-    ) -> Result<Scope, WorthQueryApplicationInvariantPreparationError> {
+    ) -> Result<Scope, WorthQueryApplicationInvariantError> {
         if !self.probe.enabled {
             return Ok(Scope {
                 proposed: Vec::new(),
@@ -21,7 +21,7 @@ impl Rule {
         &self,
         view: &WorthQueryApplicationInvariantReadView<'_, WalkSchema>,
         budget: Option<&dyn CustomInvariantLeaseBudget>,
-    ) -> Result<Vec<(u64, Entity)>, WorthQueryApplicationInvariantPreparationError> {
+    ) -> Result<Vec<(u64, Entity)>, WorthQueryApplicationInvariantError> {
         let mut root = None;
         for entity in view.touched_entities(&self.key).map_err(access)? {
             if view.field(&self.key, &entity).map_err(access)? == Some(0) {
@@ -36,32 +36,28 @@ impl Rule {
         if budget.is_some_and(|b| {
             !b.claim_result((4 * memberships.len() * std::mem::size_of::<(u64, Entity)>()) as u64)
         }) {
-            return Err(WorthQueryApplicationInvariantPreparationError::new(
-                "probe scope retention refused",
-            ));
+            return Err(WorthQueryApplicationInvariantError::Stopped);
         }
         let mut nodes = Vec::new();
         for membership in memberships {
             if budget.is_some_and(|b| !b.checkpoint(1)) {
-                return Err(WorthQueryApplicationInvariantPreparationError::new(
-                    "probe preparation stopped",
-                ));
+                return Err(WorthQueryApplicationInvariantError::Stopped);
             }
             let entity = membership.from().clone();
             let key = view
                 .field(&self.key, &entity)
                 .map_err(access)?
-                .ok_or_else(|| {
-                    WorthQueryApplicationInvariantPreparationError::new("node key absent")
-                })?;
+                .ok_or_else(
+                    || WorthQueryApplicationInvariantError::MissingRequiredField {
+                        field: "node key absent",
+                    },
+                )?;
             nodes.push((key, entity));
         }
         if budget
             .is_some_and(|b| !b.claim_scratch((nodes.len() * std::mem::size_of::<Entity>()) as u64))
         {
-            return Err(WorthQueryApplicationInvariantPreparationError::new(
-                "probe root retention refused",
-            ));
+            return Err(WorthQueryApplicationInvariantError::Stopped);
         }
         let roots = nodes
             .iter()
@@ -73,7 +69,7 @@ impl Rule {
     }
 }
 pub fn access(
-    e: WorthQueryInvariantAccessDenial,
-) -> WorthQueryApplicationInvariantPreparationError {
-    WorthQueryApplicationInvariantPreparationError::new(e.to_string())
+    e: impl Into<WorthQueryApplicationInvariantError>,
+) -> WorthQueryApplicationInvariantError {
+    e.into()
 }

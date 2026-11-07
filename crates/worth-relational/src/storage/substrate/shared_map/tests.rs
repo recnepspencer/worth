@@ -120,3 +120,26 @@ fn targeted_mutation_does_not_change_a_retained_map() {
     assert!(map.is_empty());
     assert_eq!(retained.len(), 10_000);
 }
+
+#[test]
+fn suffix_seek_matches_an_independent_ordered_filter() {
+    let values: SharedMap<_, _> = (0..128_u64)
+        .filter(|key| key % 3 != 0)
+        .map(|key| (key, key * 7))
+        .collect();
+    for first in 0..140 {
+        let expected = values
+            .iter()
+            .filter(|(key, _)| **key >= first)
+            .map(|(key, value)| (*key, *value))
+            .collect::<Vec<_>>();
+        let suffix = values.iter_from(&first);
+        assert_eq!(suffix.len(), expected.len());
+        assert_eq!(
+            suffix
+                .map(|(key, value)| (*key, *value))
+                .collect::<Vec<_>>(),
+            expected
+        );
+    }
+}

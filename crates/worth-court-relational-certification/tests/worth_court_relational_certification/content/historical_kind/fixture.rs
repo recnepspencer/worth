@@ -9,13 +9,18 @@ use worth_relational::facade::{
     transactions::*,
 };
 
-pub(super) struct World {
+pub(crate) struct World {
     pub runtime: RelationalRuntime,
     pub entities: Vec<EntityId>,
     pub relations: Vec<RelationId>,
 }
 
 pub(super) fn runtime() -> RelationalRuntime {
+    runtime_with_schema(support::demo_schema_registry())
+}
+fn runtime_with_schema(
+    registry: worth_relational::facade::schema::RelationalSchemaRegistry,
+) -> RelationalRuntime {
     use worth_relational::facade::config::{
         MvccConfig, RelationalRuntimeProfile, RetentionBackend, SnapshotReleasePolicy,
     };
@@ -28,7 +33,7 @@ pub(super) fn runtime() -> RelationalRuntime {
             reclaim_batch_size: 8,
             retention_backend: RetentionBackend::EpochChunkRetention,
         })
-        .schema_registry(support::demo_schema_registry())
+        .schema_registry(registry)
         .build()
         .unwrap()
 }
@@ -54,6 +59,15 @@ impl World {
         }
     }
 
+    pub fn with_schema(
+        registry: worth_relational::facade::schema::RelationalSchemaRegistry,
+    ) -> Self {
+        Self {
+            runtime: runtime_with_schema(registry),
+            entities: vec![],
+            relations: vec![],
+        }
+    }
     pub fn commit(
         &self,
         execution: &ExecutionRequest<'_, '_>,

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 
@@ -93,7 +94,7 @@ impl WorthQueryLiveArtifactBundle {
     pub(in crate::runtime) fn new(
         snapshot_identity: WorthQuerySnapshotIdentity,
         reads: BTreeMap<WorthQueryLiveArtifactTarget, WorthQueryLiveReadResult>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let snapshot_evidence_identity = snapshot_identity.evidence_identity();
         let bundle_digest =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LiveArtifactBundle)
@@ -111,15 +112,15 @@ impl WorthQueryLiveArtifactBundle {
                         )
                     }),
                 )
-                .seal()
+                .seal()?
                 .terminal_projection_for_reporting()
                 .to_string();
-        Self {
+        Ok(Self {
             snapshot_identity,
             snapshot_evidence_identity,
             bundle_digest,
             reads,
-        }
+        })
     }
 
     pub fn snapshot_identity(&self) -> &WorthQuerySnapshotIdentity {
@@ -193,7 +194,7 @@ impl WorthQueryLiveArtifactBundle {
     pub(crate) fn test_only(
         snapshot_identity: WorthQuerySnapshotIdentity,
         reads: BTreeMap<WorthQueryLiveArtifactTarget, WorthQueryLiveReadResult>,
-    ) -> Self {
-        Self::new(snapshot_identity, reads)
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(snapshot_identity, reads)?)
     }
 }

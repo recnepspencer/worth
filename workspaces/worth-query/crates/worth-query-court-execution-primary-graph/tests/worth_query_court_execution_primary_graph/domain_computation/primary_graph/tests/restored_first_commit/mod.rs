@@ -8,10 +8,11 @@
 //! or not the store also holds a retired index definition. A World
 //! publication first, followed by a raw commit, gives the same answer.
 
+use std::sync::Arc;
 use worth_execution::ExecutionAllocationPolicy as CapturePolicy;
 use worth_query_declaration::facade::authentication::WorthQueryPrincipalMappingStatus;
 use worth_relational::facade::history::RelationalCommitReceipt;
-use worth_relational::facade::indexes::DerivedIndexId;
+use worth_relational::facade::indexes::DerivedIndexGeneration;
 use worth_relational::facade::publication::PatchStreamPosition;
 
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_world;
@@ -79,7 +80,7 @@ pub fn raw_commits_first_after_restore(with_retired_index: bool) {
                 .expect("fixture borrows its runtime request");
             let execution = &borrowed_execution;
 
-            assert_every_installed_index_current(execution, &restored, &first, retired)
+            assert_every_installed_index_current(execution, &restored, &first, retired.as_deref())
         })
         .expect("the fixture read owns its installed host call");
     let second = restored
@@ -105,7 +106,7 @@ pub fn raw_commits_first_after_restore(with_retired_index: bool) {
                 .expect("fixture borrows its runtime request");
             let execution = &borrowed_execution;
 
-            assert_every_installed_index_current(execution, &restored, &second, retired)
+            assert_every_installed_index_current(execution, &restored, &second, retired.as_deref())
         })
         .expect("the fixture read owns its installed host call");
 }
@@ -166,14 +167,16 @@ pub fn world_publication_first_after_restore(with_retired_index: bool) {
                 .expect("fixture borrows its runtime request");
             let execution = &borrowed_execution;
 
-            assert_every_installed_index_current(execution, &restored, &raw, retired)
+            assert_every_installed_index_current(execution, &restored, &raw, retired.as_deref())
         })
         .expect("the fixture read owns its installed host call");
 }
 
 /// Builds a world with World-published history, optionally persists a retired
 /// index definition, captures the world, and restores the capture.
-pub fn captured_and_restored(with_retired_index: bool) -> (IdentityWorld, Option<DerivedIndexId>) {
+pub fn captured_and_restored(
+    with_retired_index: bool,
+) -> (IdentityWorld, Option<Arc<DerivedIndexGeneration>>) {
     let world = installed_world(&[("alice", WorthQueryPrincipalMappingStatus::Enabled)]);
     let principal = world
         .application
@@ -252,7 +255,7 @@ pub fn captured_and_restored(with_retired_index: bool) -> (IdentityWorld, Option
             )
         })
         .expect("the fixture read owns its installed host call");
-    if let Some(retired) = retired {
+    if let Some(retired) = &retired {
         restored
             .application
             .with_host_advancement(|phase| {
@@ -292,7 +295,7 @@ pub fn assert_every_installed_index_current(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &IdentityWorld,
     commit: &RelationalCommitReceipt,
-    retired: Option<DerivedIndexId>,
+    retired: Option<&DerivedIndexGeneration>,
 ) {
     let graph = (*world.application.runtime_for_test())
         .primary_graph_for_test()
@@ -310,14 +313,13 @@ pub fn assert_every_installed_index_current(
             );
         }
         if let Some(retired) = retired {
-            assert!(
-                runtime
-                    .index_access()
-                    .read_published_generation_for_commit(request_execution, retired, commit)
-                    .unwrap()
-                    .is_none(),
-                "nothing maintains the retired index"
-            );
+            let selected = runtime
+                .index_access()
+                .read_published_generation_for_commit(request_execution, retired.index_id, commit)
+                .unwrap()
+                .expect("an unrelated commit carries the exact retained selection");
+            assert_eq!(selected.as_ref(), retired,
+                "the retired generation keeps its identity, affinity and entries without rebuilding");
         }
     });
 }

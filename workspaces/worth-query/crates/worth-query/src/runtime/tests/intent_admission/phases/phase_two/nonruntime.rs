@@ -8,7 +8,8 @@ fn basis_observation_eligibility_admits_without_runtime_handoff() {
         )
         .expect("basis observation request should build");
     let eligibility =
-        crate::intent_admission::WorthQueryIntentAdmissionEligibility::from_request(request);
+        crate::intent_admission::WorthQueryIntentAdmissionEligibility::from_request(request)
+            .expect("fixture digest must fit");
 
     assert_eq!(
         eligibility.support_posture(),
@@ -58,7 +59,8 @@ fn projection_consumption_warning_eligibility_stays_admitted_without_execution_h
         )
         .expect("projection request should build");
     let eligibility =
-        crate::intent_admission::WorthQueryIntentAdmissionEligibility::from_request(request);
+        crate::intent_admission::WorthQueryIntentAdmissionEligibility::from_request(request)
+            .expect("fixture digest must fit");
 
     assert_eq!(
         eligibility.projection_source_posture(),

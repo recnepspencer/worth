@@ -1,6 +1,7 @@
 //! Closed projection minted only from an exactly validated workflow stage.
 
 use crate::basis_lifecycle::BasisOperationLane;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::super::{WorthQueryWorkflowRun, WorthQueryWorkflowStageCompletion};
 

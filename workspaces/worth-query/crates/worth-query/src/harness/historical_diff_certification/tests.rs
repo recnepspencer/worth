@@ -3,7 +3,7 @@ use super::matrix::MilestoneSixHistoricalDiffCertificationAdapter;
 #[test]
 fn historical_diff_branch_to_branch_lane_emits_exact_posture() {
     let matrix =
-        MilestoneSixHistoricalDiffCertificationAdapter::branch_scoped_historical_and_diff_query_context_test();
+        MilestoneSixHistoricalDiffCertificationAdapter::branch_scoped_historical_and_diff_query_context_test().expect("fixture digest must fit");
     let row = matrix
         .rows
         .iter()
@@ -69,7 +69,7 @@ fn historical_diff_branch_to_branch_lane_emits_exact_posture() {
 #[test]
 fn historical_diff_current_to_historical_lane_emits_exact_comparison_family() {
     let matrix =
-        MilestoneSixHistoricalDiffCertificationAdapter::branch_scoped_historical_and_diff_query_context_test();
+        MilestoneSixHistoricalDiffCertificationAdapter::branch_scoped_historical_and_diff_query_context_test().expect("fixture digest must fit");
     let row = matrix
         .rows
         .iter()
@@ -99,7 +99,7 @@ fn historical_diff_current_to_historical_lane_emits_exact_comparison_family() {
 #[test]
 fn historical_diff_rejection_rows_emit_exact_failure_counters() {
     let matrix =
-        MilestoneSixHistoricalDiffCertificationAdapter::branch_scoped_historical_and_diff_query_context_test();
+        MilestoneSixHistoricalDiffCertificationAdapter::branch_scoped_historical_and_diff_query_context_test().expect("fixture digest must fit");
 
     for row in &matrix.rejection_rows {
         assert!(
@@ -181,7 +181,7 @@ fn historical_diff_rejection_rows_emit_exact_failure_counters() {
 #[test]
 fn historical_diff_zero_rediscovery_and_metadata_identity_are_explicit() {
     let matrix =
-        MilestoneSixHistoricalDiffCertificationAdapter::branch_scoped_historical_and_diff_query_context_test();
+        MilestoneSixHistoricalDiffCertificationAdapter::branch_scoped_historical_and_diff_query_context_test().expect("fixture digest must fit");
 
     for row in &matrix.rows {
         for lane in [&row.control_lane, &row.hostile_lane, &row.parity_lane] {
@@ -238,7 +238,7 @@ fn historical_diff_zero_rediscovery_and_metadata_identity_are_explicit() {
 #[test]
 fn historical_diff_parity_rows_prove_expected_equality_and_distinction() {
     let matrix =
-        MilestoneSixHistoricalDiffCertificationAdapter::branch_scoped_historical_and_diff_query_context_test();
+        MilestoneSixHistoricalDiffCertificationAdapter::branch_scoped_historical_and_diff_query_context_test().expect("fixture digest must fit");
 
     let parity = matrix
         .rows

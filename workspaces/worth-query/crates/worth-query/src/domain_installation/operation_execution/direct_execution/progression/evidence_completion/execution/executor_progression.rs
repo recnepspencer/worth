@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 impl<D: 'static, O, F: 'static, L: BasisOperationLane>
     WorthQueryGraphCompletedDirectExecution<D, O, F, L>

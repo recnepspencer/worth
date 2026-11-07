@@ -17,7 +17,11 @@ pub struct ArrayColumns<Kind>(PhantomData<Kind>);
 #[doc(hidden)]
 pub trait ValueColumns<T, Kind>: super::BindingSet {
     fn bindings(output: &mut Vec<super::RecordBinding>);
-    fn columns(path: &str, output: &mut Vec<Column>) -> Result<(), RecordRefusal>;
+    fn columns(
+        path: &str,
+        equality_queryable: bool,
+        output: &mut Vec<Column>,
+    ) -> Result<(), RecordRefusal>;
     fn encode(
         value: &T,
         path: &str,
@@ -58,7 +62,7 @@ impl<Set: Scalar<T>, T: 'static> ScalarValue<T> for Set {
             recipe: ApplicationFieldBindingRecipe::of::<Set::Binding>,
             presence: super::super::ApplicationFieldPresence::Required,
             writable: Set::WRITABLE,
-            equality: Set::EQUALITY_QUERYABLE,
+            equality: false,
             unique: false,
         });
         Ok(())
@@ -110,8 +114,21 @@ impl<Set: Record<T>, T: 'static> ValueColumns<T, RecordColumns> for Set {
     fn bindings(output: &mut Vec<super::RecordBinding>) {
         output.extend(Set::record().bindings());
     }
-    fn columns(path: &str, output: &mut Vec<Column>) -> Result<(), RecordRefusal> {
-        output.extend(Set::record().columns_field(path)?);
+    fn columns(
+        path: &str,
+        equality_queryable: bool,
+        output: &mut Vec<Column>,
+    ) -> Result<(), RecordRefusal> {
+        let record = Set::record();
+        let scalar = record.is_scalar();
+        require_scalar_queryability(path, equality_queryable, scalar)?;
+        append_declared_columns(
+            output,
+            record.columns_field(path)?,
+            equality_queryable,
+            scalar,
+        );
+
         Ok(())
     }
 
@@ -141,9 +158,17 @@ where
     fn bindings(output: &mut Vec<super::RecordBinding>) {
         <Set as ValueColumns<T, Kind>>::bindings(output);
     }
-    fn columns(path: &str, output: &mut Vec<Column>) -> Result<(), RecordRefusal> {
+    fn columns(
+        path: &str,
+        equality_queryable: bool,
+        output: &mut Vec<Column>,
+    ) -> Result<(), RecordRefusal> {
         for index in 0..N {
-            <Set as ValueColumns<T, Kind>>::columns(&format!("{path}[{index}]"), output)?;
+            <Set as ValueColumns<T, Kind>>::columns(
+                &format!("{path}[{index}]"),
+                equality_queryable,
+                output,
+            )?;
         }
         Ok(())
     }
@@ -178,4 +203,28 @@ where
             .try_into()
             .map_err(|_| RecordRefusal::new(path, Denial::MissingField))
     }
+}
+
+fn require_scalar_queryability(
+    path: &str,
+    queryable: bool,
+    scalar: bool,
+) -> Result<(), RecordRefusal> {
+    if queryable && !scalar {
+        return Err(RecordRefusal::new(path, Denial::QueryabilityNeedsScalar));
+    }
+    Ok(())
+}
+fn append_declared_columns(
+    output: &mut Vec<Column>,
+    mut columns: Vec<Column>,
+    queryable: bool,
+    scalar: bool,
+) {
+    if scalar {
+        for column in &mut columns {
+            column.equality = queryable;
+        }
+    }
+    output.extend(columns);
 }

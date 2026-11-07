@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::ordinary::WorthQueryOrdinaryInspectionPolicy;
 use crate::runtime::{
     CausalInspection, CausalInspectionPlanErrorKind, CausalInspectionProofFlow,
@@ -12,13 +13,16 @@ use super::{
 };
 
 impl WorthQueryInspectionRequest {
-    pub fn run(self, workspace: &WorthQueryWorkspace) -> WorthQueryInspectionOutcome {
+    pub fn run(
+        self,
+        workspace: &WorthQueryWorkspace,
+    ) -> Result<WorthQueryInspectionOutcome, IdentityDerivationDenial> {
         let counters = WorthQueryInspectionCounters::context_handed_off().planning_attempted();
         let basis = self.context.basis;
         let observation = QueryObservationReceipt::from_read_receipt(
             &self.declaration.source_receipt,
             basis.clone(),
-        );
+        )?;
         let plan = match CausalInspection::for_observation(observation, basis)
             .reference_only()
             .plan()
@@ -26,6 +30,9 @@ impl WorthQueryInspectionRequest {
             Ok(plan) => plan,
             Err(error) => {
                 let source = match error.kind() {
+                    CausalInspectionPlanErrorKind::Construction => {
+                        WorthQueryInspectionStopSource::Construction
+                    }
                     CausalInspectionPlanErrorKind::BasisMismatch => {
                         WorthQueryInspectionStopSource::BasisMismatch
                     }
@@ -39,10 +46,8 @@ impl WorthQueryInspectionRequest {
                         WorthQueryInspectionStopSource::InvalidRequest
                     }
                 };
-                return WorthQueryInspectionOutcome::Stopped(WorthQueryInspectionStop::new(
-                    source,
-                    error.failure_digest(),
-                    counters,
+                return Ok(WorthQueryInspectionOutcome::Stopped(
+                    WorthQueryInspectionStop::new(source, error, counters),
                 ));
             }
         };
@@ -58,6 +63,12 @@ impl WorthQueryInspectionRequest {
                 ),
                 Err(error) => {
                     let source = match error.kind() {
+                        WorthQueryBackendInspectionErrorKind::EvidenceIdentityDerivationDenied => {
+                            WorthQueryInspectionUnavailableSource::EvidenceIdentityDerivationDenied
+                        }
+                        WorthQueryBackendInspectionErrorKind::Construction => {
+                            WorthQueryInspectionUnavailableSource::Construction
+                        }
                         WorthQueryBackendInspectionErrorKind::Unavailable => {
                             WorthQueryInspectionUnavailableSource::Runtime
                         }
@@ -65,15 +76,11 @@ impl WorthQueryInspectionRequest {
                             WorthQueryInspectionUnavailableSource::Materialization
                         }
                     };
-                    return WorthQueryInspectionOutcome::Unavailable(
-                        WorthQueryInspectionUnavailable::new(
-                            source,
-                            error.message(),
-                            receipt,
-                            cost,
-                            attempted,
+                    return Ok(WorthQueryInspectionOutcome::Unavailable(
+                        WorthQueryInspectionUnavailable::from_backend(
+                            source, error, receipt, cost, attempted,
                         ),
-                    );
+                    ));
                 }
             }
         } else {
@@ -81,7 +88,7 @@ impl WorthQueryInspectionRequest {
         };
         let completion =
             WorthQueryInspectionCompletion::new(receipt, cost, materialization, counters);
-        match plan.admission() {
+        Ok(match plan.admission() {
             CausalInspectionProofFlow::Admitted(_) => {
                 WorthQueryInspectionOutcome::Completed(completion)
             }
@@ -91,6 +98,6 @@ impl WorthQueryInspectionRequest {
             CausalInspectionProofFlow::Denied(_) => {
                 WorthQueryInspectionOutcome::Violation(completion)
             }
-        }
+        })
     }
 }

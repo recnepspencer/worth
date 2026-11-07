@@ -169,7 +169,8 @@ impl WorthQueryOutcomeNavigation for workflow::WorthQueryWritebackOutcome {
         match self {
             Self::Completed(_) => WorthQueryOutcomePosture::Completed,
             Self::Stopped(stop) => match stop.source() {
-                workflow::WorthQueryWritebackStopSource::InspectionUnavailable
+                workflow::WorthQueryWritebackStopSource::EvidenceIdentityDerivationDenied(_)
+                | workflow::WorthQueryWritebackStopSource::InspectionUnavailable
                 | workflow::WorthQueryWritebackStopSource::BridgeExecution => {
                     WorthQueryOutcomePosture::Unavailable
                 }
@@ -195,7 +196,8 @@ impl WorthQueryOutcomeNavigation for workflow::WorthQueryBranchMergeOutcome {
                 WorthQueryOutcomePosture::Unavailable
             }
             Self::Stopped(stop) => match stop.source() {
-                workflow::WorthQueryBranchMergeStopSource::InspectionUnavailable
+                workflow::WorthQueryBranchMergeStopSource::EvidenceIdentityDerivationDenied(_)
+                | workflow::WorthQueryBranchMergeStopSource::InspectionUnavailable
                 | workflow::WorthQueryBranchMergeStopSource::RelationalExecution => {
                     WorthQueryOutcomePosture::Unavailable
                 }
@@ -219,7 +221,9 @@ impl WorthQueryOutcomeNavigation
     fn posture(&self) -> WorthQueryOutcomePosture {
         match self {
             Self::Completed(completion) => workflow_completion_posture(completion.completion()),
-            Self::Stopped(stop) => workflow_stop_posture(stop.stop()),
+            Self::Stopped(stop) => stop
+                .stop()
+                .map_or(WorthQueryOutcomePosture::Unavailable, workflow_stop_posture),
         }
     }
 }

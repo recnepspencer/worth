@@ -67,15 +67,22 @@ fn mutation_refreshes_every_exact_performed_commit_across_branches() {
                     source,
                 )
                 .expect("feature branch forks from main");
+            let (_, before) = runtime.observe_branch(&runtime.main_branch_identity()).unwrap();
+            let before = before.observation().commit_receipt().unwrap().clone();
+            let original: Vec<_> = index_ids.iter().map(|index| runtime.index_access()
+                .read_published_generation_for_commit(execution, *index, &before)
+                .unwrap().unwrap()).collect();
             let feature = commit_empty(execution, runtime, "index-refresh-feature");
             let main = commit_empty(execution, runtime, "main");
-            assert!(index_ids.iter().any(|index_id| {
-                runtime
-                    .index_access()
-                    .read_published_generation_for_commit(execution, *index_id, &feature)
-                    .unwrap()
-                    .is_none()
-            }));
+            for committed in [&feature, &main] {
+                for (index, original) in index_ids.iter().zip(&original) {
+                    let selected = runtime.index_access()
+                        .read_published_generation_for_commit(execution, *index, committed)
+                        .unwrap().expect("native publication carries the unchanged exact selection");
+                    assert_eq!(selected.as_ref(), original.as_ref(),
+                        "empty edits carry the same generation identity and every entry on each branch");
+                }
+            }
             Ok::<_, &'static str>((feature, main))
         })
         .expect("exact publication delta refresh succeeds")
@@ -134,7 +141,7 @@ fn multi_commit_callback_reconstructs_each_retained_generation_with_cold_budget(
     });
 }
 #[test]
-fn captured_before_root_with_missing_generation_uses_explicit_cold_fallback() {
+fn missing_selected_predecessor_refuses_until_explicit_recovery() {
     let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -170,19 +177,15 @@ fn captured_before_root_with_missing_generation_uses_explicit_cold_fallback() {
             .expect("index fixture has identity capacity");
         let committed = commit_empty(execution, runtime, "main");
         let (_, basis) = runtime.observe_branch(&identity).unwrap();
-        let refreshed = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::index_maintenance_budget::refresh_with_cold_fallback(
-            execution,
-            runtime,
-            DerivedIndexBuildRequest {
-                source_commit_id: committed.commit_id,
-                branch_id: committed.branch_id.clone(),
-                index_ids: vec![index.index_id],
-            },
-            &basis,
-            Some(&before),
-        )
-        .unwrap();
-        assert_eq!(refreshed.generations.len(), 1);
+        let denied = runtime.index_authority().refresh_for_basis(
+            DerivedIndexBuildRequest { source_commit_id: committed.commit_id, branch_id: committed.branch_id.clone(), index_ids: vec![index.index_id] },
+            &basis, Some(&before), worth_relational::facade::indexes::DerivedIndexMaintenanceBudget {
+                maximum_work_units: None, maximum_cold_record_slots: Some(0), maximum_derived_rows: None,
+            }, execution).unwrap_err();
+        assert_eq!(denied.kind, worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired);
+        let recovered = runtime.index_authority().recover_installed_indexes_for_basis(execution, &basis).unwrap();
+        assert!(recovered.failed_indexes.is_empty());
+        assert!(runtime.index_access().read_published_generation_for_observation(execution, index.index_id, &basis.observation()).unwrap().is_some());
         runtime.snapshots().release_snapshot(&before).unwrap();
     });
 }

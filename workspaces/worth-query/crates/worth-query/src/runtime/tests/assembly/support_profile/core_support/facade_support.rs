@@ -75,7 +75,9 @@ fn runtime_public_api_contract_closes_runtime_backed_temporal_async_surfaces() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = stateful_bridge_task_runtime(request_execution);
-    let contract = runtime.public_api_contract();
+    let contract = runtime
+        .public_api_contract()
+        .expect("fixture digest must fit");
 
     assert_eq!(
         contract.backend_posture(),

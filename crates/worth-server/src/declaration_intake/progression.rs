@@ -82,7 +82,13 @@ fn build_support_snapshot(
     workspace: &WorthQueryWorkspace,
     declaration: WorthServerDirectDeclaration,
 ) -> Result<WorthServerDirectSupportSnapshot, WorthServerDirectDeclarationDenial> {
-    let support_snapshot = project_workspace_support_snapshot(workspace);
+    let support_snapshot = project_workspace_support_snapshot(workspace).map_err(|cause| {
+        WorthServerDirectDeclarationDenial::EvidenceIdentityDerivationDenied {
+            diagnostics_profile,
+            cause,
+            detail: "support snapshot identity exceeded canonical digest bounds".into(),
+        }
+    })?;
     let read_family_row = support_snapshot
         .rows()
         .iter()

@@ -1,5 +1,6 @@
 use crate::basis_lifecycle::BasisOperationLane;
 use crate::domain_installation::WorthQueryBoundDomainOperation;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::WorthQueryWorkspace;
 use worth_proof::TransitionOutcome;
 
@@ -140,6 +141,7 @@ pub enum WorthQueryCertificationReplayAdmissionDenial {
 /// non-success arms of `WorthQueryCertificationReplayOutcome`.
 #[derive(Debug)]
 pub enum WorthQueryCertificationReplayStop {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     /// Replay admission was refused; nothing ran.
     Admission(WorthQueryCertificationReplayAdmissionDenial),
     /// Execution resources were not admitted; nothing ran.
@@ -289,7 +291,7 @@ where
                 WorthQueryReplayBasisRelationship::ExactAdmittedBasis,
                 counters,
                 &phase,
-            )
+            ).unwrap_or_else(|cause| TransitionOutcome::Denied(super::certification_replay::WorthQueryCertificationReplayStop::EvidenceIdentityDerivationDenied(cause)))
         })
         .unwrap_or_else(|cause| {
             TransitionOutcome::Denied(

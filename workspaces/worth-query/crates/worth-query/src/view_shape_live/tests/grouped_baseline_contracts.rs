@@ -49,7 +49,7 @@ fn grouped_baseline_is_derived_from_authoritative_execution_bindings() {
         grouped_execution.truth_view_evidence_identity().as_str(),
         crate::view_shape_live::grouped_execution::bridge_grouped_truth_view_digest_evidence_identity(
             truth_view.digest(),
-        )
+        ).expect("fixture digest must fit")
         .as_str()
     );
     assert_eq!(baseline.desired_state().result().row_count(), 2);
@@ -146,6 +146,7 @@ fn grouped_execution_rejects_truth_view_with_mismatched_snapshot_identity() {
             BasisAuthorityFamily::Runtime,
             None,
             crate::memory_workspace::admit_external_snapshot_label("snapshot-b")
+                .expect("fixture digest must fit")
                 .evidence_identity(),
             planned.validated().query().schema_basis().clone(),
             SnapshotLineageClass::CurrentHead,

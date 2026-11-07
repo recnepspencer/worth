@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::marker::PhantomData;
 
 use crate::ordinary::live::{
@@ -62,15 +63,15 @@ impl<D: 'static> WorthQueryInstalledDomainLiveContinuation<D> {
     pub fn resume(
         self,
         workspace: &mut WorthQueryWorkspace,
-    ) -> WorthQueryInstalledDomainLiveResumeOutcome<D> {
+    ) -> Result<WorthQueryInstalledDomainLiveResumeOutcome<D>, IdentityDerivationDenial> {
         if let Err(drift) = WorthQueryInstalledDomainExecutionDrift::validate::<D>(
             self.receipt.installed_authority(),
             workspace,
         ) {
-            return WorthQueryInstalledDomainLiveResumeOutcome::AuthorityStopped(self, drift);
+            return Ok(WorthQueryInstalledDomainLiveResumeOutcome::AuthorityStopped(self, drift));
         }
         let receipt = self.receipt;
-        match self.continuation.resume(workspace) {
+        Ok(match self.continuation.resume(workspace)? {
             WorthQueryManagedLiveResumeOutcome::Resumed(completion) => {
                 let resume_receipt = completion.receipt().clone();
                 let execution_receipt = receipt.derive(
@@ -98,7 +99,7 @@ impl<D: 'static> WorthQueryInstalledDomainLiveContinuation<D> {
                     },
                 )
             }
-        }
+        })
     }
 }
 

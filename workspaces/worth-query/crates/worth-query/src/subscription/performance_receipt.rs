@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -52,7 +53,7 @@ impl SubscriptionPerformanceReceipt {
             WorthQueryEvidenceTag::new("allocation"),
             allocation_posture.as_str(),
         )
-        .seal();
+        .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens");
         Self {
             consumed_width,
             budgeted_width,

@@ -24,24 +24,24 @@ impl Scalar<declaration::authentication::WorthQueryExternalPrincipalIdentity>
     for CapabilityModelBindings
 {
     type Binding = declaration::authentication::WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl Scalar<declaration::authentication::WorthQueryPrincipalMappingStatus>
     for CapabilityModelBindings
 {
     type Binding = declaration::authentication::WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<u64> for CapabilityModelBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<String> for CapabilityModelBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 #[derive(Clone, Copy)]
@@ -111,9 +111,11 @@ impl fragment::Record<ExternalIdentityValue> for CapabilityModelBindings {
         field("ExternalIdentityField", |row: &ExternalIdentityValue| {
             row.external_identity_field.clone()
         })
+        .equality_queryable(true)
         .and("MappingStatusField", |row: &ExternalIdentityValue| {
             row.mapping_status_field
         })
+        .equality_queryable(true)
         .build(
             |external_identity_field, mapping_status_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ExternalIdentityValue {
@@ -142,6 +144,7 @@ impl fragment::Record<PrincipalFactsValue> for CapabilityModelBindings {
         field("PrincipalIdentityField", |row: &PrincipalFactsValue| {
             row.principal_identity_field
         })
+        .equality_queryable(true)
         .read_only()
         .build(
             |principal_identity_field, _: &mut ValueDecodeAdmission<'_>| {
@@ -171,9 +174,11 @@ impl fragment::Record<DocumentFactsValue> for CapabilityModelBindings {
         field("DocumentIdentityField", |row: &DocumentFactsValue| {
             row.document_identity_field.clone()
         })
+        .equality_queryable(true)
         .and("DocumentRetentionField", |row: &DocumentFactsValue| {
             row.document_retention_field
         })
+        .equality_queryable(true)
         .build(
             |document_identity_field,
              document_retention_field,
@@ -212,26 +217,35 @@ impl fragment::Record<GrantFactsValue> for CapabilityModelBindings {
         field("ResourceDisclosureField", |row: &GrantFactsValue| {
             row.resource_disclosure_field
         })
+        .equality_queryable(true)
         .read_only()
         .and("GrantAction", |row: &GrantFactsValue| row.grant_action)
+        .equality_queryable(true)
         .read_only()
         .and("GrantPurpose", |row: &GrantFactsValue| row.grant_purpose)
+        .equality_queryable(true)
         .read_only()
         .and("GrantStatus", |row: &GrantFactsValue| row.grant_status)
+        .equality_queryable(true)
         .and("GrantNotBefore", |row: &GrantFactsValue| {
             row.grant_not_before
         })
+        .equality_queryable(true)
         .read_only()
         .and("GrantNotAfter", |row: &GrantFactsValue| row.grant_not_after)
+        .equality_queryable(true)
         .read_only()
         .and("GrantDepth", |row: &GrantFactsValue| row.grant_depth)
+        .equality_queryable(true)
         .read_only()
         .and("GrantIdentity", |row: &GrantFactsValue| {
             row.grant_identity.clone()
         })
+        .equality_queryable(true)
         .and("GrantScopeKey", |row: &GrantFactsValue| {
             row.grant_scope_key.clone()
         })
+        .equality_queryable(true)
         .build(
             |resource_disclosure_field,
              grant_action,

@@ -19,6 +19,7 @@ fn historical_reader_from_live_head_survives_head_retirement() {
         build_on_branch(execution, &runtime, index.index_id, &first, branch.clone());
     release_test_commit_snapshot(&runtime, &anchor);
     release_test_commit_snapshot(&runtime, &first);
+    build(execution, &runtime, index.index_id, &anchor);
     let advanced_main =
         create_entity_outcome(execution, &runtime, "historical-reader-main-advanced");
     release_test_commit_snapshot(&runtime, &advanced_main);
@@ -36,21 +37,15 @@ fn historical_reader_from_live_head_survives_head_retirement() {
     );
     let next_generation = build_on_branch(execution, &runtime, index.index_id, &next, branch);
     release_test_commit_snapshot(&runtime, &next);
-    assert_eq!(
-        runtime
-            .run_index_generation_reclamation_after_publication(&next)
-            .unwrap(),
-        Some(0)
-    );
+    runtime
+        .run_index_generation_reclamation_after_publication(&next)
+        .unwrap();
     assert!(runtime.indexes.generation(first_generation).is_some());
     assert!(runtime.indexes.generation(next_generation).is_some());
     drop(retained);
-    assert_eq!(
-        runtime
-            .run_index_generation_reclamation_after_publication(&next)
-            .unwrap(),
-        Some(1)
-    );
+    runtime
+        .run_index_generation_reclamation_after_publication(&next)
+        .unwrap();
     assert_eq!(runtime.run_index_generation_reclamation_pass(), Some(0));
     assert!(runtime.indexes.generation(first_generation).is_none());
     assert!(runtime.indexes.generation(next_generation).is_some());

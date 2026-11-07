@@ -212,6 +212,7 @@ impl CheckpointArenaKind for RelationRecordKind {
 }
 
 pub(super) fn arena_to_image<K: CheckpointArenaKind>(
+    _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     arena: RecordArena<K>,
     catalog: &AspectContractPlanCatalog,
     contracts: &CheckpointAspectContractCatalog,
@@ -270,6 +271,7 @@ pub(super) fn arena_to_image<K: CheckpointArenaKind>(
 }
 
 pub(super) fn arena_from_image<K: CheckpointArenaKind>(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     partition_id: PartitionId,
     mut image: RecordArenaCheckpointImage<K::ImageKind>,
     catalog: &AspectContractPlanCatalog,
@@ -292,7 +294,7 @@ pub(super) fn arena_from_image<K: CheckpointArenaKind>(
             "record arena field revision length differs from its SoA columns",
         ));
     }
-    let slots = crate::storage::substrate::RecordSlotDirectory::restore(slots)
+    let slots = crate::storage::substrate::RecordSlotDirectory::restore(lane, slots)
         .map_err(|detail| DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, detail))?;
     let metadata_history = image
         .metadata_history
@@ -339,7 +341,7 @@ pub(super) fn arena_from_image<K: CheckpointArenaKind>(
         branch_pins: image.branch_pins.into(),
         replay_pins: image.replay_pins.into(),
         snapshot_pins: image.snapshot_pins.into(),
-        live_bitset: restore_bitset(image.live_bitset),
-        reclaimable_bitset: restore_bitset(image.reclaimable_bitset),
+        live_bitset: restore_bitset(lane, image.live_bitset),
+        reclaimable_bitset: restore_bitset(lane, image.reclaimable_bitset),
     })
 }

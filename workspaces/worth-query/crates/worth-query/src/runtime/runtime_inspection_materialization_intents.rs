@@ -1,5 +1,6 @@
 use super::runtime_inspection_materialization_identity::bundle_snapshot_identity;
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::intent_admission::dx::{
     non_admitted_runtime_violation, WorthQueryRuntimeIntentAdmissionReviewData,
 };
@@ -61,7 +62,7 @@ impl WorthQueryWorkspace {
         Ok(WorthQueryDerivedMaterializationBundle::new(
             snapshot_identity,
             materializations,
-        ))
+        )?)
     }
 
     pub fn materialize_intent<T>(
@@ -111,9 +112,10 @@ impl WorthQueryWorkspace {
     pub(crate) fn into_runtime_derived_materialization_binding(
         &self,
         handoff: WorthQueryDerivedMaterializationExecutionHandoff,
-    ) -> WorthQueryDerivedMaterializationExecutionBinding {
-        self.runtime
-            .prepare_derived_materialization_execution_binding(handoff)
+    ) -> Result<WorthQueryDerivedMaterializationExecutionBinding, IdentityDerivationDenial> {
+        Ok(self
+            .runtime
+            .prepare_derived_materialization_execution_binding(handoff)?)
     }
 
     pub(crate) fn execute_bound_derived_materialization(
@@ -150,9 +152,10 @@ impl WorthQueryWorkspace {
     pub(crate) fn into_runtime_derived_inspection_binding(
         &self,
         handoff: WorthQueryDerivedInspectionExecutionHandoff,
-    ) -> WorthQueryDerivedInspectionExecutionBinding {
-        self.runtime
-            .prepare_derived_inspection_execution_binding(handoff)
+    ) -> Result<WorthQueryDerivedInspectionExecutionBinding, IdentityDerivationDenial> {
+        Ok(self
+            .runtime
+            .prepare_derived_inspection_execution_binding(handoff)?)
     }
 
     pub(crate) fn execute_bound_derived_inspection(
@@ -172,7 +175,7 @@ impl WorthQueryWorkspace {
         let review = self
             .review_derived_materialization(target.terminal_view_name_projection().to_string())?;
         let handoff = self.resolve_reviewed_admitted_derived_materialization_handoff(review)?;
-        let binding = self.into_runtime_derived_materialization_binding(handoff);
+        let binding = self.into_runtime_derived_materialization_binding(handoff)?;
         self.execute_bound_derived_materialization(execution, binding)
     }
 }
@@ -191,7 +194,7 @@ impl WorthQueryRuntime {
                 })?;
         Ok(WorthQueryRuntimeIntentAdmissionReviewData::from_request(
             request,
-        ))
+        )?)
     }
 
     pub(crate) fn review_runtime_derived_inspection(
@@ -207,7 +210,7 @@ impl WorthQueryRuntime {
                 })?;
         Ok(WorthQueryRuntimeIntentAdmissionReviewData::from_request(
             request,
-        ))
+        )?)
     }
 
     pub(crate) fn resolve_reviewed_admitted_derived_materialization_handoff(
@@ -257,15 +260,17 @@ impl WorthQueryRuntime {
     pub(crate) fn prepare_derived_materialization_execution_binding(
         &self,
         handoff: WorthQueryDerivedMaterializationExecutionHandoff,
-    ) -> WorthQueryDerivedMaterializationExecutionBinding {
-        WorthQueryDerivedMaterializationExecutionBinding::from_handoff(handoff)
+    ) -> Result<WorthQueryDerivedMaterializationExecutionBinding, IdentityDerivationDenial> {
+        Ok(WorthQueryDerivedMaterializationExecutionBinding::from_handoff(handoff)?)
     }
 
     pub(crate) fn prepare_derived_inspection_execution_binding(
         &self,
         handoff: WorthQueryDerivedInspectionExecutionHandoff,
-    ) -> WorthQueryDerivedInspectionExecutionBinding {
-        WorthQueryDerivedInspectionExecutionBinding::from_handoff(handoff)
+    ) -> Result<WorthQueryDerivedInspectionExecutionBinding, IdentityDerivationDenial> {
+        Ok(WorthQueryDerivedInspectionExecutionBinding::from_handoff(
+            handoff,
+        )?)
     }
 
     pub(crate) fn execute_derived_materialization_execution_binding(
@@ -314,7 +319,7 @@ impl WorthQueryRuntime {
                 binding.binding_digest(),
                 result.receipt().result_digest(),
                 &snapshot_evidence_identity,
-            );
+            )?;
         result.attach_intent_admission_evidence(decision_trace_envelope, execution_provenance);
         Ok(result)
     }
@@ -354,7 +359,7 @@ impl WorthQueryRuntime {
                 binding.binding_digest(),
                 result.receipt().result_digest(),
                 &snapshot_evidence_identity,
-            );
+            )?;
         result.attach_intent_admission_evidence(decision_trace_envelope, execution_provenance);
         Ok(result)
     }
@@ -385,6 +390,7 @@ impl WorthQueryRuntime {
         self.derived_views
             .get(&WorthQueryDerivedMaterializationTarget::new(view_name))
             .map(WorthQueryComputedInspectionEvidence::from_runtime)
+            .transpose()?
             .ok_or_else(|| WorthQueryRuntimeError::MissingDerivedView(view_name.to_string()))
     }
 }

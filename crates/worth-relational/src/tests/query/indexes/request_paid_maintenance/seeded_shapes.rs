@@ -107,6 +107,21 @@ fn prove_shapes(shapes: impl IntoIterator<Item = (usize, usize)>) {
         }
         let (paid, report) = execution
             .run(ExecutionWorkCeiling::new(None), |_| {
+                let mut missing = request.clone();
+                missing.index_ids = indexes
+                    .iter()
+                    .enumerate()
+                    .filter(|(field, _)| (seed >> field) & 1 == 0)
+                    .map(|(_, index)| *index)
+                    .collect();
+                if !missing.index_ids.is_empty() {
+                    runtime.index_authority().reconstruct_for_basis(
+                        execution,
+                        missing,
+                        &basis,
+                        cold_budget(),
+                    )?;
+                }
                 runtime.index_authority().refresh_for_basis(
                     request.clone(),
                     &basis,
@@ -237,27 +252,32 @@ fn prove_commit_paths(
                 .unwrap();
         }
     }
-    let transaction = test_owner_begin_transaction_for_main(runtime);
-    let mut candidate = runtime
-        .prepare_branch_transaction(execution, transaction)
+    let (_, basis) = runtime
+        .observe_branch(&runtime.main_branch_identity())
         .unwrap();
-    let (prepared, report) = execution
+    let mut missing = request.clone();
+    missing.index_ids = request
+        .index_ids
+        .iter()
+        .enumerate()
+        .filter(|(field, _)| (seed >> field) & 1 == 0)
+        .map(|(_, index)| *index)
+        .collect();
+    if !missing.index_ids.is_empty() {
+        runtime
+            .index_authority()
+            .reconstruct_for_basis(execution, missing, &basis, cold_budget())
+            .unwrap();
+    }
+    let transaction = test_owner_begin_transaction_for_main(runtime);
+    let (candidate, report) = execution
         .run(ExecutionWorkCeiling::new(None), |_| {
-            runtime.index_authority().prepare_for_candidate(
-                &mut candidate,
-                &request.index_ids,
-                Some(&created.snapshot),
-                cold_budget(),
-                execution,
-            )
+            runtime.prepare_branch_transaction(execution, transaction)
         })
         .unwrap();
-    let prepared = prepared.unwrap();
+    let candidate = candidate.unwrap();
+    let prepared = candidate.prepared_index_maintenance_work().unwrap();
     assert!(report.charged_work() >= prepared.work_units as u64);
-    assert_eq!(
-        prepared.generation_publications_reserved,
-        request.index_ids.len()
-    );
     assert_eq!(prepared.patch_records, 0);
     assert!(request.index_ids.iter().all(|index| runtime
         .index_access()
@@ -271,14 +291,18 @@ fn prove_commit_paths(
         panic!("prepared differential candidate publishes")
     };
     let committed = runtime.settle_performed_publication(performed).unwrap();
-    for (index, old) in request.index_ids.iter().zip(baseline) {
+    for (field, (index, old)) in request.index_ids.iter().zip(baseline).enumerate() {
         let new = runtime
             .index_access()
-            .read_latest_generation(execution, *index, &request.branch_id)
+            .read_published_generation_for_commit(execution, *index, &committed.commit)
             .unwrap()
             .unwrap();
         assert_eq!(new.entries, old.entries, "candidate seed {seed}");
-        assert_eq!(new.source_commit_id, committed.commit.commit_id);
+        if (seed >> field) & 1 != 0 {
+            assert_eq!(new.generation_id, old.generation_id);
+        } else {
+            assert_eq!(new.source_commit_id, created.commit.commit_id);
+        }
     }
     release_test_commit_snapshot(runtime, &committed);
     // Also exercise the retained-commit reader while the source snapshot owns

@@ -30,7 +30,6 @@ impl BindingSet for Bindings {
 impl Scalar<String> for Bindings {
     type Binding = Unmarked;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 pub(super) struct DomainEntity;
 impl fragment::Entity for DomainEntity {
@@ -49,11 +48,11 @@ pub(super) struct Row {
 }
 impl fragment::Record<Row> for Bindings {
     fn record() -> impl Shape<Row, Self> {
-        field("DomainField", |row: &Row| row.value.clone()).build(
-            |value, _: &mut ValueDecodeAdmission<'_>| {
+        field("DomainField", |row: &Row| row.value.clone())
+            .equality_queryable(true)
+            .build(|value, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(Row { value })
-            },
-        )
+            })
     }
 }
 pub(super) type DomainField = FieldSelection<DomainEquality, DomainEntity, DomainAspect, String>;

@@ -4,6 +4,7 @@ use crate::application_operation::{
 };
 use crate::application_schema::{
     ApplicationDeclaredOperation, ApplicationOperationDefinitionBuilder, ApplicationSchema,
+    ApplicationSchemaDeclarationDenial,
 };
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
@@ -184,11 +185,66 @@ impl DeclaredCorrectionBinding {
         }
     }
 
-    pub fn of<Schema: ApplicationSchema, Correction: ApplicationCorrectionBinding<Schema>>() -> Self
-    {
+    pub fn of<Schema: ApplicationSchema, Correction: ApplicationCorrectionBinding<Schema>>(
+    ) -> Result<Self, ApplicationSchemaDeclarationDenial> {
+        Self::from_expression::<Schema, Correction>(
+            Correction::authored_identity(),
+            Correction::source_output_fields(),
+            Correction::completed_external_reconciliation(),
+        )
+    }
+
+    pub(crate) fn compose<
+        Schema: ApplicationSchema,
+        Correction: ApplicationCorrectionBinding<Schema>,
+    >(
+        reconciliation: Option<super::super::DeclaredReconciliationProcedure>,
+    ) -> Result<super::ComposedCorrectionBinding, ApplicationSchemaDeclarationDenial> {
+        let expression = Correction::authored_identity();
+        let mut fields: Vec<_> = expression
+            .as_ref()
+            .map(|identity| identity.binding_recipes().cloned().collect())
+            .unwrap_or_default();
+        let outputs = Correction::source_output_fields();
+        fields.extend(outputs.iter().map(|field| field.binding_recipe().clone()));
+        Self::from_expression::<Schema, Correction>(expression, outputs, reconciliation)
+            .map(|binding| super::ComposedCorrectionBinding { binding, fields })
+    }
+
+    fn from_expression<
+        Schema: ApplicationSchema,
+        Correction: ApplicationCorrectionBinding<Schema>,
+    >(
+        expression: Option<super::ApplicationAuthoredCorrection<Schema>>,
+        outputs: Vec<super::ApplicationCorrectionOutputField<Schema>>,
+        reconciliation: Option<super::super::DeclaredReconciliationProcedure>,
+    ) -> Result<Self, ApplicationSchemaDeclarationDenial> {
+        if let Some(reconciliation) = &reconciliation {
+            reconciliation.validate().map_err(|cause| {
+                ApplicationSchemaDeclarationDenial::InvalidCorrectionMechanism {
+                    correction: Correction::IDENTITY.to_owned(),
+                    cause,
+                }
+            })?;
+        }
         let source = Correction::Source::descriptor();
         let inverse = ApplicationInverseBinding::<Schema, Correction>::descriptor();
-        Self {
+        let authored_identity = expression
+            .map(|identity| {
+                let requested = identity.binding_recipe().locus().clone();
+                identity.into_declaration().map_err(|cause| {
+                    let field = match cause {
+                        ApplicationSchemaDeclarationDenial::InvalidRecordField { field } => field,
+                        _ => requested,
+                    };
+                    ApplicationSchemaDeclarationDenial::InvalidCorrectionField {
+                        correction: Correction::IDENTITY.to_owned(),
+                        field,
+                    }
+                })
+            })
+            .transpose()?;
+        Ok(Self {
             identity: WorthQueryPortableTypeIdentity::declared(Correction::IDENTITY),
             source: source.description().clone(),
             inverse: inverse.description().clone(),
@@ -197,20 +253,33 @@ impl DeclaredCorrectionBinding {
             source_query: source.source_query_identifier().map(str::to_owned),
             inverse_query: inverse.source_query_identifier().map(str::to_owned),
             disclosure: super::DeclaredCorrectionDisclosure::of::<Schema, Correction::Disclosure>(),
-            authored_identity: Correction::authored_identity()
-                .map(super::ApplicationAuthoredCorrection::into_declaration),
+            authored_identity,
             coupled_outputs: {
                 let mut visitor = crate::application_program::DescribeCoupledOutputs::new();
                 Correction::visit_coupled_outputs(&mut visitor);
                 visitor.finish()
             },
-            completed_external_reconciliation: Correction::completed_external_reconciliation(),
+            completed_external_reconciliation: reconciliation,
             reapplication_source: super::reapplication::declared_source::<Schema, Correction>(),
-            source_output_fields: Correction::source_output_fields()
+            source_output_fields: outputs
                 .into_iter()
-                .map(super::ApplicationCorrectionOutputField::into_declaration)
-                .collect(),
-        }
+                .map(|field| {
+                    let requested = field.binding_recipe().locus().clone();
+                    field.into_declaration().map_err(|cause| {
+                        let field = match cause {
+                            ApplicationSchemaDeclarationDenial::InvalidRecordField { field } => {
+                                field
+                            }
+                            _ => requested,
+                        };
+                        ApplicationSchemaDeclarationDenial::InvalidCorrectionField {
+                            correction: Correction::IDENTITY.to_owned(),
+                            field,
+                        }
+                    })
+                })
+                .collect::<Result<_, _>>()?,
+        })
     }
 
     pub fn with_coupled_outputs(

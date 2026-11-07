@@ -30,9 +30,11 @@ pub struct QuantityValue {
 impl fragment::Record<QuantityValue> for TopologyRecordsBindings {
     fn record() -> impl Shape<QuantityValue, Self> {
         field("QuantityKey", |row: &QuantityValue| row.key.clone())
+            .equality_queryable(true)
             .and("QuantitySnapshot", |row: &QuantityValue| {
                 row.snapshot.clone()
             })
+            .equality_queryable(true)
             .build(|key, snapshot, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(QuantityValue { key, snapshot })
             })
@@ -51,8 +53,11 @@ pub struct PopulationValue {
 impl fragment::Record<PopulationValue> for TopologyRecordsBindings {
     fn record() -> impl Shape<PopulationValue, Self> {
         field("MemberNumber", |row: &PopulationValue| row.number)
+            .equality_queryable(true)
             .and("DemandKey", |row: &PopulationValue| row.demand.clone())
+            .equality_queryable(true)
             .and("MemberKind", |row: &PopulationValue| row.kind)
+            .equality_queryable(true)
             .build(|number, demand, kind, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(PopulationValue {
                     number,
@@ -64,11 +69,10 @@ impl fragment::Record<PopulationValue> for TopologyRecordsBindings {
 }
 impl Scalar<Snapshot> for TopologyRecordsBindings {
     type Binding = SnapshotBinding;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl Scalar<Kind> for TopologyRecordsBindings {
     type Binding = KindBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 pub type QuantityKey = FieldSelection<AvailabilityRecords, Quantity, QuantityFacts, String>;

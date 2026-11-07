@@ -12,6 +12,7 @@ pub(crate) use writer::{copy_bytes, count_value, encode_value, CheckpointEncodin
 
 #[cfg(test)]
 pub(crate) fn encode_checkpoint(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     checkpoint: &DurableCheckpoint,
     policy: ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<
@@ -19,6 +20,7 @@ pub(crate) fn encode_checkpoint(
     RelationalNativeCheckpointCaptureDenial,
 > {
     let (bytes, sections, _) = encode_checkpoint_members(
+        execution,
         checkpoint,
         policy,
         &RelationalCheckpointArtifactPolicy::Embedded,
@@ -28,6 +30,7 @@ pub(crate) fn encode_checkpoint(
 
 #[cfg(test)]
 pub(crate) fn encode_checkpoint_members(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     checkpoint: &DurableCheckpoint,
     policy: ExecutionAllocationPolicy<'_, '_>,
     placement: &RelationalCheckpointArtifactPolicy<'_>,
@@ -40,7 +43,10 @@ pub(crate) fn encode_checkpoint_members(
     RelationalNativeCheckpointCaptureDenial,
 > {
     policy.check_live()?;
-    let captured = CapturedManifest::capture(checkpoint, policy)?;
+    let captured =
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            CapturedManifest::capture(lane, execution, checkpoint, policy)
+        })?;
     let (bytes, sections, members, _) = encode_captured(
         captured,
         policy,

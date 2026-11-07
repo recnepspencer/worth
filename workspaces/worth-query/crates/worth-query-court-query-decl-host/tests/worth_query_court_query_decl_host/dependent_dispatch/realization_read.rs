@@ -24,7 +24,7 @@ pub fn value_field(
     ApplicationQueryResultFieldRef::new("value", RealizedValue::at("RealizedValue"))
 }
 pub fn definition(
-) -> ApplicationQueryDefinition<Schema, RealizationQuery, (), Realized, Realization> {
+) -> ApplicationQueryDefinitionBuilder<Schema, RealizationQuery, (), Realized, Realization> {
     ApplicationQueryDefinitionBuilder::declare(RealizationQuery::reference())
         .root(Realization::reference())
         .scope(Realization::reference())
@@ -45,8 +45,6 @@ pub fn definition(
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<Schema, RealizationQuery> for Realized {
     fn project(

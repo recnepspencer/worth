@@ -1,4 +1,5 @@
 //! Missing scheduling or source-read grants refuse genuine factory installation.
+use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantError;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_declaration::facade::application_schema::*;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_invariant::WorthQueryEmptyInvariantRefusal;
@@ -12,8 +13,6 @@ use worth_query_execution::facade::domain_computation::WorthQueryExecutionRuntim
 use worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphInstallationDenial;
 use worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphInstallationDenialKind;
 use worth_query_installation::facade::*;
-use worth_relational::facade::runtime::CustomInvariantExecutionError as WorthQueryApplicationInvariantExecutionError;
-use worth_relational::facade::runtime::CustomInvariantPreparationError as WorthQueryApplicationInvariantPreparationError;
 struct BindingSchema<const PROFILE: u8>;
 struct Node;
 use worth_query_declaration::facade::application_schema::fragment;
@@ -102,17 +101,15 @@ impl<const P: u8> WorthQueryApplicationInvariantRule<BindingSchema<P>> for Rule 
     fn prepare_scope(
         &self,
         _: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, BindingSchema<P>>,
-    ) -> Result<(), WorthQueryApplicationInvariantPreparationError> {
+    ) -> Result<(), WorthQueryApplicationInvariantError> {
         Ok(())
     }
     fn evaluate(
         &self,
         _: &WorthQueryApplicationInvariantContext<'_, '_, BindingSchema<P>>,
         _: &(),
-    ) -> Result<
-        WorthQueryApplicationInvariantVerdict<()>,
-        WorthQueryApplicationInvariantExecutionError,
-    > {
+    ) -> Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>
+    {
         Ok(WorthQueryApplicationInvariantVerdict::Pass)
     }
 }

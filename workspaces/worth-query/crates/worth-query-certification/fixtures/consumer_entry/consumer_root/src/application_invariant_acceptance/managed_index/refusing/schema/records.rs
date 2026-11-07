@@ -22,32 +22,32 @@ impl fragment::BindingSet for CatalogRecordsBindings {
 }
 impl fragment::Scalar<WorthQueryExternalPrincipalIdentity> for CatalogRecordsBindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<WorthQueryPrincipalMappingStatus> for CatalogRecordsBindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<u64> for CatalogRecordsBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<String> for CatalogRecordsBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<CatalogName> for CatalogRecordsBindings {
     type Binding = NameBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<bool> for CatalogRecordsBindings {
     type Binding = BoolApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 pub struct ExternalMapping;
@@ -104,9 +104,11 @@ impl fragment::Record<ExternalIdentityValue> for CatalogRecordsBindings {
         fragment::field("ExternalIdentityField", |row: &ExternalIdentityValue| {
             row.external_identity_field.clone()
         })
+        .equality_queryable(true)
         .and("MappingStatusField", |row: &ExternalIdentityValue| {
             row.mapping_status_field
         })
+        .equality_queryable(true)
         .build(
             |external_identity_field, mapping_status_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ExternalIdentityValue {
@@ -131,6 +133,7 @@ impl fragment::Record<PrincipalFactsValue> for CatalogRecordsBindings {
         fragment::field("PrincipalIdentityField", |row: &PrincipalFactsValue| {
             row.principal_identity_field
         })
+        .equality_queryable(true)
         .build(
             |principal_identity_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(PrincipalFactsValue {
@@ -154,6 +157,7 @@ impl fragment::Record<DirectoryFactsValue> for CatalogRecordsBindings {
         fragment::field("DirectoryIdentity", |row: &DirectoryFactsValue| {
             row.directory_identity.clone()
         })
+        .equality_queryable(true)
         .build(|directory_identity, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(DirectoryFactsValue { directory_identity })
         })
@@ -175,8 +179,11 @@ impl fragment::Record<ItemFactsValue> for CatalogRecordsBindings {
         fragment::field("ItemIdentity", |row: &ItemFactsValue| {
             row.item_identity.clone()
         })
+        .equality_queryable(true)
         .and("ItemName", |row: &ItemFactsValue| row.item_name.clone())
+        .equality_queryable(true)
         .and("ItemEnabled", |row: &ItemFactsValue| row.item_enabled)
+        .equality_queryable(true)
         .build(
             |item_identity, item_name, item_enabled, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ItemFactsValue {

@@ -8,6 +8,7 @@ use super::{
     MilestoneNineTwoPerturbationClass, MilestoneNineTwoRejectionBundle,
     MilestoneNineTwoRejectionRow,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::live::LiveQueryFamily;
 use crate::subscription::QuerySubscriptionMaintenanceDeltaKind;
 
@@ -16,38 +17,45 @@ pub(super) fn rejection_rows() -> Vec<MilestoneNineTwoRejectionRow> {
         rejection_row(
             "masked-sharing-denies-before-join",
             MilestoneNineTwoPerturbationClass::MaskedSharingDenied,
-            masked_sharing_rejection(),
-        ),
+            masked_sharing_rejection().expect("fixture digest must fit"),
+        )
+        .expect("fixture digest must fit"),
         rejection_row(
             "raw-cdc-delivery-denied-before-batch",
             MilestoneNineTwoPerturbationClass::RawCdcDeliveryDenied,
             raw_cdc_rejection(),
-        ),
+        )
+        .expect("fixture digest must fit"),
         rejection_row(
             "raw-bridge-invalidation-denied-before-batch",
             MilestoneNineTwoPerturbationClass::RawBridgeInvalidationDenied,
             raw_bridge_rejection(),
-        ),
+        )
+        .expect("fixture digest must fit"),
         rejection_row(
             "preview-authoritative-sharing-denied",
             MilestoneNineTwoPerturbationClass::PreviewAuthoritativeSharingDenied,
-            preview_sharing_rejection(),
-        ),
+            preview_sharing_rejection().expect("fixture digest must fit"),
+        )
+        .expect("fixture digest must fit"),
         rejection_row(
             "preview-discard-authoritative-residue-denied",
             MilestoneNineTwoPerturbationClass::PreviewDiscardResidueDenied,
-            preview_residue_rejection(),
-        ),
+            preview_residue_rejection().expect("fixture digest must fit"),
+        )
+        .expect("fixture digest must fit"),
         rejection_row(
             "dense-refresh-denied-before-work-packet",
             MilestoneNineTwoPerturbationClass::DenseRefreshDenied,
-            dense_refresh_rejection(),
-        ),
+            dense_refresh_rejection().expect("fixture digest must fit"),
+        )
+        .expect("fixture digest must fit"),
         rejection_row(
             "store-backed-restart-denied-before-lane",
             MilestoneNineTwoPerturbationClass::StoreBackedRestartDenied,
-            store_backed_restart_rejection(),
-        ),
+            store_backed_restart_rejection().expect("fixture digest must fit"),
+        )
+        .expect("fixture digest must fit"),
     ]
 }
 
@@ -55,8 +63,8 @@ fn rejection_row(
     row_name: &'static str,
     perturbation_class: MilestoneNineTwoPerturbationClass,
     hostile_lane: MilestoneNineTwoRejectionBundle,
-) -> MilestoneNineTwoRejectionRow {
-    MilestoneNineTwoRejectionRow {
+) -> Result<MilestoneNineTwoRejectionRow, IdentityDerivationDenial> {
+    Ok(MilestoneNineTwoRejectionRow {
         row_name,
         perturbation_class,
         control_lane: lifecycle_lane(
@@ -66,7 +74,7 @@ fn rejection_row(
             "control",
             1,
             0,
-        ),
+        )?,
         hostile_lane,
         parity_lane: lifecycle_lane(
             LiveQueryFamily::Detail,
@@ -75,6 +83,6 @@ fn rejection_row(
             "control",
             1,
             0,
-        ),
-    }
+        )?,
+    })
 }

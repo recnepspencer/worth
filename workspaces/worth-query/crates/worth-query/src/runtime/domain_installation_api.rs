@@ -6,6 +6,7 @@ use crate::domain_installation::{
     WorthQueryInstalledDomainOperation, WorthQueryInstalledDomainOperationLookupDenial,
     WorthQueryReboundDomainHandle,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::WorthQueryRuntime;
 
@@ -180,9 +181,10 @@ impl WorthQueryRuntime {
 
     pub fn verify_domain_execution_index_rebuild(
         &self,
-    ) -> WorthQueryDomainExecutionIndexRebuildReport {
-        self.domain_installation_registry
-            .rebuild_execution_index_report()
+    ) -> Result<WorthQueryDomainExecutionIndexRebuildReport, IdentityDerivationDenial> {
+        Ok(self
+            .domain_installation_registry
+            .rebuild_execution_index_report()?)
     }
 
     pub fn rebind_domain<D: 'static>(
@@ -226,7 +228,8 @@ impl WorthQueryRuntime {
     ) -> WorthQueryDomainExecutionIndexRebuildReport {
         let report = self
             .domain_installation_registry
-            .destroy_and_rebuild_execution_index();
+            .destroy_and_rebuild_execution_index()
+            .expect("positive fixture identity fits canonical digest bounds");
         self.execution_runtime
             .replace_rebuilt_installation(self.domain_installation_registry.retain_portable_index())
             .expect("a deterministic installed-index rebuild must preserve execution identity");
@@ -238,7 +241,7 @@ impl WorthQueryRuntime {
     ) -> Result<(), crate::runtime::WorthQueryRuntimeError> {
         let successor = self
             .domain_installation_registry
-            .prepare_runtime_reconstitution();
+            .prepare_runtime_reconstitution()?;
         let product = &mut self.installed_product;
         let current = product.world.root_product_branch();
         let selected = product

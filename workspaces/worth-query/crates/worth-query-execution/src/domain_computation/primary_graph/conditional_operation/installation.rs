@@ -61,16 +61,11 @@ where
         _phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         publication: ApplicationRuntimePublication<Schema>,
     ) -> Result<Self, WorthQueryConditionalRuntimeInstallationDenial> {
-        publication
-            .runtime
-            .installed_packages()
-            .validate_application_schema(&publication.installed_schema)
-            .map_err(|denial| {
-                WorthQueryConditionalRuntimeInstallationDenial::new(
-                    WorthQueryConditionalRuntimeInstallationDenialKind::PrimaryGraphPublication,
-                    denial.subject(),
-                )
-            })?;
+        super::super::application_runtime::installation::validate_application_schema(
+            &publication.runtime,
+            &publication.installed_schema,
+        )
+        .map_err(super::publication::publication_denial)?;
         Ok(Self {
             publication,
             output_producers: Default::default(),

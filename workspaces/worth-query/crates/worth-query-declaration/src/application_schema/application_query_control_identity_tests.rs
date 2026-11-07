@@ -176,7 +176,6 @@ impl fragment::BindingSet for QueryBindings {
 impl fragment::Scalar<u64> for QueryBindings {
     type Binding = super::U64ApplicationValueBinding;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl fragment::Entity for Entity {
     const NAME: &'static str = "Entity";
@@ -190,11 +189,11 @@ impl fragment::Aspect for Aspect {
 struct QueryRow0(u64);
 impl fragment::Record<QueryRow0> for QueryBindings {
     fn record() -> impl fragment::Shape<QueryRow0, Self> {
-        fragment::field("Field", |row: &QueryRow0| row.0).build(
-            |value, _: &mut super::ValueDecodeAdmission<'_>| {
+        fragment::field("Field", |row: &QueryRow0| row.0)
+            .equality_queryable(true)
+            .build(|value, _: &mut super::ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(QueryRow0(value))
-            },
-        )
+            })
     }
 }
 type Field = fragment::FieldSelection<QueryModel, Entity, Aspect, u64>;

@@ -13,7 +13,7 @@ fn retry_requires_installed_idempotence_and_never_reuses_attempt_identity() {
         )
         .unwrap()
         .start_workflow(&mut workspace)
-        .unwrap()
+        .unwrap().unwrap()
         .advance(
             "start",
             domain::WorthQueryWorkflowValue::NotRequired,

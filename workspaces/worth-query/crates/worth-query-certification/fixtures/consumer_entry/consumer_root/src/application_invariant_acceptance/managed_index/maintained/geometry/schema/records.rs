@@ -22,12 +22,12 @@ impl fragment::BindingSet for GeometryRecordsBindings {
 }
 impl fragment::Scalar<String> for GeometryRecordsBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<Coordinates> for GeometryRecordsBindings {
     type Binding = CoordinatesBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 pub struct Vertex;
@@ -67,7 +67,9 @@ impl fragment::Record<VertexFactsValue> for GeometryRecordsBindings {
         fragment::field("VertexIdentity", |row: &VertexFactsValue| {
             row.vertex_identity.clone()
         })
+        .equality_queryable(true)
         .and("VertexRegion", |row: &VertexFactsValue| row.vertex_region)
+        .equality_queryable(true)
         .build(
             |vertex_identity, vertex_region, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(VertexFactsValue {
@@ -92,6 +94,7 @@ impl fragment::Record<EdgeFactsValue> for GeometryRecordsBindings {
         fragment::field("EdgeIdentity", |row: &EdgeFactsValue| {
             row.edge_identity.clone()
         })
+        .equality_queryable(true)
         .build(|edge_identity, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(EdgeFactsValue { edge_identity })
         })

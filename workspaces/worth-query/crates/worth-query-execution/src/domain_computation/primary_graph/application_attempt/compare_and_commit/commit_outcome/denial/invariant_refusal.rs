@@ -41,11 +41,8 @@ impl WorthQueryApplicationCommitDenial {
     fn invariant_refusal(
         &self,
     ) -> Result<&CustomInvariantRefusal, WorthQueryInvariantRefusalDecodeDenial> {
-        match self.custom_invariant_denial() {
-            Some(WorthQueryCustomInvariantDenial::Violation { refusal, .. }) => Ok(refusal),
-            Some(WorthQueryCustomInvariantDenial::Failure { .. }) | None => {
-                Err(WorthQueryInvariantRefusalDecodeDenial::NoDomainRefusal)
-            }
-        }
+        self.custom_invariant_denial()
+            .and_then(WorthQueryCustomInvariantDenial::refusal_payload)
+            .ok_or(WorthQueryInvariantRefusalDecodeDenial::NoDomainRefusal)
     }
 }

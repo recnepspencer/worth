@@ -50,10 +50,10 @@ impl<'a> WorthQueryPreviewSession<'a> {
             &command,
             self.runtime
                 .current_snapshot_identity_with_request(execution),
-        );
+        )?;
         self.pending_commands.push(command);
         self.writes.push(receipt.clone());
-        self.route_preview_execution(&receipt);
+        self.route_preview_execution(&receipt)?;
         Ok(receipt)
     }
 
@@ -136,7 +136,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
             WorthQueryWriteCommand::Delete {
                 entity_identity: crate::memory_workspace::admit_authored_entity_label(
                     entity_identity.into(),
-                ),
+                )?,
             },
         )
     }
@@ -241,12 +241,12 @@ impl<'a> WorthQueryPreviewSession<'a> {
                         &concrete,
                         self.runtime
                             .current_snapshot_identity_with_request(execution),
-                    )
+                    )?
                     .with_symbolic_target_reference(
                         reference,
                         resolved_target.entity_identity().clone(),
                         resolved_target.target_collection_identity().cloned(),
-                    )
+                    )?
                 }
                 WorthQueryWriteCommand::DeleteSymbolicAspects {
                     reference,
@@ -269,12 +269,12 @@ impl<'a> WorthQueryPreviewSession<'a> {
                         &concrete,
                         self.runtime
                             .current_snapshot_identity_with_request(execution),
-                    )
+                    )?
                     .with_symbolic_target_reference(
                         reference,
                         resolved_target.entity_identity().clone(),
                         resolved_target.target_collection_identity().cloned(),
-                    )
+                    )?
                 }
                 _ => WorthQueryWriteReceipt::preview(
                     &self.label,
@@ -282,14 +282,14 @@ impl<'a> WorthQueryPreviewSession<'a> {
                     &command,
                     self.runtime
                         .current_snapshot_identity_with_request(execution),
-                ),
+                )?,
             };
             if let Some(reference) = symbolic_target_reference.as_ref() {
                 record_preview_symbolic_target(&mut symbolic_targets, reference, &receipt);
             }
             self.pending_commands.push(command);
             self.writes.push(receipt.clone());
-            self.route_preview_execution(&receipt);
+            self.route_preview_execution(&receipt)?;
             receipts.push(receipt);
         }
         WorthQueryBatchWriteReceipt::from_write_receipts(receipts)

@@ -3,6 +3,22 @@ use super::{FragmentCatalog, RecordFieldDefinition};
 use crate::application_schema::fragment::ColumnIdentity;
 use crate::application_schema::ApplicationFieldBindingOwnerKind as Owner;
 impl FragmentCatalog {
+    pub(in crate::application_schema) fn declared_field_matches(
+        &self,
+        expected: &crate::application_schema::ApplicationFieldBindingRecipe,
+    ) -> bool {
+        self.definitions
+            .values()
+            .flat_map(|fragment| fragment.aspects.values())
+            .flat_map(|aspect| &aspect.fields)
+            .any(|field| {
+                !field.internal_presence
+                    && field.recipe.locus() == expected.locus()
+                    && field.recipe.value_type() == expected.value_type()
+                    && field.recipe.binding_type() == expected.binding_type()
+            })
+    }
+
     pub(in crate::application_schema::fragment) fn column(
         &self,
         identity: ColumnIdentity,

@@ -352,6 +352,11 @@ pub(super) fn prepare_publication_phase(
     }
     .map_err(|error| error.with_commit_log(commit_log.clone()))?;
 
+    let symbol_publication =
+        crate::storage::residency::SymbolPublicationAdmission::prepare(prepared_history.root())
+            .map_err(|failure| {
+                crate::authority::commit::preparation::storage_read_denial(&branch_basis, failure)
+            })?;
     let mirror_publication = runtime
         .mirror_residency
         .prepare_publication(
@@ -359,15 +364,24 @@ pub(super) fn prepare_publication_phase(
             &runtime.services.symbols,
             &branch_id,
             prepared_history.root(),
+            &symbol_publication,
             clone_mode,
             committed_partitions,
         )
         .map_err(|failure| {
             crate::authority::commit::preparation::storage_read_denial(&branch_basis, failure)
         })?;
+    runtime
+        .services
+        .symbols
+        .register_symbol_publication(symbol_publication.key());
     let symbol_meanings = mutation_identities
         .symbols
-        .seal_for_publication(&canonical_commit_envelope.symbol_texts)
+        .seal_for_publication(
+            &canonical_commit_envelope.symbol_texts,
+            &runtime.services.symbols,
+            symbol_publication.required(),
+        )
         .map_err(|detail| {
             TransactionCommitError::publication(PublicationError::new(
                 PublicationStage::BundleAssembly,

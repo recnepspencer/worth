@@ -44,7 +44,6 @@ impl BindingSet for QueryBindings {
 impl Scalar<u64> for QueryBindings {
     type Binding = U64ApplicationValueBinding;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 pub(in crate::application_query) struct Account;
 impl Entity for Account {
@@ -78,16 +77,21 @@ pub(in crate::application_query) struct ActivityValue {
 }
 impl Record<AccountValue> for QueryBindings {
     fn record() -> impl Shape<AccountValue, Self> {
-        field("AccountId", |r: &AccountValue| r.id).build(|id, _: &mut ValueDecodeAdmission<'_>| {
-            Ok::<_, std::convert::Infallible>(AccountValue { id })
-        })
+        field("AccountId", |r: &AccountValue| r.id)
+            .equality_queryable(true)
+            .build(|id, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(AccountValue { id })
+            })
     }
 }
 impl Record<ActivityValue> for QueryBindings {
     fn record() -> impl Shape<ActivityValue, Self> {
         field("ActivitySequence", |r: &ActivityValue| r.sequence)
+            .equality_queryable(true)
             .and("ActivityKind", |r: &ActivityValue| r.kind)
+            .equality_queryable(true)
             .and("ActivityStatus", |r: &ActivityValue| r.status)
+            .equality_queryable(true)
             .build(|sequence, kind, status, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ActivityValue {
                     sequence,

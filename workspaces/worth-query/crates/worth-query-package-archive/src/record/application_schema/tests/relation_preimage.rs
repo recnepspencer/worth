@@ -15,7 +15,7 @@ fn member(relations: Vec<PortablePreImageRelationLocus>) -> ApplicationSchemaMem
     .with_untrusted_relations(relations);
     let inverse = PortableRecordedInverse::from_untrusted_fields(
         "RestoreStage".into(),
-        DeclaredLoweringCorrespondenceRef::new("stage-splice.v1").unwrap(),
+        DeclaredLoweringCorrespondenceRef::new("stage-splice.v1"),
         DeclaredAftermathPostcondition::ExactPriorTruth,
         demand,
     );

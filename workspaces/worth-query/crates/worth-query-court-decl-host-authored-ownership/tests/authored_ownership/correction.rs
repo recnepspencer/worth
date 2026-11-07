@@ -5,7 +5,7 @@ impl<S: Scenario> ApplicationAuthoredCorrectionFamily<S> for Family {
     const IDENTITY: &'static str = "ownership.authored.family.v1";
     type Entity = Node<S>;
     fn logical_key() -> ApplicationAuthoredLogicalKey<S, Node<S>> {
-        ApplicationAuthoredLogicalKey::from_field(schema::id::<S>()).expect("record output field")
+        ApplicationAuthoredLogicalKey::from_field(schema::id::<S>())
     }
 }
 pub struct UndoCreate<S>(PhantomData<fn() -> S>);
@@ -47,10 +47,7 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for UndoCreate<S> {
         DeclaredCorrectionMechanism::recorded_create_inverse_binding::<Self>()
     }
     fn source_output_fields() -> Vec<ApplicationCorrectionOutputField<S>> {
-        vec![
-            ApplicationCorrectionOutput::<CreateBinding<S>, Created<S>>::field(schema::id::<S>())
-                .expect("record output field"),
-        ]
+        vec![ApplicationCorrectionOutput::<CreateBinding<S>, Created<S>>::field(schema::id::<S>())]
     }
     fn derive_correction(
         original: &Create,
@@ -65,8 +62,7 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for UndoCreate<S> {
                 .field(
                     &ApplicationCorrectionOutput::<CreateBinding<S>, Created<S>>::field(
                         schema::id::<S>(),
-                    )
-                    .expect("record output field"),
+                    ),
                 )
                 .map_err(|_| UnsupportedSourceMeaning)?,
         )
@@ -138,16 +134,13 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for UndoRetire<S> {
     }
     fn mechanism() -> DeclaredCorrectionMechanism<S> {
         let mut loci = vec![
-            DeclaredPreImageLocus::from_field(schema::id::<S>())
-                .expect("the inverse field is declared"),
-            DeclaredPreImageLocus::from_field(schema::value::<S>())
-                .expect("the inverse field is declared"),
+            DeclaredPreImageLocus::from_field(schema::id::<S>()),
+            DeclaredPreImageLocus::from_field(schema::value::<S>()),
         ];
         if heterogeneous::active::<S>() {
-            loci.push(
-                DeclaredPreImageLocus::from_field(heterogeneous::BodyKey::at("BodyKey"))
-                    .expect("the inverse field is declared"),
-            );
+            loci.push(DeclaredPreImageLocus::from_field(
+                heterogeneous::BodyKey::at("BodyKey"),
+            ));
         }
         let demand = DeclaredPreImageDemand::new(
             loci,
@@ -158,14 +151,11 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for UndoRetire<S> {
             } else {
                 18
             },
-        )
-        .unwrap();
+        );
         let demand = if matches!(S::MODE, 30 | 39 | 40 | 41) {
-            demand
-                .with_relations([DeclaredPreImageRelationLocus::from_relation(
-                    PreviousStage::reference(),
-                )])
-                .unwrap()
+            demand.with_relations([DeclaredPreImageRelationLocus::from_relation(
+                PreviousStage::reference(),
+            )])
         } else {
             demand
         };
@@ -183,15 +173,13 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for UndoRetire<S> {
         };
         let id = U64ApplicationValueBinding::decode(
             fields
-                .field(&DeclaredPreImageLocus::from_field(schema::id::<S>()).expect("record field"))
+                .field(&DeclaredPreImageLocus::from_field(schema::id::<S>()))
                 .ok_or(MissingPreImage)?,
         )
         .map_err(|_| InvalidPreImage)?;
         let value = U64ApplicationValueBinding::decode(
             fields
-                .field(
-                    &DeclaredPreImageLocus::from_field(schema::value::<S>()).expect("record field"),
-                )
+                .field(&DeclaredPreImageLocus::from_field(schema::value::<S>()))
                 .ok_or(MissingPreImage)?,
         )
         .map_err(|_| InvalidPreImage)?;
@@ -207,8 +195,7 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for UndoRetire<S> {
                 let value = fields
                     .field_for_output(
                         &roles[index],
-                        &DeclaredPreImageLocus::from_field(schema::value::<S>())
-                            .expect("the inverse field is declared"),
+                        &DeclaredPreImageLocus::from_field(schema::value::<S>()),
                     )
                     .ok_or(MissingPreImage)?;
                 U64ApplicationValueBinding::decode(value).map_err(|_| InvalidPreImage)

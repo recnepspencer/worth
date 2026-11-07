@@ -116,13 +116,14 @@ pub fn read<Schema>(
             RelationalPinnedReadAdmissionDenial::Request(cause) => Denial::Execution(cause),
             _ => Denial::Corrupt,
         })?;
-    let text = pin
-        .symbols()
-        .retained_text(symbol)
-        .filter(|text| text.is_managed())
-        .ok_or(Denial::Corrupt)?;
-    support
-        .rostered_for_revision_text(text.as_str())
-        .map(|entry| *entry.revision())
-        .ok_or(Denial::Corrupt)
+    pin.with_symbol_text(execution, symbol, |text| {
+        let text = text
+            .filter(|text| text.is_managed())
+            .ok_or(Denial::Corrupt)?;
+        support
+            .rostered_for_revision_text(text.as_str())
+            .map(|entry| *entry.revision())
+            .ok_or(Denial::Corrupt)
+    })
+    .map_err(Denial::Execution)?
 }

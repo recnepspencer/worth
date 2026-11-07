@@ -12,6 +12,7 @@ test = false
 doctest = false
 
 [dependencies]
+serde = { workspace = true }
 worth-query-decl = { workspace = true }
 
 [lints]

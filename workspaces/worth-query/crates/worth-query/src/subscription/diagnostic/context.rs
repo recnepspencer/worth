@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::super::error::QuerySubscriptionFamilySelectionError;
 use super::super::evidence_identities::{
@@ -44,7 +45,7 @@ impl QuerySubscriptionDiagnosticSelectionContext {
     pub fn from_selection_denial(
         live: &LiveQueryAdmissionArtifact,
         error: &QuerySubscriptionFamilySelectionError,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let query_family_label = match live.view_family() {
             Some(view_family) => format!(
                 "selection_unresolved:{}:{}",
@@ -55,15 +56,15 @@ impl QuerySubscriptionDiagnosticSelectionContext {
         };
         let declaration_family_label = format!("not_declared:{query_family_label}");
         let live_graph_access_posture_label = "selection_denied".to_string();
-        let source_identity = error.diagnostic().source_identity().clone();
+        let source_identity = error.diagnostic()?.source_identity().clone();
         let context_identity = diagnostic_selection_context_denied_identity(
             &source_identity,
             &query_family_label,
             &declaration_family_label,
             live.basis_posture().as_str(),
             &live_graph_access_posture_label,
-        );
-        Self {
+        )?;
+        Ok(Self {
             kind: QuerySubscriptionDiagnosticSelectionContextKind::Denied {
                 source_identity,
                 query_family_label,
@@ -72,7 +73,7 @@ impl QuerySubscriptionDiagnosticSelectionContext {
                 live_graph_access_posture_label,
                 context_identity,
             },
-        }
+        })
     }
 
     pub fn query_family_label(&self) -> &str {

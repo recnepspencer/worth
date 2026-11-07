@@ -74,26 +74,36 @@ fn first_struct_field_type_denial(
     shape: &StructAspectShape,
     value: &StructAspectValue,
 ) -> Option<ContractValidationDenial> {
-    for (key, field_value) in value.fields() {
-        let Some(field) = shape.field(key) else {
-            return Some(ContractValidationDenial::UnknownField(key.clone()));
-        };
-        let found = field_value.value_family();
-        if !field_value.has_canonical_representation() {
-            return Some(ContractValidationDenial::NonCanonicalFieldValue {
-                field: key.clone(),
-                family: found,
-            });
-        }
-        if found != field.value_type() {
-            return Some(ContractValidationDenial::FieldTypeMismatch {
-                field: key.clone(),
-                expected: field.value_type(),
-                found,
-            });
-        }
+    value
+        .fields()
+        .find_map(|(key, value)| validate_struct_field(shape, key, value).err())
+}
+
+pub(crate) fn validate_struct_field(
+    shape: &StructAspectShape,
+    key: &crate::aspects::structs::FieldKey,
+    value: &AspectValue,
+) -> Result<(), ContractValidationDenial> {
+    #[cfg(test)]
+    field_observation::record();
+    let field = shape
+        .field(key)
+        .ok_or_else(|| ContractValidationDenial::UnknownField(key.clone()))?;
+    let found = value.value_family();
+    if !value.has_canonical_representation() {
+        return Err(ContractValidationDenial::NonCanonicalFieldValue {
+            field: key.clone(),
+            family: found,
+        });
     }
-    None
+    if found != field.value_type() {
+        return Err(ContractValidationDenial::FieldTypeMismatch {
+            field: key.clone(),
+            expected: field.value_type(),
+            found,
+        });
+    }
+    Ok(())
 }
 
 fn validate_scalar_family(
@@ -114,3 +124,8 @@ fn validate_scalar_family(
         TransitionOutcome::denied(ContractValidationDenial::ScalarTypeMismatch { expected, found })
     }
 }
+
+#[cfg(test)]
+mod field_observation;
+#[cfg(test)]
+pub(in crate::aspects) use field_observation::FieldValidationObservation;

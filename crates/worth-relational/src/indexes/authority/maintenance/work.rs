@@ -22,7 +22,7 @@ enum MaintenancePayer<'a, 'run, 'lease> {
 enum MaintenanceRestriction {
     Unrestricted,
     FieldIndexes,
-    IncrementalIndexes,
+    RoutedIndexes,
 }
 
 pub(super) struct MaintenanceWork<'a, 'run, 'lease> {
@@ -30,6 +30,7 @@ pub(super) struct MaintenanceWork<'a, 'run, 'lease> {
     counts: DerivedIndexMaintenanceWork,
     payer: MaintenancePayer<'a, 'run, 'lease>,
     restriction: MaintenanceRestriction,
+    deferred_publication: bool,
 }
 
 impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
@@ -69,10 +70,6 @@ impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
     pub(super) fn reserve_generation_publications(&mut self, count: usize) {
         self.counts.generation_publications_reserved = count;
     }
-    pub(super) fn prohibits_population_reconstruction(&self) -> bool {
-        self.restriction != MaintenanceRestriction::Unrestricted
-    }
-
     pub(super) fn search_is_prepared(&self) -> bool {
         self.prepares_allocations()
     }
@@ -85,8 +82,17 @@ impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
     pub(super) fn restrict_to_field_indexes(&mut self) {
         self.restriction = MaintenanceRestriction::FieldIndexes;
     }
-    pub(super) fn restrict_to_incremental_indexes(&mut self) {
-        self.restriction = MaintenanceRestriction::IncrementalIndexes;
+    pub(super) fn restrict_to_routed_indexes(&mut self) {
+        self.restriction = MaintenanceRestriction::RoutedIndexes;
+    }
+    pub(super) fn defer_publication(&mut self) {
+        self.deferred_publication = true;
+    }
+    pub(super) fn publication_is_deferred(&self) -> bool {
+        self.deferred_publication
+    }
+    pub(super) fn routes_installed_indexes(&self) -> bool {
+        self.restriction == MaintenanceRestriction::RoutedIndexes
     }
     pub(super) fn prepares_allocations(&self) -> bool {
         match self.payer {
@@ -101,6 +107,7 @@ impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
             budget,
             counts: Default::default(),
             restriction: MaintenanceRestriction::Unrestricted,
+            deferred_publication: false,
             payer: MaintenancePayer::Test,
         }
     }
@@ -113,6 +120,7 @@ impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
             budget,
             counts: Default::default(),
             restriction: MaintenanceRestriction::Unrestricted,
+            deferred_publication: false,
             payer: MaintenancePayer::Admission(preparation),
         }
     }
@@ -126,6 +134,7 @@ impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
             budget,
             counts: Default::default(),
             restriction: MaintenanceRestriction::Unrestricted,
+            deferred_publication: false,
             payer: MaintenancePayer::Request(context, memory),
         }
     }

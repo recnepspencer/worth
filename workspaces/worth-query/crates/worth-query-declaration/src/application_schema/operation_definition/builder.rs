@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use crate::application_aftermath::{
-    DeclaredApplicationAftermathContract, PortableApplicationAftermathContract,
+    AssociatedAftermathContract, DeclaredApplicationAftermathContract,
 };
 
 use super::super::capabilities::OperationEmits;
@@ -27,7 +27,7 @@ pub struct ApplicationOperationDefinitionBuilder<
     operation: &'static str,
     input_type: crate::portable_identity::WorthQueryPortableTypeIdentity,
     external_effect: Option<DeclaredExternalEffectSlot>,
-    aftermath: Option<PortableApplicationAftermathContract>,
+    aftermath: Option<AssociatedAftermathContract>,
     marker: PhantomData<fn(Input) -> (Schema, Operation)>,
 }
 
@@ -174,12 +174,10 @@ impl<Schema, Operation, Input, const EXTERNAL_EFFECT_DECIDED: bool>
             operation: self.operation,
             input_type: self.input_type,
             external_effect: self.external_effect,
-            aftermath:
-                Some(
-                    contract.associate_with_operation(
-                        AftermathAssociationAuthority::for_matching_builder(),
-                    ),
-                ),
+            aftermath: Some(contract.associate_with_operation(
+                AftermathAssociationAuthority::for_matching_builder(),
+                self.operation,
+            )),
             marker: PhantomData,
         }
     }
@@ -241,7 +239,10 @@ mod tests {
 
         let contract = definition.aftermath.expect("aftermath was associated");
         assert_eq!(
-            contract.authority(),
+            contract
+                .contract
+                .expect("association is lawful")
+                .authority(),
             DeclaredCorrectionAuthority::NotCorrectable
         );
     }

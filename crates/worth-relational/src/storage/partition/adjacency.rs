@@ -3,7 +3,9 @@ use crate::identity::data::{KindId, RelationId, VersionId};
 
 use crate::storage::substrate::SharedMap;
 mod allocation;
+mod checkpoint;
 mod ids;
+mod kind_delta;
 pub(crate) use ids::AdjacencyIds;
 pub(crate) type HistoricalKindCustody = crate::storage::substrate::StorageAllocation<
     std::sync::Mutex<worth_execution::ExecutionMemoryReservation>,
@@ -78,6 +80,7 @@ impl AdjacencySet {
     }
 
     pub(crate) fn compressed_from_checkpoint(
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         current: Vec<RelationId>,
         structural_revisions: Vec<(KindId, VersionId)>,
     ) -> Self {
@@ -127,6 +130,10 @@ impl AdjacencySet {
         let entries = self.entries_mut();
         entries.historical_by_kind = None;
         entries.historical_kind_custody = custody;
+    }
+
+    pub(crate) fn set_historical_kind_custody(&mut self, custody: Option<HistoricalKindCustody>) {
+        self.entries_mut().historical_kind_custody = custody;
     }
 
     pub(crate) fn historical_kind_custody(&self) -> Option<&HistoricalKindCustody> {
@@ -255,27 +262,6 @@ impl AdjacencySet {
             }
         }
         Ok(())
-    }
-
-    pub(crate) fn checkpoint_kind_memberships(
-        &self,
-        basis: super::AdjacencyKindBasis,
-    ) -> Vec<(KindId, Vec<RelationId>)> {
-        let entries = self.entries();
-        let selected = if matches!(basis, super::AdjacencyKindBasis::Historical) {
-            &entries.historical_by_kind
-        } else {
-            &entries.current_by_kind
-        };
-        selected
-            .as_ref()
-            .map(|kinds| {
-                kinds
-                    .iter()
-                    .map(|(&kind, ids)| (kind, ids.keys().copied().collect()))
-                    .collect()
-            })
-            .unwrap_or_default()
     }
 
     pub(crate) fn historical_kind_ids(&self, kind_id: KindId) -> AdjacencyIds<'_> {

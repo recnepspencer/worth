@@ -49,7 +49,6 @@ impl BindingSet for ParameterBindings {
 }
 impl Scalar<PositiveCount> for ParameterBindings {
     type Binding = ParameterCountBinding;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 pub struct Parameter;
 impl Entity for Parameter {
@@ -65,7 +64,19 @@ impl Parameter {
 pub struct ParameterValue;
 impl Aspect for ParameterValue {
     const NAME: &'static str = "ParameterValue";
-    type Row = PositiveCount;
+    type Row = ParameterValueRow;
+}
+pub struct ParameterValueRow {
+    pub value: PositiveCount,
+}
+impl Record<ParameterValueRow> for ParameterBindings {
+    fn record() -> impl Shape<ParameterValueRow, Self> {
+        field("value", |row: &ParameterValueRow| row.value)
+            .equality_queryable(true)
+            .build(|value, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(ParameterValueRow { value })
+            })
+    }
 }
 impl ParameterValue {
     pub fn reference<S: ParameterSchemaBinding>() -> AspectSelection<ParameterModel, Parameter, Self>

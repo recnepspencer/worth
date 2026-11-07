@@ -106,8 +106,8 @@ impl WorthQueryRuntimeDeliveryBatch {
         relational_commit_identity: Option<worth_runtime_bridge::facade::TruthCommitIdentity>,
         mutation_delta: Option<crate::memory_workspace::WorthQueryMutationDelta>,
         live_graph_read_maintenance: Option<WorthQueryLiveGraphReadMaintenanceReceipt>,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        Ok(Self {
             view_name: view_name.to_string(),
             authority_lane: WorthQueryAuthorityLane::AuthoritativeTruth,
             delivery_batch_identity: batch.evidence_identity().clone(),
@@ -128,14 +128,14 @@ impl WorthQueryRuntimeDeliveryBatch {
             mixed_cause_delivery: if batch.has_relational_patch() {
                 WorthQueryRuntimeMixedCauseDelivery::atomic_relational_patch(
                     batch.delivery_cause().delivery_cause_identity(),
-                )
+                )?
             } else {
                 WorthQueryRuntimeMixedCauseDelivery::atomic_time_only(
                     batch.delivery_cause_kind(),
                     batch.delivery_cause().delivery_cause_identity(),
-                )
+                )?
             },
-        }
+        })
     }
 
     pub fn view_name(&self) -> &str {

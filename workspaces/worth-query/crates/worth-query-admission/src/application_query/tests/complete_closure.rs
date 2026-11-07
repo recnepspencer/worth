@@ -15,7 +15,13 @@ pub(super) fn definition<Q: ApplicationQueryMarkerIdentity<PlanningTestSchema> +
         Account,
     >,
     reverse: bool,
-) -> ApplicationQueryDefinition<PlanningTestSchema, Q, ActivityParameters, ActivityResult, Account>
+) -> ApplicationQueryDefinitionBuilder<
+    PlanningTestSchema,
+    Q,
+    ActivityParameters,
+    ActivityResult,
+    Account,
+>
 where
     Q::ResultBinding:
         worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding<
@@ -39,7 +45,13 @@ pub(super) fn definition_on_path<Q: ApplicationQueryMarkerIdentity<PlanningTestS
         Account,
     >,
     path: ApplicationQueryRootPath<PlanningTestSchema, Account, Account>,
-) -> ApplicationQueryDefinition<PlanningTestSchema, Q, ActivityParameters, ActivityResult, Account>
+) -> ApplicationQueryDefinitionBuilder<
+    PlanningTestSchema,
+    Q,
+    ActivityParameters,
+    ActivityResult,
+    Account,
+>
 where
     Q::ResultBinding:
         worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding<
@@ -69,8 +81,6 @@ where
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
         .root_path(path)
-        .build()
-        .unwrap()
 }
 #[test]
 fn complete_closure_installed_requirements_are_unbounded_and_currently_supported() {
@@ -187,7 +197,13 @@ pub(super) fn derived_definition<Q: ApplicationQueryMarkerIdentity<PlanningTestS
         Account,
     >,
     reverse: bool,
-) -> ApplicationQueryDefinition<PlanningTestSchema, Q, ActivityParameters, ActivityResult, Account>
+) -> ApplicationQueryDefinitionBuilder<
+    PlanningTestSchema,
+    Q,
+    ActivityParameters,
+    ActivityResult,
+    Account,
+>
 where
     Q::ResultBinding:
         worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding<

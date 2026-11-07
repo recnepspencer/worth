@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity_authority::{QueryProjectionIdentity, QuerySubscriptionIdentityKind};
 
 use super::active_budget::ActiveSubscriptionAllocationPosture;
@@ -223,7 +224,7 @@ impl SubscriptionLifecycleCloseout {
             performance_receipt.performance_receipt_identity(),
             &counters.evidence_identity(),
             &source_identity,
-        );
+        ).expect("bounded performed receipt: closed enum labels, primitive counts and sealed identity digests");
         Self {
             active_lane_digest,
             attachment_digest,

@@ -86,7 +86,7 @@ fn completed_consumer_denial_precedes_a_second_lease_mutation() {
         )
         .unwrap()
         .start_workflow(&mut workspace)
-        .unwrap()
+        .unwrap().unwrap()
         .advance(
             "produce",
             domain::WorthQueryWorkflowValue::Text("retain-observer-lease".into()),

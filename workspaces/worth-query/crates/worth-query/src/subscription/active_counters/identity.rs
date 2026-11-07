@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -272,5 +273,6 @@ impl ActiveSubscriptionCounters {
                 self.heap_allocation_denial_count as usize,
             )
             .seal()
+            .expect("fixed counter grammar contains only primitive values and literals")
     }
 }

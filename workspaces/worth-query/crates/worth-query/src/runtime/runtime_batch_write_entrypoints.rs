@@ -22,7 +22,7 @@ impl WorthQueryRuntime {
             graph_composition_program,
         )?;
         let handoff = self.resolve_reviewed_admitted_authoritative_write_batch_handoff(review)?;
-        let binding = self.prepare_authoritative_mutation_batch_execution_binding(handoff);
+        let binding = self.prepare_authoritative_mutation_batch_execution_binding(handoff)?;
         self.execute_authoritative_mutation_batch_execution_binding(execution, binding)
     }
 }

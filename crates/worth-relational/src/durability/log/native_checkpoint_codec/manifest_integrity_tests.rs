@@ -52,7 +52,11 @@ fn shared_members_with_inconsistent_leaf_facts_refuse_the_manifest() {
             2 => leaf.relation_slots += 1,
             _ => leaf.unavailable_records += 1,
         }
-        let failure = validate(&forged).unwrap_err();
+        let failure = validate(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            &forged,
+        )
+        .unwrap_err();
         assert_eq!(
             failure.class,
             crate::durability::data::RecoveryFailureClass::CorruptCheckpoint

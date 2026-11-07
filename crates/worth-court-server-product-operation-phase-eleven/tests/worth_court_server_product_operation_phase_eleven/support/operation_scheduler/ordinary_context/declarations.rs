@@ -45,9 +45,17 @@ pub(crate) fn assert_scheduler_equivalence(
             left.shared_read_basis_identity(),
             right.shared_read_basis_identity()
         );
-        assert_eq!(left.execution_digest(), right.execution_digest());
+        assert_eq!(
+            left.execution_digest()
+                .expect("successful scheduled execution identity"),
+            right
+                .execution_digest()
+                .expect("successful scheduled execution identity")
+        );
         assert!(
-            left.execution_digest().is_some(),
+            left.execution_digest()
+                .expect("successful scheduled execution identity")
+                .is_some(),
             "shared-read success should carry a real execution digest"
         );
         assert_eq!(

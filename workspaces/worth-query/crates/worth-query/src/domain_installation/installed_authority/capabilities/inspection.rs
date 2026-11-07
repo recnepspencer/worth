@@ -57,6 +57,17 @@ impl<D: 'static> WorthQueryInstalledDomainInspectionRequest<D> {
         WorthQueryInstalledDomainInspectionOutcome<D>,
         WorthQueryInstalledDomainCapabilityStop<WorthQueryInstalledDomainExecutionDrift>,
     > {
+        let refusal_witness = self.source.witness().clone();
+        let refusal_declaration = self.source.declaration_identity().clone();
+        let identity_refused = |cause| {
+            WorthQueryInstalledDomainCapabilityStop::identity_refused(
+                refusal_witness.clone(),
+                WorthQueryInstalledDomainCapabilityKind::Inspection,
+                Some(refusal_declaration.clone()),
+                cause,
+            )
+        };
+
         WorthQueryInstalledDomainExecutionDrift::validate::<D>(self.source.witness(), workspace)
             .map_err(|drift| {
                 WorthQueryInstalledDomainCapabilityStop::new(
@@ -66,7 +77,7 @@ impl<D: 'static> WorthQueryInstalledDomainInspectionRequest<D> {
                     drift,
                 )
             })?;
-        let outcome = self.request.run(workspace);
+        let outcome = self.request.run(workspace).map_err(&identity_refused)?;
         let operational_identity = outcome
             .settled()
             .map(|completion| completion.receipt().identity().clone())

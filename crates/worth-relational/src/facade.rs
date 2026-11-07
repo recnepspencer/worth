@@ -364,6 +364,8 @@ pub mod storage {
         AuthoritativeFieldComparisonKeyDecodeDenialKind, RecordLifecycleState,
         RelationalStorageSubject, RelationalStorageUnavailable, RelationalStorageUnavailableCause,
     };
+    /// SDK-internal incremental maintenance contracts.
+    pub use crate::storage::substrate::maintenance;
 }
 
 pub mod symbols {

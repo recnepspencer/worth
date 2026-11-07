@@ -4,6 +4,11 @@ use super::WorthServerDirectSupportSnapshot;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthServerDirectDeclarationDenial {
+    EvidenceIdentityDerivationDenied {
+        diagnostics_profile: DiagnosticRichnessProfile,
+        cause: worth_query::facade::runtime::WorthQueryEvidenceIdentityDerivationDenial,
+        detail: String,
+    },
     InvalidDeclarationIdentity {
         diagnostics_profile: DiagnosticRichnessProfile,
         detail: String,
@@ -71,6 +76,9 @@ impl WorthServerDirectDeclarationDenial {
 
     pub fn code(&self) -> WorthServerDirectDeclarationDenialCode {
         match self {
+            Self::EvidenceIdentityDerivationDenied { cause, .. } => {
+                WorthServerDirectDeclarationDenialCode::EvidenceIdentityDerivationDenied(*cause)
+            }
             Self::InvalidDeclarationIdentity { .. } => {
                 WorthServerDirectDeclarationDenialCode::InvalidDeclarationIdentity
             }
@@ -88,7 +96,11 @@ impl WorthServerDirectDeclarationDenial {
 
     pub fn diagnostics_profile(&self) -> DiagnosticRichnessProfile {
         match self {
-            Self::InvalidDeclarationIdentity {
+            Self::EvidenceIdentityDerivationDenied {
+                diagnostics_profile,
+                ..
+            }
+            | Self::InvalidDeclarationIdentity {
                 diagnostics_profile,
                 ..
             }
@@ -109,7 +121,8 @@ impl WorthServerDirectDeclarationDenial {
 
     pub fn detail(&self) -> &str {
         match self {
-            Self::InvalidDeclarationIdentity { detail, .. }
+            Self::EvidenceIdentityDerivationDenied { detail, .. }
+            | Self::InvalidDeclarationIdentity { detail, .. }
             | Self::WorkspaceBindingFailed { detail, .. }
             | Self::SourceNotAdmitted { detail, .. }
             | Self::QueryFacadeFamilyNotAdmitted { detail, .. } => detail,
@@ -124,13 +137,18 @@ impl WorthServerDirectDeclarationDenial {
             | Self::QueryFacadeFamilyNotAdmitted {
                 support_snapshot, ..
             } => Some(support_snapshot),
-            Self::InvalidDeclarationIdentity { .. } | Self::WorkspaceBindingFailed { .. } => None,
+            Self::EvidenceIdentityDerivationDenied { .. }
+            | Self::InvalidDeclarationIdentity { .. }
+            | Self::WorkspaceBindingFailed { .. } => None,
         }
     }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthServerDirectDeclarationDenialCode {
+    EvidenceIdentityDerivationDenied(
+        worth_query::facade::runtime::WorthQueryEvidenceIdentityDerivationDenial,
+    ),
     InvalidDeclarationIdentity,
     WorkspaceBindingFailed,
     SourceNotAdmitted,

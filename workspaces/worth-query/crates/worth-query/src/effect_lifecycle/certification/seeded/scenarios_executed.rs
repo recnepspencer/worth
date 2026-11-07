@@ -4,6 +4,7 @@ use crate::effect_lifecycle::{
     EffectAuthoringBasis, EffectEligibilityOutcome, EffectExecutionAuthority, EffectFamily,
     RawEffectIntent,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::workflow::{
     MergeLoweringInput, WorkflowAuthorityTargetFamily, WorkflowDeclarationFamily,
     WritebackLoweringInput,
@@ -24,7 +25,7 @@ pub(super) fn scalar_mutation_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     index: usize,
     stepper: &mut SeedStepper,
-) -> EffectLifecycleSeededCertificationRow {
+) -> Result<EffectLifecycleSeededCertificationRow, IdentityDerivationDenial> {
     let branch = seeded_label("branch", stepper, index);
     let entity_name = seeded_label("entity", stepper, index);
     let updated_name = seeded_label("updated", stepper, index);
@@ -37,13 +38,13 @@ pub(super) fn scalar_mutation_row(
     );
     fork_seed_branch_from_main(execution, &mut runtime, &branch);
     let binding =
-        runtime_workflow_binding_for_branch(branch_snapshot_identity(&runtime, &branch), &branch);
+        runtime_workflow_binding_for_branch(branch_snapshot_identity(&runtime, &branch), &branch)?;
     let basis = EffectAuthoringBasis::from(branch_mutation_basis(&branch));
     let raw = raw_mutation_effect_with_binding(binding, entity_id, updated_name);
-    let support = discover_effect_lifecycle_support(basis.family(), EffectFamily::Mutation);
+    let support = discover_effect_lifecycle_support(basis.family(), EffectFamily::Mutation)?;
     let normalized =
         normalize_raw_effect_intent(&basis, raw).expect("mutation scenario should normalize");
-    let admitted = match evaluate_effect_eligibility(normalized.clone()) {
+    let admitted = match evaluate_effect_eligibility(normalized.clone())? {
         EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         other => panic!("expected admitted mutation scenario, got {other:?}"),
     };
@@ -55,7 +56,7 @@ pub(super) fn scalar_mutation_row(
             EffectExecutionAuthority::relational(&mut runtime),
         )
         .expect("mutation scenario should execute");
-    scalar_or_terminal_row(
+    Ok(scalar_or_terminal_row(
         format!("seeded-mutation-executed-{index}"),
         EffectLifecycleSeededOutcomeClass::ScalarExecuted,
         basis.family(),
@@ -85,28 +86,28 @@ pub(super) fn scalar_mutation_row(
         Some(executed.effect_execution_for_reporting().to_string()),
         None,
         executed.counters().clone(),
-    )
+    ))
 }
 
 pub(super) fn scalar_writeback_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     index: usize,
     stepper: &mut SeedStepper,
-) -> EffectLifecycleSeededCertificationRow {
+) -> Result<EffectLifecycleSeededCertificationRow, IdentityDerivationDenial> {
     let branch = seeded_label("branch", stepper, index);
     let basis = EffectAuthoringBasis::from(branch_mutation_basis(&branch));
     let raw = RawEffectIntent::Writeback {
-        binding: runtime_workflow_binding(),
+        binding: runtime_workflow_binding()?,
         request: workflow_request(
             WorkflowDeclarationFamily::WritebackLoweringNarrow,
             WorkflowAuthorityTargetFamily::BridgeWriteback,
         ),
         input: WritebackLoweringInput::projected_state_diff(),
     };
-    let support = discover_effect_lifecycle_support(basis.family(), EffectFamily::Writeback);
+    let support = discover_effect_lifecycle_support(basis.family(), EffectFamily::Writeback)?;
     let normalized =
         normalize_raw_effect_intent(&basis, raw).expect("writeback scenario should normalize");
-    let admitted = match evaluate_effect_eligibility(normalized.clone()) {
+    let admitted = match evaluate_effect_eligibility(normalized.clone())? {
         EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         other => panic!("expected admitted writeback scenario, got {other:?}"),
     };
@@ -116,7 +117,7 @@ pub(super) fn scalar_writeback_row(
     let executed = lowered
         .execute_with(execution, EffectExecutionAuthority::bridge(&bridge))
         .expect("writeback scenario should execute");
-    scalar_or_terminal_row(
+    Ok(scalar_or_terminal_row(
         format!("seeded-writeback-executed-{index}"),
         EffectLifecycleSeededOutcomeClass::ScalarExecuted,
         basis.family(),
@@ -146,34 +147,34 @@ pub(super) fn scalar_writeback_row(
         Some(executed.effect_execution_for_reporting().to_string()),
         None,
         executed.counters().clone(),
-    )
+    ))
 }
 
 pub(super) fn merge_lowered_row(
     index: usize,
     stepper: &mut SeedStepper,
-) -> EffectLifecycleSeededCertificationRow {
+) -> Result<EffectLifecycleSeededCertificationRow, IdentityDerivationDenial> {
     let branch = seeded_label("branch", stepper, index);
     let source = seeded_label("candidate", stepper, index);
     let basis = EffectAuthoringBasis::from(branch_mutation_basis(&branch));
     let raw = RawEffectIntent::Merge {
-        binding: runtime_workflow_binding(),
+        binding: runtime_workflow_binding()?,
         request: workflow_request(
             WorkflowDeclarationFamily::MergeLoweringNarrow,
             WorkflowAuthorityTargetFamily::RelationalMerge,
         ),
         input: MergeLoweringInput::reconcile_into_target(BranchId(branch), BranchId(source)),
     };
-    let support = discover_effect_lifecycle_support(basis.family(), EffectFamily::Merge);
+    let support = discover_effect_lifecycle_support(basis.family(), EffectFamily::Merge)?;
     let normalized =
         normalize_raw_effect_intent(&basis, raw).expect("merge scenario should normalize");
-    let admitted = match evaluate_effect_eligibility(normalized.clone()) {
+    let admitted = match evaluate_effect_eligibility(normalized.clone())? {
         EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         other => panic!("expected admitted merge scenario, got {other:?}"),
     };
     let scoped = scope_admitted_effect_plan(admitted);
     let lowered = scoped.lower().expect("merge scenario should lower");
-    scalar_or_terminal_row(
+    Ok(scalar_or_terminal_row(
         format!("seeded-merge-lowered-{index}"),
         EffectLifecycleSeededOutcomeClass::Lowered,
         basis.family(),
@@ -200,14 +201,14 @@ pub(super) fn merge_lowered_row(
         None,
         None,
         lowered.counters().clone(),
-    )
+    ))
 }
 
 pub(super) fn batch_mutation_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     index: usize,
     stepper: &mut SeedStepper,
-) -> EffectLifecycleSeededCertificationRow {
+) -> Result<EffectLifecycleSeededCertificationRow, IdentityDerivationDenial> {
     let branch = seeded_label("branch", stepper, index);
     let mut runtime = relational_runtime_with_intent_strategy();
     let batch_width = 2 + stepper.next_index(2);
@@ -236,12 +237,12 @@ pub(super) fn batch_mutation_row(
     let mut draft = effect_batch();
     for (entity_id, desired) in seeded_entities {
         draft = draft.push(raw_mutation_effect_with_binding(
-            binding.clone(),
+            binding.clone()?,
             entity_id,
             desired,
         ));
     }
-    let support = discover_effect_lifecycle_support(basis.family(), EffectFamily::Mutation);
+    let support = discover_effect_lifecycle_support(basis.family(), EffectFamily::Mutation)?;
     let admitted = draft
         .using_basis(basis.clone())
         .admit()
@@ -255,7 +256,7 @@ pub(super) fn batch_mutation_row(
             EffectExecutionAuthority::relational(&mut runtime),
         )
         .expect("batch scenario should execute");
-    scalar_or_terminal_row(
+    Ok(scalar_or_terminal_row(
         format!("seeded-batch-executed-{index}"),
         EffectLifecycleSeededOutcomeClass::BatchExecuted,
         basis.family(),
@@ -266,8 +267,8 @@ pub(super) fn batch_mutation_row(
         admitted_digest,
         None,
         Some(lowered_digest),
-        Some(executed.batch_for_reporting().to_string()),
+        Some(executed.batch_for_reporting()?.to_string()),
         None,
         executed.counters().clone(),
-    )
+    ))
 }

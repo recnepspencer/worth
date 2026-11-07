@@ -157,6 +157,12 @@ pub struct WorthQueryApplicationInvariantContext<'borrow, 'runtime, Schema = ()>
 impl<'borrow, 'runtime, Schema>
     WorthQueryApplicationInvariantScopePlanner<'borrow, 'runtime, Schema>
 {
+    pub(super) fn refusal_budget(
+        &self,
+    ) -> &dyn worth_relational::facade::runtime::CustomInvariantLeaseBudget {
+        self.lower.refusal_budget()
+    }
+
     pub(super) fn new(
         lower: &'borrow mut CustomInvariantScopePlanner<'runtime>,
         binding_identity: ApplicationSchemaBindingIdentity,

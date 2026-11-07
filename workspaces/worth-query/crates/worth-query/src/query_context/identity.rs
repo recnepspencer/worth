@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 use super::basis::{AdmittedQueryBasisContext, ComparisonBasisFamily, QueryContextFamily};
@@ -9,8 +10,8 @@ use super::support::QueryContextDeferredScopeMarker;
 pub(crate) fn compose_preview_derived_result_shape_digest(
     validated_query_digest: &str,
     shape_check_width: usize,
-) -> String {
-    WorthQueryEvidenceIdentity::compose(
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(WorthQueryEvidenceIdentity::compose(
         WorthQueryEvidenceScope::QueryContextCompatibilityBasisLabel,
     )
     .field_shape(
@@ -29,9 +30,9 @@ pub(crate) fn compose_preview_derived_result_shape_digest(
         WorthQueryEvidenceTag::new("shape_class"),
         "preview_query_context_shape",
     )
-    .seal()
+    .seal()?
     .as_str()
-    .to_string()
+    .to_string())
 }
 
 pub(crate) fn compose_query_basis_replay_digest(
@@ -39,8 +40,8 @@ pub(crate) fn compose_query_basis_replay_digest(
     result_digest: &str,
     metadata_result_digest: &str,
     prediction_drift: Option<&QueryContextPredictionDriftOutcome>,
-) -> String {
-    WorthQueryEvidenceIdentity::compose(
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(WorthQueryEvidenceIdentity::compose(
         WorthQueryEvidenceScope::QueryContextCompatibilityBasisLabel,
     )
     .field_shape(
@@ -64,9 +65,9 @@ pub(crate) fn compose_query_basis_replay_digest(
             .map(QueryContextPredictionDriftOutcome::as_str)
             .unwrap_or("none"),
     )
-    .seal()
+    .seal()?
     .as_str()
-    .to_string()
+    .to_string())
 }
 
 pub(crate) fn compose_query_basis_counter_snapshot_digest(
@@ -108,7 +109,7 @@ pub(crate) fn compose_query_basis_counter_snapshot_digest(
         WorthQueryEvidenceTag::new("result_shape_width"),
         execution.counters().result_shape_width(),
     )
-    .seal()
+    .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
     .as_str()
     .to_string()
 }
@@ -117,8 +118,8 @@ pub(crate) fn compose_query_diff_replay_digest(
     context: &AdmittedDiffQueryContext,
     comparison_result_digest: &str,
     prediction_drift: &QueryContextPredictionDriftOutcome,
-) -> String {
-    WorthQueryEvidenceIdentity::compose(
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(WorthQueryEvidenceIdentity::compose(
         WorthQueryEvidenceScope::QueryContextCompatibilityBasisLabel,
     )
     .field_shape(
@@ -149,9 +150,9 @@ pub(crate) fn compose_query_diff_replay_digest(
         WorthQueryEvidenceTag::new("prediction"),
         prediction_drift.as_str(),
     )
-    .seal()
+    .seal()?
     .as_str()
-    .to_string()
+    .to_string())
 }
 
 pub(crate) fn compose_query_diff_counter_snapshot_digest(
@@ -189,7 +190,7 @@ pub(crate) fn compose_query_diff_counter_snapshot_digest(
         WorthQueryEvidenceTag::new("change_rows"),
         change_set.rows().len(),
     )
-    .seal()
+    .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
     .as_str()
     .to_string()
 }
@@ -198,8 +199,8 @@ pub(crate) fn compose_query_context_support_profile_digest(
     admitted_basis_families: &[QueryContextFamily],
     admitted_comparison_families: &[ComparisonBasisFamily],
     _deferred_scope_markers: &[QueryContextDeferredScopeMarker],
-) -> String {
-    WorthQueryEvidenceIdentity::compose(
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(WorthQueryEvidenceIdentity::compose(
         WorthQueryEvidenceScope::QueryContextCompatibilityBasisLabel,
     )
     .field_shape(
@@ -218,9 +219,9 @@ pub(crate) fn compose_query_context_support_profile_digest(
             .iter()
             .map(ComparisonBasisFamily::as_str),
     )
-    .seal()
+    .seal()?
     .as_str()
-    .to_string()
+    .to_string())
 }
 
 /// Typed composition for construction-test branch/preview basis preparation.
@@ -229,8 +230,8 @@ pub fn compose_construction_branch_basis_preparation_digest(
     branch_preview_contract_digest: &str,
     preview_basis_admission: &crate::WorthQueryEvidenceIdentity,
     branch_basis_admission: &crate::WorthQueryEvidenceIdentity,
-) -> String {
-    WorthQueryEvidenceIdentity::compose(
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(WorthQueryEvidenceIdentity::compose(
         WorthQueryEvidenceScope::QueryContextCompatibilityBasisLabel,
     )
     .field_shape(
@@ -253,7 +254,7 @@ pub fn compose_construction_branch_basis_preparation_digest(
         WorthQueryEvidenceTag::new("branch_basis_admission"),
         branch_basis_admission,
     )
-    .seal()
+    .seal()?
     .as_str()
-    .to_string()
+    .to_string())
 }

@@ -1,6 +1,5 @@
 use worth_query_declaration::facade::application_query::ApplicationQueryBasisSupport;
 use worth_query_declaration::facade::application_query::ApplicationQueryCardinality;
-use worth_query_declaration::facade::application_query::ApplicationQueryDefinition;
 use worth_query_declaration::facade::application_query::ApplicationQueryDefinitionBuilder;
 use worth_query_declaration::facade::application_query::ApplicationQueryDisclosureContract;
 use worth_query_declaration::facade::application_query::ApplicationQueryInfluenceContract;
@@ -58,7 +57,7 @@ worth_query_application_query!(
     name "forbidden_root_guard"
 );
 
-pub fn governed_root_guard_definition() -> ApplicationQueryDefinition<
+pub fn governed_root_guard_definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     GovernedRootGuardQuery,
     AccountSummaryParameters,
@@ -71,7 +70,7 @@ pub fn governed_root_guard_definition() -> ApplicationQueryDefinition<
     )
 }
 
-pub fn forbidden_root_guard_definition() -> ApplicationQueryDefinition<
+pub fn forbidden_root_guard_definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     ForbiddenRootGuardQuery,
     AccountSummaryParameters,
@@ -97,7 +96,7 @@ pub fn definition<
         Account,
     >,
     guard_influence: ApplicationQueryInfluenceContract,
-) -> ApplicationQueryDefinition<
+) -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     Query,
     AccountSummaryParameters,
@@ -152,8 +151,6 @@ where
                 .expect("record field contract")
                 .forward(AccountAllActivity::reference()),
         )
-        .build()
-        .unwrap()
 }
 
 impl<

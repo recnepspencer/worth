@@ -28,5 +28,9 @@ fn compat_http_upload_keeps_blob_transport_out_of_structured_truth_artifacts() {
         .response_envelope()
         .canonical_digest()
         .contains("image/png"));
-    assert!(!upload.mutation().canonical_digest().contains("thumbnail"));
+    assert!(!upload
+        .mutation()
+        .canonical_digest()
+        .expect("admitted upload mutation identity")
+        .contains("thumbnail"));
 }

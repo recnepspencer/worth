@@ -68,7 +68,8 @@ fn mismatched_program_command_collection_is_denied_with_matching_counts() {
             Some("edge".to_string()),
         )],
         &breadth,
-    );
+    )
+    .expect("fixture digest must fit");
 
     let denial = WorthQueryGraphTouchDescriptor::from_authoritative_mutation_batch(
         &program,
@@ -100,7 +101,8 @@ fn mismatched_program_command_symbol_is_denied_with_matching_counts() {
             Some("other-edge".to_string()),
         )],
         &breadth,
-    );
+    )
+    .expect("fixture digest must fit");
 
     let denial = WorthQueryGraphTouchDescriptor::from_authoritative_mutation_batch(
         &program,
@@ -124,4 +126,5 @@ fn reference(symbol: &str, collection: &str) -> WorthQuerySymbolicTargetReferenc
 
 fn target_collection(collection: &str) -> WorthQueryMutationTargetCollectionIdentity {
     WorthQueryMutationTargetCollectionIdentity::new("graph-composition-test", collection)
+        .expect("fixture digest must fit")
 }

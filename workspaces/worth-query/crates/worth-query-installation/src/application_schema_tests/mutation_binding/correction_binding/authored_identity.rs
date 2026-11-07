@@ -71,8 +71,8 @@ fn authored_family_rejects_missing_role_or_changed_logical_key_meaning() {
         u64,
     >::at("PrincipalIdentityField");
     let key = ApplicationCorrectionOutput::<CreatedBinding, Created>::field(field)
-        .unwrap()
         .declaration()
+        .unwrap()
         .projected_value_member();
     for axis in [
         "valid",
@@ -124,8 +124,7 @@ fn authored_family_rejects_missing_role_or_changed_logical_key_meaning() {
                 Some(PortableCorrectionMechanism::RecordedInverse(
                     PortableRecordedInverse::from_untrusted_fields(
                         inverse.operation_name().to_owned(),
-                        DeclaredLoweringCorrespondenceRef::new("fixture.authored.inverse.v1")
-                            .unwrap(),
+                        DeclaredLoweringCorrespondenceRef::new("fixture.authored.inverse.v1"),
                         DeclaredAftermathPostcondition::ExactPriorTruth,
                         PortablePreImageDemand::from_untrusted_fields(vec![], 0),
                     ),

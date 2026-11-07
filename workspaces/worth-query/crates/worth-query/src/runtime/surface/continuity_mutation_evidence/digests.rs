@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -19,18 +20,21 @@ pub(super) struct ContinuityDigestInput<'a> {
 
 pub(super) fn continuity_digests(
     input: ContinuityDigestInput<'_>,
-) -> (
-    WorthQueryMutationEvidenceDigest,
-    WorthQueryMutationEvidenceDigest,
-) {
-    let lineage_digest = continuity_lineage_digest(&input);
-    let resolution_digest = continuity_resolution_digest(&input, &lineage_digest);
-    (lineage_digest, resolution_digest)
+) -> Result<
+    (
+        WorthQueryMutationEvidenceDigest,
+        WorthQueryMutationEvidenceDigest,
+    ),
+    IdentityDerivationDenial,
+> {
+    let lineage_digest = continuity_lineage_digest(&input)?;
+    let resolution_digest = continuity_resolution_digest(&input, &lineage_digest)?;
+    Ok((lineage_digest, resolution_digest))
 }
 
 fn continuity_lineage_digest(
     input: &ContinuityDigestInput<'_>,
-) -> WorthQueryMutationEvidenceDigest {
+) -> Result<WorthQueryMutationEvidenceDigest, IdentityDerivationDenial> {
     let lineage_identity =
         worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
             .field_shape(WorthQueryEvidenceTag::new("role"), "continuity-lineage")
@@ -53,14 +57,17 @@ fn continuity_lineage_digest(
                     .basis_binding
                     .map(WorthQueryMutationEvidenceDigest::evidence_identity),
             )
-            .seal();
-    WorthQueryMutationEvidenceDigest::aggregate("continuity-lineage", lineage_identity)
+            .seal()?;
+    Ok(WorthQueryMutationEvidenceDigest::aggregate(
+        "continuity-lineage",
+        lineage_identity,
+    )?)
 }
 
 fn continuity_resolution_digest(
     input: &ContinuityDigestInput<'_>,
     lineage_digest: &WorthQueryMutationEvidenceDigest,
-) -> WorthQueryMutationEvidenceDigest {
+) -> Result<WorthQueryMutationEvidenceDigest, IdentityDerivationDenial> {
     let resolution_identity =
         worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
             .field_shape(WorthQueryEvidenceTag::new("role"), "continuity-resolution")
@@ -94,6 +101,9 @@ fn continuity_resolution_digest(
                     .target_collection
                     .map(WorthQueryMutationTargetCollectionIdentity::evidence_identity),
             )
-            .seal();
-    WorthQueryMutationEvidenceDigest::aggregate("continuity-resolution", resolution_identity)
+            .seal()?;
+    Ok(WorthQueryMutationEvidenceDigest::aggregate(
+        "continuity-resolution",
+        resolution_identity,
+    )?)
 }

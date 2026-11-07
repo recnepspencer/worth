@@ -1,10 +1,12 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::counters::QuerySubscriptionDeclarationCounters;
 use super::diagnostic::{QuerySubscriptionDiagnosticEvidence, QuerySubscriptionDiagnosticStage};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum QuerySubscriptionFamilySelectionFailureClass {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     ViewFamilyLiveFamilyMismatch,
     InvalidAdmissionDimensions,
     WorkBudgetExceeded,
@@ -23,6 +25,7 @@ pub enum QuerySubscriptionFamilySelectionFailureClass {
 impl QuerySubscriptionFamilySelectionFailureClass {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => "evidence_identity_derivation_denied",
             Self::ViewFamilyLiveFamilyMismatch => "view_family_live_family_mismatch",
             Self::InvalidAdmissionDimensions => "invalid_admission_dimensions",
             Self::WorkBudgetExceeded => "work_budget_exceeded",
@@ -44,11 +47,26 @@ impl QuerySubscriptionFamilySelectionFailureClass {
 pub struct QuerySubscriptionFamilySelectionError {
     failure_class: QuerySubscriptionFamilySelectionFailureClass,
     message: String,
-    diagnostic: QuerySubscriptionDiagnosticEvidence,
+    diagnostic: Result<QuerySubscriptionDiagnosticEvidence, IdentityDerivationDenial>,
     counters: QuerySubscriptionDeclarationCounters,
 }
 
 impl QuerySubscriptionFamilySelectionError {
+    pub(super) fn identity_refused(
+        cause: IdentityDerivationDenial,
+        counters: QuerySubscriptionDeclarationCounters,
+    ) -> Self {
+        Self {
+            failure_class:
+                QuerySubscriptionFamilySelectionFailureClass::EvidenceIdentityDerivationDenied(
+                    cause,
+                ),
+            message: "canonical digest bounds refused subscription equivalence evidence".into(),
+            diagnostic: Err(cause),
+            counters,
+        }
+    }
+
     pub(super) fn new(
         failure_class: QuerySubscriptionFamilySelectionFailureClass,
         message: impl Into<String>,
@@ -57,12 +75,14 @@ impl QuerySubscriptionFamilySelectionError {
         counters: QuerySubscriptionDeclarationCounters,
     ) -> Self {
         let message = message.into();
-        let diagnostic = QuerySubscriptionDiagnosticEvidence::denied(
-            diagnostic_stage,
-            message.clone(),
-            source_identity,
-            &counters.evidence_identity(),
-        );
+        let diagnostic = (|| {
+            Ok(QuerySubscriptionDiagnosticEvidence::denied(
+                diagnostic_stage,
+                message.clone(),
+                source_identity,
+                &counters.evidence_identity(),
+            )?)
+        })();
         Self {
             failure_class,
             message,
@@ -79,8 +99,10 @@ impl QuerySubscriptionFamilySelectionError {
         &self.message
     }
 
-    pub fn diagnostic(&self) -> &QuerySubscriptionDiagnosticEvidence {
-        &self.diagnostic
+    pub fn diagnostic(
+        &self,
+    ) -> Result<&QuerySubscriptionDiagnosticEvidence, IdentityDerivationDenial> {
+        Ok(self.diagnostic.as_ref().map_err(|cause| *cause)?)
     }
 
     pub fn counters(&self) -> &QuerySubscriptionDeclarationCounters {

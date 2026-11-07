@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use crate::domain_capabilities::identity::domain_capability_scope_encoder;
@@ -12,11 +13,11 @@ use crate::domain_capabilities::{
 
 pub fn materialize_canonical_support_traceability_artifact<T>(
     contribution: WorthQueryMaterializationReadySupportContribution<T>,
-) -> WorthQueryCanonicalSupportTraceabilityArtifact<T>
+) -> Result<WorthQueryCanonicalSupportTraceabilityArtifact<T>, IdentityDerivationDenial>
 where
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)
+    Ok(super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)?)
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -172,8 +173,11 @@ impl WorthQueryLowerRuntimeBoundarySupportTraceabilityArtifact {
 
 pub(crate) fn materialize_intent_declaration_support_traceability_artifact<T>(
     contribution: WorthQueryMaterializationReadySupportContribution<T>,
-) -> WorthQueryDomainCapabilityTransitionOutcome<
-    WorthQueryIntentDeclarationSupportTraceabilityArtifact,
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<
+        WorthQueryIntentDeclarationSupportTraceabilityArtifact,
+    >,
+    IdentityDerivationDenial,
 >
 where
     T: crate::domain_capabilities::WorthQueryDeclarationContributionTargetBinding,
@@ -188,60 +192,65 @@ where
     else {
         unreachable!("declaration-bound target should preserve declaration semantics");
     };
-    TransitionOutcome::Success(WorthQueryIntentDeclarationSupportTraceabilityArtifact {
-        lane: support_lane(payload.posture()),
-        support_detail: support_detail(payload.semantic_code(), payload.detail()),
-        intent_name: name.to_string(),
-        strategy_name: strategy_name.to_string(),
-        strategy_version: strategy_version.to_string(),
-        input_contract: input_contract.to_string(),
-        source_lane,
-        target_lane,
-        target_binding_identity: domain_contribution.target().binding_identity(),
-        request_identity: domain_contribution.request_identity().clone(),
-        materialization_identity: domain_capability_scope_encoder(
-            "worth_query_intent_declaration_support_traceability_artifact_v1",
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("lane"),
-            support_lane(payload.posture()),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("semantic_code"),
-            payload.semantic_code(),
-        )
-        .field_shape(WorthQueryEvidenceTag::new("detail"), payload.detail())
-        .field_shape(WorthQueryEvidenceTag::new("intent"), name)
-        .field_shape(WorthQueryEvidenceTag::new("strategy"), strategy_name)
-        .field_shape(
-            WorthQueryEvidenceTag::new("strategy_version"),
-            strategy_version,
-        )
-        .field_shape(WorthQueryEvidenceTag::new("input_contract"), input_contract)
-        .field_shape(
-            WorthQueryEvidenceTag::new("source_lane"),
-            source_lane.as_str(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("target_lane"),
-            target_lane.as_str(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("binding"),
-            &domain_contribution.target().binding_identity(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("request"),
-            domain_contribution.request_identity(),
-        )
-        .seal(),
-    })
+    Ok(TransitionOutcome::Success(
+        WorthQueryIntentDeclarationSupportTraceabilityArtifact {
+            lane: support_lane(payload.posture()),
+            support_detail: support_detail(payload.semantic_code(), payload.detail()),
+            intent_name: name.to_string(),
+            strategy_name: strategy_name.to_string(),
+            strategy_version: strategy_version.to_string(),
+            input_contract: input_contract.to_string(),
+            source_lane,
+            target_lane,
+            target_binding_identity: domain_contribution.target().binding_identity()?,
+            request_identity: domain_contribution.request_identity().clone(),
+            materialization_identity: domain_capability_scope_encoder(
+                "worth_query_intent_declaration_support_traceability_artifact_v1",
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("lane"),
+                support_lane(payload.posture()),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("semantic_code"),
+                payload.semantic_code(),
+            )
+            .field_shape(WorthQueryEvidenceTag::new("detail"), payload.detail())
+            .field_shape(WorthQueryEvidenceTag::new("intent"), name)
+            .field_shape(WorthQueryEvidenceTag::new("strategy"), strategy_name)
+            .field_shape(
+                WorthQueryEvidenceTag::new("strategy_version"),
+                strategy_version,
+            )
+            .field_shape(WorthQueryEvidenceTag::new("input_contract"), input_contract)
+            .field_shape(
+                WorthQueryEvidenceTag::new("source_lane"),
+                source_lane.as_str(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("target_lane"),
+                target_lane.as_str(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("binding"),
+                &domain_contribution.target().binding_identity()?,
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("request"),
+                domain_contribution.request_identity(),
+            )
+            .seal()?,
+        },
+    ))
 }
 
 pub(crate) fn materialize_lower_runtime_support_traceability_artifact<T>(
     contribution: WorthQueryMaterializationReadySupportContribution<T>,
-) -> WorthQueryDomainCapabilityTransitionOutcome<
-    WorthQueryLowerRuntimeBoundarySupportTraceabilityArtifact,
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<
+        WorthQueryLowerRuntimeBoundarySupportTraceabilityArtifact,
+    >,
+    IdentityDerivationDenial,
 >
 where
     T: crate::domain_capabilities::WorthQueryLowerRuntimeContributionTargetBinding,
@@ -262,7 +271,7 @@ where
     else {
         unreachable!("lower-runtime target should preserve lower-runtime semantics");
     };
-    let envelope_identity = domain_contribution.target().binding_identity();
+    let envelope_identity = domain_contribution.target().binding_identity()?;
     let materialization_identity = domain_capability_scope_encoder(
         "worth_query_lower_runtime_support_traceability_artifact_v1",
     )
@@ -289,26 +298,28 @@ where
     .field_evidence_identity(WorthQueryEvidenceTag::new("envelope"), &envelope_identity)
     .field_evidence_identity(
         WorthQueryEvidenceTag::new("binding"),
-        &domain_contribution.target().binding_identity(),
+        &domain_contribution.target().binding_identity()?,
     )
     .field_evidence_identity(
         WorthQueryEvidenceTag::new("request"),
         domain_contribution.request_identity(),
     )
-    .seal();
-    TransitionOutcome::Success(WorthQueryLowerRuntimeBoundarySupportTraceabilityArtifact {
-        lane: support_lane(payload.posture()),
-        support_detail: support_detail(payload.semantic_code(), payload.detail()),
-        seam_key,
-        capability_label,
-        crossing_classification,
-        route_kind,
-        support_posture,
-        envelope_identity,
-        target_binding_identity: domain_contribution.target().binding_identity(),
-        request_identity: domain_contribution.request_identity().clone(),
-        materialization_identity,
-    })
+    .seal()?;
+    Ok(TransitionOutcome::Success(
+        WorthQueryLowerRuntimeBoundarySupportTraceabilityArtifact {
+            lane: support_lane(payload.posture()),
+            support_detail: support_detail(payload.semantic_code(), payload.detail()),
+            seam_key,
+            capability_label,
+            crossing_classification,
+            route_kind,
+            support_posture,
+            envelope_identity,
+            target_binding_identity: domain_contribution.target().binding_identity()?,
+            request_identity: domain_contribution.request_identity().clone(),
+            materialization_identity,
+        },
+    ))
 }
 
 pub(super) fn support_lane(posture: WorthQuerySupportContributionPosture) -> &'static str {

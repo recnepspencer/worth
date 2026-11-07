@@ -1,5 +1,6 @@
 //! Branch admission and exact comparison-basis capture.
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 impl WorthQueryRuntime {
     pub fn branch<'a>(
@@ -39,7 +40,7 @@ impl WorthQueryRuntime {
             label.clone(),
             options.effect_policy(),
             "runtime-branch-basis-admission",
-        );
+        )?;
         Ok(WorthQueryBranchSession::new(
             execution,
             label,
@@ -59,7 +60,7 @@ impl WorthQueryRuntime {
             label,
             WorthQueryEffectPolicy::DeriveOnly,
             "runtime-branch-comparison-basis-admission",
-        );
+        )?;
         Ok(WorthQueryRuntimeBranchComparisonBasis::new(
             admission,
             self.current_snapshot_identity_with_request(execution),
@@ -71,7 +72,7 @@ impl WorthQueryRuntime {
         label: WorthQuerySessionLabel,
         effect_policy: WorthQueryEffectPolicy,
         evidence_tag: &'static str,
-    ) -> WorthQueryBranchBasisAdmission {
+    ) -> Result<WorthQueryBranchBasisAdmission, IdentityDerivationDenial> {
         let branch_support_evidence = self
             .backend
             .support_profile()
@@ -87,12 +88,12 @@ impl WorthQueryRuntime {
                 .into_iter()
                 .map(WorthQueryBasisAdmissionEvidenceRow::support_profile_token),
         )
-        .collect::<Vec<_>>();
-        WorthQueryBranchBasisAdmission::new(
+        .collect::<Result<Vec<_>, _>>()?;
+        Ok(WorthQueryBranchBasisAdmission::new(
             &self.evidence_authority,
             label,
             effect_policy,
             evidence_rows,
-        )
+        )?)
     }
 }

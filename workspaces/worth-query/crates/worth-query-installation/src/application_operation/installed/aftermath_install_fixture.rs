@@ -194,10 +194,12 @@ fn associated_operation_members(
         .no_external_effect()
         .aftermath(contract)
         .finish();
-    let declaration = ApplicationSchemaDeclarationBuilder::<FixtureSchema>::for_schema()
-        .operation(definition)
-        .build()
-        .expect("the matching operation builder associates the aftermath");
+    let declaration =
+        ApplicationSchemaDeclarationBuilder::<FixtureSchema>::from_fragment(AftermathFields)
+            .expect("the actual inverse fields lower")
+            .operation(definition)
+            .build()
+            .expect("the matching operation builder associates the aftermath");
     declaration
         .erased()
         .members()
@@ -240,19 +242,15 @@ pub(crate) fn recorded_inverse_at<Field: RecordSelection>(
     field: Field,
     maximum_encoded_bytes: usize,
 ) -> DeclaredCorrectionMechanism<FixtureSchema> {
-    DeclaredCorrectionMechanism::RecordedInverse(
-        DeclaredRecordedInverse::new(
-            "unfreeze",
-            DeclaredLoweringCorrespondenceRef::new("geometry-inverse").unwrap(),
-            DeclaredAftermathPostcondition::ExactPriorTruth,
-            DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(field).unwrap()],
-                maximum_encoded_bytes,
-            )
-            .unwrap(),
-        )
-        .unwrap(),
-    )
+    DeclaredCorrectionMechanism::RecordedInverse(DeclaredRecordedInverse::new(
+        "unfreeze",
+        DeclaredLoweringCorrespondenceRef::new("geometry-inverse"),
+        DeclaredAftermathPostcondition::ExactPriorTruth,
+        DeclaredPreImageDemand::new(
+            [DeclaredPreImageLocus::from_field(field)],
+            maximum_encoded_bytes,
+        ),
+    ))
 }
 
 fn decision_read_target<Field: RecordSelection>(
@@ -266,13 +264,10 @@ fn decision_read_target<Field: RecordSelection>(
 }
 
 pub(crate) fn compensation() -> DeclaredCorrectionMechanism<FixtureSchema> {
-    DeclaredCorrectionMechanism::Compensation(
-        DeclaredCompensation::new(
-            "compensating-journal",
-            DeclaredAftermathPostcondition::BusinessPostcondition {
-                identity: "settled".into(),
-            },
-        )
-        .unwrap(),
-    )
+    DeclaredCorrectionMechanism::Compensation(DeclaredCompensation::new(
+        "compensating-journal",
+        DeclaredAftermathPostcondition::BusinessPostcondition {
+            identity: "settled".into(),
+        },
+    ))
 }

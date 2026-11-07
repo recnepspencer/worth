@@ -26,9 +26,11 @@ impl Aspect for PlanarPosition {
 pub struct Header(String);
 impl fragment::Record<Header> for TopologyRecordsBindings {
     fn record() -> impl Shape<Header, Self> {
-        field("BodyKey", |row: &Header| row.0.clone()).build(
-            |key, _: &mut ValueDecodeAdmission<'_>| Ok::<_, std::convert::Infallible>(Header(key)),
-        )
+        field("BodyKey", |row: &Header| row.0.clone())
+            .equality_queryable(true)
+            .build(|key, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(Header(key))
+            })
     }
 }
 pub type BodyKey = FieldSelection<QuoteRecords, Body, PlanarPosition, String>;
@@ -42,11 +44,11 @@ impl Aspect for QuoteSourceFacts {
 pub struct Requested(Count);
 impl fragment::Record<Requested> for TopologyRecordsBindings {
     fn record() -> impl Shape<Requested, Self> {
-        field("RequestedRows", |row: &Requested| row.0).build(
-            |value, _: &mut ValueDecodeAdmission<'_>| {
+        field("RequestedRows", |row: &Requested| row.0)
+            .equality_queryable(true)
+            .build(|value, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(Requested(value))
-            },
-        )
+            })
     }
 }
 pub struct QuoteOutputFacts;
@@ -57,11 +59,11 @@ impl Aspect for QuoteOutputFacts {
 pub struct Counted(Count);
 impl fragment::Record<Counted> for TopologyRecordsBindings {
     fn record() -> impl Shape<Counted, Self> {
-        field("CountedTotal", |row: &Counted| row.0).build(
-            |value, _: &mut ValueDecodeAdmission<'_>| {
+        field("CountedTotal", |row: &Counted| row.0)
+            .equality_queryable(true)
+            .build(|value, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(Counted(value))
-            },
-        )
+            })
     }
 }
 pub type RequestedRows = FieldSelection<QuoteRecords, Body, QuoteSourceFacts, Count>;
@@ -111,7 +113,6 @@ impl ApplicationReadableScalarValueBinding for CountBinding {
 }
 impl Scalar<Count> for TopologyRecordsBindings {
     type Binding = CountBinding;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 pub struct PlanarAnchorOutput<S>(std::marker::PhantomData<fn() -> S>);
 impl<S: TopologySchemaBinding> WorthQueryApplicationOutputRole for PlanarAnchorOutput<S> {

@@ -7,6 +7,8 @@ mod allocation;
 mod allocation_delta;
 mod bulk_bootstrap;
 mod iteration;
+mod iteration_observation;
+pub use iteration_observation::observe_history_prefix_traversal;
 mod node;
 mod preallocation;
 #[cfg(test)]

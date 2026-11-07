@@ -85,10 +85,10 @@ impl WorthQueryRuntimeWriteAuthorityAdapter for AuthorityLessWriteAuthority {
     ) -> Result<WriteAuthorityExecutionReceipt, WorthQueryWorkspaceError> {
         let collection = mutation_collection(&mutation);
         let receipt = test_mutation_receipt(
-            crate::memory_workspace::admit_external_commit_label("authority-less-commit"),
-            crate::memory_workspace::admit_external_snapshot_label("authority-less-snapshot"),
+            crate::memory_workspace::admit_external_commit_label("authority-less-commit")?,
+            crate::memory_workspace::admit_external_snapshot_label("authority-less-snapshot")?,
             collection,
-            crate::memory_workspace::admit_authored_entity_label("authority-less-entity"),
+            crate::memory_workspace::admit_authored_entity_label("authority-less-entity")?,
             WorthQueryMutationKind::Created,
             mutation.declared_aspect_touches(),
         );
@@ -222,7 +222,7 @@ impl WorthQueryRuntimeSignalSinkAdapter for DriftingSignalSink {
     ) -> Result<SignalInvalidationBoundaryReceipt, WorthQueryWorkspaceError> {
         let mut drifted = receipt.clone();
         drifted.commit_identity =
-            crate::memory_workspace::admit_external_commit_label("drifted-signal-routing-commit")
+            crate::memory_workspace::admit_external_commit_label("drifted-signal-routing-commit")?
                 .admit_runtime_write_authority();
         let routed = self.build_signal_invalidation_routing_receipt(&drifted)?;
         self.build_signal_invalidation_boundary_receipt(&drifted, routed)

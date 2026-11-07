@@ -127,7 +127,6 @@ pub enum WorthQueryHistoryNavigationDenial {
         crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial,
     ),
     SelectorSnapshot(worth_relational::facade::snapshots::RelationalSnapshotAdmissionDenial),
-    SelectorMaintenance(worth_relational::facade::indexes::DerivedIndexMaintenanceDenial),
     Publication(worth_runtime_world::facade::NoEffectCompositePublication),
     Recovery(worth_runtime_world::facade::RuntimeWorldRecoveryDenial),
     RecoveryAffinity,

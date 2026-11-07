@@ -1,4 +1,4 @@
-//! One tuple owns every exclusive case and its compiler-visible membership.
+//! One case list owns every exclusive case and its compiler-visible membership.
 
 use super::super::ApplicationValue;
 use super::super::{
@@ -9,7 +9,9 @@ use super::{Aspect, BindingSet, Record, RecordRefusal, RecordRefusalKind, Shape}
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
 mod definition;
+mod join;
 pub use definition::{CaseDefinition, GroupDefinition};
+pub use join::JoinCases;
 
 pub trait OneOf: 'static {
     type Row: 'static;
@@ -30,6 +32,7 @@ pub struct OptionalCaseWitness<P>(PhantomData<P>);
 
 #[doc(hidden)]
 pub trait CaseRows<Set: BindingSet, Enum> {
+    fn contains(name: &str) -> bool;
     fn decode(
         name: &str,
         values: &BTreeMap<String, ApplicationValue>,
@@ -99,6 +102,7 @@ macro_rules! cases {
     ($($case:ident),+) => {
         impl<Set, Enum, $($case),+> CaseRows<Set, Enum> for ($($case,)+)
         where $($case: Aspect, Set: Record<$case::Row>, Enum: From<$case::Row> + 'static,)+ {
+            fn contains(name: &str) -> bool { false $(|| name == $case::NAME)+ }
             fn decode(name: &str, values: &BTreeMap<String, ApplicationValue>, prefix: &str, work: &mut Set::Work<'_>, admission: &mut super::super::ValueDecodeAdmission<'_>) -> Result<Enum, RecordRefusal> {
                 $(if name == $case::NAME { return <Set as Record<$case::Row>>::record().decode_admitted(values, prefix, work, admission).map(Enum::from); })+
                 Err(RecordRefusal::new(prefix, RecordRefusalKind::UnknownCase))

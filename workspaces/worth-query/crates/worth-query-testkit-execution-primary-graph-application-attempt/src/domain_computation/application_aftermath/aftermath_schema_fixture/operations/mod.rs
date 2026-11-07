@@ -80,8 +80,7 @@ pub fn compensation(
             DeclaredAftermathPostcondition::BusinessPostcondition {
                 identity: identity.into(),
             },
-        )
-        .unwrap(),
+        ),
     ))
 }
 
@@ -91,15 +90,12 @@ pub fn inverse(
     lowering: &str,
 ) -> DeclaredApplicationAftermathContract<AftermathFixtureSchema> {
     DeclaredApplicationAftermathContract::runtime_alone(
-        DeclaredCorrectionMechanism::RecordedInverse(
-            DeclaredRecordedInverse::new(
-                "unfreeze",
-                DeclaredLoweringCorrespondenceRef::new(lowering).unwrap(),
-                DeclaredAftermathPostcondition::ExactPriorTruth,
-                DeclaredPreImageDemand::new(loci, bound).unwrap(),
-            )
-            .unwrap(),
-        ),
+        DeclaredCorrectionMechanism::RecordedInverse(DeclaredRecordedInverse::new(
+            "unfreeze",
+            DeclaredLoweringCorrespondenceRef::new(lowering),
+            DeclaredAftermathPostcondition::ExactPriorTruth,
+            DeclaredPreImageDemand::new(loci, bound),
+        )),
     )
 }
 
@@ -183,15 +179,12 @@ pub fn bind_compensating_ops(schema: FixtureBuilder, ability: FixtureAbilityRef)
         Charge,
         "charge",
         DeclaredApplicationAftermathContract::runtime_alone(
-            DeclaredCorrectionMechanism::Compensation(
-                DeclaredCompensation::new(
-                    "undo-charge",
-                    DeclaredAftermathPostcondition::InvariantRestored {
-                        invariant: "balanced-ledger".into(),
-                    },
-                )
-                .unwrap(),
-            ),
+            DeclaredCorrectionMechanism::Compensation(DeclaredCompensation::new(
+                "undo-charge",
+                DeclaredAftermathPostcondition::InvariantRestored {
+                    invariant: "balanced-ledger".into(),
+                },
+            ),),
         )
     )
 }
@@ -238,8 +231,7 @@ pub fn bind_inverse_ops(
                 .definition()
                 .no_external_effect()
                 .aftermath(inverse(
-                    [DeclaredPreImageLocus::from_field(reads.frozen)
-                        .expect("owned inverse field is valid")],
+                    [DeclaredPreImageLocus::from_field(reads.frozen)],
                     64,
                     "account-freeze-inverse",
                 ))
@@ -255,8 +247,7 @@ pub fn bind_inverse_ops(
                 .definition()
                 .no_external_effect()
                 .aftermath(inverse(
-                    [DeclaredPreImageLocus::from_field(reads.note)
-                        .expect("owned inverse field is valid")],
+                    [DeclaredPreImageLocus::from_field(reads.note)],
                     4,
                     "geometry-inverse",
                 ))
@@ -272,8 +263,7 @@ pub fn bind_inverse_ops(
                 .definition()
                 .no_external_effect()
                 .aftermath(inverse(
-                    [DeclaredPreImageLocus::from_field(reads.balance)
-                        .expect("owned inverse field is valid")],
+                    [DeclaredPreImageLocus::from_field(reads.balance)],
                     256,
                     "inverse-v2",
                 ))
@@ -290,10 +280,8 @@ pub fn bind_inverse_ops(
                 .no_external_effect()
                 .aftermath(inverse(
                     [
-                        DeclaredPreImageLocus::from_field(reads.note)
-                            .expect("owned inverse field is valid"),
-                        DeclaredPreImageLocus::from_field(reads.frozen)
-                            .expect("owned inverse field is valid"),
+                        DeclaredPreImageLocus::from_field(reads.note),
+                        DeclaredPreImageLocus::from_field(reads.frozen),
                     ],
                     256,
                     "account-fields-inverse",
@@ -312,10 +300,8 @@ pub fn bind_inverse_ops(
                 .no_external_effect()
                 .aftermath(inverse(
                     [
-                        DeclaredPreImageLocus::from_field(reads.frozen)
-                            .expect("owned inverse field is valid"),
-                        DeclaredPreImageLocus::from_field(reads.note)
-                            .expect("owned inverse field is valid"),
+                        DeclaredPreImageLocus::from_field(reads.frozen),
+                        DeclaredPreImageLocus::from_field(reads.note),
                     ],
                     256,
                     "account-fields-inverse",
@@ -349,16 +335,13 @@ pub fn bind_escaping_ops(schema: FixtureBuilder, ability: FixtureAbilityRef) -> 
         DeathNoticeEffect::reference(),
         DEATH_NOTICE_RAIL,
         DeclaredApplicationAftermathContract::runtime_with_external_owner(
-            DeclaredCorrectionMechanism::Compensation(
-                DeclaredCompensation::new(
-                    "confirm-death-notice-with-authority",
-                    DeclaredAftermathPostcondition::BusinessPostcondition {
-                        identity: "death-notice-confirmed".into(),
-                    },
-                )
-                .unwrap(),
-            ),
-            DeclaredReconciliationProcedure::new("confirm-death-notice-with-authority").unwrap(),
+            DeclaredCorrectionMechanism::Compensation(DeclaredCompensation::new(
+                "confirm-death-notice-with-authority",
+                DeclaredAftermathPostcondition::BusinessPostcondition {
+                    identity: "death-notice-confirmed".into(),
+                },
+            ),),
+            DeclaredReconciliationProcedure::new("confirm-death-notice-with-authority"),
         )
     );
     bind_escaping_principal_op!(

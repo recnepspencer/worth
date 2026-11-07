@@ -58,6 +58,11 @@ pub struct PreviewBindingCounters {
 }
 
 impl PreviewBindingCounters {
+    pub(super) fn for_identity_refusal() -> Self {
+        let mut counters = Self::for_admitted_path();
+        counters.preview_session_admission_count = 0;
+        counters
+    }
     pub fn preview_session_admission_count(&self) -> usize {
         self.preview_session_admission_count
     }

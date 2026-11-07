@@ -1,6 +1,32 @@
+#[path = "root_region_access/kind_directory.rs"]
+mod kind_directory;
 use super::*;
 
 impl RelationalBranchRoot {
+    pub(crate) fn reconstruct_region_head(
+        &self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: PartitionId,
+    ) -> Result<
+        Option<crate::storage::residency::ReconstructedRegionHead>,
+        crate::storage::residency::RelationalResidencyDemandFailure,
+    > {
+        self.regions
+            .get(id)
+            .map(|region| region.partition.reconstruct_head(lane, execution))
+            .transpose()
+    }
+
+    pub(crate) fn live_counts(&self) -> crate::storage::residency::LiveRecordCounts {
+        self.regions.live_counts()
+    }
+    pub(crate) fn commit_change(
+        &self,
+    ) -> Option<&Arc<crate::storage::substrate::maintenance::CommitChange>> {
+        self.committed.as_ref()?.commit_change.as_ref()
+    }
+
     pub(crate) fn accepted_head_region_witness(
         &self,
         id: PartitionId,
@@ -28,6 +54,25 @@ impl RelationalBranchRoot {
         self.regions
             .get(id)
             .map(|region| region.partition.pin_lease())
+            .transpose()
+    }
+
+    pub(crate) fn accepted_full_region(&self, id: PartitionId) -> Option<&PartitionState> {
+        self.regions.get(id)?.partition.accepted_full_partition()
+    }
+    pub(crate) fn demand_region_full(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: PartitionId,
+    ) -> Result<
+        Option<
+            crate::storage::residency::RelationalResidencyLease<crate::storage::residency::Full>,
+        >,
+        crate::storage::residency::RelationalResidencyDemandFailure,
+    > {
+        self.regions
+            .get(id)
+            .map(|region| region.partition.demand_full(execution, 1 << 30))
             .transpose()
     }
 
@@ -176,6 +221,8 @@ impl RelationalBranchRoot {
         symbols: &crate::runtime::RuntimeSymbolTable,
         partitions: impl IntoIterator<Item = PartitionId>,
     ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        crate::execution::check_request(execution)
+            .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request)?;
         for partition in partitions {
             if let Some(region) = self.regions.get(partition) {
                 region
@@ -256,6 +303,8 @@ impl RelationalBranchRoot {
                     partition_id: region.partition_id,
                     content_digest: region.content_digest,
                     kind_commitment: region.kind_commitment,
+                    directory: region.directory.clone(),
+                    live_counts: region.live_counts,
                     entity_slots: region.entity_slots,
                     relation_slots: region.relation_slots,
                     unavailable_records: region.materialization_unavailable_records(),

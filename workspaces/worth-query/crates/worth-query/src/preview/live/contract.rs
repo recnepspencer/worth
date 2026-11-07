@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::live::LiveQueryPlan;
 use crate::preview::binding::PreviewSessionPlanBinding;
 use crate::preview::execution::PreviewExecutionError;
@@ -53,6 +54,7 @@ impl PreviewLiveCounters {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PreviewLiveFailureClass {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     PreviewLiveQueryDigestMismatch,
     PreviewLivePlanDigestMismatch,
     PreviewLiveCollectionDigestMismatch,
@@ -71,6 +73,16 @@ pub struct PreviewLiveError {
 }
 
 impl PreviewLiveError {
+    pub(in crate::preview) fn identity_refused(
+        cause: IdentityDerivationDenial,
+        counters: PreviewLiveCounters,
+    ) -> Self {
+        Self {
+            failure_class: PreviewLiveFailureClass::EvidenceIdentityDerivationDenied(cause),
+            message: "preview live evidence identity refused",
+            counters,
+        }
+    }
     pub fn failure_class(&self) -> &PreviewLiveFailureClass {
         &self.failure_class
     }

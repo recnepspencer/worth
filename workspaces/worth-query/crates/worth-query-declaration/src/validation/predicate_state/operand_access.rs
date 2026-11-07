@@ -20,6 +20,9 @@ pub(super) fn comparison_scalar(
 pub(super) fn string_scalar(predicate: &CanonicalPredicateEntry) -> &str {
     match scalar_operand(predicate).as_native() {
         worth_foundational::facade::AspectValue::String(
+            worth_foundational::facade::InternedString::Stored(value),
+        ) => value.as_str(),
+        worth_foundational::facade::AspectValue::String(
             worth_foundational::facade::InternedString::Raw(value),
         ) => value,
         _ => unreachable!("string predicate expected string scalar"),

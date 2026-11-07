@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -22,7 +23,7 @@ impl WorthQueryPublicBridgeProjectionConsumptionEvidence {
         source_identity: impl Into<String>,
         extracted_fact_count: usize,
         requested_field: impl Into<String>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let consumed_title = consumed_title.into();
         let receipt_digest = receipt_digest.into();
         let fact_set_digest = fact_set_digest.into();
@@ -55,8 +56,8 @@ impl WorthQueryPublicBridgeProjectionConsumptionEvidence {
             WorthQueryEvidenceTag::new("requested_field"),
             &requested_field,
         )
-        .seal();
-        Self {
+        .seal()?;
+        Ok(Self {
             consumed_title,
             receipt_digest,
             fact_set_digest,
@@ -64,7 +65,7 @@ impl WorthQueryPublicBridgeProjectionConsumptionEvidence {
             extracted_fact_count,
             requested_field,
             digest,
-        }
+        })
     }
 
     pub fn consumed_title(&self) -> &str {

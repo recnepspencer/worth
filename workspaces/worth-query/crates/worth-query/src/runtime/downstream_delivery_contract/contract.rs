@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryRuntimeDownstreamDeliveryClass {
@@ -47,11 +48,15 @@ pub struct WorthQueryRuntimeDownstreamDeliveryContract {
 }
 
 impl WorthQueryRuntimeDownstreamDeliveryContract {
-    pub fn from_support_profile(profile: &WorthQueryRuntimeSupportProfile) -> Self {
-        Self::from_backend_posture(profile.posture())
+    pub fn from_support_profile(
+        profile: &WorthQueryRuntimeSupportProfile,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::from_backend_posture(profile.posture())?)
     }
 
-    pub fn from_backend_posture(backend_posture: WorthQueryRuntimeBackendPosture) -> Self {
+    pub fn from_backend_posture(
+        backend_posture: WorthQueryRuntimeBackendPosture,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let support = worth_query_lower_runtime_support_matrix();
         let runtime_resume = support
             .support_for(WorthQueryLowerRuntimeSeamKey::BasisReadmissionFromSubscriptionEvidence)
@@ -68,9 +73,9 @@ impl WorthQueryRuntimeDownstreamDeliveryContract {
         });
         let durable_resume_support_status =
             aggregate_support_posture(durable_resume_rows.iter().map(|row| row.posture()));
-        let runtime_resume_support_identity = lower_runtime_support_row_identity(runtime_resume);
+        let runtime_resume_support_identity = lower_runtime_support_row_identity(runtime_resume)?;
         let durable_resume_support_identity =
-            lower_runtime_support_rows_aggregate_identity(durable_resume_rows);
+            lower_runtime_support_rows_aggregate_identity(durable_resume_rows)?;
         let runtime_resume_support_status = runtime_resume.posture();
         let contract_identity = runtime_downstream_delivery_contract_identity(
             backend_posture,
@@ -79,14 +84,14 @@ impl WorthQueryRuntimeDownstreamDeliveryContract {
             durable_resume_support_status,
             &durable_resume_support_identity,
         );
-        Self {
+        Ok(Self {
             backend_posture,
             runtime_resume_support_status,
             runtime_resume_support_identity,
             durable_resume_support_status,
             durable_resume_support_identity,
             contract_identity,
-        }
+        })
     }
 
     pub fn backend_posture(&self) -> WorthQueryRuntimeBackendPosture {

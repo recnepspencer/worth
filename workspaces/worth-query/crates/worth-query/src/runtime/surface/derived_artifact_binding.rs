@@ -80,7 +80,7 @@ impl WorthQueryDerivedArtifactBinding {
                         .iter()
                         .map(WorthQueryDerivedMaterializationTarget::terminal_view_name_projection),
                 )
-                .seal();
+                .seal()?;
 
         Ok(Self {
             artifact_name,
@@ -146,6 +146,7 @@ fn terminal_target_view_names(targets: &[WorthQueryDerivedMaterializationTarget]
 
 #[cfg(test)]
 mod tests {
+    use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
     use std::collections::BTreeMap;
 
     use worth_foundational::facade::{AspectValue, CanonicalFieldPath, FieldKey, InternedString};
@@ -168,46 +169,52 @@ mod tests {
         .expect("retained row should build")
     }
 
-    fn retained_row(view_name: &str, value: &str) -> WorthQueryDerivedMaterializationResult {
-        WorthQueryDerivedMaterializationResult::from_retained_rows(
+    fn retained_row(
+        view_name: &str,
+        value: &str,
+    ) -> Result<WorthQueryDerivedMaterializationResult, IdentityDerivationDenial> {
+        Ok(WorthQueryDerivedMaterializationResult::from_retained_rows(
             vec![scalar_row(
                 "value",
                 crate::runtime::WorthQueryAuthoredAspectMutation::native_string_value(value),
             )],
             WorthQueryDerivedMaterializationReceipt::test_only(
                 view_name,
-                crate::memory_workspace::admit_external_snapshot_label("snapshot-test"),
+                crate::memory_workspace::admit_external_snapshot_label("snapshot-test")?,
                 format!("{view_name}-digest"),
             ),
-        )
+        ))
     }
 
-    fn binding() -> (
-        WorthQueryDerivedArtifactBinding,
-        WorthQueryDerivedViewHandle<WorthQueryUnrefinedLiveShape>,
-        WorthQueryDerivedViewHandle<WorthQueryUnrefinedLiveShape>,
-        WorthQueryDerivedViewHandle<WorthQueryUnrefinedLiveShape>,
-    ) {
+    fn binding() -> Result<
+        (
+            WorthQueryDerivedArtifactBinding,
+            WorthQueryDerivedViewHandle<WorthQueryUnrefinedLiveShape>,
+            WorthQueryDerivedViewHandle<WorthQueryUnrefinedLiveShape>,
+            WorthQueryDerivedViewHandle<WorthQueryUnrefinedLiveShape>,
+        ),
+        IdentityDerivationDenial,
+    > {
         let first = WorthQueryDerivedViewHandle::new("derived.first");
         let second = WorthQueryDerivedViewHandle::new("derived.second");
         let third = WorthQueryDerivedViewHandle::new("derived.third");
         let bundle = WorthQueryDerivedMaterializationBundle::new(
-            crate::memory_workspace::admit_external_snapshot_label("snapshot-test"),
+            crate::memory_workspace::admit_external_snapshot_label("snapshot-test")?,
             BTreeMap::from([
                 (
                     WorthQueryDerivedMaterializationTarget::from(&first),
-                    retained_row(first.name(), "first"),
+                    retained_row(first.name(), "first")?,
                 ),
                 (
                     WorthQueryDerivedMaterializationTarget::from(&second),
-                    retained_row(second.name(), "second"),
+                    retained_row(second.name(), "second")?,
                 ),
                 (
                     WorthQueryDerivedMaterializationTarget::from(&third),
-                    retained_row(third.name(), "third"),
+                    retained_row(third.name(), "third")?,
                 ),
             ]),
-        );
+        )?;
         let binding = WorthQueryDerivedArtifactBinding::bind(
             bundle,
             "test.binding",
@@ -218,7 +225,7 @@ mod tests {
             ],
         )
         .expect("binding should succeed");
-        (binding, first, second, third)
+        Ok((binding, first, second, third))
     }
 
     fn retained_string_value(
@@ -233,27 +240,31 @@ mod tests {
             .expect("bound materialization should carry one row")
             .scalar_value_at(&value_path)
             .expect("bound materialization should carry value field");
-        let AspectValue::String(InternedString::Raw(value)) = value else {
+        let Some(value) = (value).raw_text() else {
             panic!("expected retained string value, got {value:?}");
         };
-        value.clone()
+        value.to_owned()
     }
 
     #[test]
-    fn row_pair_uses_bound_retained_artifact_identity() {
-        let (binding, first, second, _) = binding();
+    fn row_pair_uses_bound_retained_artifact_identity() -> Result<(), IdentityDerivationDenial> {
+        let (binding, first, second, _) = binding()?;
 
         assert_eq!(retained_string_value(&binding, &first), "first");
         assert_eq!(retained_string_value(&binding, &second), "second");
+
+        Ok(())
     }
 
     #[test]
-    fn row_triple_uses_bound_retained_artifact_identity() {
-        let (binding, first, second, third) = binding();
+    fn row_triple_uses_bound_retained_artifact_identity() -> Result<(), IdentityDerivationDenial> {
+        let (binding, first, second, third) = binding()?;
 
         assert_eq!(retained_string_value(&binding, &first), "first");
         assert_eq!(retained_string_value(&binding, &second), "second");
         assert_eq!(retained_string_value(&binding, &third), "third");
+
+        Ok(())
     }
 
     fn retained_field_path(path: &str) -> Result<WorthQueryRetainedFieldPath, String> {

@@ -1,4 +1,5 @@
 use super::handoff_execution_binding_identity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::intent_admission::{
     WorthQueryDerivedInspectionExecutionHandoff, WorthQueryDerivedMaterializationExecutionHandoff,
     WorthQueryIntentAdmissionCoveredEntrypoint, WorthQueryIntentAdmissionExecutionSeam,
@@ -18,15 +19,17 @@ pub struct WorthQueryDerivedInspectionExecutionBinding {
 }
 
 impl WorthQueryDerivedMaterializationExecutionBinding {
-    pub(crate) fn from_handoff(handoff: WorthQueryDerivedMaterializationExecutionHandoff) -> Self {
+    pub(crate) fn from_handoff(
+        handoff: WorthQueryDerivedMaterializationExecutionHandoff,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let binding_digest = handoff_execution_binding_identity(
             "derived-materialization-execution",
             handoff.handoff_digest(),
-        );
-        Self {
+        )?;
+        Ok(Self {
             handoff,
             binding_digest,
-        }
+        })
     }
 
     pub fn family(&self) -> WorthQueryIntentAdmissionFamily {
@@ -55,15 +58,17 @@ impl WorthQueryDerivedMaterializationExecutionBinding {
 }
 
 impl WorthQueryDerivedInspectionExecutionBinding {
-    pub(crate) fn from_handoff(handoff: WorthQueryDerivedInspectionExecutionHandoff) -> Self {
+    pub(crate) fn from_handoff(
+        handoff: WorthQueryDerivedInspectionExecutionHandoff,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let binding_digest = handoff_execution_binding_identity(
             "derived-inspection-execution",
             handoff.handoff_digest(),
-        );
-        Self {
+        )?;
+        Ok(Self {
             handoff,
             binding_digest,
-        }
+        })
     }
 
     pub fn family(&self) -> WorthQueryIntentAdmissionFamily {

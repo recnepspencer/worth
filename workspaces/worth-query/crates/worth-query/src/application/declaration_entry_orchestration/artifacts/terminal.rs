@@ -1,4 +1,5 @@
 use crate::application::{WorthQueryDeclarationInput, WorthQueryDomainEntryMarker};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[cfg(test)]
 use super::outcome::WorthQueryDeclarationEntryOrchestrationOutcome;
@@ -14,6 +15,7 @@ pub enum WorthQueryDeclarationEntryOrchestrationTerminalError<
     D: WorthQueryDomainEntryMarker,
     I: WorthQueryDeclarationInput<D>,
 > {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     Deferred(WorthQueryDeclarationEntryOrchestrationDeferred<D, I>),
     Denied(WorthQueryDeclarationEntryOrchestrationDenied<D, I>),
     Stale(WorthQueryDeclarationEntryOrchestrationStale<D, I>),
@@ -27,6 +29,7 @@ impl<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>
 {
     pub fn reason(&self) -> &'static str {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => "canonical evidence identity refused",
             Self::Deferred(outcome) => outcome.reason(),
             Self::Denied(outcome) => outcome.reason(),
             Self::Stale(outcome) => outcome.reason(),
@@ -67,5 +70,13 @@ pub(crate) fn terminal_error_from_outcome<
         WorthQueryDeclarationEntryOrchestrationOutcome::Refused(outcome) => {
             Err(WorthQueryDeclarationEntryOrchestrationTerminalError::Refused(outcome))
         }
+    }
+}
+
+impl<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>
+    From<IdentityDerivationDenial> for WorthQueryDeclarationEntryOrchestrationTerminalError<D, I>
+{
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
     }
 }

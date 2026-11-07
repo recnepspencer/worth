@@ -40,25 +40,21 @@ fn base<Q: ApplicationQueryMarkerIdentity<Schema, ResultBinding = RowBinding>>(
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
 }
-pub fn source() -> ApplicationQueryDefinition<Schema, SourceQuery, Parameters, Row, Record> {
+pub fn source() -> ApplicationQueryDefinitionBuilder<Schema, SourceQuery, Parameters, Row, Record> {
     base(SourceQuery::reference())
         .root_path(
             ApplicationQueryRootPath::from(Record::reference())
                 .forward(ContainsSamples::reference()),
         )
         .order_by(key(), ApplicationQueryOrderingDirection::Ascending)
-        .build()
-        .unwrap()
 }
 fn probe() -> ApplicationQueryParameterRef<ExactQuery, ProbeSlot, ProbeBinding> {
     ApplicationQueryParameterRef::from_query_identifier("minimum")
 }
-pub fn exact() -> ApplicationQueryDefinition<Schema, ExactQuery, Parameters, Row, Record> {
+pub fn exact() -> ApplicationQueryDefinitionBuilder<Schema, ExactQuery, Parameters, Row, Record> {
     base(ExactQuery::reference())
         .managed_index_refined(Index::reference(), probe())
         .order_by(key(), ApplicationQueryOrderingDirection::Ascending)
-        .build()
-        .unwrap()
 }
 impl<Q: ApplicationQueryMarkerIdentity<Schema>> WorthQueryApplicationProjection<Schema, Q> for Row {
     fn project(
@@ -97,8 +93,8 @@ worth_query_query_binding!(pub FindBinding for Find,schema Schema,identity "cont
  scope Key, field Key::at("Key"),value find_root,limits results 32);
 
 worth_query_application_query!(pub StateQuery for Schema,identity "content-source.state.v1",parameters ParametersBinding,result RowBinding,scope Record=>"Record",name "content_state");
-pub fn state() -> ApplicationQueryDefinition<Schema, StateQuery, Parameters, Row, Record> {
-    base(StateQuery::reference()).build().unwrap()
+pub fn state() -> ApplicationQueryDefinitionBuilder<Schema, StateQuery, Parameters, Row, Record> {
+    base(StateQuery::reference())
 }
 #[derive(Clone, Debug, WorthValue)]
 #[worth_value(crate = "worth_query_decl::facade::application_schema")]

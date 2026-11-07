@@ -34,14 +34,21 @@ impl SubscriptionConsumerAttachmentError {
 }
 
 impl QueryDeliveryError {
-    pub fn source_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.source_identity
+    pub fn source_identity(
+        &self,
+    ) -> Result<
+        &WorthQueryEvidenceIdentity,
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    > {
+        self.source_identity.as_ref().map_err(|cause| *cause)
     }
-
     pub fn source_projection(
         &self,
-    ) -> QueryProjectionIdentity<String, QuerySubscriptionIdentityKind> {
-        subscription_evidence_projection(self.source_identity())
+    ) -> Result<
+        QueryProjectionIdentity<String, QuerySubscriptionIdentityKind>,
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    > {
+        Ok(subscription_evidence_projection(self.source_identity()?))
     }
 }
 

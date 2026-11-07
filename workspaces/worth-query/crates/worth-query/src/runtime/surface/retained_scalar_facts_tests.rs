@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::BTreeMap;
 
 use worth_foundational::facade::{AspectValue, CanonicalFieldPath, FieldKey};
@@ -26,8 +27,9 @@ fn retained_row(
         .expect("retained row should build")
 }
 
-fn binding() -> WorthQueryDerivedArtifactBinding {
-    let snapshot_identity = crate::memory_workspace::admit_external_snapshot_label("snapshot:test");
+fn binding() -> Result<WorthQueryDerivedArtifactBinding, IdentityDerivationDenial> {
+    let snapshot_identity =
+        crate::memory_workspace::admit_external_snapshot_label("snapshot:test")?;
     let materialization = WorthQueryDerivedMaterializationResult::from_retained_rows(
         vec![retained_row([
             ("authority_snapshot_id", AspectValue::Int64(7)),
@@ -46,9 +48,11 @@ fn binding() -> WorthQueryDerivedArtifactBinding {
     let bundle = WorthQueryDerivedMaterializationBundle::new(
         snapshot_identity,
         BTreeMap::from([(target.clone(), materialization)]),
-    );
-    WorthQueryDerivedArtifactBinding::bind(bundle, "artifact:test", [target])
-        .expect("binding should build")
+    )?;
+    Ok(
+        WorthQueryDerivedArtifactBinding::bind(bundle, "artifact:test", [target])
+            .expect("binding should build"),
+    )
 }
 
 fn view_handle() -> WorthQueryDerivedViewHandle<crate::runtime::WorthQueryUnrefinedLiveShape> {
@@ -56,13 +60,13 @@ fn view_handle() -> WorthQueryDerivedViewHandle<crate::runtime::WorthQueryUnrefi
 }
 
 #[test]
-fn retained_scalar_fact_set_reads_nested_fields() {
+fn retained_scalar_fact_set_reads_nested_fields() -> Result<(), IdentityDerivationDenial> {
     let view = view_handle();
     let truth_basis_digest =
         retained_field_path("nested.truth_basis_digest_hex").expect("field path should parse");
     let authority_snapshot_id =
         retained_field_path("authority_snapshot_id").expect("field path should parse");
-    let facts = binding()
+    let facts = binding()?
         .consume_scalar_fields(
             &view,
             [truth_basis_digest.clone(), authority_snapshot_id.clone()],
@@ -81,13 +85,15 @@ fn retained_scalar_fact_set_reads_nested_fields() {
         Some(&crate::runtime::WorthQueryAuthoredAspectMutation::native_string_value("basis:test"))
     );
     assert!(!facts.fact_set_digest().is_empty());
+
+    Ok(())
 }
 
 #[test]
-fn retained_scalar_fact_set_rejects_missing_field() {
+fn retained_scalar_fact_set_rejects_missing_field() -> Result<(), IdentityDerivationDenial> {
     let view = view_handle();
     let missing_field = retained_field_path("missing.field").expect("field path should parse");
-    let error = binding()
+    let error = binding()?
         .consume_scalar_fields(&view, [missing_field])
         .expect_err("missing field should fail");
 
@@ -95,6 +101,8 @@ fn retained_scalar_fact_set_rejects_missing_field() {
         error,
         crate::runtime::WorthQueryRuntimeError::RetainedRowDecode { .. }
     ));
+
+    Ok(())
 }
 
 fn retained_field_path(path: &str) -> Result<WorthQueryRetainedFieldPath, String> {

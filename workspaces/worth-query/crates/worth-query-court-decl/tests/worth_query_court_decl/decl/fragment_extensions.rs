@@ -230,22 +230,70 @@ fn a_principal_requirement_accepts_an_identity_field_selected_from_an_extension(
         type Bindings = Bindings;
         type Members = (Extend<Principal, (Option<ItemIdentity>,)>,);
     }
-    let schema = ApplicationSchemaDeclarationBuilder::<Composition<()>>::from_fragment(
-        Composition::<(Model, Identity)>(std::marker::PhantomData),
-    )
-    .unwrap()
-    .build()
-    .unwrap();
+    struct Mapping;
+    impl Entity for Mapping {
+        const NAME: &'static str = "mapping";
+        type Aspects = (worth_query_testkit_decl::fragment_auth_fixture::MappingIdentity,);
+        type Relations = (MapsTo,);
+    }
+    struct MapsTo;
+    impl Relation for MapsTo {
+        const NAME: &'static str = "maps_to";
+        type To = Principal;
+    }
+    struct Authentication;
+    impl Fragment for Authentication {
+        const NAME: &'static str = "extension_authentication";
+        type Bindings = Bindings;
+        type Members = (Mapping,);
+    }
+    struct Actor;
     let selection: FieldSelection<_, _, _, u64> =
         select_field(Identity, Principal, ItemIdentity, "id");
-    assert!(selection
-        .installed(schema.member_provenance().fragment_catalog())
-        .is_ok());
-    assert!(ApplicationPrincipalIdentityRequirement::<
+    let principal = ApplicationPrincipalBindingRef::<
         Composition<()>,
+        Actor,
+        Mapping,
         Principal,
         u64,
         IdentityValueBinding,
-    >::from_record(Identity, selection.resolve().unwrap())
-    .is_ok());
+    >::from_requirements(
+        "actor",
+        ApplicationPrincipalBindingRequirements {
+            mapping_identity: ApplicationPrincipalMappingIdentityRequirement::from_record(
+                record_field(
+                    Authentication,
+                    Mapping,
+                    worth_query_testkit_decl::fragment_auth_fixture::MappingIdentity,
+                    "external",
+                ),
+            ),
+            mapping_status: ApplicationPrincipalMappingStatusRequirement::from_record(
+                record_field(
+                    Authentication,
+                    Mapping,
+                    worth_query_testkit_decl::fragment_auth_fixture::MappingIdentity,
+                    "status",
+                ),
+            ),
+            target: ApplicationPrincipalTargetRequirement::from_relation(relation(
+                Authentication,
+                Mapping,
+                MapsTo,
+            )),
+            principal_identity: ApplicationPrincipalIdentityRequirement::from_record(
+                Identity, selection,
+            ),
+        },
+    );
+    let schema = ApplicationSchemaDeclarationBuilder::<Composition<()>>::from_fragment(
+        Composition::<(Model, Identity, Authentication)>(std::marker::PhantomData),
+    )
+    .unwrap()
+    .principal_binding(principal)
+    .build()
+    .unwrap();
+    assert!(selection
+        .installed(schema.member_provenance().fragment_catalog())
+        .is_ok());
 }

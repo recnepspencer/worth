@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod resolved;
 
 use crate::evidence_identity::{
@@ -130,34 +131,37 @@ impl ResolvedSnapshotIdentity {
         &self.lineage_class
     }
 
-    fn evidence_identity(&self) -> WorthQueryEvidenceIdentity {
-        worth_query_evidence_identity(WorthQueryEvidenceScope::ResolvedSnapshotBasis)
-            .field_shape(
-                WorthQueryEvidenceTag::new("authority_family"),
-                self.authority_family.as_str(),
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("snapshot_identity"),
-                &self.snapshot_identity,
-            )
-            .field_digest(
-                WorthQueryEvidenceTag::new("schema_basis"),
-                self.schema_basis().digest(),
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("lineage_class"),
-                self.lineage_class.as_str(),
-            )
-            .optional_value(
-                WorthQueryEvidenceTag::new("workspace_scope"),
-                self.workspace_scope.as_deref(),
-            )
-            .seal()
+    fn evidence_identity(&self) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(
+            worth_query_evidence_identity(WorthQueryEvidenceScope::ResolvedSnapshotBasis)
+                .field_shape(
+                    WorthQueryEvidenceTag::new("authority_family"),
+                    self.authority_family.as_str(),
+                )
+                .field_evidence_identity(
+                    WorthQueryEvidenceTag::new("snapshot_identity"),
+                    &self.snapshot_identity,
+                )
+                .field_digest(
+                    WorthQueryEvidenceTag::new("schema_basis"),
+                    self.schema_basis().digest(),
+                )
+                .field_shape(
+                    WorthQueryEvidenceTag::new("lineage_class"),
+                    self.lineage_class.as_str(),
+                )
+                .optional_value(
+                    WorthQueryEvidenceTag::new("workspace_scope"),
+                    self.workspace_scope.as_deref(),
+                )
+                .seal()?,
+        )
     }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum BasisResolutionError {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     UnsupportedBasisKind,
     ResolutionIdentityMismatch,
 }
@@ -220,7 +224,7 @@ pub fn resolve_snapshot_basis(
         intent,
         identity,
         resolution_mode,
-    ))
+    )?)
 }
 
 pub(crate) fn resolve_runtime_current_snapshot_basis(
@@ -248,7 +252,7 @@ pub(crate) fn resolve_runtime_historical_snapshot_basis(
     snapshot_identity: WorthQueryEvidenceIdentity,
     schema_basis: SchemaBasisDigest,
     workspace_scope: impl Into<String>,
-) -> ResolvedSnapshotBasis {
+) -> Result<ResolvedSnapshotBasis, IdentityDerivationDenial> {
     let reporting_label = snapshot_identity.as_str().to_string();
     let intent = ExecutionBasisIntent::new(
         BasisAuthorityFamily::Runtime,
@@ -262,12 +266,12 @@ pub(crate) fn resolve_runtime_historical_snapshot_basis(
         schema_basis,
         SnapshotLineageClass::ReplayEquivalent,
     );
-    ResolvedSnapshotBasis::new_with_reporting_label(
+    Ok(ResolvedSnapshotBasis::new_with_reporting_label(
         intent,
         identity,
         BasisResolutionMode::RuntimeDirect,
         reporting_label,
-    )
+    )?)
 }
 
 pub fn admit_runtime_current_snapshot_basis(
@@ -321,4 +325,10 @@ pub fn preflight_execution_basis(
         plan,
         basis,
     })
+}
+
+impl From<IdentityDerivationDenial> for BasisResolutionError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
+    }
 }

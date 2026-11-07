@@ -36,7 +36,8 @@ fn current_query_context_extracts_identity_and_row_bound_field_facts() {
                 ]),
             ),
     )
-    .bind_contract();
+    .bind_contract()
+    .expect("fixture digest must fit");
 
     let consumed = contract
         .extract_from_query_context_execution(&execution)
@@ -47,6 +48,7 @@ fn current_query_context_extracts_identity_and_row_bound_field_facts() {
         &crate::memory_workspace::admit_authored_entity_label(
             consumed.entity_identities()[0].source_row_identity(),
         )
+        .expect("fixture entity identity must fit")
     );
     assert_eq!(
         consumed.view_local_identities()[1].view_local_identity(),
@@ -88,7 +90,8 @@ fn query_context_extracts_bound_source_reference_metadata() {
             )
             .source_references(),
     )
-    .bind_contract();
+    .bind_contract()
+    .expect("fixture digest must fit");
 
     let consumed = contract
         .extract_from_query_context_execution(&execution)
@@ -129,7 +132,8 @@ fn query_context_extraction_rejects_result_shape_drift() {
             ]),
         ),
     )
-    .bind_contract();
+    .bind_contract()
+    .expect("fixture digest must fit");
     let mismatched = QueryContextExecutionArtifact::test_only(
         QueryContextExecutionFamily::RuntimeCurrent,
         "query:test",
@@ -161,7 +165,8 @@ fn query_context_extraction_rejects_missing_bound_source_reference() {
         binding_for_result_shape("result-shape:test", &[]),
         ProjectMaterializedFacts::declare().source_references(),
     )
-    .bind_contract();
+    .bind_contract()
+    .expect("fixture digest must fit");
     let missing_reference = QueryContextExecutionArtifact::test_only(
         QueryContextExecutionFamily::PreviewDerivedHistorical,
         "query:test",

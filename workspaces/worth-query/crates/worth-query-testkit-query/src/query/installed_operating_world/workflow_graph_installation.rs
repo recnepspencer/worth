@@ -28,7 +28,7 @@ pub fn installed_graph(
         )
         .unwrap()
         .start_workflow(&mut workspace)
-        .unwrap()
+        .unwrap().unwrap()
         .installed_graph()
         .stages()
         .iter()

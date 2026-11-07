@@ -1,10 +1,9 @@
 pub use worth_query_host::facade::declaration::application_query::{
-    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryLiveCauseBinding,
-    ApplicationQueryOrderingDirection, ApplicationQueryResultFieldRef,
-    ApplicationQueryResultRelationRef, ApplicationQueryResultShapeBuilder, ForwardResultTraversal,
-    ManyResults,
+    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
+    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryLiveCauseBinding, ApplicationQueryOrderingDirection,
+    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
+    ApplicationQueryResultShapeBuilder, ForwardResultTraversal, ManyResults,
 };
 pub use worth_query_host::facade::{declaration, primary_graph, worth_query_application_query};
 
@@ -48,7 +47,7 @@ worth_query_application_query!(
     name "temporal_intent_live_query"
 );
 
-pub fn temporal_intent_live_query_definition() -> ApplicationQueryDefinition<
+pub fn temporal_intent_live_query_definition() -> ApplicationQueryDefinitionBuilder<
     TemporalHostSchema,
     TemporalIntentLiveQuery,
     IntentLiveQueryParameters,
@@ -88,8 +87,6 @@ pub fn temporal_intent_live_query_definition() -> ApplicationQueryDefinition<
         )
         .continue_by(live_targets())
         .live_by::<TemporalIntent, TemporalIntentLiveCause>(scope_identity(), target_identity())
-        .build()
-        .expect("the temporal live query is canonical")
 }
 
 impl primary_graph::WorthQueryApplicationProjection<TemporalHostSchema, TemporalIntentLiveQuery>

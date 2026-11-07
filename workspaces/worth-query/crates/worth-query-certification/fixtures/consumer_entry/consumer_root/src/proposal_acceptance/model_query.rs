@@ -122,9 +122,7 @@ pub fn declare(
         .disclosure(disclosure::model())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
-        .requires_ability(super::access::ReadModels::reference())
-        .build()
-        .unwrap();
+        .requires_ability(super::access::ReadModels::reference());
     let target = ApplicationQueryDefinitionBuilder::declare(TargetQuery::reference())
         .root(Target::reference())
         .scope(Model::reference())
@@ -147,9 +145,7 @@ pub fn declare(
         .requires_ability(super::access::ReadModels::reference())
         .root_path(
             ApplicationQueryRootPath::from(Model::reference()).forward(ModelTarget::reference()),
-        )
-        .build()
-        .unwrap();
+        );
     schema
         .application_query(model)
         .application_query(target)

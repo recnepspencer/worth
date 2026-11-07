@@ -245,7 +245,7 @@ fn compat_http_cross_surface_parity_matrix_stays_narrow_and_retry_honest() {
     let direct_mutation_bundle = crate::shared_support_compat_http_phase_thirteen_bundle::WorthServerPhaseThirteenBundle::new()
         .with_digest(
             MUTATION_RESULT_DIGEST,
-            direct_mutation.mutation_result().result_digest(),
+            direct_mutation.mutation_result().result_digest().expect("admitted mutation result identity"),
         )
         .with_digest(
             SUPPORT_POSTURE_DIGEST,
@@ -260,7 +260,7 @@ fn compat_http_cross_surface_parity_matrix_stays_narrow_and_retry_honest() {
     let compat_mutation_bundle = crate::shared_support_compat_http_phase_thirteen_bundle::WorthServerPhaseThirteenBundle::new()
         .with_digest(
             MUTATION_RESULT_DIGEST,
-            compat_mutation.mutation_result().result_digest(),
+            compat_mutation.mutation_result().result_digest().expect("admitted mutation result identity"),
         )
         .with_digest(
             SUPPORT_POSTURE_DIGEST,
@@ -278,7 +278,7 @@ fn compat_http_cross_surface_parity_matrix_stays_narrow_and_retry_honest() {
     let first_retry_bundle = crate::shared_support_compat_http_phase_thirteen_bundle::WorthServerPhaseThirteenBundle::new()
         .with_digest(
             MUTATION_RESULT_DIGEST,
-            first_retry_attempt.mutation_result().result_digest(),
+            first_retry_attempt.mutation_result().result_digest().expect("admitted mutation result identity"),
         )
         .with_digest(
             RESPONSE_DIGEST,
@@ -303,7 +303,7 @@ fn compat_http_cross_surface_parity_matrix_stays_narrow_and_retry_honest() {
     let resolved_retry_bundle = crate::shared_support_compat_http_phase_thirteen_bundle::WorthServerPhaseThirteenBundle::new()
         .with_digest(
             MUTATION_RESULT_DIGEST,
-            resolved_retry.mutation_result().result_digest(),
+            resolved_retry.mutation_result().result_digest().expect("admitted mutation result identity"),
         )
         .with_digest(
             RESPONSE_DIGEST,

@@ -78,6 +78,7 @@ fn shared_read_pinning_inventory_evidence() -> WorthQuerySharedReadPinningInvent
             .map(|row| row.function()),
     )
     .seal()
+    .expect("fixture digest must fit")
     .as_str()
     .to_string();
     WorthQuerySharedReadPinningInventoryEvidence::new(
@@ -158,7 +159,11 @@ fn evidence_digest(
             value,
         );
     }
-    builder.seal().as_str().to_string()
+    builder
+        .seal()
+        .expect("fixture digest must fit")
+        .as_str()
+        .to_string()
 }
 
 fn generation_ordinal(

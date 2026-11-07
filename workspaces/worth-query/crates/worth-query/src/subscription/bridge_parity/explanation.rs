@@ -179,13 +179,26 @@ pub fn explain_query_subscription_bridge_parity(
 
     let parity_class = parity_class_for_family(declaration.family());
     let comparison_width =
-        SubscriptionBridgeParityWidth::new(3, lowering.bridge_slices().len(), 1, 1);
+        SubscriptionBridgeParityWidth::new(3, lowering.bridge_slices().len(), 1, 1).map_err(
+            |cause| {
+                QuerySubscriptionBridgeParityError::identity_refused(
+                    cause,
+                    witness.evidence_identity().clone(),
+                )
+            },
+        )?;
     let receipt = BridgeParityReceipt::new(
         *witness.assembly_posture(),
         parity_class,
         comparison_width,
         0,
-    );
+    )
+    .map_err(|cause| {
+        QuerySubscriptionBridgeParityError::identity_refused(
+            cause,
+            witness.evidence_identity().clone(),
+        )
+    })?;
     let counters = QuerySubscriptionBridgeParityCounters::admitted(parity_class);
     let counter_identity = counters.counter_identity();
     let comparison_identity = bridge_parity_comparison_identity(

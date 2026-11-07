@@ -5,8 +5,10 @@ use crate::runtime::{
 
 pub(in super::super::tests) fn live_support_matrix() -> WorthQueryRuntimePublicSupportMatrix {
     WorthQueryRuntimePublicSupportMatrix::from_public_api_contract(
-        &WorthQueryRuntimePublicApiContract::from_support_profile(&primary_support_profile()),
+        &WorthQueryRuntimePublicApiContract::from_support_profile(&primary_support_profile())
+            .expect("fixture digest must fit"),
     )
+    .expect("fixture digest must fit")
 }
 
 pub(in super::super::tests) fn support_snapshot_workspace(
@@ -23,8 +25,10 @@ pub(in super::super::tests) fn scaffold_support_matrix() -> WorthQueryRuntimePub
     WorthQueryRuntimePublicSupportMatrix::from_public_api_contract(
         &WorthQueryRuntimePublicApiContract::from_support_profile(
             &WorthQueryRuntimeSupportProfile::scaffold_backend_profile(),
-        ),
+        )
+        .expect("fixture digest must fit"),
     )
+    .expect("fixture digest must fit")
 }
 
 fn primary_support_profile() -> WorthQueryRuntimeSupportProfile {

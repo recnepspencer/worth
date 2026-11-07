@@ -23,19 +23,22 @@ pub(super) fn inspect<R>(
         entity,
         kind,
         field,
-        |value| {
-            // Native system text and native managed field text are two current representations,
-            // not two formats. A missing managed symbol never falls back to an ID or raw spelling.
-            let text = match value {
-                Some(AspectValue::String(InternedString::Raw(text))) => Some(text.as_str()),
-                Some(AspectValue::String(InternedString::Symbol(symbol))) => pinned
-                    .symbols()
-                    .resolve(worth_relational::facade::symbols::Symbol(symbol.0)),
-                _ => None,
-            };
-            inspect(text)
+        |value| match value {
+            Some(AspectValue::String(InternedString::Stored(text))) => {
+                Ok(inspect(Some(text.as_str())))
+            }
+            Some(AspectValue::String(InternedString::Raw(text))) => {
+                Ok(inspect(Some(text.as_str())))
+            }
+            Some(AspectValue::String(InternedString::Symbol(symbol))) => pinned.with_symbol_text(
+                execution,
+                worth_relational::facade::symbols::Symbol(symbol.0),
+                |text| inspect(text.map(|text| text.as_str())),
+            ),
+            _ => Ok(inspect(None)),
         },
     )
     .map_err(Denial::Relational)?
-    .ok_or(Denial::Corrupt)
+    .ok_or(Denial::Corrupt)?
+    .map_err(Denial::Relational)
 }

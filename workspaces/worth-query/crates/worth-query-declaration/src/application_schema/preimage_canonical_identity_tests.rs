@@ -81,15 +81,13 @@ fn identity(
             >::at(field))
         }
         _ => panic!("unknown fixture locus"),
-    }
-    .unwrap();
+    };
     let inverse = DeclaredRecordedInverse::new(
         "restore",
-        DeclaredLoweringCorrespondenceRef::new("exact-inverse").unwrap(),
+        DeclaredLoweringCorrespondenceRef::new("exact-inverse"),
         DeclaredAftermathPostcondition::ExactPriorTruth,
-        DeclaredPreImageDemand::new([locus], maximum_encoded_bytes).unwrap(),
-    )
-    .unwrap();
+        DeclaredPreImageDemand::new([locus], maximum_encoded_bytes),
+    );
     let definition = ApplicationOperationRef::<Schema, Operation, ()>::from_declaration()
         .definition()
         .no_external_effect()
@@ -97,7 +95,8 @@ fn identity(
             DeclaredCorrectionMechanism::RecordedInverse(inverse),
         ))
         .finish();
-    ApplicationSchemaDeclarationBuilder::<Schema>::for_schema()
+    ApplicationSchemaDeclarationBuilder::<Schema>::from_fragment(Fixture)
+        .unwrap()
         .operation(definition)
         .build()
         .unwrap()

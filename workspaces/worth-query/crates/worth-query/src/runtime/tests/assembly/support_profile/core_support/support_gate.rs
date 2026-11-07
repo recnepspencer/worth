@@ -56,7 +56,8 @@ fn runtime_public_support_gate_denies_deferred_and_unsupported_families_before_u
 
 #[test]
 fn runtime_public_api_naming_contract_prefers_workspace_surface_names() {
-    let contract = WorthQueryRuntime::public_api_naming_contract();
+    let contract =
+        WorthQueryRuntime::public_api_naming_contract().expect("fixture digest must fit");
 
     assert_eq!(contract.preferred_name_for("workspace"), Some("workspace"));
     assert_eq!(contract.preferred_name_for("insert"), Some("insert"));

@@ -19,6 +19,8 @@ mod canonical_identity;
 mod canonical_operation_identity;
 mod capabilities;
 mod content;
+mod correction_fields;
+mod principal_fields;
 pub use content::*;
 mod capability_identifier_validation;
 mod capability_member_closure;
@@ -64,6 +66,7 @@ mod mutation_description_validation;
 mod mutation_intent_traits;
 mod mutation_precondition;
 mod mutation_precondition_authoring;
+mod mutation_references;
 mod operation_component_read;
 mod operation_contract_cardinality;
 mod operation_definition;
@@ -291,10 +294,11 @@ pub use value_binding::{
     decode_canonical_value, decode_canonical_value_with_admission,
     decode_delegated_canonical_value, decode_delegated_canonical_value_with_admission,
     encode_application_binary_value, encode_application_document, encode_canonical_value,
-    encode_delegated_canonical_value, value_decode_error, ApplicationCanonicalValueContract,
-    ApplicationCanonicalValueReference, ApplicationCanonicalValueReferenceParts,
-    ApplicationEncodedScalarValue, ApplicationFieldBindingLocus, ApplicationFieldBindingOwnerKind,
-    ApplicationFieldBindingRecipe, ApplicationFrameIdentity, ApplicationIdentityScalarValueBinding,
+    encode_delegated_canonical_value, encode_stored_canonical_value, value_decode_error,
+    ApplicationCanonicalValueContract, ApplicationCanonicalValueReference,
+    ApplicationCanonicalValueReferenceParts, ApplicationEncodedScalarValue,
+    ApplicationFieldBindingLocus, ApplicationFieldBindingOwnerKind, ApplicationFieldBindingRecipe,
+    ApplicationFrameIdentity, ApplicationIdentityScalarValueBinding,
     ApplicationNativeInputAdmissionDenial, ApplicationNativeInputDecodeProfile,
     ApplicationNativeInputDecodeResources, ApplicationReadableScalarValueBinding,
     ApplicationScalarValueBinding, ApplicationSignedAggregateValueBinding,

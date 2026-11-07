@@ -1,4 +1,5 @@
 use crate::basis::ResolvedBasisProof;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::{
     AdmittedHistoricalPathClass, HistoricalCapabilityDescriptor, HistoricalEvaluationRequest,
@@ -6,8 +7,8 @@ use super::{
     ResolvedHistoricalPathClass,
 };
 
-fn basis(label: impl Into<String>) -> ResolvedBasisProof {
-    super::bridge_historical_basis(&label.into())
+fn basis(label: impl Into<String>) -> Result<ResolvedBasisProof, IdentityDerivationDenial> {
+    Ok(super::bridge_historical_basis(&label.into())?)
 }
 
 impl HistoricalEvaluationRequest {
@@ -16,8 +17,13 @@ impl HistoricalEvaluationRequest {
         replay_budget: usize,
         reconstruction_budget: usize,
         reuse: HistoricalPathReuseDescriptor,
-    ) -> Self {
-        Self::retained_snapshot(&basis(label), replay_budget, reconstruction_budget, reuse)
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::retained_snapshot(
+            &basis(label)?,
+            replay_budget,
+            reconstruction_budget,
+            reuse,
+        ))
     }
 
     pub(crate) fn delta_replay_for_test(
@@ -25,8 +31,13 @@ impl HistoricalEvaluationRequest {
         replay_budget: usize,
         reconstruction_budget: usize,
         reuse: HistoricalPathReuseDescriptor,
-    ) -> Self {
-        Self::delta_replay(&basis(label), replay_budget, reconstruction_budget, reuse)
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::delta_replay(
+            &basis(label)?,
+            replay_budget,
+            reconstruction_budget,
+            reuse,
+        ))
     }
 
     pub(crate) fn full_reconstruction_for_test(
@@ -34,8 +45,13 @@ impl HistoricalEvaluationRequest {
         replay_budget: usize,
         reconstruction_budget: usize,
         reuse: HistoricalPathReuseDescriptor,
-    ) -> Self {
-        Self::full_reconstruction(&basis(label), replay_budget, reconstruction_budget, reuse)
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::full_reconstruction(
+            &basis(label)?,
+            replay_budget,
+            reconstruction_budget,
+            reuse,
+        ))
     }
 }
 
@@ -43,22 +59,22 @@ impl HistoricalCapabilityDescriptor {
     pub(crate) fn retained_snapshot_for_test(
         label: impl Into<String>,
         reuse: HistoricalPathReuseDescriptor,
-    ) -> Self {
-        Self::retained_snapshot(&basis(label), reuse)
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::retained_snapshot(&basis(label)?, reuse))
     }
 
     pub(crate) fn delta_replay_for_test(
         label: impl Into<String>,
         reuse: HistoricalPathReuseDescriptor,
-    ) -> Self {
-        Self::delta_replay(&basis(label), reuse)
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::delta_replay(&basis(label)?, reuse))
     }
 
     pub(crate) fn full_reconstruction_for_test(
         label: impl Into<String>,
         reuse: HistoricalPathReuseDescriptor,
-    ) -> Self {
-        Self::full_reconstruction(&basis(label), reuse)
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::full_reconstruction(&basis(label)?, reuse))
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -70,36 +86,42 @@ impl HistoricalCapabilityDescriptor {
         retention_available: bool,
         historical_lookup_available: bool,
         reuse: HistoricalPathReuseDescriptor,
-    ) -> Self {
-        Self::new(
-            basis(label),
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
+            basis(label)?,
             admitted,
             replay_permitted,
             replay_required,
             retention_available,
             historical_lookup_available,
             reuse,
-        )
+        ))
     }
 }
 
 impl HistoricalMaterializationDescriptor {
-    pub(crate) fn retained_snapshot_for_test(label: impl Into<String>) -> Self {
-        Self::retained_snapshot(&basis(label))
+    pub(crate) fn retained_snapshot_for_test(
+        label: impl Into<String>,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::retained_snapshot(&basis(label)?))
     }
 
-    pub(crate) fn delta_replay_for_test(label: impl Into<String>) -> Self {
-        Self::delta_replay(&basis(label))
+    pub(crate) fn delta_replay_for_test(
+        label: impl Into<String>,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::delta_replay(&basis(label)?))
     }
 
-    pub(crate) fn full_reconstruction_for_test(label: impl Into<String>) -> Self {
-        Self::full_reconstruction(&basis(label))
+    pub(crate) fn full_reconstruction_for_test(
+        label: impl Into<String>,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::full_reconstruction(&basis(label)?))
     }
 
     pub(crate) fn new_for_test(
         label: impl Into<String>,
         resolved: ResolvedHistoricalPathClass,
-    ) -> Self {
-        Self::new(basis(label), resolved)
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(basis(label)?, resolved))
     }
 }

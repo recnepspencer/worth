@@ -59,12 +59,14 @@ pub(crate) struct PendingSymbolMeanings {
 pub(crate) struct PreparedSymbolPublication {
     owner: RuntimeSymbolTable,
     meanings: SymbolTableSnapshot,
+    admissions: super::admission_transfer::PreparedSymbolAdmissionTransfer,
     reservations: Vec<Arc<ReservedSymbolMeaning>>,
 }
 
 impl PreparedSymbolPublication {
     pub(crate) fn publish(self) -> Result<(), &'static str> {
-        let result = self.owner.import_canonical_snapshot(&self.meanings);
+        self.owner.import_canonical_snapshot(&self.meanings)?;
+        let result = self.admissions.publish(&self.owner);
         drop(self.reservations);
         result
     }
@@ -255,12 +257,16 @@ impl PendingSymbolMeanings {
     pub(crate) fn seal_for_publication(
         mut self,
         meanings: &SymbolTableSnapshot,
+        binding: &RuntimeSymbolTable,
+        required: impl IntoIterator<Item = Symbol>,
     ) -> Result<PreparedSymbolPublication, &'static str> {
         if meanings.entries.iter().any(|(symbol, text)| {
             symbol.0 == u32::MAX || self.interner.resolve(*symbol) != Some(text.as_str())
         }) {
             return Err("canonical text differs from candidate meaning");
         }
+        let admissions = binding.prepare_admission_transfer(&self.binding, &self.interner)?;
+        admissions.verify_required(required, binding, &self.owner, meanings)?;
         let reservations = meanings
             .entries
             .iter()
@@ -269,6 +275,7 @@ impl PendingSymbolMeanings {
         Ok(PreparedSymbolPublication {
             owner: self.owner,
             meanings: meanings.clone(),
+            admissions,
             reservations,
         })
     }

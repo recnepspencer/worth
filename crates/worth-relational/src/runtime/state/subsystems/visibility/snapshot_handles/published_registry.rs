@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::{Mutex, MutexGuard};
 
 use crate::identity::data::VersionId;
@@ -22,7 +22,7 @@ pub(super) struct PublishedSnapshotHandleRegistry {
 #[derive(Debug, Default)]
 struct PublishedSnapshotHandleEntries {
     by_id: HashMap<SnapshotId, SnapshotHandleBinding>,
-    by_version: HashMap<VersionId, SnapshotId>,
+    by_version: BTreeMap<VersionId, SnapshotId>,
     key_lookups: u64,
     mutations: u64,
 }
@@ -107,14 +107,11 @@ impl PublishedSnapshotHandleRegistry {
             .map(|binding| (snapshot_id, binding))
     }
 
-    /// Every version a published handle currently retains, collected so no
-    /// caller scans the registry while holding its lock.
-    pub(super) fn versions(&self) -> Vec<VersionId> {
+    pub(super) fn oldest_version(&self) -> Option<VersionId> {
         self.lock()
-            .by_id
-            .values()
-            .map(|binding| binding.version_id)
-            .collect()
+            .by_version
+            .first_key_value()
+            .map(|(version, _)| *version)
     }
 
     #[cfg(test)]

@@ -22,15 +22,17 @@ impl VisibilityProjectionView {
         demand: AdjacencyDemand,
     ) -> Result<(), Cause> {
         crate::execution::check_request(execution)?;
-        if self.resident.is_some() {
-            return Ok(());
-        }
         let Some(root) = self.selected_root() else {
             return Ok(());
         };
-        let source = crate::branch::SymbolAdmittedRootRead::new(root, &self.symbols);
+        let root_source = crate::branch::SymbolAdmittedRootRead::new(root, &self.symbols);
         if self.is_exact_basis() {
-            probe_head(execution, &source, |round| {
+            let source: &dyn crate::storage::overlay::CurrentPartitionAccess =
+                self.resident.as_ref().map_or(
+                    &root_source as &dyn crate::storage::overlay::CurrentPartitionAccess,
+                    |basis| basis,
+                );
+            probe_head(execution, source, |round| {
                 self.discover_adjacency(
                     execution,
                     entities.clone(),
@@ -61,7 +63,7 @@ impl VisibilityProjectionView {
             })
             .map_err(Cause::from)?
         } else {
-            probe_full(execution, &source, |round| {
+            probe_full(execution, &root_source, |round| {
                 self.discover_adjacency(
                     execution,
                     entities.clone(),

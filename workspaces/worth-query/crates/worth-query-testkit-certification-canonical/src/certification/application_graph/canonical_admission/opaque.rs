@@ -4,6 +4,23 @@ pub use worth_foundational::facade::{
     CanonicalValue, ValueCodecDenial, ValueDecodeAdmission, ValueDecodeBounds, ValueShapeBody,
 };
 thread_local! { static IGNORED_REFUSALS: std::cell::Cell<u32> = const { std::cell::Cell::new(0) }; }
+thread_local! {
+    static CONSULT: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    static DECODES: std::cell::Cell<u32> = const { std::cell::Cell::new(0) };
+    static SECOND_DECODE: std::cell::Cell<Option<usize>> = const { std::cell::Cell::new(None) };
+}
+pub(crate) fn begin_request() {
+    CONSULT.set(0);
+    DECODES.set(0);
+    SECOND_DECODE.set(None);
+}
+pub(crate) fn consult(ordinal: usize) {
+    CONSULT.set(ordinal);
+}
+pub(crate) fn second_decode_consult() -> Option<usize> {
+    SECOND_DECODE.get()
+}
+
 pub fn reset() {
     IGNORED_REFUSALS.set(0);
 }
@@ -41,8 +58,14 @@ impl CanonicalValue for SwallowingValue {
     ) -> Result<Self, Decoder::Error> {
         // Every cost originates in the real supported nested decoder. No made-up
         // stop, callback error, or budget arithmetic supplies the negative case.
+        DECODES.set(DECODES.get() + 1);
+        let second = DECODES.get() == 2;
         NestedValue::deserialize_admitted(decoder, bounds, &mut |work, bytes| {
-            if admission.admit(work, bytes).is_err() {
+            let result = admission.admit(work, bytes);
+            if second && work > 0 && SECOND_DECODE.get().is_none() {
+                SECOND_DECODE.set(Some(CONSULT.get()));
+            }
+            if result.is_err() {
                 IGNORED_REFUSALS.set(IGNORED_REFUSALS.get() + 1);
             }
             Ok(())

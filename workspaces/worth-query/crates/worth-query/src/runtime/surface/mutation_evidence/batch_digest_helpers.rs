@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -11,7 +12,7 @@ use crate::runtime::{
 
 pub(super) fn batch_target_digest(
     components: &[WorthQueryMutationTargetEvidence],
-) -> WorthQueryMutationEvidenceDigest {
+) -> Result<WorthQueryMutationEvidenceDigest, IdentityDerivationDenial> {
     let identity =
         worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
             .field_shape(WorthQueryEvidenceTag::new("role"), "batch-target")
@@ -20,68 +21,71 @@ pub(super) fn batch_target_digest(
                 components
                     .iter()
                     .map(target_component_identity)
-                    .collect::<Vec<_>>()
+                    .collect::<Result<Vec<_>, _>>()?
                     .iter(),
             )
-            .seal();
-    WorthQueryMutationEvidenceDigest::aggregate("batch-target", identity)
+            .seal()?;
+    Ok(WorthQueryMutationEvidenceDigest::aggregate(
+        "batch-target",
+        identity,
+    )?)
 }
 
 pub(super) fn batch_existing_truth_binding_digest(
     bindings: &[Option<WorthQueryExistingTruthBindingEvidence>],
-) -> Option<WorthQueryMutationEvidenceDigest> {
+) -> Result<Option<WorthQueryMutationEvidenceDigest>, IdentityDerivationDenial> {
     let bindings = bindings
         .iter()
         .flatten()
         .map(|binding| binding.binding_digest().evidence_identity().clone())
         .collect::<Vec<_>>();
     if bindings.is_empty() {
-        return None;
+        return Ok(None);
     }
-    Some(aggregate_sequence_identity(
+    Ok(Some(aggregate_sequence_identity(
         "batch-existing-truth-binding",
         bindings,
-    ))
+    )?))
 }
 
 pub(super) fn batch_existing_truth_assertion_digest(
     assertions: &[Option<WorthQueryExistingTruthAssertionEvidence>],
-) -> Option<WorthQueryMutationEvidenceDigest> {
+) -> Result<Option<WorthQueryMutationEvidenceDigest>, IdentityDerivationDenial> {
     let assertions = assertions
         .iter()
         .flatten()
         .map(existing_truth_assertion_identity)
         .collect::<Vec<_>>();
     if assertions.is_empty() {
-        return None;
+        return Ok(None);
     }
-    Some(aggregate_sequence_identity(
+    Ok(Some(aggregate_sequence_identity(
         "batch-existing-truth-assertion",
         assertions,
-    ))
+    )?))
 }
 
 pub(super) fn batch_symbolic_target_reference_digest(
     references: &[Option<WorthQuerySymbolicTargetReferenceEvidence>],
-) -> Option<WorthQueryMutationEvidenceDigest> {
+) -> Result<Option<WorthQueryMutationEvidenceDigest>, IdentityDerivationDenial> {
     let references = references
         .iter()
         .flatten()
         .map(|reference| symbolic_target_reference_identity("symbolic-target-reference", reference))
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     if references.is_empty() {
-        return None;
+        return Ok(None);
     }
-    Some(aggregate_sequence_identity(
+    Ok(Some(aggregate_sequence_identity(
         "batch-symbolic-target-reference",
         references,
-    ))
+    )?))
 }
 
 pub(super) fn batch_symbolic_resolution_digest(
     target_references: &[Option<WorthQuerySymbolicTargetReferenceEvidence>],
     aspect_resolutions: &[Vec<WorthQuerySymbolicAspectResolutionEvidence>],
-) -> Option<WorthQueryMutationEvidenceDigest> {
+) -> Result<Option<WorthQueryMutationEvidenceDigest>, IdentityDerivationDenial> {
     let rows = target_references
         .iter()
         .flatten()
@@ -94,85 +98,85 @@ pub(super) fn batch_symbolic_resolution_digest(
                 .flatten()
                 .map(symbolic_aspect_resolution_identity),
         )
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     if rows.is_empty() {
-        return None;
+        return Ok(None);
     }
-    Some(aggregate_sequence_identity(
+    Ok(Some(aggregate_sequence_identity(
         "batch-symbolic-resolution",
         rows,
-    ))
+    )?))
 }
 
 pub(super) fn batch_continuity_mutation_digest(
     continuities: &[Option<WorthQueryContinuityMutationEvidence>],
-) -> Option<WorthQueryMutationEvidenceDigest> {
+) -> Result<Option<WorthQueryMutationEvidenceDigest>, IdentityDerivationDenial> {
     let continuities = continuities
         .iter()
         .flatten()
         .map(continuity_mutation_identity)
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     if continuities.is_empty() {
-        return None;
+        return Ok(None);
     }
-    Some(aggregate_sequence_identity(
+    Ok(Some(aggregate_sequence_identity(
         "batch-continuity-mutation",
         continuities,
-    ))
+    )?))
 }
 
 pub(super) fn batch_naming_mutation_digest(
     namings: &[Option<WorthQueryNamingMutationEvidence>],
-) -> Option<WorthQueryMutationEvidenceDigest> {
+) -> Result<Option<WorthQueryMutationEvidenceDigest>, IdentityDerivationDenial> {
     let namings = namings
         .iter()
         .flatten()
         .map(naming_mutation_identity)
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     if namings.is_empty() {
-        return None;
+        return Ok(None);
     }
-    Some(aggregate_sequence_identity(
+    Ok(Some(aggregate_sequence_identity(
         "batch-naming-mutation",
         namings,
-    ))
+    )?))
 }
 
 fn existing_truth_assertion_identity(
     assertion: &WorthQueryExistingTruthAssertionEvidence,
 ) -> WorthQueryEvidenceIdentity {
     worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
-        .field_shape(
-            WorthQueryEvidenceTag::new("role"),
-            "existing-truth-assertion",
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("mode"),
-            assertion.mode().as_str(),
-        )
-        .field_usize(
-            WorthQueryEvidenceTag::new("asserted_aspect_count"),
-            assertion.asserted_aspect_count(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("verification"),
-            assertion.verification_evidence_identity(),
-        )
-        .optional_evidence_identity(
-            WorthQueryEvidenceTag::new("assumption_snapshot"),
-            assertion.assumption_snapshot_evidence_digest(),
-        )
-        .optional_evidence_identity(
-            WorthQueryEvidenceTag::new("verified_precondition"),
-            assertion.verified_precondition_evidence_digest(),
-        )
-        .seal()
+            .field_shape(
+                WorthQueryEvidenceTag::new("role"),
+                "existing-truth-assertion",
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("mode"),
+                assertion.mode().as_str(),
+            )
+            .field_usize(
+                WorthQueryEvidenceTag::new("asserted_aspect_count"),
+                assertion.asserted_aspect_count(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("verification"),
+                assertion.verification_evidence_identity(),
+            )
+            .optional_evidence_identity(
+                WorthQueryEvidenceTag::new("assumption_snapshot"),
+                assertion.assumption_snapshot_evidence_digest(),
+            )
+            .optional_evidence_identity(
+                WorthQueryEvidenceTag::new("verified_precondition"),
+                assertion.verified_precondition_evidence_digest(),
+            )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 fn symbolic_target_reference_identity(
     role: &'static str,
     reference: &WorthQuerySymbolicTargetReferenceEvidence,
-) -> WorthQueryEvidenceIdentity {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let mut identity =
         worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
             .field_shape(WorthQueryEvidenceTag::new("role"), role)
@@ -194,12 +198,12 @@ fn symbolic_target_reference_identity(
             collection.evidence_identity(),
         );
     }
-    identity.seal()
+    Ok(identity.seal()?)
 }
 
 fn symbolic_aspect_resolution_identity(
     resolution: &WorthQuerySymbolicAspectResolutionEvidence,
-) -> WorthQueryEvidenceIdentity {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let mut identity =
         worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
             .field_shape(
@@ -228,12 +232,12 @@ fn symbolic_aspect_resolution_identity(
             collection.evidence_identity(),
         );
     }
-    identity.seal()
+    Ok(identity.seal()?)
 }
 
 fn continuity_mutation_identity(
     continuity: &WorthQueryContinuityMutationEvidence,
-) -> WorthQueryEvidenceIdentity {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let mut identity =
         worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
             .field_shape(WorthQueryEvidenceTag::new("role"), "continuity-mutation")
@@ -286,12 +290,12 @@ fn continuity_mutation_identity(
             collection.evidence_identity(),
         );
     }
-    identity.seal()
+    Ok(identity.seal()?)
 }
 
 fn naming_mutation_identity(
     naming: &WorthQueryNamingMutationEvidence,
-) -> WorthQueryEvidenceIdentity {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let mut identity =
         worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
             .field_shape(WorthQueryEvidenceTag::new("role"), "naming-mutation")
@@ -331,12 +335,12 @@ fn naming_mutation_identity(
             collection.evidence_identity(),
         );
     }
-    identity.seal()
+    Ok(identity.seal()?)
 }
 
 fn target_component_identity(
     component: &WorthQueryMutationTargetEvidence,
-) -> WorthQueryEvidenceIdentity {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let mut identity =
         worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
             .field_shape(WorthQueryEvidenceTag::new("role"), "target-component")
@@ -372,17 +376,17 @@ fn target_component_identity(
             &entity.evidence_identity(),
         );
     }
-    identity.seal()
+    Ok(identity.seal()?)
 }
 
 fn aggregate_sequence_identity(
     role: &'static str,
     entries: Vec<WorthQueryEvidenceIdentity>,
-) -> WorthQueryMutationEvidenceDigest {
+) -> Result<WorthQueryMutationEvidenceDigest, IdentityDerivationDenial> {
     let identity =
         worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
             .field_shape(WorthQueryEvidenceTag::new("role"), role)
             .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("entry"), entries.iter())
-            .seal();
-    WorthQueryMutationEvidenceDigest::aggregate(role, identity)
+            .seal()?;
+    Ok(WorthQueryMutationEvidenceDigest::aggregate(role, identity)?)
 }

@@ -23,17 +23,17 @@ impl fragment::BindingSet for ApprovalRecordsBindings {
 }
 impl fragment::Scalar<String> for ApprovalRecordsBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<PaymentId> for ApprovalRecordsBindings {
     type Binding = PaymentIdBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<u64> for ApprovalRecordsBindings {
     type Binding = worth_query_decl::facade::application_schema::U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = true;
 }
 pub struct ApprovedBusinessPaymentGrant;

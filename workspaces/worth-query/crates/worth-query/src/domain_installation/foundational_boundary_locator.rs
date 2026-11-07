@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::BTreeMap;
 use std::sync::{Mutex, OnceLock};
 
@@ -56,17 +57,20 @@ mod tests {
     use super::*;
     use crate::evidence_identity::{WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
-    fn identity(value: &str) -> WorthQueryEvidenceIdentity {
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::InstalledDomainExecution)
-            .field_value(WorthQueryEvidenceTag::new("subject"), value)
-            .seal()
+    fn identity(value: &str) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(
+            WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::InstalledDomainExecution)
+                .field_value(WorthQueryEvidenceTag::new("subject"), value)
+                .seal()?,
+        )
     }
 
     #[test]
-    fn equivalent_full_identities_share_a_locator_without_digest_truncation() {
-        let first = identity("first");
+    fn equivalent_full_identities_share_a_locator_without_digest_truncation(
+    ) -> Result<(), IdentityDerivationDenial> {
+        let first = identity("first")?;
         let equivalent = first.clone();
-        let second = identity("second");
+        let second = identity("second")?;
 
         assert_eq!(
             foundational_boundary_handle(&first),
@@ -76,5 +80,7 @@ mod tests {
             foundational_boundary_handle(&first),
             foundational_boundary_handle(&second)
         );
+
+        Ok(())
     }
 }

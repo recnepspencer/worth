@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::active_digest::ActiveSubscriptionLaneDigest;
 use super::active_posture::ActiveSubscriptionDeliveryPosture;
@@ -71,13 +72,13 @@ impl QuerySubscriptionMaintenanceDelta {
         active_lane_digest: ActiveSubscriptionLaneDigest,
         scope_label: &str,
         width: MaintenanceDeltaWidth,
-    ) -> Self {
-        Self::admitted(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::admitted(
             kind,
             active_lane_digest,
-            &lifecycle_maintenance_delta_scope_identity(scope_label),
+            &lifecycle_maintenance_delta_scope_identity(scope_label)?,
             width,
-        )
+        ))
     }
 
     pub fn admitted_with_typed_scope(
@@ -168,7 +169,10 @@ impl QueryMaintenanceDeltaLoweringReport {
             crate::evidence_identity::WorthQueryEvidenceTag::new("width"),
             delta.width() as usize,
         )
-        .seal();
+        .seal()
+        .expect(
+            "fixed subscription receipt: two sealed tokens, closed labels and primitive widths",
+        );
         Self {
             maintenance_delta_identity: delta.evidence_identity().clone(),
             lowering_report_identity,

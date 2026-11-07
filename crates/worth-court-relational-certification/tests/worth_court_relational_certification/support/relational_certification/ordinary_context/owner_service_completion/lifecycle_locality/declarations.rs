@@ -49,7 +49,7 @@ pub(crate) fn coordination_waits(
     identity: &worth_relational::facade::branch::RelationalBranchIdentity,
 ) -> u64 {
     runtime
-        .observe_branch_sharing(std::slice::from_ref(identity))
+        .observe_branch_sharing(&worth_execution::ExecutionRequest::serial(&worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request()), std::slice::from_ref(identity))
         .expect("the owner-issued branch remains publicly inspectable")
         .coordination_waits()
 }

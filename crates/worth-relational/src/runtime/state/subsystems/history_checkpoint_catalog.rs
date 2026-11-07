@@ -13,6 +13,7 @@ impl HistorySubsystem {
     /// root readmission. No provisional, unlinked catalog is needed.
     pub(super) fn rebuild_checkpoint_catalog(
         &self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         checkpoints: &[RelationalBranchCellCheckpoint],
     ) -> Result<(), String> {
         let mut descriptors = BTreeMap::new();

@@ -5,7 +5,7 @@ use super::{
 };
 use worth_query_decl::facade::{
     application_query::{
-        ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
+        ApplicationQueryBasisSupport, ApplicationQueryCardinality,
         ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
         ApplicationQueryInspectionDefinition, ApplicationQueryLaneEligibility,
         ApplicationQueryParameterSet, ApplicationQueryResultFieldRef,
@@ -45,9 +45,13 @@ pub(super) fn number_result<Q>(
     ApplicationQueryResultFieldRef::new("number", AccountNumber::at("AccountNumber"))
 }
 
-pub(super) fn definition(
-) -> ApplicationQueryDefinition<HostIdentitySchema, AccountQuery, AccountParameters, String, Account>
-{
+pub(super) fn definition() -> ApplicationQueryDefinitionBuilder<
+    HostIdentitySchema,
+    AccountQuery,
+    AccountParameters,
+    String,
+    Account,
+> {
     let shape = ApplicationQueryResultShapeBuilder::<
         HostIdentitySchema,
         AccountQuery,
@@ -66,8 +70,6 @@ pub(super) fn definition(
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 
 impl WorthQueryApplicationProjection<HostIdentitySchema, AccountQuery> for String {

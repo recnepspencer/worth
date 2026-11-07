@@ -34,11 +34,11 @@ pub(crate) fn emit_mixed_cause_live_subscription_delivery(
         .get_mut(&target)
         .ok_or_else(|| WorthQueryRuntimeError::MissingLiveSubscription(view_name.to_string()))?;
     let mixed_cause_delivery =
-        WorthQueryRuntimeMixedCauseDelivery::from_bridge(ordering, delivery_window);
+        WorthQueryRuntimeMixedCauseDelivery::from_bridge(ordering, delivery_window)?;
     let delivery_cause = QuerySubscriptionDeliveryCause::classified(
         mixed_cause_delivery.primary_delivery_cause_kind(),
         mixed_cause_delivery.ordering_identity(),
-    );
+    )?;
     let patch_group = QueryPatchGroup::new(
         QueryPatchGroupKind::MixedCauseDeliveryGroup,
         mixed_cause_delivery.mixed_cause_identity(),
@@ -60,7 +60,7 @@ pub(crate) fn emit_mixed_cause_live_subscription_delivery(
     .map_err(|error| mixed_cause_delivery_error(view_name, error))?;
     let delivery_receipt = batch.receipt().clone();
     let mut runtime_batch =
-        WorthQueryRuntimeDeliveryBatch::from_query_delivery(view_name, &batch, None, None, None);
+        WorthQueryRuntimeDeliveryBatch::from_query_delivery(view_name, &batch, None, None, None)?;
     runtime_batch.mixed_cause_delivery = mixed_cause_delivery;
     state.last_delivery = Some(WorthQueryRuntimeRetainedDelivery::from_batch(
         &runtime_batch,

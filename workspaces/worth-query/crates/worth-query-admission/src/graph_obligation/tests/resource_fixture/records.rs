@@ -22,17 +22,17 @@ impl fragment::BindingSet for ResourceModelBindings {
 }
 impl fragment::Scalar<WorthQueryExternalPrincipalIdentity> for ResourceModelBindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<WorthQueryPrincipalMappingStatus> for ResourceModelBindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<u64> for ResourceModelBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 pub struct Mapping;
@@ -68,9 +68,11 @@ impl fragment::Record<MappingFactsValue> for ResourceModelBindings {
         fragment::field("MappingIdentity", |row: &MappingFactsValue| {
             row.mapping_identity.clone()
         })
+        .equality_queryable(true)
         .and("MappingStatus", |row: &MappingFactsValue| {
             row.mapping_status
         })
+        .equality_queryable(true)
         .build(
             |mapping_identity, mapping_status, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(MappingFactsValue {
@@ -95,6 +97,7 @@ impl fragment::Record<PrincipalFactsValue> for ResourceModelBindings {
         fragment::field("PrincipalIdentity", |row: &PrincipalFactsValue| {
             row.principal_identity
         })
+        .equality_queryable(true)
         .build(|principal_identity, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(PrincipalFactsValue { principal_identity })
         })

@@ -5,9 +5,13 @@ pub fn probe(
     ApplicationQueryParameterRef::from_query_identifier("probe")
 }
 // compiled-example: begin
-pub fn definition(
-) -> ApplicationQueryDefinition<Catalog, ExactQuery, source::Parameters, source::ItemRow, Directory>
-{
+pub fn definition() -> ApplicationQueryDefinitionBuilder<
+    Catalog,
+    ExactQuery,
+    source::Parameters,
+    source::ItemRow,
+    Directory,
+> {
     source::base(
         ExactQuery::reference(),
         ApplicationQueryLaneEligibility::one_shot().with_live(),
@@ -17,8 +21,6 @@ pub fn definition(
         source::identity(),
         ApplicationQueryOrderingDirection::Ascending,
     )
-    .build()
-    .unwrap()
 }
 // compiled-example: end
 

@@ -195,7 +195,6 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
             snapshot: identity,
             basis: resident,
             context,
-            symbols: services.symbols.interner_snapshot(),
             indexes: BTreeMap::new(),
         })
     }

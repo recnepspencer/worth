@@ -62,7 +62,12 @@ fn assert_complete(runtime: &crate::runtime::RelationalRuntime, stage: &str) {
         .unwrap();
     let symbols = runtime.services.symbols.interner_snapshot();
     assert!(
-        root.is_complete(&symbols),
+        root.is_complete(
+            &worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request()
+            ),
+            &symbols
+        ),
         "{stage}: carried commitment must match cold truth"
     );
 }

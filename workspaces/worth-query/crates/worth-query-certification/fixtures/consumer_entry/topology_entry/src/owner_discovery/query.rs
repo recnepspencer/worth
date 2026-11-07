@@ -75,9 +75,13 @@ fn y<S: TopologySchemaBinding>(
 ) -> ApplicationQueryResultFieldRef<OwnerDiscoveryQuery, OwnerPositionYSlot, S, PositionY> {
     ApplicationQueryResultFieldRef::new("y", PositionY::at("PositionY"))
 }
-pub(super) fn definition<S: TopologySchemaBinding>(
-) -> ApplicationQueryDefinition<S, OwnerDiscoveryQuery, PlanarReadParameters, PlanarReadResult, Body>
-{
+pub(super) fn definition<S: TopologySchemaBinding>() -> ApplicationQueryDefinitionBuilder<
+    S,
+    OwnerDiscoveryQuery,
+    PlanarReadParameters,
+    PlanarReadResult,
+    Body,
+> {
     let shape = ApplicationQueryResultShapeBuilder::<
         S,
         OwnerDiscoveryQuery,
@@ -97,8 +101,6 @@ pub(super) fn definition<S: TopologySchemaBinding>(
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .requires_ability(OwnerOnlyDiscovery::reference())
-        .build()
-        .expect("owner-only discovery declares a normal scoped READ ability")
 }
 impl<S: TopologySchemaBinding> WorthQueryApplicationProjection<S, OwnerDiscoveryQuery>
     for PlanarReadResult

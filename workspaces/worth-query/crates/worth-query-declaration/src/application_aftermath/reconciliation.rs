@@ -8,12 +8,19 @@ pub struct DeclaredReconciliationProcedure {
 }
 
 impl DeclaredReconciliationProcedure {
-    pub fn new(procedure_slot: impl Into<String>) -> Result<Self, &'static str> {
-        let procedure_slot = procedure_slot.into();
-        if procedure_slot.trim().is_empty() {
-            return Err("empty-reconciliation-procedure");
+    pub fn new(procedure_slot: impl Into<String>) -> Self {
+        Self {
+            procedure_slot: procedure_slot.into(),
         }
-        Ok(Self { procedure_slot })
+    }
+
+    /// Checks descriptive meaning without granting schema admission.
+    pub fn validate(&self) -> Result<(), super::DeclaredCorrectionMechanismDenial> {
+        if self.procedure_slot.trim().is_empty() {
+            Err(super::DeclaredCorrectionMechanismDenial::EmptyReconciliationProcedure)
+        } else {
+            Ok(())
+        }
     }
 
     pub fn procedure_slot(&self) -> &str {

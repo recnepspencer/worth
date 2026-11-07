@@ -29,7 +29,7 @@ pub(in crate::runtime::inspection::causal::certification) fn validate_proof_shap
             proof_shape.boundary_audit_digest(),
             proof_shape.phase_progression_digest(),
             proof_shape.witness_authority_digest(),
-        );
+        )?;
     if posture_complete && binds_artifact && binds_matrix && binds_boundary && canonical_shape {
         return Ok(());
     }

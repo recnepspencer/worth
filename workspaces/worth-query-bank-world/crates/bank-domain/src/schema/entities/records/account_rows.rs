@@ -18,6 +18,7 @@ impl fragment::Record<IdentityValue> for BankRecordsBindings {
         fragment::field("AccountIdentity", |row: &IdentityValue| {
             row.account_identity
         })
+        .equality_queryable(true)
         .build(|account_identity, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(IdentityValue { account_identity })
         })
@@ -42,6 +43,7 @@ impl fragment::Record<InstitutionIdentityValue> for BankRecordsBindings {
             "InstitutionIdentityField",
             |row: &InstitutionIdentityValue| row.institution_identity_field,
         )
+        .equality_queryable(true)
         .build(
             |institution_identity_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(InstitutionIdentityValue {
@@ -69,6 +71,7 @@ impl fragment::Record<BusinessIdentityValue> for BankRecordsBindings {
         fragment::field("BusinessIdentityField", |row: &BusinessIdentityValue| {
             row.business_identity_field
         })
+        .equality_queryable(true)
         .build(
             |business_identity_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(BusinessIdentityValue {
@@ -97,7 +100,9 @@ impl fragment::Record<AccountProfileValue> for BankRecordsBindings {
         fragment::field("AccountDisplayName", |row: &AccountProfileValue| {
             row.account_display_name.clone()
         })
+        .equality_queryable(true)
         .and("Kind", |row: &AccountProfileValue| row.kind)
+        .equality_queryable(true)
         .build(
             |account_display_name, kind, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(AccountProfileValue {
@@ -127,7 +132,9 @@ impl fragment::Record<AccountStateValue> for BankRecordsBindings {
         fragment::field("AccountingRevision", |row: &AccountStateValue| {
             row.accounting_revision
         })
+        .equality_queryable(true)
         .and("Status", |row: &AccountStateValue| row.status)
+        .equality_queryable(true)
         .build(
             |accounting_revision, status, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(AccountStateValue {
@@ -156,6 +163,7 @@ impl fragment::Record<AuthorizationScopeValue> for BankRecordsBindings {
         fragment::field("AuthorizationRole", |row: &AuthorizationScopeValue| {
             row.authorization_role
         })
+        .equality_queryable(true)
         .build(|authorization_role, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(AuthorizationScopeValue { authorization_role })
         })
@@ -180,6 +188,7 @@ impl fragment::Record<AuthorizationIdentityValue> for BankRecordsBindings {
             "AccountAuthorizationIdentity",
             |row: &AuthorizationIdentityValue| row.account_authorization_identity,
         )
+        .equality_queryable(true)
         .build(
             |account_authorization_identity, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(AuthorizationIdentityValue {
@@ -209,9 +218,11 @@ impl fragment::Record<EmployeeScopeValue> for BankRecordsBindings {
             "EmployeeAssignmentIdentityField",
             |row: &EmployeeScopeValue| row.employee_assignment_identity_field,
         )
+        .equality_queryable(true)
         .and("AssignmentRole", |row: &EmployeeScopeValue| {
             row.assignment_role
         })
+        .equality_queryable(true)
         .build(
             |employee_assignment_identity_field,
              assignment_role,

@@ -35,15 +35,14 @@ impl BindingSet for WrongBindings {
 }
 impl Scalar<CatalogName> for WrongBindings {
     type Binding = Lookalike;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl fragment::Record<WrongName> for WrongBindings {
     fn record() -> impl Shape<WrongName, Self> {
-        field("ItemName", |value: &WrongName| value.0.clone()).build(
-            |value, _: &mut ValueDecodeAdmission<'_>| {
+        field("ItemName", |value: &WrongName| value.0.clone())
+            .equality_queryable(true)
+            .build(|value, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(WrongName(value))
-            },
-        )
+            })
     }
 }
 struct Lookalike;

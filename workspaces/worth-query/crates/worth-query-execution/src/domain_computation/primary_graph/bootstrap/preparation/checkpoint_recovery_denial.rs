@@ -4,21 +4,15 @@ pub(in crate::domain_computation::primary_graph::bootstrap) fn map_checkpoint_re
     stop: worth_relational::facade::durability::RelationalRecoveryStop,
 ) -> WorthQueryPrimaryGraphInstallationDenial {
     use worth_relational::facade::durability::RelationalRecoveryStop;
-    match stop {
-        RelationalRecoveryStop::Content(cause) => primary_graph_denial(
+    let denial = match stop.clone() {
+        RelationalRecoveryStop::Content(_) => primary_graph_denial(
             WorthQueryPrimaryGraphInstallationDenialKind::ContentAdmissionRejected,
             "native checkpoint content refused",
-        )
-        .with_content_cause(cause),
-        RelationalRecoveryStop::Durability(error) => {
-            let denial = primary_graph_denial(
-                WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
-                format!("native checkpoint recovery denied: {error:?}"),
-            );
-            if error.storage_unavailable.is_some_and(|e|matches!(e.cause,worth_relational::facade::storage::RelationalStorageUnavailableCause::CorruptCurrentOwnership{..})) {
-                denial.with_native_recovery_cause(RelationalRecoveryStop::Durability(error))
-            } else {denial}
-        }
+        ),
+        RelationalRecoveryStop::Durability(error) => primary_graph_denial(
+            WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
+            format!("native checkpoint recovery denied: {error:?}"),
+        ),
         RelationalRecoveryStop::Allocation(cause) => primary_graph_denial(
             WorthQueryPrimaryGraphInstallationDenialKind::NativeAllocation {
                 kind: cause.classify(),
@@ -42,7 +36,8 @@ pub(in crate::domain_computation::primary_graph::bootstrap) fn map_checkpoint_re
                 format!("native checkpoint recovery request stopped: {cause:?}"),
             )
         }
-    }
+    };
+    denial.with_native_recovery_cause(stop)
 }
 
 #[cfg(test)]
@@ -157,7 +152,8 @@ mod tests {
         let expected = primary_graph_denial(
             WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
             format!("native checkpoint recovery denied: {error:?}"),
-        );
+        )
+        .with_native_recovery_cause(RelationalRecoveryStop::Durability(error.clone()));
         assert_eq!(
             map_checkpoint_recovery_stop(RelationalRecoveryStop::Durability(error)),
             expected

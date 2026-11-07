@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::facade::foundation::{
     admit_historical_evaluation_path, materialization_metadata_from_resolved,
     resolve_historical_materialization_path, HistoricalCapabilityDescriptor,
@@ -15,23 +16,26 @@ use crate::query_context::{
     QueryBasisContextRequest, QueryContextAdmissionError, QueryContextBindingSource,
 };
 
-pub(super) fn historical_broadening_error() -> QueryContextAdmissionError {
+pub(super) fn historical_broadening_error(
+) -> Result<QueryContextAdmissionError, IdentityDerivationDenial> {
     let preflight = execution_preflights::ordered_collection_preflight();
     let request = HistoricalEvaluationRequest::full_reconstruction_for_test(
         "history:reconstruction",
         4,
         8,
         HistoricalPathReuseDescriptor::no_reuse(),
-    );
+    )?;
     let capability = HistoricalCapabilityDescriptor::full_reconstruction_for_test(
         "history:reconstruction",
         HistoricalPathReuseDescriptor::no_reuse(),
-    );
+    )?;
     let admission =
         admit_historical_evaluation_path(request, capability).expect("reconstruction should admit");
     let resolved = resolve_historical_materialization_path(
         admission.clone(),
-        HistoricalMaterializationDescriptor::full_reconstruction_for_test("history:reconstruction"),
+        HistoricalMaterializationDescriptor::full_reconstruction_for_test(
+            "history:reconstruction",
+        )?,
     )
     .expect("reconstruction should resolve");
     let metadata = materialization_metadata_from_resolved(resolved);
@@ -48,8 +52,8 @@ pub(super) fn historical_broadening_error() -> QueryContextAdmissionError {
     )
     .expect("historical reconstruction context should admit");
 
-    execute_query_basis_context(&context)
-        .expect_err("reconstruction lane should deny broadening before rich execution")
+    Ok(execute_query_basis_context(&context)
+        .expect_err("reconstruction lane should deny broadening before rich execution"))
 }
 
 pub(super) fn preview_lane_context() -> crate::query_context::ScopedQueryBasisContext {
@@ -106,28 +110,29 @@ pub(super) fn diff_scope_mismatch_error() -> QueryContextAdmissionError {
     bind_diff_query_context(&left, &right).expect_err("mismatched query scopes should deny")
 }
 
-pub(super) fn basis_substitution_error() -> QueryContextAdmissionError {
+pub(super) fn basis_substitution_error(
+) -> Result<QueryContextAdmissionError, IdentityDerivationDenial> {
     let preflight = execution_preflights::direct_runtime_preflight();
     let request = HistoricalEvaluationRequest::retained_snapshot_for_test(
         "history:snapshot-1",
         1,
         1,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )?;
     let capability = HistoricalCapabilityDescriptor::retained_snapshot_for_test(
         "history:snapshot-1",
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )?;
     let admission =
         admit_historical_evaluation_path(request, capability).expect("history should admit");
     let resolved = resolve_historical_materialization_path(
         admission.clone(),
-        HistoricalMaterializationDescriptor::retained_snapshot_for_test("history:snapshot-1"),
+        HistoricalMaterializationDescriptor::retained_snapshot_for_test("history:snapshot-1")?,
     )
     .expect("history should resolve");
     let metadata = materialization_metadata_from_resolved(resolved);
 
-    bind_legacy_query_basis_context(
+    Ok(bind_legacy_query_basis_context(
         QueryBasisContextRequest::historical_snapshot("history:other"),
         QueryContextBindingSource::Historical {
             query_preflight: &preflight,
@@ -135,7 +140,7 @@ pub(super) fn basis_substitution_error() -> QueryContextAdmissionError {
             metadata: &metadata,
         },
     )
-    .expect_err("basis substitution must deny")
+    .expect_err("basis substitution must deny"))
 }
 
 pub(super) fn comparison_broadening_error() -> QueryContextAdmissionError {

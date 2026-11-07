@@ -13,12 +13,28 @@ fn no_position_policy_preserves_funded_history_and_original_reader_currentness()
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     )
     .into_parts_for_test();
+    // This court funds a 300-commit journey. It has no position policy and
+    // must not mistake the host fixture's aggregate work ceiling for one.
+    // Keep memory, placement and determinism under the original policy.
+    let policy = *execution.policy_for_test();
+    let budget = policy
+        .accounting()
+        .expect("fixture has an accounted request policy");
+    let policy = worth_foundational::ExecutionRequestPolicy::new(
+        policy.posture(),
+        policy.determinism(),
+        worth_foundational::ExecutionBudget::new(
+            budget.max_workers(),
+            budget.charged_memory_bytes(),
+            None,
+        ),
+    );
     let resources = WorthQueryInvalidationResources::new();
     let configured = WorthQueryProductWorldResources::new(
         worth_runtime_world::facade::RuntimeWorldBudgets::without_policy_limits(),
         clock,
         resources,
-        (*execution.policy_for_test()),
+        policy,
     );
     let configured = match execution.authority_into_for_test() {
         Some(authority) => configured.with_execution_authority(authority),

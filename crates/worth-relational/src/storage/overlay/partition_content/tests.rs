@@ -28,7 +28,7 @@ fn one_record_update_hashes_three_values_regardless_of_population_or_history() {
                 .expect("fixture slot is materialized");
         }
         let symbols = StringInterner::default();
-        let (retained, _) = PartitionContentCommitment::capture(&old, &symbols, None).unwrap();
+        let (retained, _) = PartitionContentCommitment::capture_oracle(&old, &symbols).unwrap();
         let before_digest = retained.digest(old.partition_id);
         let mut next = old.clone();
         next.entity_arena
@@ -39,7 +39,7 @@ fn one_record_update_hashes_three_values_regardless_of_population_or_history() {
             ..Default::default()
         };
         let (incremental, hashed) =
-            PartitionContentCommitment::capture(&next, &symbols, Some((&retained, &old, &journal)))
+            PartitionContentCommitment::maintain(&next, &symbols, (&retained, &old, &journal))
                 .unwrap();
         assert_eq!(
             hashed, 3,

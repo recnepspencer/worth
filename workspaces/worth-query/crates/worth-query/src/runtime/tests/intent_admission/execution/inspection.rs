@@ -109,7 +109,10 @@ fn runtime_read_derived_result_delegates_to_derived_materialization_intent_execu
         })
         .map(|handoff| runtime.prepare_derived_materialization_execution_binding(handoff))
         .and_then(|binding| {
-            runtime.execute_derived_materialization_execution_binding(request_execution, binding)
+            runtime.execute_derived_materialization_execution_binding(
+                request_execution,
+                binding.expect("fixture digest must fit"),
+            )
         })
         .expect("canonical derived materialization should execute");
 
@@ -204,7 +207,10 @@ fn runtime_inspect_derived_view_delegates_to_derived_inspection_intent_execution
         .and_then(|review| runtime.resolve_reviewed_admitted_derived_inspection_handoff(review))
         .map(|handoff| runtime.prepare_derived_inspection_execution_binding(handoff))
         .and_then(|binding| {
-            runtime.execute_derived_inspection_execution_binding(request_execution, binding)
+            runtime.execute_derived_inspection_execution_binding(
+                request_execution,
+                binding.expect("fixture digest must fit"),
+            )
         })
         .expect("canonical derived inspection should execute");
 
@@ -251,6 +257,7 @@ fn workspace_inspection_lane_delegates_to_unified_inspection_intent_execution() 
         .expect("inspection lane should inspect");
     let canonical = inspections
         .inspect_intent(&live)
+        .expect("fixture digest must fit")
         .execute(request_execution)
         .expect("canonical generic inspection should execute");
 
@@ -284,6 +291,7 @@ fn runtime_inspect_live_view_delegates_to_unified_inspection_intent_execution() 
         .expect("runtime generic inspection should succeed");
     let canonical = runtime
         .inspect_intent(&live)
+        .expect("fixture digest must fit")
         .execute(request_execution)
         .expect("canonical generic inspection should execute");
 
@@ -321,6 +329,7 @@ fn runtime_specific_intent_inspection_wrappers_delegate_to_unified_inspection_ex
         .expect("direct wrapper should inspect");
     let canonical = runtime
         .inspect_intent(&receipt)
+        .expect("fixture digest must fit")
         .execute(request_execution)
         .expect("canonical inspection should execute");
 
@@ -366,6 +375,7 @@ fn runtime_specific_intent_denial_wrapper_delegates_to_unified_inspection_execut
         .expect("direct denial wrapper should inspect");
     let canonical = runtime
         .inspect_intent(&evidence)
+        .expect("fixture digest must fit")
         .execute(request_execution)
         .expect("canonical inspection should execute");
 

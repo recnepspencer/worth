@@ -26,6 +26,7 @@ mod capture_preparation;
 #[cfg(test)]
 #[path = "root_content_tests.rs"]
 mod content_tests;
+mod court_doors_for_test;
 #[path = "root_identity.rs"]
 mod identity;
 #[path = "root_output_publication.rs"]
@@ -123,6 +124,7 @@ pub(crate) struct RelationalBranchRootAxes {
 
 #[derive(Debug, Clone)]
 struct RelationalCommittedBranchRoot {
+    commit_change: Option<Arc<crate::storage::substrate::maintenance::CommitChange>>,
     descriptor: RelationalBranchRootDescriptor,
     canonical_envelope: Arc<CanonicalCommitEnvelope>,
     axes: RelationalBranchRootAxes,
@@ -186,11 +188,9 @@ impl RelationalBranchRootState {
 impl RelationalBranchRoot {
     #[cfg(test)]
     pub(crate) fn empty() -> Arc<Self> {
-        let issuer = RelationalBranchRootIdentityIssuer::default();
         Arc::new(Self {
             id: 0,
-            regions: RelationalPersistentRegionSet::initial(0, BTreeMap::new(), &issuer)
-                .expect("empty test root has reachability capacity"),
+            regions: RelationalPersistentRegionSet::empty(0),
             publication_bases: Default::default(),
             content: Default::default(),
             entity_slot_count: 0,
@@ -214,8 +214,7 @@ impl RelationalBranchRoot {
             .expect(/* Proof: Each empty root creates a fresh issuer at its initial frontier; these first schema and empty-reachability allocations cannot exhaust it. */ "empty root has schema authority capacity");
         Arc::new(Self {
             id: 0,
-            regions: RelationalPersistentRegionSet::initial(0, BTreeMap::new(), &issuer)
-                .expect(/* Proof: Each empty root creates a fresh issuer at its initial frontier; these first schema and empty-reachability allocations cannot exhaust it. */ "empty root has reachability capacity"),
+            regions: RelationalPersistentRegionSet::empty(0),
             entity_slot_count: 0,
             relation_slot_count: 0,
             publication_bases: Default::default(),
@@ -278,12 +277,16 @@ impl RelationalBranchRoot {
         self.committed.as_ref().map(|root| root.axes)
     }
 
-    pub(crate) fn is_complete(&self, symbols: &crate::symbols::data::StringInterner) -> bool {
+    pub(crate) fn is_complete(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        symbols: &crate::symbols::data::StringInterner,
+    ) -> bool {
         let Some(committed) = self.committed.as_ref() else {
             return false;
         };
         let Ok((reconstructed_root, reconstructed_accumulator)) =
-            axes::storage_root_from_authoritative_regions(&self.regions, symbols)
+            self.verify_resident_storage_content(execution, symbols)
         else {
             return false;
         };

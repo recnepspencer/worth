@@ -1,4 +1,5 @@
 use crate::basis_lifecycle::BasisFamily;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 use super::super::inventory::EffectReceiptArtifactKind;
@@ -31,7 +32,9 @@ pub struct SelfDescribingEffectEnvelope {
 }
 
 impl SelfDescribingEffectEnvelope {
-    pub(in crate::effect_lifecycle) fn from_receipt(receipt: &EffectExecutionReceipt) -> Self {
+    pub(in crate::effect_lifecycle) fn from_receipt(
+        receipt: &EffectExecutionReceipt,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let primary_result = match receipt.target_evidence() {
             EffectReceiptTargetEvidence::MutationCommit { .. } => {
                 EffectEnvelopePrimaryResult::MutationCommitted
@@ -50,7 +53,7 @@ impl SelfDescribingEffectEnvelope {
         let trace_identity = receipt.decision_trace().decision_trace_identity().clone();
         let integrity_identity = receipt.integrity_markers().integrity_identity().clone();
         let sources = EffectEnvelopeSourceRefs::from_receipt(receipt);
-        let transition_rules = receipt.transition_rules();
+        let transition_rules = receipt.transition_rules()?;
         let performance_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
                 .field_shape(
@@ -65,7 +68,7 @@ impl SelfDescribingEffectEnvelope {
                     WorthQueryEvidenceTag::new("counters"),
                     &receipt.delivery_counters().evidence_identity(),
                 )
-                .seal();
+                .seal()?;
         let boundary_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::EffectIntentReceipt)
                 .field_shape(
@@ -84,7 +87,7 @@ impl SelfDescribingEffectEnvelope {
                     WorthQueryEvidenceTag::new("family"),
                     receipt.declared_effect_family().as_str(),
                 )
-                .seal();
+                .seal()?;
         let deferred_neighbors = transition_rules
             .rules()
             .iter()
@@ -126,8 +129,8 @@ impl SelfDescribingEffectEnvelope {
                     WorthQueryEvidenceTag::new("sources"),
                     sources.sources_identity(),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             declared_effect_family: receipt.declared_effect_family(),
             authority_lane: receipt.authority_lane(),
             authority_owner: receipt.authority_owner(),
@@ -144,7 +147,7 @@ impl SelfDescribingEffectEnvelope {
             deferred_neighbors,
             sources,
             envelope_identity,
-        }
+        })
     }
 
     pub fn declared_effect_family(&self) -> EffectFamily {

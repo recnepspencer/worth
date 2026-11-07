@@ -140,8 +140,8 @@ macro_rules! worth_query_value_binding {
             }
             fn encode(value: &Self::Value) -> Result<$crate::facade::application_schema::ApplicationValue, $crate::facade::application_schema::ApplicationValueEncodeDenial> {
                 <Self as $crate::facade::application_schema::ApplicationScalarValueBinding>::validate(value)?;
-                $crate::facade::application_schema::encode_canonical_value(value, Self::CANONICAL_BOUNDS)
-                    .map(|text| $crate::facade::application_schema::ApplicationValue::String(text.into()))
+                $crate::facade::application_schema::encode_stored_canonical_value(value, Self::CANONICAL_BOUNDS)
+                    .map(|text| $crate::facade::application_schema::ApplicationValue::String(text))
                     .map_err(|cause| $crate::facade::application_schema::ApplicationValueEncodeDenial::Canonical {
                         binding_identity: <Self as $crate::facade::application_schema::ApplicationScalarValueBinding>::IDENTITY,
                         cause,

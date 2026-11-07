@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::acknowledgement::{QueryDeliveryBatchReceipt, QueryDeliverySequence};
 use super::active_budget::ActiveSubscriptionAllocationPosture;
@@ -157,7 +158,10 @@ impl QueryDeliveryWindow {
             crate::evidence_identity::WorthQueryEvidenceTag::new("remap_width"),
             report.remap_width() as usize,
         )
-        .seal();
+        .seal()
+        .expect(
+            "fixed subscription receipt: two sealed tokens, closed labels and primitive widths",
+        );
         Self {
             delivery_window_identity,
             ..self

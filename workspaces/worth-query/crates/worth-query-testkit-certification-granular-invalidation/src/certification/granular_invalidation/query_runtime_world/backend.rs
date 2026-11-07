@@ -12,8 +12,8 @@ impl runtime::WorthQueryRuntimeSchemaAdapter for SchemaAdapter {
         runtime::LiveViewDeclarationAdmissionBoundaryReceipt,
         foundation::WorthQueryWorkspaceError,
     > {
-        let receipt = self.build_live_view_declaration_admission_receipt(name, request);
-        Ok(self.build_live_view_declaration_boundary_receipt(name, request, receipt))
+        let receipt = self.build_live_view_declaration_admission_receipt(name, request)?;
+        Ok(self.build_live_view_declaration_boundary_receipt(name, request, receipt)?)
     }
 }
 
@@ -81,6 +81,7 @@ impl runtime::WorthQueryRuntimeSubscriptionActivationAdapter for SubscriptionAct
         runtime::runtime_subscription_support_evidence_identity(
             "primary-graph-granular-certification",
         )
+        .expect("fixed certification support label fits digest bounds")
     }
 
     fn admit_activation(
@@ -89,8 +90,8 @@ impl runtime::WorthQueryRuntimeSubscriptionActivationAdapter for SubscriptionAct
         activation: &runtime::SubscriptionActivationInput,
     ) -> Result<runtime::SubscriptionActivationBoundaryReceipt, foundation::WorthQueryWorkspaceError>
     {
-        let receipt = self.build_subscription_activation_receipt(view_name, activation);
-        Ok(self.build_subscription_activation_boundary_receipt(view_name, activation, receipt))
+        let receipt = self.build_subscription_activation_receipt(view_name, activation)?;
+        Ok(self.build_subscription_activation_boundary_receipt(view_name, activation, receipt)?)
     }
 }
 
@@ -110,8 +111,8 @@ impl runtime::WorthQueryRuntimePreviewBasisAdapter for PreviewBasis {
             effect_policy,
             runtime::WorthQueryBasisAdmissionEvidenceRow::rows_from_values([
                 "primary-graph-granular-certification",
-            ]),
-        ))
+            ])?,
+        )?)
     }
 }
 

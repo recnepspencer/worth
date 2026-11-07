@@ -7,8 +7,13 @@ use crate::identity::data::PartitionId;
 #[test]
 fn persistent_index_carries_explicit_set_and_removal_allocations() {
     let issuer = RelationalBranchRootIdentityIssuer::default();
-    let initial = RelationalPersistentRegionSet::initial(1, BTreeMap::new(), &issuer)
-        .expect("empty owner index builds");
+    let initial = RelationalPersistentRegionSet::initial(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        1,
+        BTreeMap::new(),
+        &issuer,
+    )
+    .expect("empty owner index builds");
     let removed = [PartitionId(7), PartitionId(11)]
         .into_iter()
         .collect::<BTreeSet<_>>();
@@ -34,8 +39,13 @@ fn persistent_index_carries_explicit_set_and_removal_allocations() {
 #[test]
 fn keyed_merkle_commitment_rejects_compensating_leaf_substitution() {
     let issuer = RelationalBranchRootIdentityIssuer::default();
-    let initial = RelationalPersistentRegionSet::initial(1, BTreeMap::new(), &issuer)
-        .expect("empty owner index builds");
+    let initial = RelationalPersistentRegionSet::initial(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        1,
+        BTreeMap::new(),
+        &issuer,
+    )
+    .expect("empty owner index builds");
     let left = RelationalPersistentRegionSet::replace(
         2,
         &initial,

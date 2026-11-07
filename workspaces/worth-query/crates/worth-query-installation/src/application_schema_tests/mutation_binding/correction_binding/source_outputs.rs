@@ -43,8 +43,8 @@ fn source_output_manifest_resolves_actual_role_and_complete_field_meaning() {
         FixtureIdentityAspect,
         u64,
     >::at("PrincipalIdentityField");
-    let witness = ApplicationCorrectionOutput::<CreatedBinding, Created>::field(field).unwrap();
-    let declared = witness.declaration().parts().clone();
+    let witness = ApplicationCorrectionOutput::<CreatedBinding, Created>::field(field);
+    let declared = witness.declaration().unwrap().parts().clone();
     for axis in [
         "valid",
         "codec",
@@ -78,10 +78,10 @@ fn source_output_manifest_resolves_actual_role_and_complete_field_meaning() {
         if axis == "duplicate" {
             association
                 .source_output_fields
-                .push(witness.declaration().clone());
+                .push(witness.declaration().unwrap().clone());
         }
         let mut actual = members(&source, association);
-        actual.push(witness.declaration().projected_value_member());
+        actual.push(witness.declaration().unwrap().projected_value_member());
         let result = resolve_correction_binding(&actual, &source, &inventory, &queries);
         if axis == "valid" {
             assert!(result.unwrap().is_some());

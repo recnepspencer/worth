@@ -34,7 +34,9 @@ where
     let envelope_checked = handle.envelope_routes_checked(
         WorthQueryDeclarationEnvelopeInput::receipt_checked(receipt_checked),
     );
-    handle.route_relational_truth_checked(
-        WorthQueryDeclarationRelationalRoutingInput::envelope_checked(envelope_checked),
-    )
+    handle
+        .route_relational_truth_checked(
+            WorthQueryDeclarationRelationalRoutingInput::envelope_checked(envelope_checked),
+        )
+        .expect("fixture digest must fit")
 }

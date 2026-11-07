@@ -22,7 +22,7 @@ impl fragment::BindingSet for RemovalRecordsBindings {
 }
 impl fragment::Scalar<u64> for RemovalRecordsBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 pub(super) struct Subject;
@@ -53,7 +53,9 @@ pub(super) struct OptionalFactsValue {
 impl fragment::Record<OptionalFactsValue> for RemovalRecordsBindings {
     fn record() -> impl fragment::Shape<OptionalFactsValue, Self> {
         fragment::field("Value", |row: &OptionalFactsValue| row.value)
+            .equality_queryable(true)
             .and("Sibling", |row: &OptionalFactsValue| row.sibling)
+            .equality_queryable(true)
             .build(|value, sibling, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(OptionalFactsValue { value, sibling })
             })

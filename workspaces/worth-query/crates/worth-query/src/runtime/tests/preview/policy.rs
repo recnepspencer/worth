@@ -122,7 +122,7 @@ fn preview_defaults_to_derive_only_effect_policy_but_keeps_explicit_writes_previ
         WorthQueryAuthorityLane::PreviewTruth
     );
 
-    let outcome = preview.discard();
+    let outcome = preview.discard().expect("fixture digest must fit");
     assert_eq!(outcome.effect_policy(), WorthQueryEffectPolicy::DeriveOnly);
     assert_eq!(outcome.source_lane(), WorthQueryAuthorityLane::PreviewTruth);
     assert_eq!(outcome.target_lane(), WorthQueryAuthorityLane::PreviewTruth);

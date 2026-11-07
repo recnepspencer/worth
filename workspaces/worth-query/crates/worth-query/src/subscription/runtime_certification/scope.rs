@@ -81,26 +81,26 @@ pub fn build_query_subscription_runtime_certification_scope(
         return Err(QuerySubscriptionRuntimeCertificationError::new(
             QuerySubscriptionRuntimeCertificationErrorKind::ScopeFamilyMismatch,
             "runtime certification scope requires support, parity, diagnostic, and coverage artifacts for the same query subscription family",
-            &[
+            (|| { Ok(vec![
                 validation_shape_role_evidence_identity(
                     "support_family",
                     support_report.support_subject().family().as_str(),
-                ),
+                )?,
                 validation_shape_role_evidence_identity(
                     "parity_family",
                     bridge_parity.query_family_label(),
-                ),
+                )?,
                 validation_shape_role_evidence_identity(
                     "diagnostic_family",
                     admitted_diagnostic_bundle
                         .semantic_labels()
                         .query_family_label(),
-                ),
+                )?,
                 validation_shape_role_evidence_identity(
                     "coverage_family",
                     coverage_handle.family().as_str(),
-                ),
-            ],
+                )?,
+            ]) })(),
             QuerySubscriptionRuntimeCertificationCounters::default(),
         ));
     }
@@ -111,16 +111,18 @@ pub fn build_query_subscription_runtime_certification_scope(
         return Err(QuerySubscriptionRuntimeCertificationError::new(
             QuerySubscriptionRuntimeCertificationErrorKind::CertificationSupportPostureDenied,
             "runtime certification scope requires runtime-backed certified support reports",
-            &[
-                validation_shape_role_evidence_identity(
-                    "support_posture",
-                    support_report.support_posture().as_str(),
-                ),
-                validation_role_evidence_identity(
-                    "support_report",
-                    support_report.report_identity(),
-                ),
-            ],
+            (|| {
+                Ok(vec![
+                    validation_shape_role_evidence_identity(
+                        "support_posture",
+                        support_report.support_posture().as_str(),
+                    )?,
+                    validation_role_evidence_identity(
+                        "support_report",
+                        support_report.report_identity(),
+                    ),
+                ])
+            })(),
             QuerySubscriptionRuntimeCertificationCounters::default(),
         ));
     }
@@ -144,7 +146,7 @@ pub fn build_query_subscription_runtime_certification_scope(
         return Err(QuerySubscriptionRuntimeCertificationError::new(
             QuerySubscriptionRuntimeCertificationErrorKind::ScopeSourceMismatch,
             "runtime certification scope requires aligned support, parity, diagnostic, and lifecycle digests",
-            &[
+            (|| { Ok(vec![
                 validation_role_evidence_identity(
                     "support_declaration",
                     support_report.support_subject().declaration_identity(),
@@ -178,7 +180,7 @@ pub fn build_query_subscription_runtime_certification_scope(
                     "lifecycle",
                     lifecycle_certification.certification_bundle_identity(),
                 ),
-            ],
+            ]) })(),
             QuerySubscriptionRuntimeCertificationCounters::default(),
         ));
     }
@@ -200,7 +202,7 @@ pub fn build_query_subscription_runtime_certification_scope(
         return Err(QuerySubscriptionRuntimeCertificationError::new(
             QuerySubscriptionRuntimeCertificationErrorKind::CoverageScopeMissingAdmittedRow,
             "runtime certification scope requires the indexed family coverage handle to contain the scope's admitted support, parity, lifecycle, and diagnostic row",
-            &[
+            (|| { Ok(vec![
                 validation_role_evidence_identity("support", support_report.report_identity()),
                 validation_role_evidence_identity(
                     "parity",
@@ -218,7 +220,7 @@ pub fn build_query_subscription_runtime_certification_scope(
                     "coverage",
                     coverage_handle.family_coverage_identity(),
                 ),
-            ],
+            ]) })(),
             QuerySubscriptionRuntimeCertificationCounters::default(),
         ));
     }
@@ -253,7 +255,7 @@ pub fn build_query_subscription_runtime_certification_scope(
                 coverage_handle.family_coverage_identity(),
             )
             .field_evidence_identity(WorthQueryEvidenceTag::new("counters"), &counter_identity)
-            .seal();
+            .seal().expect("runtime certification scope grammar contains a closed family label and sealed identity tokens");
 
     Ok(QuerySubscriptionRuntimeCertificationScope {
         family,

@@ -30,8 +30,8 @@ impl IndexAccess<'_> {
     /// commit.
     ///
     /// This names the receipt's branch. It is not a currency check for a
-    /// fresh fork that selects the same commit: that fork needs its own
-    /// branch-scoped generation, so judge observed reads with
+    /// fresh fork that selects the same commit: consume its installed carried
+    /// selection through its actual branch observation with
     /// [`Self::read_published_generation_for_observation`].
     pub fn read_published_generation_for_commit(
         &self,
@@ -62,8 +62,9 @@ impl IndexAccess<'_> {
     ///
     /// A fork that has not committed yet selects its parent's commit, so the
     /// commit receipt names the parent branch. A branch-scoped index is still
-    /// judged on the observing branch, which has to publish its own
-    /// generation before its reads can use the index.
+    /// judged on the observing branch's installed selection. Fork installation
+    /// carries the source's immutable generation by identity; later writes carry
+    /// that generation until its routed meaning actually changes.
     pub fn read_published_generation_for_observation(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -92,6 +93,23 @@ impl IndexAccess<'_> {
             commit,
             observation.version_id(),
         ))
+    }
+
+    /// Cost: one commit lookup plus the generations published by that commit.
+    pub(crate) fn read_artifacts_for_commit(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        commit: crate::history::data::CommitId,
+    ) -> Result<
+        crate::indexes::data::DerivedIndexArtifacts,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
+        crate::execution::check_request(execution)?;
+        self.runtime
+            .indexes
+            .definition_read_binding()
+            .demand_checkpoint_image(execution)?;
+        Ok(self.runtime.indexes.derived_artifacts_for_commit(commit))
     }
 
     pub fn read_generations_for_version(

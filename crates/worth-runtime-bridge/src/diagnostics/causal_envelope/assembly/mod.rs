@@ -23,7 +23,10 @@ impl BridgeDiagnosticsFacade {
     pub fn assemble_causal_explanation_envelope(
         &self,
         request: BridgeCausalEnvelopeAssemblyRequest,
-    ) -> Result<BridgeCausalExplanationEnvelope, BridgeCausalEnvelopeDenial> {
+    ) -> Result<
+        BridgeCausalExplanationEnvelope,
+        crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop,
+    > {
         assemble(request, source::SourceContext::LegacyDiagnostics(self))
     }
 }

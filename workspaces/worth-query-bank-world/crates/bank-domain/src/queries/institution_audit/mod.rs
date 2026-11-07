@@ -4,9 +4,9 @@ mod relations;
 mod shape;
 
 use worth_query_decl::facade::application_query::{
-    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryOrderingDirection,
+    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
+    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryOrderingDirection,
 };
 use worth_query_decl::facade::worth_query_application_query;
 
@@ -67,7 +67,7 @@ worth_query_decl::facade::worth_query_query_binding!(
 
 );
 
-pub fn institution_audit_definition() -> ApplicationQueryDefinition<
+pub fn institution_audit_definition() -> ApplicationQueryDefinitionBuilder<
     BankSchema,
     InstitutionAuditQuery,
     InstitutionAuditQueryParameters,
@@ -87,6 +87,4 @@ pub fn institution_audit_definition() -> ApplicationQueryDefinition<
             posting_sequence(),
             ApplicationQueryOrderingDirection::Ascending,
         )
-        .build()
-        .expect("bank institution audit query is statically canonical")
 }

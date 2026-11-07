@@ -1,4 +1,5 @@
 use super::{WorthQueryLowerRuntimeBoundaryEnvelope, WorthQueryLowerRuntimeCloseoutRow};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryLowerRuntimeBoundarySummary {
@@ -133,7 +134,7 @@ mod tests {
     };
 
     #[test]
-    fn common_path_summary_reuses_envelope_digest() {
+    fn common_path_summary_reuses_envelope_digest() -> Result<(), IdentityDerivationDenial> {
         let request = WorthQueryLowerRuntimeCapabilityRequest::new(
             WorthQueryLowerRuntimeSeamKey::LiveViewSchemaAdmission,
             WorthQueryLowerRuntimeRouteKind::ReadmissionHandoff,
@@ -144,8 +145,8 @@ mod tests {
                     crate::evidence_identity::WorthQueryEvidenceTag::new("test_subject"),
                     "subject-3",
                 )
-                .seal(),
-        );
+                .seal()?,
+        )?;
         let detail_identity = crate::evidence_identity::WorthQueryEvidenceIdentity::compose(
             crate::evidence_identity::WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
         )
@@ -153,12 +154,12 @@ mod tests {
             crate::evidence_identity::WorthQueryEvidenceTag::new("test_detail"),
             "detail-3",
         )
-        .seal();
+        .seal()?;
         let eligibility =
             WorthQueryLowerRuntimeCapabilityEligibility::admitted_with_evidence_identity(
                 request,
                 &detail_identity,
-            );
+            )?;
         let retained_evidence =
             crate::lower_runtime_routing::worth_query_lower_runtime_retained_evidence_identity(
                 "dx-test",
@@ -169,8 +170,8 @@ mod tests {
                     crate::evidence_identity::WorthQueryEvidenceTag::new("test_retained"),
                     "evidence-3",
                 )
-                .seal(),
-            );
+                .seal()?,
+            )?;
         let readmission =
             WorthQueryLowerRuntimeReadmissionReceipt::new(eligibility, &retained_evidence);
         let boundary =
@@ -192,10 +193,13 @@ mod tests {
             summary.headline(),
             "Live view schema admission [query / readmission-handoff / admitted]"
         );
+
+        Ok(())
     }
 
     #[test]
-    fn advanced_boundary_inspection_reuses_envelope_digest() {
+    fn advanced_boundary_inspection_reuses_envelope_digest() -> Result<(), IdentityDerivationDenial>
+    {
         let request = WorthQueryLowerRuntimeCapabilityRequest::new(
             WorthQueryLowerRuntimeSeamKey::SignalInvalidationRouting,
             WorthQueryLowerRuntimeRouteKind::RoutePlanning,
@@ -206,8 +210,8 @@ mod tests {
                     crate::evidence_identity::WorthQueryEvidenceTag::new("test_subject"),
                     "subject-4",
                 )
-                .seal(),
-        );
+                .seal()?,
+        )?;
         let detail_identity = crate::evidence_identity::WorthQueryEvidenceIdentity::compose(
             crate::evidence_identity::WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
         )
@@ -215,18 +219,18 @@ mod tests {
             crate::evidence_identity::WorthQueryEvidenceTag::new("test_detail"),
             "detail-4",
         )
-        .seal();
+        .seal()?;
         let eligibility =
             WorthQueryLowerRuntimeCapabilityEligibility::admitted_with_evidence_identity(
                 request,
                 &detail_identity,
-            );
+            )?;
         let route = crate::lower_runtime_routing::WorthQueryLowerRuntimeRoutePlan::new(
             eligibility,
             crate::lower_runtime_routing::WorthQueryLowerRuntimeRouteSubjectIdentity::from_evidence_identity(
                 "lower-runtime-dx-route",
                 &detail_identity,
-            ),
+            )?,
         );
         let retained_evidence =
             crate::lower_runtime_routing::worth_query_lower_runtime_retained_evidence_identity(
@@ -238,8 +242,8 @@ mod tests {
                     crate::evidence_identity::WorthQueryEvidenceTag::new("test_retained"),
                     "evidence-4",
                 )
-                .seal(),
-            );
+                .seal()?,
+            )?;
         let boundary = WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(
             &route,
             &retained_evidence,
@@ -278,6 +282,8 @@ mod tests {
                     .terminal_projection_for_reporting(),
             )
         );
+
+        Ok(())
     }
 
     #[test]

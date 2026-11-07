@@ -70,10 +70,16 @@ impl RelationalRegionResidency {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         match &*state {
-            ResidencyState::Head { region, .. } | ResidencyState::Full(region) => region
-                .commitment
-                .as_ref()
-                .map_or(0, |commitment| commitment.allocation_bytes()),
+            ResidencyState::Head { region, .. } | ResidencyState::Full(region) => {
+                region
+                    .commitment
+                    .as_ref()
+                    .map_or(0, |commitment| commitment.allocation_bytes())
+                    + region
+                        .kind_indexes
+                        .as_ref()
+                        .map_or(0, |index| index.allocation_bytes())
+            }
             _ => 0,
         }
     }
@@ -90,6 +96,9 @@ impl RelationalRegionResidency {
             && let Some(commitment) = &region.commitment
         {
             commitment.visit_allocations(visitor);
+            if let Some(indexes) = &region.kind_indexes {
+                indexes.visit_allocations(visitor);
+            }
         }
     }
 }

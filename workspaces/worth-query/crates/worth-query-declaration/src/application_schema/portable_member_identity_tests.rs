@@ -239,8 +239,8 @@ fn two_query_markers_cannot_claim_one_portable_query_identity() {
     let entity = ApplicationEntityRef::<Schema, QueryEntity>::from_schema_identifier("QueryEntity");
     let denial = ApplicationSchemaDeclarationBuilder::<Schema>::from_fragment(QueryRecords)
         .unwrap()
-        .application_query(query_definition(FirstQuery::reference(), entity).unwrap())
-        .application_query(query_definition(SecondQuery::reference(), entity).unwrap())
+        .application_query(query_definition(FirstQuery::reference(), entity))
+        .application_query(query_definition(SecondQuery::reference(), entity))
         .build()
         .unwrap_err();
     assert_eq!(denial, ApplicationSchemaDeclarationDenial::DuplicateMember);
@@ -249,7 +249,7 @@ fn two_query_markers_cannot_claim_one_portable_query_identity() {
 #[test]
 fn blank_query_identity_is_rejected_before_schema_canonicalization() {
     let entity = ApplicationEntityRef::<Schema, QueryEntity>::from_schema_identifier("QueryEntity");
-    let denial = match query_definition(BlankQuery::reference(), entity) {
+    let denial = match query_definition(BlankQuery::reference(), entity).build() {
         Ok(_) => panic!("blank query identity must be rejected"),
         Err(denial) => denial,
     };

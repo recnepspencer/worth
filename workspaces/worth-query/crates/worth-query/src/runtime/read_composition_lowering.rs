@@ -270,7 +270,7 @@ fn build_scoped_read_intent_from_request(
     };
     Ok(WorthQueryDeclaredReadIntent::new(
         meaning, operations, traversal, artifacts,
-    ))
+    )?)
 }
 
 pub(in crate::runtime) fn plan_standalone_read_intent(

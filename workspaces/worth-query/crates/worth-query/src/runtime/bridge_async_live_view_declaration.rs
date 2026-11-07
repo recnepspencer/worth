@@ -31,7 +31,7 @@ impl WorthQueryRuntime {
                         bridge_request.request_identity_for_reporting(),
                     ),
                 ],
-            );
+            )?;
         self.declare_bridge_async_live_view_with_selection(
             request_execution,
             name,
@@ -61,7 +61,7 @@ impl WorthQueryRuntime {
                             from_async_identity_part,
                     )
                     .collect(),
-            );
+            )?;
         self.declare_bridge_async_live_view_with_selection(
             request_execution,
             name,
@@ -92,7 +92,7 @@ impl WorthQueryRuntime {
             schema_view.clone(),
             future_selection,
         )?;
-        let binding = WorthQueryRuntimeAsyncSourceBinding::admit(&name, bridge_request);
+        let binding = WorthQueryRuntimeAsyncSourceBinding::admit(&name, bridge_request)?;
         self.finish_live_view_declaration(name, request, schema_view, activation, Some(binding))
     }
 }

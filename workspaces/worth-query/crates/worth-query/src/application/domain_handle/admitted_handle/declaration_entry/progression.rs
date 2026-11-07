@@ -5,6 +5,7 @@ use crate::application::{
     WorthQueryDeclarationProgressionChecked, WorthQueryDeclarationProgressionRecipe,
     WorthQueryDeclarationProgressionTerminalError, WorthQueryDomainEntryMarker,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::super::WorthQueryInstalledDomainDeclarationContext;
 use crate::application::WorthQueryDomainOperatingContext;
@@ -126,6 +127,15 @@ pub enum WorthQueryDeclarationEntryProgressionError<
     D: WorthQueryDomainEntryMarker,
     I: WorthQueryDeclarationInput<D>,
 > {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     Entry(WorthQueryDeclarationAdmissionOrLegalityError<D, I>),
     Progression(WorthQueryDeclarationProgressionTerminalError<D, I>),
+}
+
+impl<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>
+    From<IdentityDerivationDenial> for WorthQueryDeclarationEntryProgressionError<D, I>
+{
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
+    }
 }

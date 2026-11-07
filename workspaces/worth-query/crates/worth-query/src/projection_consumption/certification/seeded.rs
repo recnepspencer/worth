@@ -2,6 +2,7 @@ use super::fixtures::{
     control_row_set_lifecycle, denied_masked_field_failure_digest, grouped_worth_lifecycle,
     source_mismatch_failure_digest,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::identity::{
     compose_digest_sequence, compose_executed_lifecycle_artifact_digest,
     compose_seeded_replay_digest, compose_seeded_row_digest,
@@ -102,56 +103,56 @@ impl ProjectionConsumptionSeededCertificationReport {
 }
 
 pub fn projection_consumption_seeded_certification_report(
-) -> ProjectionConsumptionSeededCertificationReport {
+) -> Result<ProjectionConsumptionSeededCertificationReport, IdentityDerivationDenial> {
     let rows = [17_u64, 18_u64, 23_u64]
         .into_iter()
         .map(seed_row)
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     let seeded_sequence_digest = compose_digest_sequence(
         "projection_consumption_seeded_sequence_v1",
         "row",
         rows.iter().map(|row| row.row_digest().to_string()),
-    );
-    let stable_replay = seed_row(17);
-    let changed_seed = seed_row(20);
+    )?;
+    let stable_replay = seed_row(17)?;
+    let changed_seed = seed_row(20)?;
     let seed_replay_digest = compose_seeded_sequence_replay_check_digest(
         &rows[0].replay_digest,
         &stable_replay.replay_digest,
         rows[0] == stable_replay,
         rows[0].row_digest() != changed_seed.row_digest(),
-    );
+    )?;
     let seed_generator_class_digest = compose_digest_sequence(
         "projection_consumption_seed_generator_class_v1",
         "class",
         ProjectionConsumptionSeedGeneratorClass::all()
             .iter()
             .map(|class| class.as_str()),
-    );
-    ProjectionConsumptionSeededCertificationReport {
+    )?;
+    Ok(ProjectionConsumptionSeededCertificationReport {
         rows,
         seeded_sequence_digest,
         seed_replay_digest,
         seed_generator_class_digest,
-    }
+    })
 }
 
-fn seed_row(seed: u64) -> ProjectionConsumptionSeedReplayRow {
+fn seed_row(seed: u64) -> Result<ProjectionConsumptionSeedReplayRow, IdentityDerivationDenial> {
     let scenario = scenario_for(seed);
     let generator_choices = generator_choices_for(seed, scenario);
-    let executed_artifact_digest = executed_artifact_digest(seed, scenario);
+    let executed_artifact_digest = executed_artifact_digest(seed, scenario)?;
     let replay_digest =
-        compose_seeded_replay_digest(seed, scenario.as_str(), &executed_artifact_digest);
+        compose_seeded_replay_digest(seed, scenario.as_str(), &executed_artifact_digest)?;
     let generator_choice_refs = generator_choices
         .iter()
         .map(|(class, choice)| (class.as_str(), *choice))
         .collect::<Vec<_>>();
-    let row_digest = compose_seeded_row_digest(seed, &replay_digest, &generator_choice_refs);
-    ProjectionConsumptionSeedReplayRow {
+    let row_digest = compose_seeded_row_digest(seed, &replay_digest, &generator_choice_refs)?;
+    Ok(ProjectionConsumptionSeedReplayRow {
         seed,
         generator_choices,
         replay_digest,
         row_digest,
-    }
+    })
 }
 
 fn scenario_for(seed: u64) -> ExecutedSeedScenario {
@@ -224,31 +225,34 @@ fn generator_choices_for(
     ]
 }
 
-fn executed_artifact_digest(seed: u64, scenario: ExecutedSeedScenario) -> String {
-    match scenario {
+fn executed_artifact_digest(
+    seed: u64,
+    scenario: ExecutedSeedScenario,
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(match scenario {
         ExecutedSeedScenario::ControlRowSet => {
-            let lifecycle = control_row_set_lifecycle(row_count(seed));
+            let lifecycle = control_row_set_lifecycle(row_count(seed))?;
             compose_executed_lifecycle_artifact_digest(
                 lifecycle.declaration().declaration_digest(),
                 lifecycle.contract().contract_digest(),
                 lifecycle.facts().fact_set_digest(),
                 lifecycle.receipt().receipt_digest(),
                 lifecycle.envelope().envelope_digest(),
-            )
+            )?
         }
         ExecutedSeedScenario::GroupedWorth => {
-            let lifecycle = grouped_worth_lifecycle(row_count(seed));
+            let lifecycle = grouped_worth_lifecycle(row_count(seed))?;
             compose_executed_lifecycle_artifact_digest(
                 lifecycle.declaration().declaration_digest(),
                 lifecycle.contract().contract_digest(),
                 lifecycle.facts().fact_set_digest(),
                 lifecycle.receipt().receipt_digest(),
                 lifecycle.envelope().envelope_digest(),
-            )
+            )?
         }
-        ExecutedSeedScenario::MaskedFieldDenial => denied_masked_field_failure_digest(),
-        ExecutedSeedScenario::SourceReferenceMismatch => source_mismatch_failure_digest(),
-    }
+        ExecutedSeedScenario::MaskedFieldDenial => denied_masked_field_failure_digest()?,
+        ExecutedSeedScenario::SourceReferenceMismatch => source_mismatch_failure_digest()?,
+    })
 }
 
 fn row_count(seed: u64) -> usize {
@@ -264,21 +268,27 @@ mod tests {
     use super::*;
 
     #[test]
-    fn seeded_report_replays_same_seed_stably_and_exposes_generator_classes() {
-        let report = projection_consumption_seeded_certification_report();
+    fn seeded_report_replays_same_seed_stably_and_exposes_generator_classes(
+    ) -> Result<(), IdentityDerivationDenial> {
+        let report = projection_consumption_seeded_certification_report()?;
         assert_eq!(report.rows().len(), 3);
         assert!(!report.seeded_sequence_digest().is_empty());
         assert!(!report.seed_replay_digest().is_empty());
         assert!(!report.seed_generator_class_digest().is_empty());
+
+        Ok(())
     }
 
     #[test]
-    fn seeded_rows_bind_real_executed_lanes_instead_of_label_only_hashes() {
-        let first = seed_row(17);
-        let replay = seed_row(17);
-        let changed = seed_row(19);
+    fn seeded_rows_bind_real_executed_lanes_instead_of_label_only_hashes(
+    ) -> Result<(), IdentityDerivationDenial> {
+        let first = seed_row(17)?;
+        let replay = seed_row(17)?;
+        let changed = seed_row(19)?;
         assert_eq!(first, replay);
         assert_ne!(first.row_digest(), changed.row_digest());
-        assert_ne!(seed_row(18).row_digest(), seed_row(23).row_digest());
+        assert_ne!(seed_row(18)?.row_digest(), seed_row(23)?.row_digest());
+
+        Ok(())
     }
 }

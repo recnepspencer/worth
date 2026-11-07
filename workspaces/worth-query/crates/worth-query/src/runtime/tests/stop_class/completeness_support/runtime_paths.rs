@@ -57,7 +57,9 @@ pub(in super::super) fn intent_execution_routing_failed_error(
     let handoff = runtime
         .admit_authoritative_intent_for_execution(declaration.clone())
         .expect("authoritative handoff should admit");
-    let binding = runtime.prepare_authoritative_intent_execution_binding(handoff.clone());
+    let binding = runtime
+        .prepare_authoritative_intent_execution_binding(handoff.clone())
+        .expect("fixture digest must fit");
     let execution = runtime
         .backend
         .execute_intent(request_execution, binding.declaration())
@@ -77,7 +79,8 @@ pub(in super::super) fn intent_execution_routing_failed_error(
             binding.binding_digest(),
             execution.outcome_digest(),
             &snapshot_evidence_identity,
-        );
+        )
+        .expect("fixture digest must fit");
     let decision_trace_envelope = WorthQueryIntentDecisionTraceEnvelope::for_admitted_execution(
         &admitted_handoff,
         &execution,
@@ -270,8 +273,10 @@ pub(in super::super) fn preview_promotion_rebinding_required_error(
                     BridgeAsyncCompletionDenialClass::SignalLifecycleDenied,
                 ),
                 "async:preview-stop-class-mismatch",
-            ),
-            &runtime_async_checkpoint_label_identity("basis:drifted"),
+            )
+            .expect("fixture digest must fit"),
+            &runtime_async_checkpoint_label_identity("basis:drifted")
+                .expect("fixture digest must fit"),
             &generation_digest,
         )
         .expect("preview mismatch should remain typed");

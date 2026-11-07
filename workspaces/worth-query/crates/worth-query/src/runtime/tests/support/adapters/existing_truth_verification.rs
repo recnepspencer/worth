@@ -125,7 +125,14 @@ impl WorthQueryRuntimeExistingTruthVerificationAdapter for TestExistingTruthVeri
                 aspect_touch.clone(),
                 value.clone(),
             );
-            fields.push(field);
+            fields.push(field.map_err(|cause| {
+                WorthQueryExistingTruthProbeDenial::new(
+                    request.binding(),
+                    WorthQueryExistingTruthProbeDenialKind::EvidenceIdentityDerivationDenied(cause),
+                    None,
+                    "canonical digest refused probe field",
+                )
+            })?);
         }
         Ok(fields)
     }
@@ -166,6 +173,7 @@ impl WorthQueryRuntimeExistingTruthVerificationAdapter
                         "permissive",
                     ),
                 )
+                .expect("fixture digest must fit")
             })
             .collect())
     }

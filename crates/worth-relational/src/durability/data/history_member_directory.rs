@@ -45,6 +45,7 @@ impl RelationalHistoryMemberDirectory {
     }
 
     pub(crate) fn readmit(
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         declarations: &[RelationalCheckpointHistoryDependency],
         roots: impl IntoIterator<Item = RelationalDurableMemberLocator>,
     ) -> Result<Self, Cause> {
@@ -152,9 +153,12 @@ mod tests {
     #[test]
     fn each_root_exposes_only_its_dependency_members() {
         let declarations = vec![edge(1, &[3, 4]), edge(2, &[4]), edge(3, &[4])];
-        let directory =
-            RelationalHistoryMemberDirectory::readmit(&declarations, [member(1), member(2)])
-                .unwrap();
+        let directory = RelationalHistoryMemberDirectory::readmit(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            &declarations,
+            [member(1), member(2)],
+        )
+        .unwrap();
         let first = directory.members(member(1));
         assert_eq!(first, BTreeSet::from([member(1), member(3), member(4)]));
         assert_eq!(
@@ -180,7 +184,11 @@ mod tests {
             vec![edge(1, &[2]), edge(3, &[4])],
         ] {
             assert_eq!(
-                RelationalHistoryMemberDirectory::readmit(&declarations, [member(1)]),
+                RelationalHistoryMemberDirectory::readmit(
+                    &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+                    &declarations,
+                    [member(1)]
+                ),
                 Err(Cause::Damaged)
             );
         }
@@ -191,8 +199,12 @@ mod tests {
         let declarations = (1..16_384)
             .map(|index| edge(index, &[index + 1]))
             .collect::<Vec<_>>();
-        let directory =
-            RelationalHistoryMemberDirectory::readmit(&declarations, [member(1)]).unwrap();
+        let directory = RelationalHistoryMemberDirectory::readmit(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            &declarations,
+            [member(1)],
+        )
+        .unwrap();
         let closure = directory.members(member(1));
         for index in 1..=16_384 {
             assert!(closure.contains(&member(index)));

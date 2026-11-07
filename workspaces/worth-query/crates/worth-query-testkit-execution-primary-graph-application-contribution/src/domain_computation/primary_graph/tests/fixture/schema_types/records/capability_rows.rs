@@ -24,6 +24,7 @@ impl fragment::Record<CapabilityElevationFactsValue> for ElevationBindings {
             "CapabilityElevationIdentity",
             |row: &CapabilityElevationFactsValue| row.capability_elevation_identity.clone(),
         )
+        .equality_queryable(true)
         .read_only()
         .and(
             "CapabilityElevationReason",
@@ -88,11 +89,13 @@ impl fragment::Record<CapabilityReviewFactsValue> for ExecutionRecordsBindings {
             "CapabilityReviewIdentity",
             |row: &CapabilityReviewFactsValue| row.capability_review_identity.clone(),
         )
+        .equality_queryable(true)
         .read_only()
         .and(
             "CapabilityReviewKindField",
             |row: &CapabilityReviewFactsValue| row.capability_review_kind_field,
         )
+        .equality_queryable(true)
         .and(
             "CapabilityReviewStatusField",
             |row: &CapabilityReviewFactsValue| row.capability_review_status_field,
@@ -144,6 +147,7 @@ impl fragment::Record<CapabilityFactsValue> for GrantBindings {
         fragment::field("CapabilityIdentity", |row: &CapabilityFactsValue| {
             row.capability_identity.clone()
         })
+        .equality_queryable(true)
         .read_only()
         .and("CapabilityActionField", |row: &CapabilityFactsValue| {
             row.capability_action_field
@@ -220,6 +224,7 @@ impl fragment::Record<CapabilityActionRecordFactsValue> for ExecutionRecordsBind
             "CapabilityActionRecordIdentity",
             |row: &CapabilityActionRecordFactsValue| row.capability_action_record_identity.clone(),
         )
+        .equality_queryable(true)
         .read_only()
         .build(
             |capability_action_record_identity, _: &mut ValueDecodeAdmission<'_>| {

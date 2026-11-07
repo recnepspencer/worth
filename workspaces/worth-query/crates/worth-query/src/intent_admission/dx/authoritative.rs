@@ -113,7 +113,7 @@ impl<'a> WorthQueryRuntimeIntentAdmissionReview<'a> {
             })?;
         let execution_binding = self
             .runtime
-            .prepare_authoritative_intent_execution_binding(handoff.clone());
+            .prepare_authoritative_intent_execution_binding(handoff.clone())?;
         Ok(WorthQueryAdmittedRuntimeIntent {
             runtime: self.runtime,
             review: self.review,

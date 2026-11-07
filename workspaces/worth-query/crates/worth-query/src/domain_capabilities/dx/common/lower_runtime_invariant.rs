@@ -13,10 +13,12 @@ use crate::domain_capabilities::{
     WorthQueryDomainCapabilityTargetKind, WorthQueryInstalledLowerRuntimeContributionTarget,
     WorthQueryRequestedInvariantCapabilityContribution,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::WorthQueryGraphCompositionDomainInvariantDenial;
 
 use super::lower_runtime::WorthQueryLowerRuntimeDomainContributionSurface;
-use super::shared::{materialize_common_lane, qualify_semantic_code};
+use super::materialization::materialize_common_lane;
+use super::semantic_code::qualify_semantic_code;
 
 impl WorthQueryLowerRuntimeDomainContributionSurface {
     #[allow(clippy::too_many_arguments)]
@@ -32,7 +34,8 @@ impl WorthQueryLowerRuntimeDomainContributionSurface {
         counter_snapshot: impl Into<String>,
         semantic_code: impl AsRef<str>,
         detail: impl Into<String>,
-    ) -> WorthQueryLowerRuntimeGraphInvariantDenialContribution {
+    ) -> Result<WorthQueryLowerRuntimeGraphInvariantDenialContribution, IdentityDerivationDenial>
+    {
         let target = self.target;
         let requested = WorthQueryInvariantCapabilityContributionAuthoring::graph_invariant_denial(
             invariant_family,
@@ -45,9 +48,9 @@ impl WorthQueryLowerRuntimeDomainContributionSurface {
             counter_snapshot,
             qualify_semantic_code(target.authority(), semantic_code.as_ref()),
             detail,
-        )
-        .bind_to_installed_target(target.clone());
-        WorthQueryLowerRuntimeGraphInvariantDenialContribution { requested, target }
+        )?
+        .bind_to_installed_target(target.clone())?;
+        Ok(WorthQueryLowerRuntimeGraphInvariantDenialContribution { requested, target })
     }
 }
 
@@ -61,10 +64,12 @@ pub struct WorthQueryLowerRuntimeGraphInvariantDenialContribution {
 impl WorthQueryLowerRuntimeGraphInvariantDenialContribution {
     pub fn try_materialize(
         self,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<WorthQueryGraphCompositionDomainInvariantDenial>
-    {
+    ) -> Result<
+        WorthQueryCheckedDomainCapabilityOutcome<WorthQueryGraphCompositionDomainInvariantDenial>,
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    > {
         let target = self.target;
-        materialize_common_lane(
+        Ok(materialize_common_lane(
             "invariant-capability",
             WorthQueryDomainCapabilityTargetKind::LowerRuntimeBoundaryEnvelope,
             WorthQueryInvariantCapabilityContributionPosture::InvariantDenial.as_str(),
@@ -77,7 +82,7 @@ impl WorthQueryLowerRuntimeGraphInvariantDenialContribution {
                 )
             },
             materialize_graph_composition_domain_invariant_denial,
-        )
+        )?)
     }
 
     pub fn materialize(
@@ -86,6 +91,6 @@ impl WorthQueryLowerRuntimeGraphInvariantDenialContribution {
         WorthQueryGraphCompositionDomainInvariantDenial,
         WorthQueryDomainCapabilityMaterializationError,
     > {
-        self.try_materialize().into_result()
+        self.try_materialize()?.into_result()
     }
 }

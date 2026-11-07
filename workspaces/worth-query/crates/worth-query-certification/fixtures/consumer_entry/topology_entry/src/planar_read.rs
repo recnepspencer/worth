@@ -44,8 +44,13 @@ impl<Schema: TopologyModelBinding> ApplicationQueryMarkerIdentity<Schema> for Pl
     const QUERY_TYPE_NAME: &'static str = "worth.query.certification.planar-query.v1";
     const SCOPE_TYPE_NAME: &'static str = "Body";
 }
-pub fn planar_query_definition<Schema: TopologyModelBinding>(
-) -> ApplicationQueryDefinition<Schema, PlanarQuery, PlanarReadParameters, PlanarReadResult, Body> {
+pub fn planar_query_definition<Schema: TopologyModelBinding>() -> ApplicationQueryDefinitionBuilder<
+    Schema,
+    PlanarQuery,
+    PlanarReadParameters,
+    PlanarReadResult,
+    Body,
+> {
     let second_successor_shape = ApplicationQueryResultShapeBuilder::<
         Schema,
         PlanarQuery,
@@ -89,8 +94,6 @@ pub fn planar_query_definition<Schema: TopologyModelBinding>(
     .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
     .lanes(ApplicationQueryLaneEligibility::one_shot())
     .public()
-    .build()
-    .expect("planar query is canonical")
 }
 fn successor_position_y_result<Schema: TopologyModelBinding>(
 ) -> ApplicationQueryResultFieldRef<PlanarQuery, SuccessorPositionYSlot, Schema, PositionY> {

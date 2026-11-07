@@ -1,4 +1,5 @@
 use crate::basis_lifecycle::BasisFamily;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 use super::batch_execution::ExecutedEffectBatchPlan;
@@ -68,7 +69,7 @@ impl EffectExecutionReceipt {
                     WorthQueryEvidenceTag::new("execution"),
                     &execution_identity,
                 )
-                .seal();
+                .seal().expect("fixed performed artifact grammar: closed labels, primitive coordinates, sealed identities, and Bridge-owned SHA256 output tokens");
         let decision_trace = EffectReceiptDecisionTrace::scalar(executed);
         let integrity_markers = EffectReceiptIntegrityMarkers::new(
             executed.artifact(),
@@ -111,7 +112,7 @@ impl EffectExecutionReceipt {
                     WorthQueryEvidenceTag::new("execution"),
                     &execution_identity,
                 )
-                .seal();
+                .seal().expect("fixed performed artifact grammar: closed labels, primitive coordinates, sealed identities, and Bridge-owned SHA256 output tokens");
         let decision_trace = EffectReceiptDecisionTrace::batch(executed);
         let integrity_markers = EffectReceiptIntegrityMarkers::new(
             executed.aggregate_artifact(),
@@ -185,20 +186,28 @@ impl EffectExecutionReceipt {
         self.write_count
     }
 
-    pub fn effect_envelope(&self) -> SelfDescribingEffectEnvelope {
-        SelfDescribingEffectEnvelope::from_receipt(self)
+    pub fn effect_envelope(
+        &self,
+    ) -> Result<SelfDescribingEffectEnvelope, IdentityDerivationDenial> {
+        Ok(SelfDescribingEffectEnvelope::from_receipt(self)?)
     }
 
     pub fn materialize_diagnostics(
         &self,
         request: EffectDiagnosticsRequest,
-    ) -> EffectDiagnosticsMaterialization {
-        let envelope = self.effect_envelope();
-        EffectDiagnosticsMaterialization::from_receipt(self, &envelope, request)
+    ) -> Result<EffectDiagnosticsMaterialization, IdentityDerivationDenial> {
+        let envelope = self.effect_envelope()?;
+        Ok(EffectDiagnosticsMaterialization::from_receipt(
+            self, &envelope, request,
+        )?)
     }
 
-    pub fn transition_rules(&self) -> EffectReceiptTransitionRules {
-        EffectReceiptTransitionRules::for_receipt_family(self.receipt_family)
+    pub fn transition_rules(
+        &self,
+    ) -> Result<EffectReceiptTransitionRules, IdentityDerivationDenial> {
+        Ok(EffectReceiptTransitionRules::for_receipt_family(
+            self.receipt_family,
+        )?)
     }
 
     pub fn target_evidence(&self) -> EffectReceiptTargetEvidence {
@@ -264,7 +273,7 @@ fn scalar_execution_receipt_identity(
             WorthQueryEvidenceTag::new("authority_artifact"),
             &executed_authority_artifact_identity(executed.artifact()),
         )
-        .seal()
+        .seal().expect("fixed performed artifact grammar: closed labels, primitive coordinates, sealed identities, and Bridge-owned SHA256 output tokens")
 }
 
 fn batch_execution_receipt_identity(
@@ -287,5 +296,5 @@ fn batch_execution_receipt_identity(
             WorthQueryEvidenceTag::new("authority_artifact"),
             &executed_authority_artifact_identity(executed.aggregate_artifact()),
         )
-        .seal()
+        .seal().expect("fixed performed artifact grammar: closed labels, primitive coordinates, sealed identities, and Bridge-owned SHA256 output tokens")
 }

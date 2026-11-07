@@ -21,8 +21,8 @@ impl<S: OrbitModel> WorthQueryApplicationProjection<S, Names> for Member {
         Ok(Self)
     }
 }
-pub fn definition<S: OrbitModel>() -> ApplicationQueryDefinition<S, Names, Parameters, Member, Node>
-{
+pub fn definition<S: OrbitModel>(
+) -> ApplicationQueryDefinitionBuilder<S, Names, Parameters, Member, Node> {
     let shape = ApplicationQueryResultShapeBuilder::<S, Names, Node, Member, MemberBinding>::new(
         Node::reference(),
     )
@@ -37,6 +37,4 @@ pub fn definition<S: OrbitModel>() -> ApplicationQueryDefinition<S, Names, Param
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
         .orbit(whole::<S, Names>())
-        .build()
-        .unwrap()
 }

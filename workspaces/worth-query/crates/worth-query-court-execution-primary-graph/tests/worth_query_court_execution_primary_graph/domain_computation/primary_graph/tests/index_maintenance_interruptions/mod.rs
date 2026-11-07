@@ -29,7 +29,7 @@ pub fn index_currency_stop(cancelled: bool) {
         if cancelled {
             source.cancel();
             let denied = handle
-                .ensure_primary_indexes_for_basis_for_test(&execution, runtime, &basis)
+                .carry_primary_index_basis_for_basis_for_test(&execution, runtime, &basis)
                 .unwrap_err();
             assert_eq!(currency_stop(denied), Some(Err(Control::Cancelled)));
             return;
@@ -48,7 +48,7 @@ pub fn index_currency_stop(cancelled: bool) {
         }
         let (enough, report) = setup
             .run(ExecutionWorkCeiling::new(Some(100_000)), |_| {
-                handle.ensure_primary_indexes_for_basis_for_test(&setup, runtime, &basis)
+                handle.carry_primary_index_basis_for_basis_for_test(&setup, runtime, &basis)
             })
             .unwrap();
         enough.unwrap();
@@ -66,7 +66,7 @@ pub fn index_currency_stop(cancelled: bool) {
         let (short, _) = setup
             .run(
                 ExecutionWorkCeiling::new(Some(report.charged_work() - 1)),
-                |_| handle.ensure_primary_indexes_for_basis_for_test(&setup, runtime, &basis),
+                |_| handle.carry_primary_index_basis_for_basis_for_test(&setup, runtime, &basis),
             )
             .unwrap();
         assert_eq!(
@@ -152,7 +152,9 @@ pub fn refresh_stop(
     use worth_query_execution::facade::integration::WorthQueryPrimaryGraphIndexRefreshDenialKind as Denial;
     match denial.kind() {
         Denial::Execution(stop) => Some(stop),
-        Denial::MissingCommittedMutation | Denial::IndexBuildRejected => None,
+        Denial::MissingCommittedMutation
+        | Denial::IndexBuildRejected
+        | Denial::IndexPredecessorUnavailable => None,
     }
 }
 

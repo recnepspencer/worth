@@ -23,7 +23,7 @@ worth_query_application_query!(pub Query for Schema, identity "RowQuery", parame
 pub fn value() -> ApplicationQueryResultFieldRef<Query, ValueSlot, Schema, RowValue> {
     ApplicationQueryResultFieldRef::new("value", RowValue::at("RowValue"))
 }
-pub fn definition() -> ApplicationQueryDefinition<Schema, Query, (), Value, Row> {
+pub fn definition() -> ApplicationQueryDefinitionBuilder<Schema, Query, (), Value, Row> {
     ApplicationQueryDefinitionBuilder::declare(Query::reference())
         .root(Row::reference())
         .scope(Row::reference())
@@ -39,8 +39,6 @@ pub fn definition() -> ApplicationQueryDefinition<Schema, Query, (), Value, Row>
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<Schema, Query> for Value {
     fn project(

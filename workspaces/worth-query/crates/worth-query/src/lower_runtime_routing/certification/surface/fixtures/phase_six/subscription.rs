@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::num::NonZeroUsize;
 
 use crate::declarative_live::{
@@ -23,7 +24,8 @@ use crate::subscription::{
 
 use super::super::{RepresentativeArtifacts, WorthQueryLowerRuntimeRepresentativeEvidenceSource};
 
-pub(crate) fn representative_subscription_activation_row() -> RepresentativeArtifacts {
+pub(crate) fn representative_subscription_activation_row(
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let request = DeclarativeLiveQueryRequest::new("Task", DeclarativeLiveViewShape::table())
         .project(DeclarativeProjectionField::from_authoring_parts(
             "identity", "id",
@@ -53,7 +55,7 @@ pub(crate) fn representative_subscription_activation_row() -> RepresentativeArti
     let session = declare_runtime_live_query_session_with_grouped_baseline(
         request.clone(),
         schema_view,
-        phase_six_snapshot_identity("subscription-snapshot"),
+        phase_six_snapshot_identity("subscription-snapshot")?,
         None::<Vec<crate::view_shape_live::WorthQueryGroupedBaselineMember>>,
     )
     .expect("subscription activation fixture should declare live session");
@@ -68,7 +70,7 @@ pub(crate) fn representative_subscription_activation_row() -> RepresentativeArti
             NonZeroUsize::new(2).expect("projection width"),
             NonZeroUsize::new(1).expect("ordering width"),
         ),
-    );
+    )?;
     let selection = select_query_subscription_family(live, work_budget())
         .expect("subscription activation fixture should select family");
     let declaration = declare_query_subscription(selection, slice_budget())
@@ -83,15 +85,15 @@ pub(crate) fn representative_subscription_activation_row() -> RepresentativeArti
         &activation,
         crate::runtime::runtime_subscription_support_evidence_identity(
             "certified-subscription-activation-support",
-        ),
+        )?,
         None,
-    );
+    )?;
     let boundary = SubscriptionActivationBoundaryReceipt::from_activation(
         "tasks.subscription",
         &activation,
         activation_receipt,
-    );
-    RepresentativeArtifacts {
+    )?;
+    Ok(RepresentativeArtifacts {
         seam_key: WorthQueryLowerRuntimeSeamKey::SubscriptionActivation,
         request: boundary.route_plan().eligibility().request().clone(),
         eligibility: boundary.route_plan().eligibility().clone(),
@@ -99,15 +101,17 @@ pub(crate) fn representative_subscription_activation_row() -> RepresentativeArti
         boundary_receipt: boundary.boundary_execution_receipt().clone(),
         envelope: boundary.boundary_envelope().clone(),
         evidence_source: WorthQueryLowerRuntimeRepresentativeEvidenceSource::RuntimeBackedFixture,
-    }
+    })
 }
 
-fn phase_six_snapshot_identity(label: &'static str) -> WorthQuerySnapshotIdentity {
-    WorthQuerySnapshotIdentity::preview(
+fn phase_six_snapshot_identity(
+    label: &'static str,
+) -> Result<WorthQuerySnapshotIdentity, IdentityDerivationDenial> {
+    Ok(WorthQuerySnapshotIdentity::preview(
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WriteReceiptSnapshotIdentity)
             .field_shape(WorthQueryEvidenceTag::new("phase_six_fixture"), label)
-            .seal(),
-    )
+            .seal()?,
+    ))
 }
 
 fn work_budget() -> QuerySubscriptionWorkBudget {

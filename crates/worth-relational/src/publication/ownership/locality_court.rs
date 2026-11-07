@@ -141,14 +141,13 @@ impl RelationalRuntime {
                 .count()
         };
         let cold_before = count();
-        // Bound this certification caller's entire recovered edit wave. Native's
-        // fence and custody stages still consume the original request account.
+        // Keep the original host's request ceiling. This court guards physical
+        // read locality; an additional fixed work invoice would conflate cold
+        // index admission with the ordinary ownership selection being observed.
         execution
             .in_scope(|lease| {
-                worth_execution::ExecutionWorkCeiling::new(Some(100_000)).run_with_checkpoint(
-                    lease,
-                    None,
-                    |_| {
+                worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
+                    .run_with_checkpoint(lease, None, |_| {
                         let bounded = *execution;
                         let selected = super::select_current(
                             &bounded,
@@ -224,8 +223,7 @@ impl RelationalRuntime {
                             cold_after_owned: count(),
                             owned_refusal,
                         })
-                    },
-                )
+                    })
             })
             .map_err(|cause| TransactionCommitError::execution(cause.into()))?
             .map_err(|cause| TransactionCommitError::execution(cause.into()))?

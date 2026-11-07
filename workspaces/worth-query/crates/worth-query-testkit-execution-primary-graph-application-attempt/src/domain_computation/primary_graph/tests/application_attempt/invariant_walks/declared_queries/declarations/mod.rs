@@ -40,7 +40,7 @@ impl<Q: ApplicationQueryMarkerIdentity<WalkSchema>> WorthQueryApplicationProject
 pub fn definition<Q: ApplicationQueryMarkerIdentity<WalkSchema> + 'static>(
     query: ApplicationQueryReference<WalkSchema, Q, Parameters, NodeRow, Node>,
     path: ApplicationQueryRootPath<WalkSchema, Node, Node>,
-) -> ApplicationQueryDefinition<WalkSchema, Q, Parameters, NodeRow, Node>
+) -> ApplicationQueryDefinitionBuilder<WalkSchema, Q, Parameters, NodeRow, Node>
 where
     Q::ResultBinding: ApplicationStructuredValueBinding<Value = NodeRow>,
 {
@@ -60,8 +60,6 @@ where
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .requires_ability(EditNode::reference())
         .root_path(path)
-        .build()
-        .unwrap()
 }
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<WalkSchema>,

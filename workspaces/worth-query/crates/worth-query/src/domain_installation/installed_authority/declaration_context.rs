@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::marker::PhantomData;
 
 use crate::application::{
@@ -17,6 +18,7 @@ use super::{
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInstalledDomainDeclarationContextDenialKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     HandleAuthority,
     UndeclaredCapability,
     UndeclaredConfiguration,
@@ -97,7 +99,7 @@ where
         operating_context: C,
     ) -> Result<Self, WorthQueryInstalledDomainDeclarationContextDenial> {
         validate_context_requirements::<D, C>(&installed_authority, &operating_context)?;
-        let operating_context_identity = operating_context_identity(&operating_context);
+        let operating_context_identity = operating_context_identity(&operating_context)?;
         let context_identity = worth_query_evidence_identity(
             WorthQueryEvidenceScope::InstalledDomainDeclarationContext,
         )
@@ -109,7 +111,7 @@ where
             WorthQueryEvidenceTag::new("operating_context"),
             &operating_context_identity,
         )
-        .seal();
+        .seal()?;
         Ok(Self {
             installed_authority,
             operating_context,
@@ -218,7 +220,10 @@ where
     pub(crate) fn contribution_target<I>(
         &self,
         declaration: &crate::application::WorthQueryCanonicalDeclarationArtifact<D, I>,
-    ) -> crate::domain_capabilities::WorthQueryInstalledDeclarationContributionTarget
+    ) -> Result<
+        crate::domain_capabilities::WorthQueryInstalledDeclarationContributionTarget,
+        IdentityDerivationDenial,
+    >
     where
         I: crate::application::WorthQueryDeclarationInput<D>,
     {
@@ -226,9 +231,11 @@ where
             crate::domain_capabilities::WorthQueryDeclarationBoundContributionTarget::for_canonical_declaration(
                 declaration,
             );
-        crate::domain_capabilities::WorthQueryInstalledDomainContributionTarget::bind(
-            self.installed_authority.authority_arc(),
-            semantic_target,
+        Ok(
+            crate::domain_capabilities::WorthQueryInstalledDomainContributionTarget::bind(
+                self.installed_authority.authority_arc(),
+                semantic_target,
+            )?,
         )
     }
 
@@ -300,20 +307,35 @@ where
     Ok(())
 }
 
-fn operating_context_identity<D, C>(operating_context: &C) -> WorthQueryEvidenceIdentity
+fn operating_context_identity<D, C>(
+    operating_context: &C,
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>
 where
     D: WorthQueryDomainEntryMarker,
     C: WorthQueryDomainOperatingContext<D>,
 {
     let declaration = operating_context.context_identity();
-    worth_query_evidence_identity(WorthQueryEvidenceScope::InstalledDomainDeclarationContext)
-        .field_value_sequence(
-            WorthQueryEvidenceTag::new("operating_context_field_name"),
-            declaration.fields().map(|(name, _)| name),
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::InstalledDomainDeclarationContext)
+            .field_value_sequence(
+                WorthQueryEvidenceTag::new("operating_context_field_name"),
+                declaration.fields().map(|(name, _)| name),
+            )
+            .field_value_sequence(
+                WorthQueryEvidenceTag::new("operating_context_field_value"),
+                declaration.fields().map(|(_, value)| value),
+            )
+            .seal()?,
+    )
+}
+
+impl From<IdentityDerivationDenial> for WorthQueryInstalledDomainDeclarationContextDenial {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::for_requirement(
+            WorthQueryInstalledDomainDeclarationContextDenialKind::EvidenceIdentityDerivationDenied(
+                cause,
+            ),
+            "canonical declaration context identity",
         )
-        .field_value_sequence(
-            WorthQueryEvidenceTag::new("operating_context_field_value"),
-            declaration.fields().map(|(_, value)| value),
-        )
-        .seal()
+    }
 }

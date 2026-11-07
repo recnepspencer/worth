@@ -16,11 +16,14 @@ fn runtime_specific_effect_and_preview_wrappers_delegate_to_unified_inspection_e
         )
         .expect("live should declare");
     let effect = runtime
-        .declare_effect::<WorthQueryUnrefinedLiveShape>(WorthQueryEffectDeclaration::deliver(
-            "ui.wrapper-delegation",
-            WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title"])),
-            "ui.preview",
-        ))
+        .declare_effect::<WorthQueryUnrefinedLiveShape>(
+            WorthQueryEffectDeclaration::deliver(
+                "ui.wrapper-delegation",
+                WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title"])),
+                "ui.preview",
+            )
+            .expect("fixture digest must fit"),
+        )
         .expect("effect should declare");
 
     let effect_delegated = runtime
@@ -28,6 +31,7 @@ fn runtime_specific_effect_and_preview_wrappers_delegate_to_unified_inspection_e
         .expect("effect wrapper should inspect");
     let effect_canonical = runtime
         .inspect_intent(&effect)
+        .expect("fixture digest must fit")
         .execute(request_execution)
         .expect("canonical effect inspection should execute");
     match effect_canonical.inspection() {
@@ -44,13 +48,15 @@ fn runtime_specific_effect_and_preview_wrappers_delegate_to_unified_inspection_e
             .expect("preview session should be admitted");
         preview.use_view(&live);
         preview.discard()
-    };
+    }
+    .expect("fixture digest must fit");
 
     let preview_delegated = runtime
         .inspect_preview_outcome(request_execution, &outcome)
         .expect("preview outcome wrapper should inspect");
     let preview_canonical = runtime
         .inspect_intent(&outcome)
+        .expect("fixture digest must fit")
         .execute(request_execution)
         .expect("canonical preview inspection should execute");
     match preview_canonical.inspection() {

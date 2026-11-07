@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod session_entry;
 use super::{
     DeclarativeLiveQueryRequest, QuerySchemaView, WorthQueryAspectApiFinalizationCloseout,
@@ -223,20 +224,28 @@ impl WorthQueryWorkspace {
         self.runtime
     }
 
-    pub fn public_api_contract(&self) -> WorthQueryRuntimePublicApiContract {
-        self.runtime.public_api_contract()
+    pub fn public_api_contract(
+        &self,
+    ) -> Result<WorthQueryRuntimePublicApiContract, IdentityDerivationDenial> {
+        Ok(self.runtime.public_api_contract()?)
     }
 
-    pub fn public_handle_contract(&self) -> WorthQueryHandleContract {
-        self.runtime.public_handle_contract()
+    pub fn public_handle_contract(
+        &self,
+    ) -> Result<WorthQueryHandleContract, IdentityDerivationDenial> {
+        Ok(self.runtime.public_handle_contract()?)
     }
 
-    pub fn public_support_matrix(&self) -> WorthQueryRuntimePublicSupportMatrix {
-        self.runtime.public_support_matrix()
+    pub fn public_support_matrix(
+        &self,
+    ) -> Result<WorthQueryRuntimePublicSupportMatrix, IdentityDerivationDenial> {
+        Ok(self.runtime.public_support_matrix()?)
     }
 
-    pub fn public_mutation_surface_report(&self) -> WorthQueryMutationSurfaceReport {
-        self.runtime.public_mutation_surface_report()
+    pub fn public_mutation_surface_report(
+        &self,
+    ) -> Result<WorthQueryMutationSurfaceReport, IdentityDerivationDenial> {
+        Ok(self.runtime.public_mutation_surface_report()?)
     }
 
     pub fn public_authoritative_mutation_evidence_support(
@@ -248,15 +257,16 @@ impl WorthQueryWorkspace {
 
     pub fn public_aspect_api_finalization_closeout(
         &self,
-    ) -> WorthQueryAspectApiFinalizationCloseout {
-        self.runtime.public_aspect_api_finalization_closeout()
+    ) -> Result<WorthQueryAspectApiFinalizationCloseout, IdentityDerivationDenial> {
+        Ok(self.runtime.public_aspect_api_finalization_closeout()?)
     }
 
     pub fn public_authoritative_mutation_evidence_closeout(
         &self,
-    ) -> WorthQueryAuthoritativeMutationEvidenceCloseout {
-        self.runtime
-            .public_authoritative_mutation_evidence_closeout()
+    ) -> Result<WorthQueryAuthoritativeMutationEvidenceCloseout, IdentityDerivationDenial> {
+        Ok(self
+            .runtime
+            .public_authoritative_mutation_evidence_closeout()?)
     }
 
     pub fn admit_public_api_family(

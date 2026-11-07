@@ -1,8 +1,10 @@
 use super::super::{ProjectionFactFieldPath, ProjectionFactKind, ProjectionSourceFamily};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_foundational::facade::AspectValuePosture;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ProjectionFactExtractionError {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     ContractSourceFamilyMismatch {
         contract_family: ProjectionSourceFamily,
         extractor_family: ProjectionSourceFamily,
@@ -64,4 +66,10 @@ pub enum ProjectionFactExtractionError {
         expected_count: usize,
         actual_count: usize,
     },
+}
+
+impl From<IdentityDerivationDenial> for ProjectionFactExtractionError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
+    }
 }

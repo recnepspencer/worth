@@ -13,6 +13,7 @@ use crate::storage::data::{
     RelationalStorageSubject, RelationalStorageUnavailable,
     RelationalStorageUnavailableCause as Cause,
 };
+use crate::storage::substrate::maintenance::ReconstructionLane;
 use crate::storage::substrate::{EntityRecordKind, RelationRecordKind};
 use serde::Serialize;
 use std::collections::BTreeMap;
@@ -56,6 +57,7 @@ pub(super) struct HistoryFolder<'request, 'scope, 'host> {
 
 impl<'request, 'scope, 'host> HistoryFolder<'request, 'scope, 'host> {
     pub(super) fn new(
+        _lane: &ReconstructionLane<'_>,
         execution: &'request worth_execution::ExecutionRequest<'scope, 'host>,
         partition: PartitionId,
         limit: u64,
@@ -72,6 +74,7 @@ impl<'request, 'scope, 'host> HistoryFolder<'request, 'scope, 'host> {
 
     pub(super) fn read(
         &mut self,
+        lane: &ReconstructionLane<'_>,
         source: &dyn RelationalDurableColdSource,
         directory: &Arc<RelationalHistoryMemberDirectory>,
         reference: &RegionHistoryBase,
@@ -95,7 +98,7 @@ impl<'request, 'scope, 'host> HistoryFolder<'request, 'scope, 'host> {
                 .iter()
                 .any(|owner| Arc::ptr_eq(owner, directory))
             {
-                verify_directory(&cached.image, directory, reference.member)
+                verify_directory(lane, &cached.image, directory, reference.member)
                     .map_err(|cause| unavailable(partition, cause))?;
                 cached.directories.push(directory.clone());
             }
@@ -128,20 +131,24 @@ impl<'request, 'scope, 'host> HistoryFolder<'request, 'scope, 'host> {
             .read_member(reference.member, remaining)
             .map_err(|cause| unavailable(partition, cause))?;
         crate::execution::check_request(self.execution).map_err(Failure::Request)?;
-        let frame = RelationalRegionImage::decode(
-            &bytes,
-            reference.member,
-            reference.partition_id,
-            reference.schema_carrier_digest,
-            RelationalRegionImageKind::History,
-        )
-        .map_err(|cause| unavailable(partition, cause))?;
+        let frame =
+            super::kind_admission::recover(lane, self.execution, partition, |checkpoint, _| {
+                RelationalRegionImage::decode(
+                    lane,
+                    checkpoint,
+                    &bytes,
+                    reference.member,
+                    reference.partition_id,
+                    reference.schema_carrier_digest,
+                    RelationalRegionImageKind::History,
+                )
+            })?;
         let image: RegionHistoryImage = rmp_serde::from_slice(frame.payload)
             .map_err(|_| unavailable(partition, Cause::Damaged))?;
-        super::kind_commitment::verify(&image.kind_projection, reference.kind_commitment)
+        super::kind_commitment::verify(lane, &image.kind_projection, reference.kind_commitment)
+            .and_then(|()| super::history_kind_cache::verify(lane, &image))
             .map_err(|cause| unavailable(partition, cause))?;
-        super::history_kind_cache::verify(&image).map_err(|cause| unavailable(partition, cause))?;
-        verify_directory(&image, directory, reference.member)
+        verify_directory(lane, &image, directory, reference.member)
             .map_err(|cause| unavailable(partition, cause))?;
         let image = Arc::new(image);
         self.cache.insert(
@@ -159,6 +166,7 @@ impl<'request, 'scope, 'host> HistoryFolder<'request, 'scope, 'host> {
 
     pub(super) fn fold_rows<K: HistoryRowKind>(
         &mut self,
+        lane: &ReconstructionLane<'_>,
         source: &dyn RelationalDurableColdSource,
         directory: &Arc<RelationalHistoryMemberDirectory>,
         root: &RegionHistoryBase,
@@ -171,20 +179,21 @@ impl<'request, 'scope, 'host> HistoryFolder<'request, 'scope, 'host> {
         for row in 0..rows {
             let mut reference = root.clone();
             reference.row_index = row as u64;
-            result.push(self.fold_row::<K>(source, directory, reference)?);
+            result.push(self.fold_row::<K>(lane, source, directory, reference)?);
         }
         Ok(result)
     }
 
     pub(super) fn fold_row<K: HistoryRowKind>(
         &mut self,
+        lane: &ReconstructionLane<'_>,
         source: &dyn RelationalDurableColdSource,
         directory: &Arc<RelationalHistoryMemberDirectory>,
         mut reference: RegionHistoryBase,
     ) -> Result<Vec<K::Metadata>, Failure> {
         let mut chunks = Vec::new();
         loop {
-            let image = self.read(source, directory, &reference)?;
+            let image = self.read(lane, source, directory, &reference)?;
             let index = usize::try_from(reference.row_index)
                 .map_err(|_| unavailable(self.partition, Cause::Damaged))?;
             let row = K::rows(&image)
@@ -238,11 +247,12 @@ impl<'request, 'scope, 'host> HistoryFolder<'request, 'scope, 'host> {
 }
 
 fn verify_directory(
+    lane: &ReconstructionLane<'_>,
     image: &RegionHistoryImage,
     directory: &RelationalHistoryMemberDirectory,
     member: RelationalDurableMemberLocator,
 ) -> Result<(), Cause> {
-    if image.direct_bases().as_slice() != directory.bases(member) {
+    if image.direct_bases(lane).as_slice() != directory.bases(member) {
         Err(Cause::Damaged)
     } else {
         Ok(())

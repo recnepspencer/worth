@@ -20,7 +20,7 @@ impl BindingSet for CompanionModelBindings {
 }
 impl Scalar<String> for CompanionModelBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 #[derive(Clone, Copy)]
@@ -54,10 +54,12 @@ impl Record<CompanionFactsValue> for CompanionModelBindings {
         field("CompanionIdentityField", |row: &CompanionFactsValue| {
             row.companion_identity_field.clone()
         })
+        .equality_queryable(true)
         .read_only()
         .and("CompanionValueField", |row: &CompanionFactsValue| {
             row.companion_value_field.clone()
         })
+        .equality_queryable(true)
         .build(
             |companion_identity_field, companion_value_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(CompanionFactsValue {

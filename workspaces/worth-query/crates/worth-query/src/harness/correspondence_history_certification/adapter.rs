@@ -19,14 +19,14 @@ impl MilestoneFivePointFourCorrespondenceHistoryCertificationAdapter {
     pub fn structural_correspondence_and_historical_materialization_path_test(
     ) -> CorrespondenceHistoryCertificationMatrix {
         let lanes = CertificationLanes {
-            lineage: fixtures::lineage_authoritative_lane(),
-            structural: fixtures::structural_unique_replay_lane(),
-            disagreement: fixtures::disagreement_lane(),
-            ambiguity: fixtures::ambiguity_lane(),
-            retained: fixtures::retained_lane(),
-            replay: fixtures::replay_lane(),
-            reconstruction: fixtures::reconstruction_lane(),
-            drift: fixtures::prediction_drift_lane(),
+            lineage: fixtures::lineage_authoritative_lane().expect("fixture digest must fit"),
+            structural: fixtures::structural_unique_replay_lane().expect("fixture digest must fit"),
+            disagreement: fixtures::disagreement_lane().expect("fixture digest must fit"),
+            ambiguity: fixtures::ambiguity_lane().expect("fixture digest must fit"),
+            retained: fixtures::retained_lane().expect("fixture digest must fit"),
+            replay: fixtures::replay_lane().expect("fixture digest must fit"),
+            reconstruction: fixtures::reconstruction_lane().expect("fixture digest must fit"),
+            drift: fixtures::prediction_drift_lane().expect("fixture digest must fit"),
         };
 
         CertificationMatrix {
@@ -38,7 +38,8 @@ impl MilestoneFivePointFourCorrespondenceHistoryCertificationAdapter {
             rejection_rows: CORRESPONDENCE_HISTORY_REJECTION_ROW_SPECS
                 .iter()
                 .map(|spec| rejection_row(spec, &lanes))
-                .collect(),
+                .collect::<Result<_, _>>()
+                .expect("fixture digests must fit"),
         }
     }
 

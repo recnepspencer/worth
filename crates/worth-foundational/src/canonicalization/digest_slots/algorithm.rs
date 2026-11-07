@@ -6,7 +6,10 @@ use super::super::{CanonicalBasisDomain, CanonicalizationRuleVersion};
 pub struct CanonicalDigestAlgorithmId(String);
 
 impl CanonicalDigestAlgorithmId {
-    const SHA256: &'static str = "sha256";
+    // V1 included preparation work in identity. It is deliberately unsupported:
+    // persisted v1 identities must be re-derived from their canonical basis at
+    // upgrade, never relabeled or compared as v2 identities.
+    pub const SHA256_POLICY_ID: &'static str = "sha256-canonical-v2";
 
     pub fn new(value: impl Into<String>) -> Option<Self> {
         let value = value.into();
@@ -18,7 +21,7 @@ impl CanonicalDigestAlgorithmId {
     }
 
     pub fn sha256() -> Self {
-        Self(Self::SHA256.to_string())
+        Self(Self::SHA256_POLICY_ID.to_string())
     }
 
     pub fn as_str(&self) -> &str {
@@ -30,7 +33,7 @@ impl CanonicalDigestAlgorithmId {
     }
 
     pub(super) fn is_sha256(&self) -> bool {
-        self.0 == Self::SHA256
+        self.0 == Self::SHA256_POLICY_ID
     }
 }
 

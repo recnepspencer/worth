@@ -1,10 +1,11 @@
-//! Retained scoped caches may lag their actual observing branch after restart.
+//! Retained scoped generations remain distinct from natively maintained heads.
 use super::*;
 use crate::facade::history::RelationalCommitReceipt;
 use crate::indexes::data::DerivedIndexGenerationId;
 
 #[test]
-fn lagging_inherited_and_own_stream_scoped_generations_survive_checkpoint_reopen() {
+fn retained_inherited_and_own_stream_generations_survive_native_maintenance_and_checkpoint_reopen()
+{
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -28,7 +29,7 @@ fn lagging_inherited_and_own_stream_scoped_generations_survive_checkpoint_reopen
     assert_eq!(inherited.generations.len(), 1);
     let inherited_generation = inherited.generations[0].generation_id;
     assert_ne!(anchor.commit.branch_id, branch);
-    drop(inherited_basis);
+    let _inherited_hold = inherited_basis;
     release_test_commit_snapshot(&runtime, &anchor);
 
     // These expectations come from actual committed native fixtures, never
@@ -42,6 +43,11 @@ fn lagging_inherited_and_own_stream_scoped_generations_survive_checkpoint_reopen
         reopened
             .durability_recovery()
             .recover(execution, plan)
+            .unwrap();
+        reopened
+            .indexes
+            .definition_read_binding()
+            .demand_checkpoint_image(execution)
             .unwrap();
         let retained = reopened.indexes.generation(generation).unwrap();
         assert_eq!(retained.index_id, index.index_id);
@@ -62,8 +68,8 @@ fn lagging_inherited_and_own_stream_scoped_generations_survive_checkpoint_reopen
                     &basis.observation()
                 )
                 .unwrap()
-                .is_none(),
-            "retained lagging cache is not current index authority"
+                .is_some_and(|selected| selected.generation_id != generation),
+            "the successor selects its native generation while the old reader remains valid"
         );
         let read = reopened
             .begin_branch_transaction(&basis, crate::mvcc::RelationalTransactionIntent::ordinary())
@@ -76,6 +82,14 @@ fn lagging_inherited_and_own_stream_scoped_generations_survive_checkpoint_reopen
         );
     };
 
+    let (_, inherited_source) = runtime.observe_fork_source(&branch).unwrap();
+    runtime
+        .fork_branch(
+            execution,
+            BranchId("inherited-reader-head".into()),
+            inherited_source,
+        )
+        .unwrap();
     let first = update_entity_on_branch(
         execution,
         &runtime,
@@ -103,6 +117,11 @@ fn lagging_inherited_and_own_stream_scoped_generations_survive_checkpoint_reopen
     // real branch once more without rebuilding that cache, then capture again.
     let own_generation =
         build_on_branch(execution, &runtime, index.index_id, &first, branch.clone());
+    let (_, _own_hold) = runtime.observe_branch(&identity).unwrap();
+    let (_, own_source) = runtime.observe_fork_source(&branch).unwrap();
+    runtime
+        .fork_branch(execution, BranchId("own-reader-head".into()), own_source)
+        .unwrap();
     let second = update_entity_on_branch(
         execution,
         &runtime,

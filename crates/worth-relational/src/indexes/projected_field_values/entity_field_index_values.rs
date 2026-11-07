@@ -2,9 +2,7 @@ use std::collections::BTreeMap;
 
 use worth_foundational::facade::AspectFieldLocator;
 
-use crate::capabilities::AspectPlanSource;
 use crate::identity::data::EntityId;
-use crate::runtime::RelationalRuntime;
 use crate::storage::data::AuthoritativeFieldComparisonKey;
 use crate::visibility::materialization::read_records::{
     entity_query_locus_comparison_key, entity_query_locus_value,
@@ -18,6 +16,7 @@ use super::field_projection_scope::{
 use super::IndexProjectionSource;
 
 pub(in crate::indexes) fn build_entity_aspect_field_index(
+    _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_>,
     field_locator: &AspectFieldLocator,
@@ -27,20 +26,24 @@ pub(in crate::indexes) fn build_entity_aspect_field_index(
 > {
     let mut entries = BTreeMap::new();
     for scope in entity_index_projection_scopes(projection, field_locator) {
-        projection.for_each_entity(execution, scope.kind_id(), |record| {
-            if let Some(key) = entity_query_locus_comparison_key(record, field_locator) {
-                entries
-                    .entry(key)
-                    .or_insert_with(Vec::new)
-                    .push(record.entity_id);
-            }
-            Ok(())
-        })?;
+        projection.try_for_each_entity_field(execution, scope.kind_id(), field_locator,
+            |_, _| Ok::<_, crate::execution::RelationalExecutionDenialCause>(()),
+            |entity_id, value| {
+                if let Some(value) = value {
+                    let key = AuthoritativeFieldComparisonKey::from_aspect_value(value);
+                    entries.entry(key).or_insert_with(Vec::new).push(entity_id);
+                }
+                Ok(())
+            }).map_err(|stop| match stop {
+                crate::visibility::materialization::read_records::read_stop::ReadStop::Request(cause)
+                | crate::visibility::materialization::read_records::read_stop::ReadStop::Admission(cause) => cause,
+            })?;
     }
     Ok(entries)
 }
 
 pub(in crate::indexes) fn build_entity_aspect_field_index_checked(
+    _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_>,
     field_locator: &AspectFieldLocator,
@@ -92,18 +95,6 @@ pub(in crate::indexes) fn build_entity_aspect_field_index_checked(
         }
     }
     Ok(entries)
-}
-
-pub(in crate::indexes) fn entity_aspect_field_index_entry(
-    runtime: &RelationalRuntime,
-    record: &crate::storage::data::EntityReadRecord,
-    field_locator: &AspectFieldLocator,
-) -> Option<(AuthoritativeFieldComparisonKey, EntityId)> {
-    entity_index_projection_scope(
-        runtime.entity_aspect_plan(record.kind.kind_id)?,
-        field_locator,
-    )?;
-    entity_query_locus_comparison_key(record, field_locator).map(|value| (value, record.entity_id))
 }
 
 pub(in crate::indexes) fn entity_aspect_field_ordering_value(

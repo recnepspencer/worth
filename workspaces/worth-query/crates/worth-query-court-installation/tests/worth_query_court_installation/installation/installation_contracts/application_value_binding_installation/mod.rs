@@ -6,7 +6,9 @@ fn installed_schema_retains_exact_typed_scalar_codec_and_contract() {
         .bind_application_schema(BindingSchema::declaration().unwrap())
         .unwrap();
     let field: RecordField<_, _, u64> =
-        record_field(BindingSchema, Component, Measurement, "value").unwrap();
+        record_field(BindingSchema, Component, Measurement, "value")
+            .resolve()
+            .unwrap();
     let binding = installed
         .value_bindings()
         .field(

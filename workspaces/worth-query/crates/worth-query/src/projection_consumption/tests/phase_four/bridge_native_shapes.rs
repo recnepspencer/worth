@@ -46,7 +46,8 @@ fn bridge_row_set_preserves_complete_struct_values_through_consumption() {
             )]),
         ),
     )
-    .bind_contract();
+    .bind_contract()
+    .expect("fixture digest must fit");
 
     let consumed = consumption
         .extract_from_bridge_truth_view_row_set(&row_set)

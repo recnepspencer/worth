@@ -97,7 +97,7 @@ where
         ordinary.clone(),
         conditional_evaluation_budget,
     )
-    .map_err(|error| bridge_denial(format!("{error:?}")))?;
+    .map_err(|error| bridge_denial(format!("{error:?}")).with_bridge_conditional_cause(error))?;
     Ok(WorthQueryApplicationBridgeInstallation {
         ordinary,
         conditional,
@@ -141,7 +141,7 @@ where
                 .register_mapping(mapping.routing)
         })
         .build()
-        .map_err(|error| bridge_denial(format!("{error:?}")))
+        .map_err(|error| bridge_denial(format!("{error:?}")).with_bridge_build_cause(error))
 }
 
 pub(crate) fn build_primary_graph_product_bridge<Schema>(

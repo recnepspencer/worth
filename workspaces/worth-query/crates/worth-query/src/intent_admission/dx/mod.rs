@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod authoritative;
 mod basis_projection;
 mod batch_mutation;
@@ -118,16 +119,18 @@ pub(crate) struct WorthQueryRuntimeIntentAdmissionReviewData {
 }
 
 impl WorthQueryRuntimeIntentAdmissionReviewData {
-    pub(crate) fn from_request(request: WorthQueryRawIntentAdmissionRequest) -> Self {
-        let decision = admit_runtime_intent_request(request.clone());
-        Self::from_decision(request, decision)
+    pub(crate) fn from_request(
+        request: WorthQueryRawIntentAdmissionRequest,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        let decision = admit_runtime_intent_request(request.clone())?;
+        Ok(Self::from_decision(request, decision)?)
     }
 
     pub(crate) fn from_decision(
         request: WorthQueryRawIntentAdmissionRequest,
         decision: WorthQueryIntentAdmissionDecision,
-    ) -> Self {
-        let eligibility = WorthQueryIntentAdmissionEligibility::from_request(request.clone());
+    ) -> Result<Self, IdentityDerivationDenial> {
+        let eligibility = WorthQueryIntentAdmissionEligibility::from_request(request.clone())?;
         let non_admitted_trace = match &decision {
             WorthQueryIntentAdmissionDecision::Admitted(_) => None,
             WorthQueryIntentAdmissionDecision::Advisory(advisory) => {
@@ -145,12 +148,12 @@ impl WorthQueryRuntimeIntentAdmissionReviewData {
                 ),
             ),
         };
-        Self {
+        Ok(Self {
             request,
             eligibility,
             decision,
             non_admitted_trace,
-        }
+        })
     }
 
     pub(crate) fn admitted_plan(&self) -> Option<&WorthQueryAdmittedIntentPlan> {

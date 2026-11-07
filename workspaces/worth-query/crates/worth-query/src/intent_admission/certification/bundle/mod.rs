@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod outputs;
 
 use self::outputs::{assemble_certification_outputs, certification_bundle_digest};
@@ -216,22 +217,22 @@ impl WorthQueryIntentAdmissionCertificationBundle {
 
 pub fn certify_intent_admission(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> WorthQueryIntentAdmissionCertificationBundle {
-    WorthQueryIntentAdmissionCertificationBundle::new(
+) -> Result<WorthQueryIntentAdmissionCertificationBundle, IdentityDerivationDenial> {
+    Ok(WorthQueryIntentAdmissionCertificationBundle::new(
         worth_query_intent_admission_family_inventory(),
         worth_query_intent_admission_coverage_inventory(),
         worth_query_intent_admission_support_matrix(),
         WorthQueryIntentAdmissionPublicBoundaryAudit::new(),
         worth_query_intent_admission_proof_shape_audit(),
         WorthQueryIntentAdmissionTopologyAudit::new(),
-        worth_query_intent_admission_representative_output_report(execution),
-        worth_query_intent_admission_representative_family_report(execution),
-        worth_query_intent_admission_oracle_report(execution),
-        worth_query_intent_admission_legacy_parity_report(execution),
-        worth_query_intent_admission_support_traceability_report(execution),
-        worth_query_intent_admission_seeded_certification_report(execution),
-        worth_query_intent_admission_slope_report(execution),
-    )
+        worth_query_intent_admission_representative_output_report(execution)?,
+        worth_query_intent_admission_representative_family_report(execution)?,
+        worth_query_intent_admission_oracle_report(execution)?,
+        worth_query_intent_admission_legacy_parity_report(execution)?,
+        worth_query_intent_admission_support_traceability_report(execution)?,
+        worth_query_intent_admission_seeded_certification_report(execution)?,
+        worth_query_intent_admission_slope_report(execution)?,
+    ))
 }
 
 fn validate_output_manifest(

@@ -65,8 +65,9 @@ pub(super) fn read(
         if fields.len() != 1 {
             return work.invalid(PlanDenial::IncompleteStoredMembership);
         }
-        let Some(AspectValue::String(InternedString::Raw(cases))) =
-            fields.get(&FieldKey::new("cases").expect("fixed case field"))
+        let Some(cases) = (fields.get(&FieldKey::new("cases").expect("fixed case field")))
+            .as_ref()
+            .and_then(|value| value.raw_text())
         else {
             return work.invalid(PlanDenial::IncompleteStoredMembership);
         };

@@ -3,6 +3,7 @@ use super::*;
 #[derive(Clone, Debug, WorthValue)]
 #[worth_value(crate = "worth_query_decl::facade::application_schema")]
 pub enum Change {
+    OverCapacity,
     RemoveThenWriteFirst,
     WriteFirstThenRemove,
     RemoveNamedOnly,
@@ -175,6 +176,9 @@ impl OperationHandler<Schema, Binding> for Handler {
         let effect = (|| {
             let target = writer.projected_entity(&decision.target)?;
             match input.change {
+                Change::OverCapacity => {
+                    return writer.write_field(&target, FirstValue::at("FirstValue"), 256)
+                }
                 Change::RemoveThenWriteFirst => {
                     writer.remove_aspect(&target, First::reference())?;
                     return writer.write_field(&target, FirstValue::at("FirstValue"), 99);

@@ -4,6 +4,7 @@ use super::{
     WorthQueryIntentDenialEvidence, WorthQueryIntentSourceLane, WorthQueryRuntime,
     WorthQueryRuntimeError, WorthQueryRuntimeFacadeFamily,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQuerySnapshotIdentity;
 use crate::session_label::WorthQuerySessionLabel;
 
@@ -108,7 +109,7 @@ impl<'a> WorthQueryBranchSession<'a> {
             &self.basis_admission,
             &self.basis_snapshot_identity,
             admission,
-        );
+        )?;
         self.intent_receipts.push(receipt.clone());
         Ok(receipt)
     }

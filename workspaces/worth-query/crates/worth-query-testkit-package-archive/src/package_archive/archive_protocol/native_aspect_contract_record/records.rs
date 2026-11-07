@@ -22,12 +22,12 @@ impl fragment::BindingSet for NativeModelBindings {
 }
 impl fragment::Scalar<u64> for NativeModelBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<String> for NativeModelBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = false;
 }
 pub struct NativeEntity;
@@ -58,6 +58,7 @@ pub struct ProfileValue {
 impl fragment::Record<ProfileValue> for NativeModelBindings {
     fn record() -> impl fragment::Shape<ProfileValue, Self> {
         fragment::field("Age", |row: &ProfileValue| row.age)
+            .equality_queryable(true)
             .and("Tag", |row: &ProfileValue| row.tag.clone())
             .build(|age, tag, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ProfileValue { age, tag })

@@ -15,9 +15,11 @@ fn scaffold_snapshot() -> WorthQuerySupportSnapshot {
 }
 
 fn snapshot_from_profile(profile: WorthQueryRuntimeSupportProfile) -> WorthQuerySupportSnapshot {
-    let contract = WorthQueryRuntimePublicApiContract::from_support_profile(&profile);
-    let matrix = WorthQueryRuntimePublicSupportMatrix::from_public_api_contract(&contract);
-    project_support_snapshot(&matrix)
+    let contract = WorthQueryRuntimePublicApiContract::from_support_profile(&profile)
+        .expect("fixture digest must fit");
+    let matrix = WorthQueryRuntimePublicSupportMatrix::from_public_api_contract(&contract)
+        .expect("fixture digest must fit");
+    project_support_snapshot(&matrix).expect("fixture digest must fit")
 }
 
 fn write_deferred_snapshot() -> WorthQuerySupportSnapshot {

@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::intent_admission::{
     admit_authoritative_execution, admit_effect_execution, intent_runtime_facade_family,
     WorthQueryAdmittedIntentExecutionHandoff, WorthQueryAuthoritativeIntentExecutionBinding,
@@ -10,18 +11,22 @@ impl WorthQueryRuntime {
     pub(crate) fn prepare_authoritative_intent_execution_binding(
         &self,
         handoff: WorthQueryAuthoritativeIntentExecutionHandoff,
-    ) -> WorthQueryAuthoritativeIntentExecutionBinding {
-        WorthQueryAuthoritativeIntentExecutionBinding::from_handoff(handoff)
+    ) -> Result<WorthQueryAuthoritativeIntentExecutionBinding, IdentityDerivationDenial> {
+        Ok(WorthQueryAuthoritativeIntentExecutionBinding::from_handoff(
+            handoff,
+        )?)
     }
 
     pub(crate) fn prepare_effect_intent_execution_binding(
         &self,
         handoff: WorthQueryEffectTriggeredIntentExecutionHandoff,
         pending_delivery: &WorthQueryEffectDelivery,
-    ) -> WorthQueryEffectTriggeredIntentExecutionBinding {
-        WorthQueryEffectTriggeredIntentExecutionBinding::from_handoff_and_delivery(
-            handoff,
-            pending_delivery,
+    ) -> Result<WorthQueryEffectTriggeredIntentExecutionBinding, IdentityDerivationDenial> {
+        Ok(
+            WorthQueryEffectTriggeredIntentExecutionBinding::from_handoff_and_delivery(
+                handoff,
+                pending_delivery,
+            )?,
         )
     }
 
@@ -70,7 +75,7 @@ impl WorthQueryRuntime {
             &declaration,
             execution,
             &write_receipt,
-        ))
+        )?)
     }
 
     pub(crate) fn execute_effect_intent_execution_binding(
@@ -126,13 +131,13 @@ impl WorthQueryRuntime {
             &declaration,
             execution,
             &write_receipt,
-        );
+        )?;
         let effect_target = WorthQueryEffectTarget::from_name(pending_delivery.effect_name());
         self.remove_pending_effect_delivery(&effect_target, pending_index, &pending_delivery);
         Ok(WorthQueryEffectIntentReceipt::new(
             &pending_delivery,
             intent_receipt,
-        ))
+        )?)
     }
 
     fn pending_effect_write_delivery_for_binding(
@@ -143,18 +148,16 @@ impl WorthQueryRuntime {
         let runtime = self.effects.get(&effect_target).ok_or_else(|| {
             WorthQueryRuntimeError::MissingEffect(binding.effect_name().to_string())
         })?;
-        runtime
-            .deliveries
-            .iter()
-            .enumerate()
-            .find(|(_, delivery)| {
-                delivery.family() == &WorthQueryEffectDeliveryFamily::PendingWriteIntent
-                    && binding.matches_pending_delivery(delivery)
-            })
-            .map(|(index, delivery)| (index, delivery.clone()))
-            .ok_or_else(|| {
-                WorthQueryRuntimeError::MissingPendingWriteIntent(binding.effect_name().to_string())
-            })
+        for (index, delivery) in runtime.deliveries.iter().enumerate() {
+            if delivery.family() == &WorthQueryEffectDeliveryFamily::PendingWriteIntent
+                && binding.matches_pending_delivery(delivery)?
+            {
+                return Ok((index, delivery.clone()));
+            }
+        }
+        Err(WorthQueryRuntimeError::MissingPendingWriteIntent(
+            binding.effect_name().to_string(),
+        ))
     }
 
     fn route_admitted_intent_execution(
@@ -204,7 +207,7 @@ fn authoritative_execution_provenance(
         binding.binding_digest(),
         execution.outcome_digest(),
         &snapshot_identity,
-    )
+    ).expect("bounded performed receipt: closed enum labels, primitive counts and sealed identity digests")
 }
 
 fn effect_execution_provenance(
@@ -224,5 +227,5 @@ fn effect_execution_provenance(
         binding.binding_digest(),
         execution.outcome_digest(),
         &snapshot_identity,
-    )
+    ).expect("bounded performed receipt: closed enum labels, primitive counts and sealed identity digests")
 }

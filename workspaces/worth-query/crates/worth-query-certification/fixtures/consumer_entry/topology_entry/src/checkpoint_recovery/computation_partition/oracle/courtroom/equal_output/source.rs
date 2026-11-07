@@ -44,7 +44,8 @@ impl<Schema: TopologySchemaBinding> ApplicationQueryMarkerIdentity<Schema> for S
     const QUERY_TYPE_NAME: &'static str = "worth.query.certification.courtroom-successor-query.v1";
     const SCOPE_TYPE_NAME: &'static str = "Body";
 }
-pub fn successor_query_definition<Schema: TopologySchemaBinding>() -> ApplicationQueryDefinition<
+pub fn successor_query_definition<Schema: TopologySchemaBinding>(
+) -> ApplicationQueryDefinitionBuilder<
     Schema,
     SuccessorQuery,
     SuccessorReadParameters,
@@ -94,8 +95,6 @@ pub fn successor_query_definition<Schema: TopologySchemaBinding>() -> Applicatio
     .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
     .lanes(ApplicationQueryLaneEligibility::one_shot())
     .public()
-    .build()
-    .expect("planar query is canonical")
 }
 fn successor_position_y_result<Schema: TopologySchemaBinding>(
 ) -> ApplicationQueryResultFieldRef<SuccessorQuery, SuccessorPositionYSlot, Schema, PositionY> {

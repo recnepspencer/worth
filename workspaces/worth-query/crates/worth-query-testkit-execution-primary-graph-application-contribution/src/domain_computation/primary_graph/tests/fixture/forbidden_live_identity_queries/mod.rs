@@ -1,6 +1,5 @@
 use worth_query_declaration::facade::application_query::ApplicationQueryBasisSupport;
 use worth_query_declaration::facade::application_query::ApplicationQueryCardinality;
-use worth_query_declaration::facade::application_query::ApplicationQueryDefinition;
 use worth_query_declaration::facade::application_query::ApplicationQueryDefinitionBuilder;
 use worth_query_declaration::facade::application_query::ApplicationQueryDisclosureContract;
 use worth_query_declaration::facade::application_query::ApplicationQueryInfluenceContract;
@@ -72,7 +71,7 @@ worth_query_application_query!(
     name "forbidden_live_target_identity"
 );
 
-pub fn forbidden_live_scope_identity_definition() -> ApplicationQueryDefinition<
+pub fn forbidden_live_scope_identity_definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     ForbiddenLiveScopeIdentityQuery,
     AccountSummaryParameters,
@@ -86,7 +85,7 @@ pub fn forbidden_live_scope_identity_definition() -> ApplicationQueryDefinition<
     )
 }
 
-pub fn forbidden_live_target_identity_definition() -> ApplicationQueryDefinition<
+pub fn forbidden_live_target_identity_definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     ForbiddenLiveTargetIdentityQuery,
     AccountSummaryParameters,
@@ -125,7 +124,7 @@ pub fn definition<
     >,
     scope_influence: ApplicationQueryInfluenceContract,
     target_influence: ApplicationQueryInfluenceContract,
-) -> ApplicationQueryDefinition<
+) -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     Query,
     AccountSummaryParameters,
@@ -212,8 +211,6 @@ where
         )
         .continue_by(activities::<Query>())
         .live_by::<Activity, Cause>(account_identity::<Query>(), activity_identity::<Query>())
-        .build()
-        .unwrap()
 }
 
 pub fn influence_without_live_membership() -> ApplicationQueryInfluenceContract {

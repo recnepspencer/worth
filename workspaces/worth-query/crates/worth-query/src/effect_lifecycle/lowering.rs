@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::workflow::{
     lower_merge_workflow_declaration, lower_mutation_intent_declaration,
     lower_query_writeback_declaration, LoweredMergeWorkflowDeclaration,
@@ -20,6 +21,7 @@ use super::taxonomy::{EffectAuthorityLane, EffectFamily};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum EffectLoweringDenialKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     InvalidWorkflowDeclarationFamily,
     UnsupportedMergeFamily,
     UnsupportedRelationalStrategyTarget,
@@ -34,6 +36,7 @@ pub enum EffectLoweringDenialKind {
 impl EffectLoweringDenialKind {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => "evidence_identity_derivation_denied",
             Self::InvalidWorkflowDeclarationFamily => "invalid_workflow_declaration_family",
             Self::UnsupportedMergeFamily => "unsupported_merge_family",
             Self::UnsupportedRelationalStrategyTarget => "unsupported_relational_strategy_target",
@@ -51,13 +54,29 @@ impl EffectLoweringDenialKind {
 pub struct EffectLoweringDenial {
     denial_kind: EffectLoweringDenialKind,
     message: &'static str,
-    staleness_class: WorkflowStalenessClass,
+    staleness_class: Option<WorkflowStalenessClass>,
     authority_scoped_plan_identity: WorthQueryEvidenceIdentity,
-    denial_identity: WorthQueryEvidenceIdentity,
+    denial_identity: Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>,
     counters: EffectLifecycleCounters,
 }
 
 impl EffectLoweringDenial {
+    pub(crate) fn identity_refused(
+        subject: &WorthQueryEvidenceIdentity,
+        support_rows: usize,
+        lowering_width: usize,
+        cause: IdentityDerivationDenial,
+    ) -> Self {
+        Self {
+            denial_kind: EffectLoweringDenialKind::EvidenceIdentityDerivationDenied(cause),
+            message: "batch lowering identity exceeded its digest bounds",
+            staleness_class: None,
+            authority_scoped_plan_identity: subject.clone(),
+            denial_identity: Err(cause),
+            counters: EffectLifecycleCounters::lowering_denied(support_rows, lowering_width),
+        }
+    }
+
     fn from_workflow_error(plan: &AuthorityScopedEffectPlan, error: WorkflowLoweringError) -> Self {
         Self::from_workflow_error_for_batch(
             plan.plan_identity(),
@@ -92,7 +111,7 @@ impl EffectLoweringDenial {
         Self {
             denial_kind,
             message: error.message(),
-            staleness_class: error.staleness_class().clone(),
+            staleness_class: Some(error.staleness_class().clone()),
             authority_scoped_plan_identity: execution_subject_identity.clone(),
             denial_identity,
             counters: EffectLifecycleCounters::lowering_denied(
@@ -110,8 +129,8 @@ impl EffectLoweringDenial {
         self.message
     }
 
-    pub fn staleness_class(&self) -> &WorkflowStalenessClass {
-        &self.staleness_class
+    pub fn staleness_class(&self) -> Option<&WorkflowStalenessClass> {
+        self.staleness_class.as_ref()
     }
 
     pub fn authority_scoped_plan_identity(&self) -> &WorthQueryEvidenceIdentity {
@@ -122,12 +141,12 @@ impl EffectLoweringDenial {
         self.authority_scoped_plan_identity.as_str()
     }
 
-    pub fn denial_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.denial_identity
+    pub fn denial_identity(&self) -> Result<&WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        self.denial_identity.as_ref().map_err(|cause| *cause)
     }
 
-    pub fn denial_for_reporting(&self) -> &str {
-        self.denial_identity.as_str()
+    pub fn denial_for_reporting(&self) -> Result<&str, IdentityDerivationDenial> {
+        Ok(self.denial_identity()?.as_str())
     }
 
     pub fn counters(&self) -> &EffectLifecycleCounters {
@@ -169,7 +188,7 @@ impl LoweredEffectExecutionPlan {
                     WorthQueryEvidenceTag::new("artifact"),
                     artifact_identity(&artifact),
                 )
-                .seal();
+                .seal().expect("fixed lowered effect grammar: one literal family and two already sealed plan and artifact identities");
         let counters = EffectLifecycleCounters::lowered(
             authority_scoped_plan.counters().effect_support_row_count(),
             artifact_counters(&artifact).workflow_lowering_width(),
@@ -326,6 +345,9 @@ pub(crate) fn assemble_lowered_batch_mutation_component(
 
 fn lowering_denial_kind(failure_class: &WorkflowLoweringFailureClass) -> EffectLoweringDenialKind {
     match failure_class {
+        WorkflowLoweringFailureClass::EvidenceIdentityDerivationDenied(cause) => {
+            EffectLoweringDenialKind::EvidenceIdentityDerivationDenied(*cause)
+        }
         WorkflowLoweringFailureClass::InvalidWorkflowDeclarationFamily => {
             EffectLoweringDenialKind::InvalidWorkflowDeclarationFamily
         }

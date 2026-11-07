@@ -23,19 +23,23 @@ pub(in crate::runtime::tests) fn runtime_backed_causal_certification_bundle(
         &changed,
         &representatives,
         &boundary_audit,
-    );
+    )
+    .expect("fixture digest must fit");
     let small = CausalInspectionScaleCounterSnapshot::from_artifact(
         CausalInspectionScaleFixtureSize::Small,
         &changed,
-    );
+    )
+    .expect("fixture digest must fit");
     let medium = CausalInspectionScaleCounterSnapshot::from_artifact(
         CausalInspectionScaleFixtureSize::Medium,
         &changed,
-    );
+    )
+    .expect("fixture digest must fit");
     let large = CausalInspectionScaleCounterSnapshot::from_artifact(
         CausalInspectionScaleFixtureSize::Large,
         &changed,
-    );
+    )
+    .expect("fixture digest must fit");
     let scope = build_causal_inspection_certification_scope(
         &changed,
         &full,
@@ -51,5 +55,5 @@ pub(in crate::runtime::tests) fn runtime_backed_causal_certification_bundle(
     )
     .expect("complete runtime-backed rows should build certification scope");
 
-    certify_causal_inspection_runtime_path(scope)
+    certify_causal_inspection_runtime_path(scope).expect("fixture digest must fit")
 }

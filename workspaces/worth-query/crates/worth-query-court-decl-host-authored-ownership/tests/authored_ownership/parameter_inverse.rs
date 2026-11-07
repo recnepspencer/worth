@@ -97,14 +97,10 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for Inverse<S> {
         Ok(ApplicationQueryParameterSet::new())
     }
     fn mechanism() -> DeclaredCorrectionMechanism<S> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(schema::value::<S>())
-                    .expect("the inverse field is declared")],
-                9,
-            )
-            .unwrap(),
-        )
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [DeclaredPreImageLocus::from_field(schema::value::<S>())],
+            9,
+        ))
     }
     fn derive_correction(
         original: &Edit,
@@ -116,10 +112,7 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for Inverse<S> {
         };
         let value = U64ApplicationValueBinding::decode(
             fields
-                .field(
-                    &DeclaredPreImageLocus::from_field(schema::value::<S>())
-                        .expect("the inverse field is declared"),
-                )
+                .field(&DeclaredPreImageLocus::from_field(schema::value::<S>()))
                 .ok_or(MissingPreImage)?,
         )
         .map_err(|_| InvalidPreImage)?;

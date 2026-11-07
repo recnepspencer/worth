@@ -11,12 +11,15 @@ impl VisibilityProjectionView {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         kind_id: KindId,
     ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
-        self.demand_selected_scan(execution)?;
+        if !self.is_exact_basis() {
+            self.demand_selected_scan(execution)?;
+        }
         crate::visibility::materialization::read_records::read_work::metered_with_memory(
             execution,
             |context, memory| match &self.basis {
                 crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis) => {
                     ExactProjectionReader::new(self, basis.root()).entity_records(
+                        execution,
                         kind_id,
                         &mut |units| context.checkpoint(units),
                         memory,
@@ -95,12 +98,15 @@ impl VisibilityProjectionView {
         partition_id: PartitionId,
         kind_id: KindId,
     ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
-        self.demand_selected_regions(execution, [partition_id])?;
+        if !self.is_exact_basis() {
+            self.demand_selected_regions(execution, [partition_id])?;
+        }
         crate::visibility::materialization::read_records::read_work::metered_with_memory(
             execution,
             |context, memory| match &self.basis {
                 crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis) => {
                     ExactProjectionReader::new(self, basis.root()).entity_records_in(
+                        execution,
                         partition_id,
                         kind_id,
                         &mut |units| context.checkpoint(units),
@@ -129,12 +135,15 @@ impl VisibilityProjectionView {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         kind_id: KindId,
     ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
-        self.demand_selected_scan(execution)?;
+        if !self.is_exact_basis() {
+            self.demand_selected_scan(execution)?;
+        }
         crate::visibility::materialization::read_records::read_work::metered_with_memory(
             execution,
             |context, memory| match &self.basis {
                 crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis) => {
                     ExactProjectionReader::new(self, basis.root()).relation_records(
+                        execution,
                         kind_id,
                         &mut |units| context.checkpoint(units),
                         memory,
@@ -206,12 +215,15 @@ impl VisibilityProjectionView {
         partition_id: PartitionId,
         kind_id: KindId,
     ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
-        self.demand_selected_regions(execution, [partition_id])?;
+        if !self.is_exact_basis() {
+            self.demand_selected_regions(execution, [partition_id])?;
+        }
         crate::visibility::materialization::read_records::read_work::metered_with_memory(
             execution,
             |context, memory| match &self.basis {
                 crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis) => {
                     ExactProjectionReader::new(self, basis.root()).relation_records_in(
+                        execution,
                         partition_id,
                         kind_id,
                         &mut |units| context.checkpoint(units),

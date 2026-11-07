@@ -4,6 +4,7 @@ use crate::application::{
     WorthQueryInstalledDomainDeclarationContext,
 };
 use crate::binding_pipeline::WorthQueryBindingLinkedArtifacts;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::composition::WorthQueryContributionComposedStop;
 use super::input::{
@@ -31,9 +32,9 @@ pub(crate) fn orchestrate_progressed_declaration_with_contributions_checked_on_h
     progressed: WorthQueryAdmittedDeclarationProgression<D, I>,
     contributions: Vec<WorthQueryContributionIntent>,
     materialization_policy: WorthQueryContributionComposedMaterializationPolicy,
-) -> WorthQueryContributionComposedOrchestrationChecked<D, I> {
+) -> Result<WorthQueryContributionComposedOrchestrationChecked<D, I>, IdentityDerivationDenial> {
     if contributions.is_empty() {
-        return composed_outcome(
+        return Ok(composed_outcome(
             WorthQueryContributionComposedOrchestrationCheckedKind::Unsupported,
             WorthQueryContributionComposedStop::Unsupported,
             WorthQueryDeclarationEntryOrchestrationStage::DeclarationReviewed,
@@ -42,12 +43,12 @@ pub(crate) fn orchestrate_progressed_declaration_with_contributions_checked_on_h
             None,
             None,
             None,
-        );
+        ));
     }
 
     let declaration = match lower_progressed_declaration(handle, progressed) {
         Ok(value) => value,
-        Err(outcome) => return outcome,
+        Err(outcome) => return Ok(outcome),
     };
     let linked = linked_artifacts_for_envelope(&declaration.envelope);
     let intent_results = process_contributions(
@@ -56,36 +57,42 @@ pub(crate) fn orchestrate_progressed_declaration_with_contributions_checked_on_h
         contributions,
         materialization_policy,
         linked.clone(),
-    );
-    finalize_checked(declaration.envelope, linked, intent_results)
+    )?;
+    Ok(finalize_checked(
+        declaration.envelope,
+        linked,
+        intent_results,
+    )?)
 }
 
 fn finalize_checked<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>(
     envelope: crate::application::WorthQueryDeclarationEnvelope<D, I>,
     linked: WorthQueryBindingLinkedArtifacts,
     intent_results: Vec<WorthQueryContributionComposedIntentResult>,
-) -> WorthQueryContributionComposedOrchestrationChecked<D, I> {
+) -> Result<WorthQueryContributionComposedOrchestrationChecked<D, I>, IdentityDerivationDenial> {
     let declaration_aspect_record =
         super::WorthQueryContributionComposedDeclarationAspectRecord::new(
             envelope.aspect_contract().clone(),
             envelope.aspect_publication().clone(),
         );
-    match build_composed_artifact(envelope, intent_results.clone()) {
-        Ok(composed) => WorthQueryContributionComposedOrchestrationChecked::Bound(composed),
-        Err((stop, contribution_digest)) => {
-            let kind = stop_kind(stop);
-            composed_outcome(
-                kind,
-                stop,
-                WorthQueryDeclarationEntryOrchestrationStage::EnvelopeConstructed,
-                stop_reason(stop, &intent_results),
-                linked,
-                Some(contribution_digest),
-                Some(declaration_aspect_record),
-                primary_intent_descriptor(&intent_results).cloned(),
-            )
-        }
-    }
+    Ok(
+        match build_composed_artifact(envelope, intent_results.clone())? {
+            Ok(composed) => WorthQueryContributionComposedOrchestrationChecked::Bound(composed),
+            Err((stop, contribution_digest)) => {
+                let kind = stop_kind(stop);
+                composed_outcome(
+                    kind,
+                    stop,
+                    WorthQueryDeclarationEntryOrchestrationStage::EnvelopeConstructed,
+                    stop_reason(stop, &intent_results),
+                    linked,
+                    Some(contribution_digest),
+                    Some(declaration_aspect_record),
+                    primary_intent_descriptor(&intent_results).cloned(),
+                )
+            }
+        },
+    )
 }
 
 fn primary_intent_descriptor(

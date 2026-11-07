@@ -6,7 +6,7 @@ fn intent_admission_certification_bundle_assembles_foundation_artifacts() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let bundle = certify_intent_admission(request_execution);
+    let bundle = certify_intent_admission(request_execution).expect("fixture digest must fit");
     let required_outputs = worth_query_intent_admission_required_certification_outputs();
     let closeout_extension_outputs = worth_query_intent_admission_closeout_extension_outputs();
     let output_manifest = worth_query_intent_admission_certification_output_manifest();

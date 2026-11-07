@@ -15,6 +15,7 @@ impl IndexingSubsystem {
             return Err(DerivedIndexDiscardDenial::IndexNotInstalled { index_id });
         }
         let removed = state.generations.discard_index(index_id);
+        state.bases.discard(index_id);
         Ok(DerivedIndexDiscardOutcome::new(index_id, removed))
     }
 }

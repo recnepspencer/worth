@@ -1,3 +1,5 @@
+mod construction_stop;
+pub use construction_stop::CausalInspectionConstructionStop;
 mod admission;
 mod admission_decision;
 mod admission_trace;

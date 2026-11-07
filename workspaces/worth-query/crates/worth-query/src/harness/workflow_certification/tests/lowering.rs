@@ -171,6 +171,7 @@ fn workflow_certification_writeback_lowering_matches_direct_bridge_control() {
                     declaration.report().declaration_identity(),
                 )
                 .seal()
+                .expect("fixture digest must fit")
                 .bridge_external_identity_evidence(),
             ),
             BridgeRequestKind::Authoritative,

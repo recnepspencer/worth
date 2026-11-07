@@ -20,17 +20,17 @@ impl fragment::BindingSet for ComponentRecordsBindings {
 }
 impl fragment::Scalar<u64> for ComponentRecordsBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<WorthQueryExternalPrincipalIdentity> for ComponentRecordsBindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<WorthQueryPrincipalMappingStatus> for ComponentRecordsBindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 pub struct Node;
@@ -69,11 +69,11 @@ pub struct NodeDataValue {
 }
 impl fragment::Record<NodeDataValue> for ComponentRecordsBindings {
     fn record() -> impl fragment::Shape<NodeDataValue, Self> {
-        fragment::field("NodeKey", |row: &NodeDataValue| row.node_key).build(
-            |node_key, _: &mut ValueDecodeAdmission<'_>| {
+        fragment::field("NodeKey", |row: &NodeDataValue| row.node_key)
+            .equality_queryable(true)
+            .build(|node_key, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(NodeDataValue { node_key })
-            },
-        )
+            })
     }
 }
 pub struct MappingData;
@@ -91,7 +91,9 @@ impl fragment::Record<MappingDataValue> for ComponentRecordsBindings {
         fragment::field("ExternalIdentity", |row: &MappingDataValue| {
             row.external_identity.clone()
         })
+        .equality_queryable(true)
         .and("MappingStatus", |row: &MappingDataValue| row.mapping_status)
+        .equality_queryable(true)
         .build(
             |external_identity, mapping_status, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(MappingDataValue {
@@ -113,11 +115,11 @@ pub struct PrincipalDataValue {
 }
 impl fragment::Record<PrincipalDataValue> for ComponentRecordsBindings {
     fn record() -> impl fragment::Shape<PrincipalDataValue, Self> {
-        fragment::field("PrincipalKey", |row: &PrincipalDataValue| row.principal_key).build(
-            |principal_key, _: &mut ValueDecodeAdmission<'_>| {
+        fragment::field("PrincipalKey", |row: &PrincipalDataValue| row.principal_key)
+            .equality_queryable(true)
+            .build(|principal_key, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(PrincipalDataValue { principal_key })
-            },
-        )
+            })
     }
 }
 pub type NodeKey = FieldSelection<ComponentRecords, Node, NodeData, u64>;

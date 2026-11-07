@@ -22,12 +22,12 @@ impl fragment::BindingSet for HistoryRecordsBindings {
 }
 impl fragment::Scalar<String> for HistoryRecordsBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<u64> for HistoryRecordsBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 #[derive(Clone, Copy)]
@@ -62,9 +62,13 @@ pub struct NodeFactsValue {
 impl fragment::Record<NodeFactsValue> for HistoryRecordsBindings {
     fn record() -> impl fragment::Shape<NodeFactsValue, Self> {
         fragment::field("NodeKey", |row: &NodeFactsValue| row.node_key.clone())
+            .equality_queryable(true)
             .and("Revision", |row: &NodeFactsValue| row.revision)
+            .equality_queryable(true)
             .and("Value", |row: &NodeFactsValue| row.value)
+            .equality_queryable(true)
             .and("Applied", |row: &NodeFactsValue| row.applied)
+            .equality_queryable(true)
             .build(
                 |node_key, revision, value, applied, _: &mut ValueDecodeAdmission<'_>| {
                     Ok::<_, std::convert::Infallible>(NodeFactsValue {

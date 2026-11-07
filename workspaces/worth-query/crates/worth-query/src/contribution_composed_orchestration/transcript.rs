@@ -4,6 +4,7 @@ use crate::application::{
     WorthQueryInstalledDomainDeclarationContext,
 };
 use crate::binding_pipeline::WorthQueryBindingLinkedArtifacts;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::composition::WorthQueryContributionComposedClassification;
 use super::declaration_record::WorthQueryContributionComposedDeclarationRecord;
@@ -115,29 +116,29 @@ pub(crate) fn orchestrate_declaration_with_contributions_on_handle<
 >(
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     input: WorthQueryContributionComposedOrchestrationInput<D, I>,
-) -> WorthQueryContributionComposedOrchestrationTranscript<D, I> {
+) -> Result<WorthQueryContributionComposedOrchestrationTranscript<D, I>, IdentityDerivationDenial> {
     let request_descriptor_value = request_descriptor(&input);
-    let request_digest_value = request_identity(&input).as_str().to_string();
+    let request_digest_value = request_identity(&input)?.as_str().to_string();
     let materialization_policy = materialization_policy_label(input.materialization_policy());
     let (declaration_input, contributions, materialization_policy_value) = input.into_parts();
     if contributions.is_empty() {
-        return empty_contribution_transcript(
+        return Ok(empty_contribution_transcript(
             request_descriptor_value,
             request_digest_value,
             materialization_policy,
-        );
+        ));
     }
     let declaration = match lower_declaration(handle, declaration_input) {
         Ok(value) => value,
         Err(outcome) => {
-            let linked = linked_artifacts_from_outcome(&outcome);
-            let contribution_digest = contribution_digest_from_outcome(&outcome);
-            return WorthQueryContributionComposedOrchestrationTranscript::new(
+            let linked = linked_artifacts_from_outcome(&outcome)?;
+            let contribution_digest = contribution_digest_from_outcome(&outcome)?;
+            return Ok(WorthQueryContributionComposedOrchestrationTranscript::new(
                 request_descriptor_value,
                 request_digest_value,
                 materialization_policy,
                 WorthQueryContributionComposedDeclarationRecord::from_linked_artifacts(
-                    declaration_stage(&outcome),
+                    declaration_stage(&outcome)?,
                     &linked,
                 ),
                 outcome,
@@ -145,7 +146,7 @@ pub(crate) fn orchestrate_declaration_with_contributions_on_handle<
                 contribution_digest,
                 None,
                 Vec::new(),
-            );
+            ));
         }
     };
     let linked = linked_artifacts_for_envelope(&declaration.envelope);
@@ -155,15 +156,15 @@ pub(crate) fn orchestrate_declaration_with_contributions_on_handle<
         contributions,
         materialization_policy_value,
         linked.clone(),
-    );
-    finalize_transcript(
+    )?;
+    Ok(finalize_transcript(
         request_descriptor_value,
         request_digest_value,
         materialization_policy,
         declaration,
         linked,
         intent_results,
-    )
+    )?)
 }
 
 fn finalize_transcript<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>(
@@ -173,52 +174,54 @@ fn finalize_transcript<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationI
     declaration: DeclarationLowering<D, I>,
     linked: WorthQueryBindingLinkedArtifacts,
     intent_results: Vec<WorthQueryContributionComposedIntentResult>,
-) -> WorthQueryContributionComposedOrchestrationTranscript<D, I> {
+) -> Result<WorthQueryContributionComposedOrchestrationTranscript<D, I>, IdentityDerivationDenial> {
     let declaration_record = WorthQueryContributionComposedDeclarationRecord::from_envelope(
         &declaration.envelope,
         &linked,
     );
-    match build_composed_artifact(declaration.envelope, intent_results.clone()) {
-        Ok(composed) => {
-            let composition_classification = Some(composed.classification());
-            let contribution_digest = Some(composed.composition_for_reporting().to_string());
-            WorthQueryContributionComposedOrchestrationTranscript::new(
-                request_descriptor,
-                request_digest,
-                materialization_policy,
-                declaration_record,
-                WorthQueryContributionComposedOrchestrationOutcome::Bound(composed),
-                linked,
-                contribution_digest,
-                composition_classification,
-                intent_results,
-            )
-        }
-        Err((stop, contribution_digest)) => {
-            let (kind, reason) = stop_outcome_kind(stop, &intent_results);
-            let outcome = composed_outcome(
-                kind,
-                stop,
-                WorthQueryDeclarationEntryOrchestrationStage::EnvelopeConstructed,
-                reason,
-                linked.clone(),
-                Some(contribution_digest.clone()),
-                declaration_record.aspect_record().cloned(),
-                primary_intent_descriptor(&intent_results).cloned(),
-            );
-            WorthQueryContributionComposedOrchestrationTranscript::new(
-                request_descriptor,
-                request_digest,
-                materialization_policy,
-                declaration_record,
-                outcome,
-                linked,
-                Some(contribution_digest),
-                None,
-                intent_results,
-            )
-        }
-    }
+    Ok(
+        match build_composed_artifact(declaration.envelope, intent_results.clone())? {
+            Ok(composed) => {
+                let composition_classification = Some(composed.classification());
+                let contribution_digest = Some(composed.composition_for_reporting().to_string());
+                WorthQueryContributionComposedOrchestrationTranscript::new(
+                    request_descriptor,
+                    request_digest,
+                    materialization_policy,
+                    declaration_record,
+                    WorthQueryContributionComposedOrchestrationOutcome::Bound(composed),
+                    linked,
+                    contribution_digest,
+                    composition_classification,
+                    intent_results,
+                )
+            }
+            Err((stop, contribution_digest)) => {
+                let (kind, reason) = stop_outcome_kind(stop, &intent_results);
+                let outcome = composed_outcome(
+                    kind,
+                    stop,
+                    WorthQueryDeclarationEntryOrchestrationStage::EnvelopeConstructed,
+                    reason,
+                    linked.clone(),
+                    Some(contribution_digest.clone()),
+                    declaration_record.aspect_record().cloned(),
+                    primary_intent_descriptor(&intent_results).cloned(),
+                );
+                WorthQueryContributionComposedOrchestrationTranscript::new(
+                    request_descriptor,
+                    request_digest,
+                    materialization_policy,
+                    declaration_record,
+                    outcome,
+                    linked,
+                    Some(contribution_digest),
+                    None,
+                    intent_results,
+                )
+            }
+        },
+    )
 }
 
 fn empty_contribution_transcript<
@@ -257,8 +260,12 @@ fn empty_contribution_transcript<
 
 fn declaration_stage<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>(
     outcome: &WorthQueryContributionComposedOrchestrationOutcome<D, I>,
-) -> WorthQueryDeclarationEntryOrchestrationStage {
-    match outcome {
+) -> Result<WorthQueryDeclarationEntryOrchestrationStage, IdentityDerivationDenial> {
+    Ok(match outcome {
+        WorthQueryContributionComposedOrchestrationOutcome::EvidenceIdentityDerivationDenied(
+            cause,
+        ) => return Err(*cause),
+
         WorthQueryContributionComposedOrchestrationOutcome::Bound(_) => {
             WorthQueryDeclarationEntryOrchestrationStage::EnvelopeConstructed
         }
@@ -269,7 +276,7 @@ fn declaration_stage<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInp
         | WorthQueryContributionComposedOrchestrationOutcome::RebindRequired(value)
         | WorthQueryContributionComposedOrchestrationOutcome::Unsupported(value)
         | WorthQueryContributionComposedOrchestrationOutcome::Failed(value) => value.stop_stage(),
-    }
+    })
 }
 
 fn stop_outcome_kind(

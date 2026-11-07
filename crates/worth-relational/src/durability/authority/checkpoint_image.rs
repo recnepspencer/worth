@@ -68,13 +68,21 @@ impl CapturedCheckpointBasis {
         } = branch_root_images(branch_roots, execution)?;
         let mirror_partitions = partitions.materialize_owned_partitions()?;
         let mirror_kind_images =
-            crate::storage::residency::CheckpointRegionKindImages::capture(&mirror_partitions)
-                .map_err(|cause| {
-                    DurabilityError::new(
-                        RecoveryFailureClass::CorruptCheckpoint,
-                        format!("mirror kind capture: {cause:?}"),
+            crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
+                |lane| {
+                    crate::storage::residency::CheckpointRegionKindImages::capture(
+                        lane,
+                        execution,
+                        &mirror_partitions,
                     )
-                })?;
+                },
+            )
+            .map_err(|cause| {
+                crate::durability::checkpoints::kind_reconstruction::stop(
+                    "mirror kind capture",
+                    cause,
+                )
+            })?;
         let mirror_schema_digest = mirror_schema_authority
             .as_ref()
             .map(crate::durability::data::DurableBranchRootSchemaImage::capture)
@@ -104,7 +112,7 @@ impl CapturedCheckpointBasis {
             record_slot_frontiers: Vec::new(),
             envelopes,
             partition_images: mirror_partitions.into_iter()
-                .map(|partition| partition_to_image_with_contracts(partition, mirror_plans, &mirror_contracts))
+                .map(|partition| crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| partition_to_image_with_contracts(lane, partition, mirror_plans, &mirror_contracts)))
                 .collect::<Result<Vec<_>, _>>()?,
             aspect_contracts: mirror_contracts.portable_contracts(),
             lineage: LineageCheckpointArtifact::new(lineage_basis, lineage_nodes),
@@ -158,27 +166,35 @@ fn branch_root_images(
             let partitions = root.partitions()?;
             root_kind_images.insert(
                 root.commit_id(),
-                crate::storage::residency::CheckpointRegionKindImages::capture(&partitions)
-                    .map_err(|cause| {
-                        DurabilityError::new(
-                            RecoveryFailureClass::CorruptCheckpoint,
-                            format!("root kind capture: {cause:?}"),
+                crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
+                    |lane| {
+                        crate::storage::residency::CheckpointRegionKindImages::capture(
+                            lane,
+                            execution,
+                            &partitions,
                         )
-                    })?,
+                    },
+                )
+                .map_err(|cause| {
+                    crate::durability::checkpoints::kind_reconstruction::stop(
+                        "root kind capture",
+                        cause,
+                    )
+                })?,
             );
             let partition_images = partitions
                 .iter()
                 .cloned()
                 .map(|partition| {
-                    partition_to_image_with_contracts(
+                    crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| partition_to_image_with_contracts(lane,
                         partition,
                         root.schema_authority().aspect_plans(),
                         &retained_contracts,
-                    )
+                    ))
                 })
                 .collect::<Result<Vec<_>, _>>()?;
             let partition_image_digest =
-                crate::durability::data::branch_root_partition_image_digest(&partition_images)
+                crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| crate::durability::data::branch_root_partition_image_digest(lane, &partition_images))
                     .map_err(|error| {
                         DurabilityError::new(
                             RecoveryFailureClass::CorruptCheckpoint,
@@ -187,13 +203,13 @@ fn branch_root_images(
                     })?;
             let format_version = DurableBranchRootImage::CURRENT_FORMAT_VERSION;
             let content_records = root.content().retained_records(execution)?;
-            let root_image_digest = crate::durability::data::branch_root_image_digest(
+            let root_image_digest = crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| crate::durability::data::branch_root_image_digest(lane,
                 format_version,
                 root.commit_id(),
                 partition_image_digest,
                 schema_carrier_digest,
                 &content_records,
-            );
+            ));
             Ok::<_, crate::durability::data::RelationalRecoveryStop>(DurableBranchRootImage {
                 content_records,
                 format_version,

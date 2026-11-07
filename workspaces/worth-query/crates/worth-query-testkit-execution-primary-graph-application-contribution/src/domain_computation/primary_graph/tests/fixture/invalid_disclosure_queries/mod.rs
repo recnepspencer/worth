@@ -1,6 +1,5 @@
 use worth_query_declaration::facade::application_query::ApplicationQueryBasisSupport;
 use worth_query_declaration::facade::application_query::ApplicationQueryCardinality;
-use worth_query_declaration::facade::application_query::ApplicationQueryDefinition;
 use worth_query_declaration::facade::application_query::ApplicationQueryDefinitionBuilder;
 use worth_query_declaration::facade::application_query::ApplicationQueryDisclosureContract;
 use worth_query_declaration::facade::application_query::ApplicationQueryInfluenceContract;
@@ -56,7 +55,7 @@ worth_query_application_query!(
     name "result_rule_predicate"
 );
 
-pub fn incomplete_disclosure_definition() -> ApplicationQueryDefinition<
+pub fn incomplete_disclosure_definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     IncompleteDisclosureQuery,
     AccountSummaryParameters,
@@ -81,7 +80,7 @@ pub fn incomplete_disclosure_definition() -> ApplicationQueryDefinition<
     )
 }
 
-pub fn forbidden_influence_definition() -> ApplicationQueryDefinition<
+pub fn forbidden_influence_definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     ForbiddenInfluenceQuery,
     AccountSummaryParameters,
@@ -117,7 +116,7 @@ pub fn forbidden_influence_definition() -> ApplicationQueryDefinition<
     )
 }
 
-pub fn result_rule_predicate_definition() -> ApplicationQueryDefinition<
+pub fn result_rule_predicate_definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     ResultRulePredicateQuery,
     AccountSummaryParameters,
@@ -193,7 +192,7 @@ pub fn definition<
     >,
     disclosure: ApplicationQueryDisclosureContract,
     predicate: bool,
-) -> ApplicationQueryDefinition<
+) -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     Query,
     AccountSummaryParameters,
@@ -216,10 +215,8 @@ where
         builder
             .parameter(status_parameter())
             .where_equal(AccountStatus::at("AccountStatus"), status_parameter())
-            .build()
-            .unwrap()
     } else {
-        builder.build().unwrap()
+        builder
     }
 }
 

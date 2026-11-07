@@ -36,7 +36,6 @@ impl BindingSet for Bindings {
 }
 impl Scalar<u64> for Bindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 pub struct Account;
 impl Entity for Account {
@@ -65,9 +64,12 @@ pub struct AccountAuditValue {
 impl Record<AccountStateValue> for Bindings {
     fn record() -> impl Shape<AccountStateValue, Self> {
         field("AccountStatus", |row: &AccountStateValue| row.status)
+            .equality_queryable(true)
             .read_only()
             .and("AccountBalance", |row: &AccountStateValue| row.balance)
+            .equality_queryable(true)
             .and("AccountLimit", |row: &AccountStateValue| row.limit)
+            .equality_queryable(true)
             .read_only()
             .build(|status, balance, limit, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(AccountStateValue {
@@ -81,6 +83,7 @@ impl Record<AccountStateValue> for Bindings {
 impl Record<AccountAuditValue> for Bindings {
     fn record() -> impl Shape<AccountAuditValue, Self> {
         field("AuditSequence", |row: &AccountAuditValue| row.sequence)
+            .equality_queryable(true)
             .read_only()
             .build(|sequence, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(AccountAuditValue { sequence })

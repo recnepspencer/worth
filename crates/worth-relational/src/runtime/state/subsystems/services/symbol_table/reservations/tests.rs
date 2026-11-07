@@ -13,9 +13,11 @@ fn publication_excludes_abandoned_preview_meanings_adopted_for_reading() {
     let meanings = SymbolTableSnapshot {
         entries: vec![(used, "actual-field".into())],
     };
-    let publication = candidate
-        .seal_for_publication(&meanings)
-        .expect("fixture meanings agree with the candidate");
+    let publication = {
+        let binding = candidate.binding();
+        candidate.seal_for_publication(&meanings, &binding, [])
+    }
+    .expect("fixture meanings agree with the candidate");
     drop(preview);
     publication.publish().unwrap();
     assert_eq!(
@@ -47,11 +49,13 @@ fn concurrent_pending_meanings_deduplicate_and_publish_only_the_accepted_candida
     );
     drop(abandoned);
     let meanings = accepted.interner().snapshot();
-    accepted
-        .seal_for_publication(&meanings)
-        .expect("fixture meanings agree with the candidate")
-        .publish()
-        .unwrap();
+    {
+        let binding = accepted.binding();
+        accepted.seal_for_publication(&meanings, &binding, [])
+    }
+    .expect("fixture meanings agree with the candidate")
+    .publish()
+    .unwrap();
     assert_eq!(
         owner.with_read(|symbols| symbols.symbol("shared")),
         Some(shared)
@@ -74,11 +78,13 @@ fn abandoning_the_last_custodian_spends_the_identity_and_removes_pending_text() 
     let fresh = retry.reserve("retry").unwrap();
     assert!(fresh.0 > abandoned.0);
     let meanings = retry.interner().snapshot();
-    retry
-        .seal_for_publication(&meanings)
-        .expect("fixture meanings agree with the candidate")
-        .publish()
-        .unwrap();
+    {
+        let binding = retry.binding();
+        retry.seal_for_publication(&meanings, &binding, [])
+    }
+    .expect("fixture meanings agree with the candidate")
+    .publish()
+    .unwrap();
     assert_eq!(
         owner.with_read(|symbols| symbols.symbol("retry")),
         Some(fresh)
@@ -104,11 +110,13 @@ fn independent_admission_uses_the_pending_identity() {
         symbol
     );
     let meanings = candidate.interner().snapshot();
-    candidate
-        .seal_for_publication(&meanings)
-        .expect("fixture meanings agree with the candidate")
-        .publish()
-        .unwrap();
+    {
+        let binding = candidate.binding();
+        candidate.seal_for_publication(&meanings, &binding, [])
+    }
+    .expect("fixture meanings agree with the candidate")
+    .publish()
+    .unwrap();
     assert_eq!(
         owner.with_read(|symbols| symbols.symbol("independent")),
         Some(symbol)
@@ -180,11 +188,13 @@ fn checkpoint_recovery_preserves_abandoned_symbol_identity_frontiers() {
         None
     );
     let meanings = candidate.interner().snapshot();
-    candidate
-        .seal_for_publication(&meanings)
-        .expect("fixture meanings agree with the candidate")
-        .publish()
-        .unwrap();
+    {
+        let binding = candidate.binding();
+        candidate.seal_for_publication(&meanings, &binding, [])
+    }
+    .expect("fixture meanings agree with the candidate")
+    .publish()
+    .unwrap();
 }
 
 #[test]
@@ -195,7 +205,11 @@ fn canonical_symbol_sealing_and_cross_owner_adoption_refuse_before_publication()
     let false_meaning = crate::symbols::data::SymbolTableSnapshot {
         entries: vec![(symbol, "different".into())],
     };
-    assert!(candidate.seal_for_publication(&false_meaning).is_err());
+    assert!({
+        let binding = candidate.binding();
+        candidate.seal_for_publication(&false_meaning, &binding, [])
+    }
+    .is_err());
     assert!(owner.with_read(|interner| interner.resolve(symbol).is_none()));
     let mut first = owner.begin_pending_meanings();
     let second_owner = super::RuntimeSymbolTable::default();
@@ -204,4 +218,19 @@ fn canonical_symbol_sealing_and_cross_owner_adoption_refuse_before_publication()
         first.adopt(&second),
         Err(super::SymbolReservationDenial::InvalidDictionary)
     ));
+}
+
+#[test]
+fn publication_refuses_a_required_symbol_that_only_has_an_unused_reservation() {
+    let owner = RuntimeSymbolTable::default();
+    let mut pending = owner.begin_pending_meanings();
+    let id = pending.reserve("unpublished-reference").unwrap();
+    let binding = pending.binding();
+    assert!(pending
+        .seal_for_publication(&SymbolTableSnapshot { entries: vec![] }, &binding, [id])
+        .is_err());
+    assert_eq!(
+        owner.with_read(|table| table.resolve(id).map(str::to_owned)),
+        None
+    );
 }

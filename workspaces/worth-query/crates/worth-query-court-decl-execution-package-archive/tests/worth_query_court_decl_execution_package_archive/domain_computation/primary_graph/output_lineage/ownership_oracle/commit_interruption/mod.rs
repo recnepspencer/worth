@@ -5,6 +5,7 @@ use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_read::PlanarReadBinding;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_read::PlanarReadResult;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::principal::ConsumerPrincipalBinding;
+use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantError;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationOutputDemandSource;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryAccessContext;
 use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;
@@ -24,9 +25,7 @@ use worth_query_execution::facade::application_invariants::WorthQueryApplication
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantRule;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantScopePlanner;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantVerdict;
-use worth_relational::facade::runtime::CustomInvariantExecutionError as WorthQueryApplicationInvariantExecutionError;
 use worth_relational::facade::runtime::CustomInvariantLeaseBudget;
-use worth_relational::facade::runtime::CustomInvariantPreparationError as WorthQueryApplicationInvariantPreparationError;
 pub fn source(
     runtime: &Application,
     phase: &WorthQueryAdvancementPhase<'_>,
@@ -104,7 +103,7 @@ impl WorthQueryApplicationInvariantRule<OwnerSchema> for InterruptingRule {
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, OwnerSchema>,
         budget: &dyn CustomInvariantLeaseBudget,
-    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantPreparationError>> {
+    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantError>> {
         let scope = self.rule.prepare_scope_checked(planner, budget);
         // Cancel the real admitted request, after the real rule prepared its scope.
         // The next production safe point decides the native interruption.
@@ -116,7 +115,7 @@ impl WorthQueryApplicationInvariantRule<OwnerSchema> for InterruptingRule {
     fn prepare_scope(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, OwnerSchema>,
-    ) -> Result<Self::Scope, WorthQueryApplicationInvariantPreparationError> {
+    ) -> Result<Self::Scope, WorthQueryApplicationInvariantError> {
         self.rule.prepare_scope(planner)
     }
     fn evaluate_checked(
@@ -127,7 +126,7 @@ impl WorthQueryApplicationInvariantRule<OwnerSchema> for InterruptingRule {
     ) -> Option<
         Result<
             WorthQueryApplicationInvariantVerdict<Self::Refusal>,
-            WorthQueryApplicationInvariantExecutionError,
+            WorthQueryApplicationInvariantError,
         >,
     > {
         self.rule.evaluate_checked(context, scope, budget)
@@ -138,7 +137,7 @@ impl WorthQueryApplicationInvariantRule<OwnerSchema> for InterruptingRule {
         scope: &Self::Scope,
     ) -> Result<
         WorthQueryApplicationInvariantVerdict<Self::Refusal>,
-        WorthQueryApplicationInvariantExecutionError,
+        WorthQueryApplicationInvariantError,
     > {
         self.rule.evaluate(context, scope)
     }

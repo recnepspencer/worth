@@ -676,6 +676,7 @@ dependencies = [
 name = "worth-foundational"
 version = "0.1.0"
 dependencies = [
+ "im",
  "serde",
  "serde_json",
  "serde_stacker",
@@ -846,6 +847,7 @@ dependencies = [
  "worth-query-decl",
  "worth-query-host",
  "worth-query-testkit-decl",
+ "worth-relational",
 ]
 
 [[package]]
@@ -889,6 +891,20 @@ dependencies = [
  "worth-query-testkit-document-retention",
  "worth-query-testkit-host",
  "worth-relational",
+]
+
+[[package]]
+name = "worth-query-court-decl-host-replay"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-decl",
+ "worth-query-host",
+ "worth-query-replay",
+ "worth-query-testkit-document-retention",
+ "worth-relational",
+ "worth-testkit-relational",
 ]
 
 [[package]]
@@ -1402,6 +1418,7 @@ dependencies = [
 name = "worth-query-testkit-decl"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "worth-query-decl",
 ]
 

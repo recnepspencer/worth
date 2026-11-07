@@ -205,7 +205,8 @@ pub(super) fn validate_domain_package<D: WorthQueryDomainEntryMarker>(
             crate::evidence_identity::WorthQueryEvidenceTag::new("portable_package"),
             portable_package.identity().digest(),
         )
-        .seal(),
+        .seal()
+        .expect("portable package identity contains one fixed-width digest entry"),
     );
     Ok(WorthQueryValidatedDomainPackage {
         marker: package.marker,

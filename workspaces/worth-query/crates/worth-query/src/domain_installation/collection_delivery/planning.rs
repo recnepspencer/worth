@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::BTreeSet;
 
 use crate::domain_installation::{
@@ -102,18 +103,18 @@ pub(super) fn plan(
     state: &mut WorthQueryCollectionConsumerWindow,
     admitted: &WorthQueryAdmittedConsumerInvalidation<'_>,
     workspace: &crate::runtime::WorthQueryWorkspace,
-) -> WorthQueryCollectionDeliveryOutcome {
+) -> Result<WorthQueryCollectionDeliveryOutcome, IdentityDerivationDenial> {
     let mut counters = WorthQueryCollectionDeliveryCounters::default();
     let delta = match validate_plan(state, admitted, workspace, &mut counters) {
         Ok(delta) => delta,
-        Err(kind) => return no_delivery(kind, counters),
+        Err(kind) => return Ok(no_delivery(kind, counters)),
     };
     if state
         .pending_maintenance_ordinal
         .is_some_and(|pending| pending != delta.maintenance_ordinal())
     {
         counters.operations_materialized = 1;
-        return reset_patch(
+        return Ok(reset_patch(
             state,
             delta,
             ResetPatchSpec {
@@ -127,12 +128,12 @@ pub(super) fn plan(
                 },
                 counters,
             },
-        );
+        )?);
     }
     let impact = delta.impact().class();
     if let Some(reset) = reset_for(impact, state.window.rows().len()) {
         counters.operations_materialized = 1;
-        return reset_patch(
+        return Ok(reset_patch(
             state,
             delta,
             ResetPatchSpec {
@@ -140,9 +141,9 @@ pub(super) fn plan(
                 operation: reset,
                 counters,
             },
-        );
+        )?);
     }
-    plan_incremental(
+    Ok(plan_incremental(
         execution,
         state,
         IncrementalPlan {
@@ -151,7 +152,7 @@ pub(super) fn plan(
             impact,
             counters,
         },
-    )
+    )?)
 }
 
 struct IncrementalPlan<'a> {
@@ -165,7 +166,7 @@ fn plan_incremental(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     state: &mut WorthQueryCollectionConsumerWindow,
     request: IncrementalPlan<'_>,
-) -> WorthQueryCollectionDeliveryOutcome {
+) -> Result<WorthQueryCollectionDeliveryOutcome, IdentityDerivationDenial> {
     let IncrementalPlan {
         delta,
         workspace,
@@ -186,9 +187,9 @@ fn plan_incremental(
             workspace,
         },
         &mut counters,
-    ) {
+    )? {
         Ok(preview) => preview,
-        Err(outcome) => return outcome,
+        Err(outcome) => return Ok(outcome),
     };
     let next = next_window(state, preview.rows, preview.has_more, counters);
     let mut operations = operations_for(
@@ -210,25 +211,27 @@ fn plan_incremental(
     if operations.is_empty() {
         state.index.apply(preview.delta);
         state.last_maintenance_ordinal = Some(delta.maintenance_ordinal());
-        return no_delivery(
+        return Ok(no_delivery(
             WorthQueryCollectionDeliveryDenialKind::NoSemanticWindowEffect,
             counters,
-        );
+        ));
     }
     counters.operations_materialized = operations.len();
     state.pending_maintenance_ordinal = Some(delta.maintenance_ordinal());
-    WorthQueryCollectionDeliveryOutcome::Patch(WorthQueryCollectionPatch {
-        authority: delta.authority().clone(),
-        maintenance_ordinal: delta.maintenance_ordinal(),
-        impact,
-        prior_cursor: state.window.cursor().clone(),
-        next,
-        operations: std::mem::take(&mut operations),
-        facts: preview.facts,
-        foundational_invalidation: delta.foundational_projection(),
-        counters,
-        index_delta: Some(preview.delta),
-    })
+    Ok(WorthQueryCollectionDeliveryOutcome::Patch(
+        WorthQueryCollectionPatch {
+            authority: delta.authority().clone(),
+            maintenance_ordinal: delta.maintenance_ordinal(),
+            impact,
+            prior_cursor: state.window.cursor().clone(),
+            next,
+            operations: std::mem::take(&mut operations),
+            facts: preview.facts,
+            foundational_invalidation: delta.foundational_projection()?,
+            counters,
+            index_delta: Some(preview.delta),
+        },
+    ))
 }
 
 fn validate_plan<'a>(
@@ -277,25 +280,27 @@ fn preview_or_reset(
     state: &mut WorthQueryCollectionConsumerWindow,
     context: PreviewContext<'_>,
     counters: &mut WorthQueryCollectionDeliveryCounters,
-) -> Result<super::index::WorthQueryCollectionIndexPreview, WorthQueryCollectionDeliveryOutcome> {
-    let preview = state
-        .index
-        .preview(
-            execution,
-            super::index::WorthQueryCollectionPreviewRequest {
-                window: &state.window,
-                affected: context.affected,
-                keys: context.delta.affected_native_keys(),
-                workspace: context.workspace,
-            },
-            counters,
-        )
-        .map_err(|()| {
+) -> Result<
+    Result<super::index::WorthQueryCollectionIndexPreview, WorthQueryCollectionDeliveryOutcome>,
+    IdentityDerivationDenial,
+> {
+    let preview = match state.index.preview(
+        execution,
+        super::index::WorthQueryCollectionPreviewRequest {
+            window: &state.window,
+            affected: context.affected,
+            keys: context.delta.affected_native_keys(),
+            workspace: context.workspace,
+        },
+        counters,
+    ) {
+        Ok(preview) => preview,
+        Err(()) => {
             counters.operations_materialized = 1;
             let impact = WorthQueryImpactClass::UnsupportedEscalation;
             let reset = reset_for(impact, state.window.rows().len())
                 .expect("unsupported escalation always requires reset");
-            reset_patch(
+            return Ok(Err(reset_patch(
                 state,
                 context.delta,
                 ResetPatchSpec {
@@ -303,8 +308,9 @@ fn preview_or_reset(
                     operation: reset,
                     counters: *counters,
                 },
-            )
-        })?;
+            )?));
+        }
+    };
     if preview.has_more
         && state.index.window_policy() == WorthQueryOperationWindowPolicy::CompleteCollection
     {
@@ -316,7 +322,7 @@ fn preview_or_reset(
                 maximum_replacement_rows: state.window.admitted_width(),
             },
         };
-        return Err(reset_patch(
+        return Ok(Err(reset_patch(
             state,
             context.delta,
             ResetPatchSpec {
@@ -324,9 +330,9 @@ fn preview_or_reset(
                 operation: reset,
                 counters: *counters,
             },
-        ));
+        )?));
     }
-    Ok(preview)
+    Ok(Ok(preview))
 }
 
 struct ResetPatchSpec {
@@ -339,23 +345,25 @@ fn reset_patch(
     state: &mut WorthQueryCollectionConsumerWindow,
     delta: &WorthQueryConsumerInvalidationDelta,
     spec: ResetPatchSpec,
-) -> WorthQueryCollectionDeliveryOutcome {
+) -> Result<WorthQueryCollectionDeliveryOutcome, IdentityDerivationDenial> {
     state.pending_maintenance_ordinal = Some(delta.maintenance_ordinal());
-    WorthQueryCollectionDeliveryOutcome::Patch(WorthQueryCollectionPatch {
-        authority: delta.authority().clone(),
-        maintenance_ordinal: delta.maintenance_ordinal(),
-        impact: spec.impact,
-        prior_cursor: state.window.cursor().clone(),
-        next: state.window.targetized(
-            state.window.capability_identity,
-            state.window.capability_generation,
-        ),
-        operations: vec![spec.operation],
-        facts: Vec::new(),
-        foundational_invalidation: delta.foundational_projection(),
-        counters: spec.counters,
-        index_delta: None,
-    })
+    Ok(WorthQueryCollectionDeliveryOutcome::Patch(
+        WorthQueryCollectionPatch {
+            authority: delta.authority().clone(),
+            maintenance_ordinal: delta.maintenance_ordinal(),
+            impact: spec.impact,
+            prior_cursor: state.window.cursor().clone(),
+            next: state.window.targetized(
+                state.window.capability_identity,
+                state.window.capability_generation,
+            ),
+            operations: vec![spec.operation],
+            facts: Vec::new(),
+            foundational_invalidation: delta.foundational_projection()?,
+            counters: spec.counters,
+            index_delta: None,
+        },
+    ))
 }
 
 fn no_delivery(

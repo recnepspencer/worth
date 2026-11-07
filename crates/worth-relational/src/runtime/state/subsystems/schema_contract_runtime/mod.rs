@@ -6,8 +6,9 @@ use crate::schema::{lower_aspect_plans, lower_relation_integrity_plans};
 use crate::validation::data::InvariantRegistration;
 use crate::validation::FrozenCustomInvariantRegistry;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub(crate) struct SchemaContractRuntimeSubsystem {
+    pub(crate) schema_authority_digest: [u8; 32],
     pub(crate) aspect_contract_plans: AspectContractPlanCatalog,
     #[cfg(test)]
     pub(crate) relation_integrity_plans: RelationIntegrityPlanCatalog,
@@ -23,6 +24,7 @@ impl RuntimeSubsystem for SchemaContractRuntimeSubsystem {
     fn new(config: &Self::Config) -> Self {
         let relation_integrity_plans = lower_relation_integrity_plans(&config.schema.registry);
         Self {
+            schema_authority_digest: config.schema.registry.authority_digest_bytes(),
             aspect_contract_plans: lower_aspect_plans(&config.schema.registry),
             relation_integrity_registrations: relation_integrity_plans
                 .relation_plans

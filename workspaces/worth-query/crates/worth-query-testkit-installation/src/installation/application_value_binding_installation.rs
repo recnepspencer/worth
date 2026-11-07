@@ -39,7 +39,6 @@ impl BindingSet for Bindings {
 }
 impl Scalar<u64> for Bindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 pub struct Component;
 impl Entity for Component {
@@ -50,7 +49,7 @@ impl Entity for Component {
 pub struct Measurement;
 impl Aspect for Measurement {
     const NAME: &'static str = "Measurement";
-    type Row = u64;
+    type Row = IdentityRow;
 }
 
 pub fn installed_index() -> WorthQueryInstalledPackageIndex {
@@ -71,4 +70,15 @@ pub fn installed_index() -> WorthQueryInstalledPackageIndex {
         [admitted],
     )
     .unwrap()
+}
+
+pub struct IdentityRow(u64);
+impl fragment::Record<IdentityRow> for Bindings {
+    fn record() -> impl fragment::Shape<IdentityRow, Self> {
+        fragment::field("value", |row: &IdentityRow| row.0)
+            .equality_queryable(true)
+            .build(|value, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(IdentityRow(value))
+            })
+    }
 }

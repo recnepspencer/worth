@@ -153,7 +153,10 @@ fn bound_operations_drive_native_live_invalidation_collection_and_disposal() {
     consumer
         .bind_shared_target(&admitted, &collection_workspace)
         .unwrap();
-    let patch = match consumer.plan_patch(request_execution, &admitted, &collection_workspace) {
+    let patch = match consumer
+        .plan_patch(request_execution, &admitted, &collection_workspace)
+        .expect("fixture digest must fit")
+    {
         installed::collection::WorthQueryCollectionDeliveryOutcome::Patch(patch) => patch,
         installed::collection::WorthQueryCollectionDeliveryOutcome::NoDelivery(denial) => {
             panic!("semantic invalidation produced no collection patch: {denial:?}")

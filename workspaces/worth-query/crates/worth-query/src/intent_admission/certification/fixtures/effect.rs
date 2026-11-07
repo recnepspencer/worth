@@ -3,6 +3,7 @@ use super::runtime::{
     certification_runtime, certification_task_live_request, certification_task_schema,
 };
 use super::title_value_touch;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::facade::runtime::{WorthQueryEffectDeclaration, WorthQueryEffectTrigger};
 use crate::runtime::WorthQueryUnrefinedLiveShape;
 
@@ -20,7 +21,7 @@ pub(in crate::intent_admission::certification) struct CertifiedEffectIntentFixtu
 
 pub(in crate::intent_admission::certification) fn certified_effect_intent_fixture(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> CertifiedEffectIntentFixture {
+) -> Result<CertifiedEffectIntentFixture, IdentityDerivationDenial> {
     let mut runtime = certification_runtime(execution);
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
@@ -35,7 +36,7 @@ pub(in crate::intent_admission::certification) fn certified_effect_intent_fixtur
             "effects.certification.reconcile",
             WorthQueryEffectTrigger::live_view(&live, [title_value_touch()]),
             "strategy.intent.reconcile",
-        ))
+        )?)
         .expect("effect certification effect should declare");
     runtime
         .write(
@@ -77,7 +78,7 @@ pub(in crate::intent_admission::certification) fn certified_effect_intent_fixtur
     let execution_provenance_chain_digest = receipt.execution_provenance_chain_digest().to_string();
     let receipt_digest = receipt.intent_receipt().receipt_digest().to_string();
 
-    CertifiedEffectIntentFixture {
+    Ok(CertifiedEffectIntentFixture {
         request_digest,
         eligibility_digest,
         decision_digest,
@@ -86,5 +87,5 @@ pub(in crate::intent_admission::certification) fn certified_effect_intent_fixtur
         trace_digest,
         receipt_digest,
         execution_provenance_chain_digest,
-    }
+    })
 }

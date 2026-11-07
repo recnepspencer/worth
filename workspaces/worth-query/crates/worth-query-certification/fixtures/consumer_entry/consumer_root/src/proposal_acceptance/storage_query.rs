@@ -105,9 +105,7 @@ pub fn declare(
         .root_path(
             ApplicationQueryRootPath::from(Model::reference()).forward(ModelProposal::reference()),
         )
-        .order_by(key(), ApplicationQueryOrderingDirection::Ascending)
-        .build()
-        .unwrap();
+        .order_by(key(), ApplicationQueryOrderingDirection::Ascending);
     schema
         .application_query(definition)
         .application_query_binding::<Binding>()

@@ -1,7 +1,7 @@
 use worth_query_decl::facade::application_query::{
-    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
-    ApplicationQueryInfluenceContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
+    ApplicationQueryDisclosureContract, ApplicationQueryInfluenceContract,
+    ApplicationQueryLaneEligibility,
 };
 use worth_query_decl::facade::worth_query_application_query;
 
@@ -68,7 +68,7 @@ worth_query_decl::facade::worth_query_query_binding!(
     limits results 1_024
 );
 
-pub fn estate_mandatory_review_definition() -> ApplicationQueryDefinition<
+pub fn estate_mandatory_review_definition() -> ApplicationQueryDefinitionBuilder<
     BankSchema,
     EstateMandatoryReviewQuery,
     EstateMandatoryReviewQueryParameters,
@@ -84,8 +84,6 @@ pub fn estate_mandatory_review_definition() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .requires_ability(ViewEstateMandatoryReview::reference())
-        .build()
-        .expect("bank estate mandatory-review query is statically canonical")
 }
 
 fn disclosure_contract() -> ApplicationQueryDisclosureContract {

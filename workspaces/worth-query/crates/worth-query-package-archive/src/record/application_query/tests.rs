@@ -28,8 +28,6 @@ fn parts() -> WorthQueryPortableApplicationQueryParts {
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
         .into_erased()
         .into_parts()
 }

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 use super::super::receipt::EffectExecutionReceipt;
@@ -39,7 +40,7 @@ impl EffectEnvelopeSourceRefs {
                     WorthQueryEvidenceTag::new("counters"),
                     &counter_snapshot_identity,
                 )
-                .seal();
+                .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens");
         Self {
             receipt_identity,
             lowered_identity,

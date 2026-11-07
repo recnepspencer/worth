@@ -12,12 +12,14 @@ pub(super) type RestoredPartitions = BTreeMap<PartitionId, PartitionState>;
 /// schema interpretation. A divergent mirror partition is reconstructed from
 /// its own image, even when every sibling partition can share the substrate.
 pub(super) fn restore_partition_mirror(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     checkpoint: &crate::durability::data::DurableCheckpoint,
     branch_roots: &RestoredBranchRootImages,
     plans: &crate::schema::data::AspectContractPlanCatalog,
     contracts: &crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog,
     work: &mut CheckpointRestoreWork,
-) -> Result<RestoredPartitions, DurabilityError> {
+) -> Result<RestoredPartitions, crate::durability::data::RelationalRecoveryStop> {
     reject_duplicate_partition_images(&checkpoint.partition_images, "checkpoint")?;
     let mut candidates = Vec::new();
     for root_image in &checkpoint.branch_roots {
@@ -62,31 +64,39 @@ pub(super) fn restore_partition_mirror(
         }
     }
     let mut reconstructed =
-        restore_owned_partition_images_with_schema(fallback, plans, contracts, "checkpoint")?;
+        restore_owned_partition_images_with_schema(lane, fallback, plans, contracts, "checkpoint")?;
     reconstructed.extend(reused);
     checkpoint
         .mirror_kind_images
-        .restore(&mut reconstructed)
-        .map_err(|detail| {
-            DurabilityError::new(
-                crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
-                format!("mirror kind reconstruction: {detail:?}"),
+        .restore(lane, execution, &mut reconstructed)
+        .map_err(|cause| {
+            crate::durability::checkpoints::kind_reconstruction::stop(
+                "mirror kind reconstruction",
+                cause,
             )
         })?;
     Ok(reconstructed)
 }
 
 pub(super) fn restore_unique_partition_images_with_schema(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     images: &[PartitionCheckpointImage],
     plans: &crate::schema::data::AspectContractPlanCatalog,
     aspect_contracts: &crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog,
     owner: &str,
 ) -> Result<RestoredPartitions, DurabilityError> {
     reject_duplicate_partition_images(images, owner)?;
-    restore_owned_partition_images_with_schema(images.to_vec(), plans, aspect_contracts, owner)
+    restore_owned_partition_images_with_schema(
+        lane,
+        images.to_vec(),
+        plans,
+        aspect_contracts,
+        owner,
+    )
 }
 
 fn restore_owned_partition_images_with_schema(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     images: Vec<PartitionCheckpointImage>,
     plans: &crate::schema::data::AspectContractPlanCatalog,
     aspect_contracts: &crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog,
@@ -98,6 +108,7 @@ fn restore_owned_partition_images_with_schema(
         .map(|image| {
             let partition_id = image.partition_id;
             crate::durability::checkpoints::images::partition_from_image(
+                lane,
                 image,
                 plans,
                 aspect_contracts,

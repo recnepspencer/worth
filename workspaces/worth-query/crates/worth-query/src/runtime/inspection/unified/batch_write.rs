@@ -3,6 +3,7 @@ use super::batch_write_digest::{
 };
 use super::WorthQueryBatchWriteComponentInspection;
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQueryCommitIdentity;
 use crate::runtime::{
     WorthQueryAspectTouch, WorthQueryAuthorityLane, WorthQueryBatchMutationEvidence,
@@ -34,7 +35,9 @@ pub struct WorthQueryBatchWriteReceiptInspection {
 }
 
 impl WorthQueryBatchWriteReceiptInspection {
-    pub(in crate::runtime) fn new(receipt: &WorthQueryBatchWriteReceipt) -> Self {
+    pub(in crate::runtime) fn new(
+        receipt: &WorthQueryBatchWriteReceipt,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let commit_identities = receipt
             .write_receipts()
             .iter()
@@ -49,11 +52,12 @@ impl WorthQueryBatchWriteReceiptInspection {
             .journal_positions()
             .map(|position| position.evidence_identity())
             .collect::<Vec<_>>();
-        let batch_mutation_evidence = receipt.batch_mutation_evidence().clone();
+        let batch_mutation_evidence = receipt.batch_mutation_evidence()?.clone();
         let graph_composition_breadth = receipt.graph_composition_breadth().clone();
-        let graph_composition_lifecycle_outcomes = receipt.graph_composition_lifecycle_outcomes();
+        let graph_composition_lifecycle_outcomes =
+            receipt.graph_composition_lifecycle_outcomes()?;
         let graph_composition_program = receipt.graph_composition_program().cloned();
-        let graph_composition_evidence = receipt.graph_composition_evidence();
+        let graph_composition_evidence = receipt.graph_composition_evidence()?;
         let graph_composition_resolution_map = receipt.graph_composition_resolution_map().clone();
         let touched_aspects = receipt.admitted_touched_aspects().to_vec();
         let affected_live_view_ids = receipt.terminal_affected_live_view_ids_projection();
@@ -62,7 +66,7 @@ impl WorthQueryBatchWriteReceiptInspection {
             build_batch_write_receipt_inspection_digest(WorthQueryBatchWriteDigestInputs {
                 authority_lane: receipt.authority_lane().as_str(),
                 basis_lane: receipt.basis_lane().as_str(),
-                batch_digest: receipt.batch_identity(),
+                batch_digest: receipt.batch_identity()?,
                 graph_composition_breadth: &graph_composition_breadth,
                 graph_composition_lifecycle_outcomes: graph_composition_lifecycle_outcomes.as_ref(),
                 graph_composition_program: graph_composition_program.as_ref(),
@@ -75,11 +79,11 @@ impl WorthQueryBatchWriteReceiptInspection {
                 touched_aspects: &touched_aspects,
                 affected_live_view_ids: &affected_live_view_ids,
                 affected_derived_view_ids: &affected_derived_view_ids,
-            });
-        Self {
+            })?;
+        Ok(Self {
             authority_lane: receipt.authority_lane(),
             basis_lane: receipt.basis_lane(),
-            batch_digest: receipt.batch_identity().clone(),
+            batch_digest: receipt.batch_identity()?.clone(),
             batch_mutation_evidence,
             graph_composition_breadth,
             graph_composition_lifecycle_outcomes,
@@ -94,7 +98,7 @@ impl WorthQueryBatchWriteReceiptInspection {
             affected_live_view_ids,
             affected_derived_view_ids,
             inspection_identity,
-        }
+        })
     }
 
     pub fn authority_lane(&self) -> WorthQueryAuthorityLane {

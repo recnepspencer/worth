@@ -23,12 +23,12 @@ impl fragment::BindingSet for DeploymentRecordsBindings {
 }
 impl fragment::Scalar<String> for DeploymentRecordsBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<u64> for DeploymentRecordsBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 pub struct ProgramDeploymentScope;
@@ -72,6 +72,7 @@ impl fragment::Record<ProgramDeploymentScopeFactsValue> for DeploymentRecordsBin
             "ProgramDeploymentSourceRevision",
             |row: &ProgramDeploymentScopeFactsValue| row.program_deployment_source_revision.clone(),
         )
+        .equality_queryable(true)
         .unique()
         .read_only()
         .build(
@@ -109,6 +110,7 @@ impl fragment::Record<ProgramDeploymentGrantFactsValue> for DeploymentRecordsBin
             "ProgramDeploymentGrantIdentity",
             |row: &ProgramDeploymentGrantFactsValue| row.program_deployment_grant_identity.clone(),
         )
+        .equality_queryable(true)
         .unique()
         .read_only()
         .and(
@@ -117,33 +119,40 @@ impl fragment::Record<ProgramDeploymentGrantFactsValue> for DeploymentRecordsBin
                 row.program_deployment_grant_source_revision.clone()
             },
         )
+        .equality_queryable(true)
         .read_only()
         .and(
             "ProgramDeploymentGrantAction",
             |row: &ProgramDeploymentGrantFactsValue| row.program_deployment_grant_action.clone(),
         )
+        .equality_queryable(true)
         .read_only()
         .and(
             "ProgramDeploymentGrantPurpose",
             |row: &ProgramDeploymentGrantFactsValue| row.program_deployment_grant_purpose.clone(),
         )
+        .equality_queryable(true)
         .read_only()
         .and(
             "ProgramDeploymentGrantStatus",
             |row: &ProgramDeploymentGrantFactsValue| row.program_deployment_grant_status.clone(),
         )
+        .equality_queryable(true)
         .and(
             "ProgramDeploymentGrantNotBefore",
             |row: &ProgramDeploymentGrantFactsValue| row.program_deployment_grant_not_before,
         )
+        .equality_queryable(true)
         .and(
             "ProgramDeploymentGrantNotAfter",
             |row: &ProgramDeploymentGrantFactsValue| row.program_deployment_grant_not_after,
         )
+        .equality_queryable(true)
         .and(
             "ProgramDeploymentGrantDepth",
             |row: &ProgramDeploymentGrantFactsValue| row.program_deployment_grant_depth,
         )
+        .equality_queryable(true)
         .build(
             |program_deployment_grant_identity,
              program_deployment_grant_source_revision,

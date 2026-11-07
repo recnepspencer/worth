@@ -200,28 +200,20 @@ pub(super) fn commit(
     let source_fact_rebase = provider.graph.with_runtime(&execution, |runtime| source_fact_rebase.prepare_candidate(&candidate, runtime, before.as_snapshot(),
         crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(allocation_policy, Some(attempt.affinity().publication_request())),
     )).map_err(stops::source_rebase_preparation_stop)?;
-    let ordinary_index_budget =
-        crate::domain_computation::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget();
-    let ordinary_index_budget = if provider.take_tight_index_maintenance_budget() {
-        worth_relational::facade::indexes::DerivedIndexMaintenanceBudget {
-            maximum_work_units: Some(1),
-            ..ordinary_index_budget
-        }
-    } else {
-        ordinary_index_budget
-    };
-    let index_maintenance_work = provider
-        .graph
-        .with_runtime(&execution, |runtime| {
-            crate::domain_computation::primary_graph::index_maintenance_budget::prepare_candidate_with_cold_fallback(&execution,
-                runtime,
-                &mut candidate,
-                &provider.graph.primary_index_ids,
-                before.as_snapshot(),
-                ordinary_index_budget,
-            )
+    let index_maintenance_work = candidate.prepared_index_maintenance_work().ok_or_else(|| {
+        index_preparation_stop(worth_relational::facade::indexes::DerivedIndexMaintenanceDenial {
+            kind: worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind::CandidateUnavailable,
+            work: Default::default(),
         })
-        .map_err(index_preparation_stop)?;
+    })?;
+    // The native preparation already paid the phase. The existing caller's
+    // tighter admission policy can refuse that actual work before publication.
+    if provider.take_tight_index_maintenance_budget() && index_maintenance_work.work_units > 1 {
+        return Err(index_preparation_stop(worth_relational::facade::indexes::DerivedIndexMaintenanceDenial {
+            kind: worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded,
+            work: index_maintenance_work,
+        }));
+    }
     let managed_views = managed_views::prepare(
         &execution,
         provider,

@@ -6,6 +6,8 @@ use super::*;
 fn kind_cache_disagreement_with_authenticated_projection_is_typed() {
     let fixture = region_with_history();
     let frame = RelationalRegionImage::decode(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &mut |_, _| Ok(()),
         &fixture.source.members[&fixture.cold.head],
         fixture.cold.head,
         fixture.cold.partition_id,
@@ -21,6 +23,8 @@ fn kind_cache_disagreement_with_authenticated_projection_is_typed() {
         .kinds[0]
         .0 = crate::identity::data::KindId(999);
     let member = RelationalRegionImage::encode(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &mut |_, _| Ok(()),
         fixture.cold.partition_id,
         fixture.cold.schema_carrier_digest,
         RelationalRegionImageKind::Head,
@@ -35,6 +39,8 @@ fn kind_cache_disagreement_with_authenticated_projection_is_typed() {
 fn historical_projection_is_reconstructed_from_owned_record_history() {
     let fixture = region_with_history();
     let frame = RelationalRegionImage::decode(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &mut |_, _| Ok(()),
         &fixture.source.members[&fixture.cold.history],
         fixture.cold.history,
         fixture.cold.partition_id,
@@ -63,6 +69,8 @@ fn historical_projection_is_reconstructed_from_owned_record_history() {
     cache.kinds.retain(|(_, relations)| !relations.is_empty());
     head.history_kind_projection = history.kind_projection.clone();
     let head_member = RelationalRegionImage::encode(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &mut |_, _| Ok(()),
         fixture.cold.partition_id,
         fixture.cold.schema_carrier_digest,
         RelationalRegionImageKind::Head,
@@ -70,6 +78,8 @@ fn historical_projection_is_reconstructed_from_owned_record_history() {
     )
     .unwrap();
     let member = RelationalRegionImage::encode(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &mut |_, _| Ok(()),
         fixture.cold.partition_id,
         fixture.cold.schema_carrier_digest,
         RelationalRegionImageKind::History,
@@ -77,8 +87,11 @@ fn historical_projection_is_reconstructed_from_owned_record_history() {
     )
     .unwrap();
     let mut cold = fixture.cold.clone();
-    cold.kind_authority.history =
-        super::super::kind_commitment::digest(&history.kind_projection).unwrap();
+    cold.kind_authority.history = super::super::kind_commitment::digest(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &history.kind_projection,
+    )
+    .unwrap();
     // Even a rehashed projection and matching cache cannot replace owned arena
     // history. The canonical root separately prevents replacing peer authority.
     let mut members = fixture.source.members.clone();
@@ -128,4 +141,39 @@ fn assert_integrity_refusal(failure: crate::storage::data::RelationalStorageUnav
         failure.cause == Cause::IntegrityMismatch
             && matches!(failure.subject, RelationalStorageSubject::Region(_))
     );
+}
+
+#[test]
+fn tampered_carried_kind_commitment_is_refused_during_cold_restore() {
+    let fixture = region_with_history();
+    let mut cold = fixture.cold.clone();
+    cold.kind_authority.history[0] ^= 1;
+    let cell = RelationalRegionResidency::cold(cold).unwrap();
+    let failure = head_demand(&cell, 1 << 24).unwrap_err();
+    assert_eq!(failure.cause, Cause::IntegrityMismatch);
+}
+
+#[test]
+fn carried_live_counts_are_checked_against_admitted_member_rows() {
+    for full in [false, true] {
+        let fixture = region_with_history();
+        let mut cold = fixture.cold.clone();
+        cold.live_counts.entities += 1;
+        let cell = RelationalRegionResidency::cold(cold).unwrap();
+        let failure = if full {
+            full_demand(&cell, 1 << 24).unwrap_err()
+        } else {
+            head_demand(&cell, 1 << 24).unwrap_err()
+        };
+        assert_integrity_refusal(failure);
+    }
+}
+
+#[test]
+fn carried_directory_is_checked_against_admitted_member_rows() {
+    let fixture = region_with_history();
+    let mut cold = fixture.cold.clone();
+    Arc::make_mut(&mut cold.directory).entities.clear();
+    let cell = RelationalRegionResidency::cold(cold).unwrap();
+    assert_integrity_refusal(head_demand(&cell, 1 << 24).unwrap_err());
 }

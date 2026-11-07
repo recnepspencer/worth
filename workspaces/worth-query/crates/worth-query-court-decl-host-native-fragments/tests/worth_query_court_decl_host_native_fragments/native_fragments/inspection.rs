@@ -10,7 +10,9 @@ impl World {
                         |reader| {
                             let mut view = reader.fragment(Fixture).unwrap();
                             let item = view.resolve(
-                                record_field(Fixture, Item, ItemIdentity, "id").unwrap(),
+                                record_field(Fixture, Item, ItemIdentity, "id")
+                                    .resolve()
+                                    .unwrap(),
                                 id,
                             )?;
                             work(|work| view.read(&item, Form, work))
@@ -34,7 +36,9 @@ impl World {
                         |reader| {
                             let mut view = reader.fragment(Fixture).unwrap();
                             let item = view.resolve(
-                                record_field(Fixture, Item, ItemIdentity, "id").unwrap(),
+                                record_field(Fixture, Item, ItemIdentity, "id")
+                                    .resolve()
+                                    .unwrap(),
                                 id,
                             )?;
                             work(|work| view.read(&item, Note, work))
@@ -58,7 +62,9 @@ impl World {
                         |reader| {
                             let mut view = reader.fragment(Fixture).unwrap();
                             let item = view.resolve(
-                                record_field(Fixture, Item, ItemIdentity, "id").unwrap(),
+                                record_field(Fixture, Item, ItemIdentity, "id")
+                                    .resolve()
+                                    .unwrap(),
                                 id,
                             )?;
                             work(|work| view.read(&item, RequiredNote, work))

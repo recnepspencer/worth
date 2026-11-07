@@ -139,7 +139,7 @@ pub(crate) fn existing_binding(
             .expect("existing-truth authority identity"),
             worth_query::facade::foundation::WorthQueryEntityIdentity::admit_authored_entity_token(worth_query::facade::foundation::QueryExternalIdentityToken::new(
                 std::sync::Arc::from(resolved_entity_identity),
-            )),
+            )).expect("authored existing entity identity is admitted"),
         )
         .expect("existing entity target should build")
         .in_target_collection("Task")

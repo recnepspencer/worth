@@ -8,6 +8,9 @@ use crate::durability::data::*;
 use crate::durability::medium::RelationalDurableMemberLocator;
 use crate::storage::overlay::{PartitionContentCommitment, PartitionState};
 
+mod expanded_regions;
+use expanded_regions::{capture_partitions, restore_images};
+
 pub(crate) struct CapturedManifest {
     pub(crate) manifest: RelationalCheckpointManifest,
     pub(crate) members: BTreeMap<RelationalDurableMemberLocator, RelationalCheckpointMember>,
@@ -31,6 +34,7 @@ pub(crate) struct CapturedManifest {
 
 impl CapturedManifest {
     pub(crate) fn capture_metadata(
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         checkpoint: &DurableCheckpoint,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         prior: Option<&RelationalCheckpointManifest>,
@@ -103,8 +107,12 @@ impl CapturedManifest {
         } else {
             Vec::new()
         };
-        let dictionary =
-            super::dictionary_capture::capture(&checkpoint.symbol_table, policy, &mut members)?;
+        let dictionary = super::dictionary_capture::capture(
+            lane,
+            &checkpoint.symbol_table,
+            policy,
+            &mut members,
+        )?;
         let symbol_pages = dictionary.by_id;
         let symbol_buckets = dictionary.by_text;
         let mut lineage_pages = Vec::new();
@@ -178,21 +186,28 @@ impl CapturedManifest {
     }
     #[cfg(test)]
     pub(super) fn capture(
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         checkpoint: &DurableCheckpoint,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<Self, RelationalNativeCheckpointCaptureDenial> {
         Self::capture_expanded(
+            lane,
+            execution,
             checkpoint,
             policy,
             &mut super::checkpoint_encoding::CheckpointEncodingControl::Policy(policy),
         )
     }
     pub(crate) fn capture_expanded(
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         checkpoint: &DurableCheckpoint,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         control: &mut super::checkpoint_encoding::CheckpointEncodingControl<'_, '_, '_, '_, '_>,
     ) -> Result<Self, RelationalNativeCheckpointCaptureDenial> {
         let mut captured = Self::capture_metadata(
+            lane,
             checkpoint,
             policy,
             None,
@@ -216,7 +231,7 @@ impl CapturedManifest {
         captured.append_lineage_events(rows, policy)?;
         let mut members = std::mem::take(&mut captured.members);
         let mut symbols = crate::symbols::data::StringInterner::default();
-        symbols.restore_snapshot(checkpoint.symbol_table.clone());
+        symbols.restore_snapshot(lane, checkpoint.symbol_table.clone());
         let mut roots = Vec::new();
         let mut schemas = BTreeMap::new();
         for image in &checkpoint.branch_root_schema_images {
@@ -237,6 +252,8 @@ impl CapturedManifest {
                 .get(&root.schema_carrier_digest)
                 .ok_or_else(|| corrupt("missing root schema carrier"))?;
             let partitions = restore_images(
+                lane,
+                execution,
                 &root.partition_images,
                 schema,
                 checkpoint
@@ -245,6 +262,8 @@ impl CapturedManifest {
                     .ok_or_else(|| corrupt("missing root kind images"))?,
             )?;
             let regions = capture_partitions(
+                lane,
+                execution,
                 &partitions,
                 schema,
                 root.schema_carrier_digest,
@@ -284,7 +303,11 @@ impl CapturedManifest {
                 .get(&digest)
                 .ok_or_else(|| corrupt("missing mirror schema carrier"))?;
             capture_partitions(
+                lane,
+                execution,
                 &restore_images(
+                    lane,
+                    execution,
                     &checkpoint.partition_images,
                     schema,
                     &checkpoint.mirror_kind_images,
@@ -300,63 +323,6 @@ impl CapturedManifest {
         captured.members = members;
         Ok(captured)
     }
-}
-
-fn restore_images(
-    images: &[PartitionCheckpointImage],
-    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
-    kinds: &crate::storage::residency::CheckpointRegionKindImages,
-) -> Result<BTreeMap<crate::identity::data::PartitionId, PartitionState>, DurabilityError> {
-    let contracts =
-        CheckpointAspectContractCatalog::from_contracts(schema.retained_aspect_contracts())?;
-    let mut partitions = BTreeMap::new();
-    for image in images {
-        let partition = partition_from_image(image.clone(), schema.aspect_plans(), &contracts)?;
-        if partitions
-            .insert(partition.partition_id, partition)
-            .is_some()
-        {
-            return Err(corrupt("duplicate partition image"));
-        }
-    }
-    kinds
-        .restore(&mut partitions)
-        .map_err(|cause| corrupt(format!("kind reconstruction: {cause:?}")))?;
-    Ok(partitions)
-}
-
-fn capture_partitions(
-    partitions: &BTreeMap<crate::identity::data::PartitionId, PartitionState>,
-    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
-    schema_digest: [u8; 32],
-    symbols: &crate::symbols::data::StringInterner,
-    members: &mut BTreeMap<RelationalDurableMemberLocator, RelationalCheckpointMember>,
-) -> Result<Vec<RelationalCheckpointRegion>, DurabilityError> {
-    partitions
-        .values()
-        .map(|partition| {
-            let (commitment, _) = PartitionContentCommitment::capture(partition, symbols, None)
-                .map_err(|error| corrupt(format!("region commitment: {error:?}")))?;
-            let captured = crate::storage::residency::capture_region_members(
-                partition,
-                &commitment,
-                schema,
-                schema_digest,
-            )
-            .map_err(|cause| corrupt(format!("region member: {cause:?}")))?;
-            Ok(RelationalCheckpointRegion {
-                kind_authority: captured.kind_authority,
-                partition_id: partition.partition_id,
-                content_digest: commitment.digest(partition.partition_id),
-                entity_slots: partition.entity_arena.slot_count(),
-                relation_slots: partition.relation_arena.slot_count(),
-                unavailable_records: partition.entity_arena.lifecycle_counts().unavailable
-                    + partition.relation_arena.lifecycle_counts().unavailable,
-                head: add(members, captured.head),
-                history: add(members, captured.history),
-            })
-        })
-        .collect()
 }
 
 pub(super) fn add(

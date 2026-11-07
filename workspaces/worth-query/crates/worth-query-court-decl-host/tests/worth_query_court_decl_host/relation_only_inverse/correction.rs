@@ -6,7 +6,6 @@ impl ApplicationAuthoredCorrectionFamily<Schema> for Family {
     type Entity = Node;
     fn logical_key() -> ApplicationAuthoredLogicalKey<Schema, Node> {
         ApplicationAuthoredLogicalKey::from_field(Id::at("Id"))
-            .expect("the authored key is declared")
     }
 }
 pub struct UndoSpawn;
@@ -39,8 +38,7 @@ impl ApplicationCorrectionBinding<Schema> for UndoSpawn {
                     Holds::reference(),
                 )],
                 4096,
-            )
-            .unwrap(),
+            ),
         )
     }
     fn derive_correction(

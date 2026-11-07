@@ -21,7 +21,7 @@ fn nondeterministic_lowering_cannot_enter_parallel_progression() {
         )
         .unwrap()
         .start_workflow(&mut workspace)
-        .unwrap()
+        .unwrap().unwrap()
         .advance(
             "start",
             domain::WorthQueryWorkflowValue::NotRequired,
@@ -89,7 +89,7 @@ fn lower_runtime_parallel_denial_stops_before_frontier_graph_or_executor_work() 
         )
         .unwrap()
         .start_workflow(&mut workspace)
-        .unwrap()
+        .unwrap().unwrap()
         .advance(
             "start",
             domain::WorthQueryWorkflowValue::NotRequired,
@@ -144,7 +144,7 @@ fn parallel_frontier_accepts_ready_incomparable_stages_with_distinct_predecessor
         )
         .unwrap()
         .start_workflow(&mut workspace)
-        .unwrap()
+        .unwrap().unwrap()
         .advance(
             "start",
             domain::WorthQueryWorkflowValue::NotRequired,

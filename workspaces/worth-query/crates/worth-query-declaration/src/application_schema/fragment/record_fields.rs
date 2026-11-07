@@ -55,7 +55,7 @@ macro_rules! columns {
             }
             fn columns(&self, prefix: &str, output: &mut Vec<Column>) -> Result<(), RecordRefusal> {
                 $(let first = output.len();
-                <Set as ValueColumns<$v, $kind>>::columns(&path(prefix, self.$index.name)?, output)?;
+                <Set as ValueColumns<$v, $kind>>::columns(&path(prefix, self.$index.name)?, self.$index.equality_queryable, output)?;
                 if self.$index.unique && output.len() - first != 1 {
                     return Err(RecordRefusal::new(&path(prefix, self.$index.name)?, RecordRefusalKind::UniqueNeedsScalar));
                 }
@@ -84,7 +84,7 @@ macro_rules! append {
         impl<Row, Set, $($v, $get, $kind),+> Fields<Row, Set, ($(Accessor<$v, $get>,)+), ($($kind,)+)> {
             pub fn and<Next, NextKind>(self, name: &'static str, get: impl Fn(&Row) -> Next) -> Fields<Row, Set, ($(Accessor<$v, $get>,)+ Accessor<Next, impl Fn(&Row) -> Next>), ($($kind,)+ NextKind)>
             where Set: ValueColumns<Next, NextKind> {
-                Fields { fields: ($(self.fields.$index,)+ Accessor { name, get, read_only: false, unique: false, marker: PhantomData }), marker: PhantomData }
+                Fields { fields: ($(self.fields.$index,)+ Accessor { name, get, read_only: false, equality_queryable: false, unique: false, marker: PhantomData }), marker: PhantomData }
             }
         }
     };
@@ -95,6 +95,9 @@ macro_rules! field_posture {
         impl<Row, Set, $($v, $get, $kind),+> Fields<Row, Set, ($(Accessor<$v, $get>,)+), ($($kind,)+)> {
             pub fn read_only(mut self) -> Self { self.fields.$last.read_only = true; self }
             pub fn unique(mut self) -> Self { self.fields.$last.unique = true; self }
+            /// Declares equality-index posture for the most recently added scalar or scalar array.
+            #[inline(always)]
+            pub fn equality_queryable(mut self, queryable: bool) -> Self { self.fields.$last.equality_queryable = queryable; self }
         }
     };
 }

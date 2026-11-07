@@ -10,7 +10,16 @@ impl Fragment for Annotations {
     const NAME: &'static str = "annotations";
     type Bindings = Bindings;
     type Members = (
-        (Extend<Item, (Option<Annotation>,), (WithAspects<Annotates, (Option<EdgeWeight>,)>,)>,),
+        (
+            Extend<
+                Item,
+                (
+                    Option<Annotation>,
+                    Option<super::fragment_codec_fixture::ExtendedValue>,
+                ),
+                (WithAspects<Annotates, (Option<EdgeWeight>,)>,),
+            >,
+        ),
         ExtensionAccess,
     );
 }
@@ -39,6 +48,18 @@ impl Registration<Fixture> for ExtensionAccess {
     {
         let operation = ApplicationOperationRef::<Fixture, ChangeForm, ()>::from_declaration();
         Ok(builder
+            .operation_read_record(
+                operation,
+                Fixture,
+                Item,
+                super::fragment_codec_fixture::OwnedValue,
+            )
+            .operation_read_record(
+                operation,
+                Annotations,
+                Item,
+                super::fragment_codec_fixture::ExtendedValue,
+            )
             .operation_read_relation(operation, relation(Annotations, Item, Annotates))
             .operation_link(operation, relation(Annotations, Item, Annotates))
             .operation_read_record(operation, Annotations, Item, Annotation)
@@ -61,8 +82,20 @@ impl Relation for ClassifiedBy {
 pub struct EdgeWeight;
 impl Aspect for EdgeWeight {
     const NAME: &'static str = "weight";
-    type Row = u64;
+    type Row = EdgeWeightRow;
 }
 
 impl OperationReads<ChangeForm> for Annotates {}
 impl OperationLinks<ChangeForm> for Annotates {}
+
+#[derive(Debug, Eq, PartialEq)]
+pub struct EdgeWeightRow(pub u64);
+impl Record<EdgeWeightRow> for Bindings {
+    fn record() -> impl Shape<EdgeWeightRow, Self> {
+        field("value", |row: &EdgeWeightRow| row.0)
+            .equality_queryable(true)
+            .build(|value, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(EdgeWeightRow(value))
+            })
+    }
+}

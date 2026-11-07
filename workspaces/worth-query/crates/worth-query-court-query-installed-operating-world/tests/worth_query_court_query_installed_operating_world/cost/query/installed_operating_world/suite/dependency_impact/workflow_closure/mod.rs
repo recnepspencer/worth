@@ -20,7 +20,7 @@ fn completed_workflow_closure_retains_declared_and_realized_roles_at_exact_d_cos
         )
         .unwrap()
         .start_workflow(&mut workspace)
-        .unwrap()
+        .unwrap().unwrap()
         .advance(
             "mutate",
             domain::WorthQueryWorkflowValue::Text("commit".into()),

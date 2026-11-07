@@ -2,10 +2,9 @@
 mod storage_model;
 pub use storage_model::*;
 pub use worth_query_host::facade::declaration::application_query::{
-    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryResultFieldRef,
-    ApplicationQueryResultShapeBuilder,
+    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
+    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder,
 };
 pub use worth_query_host::facade::{declaration, primary_graph};
 pub use worth_query_host::facade::{
@@ -260,7 +259,7 @@ worth_query_application_query!(
 pub type ResultField<Slot, Field> =
     ApplicationQueryResultFieldRef<FinancialIntentQuery, Slot, FinancialHostSchema, Field>;
 
-pub fn financial_intent_query_definition() -> ApplicationQueryDefinition<
+pub fn financial_intent_query_definition() -> ApplicationQueryDefinitionBuilder<
     FinancialHostSchema,
     FinancialIntentQuery,
     FinancialIntentParameters,
@@ -289,8 +288,6 @@ pub fn financial_intent_query_definition() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .expect("financial intent query is canonical")
 }
 
 impl primary_graph::WorthQueryApplicationProjection<FinancialHostSchema, FinancialIntentQuery>

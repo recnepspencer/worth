@@ -16,7 +16,7 @@ mod current_adjacency;
 mod entity_adjacency;
 mod entity_projection;
 mod entity_retirement;
-mod exact_basis_reads;
+pub(in crate::visibility::materialization::read_records) mod exact_basis_reads;
 mod exact_observation;
 mod field_revisions;
 mod field_support;

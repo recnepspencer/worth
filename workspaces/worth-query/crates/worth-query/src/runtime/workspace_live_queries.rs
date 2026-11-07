@@ -259,7 +259,7 @@ impl WorthQueryWorkspace {
             reads.insert(target, result);
         }
         let snapshot_identity = live_bundle_snapshot_identity(&reads)?;
-        Ok(WorthQueryLiveArtifactBundle::new(snapshot_identity, reads))
+        Ok(WorthQueryLiveArtifactBundle::new(snapshot_identity, reads)?)
     }
 
     pub fn observe<T>(&mut self, view: &super::WorthQueryLiveView<T>) -> WorthQueryPatchBatch {

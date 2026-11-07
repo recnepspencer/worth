@@ -153,6 +153,22 @@ impl StringInterner {
         }
         Ok(())
     }
+    /// Compare persistent roots, visiting only nonshared map paths.
+    pub(crate) fn checked_additions_since(
+        &self,
+        previous: &Self,
+    ) -> Result<SymbolTableSnapshot, &'static str> {
+        let mut entries = Vec::new();
+        for changed in previous.by_symbol.diff(&self.by_symbol) {
+            match changed {
+                im::ordmap::DiffItem::Add(id, text) => entries.push((*id, text.clone())),
+                im::ordmap::DiffItem::Update { .. } | im::ordmap::DiffItem::Remove(_, _) => {
+                    return Err("candidate binding erased or replaced a frozen meaning")
+                }
+            }
+        }
+        Ok(SymbolTableSnapshot { entries })
+    }
     pub fn normalize(
         &mut self,
         value: InternedString,
@@ -170,10 +186,15 @@ impl StringInterner {
             .map(|(value, symbol)| (*symbol, value.clone()))
             .collect::<Vec<_>>();
         entries.sort_by(|left, right| left.1.cmp(&right.1));
+        super::snapshot_observation::materialized(entries.len());
         SymbolTableSnapshot { entries }
     }
 
-    pub fn restore_snapshot(&mut self, snapshot: SymbolTableSnapshot) {
+    pub fn restore_snapshot(
+        &mut self,
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        snapshot: SymbolTableSnapshot,
+    ) {
         self.by_value = HashMap::new();
         self.by_symbol = OrdMap::new();
         self.next_symbol = 1;
@@ -248,7 +269,10 @@ mod tests {
 
         let snapshot = interner.snapshot();
         let mut restored = StringInterner::default();
-        restored.restore_snapshot(snapshot);
+        restored.restore_snapshot(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            snapshot,
+        );
 
         assert_eq!(restored.resolve(beta), Some("beta"));
         assert_eq!(restored.resolve(alpha), Some("alpha"));

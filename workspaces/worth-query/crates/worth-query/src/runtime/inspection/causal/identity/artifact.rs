@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 pub(in crate::runtime::inspection::causal) fn compose_causal_performance_snapshot_identity(
     fixture_size: CausalInspectionScaleFixtureSize,
@@ -12,51 +13,53 @@ pub(in crate::runtime::inspection::causal) fn compose_causal_performance_snapsho
     artifact_serialization_slope_counter: usize,
     bridge_unindexed_scan_count: usize,
     bridge_readmission_proof: Option<&WorthQueryEvidenceIdentity>,
-) -> CausalInspectionPerformanceSnapshotIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::CausalInspectionPerformanceSnapshot)
-        .field_shape(WorthQueryEvidenceTag::new("size"), fixture_size.as_str())
-        .field_evidence_identity(
-            causal_artifact_identity_tag(),
-            artifact_identity.evidence_identity(),
-        )
-        .field_usize(
-            WorthQueryEvidenceTag::new("evidence_width"),
-            evidence_reference_width,
-        )
-        .field_usize(
-            WorthQueryEvidenceTag::new("anchor_slope"),
-            anchor_derivation_slope_counter,
-        )
-        .field_usize(
-            WorthQueryEvidenceTag::new("reference_slope"),
-            reference_resolution_slope_counter,
-        )
-        .field_usize(
-            WorthQueryEvidenceTag::new("admission_slope"),
-            admission_slope_counter,
-        )
-        .field_usize(
-            WorthQueryEvidenceTag::new("bridge_envelope_slope"),
-            bridge_envelope_slope_counter,
-        )
-        .field_usize(
-            WorthQueryEvidenceTag::new("materialization_slope"),
-            materialization_slope_counter,
-        )
-        .field_usize(
-            WorthQueryEvidenceTag::new("serialization_slope"),
-            artifact_serialization_slope_counter,
-        )
-        .field_usize(
-            WorthQueryEvidenceTag::new("bridge_unindexed_scan"),
-            bridge_unindexed_scan_count,
-        )
-        .optional_evidence_identity(
-            WorthQueryEvidenceTag::new("readmission"),
-            bridge_readmission_proof,
-        )
-        .seal()
-        .into()
+) -> Result<CausalInspectionPerformanceSnapshotIdentity, IdentityDerivationDenial> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::CausalInspectionPerformanceSnapshot)
+            .field_shape(WorthQueryEvidenceTag::new("size"), fixture_size.as_str())
+            .field_evidence_identity(
+                causal_artifact_identity_tag(),
+                artifact_identity.evidence_identity(),
+            )
+            .field_usize(
+                WorthQueryEvidenceTag::new("evidence_width"),
+                evidence_reference_width,
+            )
+            .field_usize(
+                WorthQueryEvidenceTag::new("anchor_slope"),
+                anchor_derivation_slope_counter,
+            )
+            .field_usize(
+                WorthQueryEvidenceTag::new("reference_slope"),
+                reference_resolution_slope_counter,
+            )
+            .field_usize(
+                WorthQueryEvidenceTag::new("admission_slope"),
+                admission_slope_counter,
+            )
+            .field_usize(
+                WorthQueryEvidenceTag::new("bridge_envelope_slope"),
+                bridge_envelope_slope_counter,
+            )
+            .field_usize(
+                WorthQueryEvidenceTag::new("materialization_slope"),
+                materialization_slope_counter,
+            )
+            .field_usize(
+                WorthQueryEvidenceTag::new("serialization_slope"),
+                artifact_serialization_slope_counter,
+            )
+            .field_usize(
+                WorthQueryEvidenceTag::new("bridge_unindexed_scan"),
+                bridge_unindexed_scan_count,
+            )
+            .optional_evidence_identity(
+                WorthQueryEvidenceTag::new("readmission"),
+                bridge_readmission_proof,
+            )
+            .seal()?
+            .into(),
+    )
 }
 
 fn causal_artifact_identity_tag() -> WorthQueryEvidenceTag {
@@ -68,14 +71,16 @@ pub(in crate::runtime::inspection::causal) fn compose_causal_performance_slope_i
     small: usize,
     medium: usize,
     large: usize,
-) -> CausalInspectionPerformanceSlopeIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::CausalInspectionPerformanceSlope)
-        .field_shape(WorthQueryEvidenceTag::new("label"), label)
-        .field_usize(WorthQueryEvidenceTag::new("small"), small)
-        .field_usize(WorthQueryEvidenceTag::new("medium"), medium)
-        .field_usize(WorthQueryEvidenceTag::new("large"), large)
-        .seal()
-        .into()
+) -> Result<CausalInspectionPerformanceSlopeIdentity, IdentityDerivationDenial> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::CausalInspectionPerformanceSlope)
+            .field_shape(WorthQueryEvidenceTag::new("label"), label)
+            .field_usize(WorthQueryEvidenceTag::new("small"), small)
+            .field_usize(WorthQueryEvidenceTag::new("medium"), medium)
+            .field_usize(WorthQueryEvidenceTag::new("large"), large)
+            .seal()?
+            .into(),
+    )
 }
 
 pub(in crate::runtime::inspection::causal) fn compose_causal_performance_scale_slope_identity(
@@ -86,33 +91,35 @@ pub(in crate::runtime::inspection::causal) fn compose_causal_performance_scale_s
     materialization_slope_identity: &CausalInspectionPerformanceSlopeIdentity,
     artifact_serialization_slope_identity: &CausalInspectionPerformanceSlopeIdentity,
 ) -> CausalInspectionPerformanceScaleSlopeIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::CausalInspectionPerformanceScaleSlope)
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("anchor"),
-            anchor_derivation_slope_identity.evidence_identity(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("reference"),
-            reference_resolution_slope_identity.evidence_identity(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("admission"),
-            admission_slope_identity.evidence_identity(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("bridge_envelope"),
-            bridge_envelope_slope_identity.evidence_identity(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("materialization"),
-            materialization_slope_identity.evidence_identity(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("serialization"),
-            artifact_serialization_slope_identity.evidence_identity(),
-        )
-        .seal()
-        .into()
+    worth_query_evidence_identity(
+        WorthQueryEvidenceScope::CausalInspectionPerformanceScaleSlope,
+    )
+    .field_evidence_identity(
+        WorthQueryEvidenceTag::new("anchor"),
+        anchor_derivation_slope_identity.evidence_identity(),
+    )
+    .field_evidence_identity(
+        WorthQueryEvidenceTag::new("reference"),
+        reference_resolution_slope_identity.evidence_identity(),
+    )
+    .field_evidence_identity(
+        WorthQueryEvidenceTag::new("admission"),
+        admission_slope_identity.evidence_identity(),
+    )
+    .field_evidence_identity(
+        WorthQueryEvidenceTag::new("bridge_envelope"),
+        bridge_envelope_slope_identity.evidence_identity(),
+    )
+    .field_evidence_identity(
+        WorthQueryEvidenceTag::new("materialization"),
+        materialization_slope_identity.evidence_identity(),
+    )
+    .field_evidence_identity(
+        WorthQueryEvidenceTag::new("serialization"),
+        artifact_serialization_slope_identity.evidence_identity(),
+    )
+    .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
+    .into()
 }
 
 pub(in crate::runtime::inspection::causal) fn compose_causal_performance_certification_identity(
@@ -180,6 +187,6 @@ pub(in crate::runtime::inspection::causal) fn compose_causal_performance_certifi
         WorthQueryEvidenceTag::new("parts"),
         scale_slope_digest_part_count,
     )
-    .seal()
+    .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
     .into()
 }

@@ -243,9 +243,13 @@ impl LineageSubsystem {
             .collect()
     }
 
-    pub(crate) fn replace_events(&self, events: Vec<(LineageEventRecord, CommitId)>) {
+    pub(crate) fn replace_events(
+        &self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        events: Vec<(LineageEventRecord, CommitId)>,
+    ) {
         let mut admissions = self.event_admissions.write();
-        self.state.write().replace_events(events);
+        self.state.write().replace_events(lane, events);
         admissions.clear();
     }
 

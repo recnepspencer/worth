@@ -1,4 +1,5 @@
 use crate::domain_installation::{foundational_boundary_artifact_id, foundational_boundary_handle};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -44,9 +45,9 @@ pub(crate) fn materialize_replay_attachment(
     original_trace_identity: &str,
     replay_trace_identity: &str,
     equivalent: bool,
-) -> WorthQueryFoundationalReplayAttachment {
-    let original = trace_evidence_identity("replay-original-trace-v1", original_trace_identity);
-    let replay = trace_evidence_identity("replay-candidate-trace-v1", replay_trace_identity);
+) -> Result<WorthQueryFoundationalReplayAttachment, IdentityDerivationDenial> {
+    let original = trace_evidence_identity("replay-original-trace-v1", original_trace_identity)?;
+    let replay = trace_evidence_identity("replay-candidate-trace-v1", replay_trace_identity)?;
     let source = BoundaryArtifactLocator::new(
         foundational_boundary_artifact_id(&original),
         BoundaryArtifactField::Basis,
@@ -83,23 +84,28 @@ pub(crate) fn materialize_replay_attachment(
             .expect("fixed replay-derived Foundational lineage is legal");
         attachment = attachment.with_replay_derived_continuity(lineage);
     }
-    WorthQueryFoundationalReplayAttachment {
+    Ok(WorthQueryFoundationalReplayAttachment {
         original_trace_evidence_identity: original,
         replay_trace_evidence_identity: replay,
         materialized: attachment.materialize_under(
             FoundationalBoundaryEvidenceMaterializationProfile::FullDescriptiveRichness,
         ),
-    }
+    })
 }
 
-fn trace_evidence_identity(role: &'static str, trace_identity: &str) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::InstalledDomainExecution)
-        .field_shape(WorthQueryEvidenceTag::new("identity_family"), role)
-        .field_value(
-            WorthQueryEvidenceTag::new("query_trace_identity"),
-            trace_identity,
-        )
-        .seal()
+fn trace_evidence_identity(
+    role: &'static str,
+    trace_identity: &str,
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::InstalledDomainExecution)
+            .field_shape(WorthQueryEvidenceTag::new("identity_family"), role)
+            .field_value(
+                WorthQueryEvidenceTag::new("query_trace_identity"),
+                trace_identity,
+            )
+            .seal()?,
+    )
 }
 
 #[cfg(test)]
@@ -108,9 +114,10 @@ mod tests {
     use worth_foundational::facade::FoundationalBoundaryEvidenceContinuityAttachmentScope;
 
     #[test]
-    fn divergence_materializes_receipt_and_provenance_without_continuity() {
-        let divergent = materialize_replay_attachment("original", "candidate", false);
-        let equivalent = materialize_replay_attachment("original", "candidate", true);
+    fn divergence_materializes_receipt_and_provenance_without_continuity(
+    ) -> Result<(), IdentityDerivationDenial> {
+        let divergent = materialize_replay_attachment("original", "candidate", false)?;
+        let equivalent = materialize_replay_attachment("original", "candidate", true)?;
 
         assert_eq!(divergent.materialized().continuity_scope(), None);
         assert_eq!(
@@ -121,5 +128,7 @@ mod tests {
             divergent.materialized().target(),
             equivalent.materialized().target()
         );
+
+        Ok(())
     }
 }

@@ -303,10 +303,13 @@ fn checkpoint_restore_rejects_incomplete_field_revision_column() {
     let image = &mut root.partition_images[0].entity_arena;
     assert!(!image.field_revisions.is_empty());
     image.field_revisions.pop();
-    root.partition_image_digest =
-        crate::durability::data::branch_root_partition_image_digest(&root.partition_images)
-            .unwrap();
+    root.partition_image_digest = crate::durability::data::branch_root_partition_image_digest(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &root.partition_images,
+    )
+    .unwrap();
     root.root_image_digest = crate::durability::data::branch_root_image_digest(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
         root.format_version,
         root.commit_id,
         root.partition_image_digest,

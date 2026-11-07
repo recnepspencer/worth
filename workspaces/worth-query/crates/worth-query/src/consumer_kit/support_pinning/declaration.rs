@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::WorthQueryRuntimeFacadeFamily;
 use std::collections::BTreeSet;
 
@@ -38,10 +39,10 @@ impl WorthQuerySupportPinDeclaration {
             consumer_name: self.consumer_name,
             contract_schema_version: WorthQuerySupportPinContractSchemaVersion::current(),
             contract_schema_identity: WorthQuerySupportPinContractSchemaVersion::current()
-                .identity()
+                .identity()?
                 .terminal_projection_for_reporting()
                 .to_string(),
-            pinned_vocabulary_identity: support_pin_vocabulary_identity()
+            pinned_vocabulary_identity: support_pin_vocabulary_identity()?
                 .terminal_projection_for_reporting()
                 .to_string(),
             support_snapshot_schema_identity: snapshot.schema_identity().to_string(),
@@ -108,12 +109,12 @@ impl WorthQuerySupportPinContractBuilder<'_> {
             .requirements
             .iter()
             .map(derive_support_pin_requirement_identity)
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?;
         let observed_identities = self
             .observed_rows
             .iter()
             .map(derive_support_pin_observed_row_identity)
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?;
         let contract_digest = derive_support_pin_contract_identity(
             &self.consumer_name,
             &self.contract_schema_identity,
@@ -122,7 +123,7 @@ impl WorthQuerySupportPinContractBuilder<'_> {
             &self.source_matrix_digest,
             &requirement_identities,
             &observed_identities,
-        )
+        )?
         .terminal_projection_for_reporting()
         .to_string();
         WorthQuerySupportPinContract::new(

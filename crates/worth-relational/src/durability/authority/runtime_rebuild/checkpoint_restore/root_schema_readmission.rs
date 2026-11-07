@@ -46,6 +46,7 @@ impl RootSchemaReadmissionCatalog {
 
     pub(super) fn readmit_root(
         &mut self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         restored: &RelationalRuntime,
         image: &DurableBranchRootImage,
         envelope: &crate::history::data::CanonicalCommitEnvelope,
@@ -54,7 +55,7 @@ impl RootSchemaReadmissionCatalog {
         if image.format_version == 0 {
             return self.readmit_legacy_root(restored, image, envelope);
         }
-        validate_root_image_integrity(image)?;
+        validate_root_image_integrity(lane, image)?;
         if let Some(authority) = self.admitted.get(&image.schema_carrier_digest) {
             if !authority.matches(&envelope.schema_authority)
                 || authority.descriptor_semantics_version() != envelope.descriptor_semantics_version
@@ -179,7 +180,10 @@ impl RootSchemaReadmissionCatalog {
     }
 }
 
-fn validate_root_image_integrity(image: &DurableBranchRootImage) -> Result<(), DurabilityError> {
+fn validate_root_image_integrity(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+    image: &DurableBranchRootImage,
+) -> Result<(), DurabilityError> {
     if image.format_version != DurableBranchRootImage::CURRENT_FORMAT_VERSION {
         return Err(corrupt_checkpoint(format!(
             "unsupported branch-root image version `{}`",
@@ -187,6 +191,7 @@ fn validate_root_image_integrity(image: &DurableBranchRootImage) -> Result<(), D
         )));
     }
     let digest = crate::durability::data::branch_root_image_digest(
+        lane,
         image.format_version,
         image.commit_id,
         image.partition_image_digest,

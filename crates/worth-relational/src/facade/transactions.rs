@@ -19,12 +19,12 @@ pub use crate::transactions::data::{
     MergeCommitMutationPlan, MergeExecutionOutcome, MergeExecutionStructuralSummary,
     MergeExecutionSummary, MergedCommitPlan, MutationIntent, NamingStableBulkMutationBatch,
     PatchVsTruthDeltaReport, PlannedBulkMutationBatch, PlannedLineageTransition,
-    ProvenanceCompleteBulkMutationBatch, PublishedMergeExecutionAuthority, RecordRef,
-    RelationAspectCreateIntent, RelationMutationIntent, RelationScope, RelationSpec,
-    ReplaceEntityIntent, RevalidateEntityIntent, RevalidateRelationIntent, RollbackEffect,
-    RollbackOutcome, RollbackSummary, SavepointId, SelectedBranchRootDenialReason,
-    TransactionCommitError, TransactionId, UndoRecord, UpdateEntityFieldsIntent,
-    UpdateRelationEndpointsIntent, WorkerIntentBatch,
+    ProvenanceCompleteBulkMutationBatch, PublishedMergeExecutionAuthority, RecordAspectPatchDenial,
+    RecordAspectPatchTarget, RecordRef, RelationAspectCreateIntent, RelationMutationIntent,
+    RelationScope, RelationSpec, ReplaceEntityIntent, RevalidateEntityIntent,
+    RevalidateRelationIntent, RollbackEffect, RollbackOutcome, RollbackSummary, SavepointId,
+    SelectedBranchRootDenialReason, TransactionCommitError, TransactionId, UndoRecord,
+    UpdateEntityFieldsIntent, UpdateRelationEndpointsIntent, WorkerIntentBatch,
 };
 pub use crate::validation::data::{
     CustomInvariantFailureIdentity, CustomInvariantFailurePhase, CustomInvariantRuleId,

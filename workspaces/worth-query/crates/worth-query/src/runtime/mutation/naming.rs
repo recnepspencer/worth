@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -119,7 +120,7 @@ pub struct WorthQueryNamingMutationDenial {
     attachment_identity: WorthQueryMutationAuthorityIdentity,
     kind: WorthQueryNamingMutationDenialKind,
     reason: String,
-    denial_digest: String,
+    denial_digest: Result<String, IdentityDerivationDenial>,
 }
 
 impl WorthQueryNamingMutationDenial {
@@ -129,22 +130,25 @@ impl WorthQueryNamingMutationDenial {
         reason: impl Into<String>,
     ) -> Self {
         let reason = reason.into();
-        let denial_digest =
-            worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
-                .field_shape(WorthQueryEvidenceTag::new("role"), "naming-mutation-denial")
-                .field_shape(
-                    WorthQueryEvidenceTag::new("family"),
-                    intent.family().as_str(),
-                )
-                .field_evidence_identity(
-                    WorthQueryEvidenceTag::new("attachment"),
-                    intent.attachment_identity().evidence_identity(),
-                )
-                .field_shape(WorthQueryEvidenceTag::new("kind"), kind.as_str())
-                .field_value(WorthQueryEvidenceTag::new("reason"), &reason)
-                .seal()
-                .as_str()
-                .to_string();
+        let denial_digest = (|| {
+            Ok(worth_query_evidence_identity(
+                WorthQueryEvidenceScope::MutationEvidenceAggregateDigest,
+            )
+            .field_shape(WorthQueryEvidenceTag::new("role"), "naming-mutation-denial")
+            .field_shape(
+                WorthQueryEvidenceTag::new("family"),
+                intent.family().as_str(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("attachment"),
+                intent.attachment_identity().evidence_identity(),
+            )
+            .field_shape(WorthQueryEvidenceTag::new("kind"), kind.as_str())
+            .field_value(WorthQueryEvidenceTag::new("reason"), &reason)
+            .seal()?
+            .as_str()
+            .to_string())
+        })();
         Self {
             family: intent.family(),
             attachment_identity: intent.attachment_identity().clone(),
@@ -170,8 +174,8 @@ impl WorthQueryNamingMutationDenial {
         &self.reason
     }
 
-    pub fn denial_digest(&self) -> &str {
-        &self.denial_digest
+    pub fn denial_digest(&self) -> Result<&str, IdentityDerivationDenial> {
+        Ok(self.denial_digest.as_ref().map_err(|cause| *cause)?)
     }
 }
 

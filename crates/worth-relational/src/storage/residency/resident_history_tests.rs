@@ -28,7 +28,12 @@ fn an_owned_head_promotes_without_a_checkpoint_and_keeps_its_old_observation() {
         .expect("fixture slot is materialized");
     let symbols = candidate_symbols.interner_snapshot();
     assert!(matches!(
-        PreparedResidentRegion::initial(partial.clone(), &symbols),
+        PreparedResidentRegion::initial(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            execution,
+            partial.clone(),
+            &symbols
+        ),
         Err(RegionContentFailure::Content(
             crate::storage::overlay::PartitionContentDigestError::InvalidHistoryCoverage
         ))
@@ -37,11 +42,18 @@ fn an_owned_head_promotes_without_a_checkpoint_and_keeps_its_old_observation() {
         RelationalRegionRetention::from_head_lease(head_demand(&fixture.cell, 1 << 24).unwrap());
     let mut journal = crate::storage::overlay::PartitionMutationJournal::default();
     journal.entity_slots.insert(fixture.entity.slot_index());
+    let directory = super::super::RegionRecordDirectory::capture(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &original.partition,
+        &mut |_, _| Ok(()),
+    )
+    .unwrap();
     let before = fixture.source.reads.load(Ordering::SeqCst);
     let prepared = PreparedResidentRegion::incremental(
         execution,
         RegionCaptureBasis {
             retention: &prior,
+            directory: &directory,
             kind_commitment: fixture.cold.kind_authority,
             inventory: original.partition.allocation_inventory(),
             unavailable_records: original
@@ -59,6 +71,7 @@ fn an_owned_head_promotes_without_a_checkpoint_and_keeps_its_old_observation() {
         &journal,
         fixture.cold.schema.clone(),
         &candidate_symbols,
+        None,
     )
     .unwrap();
     assert_eq!(prepared.kind_commitment, fixture.cold.kind_authority);
@@ -141,6 +154,8 @@ fn owned_head_base_damage_is_sticky_and_never_invalidates_an_accepted_view() {
     let head = RelationalRegionResidency::resident_head(
         original.partition.clone(),
         original.commitment.clone().unwrap(),
+        original.kind_indexes.clone().unwrap(),
+        original.history_presence,
         fixture.cold.schema.clone(),
         &fixture.cold.symbols,
     );
@@ -158,7 +173,7 @@ fn owned_head_base_damage_is_sticky_and_never_invalidates_an_accepted_view() {
     assert_eq!(full_demand(head.cell(), 1 << 24).unwrap_err(), failure);
     assert_eq!(head_demand(head.cell(), 1 << 24).unwrap_err(), failure);
     assert!(
-        matches!(head.cell().capture_resident_content(&fixture.cold.symbols.interner_snapshot()),
+        matches!(head.cell().capture_resident_content(&crate::storage::substrate::maintenance::ReconstructionLane::oracle(), execution, &fixture.cold.symbols.interner_snapshot()),
         Err(RegionContentFailure::Storage(refused)) if refused == failure)
     );
     assert_eq!(fixture.source.reads.load(Ordering::SeqCst), reads);
@@ -186,13 +201,19 @@ fn head_content_inspection_hashes_its_suffix_without_loading_the_base_or_trustin
     let owned = RelationalRegionResidency::resident_head(
         partial,
         original.commitment.clone().unwrap(),
+        original.kind_indexes.clone().unwrap(),
+        original.history_presence,
         fixture.cold.schema.clone(),
         &fixture.cold.symbols,
     );
     let reads = fixture.source.reads.load(Ordering::SeqCst);
     let digest = owned
         .cell()
-        .capture_resident_content(&crate::symbols::data::StringInterner::default())
+        .capture_resident_content(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            execution,
+            &crate::symbols::data::StringInterner::default(),
+        )
         .unwrap()
         .unwrap();
     assert_eq!(fixture.source.reads.load(Ordering::SeqCst), reads);
@@ -212,4 +233,129 @@ fn head_content_inspection_hashes_its_suffix_without_loading_the_base_or_trustin
             .unwrap()
     );
     assert!(owned.cell().reclaimable_unique_resident_payload_bytes() > 0);
+}
+
+#[test]
+fn actual_successor_supplements_equal_independent_head_and_full_closure_differences() {
+    use crate::transactions::data::*;
+    use worth_foundational::facade::{AspectValue, InternedString};
+    let original = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&original);
+    let runtime = runtime_with_test_schema();
+    let id = create_entity(&execution, &runtime, "closure-before");
+    let root = || {
+        runtime
+            .history
+            .branch_cell(&crate::history::data::BranchId("main".into()))
+            .unwrap()
+            .root()
+            .unwrap()
+    };
+    let mut previous = root()
+        .demand_region_full(&execution, id.partition_id)
+        .unwrap()
+        .unwrap();
+    for step in 0..24 {
+        let symbol = runtime
+            .services
+            .symbols
+            .with_write(|symbols| symbols.intern(&format!("closure-step-{step}")).unwrap());
+        let fields = aspect_field_patch_from_values([(
+            aspect_key("name"),
+            worth_foundational::facade::FieldKey::new("name").unwrap(),
+            AspectValue::String(InternedString::Symbol(worth_foundational::facade::Symbol(
+                symbol.0,
+            ))),
+        )]);
+        let mut transaction = crate::tests::support::test_owner_begin_transaction_for_branch(
+            &runtime,
+            crate::history::data::BranchId("main".into()),
+        );
+        transaction
+            .push_batch(
+                WorkerIntentBatch::new("closure-edit").push(MutationIntent::Entity(
+                    EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
+                        entity_id: id,
+                        fields,
+                    }),
+                )),
+                execution.allocation_policy(),
+            )
+            .unwrap();
+        let committed = transaction.commit(&execution, &runtime).unwrap();
+        release_test_commit_snapshot(&runtime, &committed);
+        let current = root()
+            .demand_region_full(&execution, id.partition_id)
+            .unwrap()
+            .unwrap();
+        let inherited = current
+            .cell()
+            .symbol_inheritance
+            .get()
+            .expect("actual canonical successor carries predecessor coverage");
+        for full in [false, true] {
+            let (predecessor, supplement) = inherited.predecessor(full).unwrap();
+            assert_eq!(
+                predecessor,
+                if full {
+                    previous.symbol_admission_identity()
+                } else {
+                    previous.head_symbol_admission_identity()
+                }
+            );
+            let before = super::super::required_symbols::collect_counted(
+                &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+                previous.full_view().partition(),
+                full,
+            )
+            .ids;
+            let cold = super::super::required_symbols::collect_counted(
+                &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+                current.full_view().partition(),
+                full,
+            )
+            .ids;
+            assert_eq!(
+                supplement
+                    .ids
+                    .difference(&before)
+                    .copied()
+                    .collect::<std::collections::BTreeSet<_>>(),
+                cold.difference(&before).copied().collect()
+            );
+        }
+        previous = current;
+    }
+}
+
+#[test]
+fn published_head_still_refuses_a_forged_owned_historical_kind_claim() {
+    let fixture = region_with_history();
+    let request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&request);
+    let original = region_load::load_head(&fixture.cold, execution, 1 << 24).unwrap();
+    let mut partition = original.partition.clone();
+    let forged = crate::identity::data::RelationId::new(
+        fixture.relation.partition_id,
+        fixture.relation.slot_index() as u64,
+        fixture.relation.generation_value() + 1,
+    );
+    partition
+        .adjacency
+        .get_mut(fixture.entity.slot_index())
+        .unwrap()
+        .index_historical_kind(KindId(99), forged);
+    let published = RelationalRegionResidency::resident_head(
+        partition,
+        original.commitment.clone().unwrap(),
+        original.kind_indexes.clone().unwrap(),
+        original.history_presence,
+        fixture.cold.schema.clone(),
+        &fixture.cold.symbols,
+    );
+    let accepted = published.head_view();
+    let refused = full_demand(published.cell(), 1 << 24).unwrap_err();
+    assert_eq!(refused.cause, Cause::IntegrityMismatch);
+    assert!(accepted.entity(fixture.entity).is_some());
+    assert_eq!(full_demand(published.cell(), 1 << 24).unwrap_err(), refused);
 }

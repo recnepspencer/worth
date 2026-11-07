@@ -1,5 +1,6 @@
 use super::artifact_execution::AssembledCommitExecution;
 
+mod index_preparation;
 mod phase;
 mod preparation;
 
@@ -92,6 +93,7 @@ pub(super) fn prepare_commit_publication_execution(
         source_interpretation,
         lineage_deferred,
     ) = assembled.into_parts();
+    let predecessor_root = std::sync::Arc::clone(selected_branch_state.state().root());
     let publication = {
         let recovered_codec_publication_custody = admitted
             .validation_input()
@@ -125,6 +127,17 @@ pub(super) fn prepare_commit_publication_execution(
             },
         )?
     };
+    let prepared_indexes = index_preparation::prepare(
+        execution,
+        &runtime.index_definitions,
+        runtime.commit_work_budget.as_ref(),
+        &predecessor_root,
+        publication.prepared_root(),
+    )
+    .map_err(|error| {
+        let (_, _, _, _, commit_log, _) = admitted.phase_view().into_parts();
+        error.with_commit_log(commit_log.clone())
+    })?;
     Ok(PreparedCommitPublicationExecution {
         source_interpretation,
         admitted,
@@ -138,7 +151,7 @@ pub(super) fn prepare_commit_publication_execution(
         publication_snapshot,
         aspect_evaluation_traces,
         aspect_emission_traces,
-        prepared_indexes: None,
+        prepared_indexes,
     })
 }
 

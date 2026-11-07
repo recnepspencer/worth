@@ -21,7 +21,7 @@ mod tag;
 mod tests;
 
 pub use artifact::{WorthQueryEvidenceIdentity, WorthQueryEvidenceIdentityComparisonError};
-pub use encoder::WorthQueryEvidenceIdentityEncoder;
+pub use encoder::{WorthQueryEvidenceIdentityDerivationDenial, WorthQueryEvidenceIdentityEncoder};
 pub use key::WorthQueryEvidenceIdentityKey;
 pub use scheme::WorthQueryEvidenceIdentityScheme;
 pub use scope::WorthQueryEvidenceScope;

@@ -39,9 +39,15 @@ fn unsupported_point_lookup_yields_one_explicit_reset_then_blocks_patch_work() {
         Err(stop) => panic!("reset-path invalidation stopped: {:?}", stop.kind()),
     };
     consumer.bind_shared_target(&admitted, &workspace).unwrap();
-    let expected_foundational = admitted.delta().foundational_projection();
+    let expected_foundational = admitted
+        .delta()
+        .foundational_projection()
+        .expect("fixture digest must fit");
 
-    let patch = match consumer.plan_patch(request_execution, &admitted, &workspace) {
+    let patch = match consumer
+        .plan_patch(request_execution, &admitted, &workspace)
+        .expect("fixture digest must fit")
+    {
         domain::WorthQueryCollectionDeliveryOutcome::Patch(patch) => patch,
         domain::WorthQueryCollectionDeliveryOutcome::NoDelivery(denial) => {
             panic!("unsupported point lookup hid reset: {:?}", denial.kind())
@@ -53,7 +59,9 @@ fn unsupported_point_lookup_yields_one_explicit_reset_then_blocks_patch_work() {
     assert!(receipt.reset_required());
     assert!(consumer.reset_pending());
 
-    let outcome = consumer.plan_patch(request_execution, &admitted, &workspace);
+    let outcome = consumer
+        .plan_patch(request_execution, &admitted, &workspace)
+        .expect("fixture digest must fit");
     let domain::WorthQueryCollectionDeliveryOutcome::NoDelivery(denial) = outcome else {
         panic!("reset-pending consumer continued incremental work")
     };

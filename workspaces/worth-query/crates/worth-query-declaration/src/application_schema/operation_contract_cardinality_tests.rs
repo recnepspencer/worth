@@ -203,8 +203,7 @@ fn correctable_aftermath(operation: &'static str) -> ApplicationSchemaMember {
         DeclaredAftermathPostcondition::InvariantRestored {
             invariant: "balance-restored".to_owned(),
         },
-    )
-    .expect("the compensation fixture is valid");
+    );
     aftermath_member(
         operation,
         DeclaredApplicationAftermathContract::<CardinalitySchema>::runtime_alone(

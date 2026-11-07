@@ -10,6 +10,7 @@ use crate::runtime::RelationalRuntime;
 use crate::storage::residency::RelationalRegionRetention;
 
 pub(super) fn restore(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
@@ -22,7 +23,7 @@ pub(super) fn restore(
         .detached_owner_snapshot()
         .map_err(|denial| corrupt(format!("cold history snapshot denied: {denial:?}")))?;
     let mut symbols = runtime.services.symbols.interner_snapshot();
-    symbols.restore_snapshot(checkpoint.symbol_table.clone());
+    symbols.restore_snapshot(lane, checkpoint.symbol_table.clone());
     let paged_symbols = runtime.services.symbols.detached_owner_snapshot();
     paged_symbols.replace(symbols);
     paged_symbols
@@ -109,7 +110,7 @@ pub(super) fn restore(
             .get(&image.commit_id)
             .cloned()
             .ok_or_else(|| corrupt("root has no commit descriptor"))?;
-        let leaves = regions.regions(image.schema_carrier_digest, &image.regions)?;
+        let leaves = regions.regions(execution, image.schema_carrier_digest, &image.regions)?;
         let content_records = crate::durability::checkpoints::content::read_records(
             execution,
             &image.content,
@@ -145,6 +146,7 @@ pub(super) fn restore(
     )?;
     history
         .restore_branch_cells(
+            lane,
             &checkpoint.branch_cells,
             &checkpoint.branch_lifecycle,
             &checkpoint.retired_branch_names,
@@ -159,7 +161,7 @@ pub(super) fn restore(
     work.branch_cells_readmitted += checkpoint.branch_cells.len();
     let mirror = match directory.manifest.mirror_schema {
         Some(schema) => regions
-            .regions(schema, &directory.manifest.mirror)?
+            .regions(execution, schema, &directory.manifest.mirror)?
             .into_iter()
             .map(|region| {
                 (
@@ -168,7 +170,7 @@ pub(super) fn restore(
                 )
             })
             .collect(),
-        None if directory.manifest.mirror.is_empty() => BTreeMap::new(),
+        None if directory.manifest.mirror.is_empty() => Default::default(),
         None => return Err(corrupt("mirror has no schema carrier").into()),
     };
     let record_identity = super::record_identity::prepare_record_identity(checkpoint)?;
@@ -178,9 +180,6 @@ pub(super) fn restore(
     runtime.partitions.install_cells(mirror);
     runtime.history = history;
     runtime.lineage.install_cold_pages(&directory)?;
-    runtime
-        .indexes
-        .install_cold_checkpoint(directory.clone(), &runtime.history)?;
     runtime.durability.checkpoint_selection().restore(directory);
     Ok(())
 }

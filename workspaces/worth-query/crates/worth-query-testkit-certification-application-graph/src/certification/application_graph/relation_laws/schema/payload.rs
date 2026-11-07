@@ -27,11 +27,11 @@ impl Aspect for EdgeFacts {
 pub struct EdgeRow(u64);
 impl fragment::Record<EdgeRow> for GraphBindings {
     fn record() -> impl Shape<EdgeRow, Self> {
-        field("EdgeWeight", |row: &EdgeRow| row.0).build(
-            |value, _: &mut ValueDecodeAdmission<'_>| {
+        field("EdgeWeight", |row: &EdgeRow| row.0)
+            .equality_queryable(true)
+            .build(|value, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(EdgeRow(value))
-            },
-        )
+            })
     }
 }
 pub type EdgeWeight =

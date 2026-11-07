@@ -11,6 +11,8 @@ use super::{
 };
 
 pub(super) fn build_initial_regions(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     issuer: &RelationalBranchRootIdentityIssuer,
     root_id: u64,
     partitions: &BTreeMap<PartitionId, PartitionState>,
@@ -23,6 +25,8 @@ pub(super) fn build_initial_regions(
     RelationalBranchRootCaptureDenial,
 > {
     build_initial_regions_owned(
+        lane,
+        execution,
         issuer,
         root_id,
         partitions
@@ -33,6 +37,8 @@ pub(super) fn build_initial_regions(
 }
 
 pub(super) fn build_initial_regions_owned(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     issuer: &RelationalBranchRootIdentityIssuer,
     root_id: u64,
     partitions: impl IntoIterator<Item = (PartitionId, PartitionState)>,
@@ -49,6 +55,8 @@ pub(super) fn build_initial_regions_owned(
     let mut content_values_hashed = 0_u64;
     for (partition_id, partition) in partitions {
         let region = Arc::new(RelationalRootRegion::new(
+            lane,
+            execution,
             root_id,
             issuer.issue_region_id()?,
             partition,
@@ -63,7 +71,7 @@ pub(super) fn build_initial_regions_owned(
         regions.insert(partition_id, region);
     }
     let first_new_node_id = issuer.next_reachability_id();
-    let regions = RelationalPersistentRegionSet::initial(root_id, regions, issuer)?;
+    let regions = RelationalPersistentRegionSet::initial(lane, root_id, regions, issuer)?;
     let (persistent_index_path_nodes, reachability_bytes) =
         regions.newly_owned_allocation_cost(first_new_node_id);
     let cost = RelationalBranchRootPublicationCost {
@@ -90,6 +98,7 @@ pub(super) fn build_incremental_regions(
     previous: &RelationalBranchRoot,
     symbols: &crate::runtime::RuntimeSymbolTable,
     schema: &Arc<super::RelationalBranchRootSchemaAuthority>,
+    change: Option<&Arc<crate::storage::substrate::maintenance::CommitChange>>,
 ) -> Result<
     (
         Arc<RelationalPersistentRegionSet>,
@@ -112,6 +121,7 @@ pub(super) fn build_incremental_regions(
                 execution,
                 crate::storage::residency::RegionCaptureBasis {
                     retention: &prior.partition,
+                    directory: &prior.directory,
                     inventory: prior.allocation_inventory(),
                     unavailable_records: prior.materialization_unavailable_records(),
                     kind_commitment: prior.kind_commitment,
@@ -120,14 +130,27 @@ pub(super) fn build_incremental_regions(
                 journal,
                 schema.clone(),
                 symbols,
+                change.map(Arc::as_ref),
             )
         } else {
-            crate::storage::residency::PreparedResidentRegion::initial(
-                overlay.clone(),
-                &symbols.interner_snapshot(),
+            crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
+                |lane| {
+                    crate::storage::residency::PreparedResidentRegion::initial(
+                        lane,
+                        execution,
+                        overlay.clone(),
+                        &symbols.interner_snapshot(),
+                    )
+                },
             )
         }
         .map_err(|failure| super::super::root_region::capture_failure(partition_id, failure))?;
+        prepared
+            .retention
+            .admit_own_symbols(execution, symbols)
+            .map_err(|failure| {
+                super::super::root_region::capture_failure(partition_id, failure.into())
+            })?;
         let new_payload_bytes = prepared.new_payload_bytes;
         copied_truth_bytes = copied_truth_bytes.saturating_add(prepared.copied_truth_bytes);
         let region = Arc::new(RelationalRootRegion::from_prepared(

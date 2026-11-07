@@ -198,7 +198,10 @@ pub(crate) fn build_legacy_query_basis_result_bundle(
         execution.result_digest(),
         metadata.result_digest(),
         metadata.prediction_drift_outcome(),
-    );
+    )
+    .map_err(|cause| {
+        QueryContextAdmissionError::identity_refused(cause, context.counters().clone())
+    })?;
     let counter_snapshot_digest =
         compose_query_basis_counter_snapshot_digest(legacy_context, &execution);
 

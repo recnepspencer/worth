@@ -22,7 +22,10 @@ pub(crate) fn standard_fanout_samples(
         branches.push(branch_identity(&world.runtime, &name));
         let fanout = ordinal + 1;
         if fanouts.contains(&fanout) {
-            let observation = world.runtime.observe_branch_sharing(&branches).unwrap();
+            let observation = world
+                .runtime
+                .observe_branch_sharing(execution, &branches)
+                .unwrap();
             assert_standard_fanout_observation(&observation, fanout, branches.len());
             samples.push(ForkFanoutSample {
                 log2_fanout: f64::from(fanout).log2(),

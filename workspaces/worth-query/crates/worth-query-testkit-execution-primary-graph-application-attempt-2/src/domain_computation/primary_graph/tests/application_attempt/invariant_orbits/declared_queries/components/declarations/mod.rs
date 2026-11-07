@@ -85,31 +85,23 @@ pub fn declare<const O: bool>(
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
         .root_path(path())
-        .component_selection(selection::<OrbitSchema<O>, Components>())
-        .build()
-        .unwrap();
+        .component_selection(selection::<OrbitSchema<O>, Components>());
     schema
         .application_query(metadata)
         .application_query(
             builder(Census::reference(), public())
                 .root_path(path())
-                .component_selection(selection::<OrbitSchema<O>, Census>())
-                .build()
-                .unwrap(),
+                .component_selection(selection::<OrbitSchema<O>, Census>()),
         )
         .application_query(
             builder(Of::reference(), public())
                 .root_path(path())
-                .component_selection(of::<OrbitSchema<O>>())
-                .build()
-                .unwrap(),
+                .component_selection(of::<OrbitSchema<O>>()),
         )
         .application_query(
             builder(Partial::reference(), public())
                 .root_path(ApplicationQueryRootPath::from(Node::reference()))
-                .component_selection(selection::<OrbitSchema<O>, Partial>())
-                .build()
-                .unwrap(),
+                .component_selection(selection::<OrbitSchema<O>, Partial>()),
         )
         .application_query(
             builder(Empty::reference(), public())
@@ -124,9 +116,7 @@ pub fn declare<const O: bool>(
                         )
                         .expect("record field contract"),
                 )
-                .component_selection(selection::<OrbitSchema<O>, Empty>())
-                .build()
-                .unwrap(),
+                .component_selection(selection::<OrbitSchema<O>, Empty>()),
         )
         .application_query(
             builder(
@@ -134,9 +124,7 @@ pub fn declare<const O: bool>(
                 disclosure::<OrbitSchema<O>, Allowed>(Some(0)),
             )
             .root_path(path())
-            .component_selection(selection::<OrbitSchema<O>, Allowed>())
-            .build()
-            .unwrap(),
+            .component_selection(selection::<OrbitSchema<O>, Allowed>()),
         )
         .application_query(
             builder(
@@ -144,9 +132,7 @@ pub fn declare<const O: bool>(
                 disclosure::<OrbitSchema<O>, Omitted>(Some(1)),
             )
             .root_path(path())
-            .component_selection(selection::<OrbitSchema<O>, Omitted>())
-            .build()
-            .unwrap(),
+            .component_selection(selection::<OrbitSchema<O>, Omitted>()),
         )
         .application_query(
             builder(
@@ -154,9 +140,7 @@ pub fn declare<const O: bool>(
                 disclosure::<OrbitSchema<O>, Missing>(None),
             )
             .root_path(path())
-            .component_selection(selection::<OrbitSchema<O>, Missing>())
-            .build()
-            .unwrap(),
+            .component_selection(selection::<OrbitSchema<O>, Missing>()),
         )
         .application_query(
             builder(
@@ -172,9 +156,7 @@ pub fn declare<const O: bool>(
                     )
                     .expect("record field contract"),
             )
-            .component_selection(selection::<OrbitSchema<O>, GuardDenied>())
-            .build()
-            .unwrap(),
+            .component_selection(selection::<OrbitSchema<O>, GuardDenied>()),
         )
         .application_query(
             builder(
@@ -197,9 +179,7 @@ pub fn declare<const O: bool>(
                     )
                     .expect("record field contract"),
             )
-            .component_selection(selection::<OrbitSchema<O>, GuardAllowed>())
-            .build()
-            .unwrap(),
+            .component_selection(selection::<OrbitSchema<O>, GuardAllowed>()),
         )
         .application_query(
             builder(
@@ -214,9 +194,7 @@ pub fn declare<const O: bool>(
                 ),
             )
             .root_path(path())
-            .component_selection(selection::<OrbitSchema<O>, AggregateDenied>())
-            .build()
-            .unwrap(),
+            .component_selection(selection::<OrbitSchema<O>, AggregateDenied>()),
         )
         .application_query(
             builder(
@@ -231,8 +209,6 @@ pub fn declare<const O: bool>(
                 ),
             )
             .root_path(path())
-            .component_selection(selection::<OrbitSchema<O>, OrderingDenied>())
-            .build()
-            .unwrap(),
+            .component_selection(selection::<OrbitSchema<O>, OrderingDenied>()),
         )
 }

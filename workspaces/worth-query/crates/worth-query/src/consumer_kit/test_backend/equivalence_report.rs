@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -58,7 +59,9 @@ pub struct WorthQueryTestBackendEquivalenceReport {
 }
 
 impl WorthQueryTestBackendEquivalenceReport {
-    fn new(rows: Vec<WorthQueryTestBackendEquivalenceRow>) -> Self {
+    fn new(
+        rows: Vec<WorthQueryTestBackendEquivalenceRow>,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let report_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::ConsumerEvidenceReport)
                 .field_shape(
@@ -74,11 +77,11 @@ impl WorthQueryTestBackendEquivalenceReport {
                     rows.iter()
                         .map(|row| if row.matched() { "matched" } else { "mismatch" }),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             rows,
             report_identity,
-        }
+        })
     }
 
     pub fn rows(&self) -> &[WorthQueryTestBackendEquivalenceRow] {
@@ -99,8 +102,8 @@ impl WorthQueryTestBackendEquivalenceReport {
 pub fn compare_test_backend_write_receipts(
     in_memory: &WorthQueryWriteReceipt,
     bridge: &WorthQueryWriteReceipt,
-) -> WorthQueryTestBackendEquivalenceReport {
-    WorthQueryTestBackendEquivalenceReport::new(vec![
+) -> Result<WorthQueryTestBackendEquivalenceReport, IdentityDerivationDenial> {
+    Ok(WorthQueryTestBackendEquivalenceReport::new(vec![
         WorthQueryTestBackendEquivalenceRow::compare(
             "mutation_family",
             in_memory.mutation_family().as_str(),
@@ -145,7 +148,7 @@ pub fn compare_test_backend_write_receipts(
                 .is_empty())
             .to_string(),
         ),
-    ])
+    ])?)
 }
 
 fn semantic_delta_rows(receipt: &WorthQueryWriteReceipt) -> String {

@@ -208,7 +208,10 @@ pub fn select_query_subscription_family(
 
     counters.family_selection_count = 1;
     counters.scratch_allocation_count = 1;
-    let equivalence_basis = QuerySubscriptionEquivalenceBasis::new(&live, &classification);
+    let equivalence_basis = QuerySubscriptionEquivalenceBasis::new(&live, &classification)
+        .map_err(|cause| {
+            QuerySubscriptionFamilySelectionError::identity_refused(cause, counters.clone())
+        })?;
     counters.equivalence_digest_part_count = equivalence_basis.digest_part_count() as u64;
     let live_graph_access_posture = live_graph_access_posture_for_family(&classification.family);
 

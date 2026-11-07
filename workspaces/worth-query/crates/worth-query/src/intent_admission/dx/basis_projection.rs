@@ -1,4 +1,5 @@
 use crate::basis_lifecycle::{BasisLifecycleIntentDraft, ScopedObservationBasis};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::intent_admission::{
     WorthQueryBasisObservationPlan, WorthQueryProjectionConsumptionPlan,
 };
@@ -38,16 +39,29 @@ pub struct WorthQueryBasisObservationIntentAuthoring {
 }
 
 impl WorthQueryBasisObservationIntentAuthoring {
-    pub fn review(self) -> WorthQueryBasisObservationIntentReview {
-        WorthQueryBasisObservationIntentReview {
-            review: WorthQueryRuntimeIntentAdmissionReviewData::from_request(self.request),
-        }
+    pub fn review(
+        self,
+    ) -> Result<WorthQueryBasisObservationIntentReview, IdentityDerivationDenial> {
+        Ok(WorthQueryBasisObservationIntentReview {
+            review: WorthQueryRuntimeIntentAdmissionReviewData::from_request(self.request)?,
+        })
     }
 
     pub fn admit(
         self,
     ) -> Result<WorthQueryBasisObservationAdmittedIntent, WorthQueryIntentNonAdmittedStop> {
-        self.review().admit()
+        let family = self.request.family();
+        let entrypoint = self.request.entrypoint();
+        self.review()
+            .map_err(|cause| {
+                WorthQueryIntentNonAdmittedStop::Violation(
+                    super::WorthQueryIntentViolationDecision::identity_refused(
+                        family, entrypoint, cause,
+                    )
+                    .into_stop(),
+                )
+            })?
+            .admit()
     }
 }
 
@@ -111,17 +125,30 @@ pub struct WorthQueryProjectionConsumptionIntentAuthoring {
 }
 
 impl WorthQueryProjectionConsumptionIntentAuthoring {
-    pub fn review(self) -> WorthQueryProjectionConsumptionIntentReview {
-        WorthQueryProjectionConsumptionIntentReview {
-            review: WorthQueryRuntimeIntentAdmissionReviewData::from_request(self.request),
-        }
+    pub fn review(
+        self,
+    ) -> Result<WorthQueryProjectionConsumptionIntentReview, IdentityDerivationDenial> {
+        Ok(WorthQueryProjectionConsumptionIntentReview {
+            review: WorthQueryRuntimeIntentAdmissionReviewData::from_request(self.request)?,
+        })
     }
 
     pub fn admit(
         self,
     ) -> Result<WorthQueryProjectionConsumptionAdmittedIntent, WorthQueryIntentNonAdmittedStop>
     {
-        self.review().admit()
+        let family = self.request.family();
+        let entrypoint = self.request.entrypoint();
+        self.review()
+            .map_err(|cause| {
+                WorthQueryIntentNonAdmittedStop::Violation(
+                    super::WorthQueryIntentViolationDecision::identity_refused(
+                        family, entrypoint, cause,
+                    )
+                    .into_stop(),
+                )
+            })?
+            .admit()
     }
 }
 
@@ -176,7 +203,9 @@ impl WorthQueryProjectionConsumptionAdmittedIntent {
         &self.plan
     }
 
-    pub fn bind_contract(&self) -> MaterializedProjectionContract {
-        self.plan.bind_contract()
+    pub fn bind_contract(
+        &self,
+    ) -> Result<MaterializedProjectionContract, IdentityDerivationDenial> {
+        Ok(self.plan.bind_contract()?)
     }
 }

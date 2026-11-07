@@ -201,10 +201,13 @@ fn selected_root_image(
 }
 
 fn recompute_partition_image_digest(root: &mut crate::durability::data::DurableBranchRootImage) {
-    root.partition_image_digest =
-        crate::durability::data::branch_root_partition_image_digest(&root.partition_images)
-            .expect("mutated production image remains canonically encodable");
+    root.partition_image_digest = crate::durability::data::branch_root_partition_image_digest(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &root.partition_images,
+    )
+    .expect("mutated production image remains canonically encodable");
     root.root_image_digest = crate::durability::data::branch_root_image_digest(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
         root.format_version,
         root.commit_id,
         root.partition_image_digest,

@@ -11,7 +11,8 @@ pub const RECORD_FOURTEEN_ENVELOPE_HEX: &str = include_str!("release_envelope_v1
 pub const RECORD_FIFTEEN_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v15.hex");
 pub const RECORD_SIXTEEN_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v16.hex");
 pub const RECORD_SEVENTEEN_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v17.hex");
-pub const CURRENT_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v18.hex");
+// D1289 canonical policy v2; the envelope/record framing is unchanged.
+pub const CURRENT_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v18_policy_v2.hex");
 
 pub fn assert_current_envelope_and_unsupported_records() {
     for (version, vector) in [

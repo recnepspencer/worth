@@ -43,7 +43,7 @@ pub(super) fn admit_portable_package(
         );
     }
     let support_snapshot =
-        WorthQueryDomainEntrySupportSnapshot::from_support_report(facade.support_report());
+        WorthQueryDomainEntrySupportSnapshot::from_support_report(facade.support_report()?)?;
     for requirement in operating_requirements {
         let status = match support_snapshot.operating_requirement_status(*requirement) {
             Some(WorthQueryRuntimeFamilySupportStatus::Supported) => {

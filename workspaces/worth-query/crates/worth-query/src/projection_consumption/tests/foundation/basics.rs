@@ -55,7 +55,8 @@ fn read_receipt_admits_visible_identity_and_display_requests() {
     )
     .expect("read-backed declaration should be valid");
 
-    let eligibility = evaluate_projection_consumption_eligibility(&declaration);
+    let eligibility =
+        evaluate_projection_consumption_eligibility(&declaration).expect("fixture digest must fit");
     match eligibility {
         ProjectionConsumptionEligibility::Admitted(admitted) => {
             assert!(!admitted.eligibility_digest().is_empty());
@@ -82,7 +83,8 @@ fn masked_display_field_denies_before_admission() {
     )
     .expect("masked field declaration should still be structurally valid");
 
-    let eligibility = evaluate_projection_consumption_eligibility(&declaration);
+    let eligibility =
+        evaluate_projection_consumption_eligibility(&declaration).expect("fixture digest must fit");
     match eligibility {
         ProjectionConsumptionEligibility::Denied(denied) => {
             assert_eq!(
@@ -106,7 +108,8 @@ fn read_receipt_membership_request_returns_source_mismatch() {
     )
     .expect("membership declaration should be structurally valid");
 
-    let eligibility = evaluate_projection_consumption_eligibility(&declaration);
+    let eligibility =
+        evaluate_projection_consumption_eligibility(&declaration).expect("fixture digest must fit");
     match eligibility {
         ProjectionConsumptionEligibility::SourceMismatch(mismatch) => {
             assert_eq!(
@@ -131,7 +134,8 @@ fn write_receipt_target_identity_is_deferred_for_now() {
     )
     .expect("write receipt declaration should be structurally valid");
 
-    let eligibility = evaluate_projection_consumption_eligibility(&declaration);
+    let eligibility =
+        evaluate_projection_consumption_eligibility(&declaration).expect("fixture digest must fit");
     assert!(matches!(
         eligibility,
         ProjectionConsumptionEligibility::Deferred(_)
@@ -141,7 +145,7 @@ fn write_receipt_target_identity_is_deferred_for_now() {
 #[test]
 fn query_context_support_and_admission_share_warning_posture() {
     let source = test_source(ProjectionSourceFamily::QueryContextExecution);
-    let report = discover_projection_consumption_support(&source);
+    let report = discover_projection_consumption_support(&source).expect("fixture digest must fit");
     let row = report
         .rows()
         .iter()
@@ -167,7 +171,8 @@ fn query_context_support_and_admission_share_warning_posture() {
         ),
     )
     .expect("query-context declaration should be valid");
-    let eligibility = evaluate_projection_consumption_eligibility(&declaration);
+    let eligibility =
+        evaluate_projection_consumption_eligibility(&declaration).expect("fixture digest must fit");
     match eligibility {
         ProjectionConsumptionEligibility::AdmittedWithWarnings(_, warnings) => {
             assert_eq!(

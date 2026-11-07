@@ -5,6 +5,7 @@ use super::rejection_evidence::{
     view_family_mismatch_rejection,
 };
 use super::{MilestoneNineOnePerturbationClass, MilestoneNineOneRejectionRow};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::live::LiveQueryFamily;
 use crate::subscription::QuerySubscriptionConstructionSource;
 use crate::view_shape_live::LiveViewShapeFamily;
@@ -18,13 +19,15 @@ pub(super) fn rejection_rows() -> Vec<MilestoneNineOneRejectionRow> {
                 LiveQueryFamily::Detail,
                 Some(LiveViewShapeFamily::Detail),
                 QuerySubscriptionConstructionSource::Direct,
-            ),
-            hostile_lane: view_family_mismatch_rejection(),
+            )
+            .expect("fixture digest must fit"),
+            hostile_lane: view_family_mismatch_rejection().expect("fixture digest must fit"),
             parity_lane: certified_lane(
                 LiveQueryFamily::Detail,
                 Some(LiveViewShapeFamily::Detail),
                 QuerySubscriptionConstructionSource::FacadeLive,
-            ),
+            )
+            .expect("fixture digest must fit"),
         },
         MilestoneNineOneRejectionRow {
             row_name: "bridge-family-unsupported-denies-before-admission",
@@ -33,13 +36,15 @@ pub(super) fn rejection_rows() -> Vec<MilestoneNineOneRejectionRow> {
                 LiveQueryFamily::OrderedCollection,
                 Some(LiveViewShapeFamily::Table),
                 QuerySubscriptionConstructionSource::Direct,
-            ),
-            hostile_lane: bridge_family_rejection(),
+            )
+            .expect("fixture digest must fit"),
+            hostile_lane: bridge_family_rejection().expect("fixture digest must fit"),
             parity_lane: certified_lane(
                 LiveQueryFamily::OrderedCollection,
                 Some(LiveViewShapeFamily::Table),
                 QuerySubscriptionConstructionSource::FacadeLive,
-            ),
+            )
+            .expect("fixture digest must fit"),
         },
         MilestoneNineOneRejectionRow {
             row_name: "masked-detail-slice-denies-before-bridge-lowering",
@@ -48,13 +53,16 @@ pub(super) fn rejection_rows() -> Vec<MilestoneNineOneRejectionRow> {
                 LiveQueryFamily::Detail,
                 None,
                 QuerySubscriptionConstructionSource::Direct,
-            ),
-            hostile_lane: masked_slice_rejection(LiveQueryFamily::Detail, None),
+            )
+            .expect("fixture digest must fit"),
+            hostile_lane: masked_slice_rejection(LiveQueryFamily::Detail, None)
+                .expect("fixture digest must fit"),
             parity_lane: certified_lane(
                 LiveQueryFamily::Detail,
                 None,
                 QuerySubscriptionConstructionSource::FacadeLive,
-            ),
+            )
+            .expect("fixture digest must fit"),
         },
         MilestoneNineOneRejectionRow {
             row_name: "masked-table-ordering-denies-before-bridge-lowering",
@@ -63,16 +71,19 @@ pub(super) fn rejection_rows() -> Vec<MilestoneNineOneRejectionRow> {
                 LiveQueryFamily::OrderedCollection,
                 Some(LiveViewShapeFamily::Table),
                 QuerySubscriptionConstructionSource::Direct,
-            ),
+            )
+            .expect("fixture digest must fit"),
             hostile_lane: masked_slice_rejection(
                 LiveQueryFamily::OrderedCollection,
                 Some(LiveViewShapeFamily::Table),
-            ),
+            )
+            .expect("fixture digest must fit"),
             parity_lane: certified_lane(
                 LiveQueryFamily::OrderedCollection,
                 Some(LiveViewShapeFamily::Table),
                 QuerySubscriptionConstructionSource::FacadeLive,
-            ),
+            )
+            .expect("fixture digest must fit"),
         },
         MilestoneNineOneRejectionRow {
             row_name: "masked-grouped-membership-denies-before-bridge-lowering",
@@ -81,16 +92,19 @@ pub(super) fn rejection_rows() -> Vec<MilestoneNineOneRejectionRow> {
                 LiveQueryFamily::OrderedCollection,
                 Some(LiveViewShapeFamily::KanbanGrouped),
                 QuerySubscriptionConstructionSource::Direct,
-            ),
+            )
+            .expect("fixture digest must fit"),
             hostile_lane: masked_slice_rejection(
                 LiveQueryFamily::OrderedCollection,
                 Some(LiveViewShapeFamily::KanbanGrouped),
-            ),
+            )
+            .expect("fixture digest must fit"),
             parity_lane: certified_lane(
                 LiveQueryFamily::OrderedCollection,
                 Some(LiveViewShapeFamily::KanbanGrouped),
                 QuerySubscriptionConstructionSource::FacadeLive,
-            ),
+            )
+            .expect("fixture digest must fit"),
         },
         MilestoneNineOneRejectionRow {
             row_name: "broken-relationship-proof-denies-before-bridge-lowering",
@@ -99,13 +113,15 @@ pub(super) fn rejection_rows() -> Vec<MilestoneNineOneRejectionRow> {
                 LiveQueryFamily::Detail,
                 None,
                 QuerySubscriptionConstructionSource::Direct,
-            ),
-            hostile_lane: broken_relationship_proof_rejection(),
+            )
+            .expect("fixture digest must fit"),
+            hostile_lane: broken_relationship_proof_rejection().expect("fixture digest must fit"),
             parity_lane: certified_lane(
                 LiveQueryFamily::Detail,
                 None,
                 QuerySubscriptionConstructionSource::FacadeLive,
-            ),
+            )
+            .expect("fixture digest must fit"),
         },
         MilestoneNineOneRejectionRow {
             row_name: "durable-reload-overclaim-denies-before-activation",
@@ -114,13 +130,15 @@ pub(super) fn rejection_rows() -> Vec<MilestoneNineOneRejectionRow> {
                 LiveQueryFamily::Detail,
                 None,
                 QuerySubscriptionConstructionSource::Direct,
-            ),
-            hostile_lane: durable_reload_rejection(),
+            )
+            .expect("fixture digest must fit"),
+            hostile_lane: durable_reload_rejection().expect("fixture digest must fit"),
             parity_lane: certified_lane(
                 LiveQueryFamily::Detail,
                 None,
                 QuerySubscriptionConstructionSource::FacadeLive,
-            ),
+            )
+            .expect("fixture digest must fit"),
         },
         MilestoneNineOneRejectionRow {
             row_name: "scale-report-source-mismatch-denies-certification",
@@ -129,13 +147,15 @@ pub(super) fn rejection_rows() -> Vec<MilestoneNineOneRejectionRow> {
                 LiveQueryFamily::Detail,
                 None,
                 QuerySubscriptionConstructionSource::Direct,
-            ),
-            hostile_lane: scale_source_mismatch_rejection(),
+            )
+            .expect("fixture digest must fit"),
+            hostile_lane: scale_source_mismatch_rejection().expect("fixture digest must fit"),
             parity_lane: certified_lane(
                 LiveQueryFamily::Detail,
                 None,
                 QuerySubscriptionConstructionSource::FacadeLive,
-            ),
+            )
+            .expect("fixture digest must fit"),
         },
         MilestoneNineOneRejectionRow {
             row_name: "scale-zero-row-baseline-denied",
@@ -144,13 +164,15 @@ pub(super) fn rejection_rows() -> Vec<MilestoneNineOneRejectionRow> {
                 LiveQueryFamily::OrderedCollection,
                 Some(LiveViewShapeFamily::Table),
                 QuerySubscriptionConstructionSource::Direct,
-            ),
-            hostile_lane: scale_zero_row_rejection(),
+            )
+            .expect("fixture digest must fit"),
+            hostile_lane: scale_zero_row_rejection().expect("fixture digest must fit"),
             parity_lane: certified_lane(
                 LiveQueryFamily::OrderedCollection,
                 Some(LiveViewShapeFamily::Table),
                 QuerySubscriptionConstructionSource::FacadeLive,
-            ),
+            )
+            .expect("fixture digest must fit"),
         },
     ]
 }

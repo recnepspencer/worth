@@ -22,7 +22,7 @@ impl fragment::BindingSet for CompleteModelBindings {
 }
 impl fragment::Scalar<String> for CompleteModelBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 pub struct CompleteEntity;
@@ -51,11 +51,11 @@ pub struct ProfileValue {
 }
 impl fragment::Record<ProfileValue> for CompleteModelBindings {
     fn record() -> impl fragment::Shape<ProfileValue, Self> {
-        fragment::field("Name", |row: &ProfileValue| row.name.clone()).build(
-            |name, _: &mut ValueDecodeAdmission<'_>| {
+        fragment::field("Name", |row: &ProfileValue| row.name.clone())
+            .equality_queryable(true)
+            .build(|name, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ProfileValue { name })
-            },
-        )
+            })
     }
 }
 type Name = FieldSelection<CompleteModel, CompleteEntity, Profile, String>;

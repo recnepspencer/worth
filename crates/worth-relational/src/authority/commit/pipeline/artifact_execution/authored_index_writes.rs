@@ -27,20 +27,27 @@ pub(super) fn prepare(
     if !supported {
         return Ok(Evidence::default());
     }
-    let prepare = |execution: ExecutionRequest<'_, '_>| {
-        prepare_evidence(runtime, selected, working, plan, allocations, execution)
-    };
-    let evidence = match (
-        super::super::request_lease(&execution),
-        runtime.commit_work_budget.as_ref(),
-    ) {
-        (Some(_), Some(budget)) => budget
-            .run_stage(execution, || prepare(execution))
-            .map_err(Denial::Request)
-            .and_then(std::convert::identity),
-        _ => prepare(execution),
-    };
-    evidence.map_err(crate::runtime::authored_write_commit_denial)
+    crate::execution::phase_observation::run(
+        &execution,
+        "authored_index_writes",
+        || {
+            let prepare = |execution: ExecutionRequest<'_, '_>| {
+                prepare_evidence(runtime, selected, working, plan, allocations, execution)
+            };
+            let evidence = match (
+                super::super::request_lease(&execution),
+                runtime.commit_work_budget.as_ref(),
+            ) {
+                (Some(_), Some(budget)) => budget
+                    .run_stage(execution, || prepare(execution))
+                    .map_err(Denial::Request)
+                    .and_then(std::convert::identity),
+                _ => prepare(execution),
+            };
+            evidence.map_err(crate::runtime::authored_write_commit_denial)
+        },
+        |cause| crate::runtime::authored_write_commit_denial(Denial::Execution(cause)),
+    )
 }
 
 fn prepare_evidence(
@@ -54,6 +61,11 @@ fn prepare_evidence(
     crate::history::run_authored_write_stage(execution, |context| {
         let catalog = runtime.index_definitions.snapshot();
         let output = funding::Output::new(execution, context)?;
+        if !catalog.has_entity_field_indexes() {
+            // The actual installed catalog proves complete-empty membership
+            // independently of record residency. Missing data never makes this proof.
+            return Ok(output.finish(catalog.coverage()));
+        }
         let mut builder = projection::Projection {
             execution,
             runtime,

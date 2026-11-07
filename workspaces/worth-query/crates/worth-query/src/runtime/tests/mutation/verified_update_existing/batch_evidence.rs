@@ -121,11 +121,13 @@ fn batch_update_existing_verified_preserves_aggregate_assertion_digest() {
     assert_eq!(
         receipt
             .batch_mutation_evidence()
+            .expect("fixture digest must fit")
             .existing_truth_assertion_count(),
         1
     );
     assert!(receipt
         .batch_mutation_evidence()
+        .expect("fixture digest must fit")
         .aggregate_existing_truth_assertion_digest()
         .is_some());
 }
@@ -229,6 +231,7 @@ fn primary_multi_verified_update_batch_shares_one_commit_boundary() {
     assert_eq!(
         receipt
             .batch_mutation_evidence()
+            .expect("fixture digest must fit")
             .backend_verified_update_count(),
         2
     );

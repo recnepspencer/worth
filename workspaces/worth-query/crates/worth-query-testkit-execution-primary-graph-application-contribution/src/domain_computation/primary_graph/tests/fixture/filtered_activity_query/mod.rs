@@ -1,6 +1,5 @@
 use worth_query_declaration::facade::application_query::ApplicationQueryBasisSupport;
 use worth_query_declaration::facade::application_query::ApplicationQueryCardinality;
-use worth_query_declaration::facade::application_query::ApplicationQueryDefinition;
 use worth_query_declaration::facade::application_query::ApplicationQueryDefinitionBuilder;
 use worth_query_declaration::facade::application_query::ApplicationQueryDisclosureContract;
 use worth_query_declaration::facade::application_query::ApplicationQueryLaneEligibility;
@@ -89,7 +88,7 @@ pub fn selected_activity_parameters(
         .unwrap()
 }
 
-pub fn selected_activity_definition() -> ApplicationQueryDefinition<
+pub fn selected_activity_definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     SelectedActivityQuery,
     SelectedActivityParameters,
@@ -130,8 +129,6 @@ pub fn selected_activity_definition() -> ApplicationQueryDefinition<
         .parameter(status_parameter::<SelectedActivityQuery>())
         .parameter(selected_activity_parameter())
         .where_equal(AccountStatus::at("AccountStatus"), status_parameter())
-        .build()
-        .unwrap()
 }
 
 pub fn selected_activity_parameter() -> ApplicationQueryParameterRef<

@@ -242,13 +242,6 @@ impl SnapshotStateBasis {
         }
     }
 
-    pub(crate) fn root_id(&self) -> Option<u64> {
-        match self {
-            Self::Exact(basis) => Some(basis.root_id()),
-            Self::Historical(basis) => basis.source_root_id(),
-        }
-    }
-
     pub(crate) fn root_version(&self) -> Option<VersionId> {
         self.root()
             .and_then(|root| root.axes())

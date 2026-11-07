@@ -41,6 +41,8 @@ pub enum RelationalForkDenial {
     /// historical-root reopening. Refused before destination reservation.
     RetainedSourceDurabilityUnsupported,
     MissingArtifact,
+    /// Original-request or structural refusal before derived fork selection is installed.
+    IndexPreparation(Box<crate::indexes::data::DerivedIndexMaintenanceDenial>),
     RootIdentityExhausted,
     ManagedSource(crate::mvcc::CompanionPreflightStop),
     InvalidTarget(BranchCreateError),

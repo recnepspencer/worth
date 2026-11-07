@@ -14,10 +14,9 @@ pub(crate) use result_only::ResultOnlyQueryBinding;
 #[path = "application_principal_binding_tests/retained_validation.rs"]
 mod retained_validation;
 use worth_query_declaration::facade::application_query::{
-    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryResultFieldRef,
-    ApplicationQueryResultShapeBuilder,
+    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
+    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationPrincipalBindingRef, ApplicationPrincipalBindingRequirements,
@@ -124,7 +123,7 @@ worth_query_query_binding!(
     limits results 8
 );
 
-fn principal_query_definition() -> ApplicationQueryDefinition<
+fn principal_query_definition() -> ApplicationQueryDefinitionBuilder<
     IdentitySchema,
     PrincipalQuery,
     PrincipalQueryParameters,
@@ -157,8 +156,6 @@ fn principal_query_definition() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 
 #[test]

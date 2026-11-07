@@ -52,7 +52,7 @@ impl WorthQuerySessionLabel {
             return Err(WorthQuerySessionLabelError::MissingNameSegments);
         }
         let display = render_display(&namespace, &name_segments);
-        let identity_digest = derive_session_label_identity(&namespace, &name_segments);
+        let identity_digest = derive_session_label_identity(&namespace, &name_segments)?;
         Ok(Self::new(SealedWorthQuerySessionLabel::new(
             namespace,
             name_segments,

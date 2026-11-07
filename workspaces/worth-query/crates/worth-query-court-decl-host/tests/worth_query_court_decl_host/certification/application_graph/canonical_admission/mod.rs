@@ -24,7 +24,17 @@ fn sufficient_native_admission_commits_nondefault_root_child_reads_and_restores(
 
 #[test]
 fn cumulative_refusal_survives_a_swallowing_handler_and_does_not_poison_fresh_request() {
-    let host = host::install(ONE_VALUE_WORK);
+    let probe = host::install(FUNDED_WORK);
+    assert_source(&probe, 0);
+    assert_committed(host::advance(&probe, Reads::Both, 71_100), 1);
+    let work = probe
+        .second_decode_work
+        .get()
+        .expect("funded handler reached its second seed");
+    drop(probe);
+    let mut host = host::install(FUNDED_WORK);
+    assert_source(&host, 0);
+    host.request_work = work;
     // Ordinary root and child reads each fund this exact nondefault decoder
     // under the same policy, without an unrelated publication bill.
     assert_source(&host, 0);
@@ -66,6 +76,7 @@ fn ordinary_query_completion_vetoes_success_after_a_swallowed_second_decode_refu
         application_entry::WorthQueryApplicationRequestQueryDenial, primary_graph::*,
     };
     let funded = host::install(FUNDED_WORK);
+    assert_source(&funded, 0);
     assert_eq!(
         host::read_repeated(&funded).unwrap(),
         query::Row {
@@ -75,9 +86,15 @@ fn ordinary_query_completion_vetoes_success_after_a_swallowed_second_decode_refu
     );
     assert_eq!(repeated_query::returned(), 1);
     assert_eq!(opaque::ignored_refusals(), 0);
+    let work = funded
+        .second_decode_work
+        .get()
+        .expect("funded projector reached its second seed");
     drop(funded);
 
-    let host = host::install(ONE_VALUE_WORK);
+    let mut host = host::install(FUNDED_WORK);
+    assert_source(&host, 0);
+    host.request_work = work;
     assert_eq!(
         host::read(&host, "root").value,
         value(),

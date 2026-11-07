@@ -23,7 +23,8 @@ worth_query_application_query!(pub Query for NumericSchema, identity "numeric-sc
 fn output() -> ApplicationQueryOptionalAspectFieldRef<Query, Slot, NumericSchema, Total> {
     ApplicationQueryOptionalAspectFieldRef::new("total", Total::at("Total"))
 }
-pub fn definition() -> ApplicationQueryDefinition<NumericSchema, Query, Parameters, Row, Number> {
+pub fn definition(
+) -> ApplicationQueryDefinitionBuilder<NumericSchema, Query, Parameters, Row, Number> {
     let shape = ApplicationQueryResultShapeBuilder::<
         NumericSchema,
         Query,
@@ -51,8 +52,6 @@ pub fn definition() -> ApplicationQueryDefinition<NumericSchema, Query, Paramete
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<NumericSchema, Query> for Row {
     fn project(

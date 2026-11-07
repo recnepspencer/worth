@@ -21,6 +21,7 @@ fn write_intent_effect_lowers_to_pending_intent_with_phase_evidence() {
                 WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title"])),
                 "reconcile-title-slug",
             )
+            .expect("fixture digest must fit")
             .with_condition(WorthQueryEffectCondition::expression(
                 "expr.title.needs-slug",
                 test_aspect_touches(["title"]),
@@ -128,6 +129,7 @@ fn write_intent_effect_rejects_authoritative_truth_target() {
         WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title"])),
         "direct-truth-write",
     )
+    .expect("fixture digest must fit")
     .with_effect_policy(WorthQueryEffectPolicy::AuthoritativeAllowed)
     .with_target_lane(WorthQueryAuthorityLane::AuthoritativeTruth);
 

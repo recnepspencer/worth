@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -25,42 +26,46 @@ impl WorthQueryContinuityMutationEvidence {
         successor_authoritative_identities: Vec<String>,
         resolved_target_entity_identity: Option<WorthQueryEntityIdentity>,
         target_collection: Option<&str>,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             family,
             outcome_class,
             prior_authoritative_identity: WorthQueryMutationAuthorityIdentity::new(
                 "continuity-prior",
                 prior_authoritative_identity,
-            ),
+            )?,
             successor_authoritative_identities: successor_authoritative_identities
                 .into_iter()
                 .map(|identity| {
                     WorthQueryMutationAuthorityIdentity::new("continuity-successor", identity)
                 })
-                .collect(),
+                .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?,
             basis_binding_digest: Some(test_only_digest(
                 "continuity-basis-binding",
                 "basis-binding:test",
-            )),
+            )?),
             resolved_target_entity_identity,
             target_collection: target_collection.map(|collection| {
                 WorthQueryMutationTargetCollectionIdentity::new("continuity-target", collection)
+                    .expect("fixture digest must fit")
             }),
-            lineage_digest: test_only_digest("continuity-lineage", "lineage:test"),
+            lineage_digest: test_only_digest("continuity-lineage", "lineage:test")?,
             continuity_resolution_digest: test_only_digest(
                 "continuity-resolution",
                 "continuity-resolution:test",
-            ),
-        }
+            )?,
+        })
     }
 }
 
-fn test_only_digest(role: &'static str, value: &str) -> WorthQueryMutationEvidenceDigest {
+fn test_only_digest(
+    role: &'static str,
+    value: &str,
+) -> Result<WorthQueryMutationEvidenceDigest, IdentityDerivationDenial> {
     let identity =
         worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
             .field_shape(WorthQueryEvidenceTag::new("role"), role)
             .field_value(WorthQueryEvidenceTag::new("test_value"), value)
-            .seal();
-    WorthQueryMutationEvidenceDigest::aggregate(role, identity)
+            .seal()?;
+    Ok(WorthQueryMutationEvidenceDigest::aggregate(role, identity)?)
 }

@@ -16,6 +16,7 @@ fn moved_artifact_advancement_opens_before_its_reader() {
                 .unwrap()
                 .start_workflow(&mut workspace)
                 .unwrap()
+                .unwrap()
                 .advance(
                     "produce",
                     domain::WorthQueryWorkflowValue::Text("produce".into()),
@@ -52,6 +53,7 @@ fn leased_artifact_advancement_opens_before_its_reader() {
                 .admit_workflow_resources(execution_resource_request(), &workspace)
                 .unwrap()
                 .start_workflow(&mut workspace)
+                .unwrap()
                 .unwrap()
                 .advance(
                     "produce",

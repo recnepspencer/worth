@@ -184,21 +184,25 @@ fn source_surfaces_expose_support_discovery_helpers() {
     let read_shape = read_result_shape();
     let read_support = read_result()
         .receipt()
-        .discover_projection_fact_consumption_support(&read_shape);
+        .discover_projection_fact_consumption_support(&read_shape)
+        .expect("fixture digest must fit");
     assert_eq!(
         read_support.source_family(),
         ProjectionConsumptionSource::from_read_receipt(read_result().receipt(), &read_shape)
             .family()
     );
 
-    let write_support = write_receipt().discover_projection_fact_consumption_support();
+    let write_support = write_receipt()
+        .discover_projection_fact_consumption_support()
+        .expect("fixture digest must fit");
     assert_eq!(
         write_support.source_family(),
         ProjectionConsumptionSource::from_write_receipt(&write_receipt()).family()
     );
 
-    let query_context_support =
-        query_context_execution_preview().discover_projection_fact_consumption_support();
+    let query_context_support = query_context_execution_preview()
+        .discover_projection_fact_consumption_support()
+        .expect("fixture digest must fit");
     assert_eq!(
         query_context_support.source_family(),
         ProjectionConsumptionSource::from_query_context_execution(

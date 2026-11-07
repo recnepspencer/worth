@@ -14,11 +14,13 @@ fn historical_capability_admits_runtime_retained_snapshot_request() {
         1,
         1,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let capability = HistoricalCapabilityDescriptor::retained_snapshot_for_test(
         "basis:historical-facade",
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let admission = historical
         .capability()
         .admit_path(request, capability)

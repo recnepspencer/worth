@@ -58,7 +58,7 @@ impl BridgeCausalExplanationEnvelope {
         request: BridgeCausalEnvelopeAssemblyRequest,
         bindings: Vec<BridgeCausalEvidenceBinding>,
         counters: BridgeCausalEnvelopeCounters,
-    ) -> Self {
+    ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal> {
         let binding_parts = bindings
             .iter()
             .map(BridgeCausalEvidenceBinding::binding_evidence_identity)
@@ -67,7 +67,7 @@ impl BridgeCausalExplanationEnvelope {
         let evidence_binding_identity = compose_bridge_causal_envelope_evidence_identity(
             BridgeCausalEnvelopeDigestArtifact::BindingSet,
             &evidence_binding_parts,
-        );
+        )?;
         let request_identity = request.request_evidence_identity().clone();
         let causal_observation_anchor_identity = request
             .admission_summary()
@@ -78,7 +78,7 @@ impl BridgeCausalExplanationEnvelope {
             causal_observation_anchor_identity.clone(),
             evidence_binding_identity,
             counters.counter_evidence_identity().clone(),
-        );
+        )?;
         let mut envelope_parts = Vec::with_capacity(bindings.len() + 4);
         envelope_parts.push(evidence_part(identity.envelope_evidence_identity()));
         envelope_parts.push(evidence_part(&request_identity));
@@ -88,9 +88,9 @@ impl BridgeCausalExplanationEnvelope {
         let envelope_identity = compose_bridge_causal_envelope_evidence_identity(
             BridgeCausalEnvelopeDigestArtifact::ExplanationEnvelope,
             &envelope_parts,
-        );
-        let receipt = BridgeCausalEnvelopeReceipt::new(&identity, &envelope_identity, &counters);
-        Self {
+        )?;
+        let receipt = BridgeCausalEnvelopeReceipt::new(&identity, &envelope_identity, &counters)?;
+        Ok(Self {
             identity,
             admission_summary_kind: request.admission_summary().kind(),
             admission_summary_identity: request
@@ -104,7 +104,7 @@ impl BridgeCausalExplanationEnvelope {
             receipt,
             envelope_identity,
             retained_native: Default::default(),
-        }
+        })
     }
 
     pub fn identity(&self) -> &BridgeCausalEnvelopeIdentity {

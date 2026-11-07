@@ -126,6 +126,7 @@ fn validate_envelope_lineage(
 }
 
 pub(super) fn reconcile_recovered_lineage_artifacts(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     restored: &mut RelationalRuntime,
     tail_log: &[PositionedCanonicalCommit],
 ) -> Result<(), DurabilityError> {
@@ -176,7 +177,7 @@ pub(super) fn reconcile_recovered_lineage_artifacts(
         .and_then(|lineage_id| lineage_id.checked_add(1));
     restored
         .lineage
-        .replace_events(events_by_id.into_values().collect());
+        .replace_events(lane, events_by_id.into_values().collect());
     restored
         .lineage
         .advance_identity_to(next_lineage_id, next_event_id);

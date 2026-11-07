@@ -24,17 +24,17 @@ impl fragment::BindingSet for OwnershipModelBindings {
 }
 impl fragment::Scalar<WorthQueryExternalPrincipalIdentity> for OwnershipModelBindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<WorthQueryPrincipalMappingStatus> for OwnershipModelBindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<u64> for OwnershipModelBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 #[derive(Clone, Copy)]
@@ -97,7 +97,9 @@ impl fragment::Record<MappingFactsValue> for OwnershipModelBindings {
         fragment::field("ExternalId", |row: &MappingFactsValue| {
             row.external_id.clone()
         })
+        .equality_queryable(true)
         .and("Status", |row: &MappingFactsValue| row.status)
+        .equality_queryable(true)
         .build(|external_id, status, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(MappingFactsValue {
                 external_id,
@@ -122,6 +124,7 @@ pub struct FactsValue {
 impl fragment::Record<FactsValue> for OwnershipModelBindings {
     fn record() -> impl fragment::Shape<FactsValue, Self> {
         fragment::field("Id", |row: &FactsValue| row.id)
+            .equality_queryable(true)
             .read_only()
             .unique()
             .build(|id, _: &mut ValueDecodeAdmission<'_>| {
@@ -144,11 +147,11 @@ pub struct ValuesValue {
 }
 impl fragment::Record<ValuesValue> for OwnershipModelBindings {
     fn record() -> impl fragment::Shape<ValuesValue, Self> {
-        fragment::field("Value", |row: &ValuesValue| row.value).build(
-            |value, _: &mut ValueDecodeAdmission<'_>| {
+        fragment::field("Value", |row: &ValuesValue| row.value)
+            .equality_queryable(true)
+            .build(|value, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ValuesValue { value })
-            },
-        )
+            })
     }
 }
 pub type ExternalId =

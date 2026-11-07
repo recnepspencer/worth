@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::hash_parts;
 
 use super::facts::{
@@ -58,7 +59,9 @@ pub struct WorthQueryIntentAdmissionEligibility {
 }
 
 impl WorthQueryIntentAdmissionEligibility {
-    pub(crate) fn from_request(request: WorthQueryRawIntentAdmissionRequest) -> Self {
+    pub(crate) fn from_request(
+        request: WorthQueryRawIntentAdmissionRequest,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let (
             support_posture,
             capability_posture,
@@ -70,7 +73,7 @@ impl WorthQueryIntentAdmissionEligibility {
             source_lane_posture,
             authority_lane_posture,
             pre_decision_posture,
-        ) = resolve_eligibility_facts(&request);
+        ) = resolve_eligibility_facts(&request)?;
         let eligibility_digest = hash_parts(&[
             "worth_query_intent_admission_eligibility_v2".to_string(),
             format!("request:{}", request.request_digest()),
@@ -124,7 +127,7 @@ impl WorthQueryIntentAdmissionEligibility {
             format!("pre-decision:{}", pre_decision_posture.stage()),
             format!("pre-decision-message:{}", pre_decision_posture.message()),
         ]);
-        Self {
+        Ok(Self {
             request,
             support_posture,
             capability_posture,
@@ -137,7 +140,7 @@ impl WorthQueryIntentAdmissionEligibility {
             authority_lane_posture,
             pre_decision_posture,
             eligibility_digest,
-        }
+        })
     }
 
     pub fn request(&self) -> &WorthQueryRawIntentAdmissionRequest {

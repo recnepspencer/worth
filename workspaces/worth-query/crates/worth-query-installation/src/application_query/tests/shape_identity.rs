@@ -1,9 +1,8 @@
 use worth_query_declaration::facade::application_query::{
-    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryReference, ApplicationQueryResultFieldRef,
-    ApplicationQueryResultRelationRef, ApplicationQueryResultShapeBuilder, ForwardResultTraversal,
-    ManyResults,
+    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
+    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility, ApplicationQueryReference,
+    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
+    ApplicationQueryResultShapeBuilder, ForwardResultTraversal, ManyResults,
 };
 use worth_query_declaration::{
     worth_query_application_query, worth_query_portable_type, worth_query_structured_value_binding,
@@ -59,7 +58,7 @@ worth_query_application_query!(
     name "grouped_two"
 );
 
-pub(in crate::application_query) fn grouped_one_definition() -> ApplicationQueryDefinition<
+pub(in crate::application_query) fn grouped_one_definition() -> ApplicationQueryDefinitionBuilder<
     QueryTestSchema,
     GroupedOneQuery,
     GroupedOneParameters,
@@ -69,7 +68,7 @@ pub(in crate::application_query) fn grouped_one_definition() -> ApplicationQuery
     grouped_shape_definition(GroupedOneQuery::reference(), true)
 }
 
-pub(in crate::application_query) fn grouped_two_definition() -> ApplicationQueryDefinition<
+pub(in crate::application_query) fn grouped_two_definition() -> ApplicationQueryDefinitionBuilder<
     QueryTestSchema,
     GroupedTwoQuery,
     GroupedTwoParameters,
@@ -106,7 +105,13 @@ fn grouped_shape_definition<Query, Parameters>(
         Account,
     >,
     split_after_first: bool,
-) -> ApplicationQueryDefinition<QueryTestSchema, Query, Parameters, ActivityQueryResult, Account>
+) -> ApplicationQueryDefinitionBuilder<
+    QueryTestSchema,
+    Query,
+    Parameters,
+    ActivityQueryResult,
+    Account,
+>
 where
     Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity<
         QueryTestSchema,
@@ -222,6 +227,4 @@ where
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }

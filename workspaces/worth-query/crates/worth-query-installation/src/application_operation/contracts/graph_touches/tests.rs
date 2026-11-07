@@ -21,7 +21,6 @@ impl records::BindingSet for Bindings {
 }
 impl records::Scalar<u64> for Bindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 struct Entity;
 impl records::Entity for Entity {
@@ -46,7 +45,9 @@ struct Pair {
 impl records::Record<Pair> for Bindings {
     fn record() -> impl records::Shape<Pair, Self> {
         records::field("Left", |r: &Pair| r.left)
+            .equality_queryable(true)
             .and("Right", |r: &Pair| r.right)
+            .equality_queryable(true)
             .build(|left, right, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(Pair { left, right })
             })

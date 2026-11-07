@@ -26,13 +26,13 @@ impl BindingSet for WorkflowGrantsBindings {
 }
 impl Scalar<String> for WorkflowGrantsBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<u64> for WorkflowGrantsBindings {
     type Binding =
         worth_query_host::facade::declaration::application_schema::U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = true;
 }
 #[derive(Clone, Copy)]
@@ -77,6 +77,7 @@ impl Record<WorkflowAuthoringGrantFactsValue> for WorkflowGrantsBindings {
             "WorkflowGrantIdentityField",
             |row: &WorkflowAuthoringGrantFactsValue| row.workflow_grant_identity_field.clone(),
         )
+        .equality_queryable(true)
         .read_only()
         .and(
             "WorkflowGrantActionField",
@@ -229,5 +230,4 @@ impl WorkflowGrantGrantee {
 
 impl fragment::Scalar<WorkflowGrantKey> for WorkflowGrantsBindings {
     type Binding = WorkflowGrantKeyBinding;
-    const EQUALITY_QUERYABLE: bool = true;
 }

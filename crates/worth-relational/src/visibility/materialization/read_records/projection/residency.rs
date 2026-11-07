@@ -3,7 +3,7 @@ use super::VisibilityProjectionView;
 use crate::execution::RelationalExecutionDenialCause;
 use crate::identity::data::PartitionId;
 impl VisibilityProjectionView {
-    pub(super) fn admitted_head_region(
+    pub(in crate::visibility::materialization::read_records) fn admitted_head_region(
         &self,
         id: PartitionId,
     ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
@@ -18,10 +18,9 @@ impl VisibilityProjectionView {
         partitions: impl IntoIterator<Item = PartitionId>,
     ) -> Result<(), RelationalExecutionDenialCause> {
         crate::execution::check_request(execution)?;
-        if self.resident.is_some() {
-            return Ok(());
-        }
-        if let Some(root) = self.selected_root() {
+        if let Some(resident) = &self.resident {
+            resident.demand_regions_head(execution, partitions)?;
+        } else if let Some(root) = self.selected_root() {
             root.demand_regions_head(execution, &self.symbols, partitions)?;
         }
         Ok(())
@@ -59,10 +58,9 @@ impl VisibilityProjectionView {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<(), RelationalExecutionDenialCause> {
         crate::execution::check_request(execution)?;
-        if self.resident.is_some() {
-            return Ok(());
-        }
-        if let Some(root) = self.selected_root() {
+        if let Some(resident) = &self.resident {
+            resident.demand_regions_full(execution, resident.root().partition_ids_iter())?;
+        } else if let Some(root) = self.selected_root() {
             root.demand_all_full(execution, &self.symbols)?;
         }
         Ok(())
@@ -73,10 +71,9 @@ impl VisibilityProjectionView {
         partitions: impl IntoIterator<Item = PartitionId>,
     ) -> Result<(), RelationalExecutionDenialCause> {
         crate::execution::check_request(execution)?;
-        if self.resident.is_some() {
-            return Ok(());
-        }
-        if let Some(root) = self.selected_root() {
+        if let Some(resident) = &self.resident {
+            resident.demand_regions_full(execution, partitions)?;
+        } else if let Some(root) = self.selected_root() {
             root.demand_regions_full(execution, &self.symbols, partitions)?;
         }
         Ok(())

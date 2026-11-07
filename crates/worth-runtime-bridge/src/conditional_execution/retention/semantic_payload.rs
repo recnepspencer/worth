@@ -1,8 +1,7 @@
-use super::{array_charge, btree_charge, sum, BridgeRetentionDenial as D};
+use super::{array_charge, sum, BridgeRetentionDenial as D};
 use worth_foundational::facade::{
-    AspectBinding, AspectContract, AspectMask, AspectShape, AspectValue, CanonicalFieldPath,
-    ContractValidatedAspectArtifact, ContractValidatedAspectValueView, FieldDeclaration, FieldKey,
-    InternedString, ProjectionMask,
+    AspectBinding, AspectContract, AspectMask, CanonicalFieldPath, ContractValidatedAspectArtifact,
+    FieldKey, ProjectionMask,
 };
 
 pub(in crate::conditional_execution) fn visit(work: &mut Option<usize>) -> Result<(), D> {
@@ -24,18 +23,9 @@ pub(in crate::conditional_execution) fn contract(
     work: &mut Option<usize>,
 ) -> Result<u64, D> {
     visit(work)?;
-    let mut size = bytes(contract.key().as_str().len())?;
-    if let AspectShape::Struct(shape) = contract.shape() {
-        size = sum(&[
-            size,
-            array_charge::<FieldDeclaration>(shape.fields().len())?,
-        ])?;
-        for field in shape.fields() {
-            visit(work)?;
-            size = sum(&[size, bytes(field.key().as_str().len())?])?;
-        }
-    }
-    Ok(size)
+    // Definitions are immutable shared backing. Retention owns that backing's
+    // cached payload extent, including its actual spare capacity, not a copy.
+    bytes(contract.owned_allocation_capacity_bytes())
 }
 
 pub(in crate::conditional_execution) fn path(
@@ -67,41 +57,9 @@ pub(in crate::conditional_execution) fn artifact(
     work: &mut Option<usize>,
 ) -> Result<u64, D> {
     visit(work)?;
-    let payload = artifact.payload();
-    let mut size = sum(&[
-        bytes(payload.key().as_str().len())?,
-        contract(payload.contract(), work)?,
-    ])?;
-    match payload.view() {
-        ContractValidatedAspectValueView::Scalar(value) => {
-            size = sum(&[size, scalar(value)?])?;
-        }
-        ContractValidatedAspectValueView::Struct(fields) => {
-            let mut count = 0usize;
-            for (key, value) in fields.fields() {
-                visit(work)?;
-                count = count.checked_add(1).ok_or(D::BytesExhausted)?;
-                size = sum(&[size, bytes(key.as_str().len())?, scalar(value)?])?;
-            }
-            size = sum(&[size, btree_charge::<FieldKey, AspectValue>(count)?])?;
-        }
-    }
-    Ok(size)
-}
-
-// Clone materializes length-sized String buffers. The source's spare capacity
-// is neither copied nor owned by the retained observation/trigger.
-fn scalar(value: &AspectValue) -> Result<u64, D> {
-    match value {
-        AspectValue::Decimal(value) => bytes(value.0.len()),
-        AspectValue::BigInt(value) => bytes(value.0.len()),
-        AspectValue::Rational(value) => sum(&[
-            bytes(value.numerator.0.len())?,
-            bytes(value.denominator.0.len())?,
-        ]),
-        AspectValue::String(InternedString::Raw(value)) => bytes(value.len()),
-        _ => Ok(0),
-    }
+    // Artifact cloning shares the admitted backing. The cached reachable extent
+    // bounds the payload kept alive; this is not a transient clone quote.
+    bytes(artifact.payload().owned_allocation_capacity_bytes())
 }
 
 pub(in crate::conditional_execution) fn binding(value: &AspectBinding) -> Result<u64, D> {

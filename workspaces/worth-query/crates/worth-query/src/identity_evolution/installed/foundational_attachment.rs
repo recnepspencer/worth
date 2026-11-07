@@ -1,5 +1,6 @@
 use super::InstalledIdentityEvolutionKind;
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_foundational::facade::{
     admit_current_basis_boundary_evidence_attachment_bundle, boundary_evidence,
     foundational_boundary_evidence_attachment_readmission_authority, BoundaryArtifactField,
@@ -110,12 +111,12 @@ impl FoundationalInstalledLineageIdentities {
         semantic: &WorthQueryEvidenceIdentity,
         basis_digest: &str,
         effect_receipt_identity: &str,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let source_basis_evidence_identity =
-            boundary_identity("installed-lineage-source-v1", basis_digest);
+            boundary_identity("installed-lineage-source-v1", basis_digest)?;
         let receipt_evidence_identity =
-            boundary_identity("installed-lineage-receipt-v1", effect_receipt_identity);
-        Self {
+            boundary_identity("installed-lineage-receipt-v1", effect_receipt_identity)?;
+        Ok(Self {
             subject: crate::domain_installation::foundational_boundary_handle(semantic),
             artifact: crate::domain_installation::foundational_boundary_artifact_id(
                 &receipt_evidence_identity,
@@ -123,7 +124,7 @@ impl FoundationalInstalledLineageIdentities {
             subject_evidence_identity: semantic.clone(),
             source_basis_evidence_identity,
             receipt_evidence_identity,
-        }
+        })
     }
 
     pub(super) fn attested_lineage(
@@ -246,8 +247,11 @@ impl FoundationalInstalledLineageIdentities {
     }
 }
 
-fn boundary_identity(role: &'static str, value: &str) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(
+fn boundary_identity(
+    role: &'static str,
+    value: &str,
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(WorthQueryEvidenceIdentity::compose(
         crate::evidence_identity::WorthQueryEvidenceScope::InstalledDomainExecution,
     )
     .field_shape(
@@ -258,5 +262,5 @@ fn boundary_identity(role: &'static str, value: &str) -> WorthQueryEvidenceIdent
         crate::evidence_identity::WorthQueryEvidenceTag::new("source_value"),
         value,
     )
-    .seal()
+    .seal()?)
 }

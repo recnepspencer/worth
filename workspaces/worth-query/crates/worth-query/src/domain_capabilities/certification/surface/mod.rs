@@ -6,6 +6,7 @@ use crate::domain_capabilities::identity::{
 };
 use crate::domain_capabilities::workflow::DOMAIN_CAPABILITY_WORKFLOW_CATEGORY_MODULE;
 use crate::domain_capabilities::WorthQueryDomainCapabilityCategory;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryDomainCapabilityCertifiedSurfaceRow {
@@ -60,15 +61,15 @@ impl WorthQueryDomainCapabilityCertifiedSurfaceRow {
         self.implementation_path
     }
 
-    pub fn row_digest(&self) -> String {
-        compose_certified_surface_row_digest(
+    pub fn row_digest(&self) -> Result<String, IdentityDerivationDenial> {
+        Ok(compose_certified_surface_row_digest(
             self.category.as_str(),
             self.ordinary_lane,
             self.inspectable_lane,
             self.proof_lane,
             self.raw_lane,
             self.implementation_path,
-        )
+        )?)
     }
 }
 
@@ -88,12 +89,13 @@ impl WorthQueryDomainCapabilityCertifiedSurfaceInventory {
         self.rows
     }
 
-    pub fn public_surface_digest(&self) -> String {
-        compose_public_surface_digest(
+    pub fn public_surface_digest(&self) -> Result<String, IdentityDerivationDenial> {
+        Ok(compose_public_surface_digest(
             self.rows
                 .iter()
-                .map(WorthQueryDomainCapabilityCertifiedSurfaceRow::row_digest),
-        )
+                .map(WorthQueryDomainCapabilityCertifiedSurfaceRow::row_digest)
+                .collect::<Result<Vec<_>, _>>()?,
+        )?)
     }
 }
 
@@ -210,15 +212,18 @@ mod tests {
     }
 
     #[test]
-    fn certified_surface_inventory_digest_is_row_order_stable() {
+    fn certified_surface_inventory_digest_is_row_order_stable(
+    ) -> Result<(), IdentityDerivationDenial> {
         let inventory = worth_query_domain_capability_public_surface_inventory();
         let expected = compose_public_surface_digest(
             inventory
                 .rows()
                 .iter()
-                .map(WorthQueryDomainCapabilityCertifiedSurfaceRow::row_digest),
-        );
+                .map(|row| row.row_digest().expect("fixture digest must fit")),
+        )?;
 
-        assert_eq!(inventory.public_surface_digest(), expected);
+        assert_eq!(inventory.public_surface_digest()?, expected);
+
+        Ok(())
     }
 }

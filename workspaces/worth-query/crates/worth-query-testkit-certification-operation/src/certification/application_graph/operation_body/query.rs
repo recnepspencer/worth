@@ -44,7 +44,8 @@ pub fn retention_result<Schema: BodySchemaBinding>() -> ApplicationQueryResultFi
         DocumentRetentionField::at("DocumentRetentionField"),
     )
 }
-pub fn document_retention_query_definition<const DESTINATION: u64>() -> ApplicationQueryDefinition<
+pub fn document_retention_query_definition<const DESTINATION: u64>(
+) -> ApplicationQueryDefinitionBuilder<
     DocumentRetentionSchema<DESTINATION>,
     DocumentRetentionQuery,
     DocumentQueryParameters,
@@ -70,8 +71,6 @@ pub fn document_retention_query_definition<const DESTINATION: u64>() -> Applicat
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 
 impl<const DESTINATION: u64>

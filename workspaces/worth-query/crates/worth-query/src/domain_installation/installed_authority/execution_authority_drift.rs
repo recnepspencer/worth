@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -205,7 +206,7 @@ impl WorthQueryInstalledDomainExecutionDrift {
             counters: WorthQueryInstalledDomainExecutionDriftCounters::denied_before_work(),
             retained_authority: retained_authority.clone(),
             current_authority: current_authority.cloned(),
-            drift_identity: drift_identity.seal(),
+            drift_identity: drift_identity.seal().expect("fixed authority drift grammar: three closed enum labels and at most two sealed witness identities"),
         }
     }
 

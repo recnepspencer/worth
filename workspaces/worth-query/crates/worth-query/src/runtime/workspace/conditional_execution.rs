@@ -37,7 +37,8 @@ impl WorthQueryWorkspace {
     ) -> Result<(), crate::runtime::WorthQueryRuntimeError> {
         self.admit_managed_live_capability(handle.workspace_capability(), handle.name())?;
         let target = self.resolve_live_artifact_target(handle.name())?;
-        self.runtime.register_installed_live_route(target, closure);
+        self.runtime
+            .register_installed_live_route(target, closure)?;
         Ok(())
     }
 

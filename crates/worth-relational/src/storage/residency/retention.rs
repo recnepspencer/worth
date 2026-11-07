@@ -71,6 +71,15 @@ impl RelationalRegionRetention {
         Ok(self.head.get().map(|lease| lease.resident_region()))
     }
 
+    pub(crate) fn reconstruct_head(
+        &self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<super::ReconstructedRegionHead, super::RelationalResidencyDemandFailure> {
+        self.cell
+            .reconstruct_head(lane, execution, self.authority.as_deref())
+    }
+
     pub(crate) fn cell(&self) -> &Arc<RelationalRegionResidency> {
         &self.cell
     }
@@ -183,6 +192,12 @@ impl RelationalRegionRetention {
                 ),
                 cause: crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
             })
+    }
+
+    /// The root retains this exact Full lease; accepted read capabilities can
+    /// keep using its immutable bytes after a later fresh demand finds damage.
+    pub(crate) fn accepted_full_partition(&self) -> Option<&PartitionState> {
+        self.full.get().map(|lease| lease.full_view().partition())
     }
 
     /// Clone custody already accepted by this immutable root, without a fresh

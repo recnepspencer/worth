@@ -29,7 +29,8 @@ fn identity() -> ApplicationQueryResultFieldRef<Query, IdentitySlot, Catalog, Di
 fn note() -> ApplicationQueryResultFieldRef<Query, NoteSlot, Catalog, DirectoryNote> {
     ApplicationQueryResultFieldRef::new("note", DirectoryNote::at("DirectoryNote"))
 }
-pub fn definition() -> ApplicationQueryDefinition<Catalog, Query, Parameters, Row, Directory> {
+pub fn definition() -> ApplicationQueryDefinitionBuilder<Catalog, Query, Parameters, Row, Directory>
+{
     ApplicationQueryDefinitionBuilder::declare(Query::reference())
         .root(Directory::reference())
         .scope(Directory::reference())
@@ -44,8 +45,6 @@ pub fn definition() -> ApplicationQueryDefinition<Catalog, Query, Parameters, Ro
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<Catalog, Query> for Row {
     fn project(

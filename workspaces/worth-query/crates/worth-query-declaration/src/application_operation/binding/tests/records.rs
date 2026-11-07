@@ -22,17 +22,17 @@ impl fragment::BindingSet for MutationModelBindings {
 }
 impl fragment::Scalar<WorthQueryExternalPrincipalIdentity> for MutationModelBindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<WorthQueryPrincipalMappingStatus> for MutationModelBindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<u64> for MutationModelBindings {
     type Binding = crate::application_schema::U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 pub struct ExternalMapping;
@@ -61,9 +61,11 @@ impl fragment::Record<ExternalIdentityValue> for MutationModelBindings {
         fragment::field("ExternalIdentityField", |row: &ExternalIdentityValue| {
             row.external_identity_field.clone()
         })
+        .equality_queryable(true)
         .and("MappingStatusField", |row: &ExternalIdentityValue| {
             row.mapping_status_field
         })
+        .equality_queryable(true)
         .build(
             |external_identity_field, mapping_status_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ExternalIdentityValue {
@@ -87,6 +89,7 @@ impl fragment::Record<AccountIdentityValue> for MutationModelBindings {
         fragment::field("AccountIdField", |row: &AccountIdentityValue| {
             row.account_id_field
         })
+        .equality_queryable(true)
         .build(|account_id_field, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(AccountIdentityValue { account_id_field })
         })

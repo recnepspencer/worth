@@ -7,7 +7,7 @@ impl<S> Registration<S> for WrongFieldType {
     ) -> Result<ApplicationSchemaDeclarationBuilder<S>, ApplicationSchemaDeclarationDenial> {
         let operation = ApplicationOperationRef::<S, SetMetric, ()>::from_declaration();
         let field: RecordField<_, _, String> =
-            record_field(Fixture, Item, Metrics, "components[1]")?;
+            record_field(Fixture, Item, Metrics, "components[1]").resolve()?;
         Ok(builder
             .operation(
                 operation
@@ -52,7 +52,7 @@ impl<S, const MODE: u8> Registration<S> for FieldConsumers<MODE> {
         builder: ApplicationSchemaDeclarationBuilder<S>,
     ) -> Result<ApplicationSchemaDeclarationBuilder<S>, ApplicationSchemaDeclarationDenial> {
         let field: RecordField<_, _, u64> =
-            record_field(Consumers::<MODE>, Item, Metrics, "components[1]")?;
+            record_field(Consumers::<MODE>, Item, Metrics, "components[1]").resolve()?;
         let operation = ApplicationOperationRef::<S, SetMetric, ()>::from_declaration();
         let body = if MODE == 0 {
             operation
@@ -72,13 +72,14 @@ impl<S, const MODE: u8> Registration<S> for FieldConsumers<MODE> {
                 .create_in_scope(entity, "child")
                 .unwrap();
             if MODE != 2 {
-                let caption = record_field(Consumers::<MODE>, Entry, Label, "text")?;
+                let caption = record_field(Consumers::<MODE>, Entry, Label, "text").resolve()?;
                 creation = creation
                     .initialize_record(caption, "created".to_owned())
                     .unwrap();
             }
             if MODE == 3 {
-                let partial = record_field(Consumers::<MODE>, Entry, Metrics, "components[1]")?;
+                let partial =
+                    record_field(Consumers::<MODE>, Entry, Metrics, "components[1]").resolve()?;
                 creation = creation.initialize_record(partial, 7u64).unwrap();
             }
             creation.finish().unwrap()
@@ -134,8 +135,9 @@ fn created_records_require_complete_required_and_selected_optional_aspects() {
 
 #[test]
 fn policies_and_requirement_operands_use_the_record_handle() {
-    let field: RecordField<_, _, u64> =
-        record_field(Fixture, Item, Metrics, "components[1]").unwrap();
+    let field: RecordField<_, _, u64> = record_field(Fixture, Item, Metrics, "components[1]")
+        .resolve()
+        .unwrap();
     let operation = ApplicationOperationRef::<(), SetMetric, ()>::from_declaration();
     operation
         .requirement_operands()

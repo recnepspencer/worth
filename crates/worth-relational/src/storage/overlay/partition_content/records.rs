@@ -1,4 +1,7 @@
-use super::{digest_index::DigestIndex, hash_value, PartitionContentDigestError};
+mod reconstruction;
+use super::{hash_value, PartitionContentDigestError};
+use super::{ReconstructionLane, ReconstructionWork};
+use crate::storage::substrate::DigestIndex;
 use crate::storage::substrate::{
     HistoryAppendFrontier, RecordArena, RecordKind, SharedMap, StorageAllocationVisitor,
 };
@@ -17,67 +20,49 @@ pub(super) struct RecordContentIndex {
 impl RecordContentIndex {
     pub(super) fn history_frontiers<K: RecordKind>(
         &self,
+        _lane: &ReconstructionLane<'_>,
         arena: &RecordArena<K>,
-    ) -> Option<Vec<(u64, HistoryAppendFrontier)>>
+        work: &mut ReconstructionWork<'_, '_>,
+    ) -> Result<Vec<(u64, HistoryAppendFrontier)>, PartitionContentDigestError>
     where
         K::Meta: serde::Serialize,
     {
-        self.histories
-            .iter()
-            .map(|(&slot, history)| {
-                let metadata = arena.metadata_history_at(usize::try_from(slot).ok()?)?;
-                let last_value = metadata
-                    .len()
-                    .checked_sub(1)
-                    .and_then(|index| metadata.get(index))
-                    .map(|value| hash_value(b"metadata", value))
-                    .transpose()
-                    .ok()?;
-                Some((slot, history.append_frontier(last_value)?))
-            })
-            .collect()
-    }
-
-    pub(super) fn from_history_frontiers<K: RecordKind>(
-        frontiers: &[(u64, HistoryAppendFrontier)],
-        arena: &RecordArena<K>,
-    ) -> Option<Self>
-    where
-        K::Meta: serde::Serialize,
-    {
-        if !frontiers
-            .iter()
-            .map(|(slot, _)| *slot)
-            .eq(arena.occupied_slots_iter().map(|slot| slot as u64))
-        {
-            return None;
+        work.prepare(
+            0,
+            (self.histories.len() * size_of::<(u64, HistoryAppendFrontier)>()) as u64,
+        )?;
+        let mut result = Vec::with_capacity(self.histories.len());
+        for (&slot, history) in self.histories.iter() {
+            let (units, bytes) = history
+                .frontier_quote()
+                .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
+            work.prepare(units, bytes)?;
+            let metadata = arena
+                .metadata_history_at(
+                    usize::try_from(slot)
+                        .map_err(|_| PartitionContentDigestError::InvalidHistoryCoverage)?,
+                )
+                .ok_or(PartitionContentDigestError::InvalidHistoryCoverage)?;
+            let last_value = metadata
+                .len()
+                .checked_sub(1)
+                .and_then(|index| metadata.get(index))
+                .map(|value| super::admission::hash_controlled(b"metadata", value, work))
+                .transpose()?;
+            result.push((
+                slot,
+                history
+                    .append_frontier(last_value)
+                    .ok_or(PartitionContentDigestError::InvalidHistoryCoverage)?,
+            ));
         }
-        let mut result = Self::default();
-        for (slot, frontier) in frontiers {
-            let history = DigestIndex::from_append_frontier(frontier)?;
-            let metadata = arena.metadata_history_at(usize::try_from(*slot).ok()?)?;
-            if metadata.len() != usize::from(history.next_history_index()? > 0) {
-                return None;
-            }
-            let last = metadata
-                .get(0)
-                .map(|value| hash_value(b"metadata", value))
-                .transpose()
-                .ok()?;
-            history.append_frontier(last)?;
-            result.history_bytes += history.allocation_bytes();
-            if result.histories.contains_key(slot) {
-                return None;
-            }
-            result.histories.insert(*slot, history);
-        }
-        Some(result)
+        Ok(result)
     }
 
     pub(super) fn update<K: RecordKind>(
         &mut self,
         arena: &RecordArena<K>,
-        previous: Option<&RecordArena<K>>,
+        previous: &RecordArena<K>,
         slots: impl IntoIterator<Item = usize>,
         symbols: &StringInterner,
         extra: impl Fn(&K::Extra, &StringInterner) -> Result<[u8; 32], PartitionContentDigestError>,
@@ -86,24 +71,17 @@ impl RecordContentIndex {
         K::Meta: serde::Serialize,
     {
         let mut hashed_values = 0;
-        let mut cold_records = previous.is_none().then(Vec::new);
-        let mut cold_histories = previous.is_none().then(Vec::new);
         for slot in slots {
             let physical = arena
                 .physical_index(slot)
                 .ok_or(PartitionContentDigestError::InvalidHistoryCoverage)?;
-            let carried_head = previous.is_none() && self.histories.contains_key(&(slot as u64));
             let cached = self
                 .histories
                 .get(&(slot as u64))
                 .cloned()
                 .unwrap_or_default();
             let old_bytes = cached.allocation_bytes();
-            let (history, hashed) = if carried_head {
-                (cached, 0)
-            } else {
-                super::record_history::update(arena, previous, slot, &cached)?
-            };
+            let (history, hashed) = super::record_history::update(arena, previous, slot, &cached)?;
             hashed_values += hashed;
             let versions = resolve_aspect_versions(&arena.aspect_versions[physical], symbols)?;
             let digest = hash_value(
@@ -131,28 +109,12 @@ impl RecordContentIndex {
                 .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?
                 .checked_add(history.allocation_bytes())
                 .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
-            if let Some(entries) = &mut cold_histories {
-                entries.push((slot as u64, history));
-            } else {
-                self.histories.insert(slot as u64, history);
-            }
-            if let Some(entries) = &mut cold_records {
-                entries.push((slot as u128, digest));
-            } else {
-                self.records.set(slot as u128, Some(digest))?;
-            }
-        }
-        if let Some(mut entries) = cold_records {
-            entries.sort_unstable_by_key(|(slot, _)| *slot);
-            self.records = DigestIndex::from_sorted_entries(&entries);
-        }
-        if let Some(mut entries) = cold_histories {
-            entries.sort_unstable_by_key(|(slot, _)| *slot);
-            self.histories = SharedMap::from_sorted_unique(entries);
+            self.histories.insert(slot as u64, history);
+            self.records.set(slot as u128, Some(digest))?;
         }
         for (word, value) in arena
             .live_bitset
-            .changed_words_since(previous.map(|old| &old.live_bitset))
+            .changed_words_since(Some(&previous.live_bitset))
         {
             self.live_words.set(
                 word as u128,
@@ -164,7 +126,7 @@ impl RecordContentIndex {
         }
         for (word, value) in arena
             .reclaimable_bitset
-            .changed_words_since(previous.map(|old| &old.reclaimable_bitset))
+            .changed_words_since(Some(&previous.reclaimable_bitset))
         {
             self.reclaimable_words.set(
                 word as u128,

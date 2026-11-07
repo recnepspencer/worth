@@ -9,7 +9,8 @@ fn view_family_mismatch_carries_family_selection_diagnostic_evidence() {
         LiveQueryFamily::Detail,
         Some(LiveViewShapeFamily::Table),
         QuerySubscriptionConstructionSource::Direct,
-    );
+    )
+    .expect("fixture digest must fit");
 
     let error = select_query_subscription_family(live, roomy_budget()).unwrap_err();
 
@@ -18,15 +19,23 @@ fn view_family_mismatch_carries_family_selection_diagnostic_evidence() {
         &QuerySubscriptionFamilySelectionFailureClass::ViewFamilyLiveFamilyMismatch
     );
     assert_eq!(
-        error.diagnostic().stage(),
+        error.diagnostic().expect("fixture digest must fit").stage(),
         &QuerySubscriptionDiagnosticStage::ViewMismatch
     );
     assert_eq!(
-        error.diagnostic().outcome(),
+        error
+            .diagnostic()
+            .expect("fixture digest must fit")
+            .outcome(),
         &QuerySubscriptionDiagnosticOutcome::Denied
     );
     assert_eq!(
-        error.diagnostic().counter_projection().label().as_str(),
+        error
+            .diagnostic()
+            .expect("fixture digest must fit")
+            .counter_projection()
+            .label()
+            .as_str(),
         error.counters().counter_projection().label()
     );
     assert_eq!(error.counters().family_registry_lookup_count(), 1);
@@ -35,8 +44,18 @@ fn view_family_mismatch_carries_family_selection_diagnostic_evidence() {
     assert_eq!(error.counters().family_denial_count(), 1);
     assert_eq!(error.counters().declaration_count(), 0);
     assert_eq!(error.counters().bridge_lowering_count(), 0);
-    assert!(!error.diagnostic().source_projection().label().is_empty());
-    assert!(!error.diagnostic().evidence_projection().label().is_empty());
+    assert!(!error
+        .diagnostic()
+        .expect("fixture digest must fit")
+        .source_projection()
+        .label()
+        .is_empty());
+    assert!(!error
+        .diagnostic()
+        .expect("fixture digest must fit")
+        .evidence_projection()
+        .label()
+        .is_empty());
 }
 
 #[test]
@@ -74,7 +93,8 @@ fn masked_detail_table_and_grouped_requests_deny_before_bridge_lowering() {
             live_family,
             view_family,
             QuerySubscriptionConstructionSource::Direct,
-        );
+        )
+        .expect("fixture digest must fit");
         let selection = select_query_subscription_family(live, roomy_budget()).unwrap();
 
         assert_eq!(selection.family(), &expected_family);
@@ -92,7 +112,7 @@ fn masked_detail_table_and_grouped_requests_deny_before_bridge_lowering() {
             &QuerySubscriptionDeclarationDenialKind::UnsupportedMaskedSlice
         );
         assert_eq!(
-            error.diagnostic().stage(),
+            error.diagnostic().expect("fixture digest must fit").stage(),
             &QuerySubscriptionDiagnosticStage::Declaration
         );
         assert_eq!(error.counters().declaration_count(), 0);
@@ -100,8 +120,47 @@ fn masked_detail_table_and_grouped_requests_deny_before_bridge_lowering() {
         assert_eq!(error.counters().bridge_lowering_count(), 0);
         assert_eq!(error.counters().masked_slice_denial_count(), 1);
         assert_eq!(
-            error.diagnostic().counter_projection().label().as_str(),
+            error
+                .diagnostic()
+                .expect("fixture digest must fit")
+                .counter_projection()
+                .label()
+                .as_str(),
             error.counters().counter_projection().label()
         );
     }
+}
+
+#[test]
+fn oversized_diagnostic_preserves_the_selection_failure() {
+    let live = LiveQueryAdmissionArtifact::for_test(
+        LiveQueryFamily::Detail,
+        Some(LiveViewShapeFamily::Table),
+        QuerySubscriptionConstructionSource::Direct,
+    )
+    .expect("fixture digest must fit");
+    let original = select_query_subscription_family(live, roomy_budget()).unwrap_err();
+    let source = original.diagnostic().unwrap().source_identity();
+    let counters = original.counters().clone();
+    let maximum =
+        worth_foundational::facade::CanonicalDigestWorkBudget::standard().maximum_encoded_bytes();
+    let reason = "x".repeat(maximum + 1);
+    let failure = QuerySubscriptionFamilySelectionError::new(
+        QuerySubscriptionFamilySelectionFailureClass::ViewFamilyLiveFamilyMismatch,
+        reason.clone(),
+        QuerySubscriptionDiagnosticStage::ViewMismatch,
+        source,
+        counters.clone(),
+    );
+    assert_eq!(
+        failure.failure_class(),
+        &QuerySubscriptionFamilySelectionFailureClass::ViewFamilyLiveFamilyMismatch
+    );
+    assert_eq!(failure.message(), reason);
+    assert_eq!(failure.counters(), &counters);
+    let refusal = failure.diagnostic().unwrap_err();
+    assert!(matches!(
+        refusal.cause,
+        worth_foundational::facade::CanonicalDigestDerivationDenial::EncodedByteLimitExceeded { .. }
+    ));
 }

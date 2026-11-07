@@ -8,6 +8,7 @@ use crate::runtime::RelationalRuntime;
 use super::super::super::derived_index_artifacts::admit_envelope_derived_index_artifacts;
 
 pub(super) fn apply_authoritative_commit_artifacts(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     positioned: &crate::history::data::PositionedCanonicalCommit,
@@ -92,6 +93,7 @@ pub(super) fn apply_authoritative_commit_artifacts(
     let result = runtime
         .history
         .record_recovered_commit(
+            lane,
             execution,
             canonical.as_ref(),
             allow_reconstructed_replacement,

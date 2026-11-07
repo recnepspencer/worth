@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 #[cfg(test)]
 use worth_runtime_bridge::facade::{
     BridgeMixedCauseDeliveryWindowPlan, BridgeMixedCauseOrderFamilyKind, BridgeMixedCauseOrdering,
@@ -106,17 +107,17 @@ pub struct WorthQueryRuntimeMixedCauseDelivery {
 impl WorthQueryRuntimeMixedCauseDelivery {
     pub(crate) fn atomic_relational_patch(
         delivery_cause_identity: &WorthQueryEvidenceIdentity,
-    ) -> Self {
-        Self::atomic(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::atomic(
             WorthQueryRuntimeMixedCauseMemberKind::TruthPatch,
             delivery_cause_identity,
-        )
+        )?)
     }
 
     pub(crate) fn atomic_time_only(
         delivery_cause_kind: QuerySubscriptionDeliveryCauseKind,
         delivery_cause_identity: &WorthQueryEvidenceIdentity,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let member_kind = match delivery_cause_kind {
             QuerySubscriptionDeliveryCauseKind::FreshnessOnly
             | QuerySubscriptionDeliveryCauseKind::WindowEntry
@@ -142,13 +143,13 @@ impl WorthQueryRuntimeMixedCauseDelivery {
                 WorthQueryRuntimeMixedCauseMemberKind::TemporalTimeOnly
             }
         };
-        Self::atomic(member_kind, delivery_cause_identity)
+        Ok(Self::atomic(member_kind, delivery_cause_identity)?)
     }
 
     fn atomic(
         member_kind: WorthQueryRuntimeMixedCauseMemberKind,
         delivery_cause_identity: &WorthQueryEvidenceIdentity,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let atomic_identity = runtime_mixed_cause_atomic_identity(delivery_cause_identity);
         let mut delivery = Self {
             ordering_identity: atomic_identity.clone(),
@@ -162,17 +163,17 @@ impl WorthQueryRuntimeMixedCauseDelivery {
             mixed_cause_identity: WorthQueryEvidenceIdentity::compose(
                 crate::evidence_identity::WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
             )
-            .seal(),
+            .seal()?,
         };
-        delivery.mixed_cause_identity = runtime_mixed_cause_delivery_identity(&delivery);
-        delivery
+        delivery.mixed_cause_identity = runtime_mixed_cause_delivery_identity(&delivery)?;
+        Ok(delivery)
     }
 
     #[cfg(test)]
     pub(crate) fn from_bridge(
         ordering: &BridgeMixedCauseOrdering,
         delivery_window: &BridgeMixedCauseDeliveryWindowPlan,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let lane_kind = match ordering.lane_kind() {
             BridgeMixedCauseOrderingLaneKind::Authoritative => {
                 WorthQueryRuntimeMixedCauseLaneKind::Authoritative
@@ -213,25 +214,25 @@ impl WorthQueryRuntimeMixedCauseDelivery {
             .ordered_causes()
             .iter()
             .map(runtime_mixed_cause_ordered_cause_identity)
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?;
         let suppressed_cause_identities = ordering
             .suppressed()
             .iter()
             .map(runtime_mixed_cause_suppressed_cause_identity)
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?;
         let denied_cause_identities = ordering
             .denied()
             .iter()
             .map(runtime_mixed_cause_denied_cause_identity)
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?;
         let coalescing_kind = if ordered_member_kinds.len() > 1 {
             WorthQueryRuntimeDeliveryCoalescingKind::Coalesced
         } else {
             WorthQueryRuntimeDeliveryCoalescingKind::Atomic
         };
-        let ordering_identity = runtime_mixed_cause_ordering_identity(ordering);
+        let ordering_identity = runtime_mixed_cause_ordering_identity(ordering)?;
         let delivery_window_identity =
-            runtime_mixed_cause_delivery_window_identity(delivery_window, ordering);
+            runtime_mixed_cause_delivery_window_identity(delivery_window, ordering)?;
         let mut delivery = Self {
             ordering_identity,
             delivery_window_identity,
@@ -244,10 +245,10 @@ impl WorthQueryRuntimeMixedCauseDelivery {
             mixed_cause_identity: WorthQueryEvidenceIdentity::compose(
                 crate::evidence_identity::WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
             )
-            .seal(),
+            .seal()?,
         };
-        delivery.mixed_cause_identity = runtime_mixed_cause_delivery_identity(&delivery);
-        delivery
+        delivery.mixed_cause_identity = runtime_mixed_cause_delivery_identity(&delivery)?;
+        Ok(delivery)
     }
 
     pub fn ordering_identity(&self) -> &WorthQueryEvidenceIdentity {

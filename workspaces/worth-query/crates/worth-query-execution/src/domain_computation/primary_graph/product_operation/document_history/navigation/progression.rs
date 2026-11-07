@@ -157,7 +157,8 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
             .map_err(Denial::ProductAdmission)?;
         let graph = &self.application.runtime.primary_provider.graph;
         let publisher = graph.application_publication.as_deref();
-        let (mut prepared, custody) = graph.with_runtime(&execution, |native| {
+        let (prepared, custody) = graph.with_runtime(&execution, |native| {
+
             let transaction = native
                 .begin_branch_transaction(
                     current.product().relational_basis(),
@@ -195,8 +196,6 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 .map(|prepared| (prepared, None))
                 .map_err(Denial::Preparation)
         })?;
-        super::super::super::candidate_selectors::prepare(&execution, &current, &mut prepared)
-            .map_err(selector_denial)?;
         let transport = match custody {
             Some(custody) => Some(super::output_custody::HistoryOutputTransport {
                 publications: prepared
@@ -228,22 +227,13 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
             }),
             None => None,
         };
+
         current
             .product()
             .publication_binding()
             .prepare_relational_candidate(prepared, request, true)
             .map(|publication| (publication, transport))
             .map_err(super::publication::publication_denial)
-    }
-}
-
-fn selector_denial(
-    cause: super::super::super::candidate_selectors::CandidateSelectorMaintenanceDenial,
-) -> WorthQueryHistoryNavigationDenial {
-    use super::super::super::candidate_selectors::CandidateSelectorMaintenanceDenial as Cause;
-    match cause {
-        Cause::Snapshot(cause) => WorthQueryHistoryNavigationDenial::SelectorSnapshot(cause),
-        Cause::Maintenance(cause) => WorthQueryHistoryNavigationDenial::SelectorMaintenance(cause),
     }
 }
 

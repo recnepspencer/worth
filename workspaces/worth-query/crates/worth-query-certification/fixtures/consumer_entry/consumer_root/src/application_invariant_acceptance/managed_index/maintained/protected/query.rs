@@ -33,7 +33,7 @@ fn definition_for<
     name_influence: ApplicationQueryInfluenceContract,
     refined: bool,
     live: bool,
-) -> ApplicationQueryDefinition<Catalog, Q, source::Parameters, Row, Directory> {
+) -> ApplicationQueryDefinitionBuilder<Catalog, Q, source::Parameters, Row, Directory> {
     let all = ApplicationQueryInfluenceContract::permit_all();
     let hidden =
         ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(2u64).unwrap();
@@ -91,11 +91,9 @@ fn definition_for<
             source::identity::<Q>(),
             ApplicationQueryOrderingDirection::Ascending,
         )
-        .build()
-        .unwrap()
 }
-pub fn definition() -> ApplicationQueryDefinition<Catalog, Query, source::Parameters, Row, Directory>
-{
+pub fn definition(
+) -> ApplicationQueryDefinitionBuilder<Catalog, Query, source::Parameters, Row, Directory> {
     definition_for(
         Query::reference(),
         ApplicationQueryInfluenceContract::permit_all(),
@@ -104,7 +102,7 @@ pub fn definition() -> ApplicationQueryDefinition<Catalog, Query, source::Parame
     )
 }
 pub fn blocked_definition(
-) -> ApplicationQueryDefinition<Catalog, BlockedQuery, source::Parameters, Row, Directory> {
+) -> ApplicationQueryDefinitionBuilder<Catalog, BlockedQuery, source::Parameters, Row, Directory> {
     definition_for(
         BlockedQuery::reference(),
         ApplicationQueryInfluenceContract::permit(

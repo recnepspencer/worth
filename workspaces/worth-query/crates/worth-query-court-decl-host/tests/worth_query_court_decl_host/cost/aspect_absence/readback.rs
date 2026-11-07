@@ -13,7 +13,7 @@ worth_query_portable_type!(SinkSlot => "class-read-cost.sink-slot.v1");
 fn sink() -> ApplicationQueryResultFieldRef<Query, SinkSlot, Schema, Sink> {
     ApplicationQueryResultFieldRef::new("sink", Sink::at("Sink"))
 }
-pub fn definition() -> ApplicationQueryDefinition<Schema, Query, Parameters, Row, Record> {
+pub fn definition() -> ApplicationQueryDefinitionBuilder<Schema, Query, Parameters, Row, Record> {
     let shape = ApplicationQueryResultShapeBuilder::<Schema, Query, Record, Row, RowBinding>::new(
         Record::reference(),
     )
@@ -28,8 +28,6 @@ pub fn definition() -> ApplicationQueryDefinition<Schema, Query, Parameters, Row
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<Schema, Query> for Row {
     fn project(

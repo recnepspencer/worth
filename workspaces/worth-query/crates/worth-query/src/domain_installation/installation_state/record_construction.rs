@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::any::TypeId;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -28,7 +29,8 @@ pub(super) fn construct_installed_domain_records(
     generation_lease: &WorthQueryDomainInstallationGenerationLease,
     execution_index: &WorthQueryInstalledDomainExecutionIndex,
     portable_index: &worth_query_installation::facade::WorthQueryInstalledPackageIndex,
-) -> (Vec<WorthQueryInstalledDomainRecord>, HashMap<TypeId, usize>) {
+) -> Result<(Vec<WorthQueryInstalledDomainRecord>, HashMap<TypeId, usize>), IdentityDerivationDenial>
+{
     let mut records_by_marker_type = HashMap::new();
     let records = artifacts
         .into_iter()
@@ -44,8 +46,8 @@ pub(super) fn construct_installed_domain_records(
                 portable_index,
             )
         })
-        .collect();
-    (records, records_by_marker_type)
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok((records, records_by_marker_type))
 }
 
 fn construct_installed_domain_record(
@@ -55,13 +57,13 @@ fn construct_installed_domain_record(
     generation_lease: &WorthQueryDomainInstallationGenerationLease,
     execution_index: &WorthQueryInstalledDomainExecutionIndex,
     portable_index: &worth_query_installation::facade::WorthQueryInstalledPackageIndex,
-) -> WorthQueryInstalledDomainRecord {
+) -> Result<WorthQueryInstalledDomainRecord, IdentityDerivationDenial> {
     let installation_identity = installation_identity(
         runtime_authority,
         generation,
         &artifact,
         execution_index.identity(),
-    );
+    )?;
     let receipt = installation_receipt(&artifact, generation, installation_identity.clone());
     let authority = installed_authority(
         &artifact,
@@ -71,12 +73,12 @@ fn construct_installed_domain_record(
         installation_identity,
         execution_index,
         portable_index,
-    );
-    WorthQueryInstalledDomainRecord {
+    )?;
+    Ok(WorthQueryInstalledDomainRecord {
         artifact,
         authority,
         receipt,
-    }
+    })
 }
 
 fn installation_receipt(
@@ -124,7 +126,7 @@ fn installed_authority(
     installation_identity: WorthQueryEvidenceIdentity,
     execution_index: &WorthQueryInstalledDomainExecutionIndex,
     portable_index: &worth_query_installation::facade::WorthQueryInstalledPackageIndex,
-) -> Arc<WorthQueryInstalledDomainAuthority> {
+) -> Result<Arc<WorthQueryInstalledDomainAuthority>, IdentityDerivationDenial> {
     let semantics = execution_index
         .domain_semantics(artifact.marker_type)
         .expect("every installed artifact has one derived semantic index");
@@ -134,7 +136,7 @@ fn installed_authority(
     portable_index
         .validate(&portable_authority)
         .expect("newly minted portable package authority must validate");
-    Arc::new(WorthQueryInstalledDomainAuthority::new(
+    Ok(Arc::new(WorthQueryInstalledDomainAuthority::new(
         super::super::WorthQueryInstalledDomainAuthorityInputs {
             runtime_authority,
             generation,
@@ -152,7 +154,7 @@ fn installed_authority(
             semantics,
             portable_authority,
         },
-    ))
+    )?))
 }
 
 fn installation_identity(
@@ -160,27 +162,29 @@ fn installation_identity(
     generation: WorthQueryDomainInstallationGeneration,
     artifact: &WorthQueryInstalledDomainArtifact,
     execution_index_identity: &WorthQueryEvidenceIdentity,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::DomainInstallation)
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("package"),
-            artifact.package_identity.evidence_identity(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("admission"),
-            &artifact.admission_identity,
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("runtime_authority"),
-            runtime_authority.as_u64().to_string(),
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("generation"),
-            generation.ordinal().to_string(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("execution_index"),
-            execution_index_identity,
-        )
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::DomainInstallation)
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("package"),
+                artifact.package_identity.evidence_identity(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("admission"),
+                &artifact.admission_identity,
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("runtime_authority"),
+                runtime_authority.as_u64().to_string(),
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("generation"),
+                generation.ordinal().to_string(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("execution_index"),
+                execution_index_identity,
+            )
+            .seal()?,
+    )
 }

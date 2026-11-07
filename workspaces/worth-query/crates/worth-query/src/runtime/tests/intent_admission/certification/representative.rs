@@ -6,10 +6,11 @@ fn intent_admission_certification_topology_and_representative_family_artifacts_m
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let bundle = certify_intent_admission(request_execution);
+    let bundle = certify_intent_admission(request_execution).expect("fixture digest must fit");
     let basis_bundle = crate::basis_lifecycle::certify_basis_lifecycle();
     let projection_bundle =
-        crate::projection_consumption::certify_projection_consumption_closeout_core();
+        crate::projection_consumption::certify_projection_consumption_closeout_core()
+            .expect("fixture digest must fit");
     let rows = bundle.representative_family_report().rows();
     let basis_row = rows
         .iter()

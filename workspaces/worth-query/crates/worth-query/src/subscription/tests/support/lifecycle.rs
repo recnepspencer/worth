@@ -25,7 +25,8 @@ fn active_lifecycle_subject_reports_certified_support_with_indexed_lookup_receip
         &declaration,
         &admission,
         &active_admission,
-    );
+    )
+    .expect("fixture digest must fit");
     let evidence = QuerySubscriptionSupportEvidence::admission(&declaration, &admission).unwrap();
 
     let (report, lookup_receipt) = report_query_subscription_support(subject, evidence).unwrap();
@@ -85,7 +86,8 @@ fn activation_subject_only_certifies_activation_and_keeps_later_runtime_rows_unc
     );
     let admission = admission_for(&declaration);
     let activation = prepare_subscription_activation(admission.clone());
-    let subject = QuerySubscriptionSupportSubject::activation(&declaration, &activation);
+    let subject = QuerySubscriptionSupportSubject::activation(&declaration, &activation)
+        .expect("fixture digest must fit");
 
     let (report, _) = report_query_subscription_support(
         subject,

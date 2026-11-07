@@ -1,3 +1,6 @@
+#[path = "cell/reconstruction_head.rs"]
+mod reconstruction_head;
+pub(crate) use reconstruction_head::ReconstructedRegionHead;
 #[path = "cell/member_export.rs"]
 mod member_export;
 #[path = "cell/observation.rs"]
@@ -34,6 +37,8 @@ pub(crate) struct RelationalColdRegion {
     pub(crate) schema_carrier_digest: [u8; 32],
     pub(crate) symbols: crate::runtime::RuntimeSymbolTable,
     pub(crate) content_digest: [u8; 32],
+    pub(crate) directory: std::sync::Arc<super::PortableRecordDirectory>,
+    pub(crate) live_counts: crate::storage::residency::LiveRecordCounts,
     pub(crate) entity_slots: usize,
     pub(crate) relation_slots: usize,
     pub(crate) unavailable_records: usize,
@@ -41,8 +46,12 @@ pub(crate) struct RelationalColdRegion {
 
 #[derive(Debug)]
 pub(crate) struct ResidentRegion {
+    pub(super) symbol_requirements:
+        OnceLock<Arc<super::required_symbols::CapturedSymbolRequirements>>,
+    pub(super) history_presence: super::history_presence::HistoryPresence,
     pub(super) partition: PartitionState,
     pub(super) commitment: Option<PartitionContentCommitment>,
+    pub(super) kind_indexes: Option<Arc<super::kind_incremental::RegionKindIndexes>>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -61,9 +70,14 @@ enum ResidencyState {
 
 #[derive(Debug)]
 pub(crate) struct RelationalRegionResidency {
+    pub(in crate::storage::residency) symbol_identity: Arc<()>,
     pub(super) partition_id: PartitionId,
     pub(super) checkpoint_bindings:
         Mutex<std::collections::BTreeMap<[u8; 32], super::RecordedRegionCheckpoint>>,
+    pub(in crate::storage::residency) symbol_aliases:
+        OnceLock<super::symbol_admission_identity::SymbolAdmissionAliases>,
+    pub(in crate::storage::residency) symbol_inheritance:
+        OnceLock<Arc<super::symbol_inheritance::SymbolAdmissionInheritance>>,
     state: Mutex<ResidencyState>,
     damage: OnceLock<RelationalStorageUnavailable>,
     backing: Option<RelationalColdRegion>,
@@ -97,6 +111,8 @@ impl RelationalRegionResidency {
                         kind_authority: cold.kind_authority,
                         partition_id: cold.partition_id,
                         content_digest: cold.content_digest,
+                        directory: cold.directory.clone(),
+                        live_counts: cold.live_counts,
                         entity_slots: cold.entity_slots,
                         relation_slots: cold.relation_slots,
                         unavailable_records: cold.unavailable_records,
@@ -112,6 +128,9 @@ impl RelationalRegionResidency {
             raw_full: Mutex::new(None),
             state: Mutex::new(ResidencyState::Cold),
             damage: OnceLock::new(),
+            symbol_inheritance: OnceLock::new(),
+            symbol_aliases: OnceLock::new(),
+            symbol_identity: Arc::new(()),
             leases: AtomicUsize::new(0),
         }))
     }
@@ -119,23 +138,37 @@ impl RelationalRegionResidency {
     pub(super) fn resident(
         partition: PartitionState,
         commitment: PartitionContentCommitment,
+        kind_indexes: Arc<super::kind_incremental::RegionKindIndexes>,
+        requirements: Option<super::required_symbols::CapturedSymbolRequirements>,
     ) -> RelationalResidencyLease<Full> {
-        Self::resident_with_commitment(partition, Some(commitment))
+        Self::resident_with_commitment(
+            partition,
+            Some(commitment),
+            Some(kind_indexes),
+            requirements,
+        )
     }
 
     pub(super) fn resident_uncommitted(
         partition: PartitionState,
     ) -> RelationalResidencyLease<Full> {
-        Self::resident_with_commitment(partition, None)
+        Self::resident_with_commitment(partition, None, None, None)
     }
 
     fn resident_with_commitment(
         partition: PartitionState,
         commitment: Option<PartitionContentCommitment>,
+        kind_indexes: Option<Arc<super::kind_incremental::RegionKindIndexes>>,
+        requirements: Option<super::required_symbols::CapturedSymbolRequirements>,
     ) -> RelationalResidencyLease<Full> {
         let region = Arc::new(ResidentRegion {
+            symbol_requirements: requirements
+                .map(|value| OnceLock::from(Arc::new(value)))
+                .unwrap_or_default(),
+            history_presence: super::history_presence::HistoryPresence::complete(),
             partition,
             commitment,
+            kind_indexes,
         });
         let cell = Arc::new(Self {
             partition_id: region.partition.partition_id,
@@ -147,6 +180,9 @@ impl RelationalRegionResidency {
             raw_full: Mutex::new(None),
             state: Mutex::new(ResidencyState::Full(region.clone())),
             damage: OnceLock::new(),
+            symbol_inheritance: OnceLock::new(),
+            symbol_aliases: OnceLock::new(),
+            symbol_identity: Arc::new(()),
             leases: AtomicUsize::new(1),
         });
         RelationalResidencyLease::accepted(cell, region)

@@ -2,6 +2,7 @@ use super::super::super::{
     WorthQueryAuthorityLane, WorthQueryEffectPolicy, WorthQueryPreviewCloseoutEvidence,
     WorthQueryPreviewCloseoutKind, WorthQueryPreviewOutcome,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -45,8 +46,10 @@ pub struct WorthQueryPreviewOutcomeInspection {
 }
 
 impl WorthQueryPreviewOutcomeInspection {
-    pub(in crate::runtime) fn from_outcome(outcome: &WorthQueryPreviewOutcome) -> Self {
-        Self::from_closeout(
+    pub(in crate::runtime) fn from_outcome(
+        outcome: &WorthQueryPreviewOutcome,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::from_closeout(
             outcome,
             outcome.closeout_evidence(),
             outcome.promoted(),
@@ -71,7 +74,7 @@ impl WorthQueryPreviewOutcomeInspection {
             outcome.authoritative_residue_count(),
             outcome.source_lane(),
             outcome.target_lane(),
-        )
+        )?)
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -98,7 +101,7 @@ impl WorthQueryPreviewOutcomeInspection {
         authoritative_residue_count: usize,
         source_lane: WorthQueryAuthorityLane,
         target_lane: WorthQueryAuthorityLane,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let basis_evidence = closeout.basis_evidence().to_vec();
         let basis_identity = worth_query_evidence_identity(
             WorthQueryEvidenceScope::PreviewOutcomeInspectionArtifact,
@@ -112,7 +115,7 @@ impl WorthQueryPreviewOutcomeInspection {
             WorthQueryEvidenceTag::new("basis_evidence"),
             basis_evidence.iter().map(String::as_str),
         )
-        .seal();
+        .seal()?;
         let residue_identity = worth_query_evidence_identity(
             WorthQueryEvidenceScope::PreviewOutcomeInspectionArtifact,
         )
@@ -165,7 +168,7 @@ impl WorthQueryPreviewOutcomeInspection {
             WorthQueryEvidenceTag::new("authoritative_residue_count"),
             authoritative_residue_count,
         )
-        .seal();
+        .seal()?;
         let inspection_identity = worth_query_evidence_identity(
             WorthQueryEvidenceScope::PreviewOutcomeInspectionArtifact,
         )
@@ -237,9 +240,9 @@ impl WorthQueryPreviewOutcomeInspection {
             WorthQueryEvidenceTag::new("rebinding_identity"),
             closeout.rebinding_identity(),
         )
-        .seal();
+        .seal()?;
 
-        Self {
+        Ok(Self {
             label: outcome.session_label().clone(),
             closeout_kind: closeout.kind(),
             effect_policy: outcome.effect_policy(),
@@ -271,7 +274,7 @@ impl WorthQueryPreviewOutcomeInspection {
             residue_identity,
             rebinding_identity: closeout.rebinding_identity().cloned(),
             inspection_identity,
-        }
+        })
     }
 
     pub fn label(&self) -> &str {

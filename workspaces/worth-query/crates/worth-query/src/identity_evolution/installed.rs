@@ -2,6 +2,7 @@ use super::{
     IdentityEvolutionExecutionArtifact, IdentityEvolutionExecutionFamily,
     IdentityEvolutionOutcomeFamily, PromotionOrMergeAuthorityState,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::{WorthQueryContinuityMutationEvidence, WorthQueryContinuityOutcomeClass};
 #[path = "installed/authority_subjects.rs"]
 mod authority_subjects;
@@ -63,16 +64,16 @@ impl InstalledIdentityEvolutionOutcome {
         continuity: Option<WorthQueryContinuityMutationEvidence>,
         lifecycle_target: Option<crate::memory_workspace::WorthQueryEntityIdentity>,
         binding: InstalledIdentityEvolutionBinding<'_>,
-    ) -> Option<Self> {
+    ) -> Result<Option<Self>, IdentityDerivationDenial> {
         if !engine_matches_authority(&artifact, continuity.as_ref(), lifecycle_target.as_ref()) {
-            return None;
+            return Ok(None);
         }
         let semantic_evidence = semantic_evidence_identity(
             &artifact,
             continuity.as_ref(),
             lifecycle_target.as_ref(),
             &binding.establishing_entity_targets,
-        );
+        )?;
         let semantic_identity = semantic_evidence
             .terminal_projection_for_reporting()
             .to_owned();
@@ -80,8 +81,8 @@ impl InstalledIdentityEvolutionOutcome {
             &semantic_evidence,
             artifact.basis_digest(),
             &binding.effect_receipt_identity,
-        );
-        Some(Self {
+        )?;
+        Ok(Some(Self {
             artifact,
             continuity,
             lifecycle_target,
@@ -92,7 +93,7 @@ impl InstalledIdentityEvolutionOutcome {
             establishing_effect_receipt_identity: binding.effect_receipt_identity,
             semantic_identity,
             foundational_identities,
-        })
+        }))
     }
 
     /// Descriptive execution metadata from the existing identity-evolution

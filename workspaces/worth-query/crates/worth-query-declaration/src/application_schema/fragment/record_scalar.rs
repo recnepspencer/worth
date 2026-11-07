@@ -20,6 +20,10 @@ fn path(prefix: &str) -> String {
     }
 }
 impl<Set: Scalar<T>, T: 'static> Shape<T, Set> for ScalarRecord<Set, T> {
+    #[inline(always)]
+    fn is_scalar(&self) -> bool {
+        true
+    }
     fn bindings(&self) -> Vec<RecordBinding> {
         let mut bindings = Vec::new();
         <Set as ScalarValue<T>>::bindings(&mut bindings);

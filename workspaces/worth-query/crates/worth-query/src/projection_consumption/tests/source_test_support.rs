@@ -61,7 +61,8 @@ impl ProjectionConsumptionSource {
             query_digest: query_digest.map(str::to_string),
             basis_digest: basis_digest.map(str::to_string),
             basis_authority: ProjectionSourceBasisAuthority::certification(
-                certification_basis_identity("projection-source-test-basis"),
+                certification_basis_identity("projection-source-test-basis")
+                    .expect("fixture digest must fit"),
             ),
             result_digest: result_digest.map(str::to_string),
             result_shape_digest: result_shape_digest.map(str::to_string),

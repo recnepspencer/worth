@@ -9,10 +9,17 @@ use crate::storage::substrate::{EntityArena, RelationArena};
 #[test]
 fn every_leaf_disagreement_refuses_with_the_selected_region_and_capture_posture() {
     let (selected, matching) = leaf_values();
-    validate(&selected, &matching).unwrap();
-    let disagreements: [fn(&mut RelationalCheckpointRegion); 7] = [
+    validate_value(
+        &selected,
+        &matching,
+        selected.directory.portable_oracle().unwrap().as_ref() == matching.directory.as_ref(),
+    )
+    .unwrap();
+    let disagreements: [fn(&mut RelationalCheckpointRegion); 9] = [
         |leaf| leaf.partition_id = PartitionId(11),
         |leaf| leaf.content_digest[0] ^= 1,
+        |leaf| leaf.live_counts.entities += 1,
+        |leaf| leaf.live_counts.relations += 1,
         |leaf| leaf.entity_slots += 1,
         |leaf| leaf.relation_slots += 1,
         |leaf| leaf.unavailable_records += 1,
@@ -22,7 +29,12 @@ fn every_leaf_disagreement_refuses_with_the_selected_region_and_capture_posture(
     for (dimension, disagree) in disagreements.into_iter().enumerate() {
         let mut captured = matching.clone();
         disagree(&mut captured);
-        let error = validate(&selected, &captured).unwrap_err();
+        let error = validate_value(
+            &selected,
+            &captured,
+            selected.directory.portable_oracle().unwrap().as_ref() == captured.directory.as_ref(),
+        )
+        .unwrap_err();
         assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
         assert_eq!(
             error.storage_unavailable,
@@ -66,6 +78,10 @@ fn leaf_values() -> (RelationalRootRegionCheckpoint, RelationalCheckpointRegion)
             head: [2; 32],
             history: [3; 32],
         },
+        directory: std::sync::Arc::new(crate::storage::residency::RegionRecordDirectory::empty(
+            partition_id,
+        )),
+        live_counts: Default::default(),
         entity_slots: 0,
         relation_slots: 0,
         unavailable_records: 0,
@@ -80,6 +96,8 @@ fn leaf_values() -> (RelationalRootRegionCheckpoint, RelationalCheckpointRegion)
         partition_id,
         content_digest: selected.content_digest,
         kind_authority: selected.kind_commitment,
+        directory: selected.directory.portable_oracle().unwrap(),
+        live_counts: Default::default(),
         entity_slots: 0,
         relation_slots: 0,
         unavailable_records: 0,

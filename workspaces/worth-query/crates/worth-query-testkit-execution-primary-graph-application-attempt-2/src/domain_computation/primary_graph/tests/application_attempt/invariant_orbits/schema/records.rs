@@ -29,22 +29,22 @@ impl BindingSet for OrbitBindings {
 }
 impl Scalar<WorthQueryExternalPrincipalIdentity> for OrbitBindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl Scalar<WorthQueryPrincipalMappingStatus> for OrbitBindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<u64> for OrbitBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl Scalar<bool> for OrbitBindings {
     type Binding = BoolApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 pub struct GrantBindings;
@@ -59,12 +59,12 @@ impl BindingSet for GrantBindings {
 }
 impl Scalar<bool> for GrantBindings {
     type Binding = BoolApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = false;
 }
 impl Scalar<u64> for GrantBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = false;
 }
 #[derive(Clone, Copy, Debug)]
@@ -90,9 +90,11 @@ impl fragment::Record<ExternalIdentityRow> for OrbitBindings {
         field("ExternalIdentityField", |row: &ExternalIdentityRow| {
             row.value_0.clone()
         })
+        .equality_queryable(true)
         .and("MappingStatusField", |row: &ExternalIdentityRow| {
             row.value_1
         })
+        .equality_queryable(true)
         .build(|value_0, value_1, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(ExternalIdentityRow { value_0, value_1 })
         })
@@ -133,11 +135,11 @@ pub struct PrincipalRow {
 }
 impl fragment::Record<PrincipalRow> for OrbitBindings {
     fn record() -> impl Shape<PrincipalRow, Self> {
-        field("PrincipalKey", |row: &PrincipalRow| row.value_0).build(
-            |value_0, _: &mut ValueDecodeAdmission<'_>| {
+        field("PrincipalKey", |row: &PrincipalRow| row.value_0)
+            .equality_queryable(true)
+            .build(|value_0, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(PrincipalRow { value_0 })
-            },
-        )
+            })
     }
 }
 pub type PrincipalKey = FieldSelection<OrbitRecords, Principal, PrincipalFacts, u64>;
@@ -169,7 +171,9 @@ pub struct NodeDataValue {
 impl fragment::Record<NodeDataValue> for OrbitBindings {
     fn record() -> impl Shape<NodeDataValue, Self> {
         field("NodeKey", |row: &NodeDataValue| row.value_0)
+            .equality_queryable(true)
             .and("Marked", |row: &NodeDataValue| row.value_1)
+            .equality_queryable(true)
             .build(|value_0, value_1, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(NodeDataValue { value_0, value_1 })
             })
@@ -200,11 +204,11 @@ pub struct SpareRow {
 }
 impl fragment::Record<SpareRow> for OrbitBindings {
     fn record() -> impl Shape<SpareRow, Self> {
-        field("SpareKey", |row: &SpareRow| row.value_0).build(
-            |value_0, _: &mut ValueDecodeAdmission<'_>| {
+        field("SpareKey", |row: &SpareRow| row.value_0)
+            .equality_queryable(true)
+            .build(|value_0, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(SpareRow { value_0 })
-            },
-        )
+            })
     }
 }
 pub type SpareKey = FieldSelection<OrbitRecords, Spare, SpareData, u64>;

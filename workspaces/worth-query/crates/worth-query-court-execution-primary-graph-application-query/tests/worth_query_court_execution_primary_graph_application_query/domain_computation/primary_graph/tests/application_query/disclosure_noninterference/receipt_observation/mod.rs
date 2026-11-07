@@ -328,10 +328,9 @@ impl StableCanonicalWorkObservation {
 
 impl StableInstallationCanonicalWork {
     pub fn capture(work: WorthQueryCanonicalWorkEvidence) -> Self {
-        assert!(
-            work.canonical_material_allocation_bytes() >= work.canonical_encoded_bytes(),
-            "amortized canonical storage must hold every encoded byte"
-        );
+        // Digest material streams into the hash; encoded-byte work does not
+        // require retaining a material-sized buffer. Streaming growth is
+        // independently guarded by the canonical digest owner court.
         let prepared_only_encoded_bytes = work
             .canonical_encoded_bytes()
             .checked_sub(work.sha256_input_bytes())

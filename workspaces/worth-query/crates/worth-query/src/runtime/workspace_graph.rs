@@ -41,7 +41,7 @@ impl WorthQueryWorkspace {
                     None,
                     denial.binding().target_collection_identity().cloned(),
                     denial.message().to_string(),
-                ))
+                )?)
             }
             Err(WorthQueryRuntimeError::MutationBindingDenied(denial)) => {
                 let kind = match denial.kind() {
@@ -60,7 +60,7 @@ impl WorthQueryWorkspace {
                     None,
                     denial.binding().target_collection_identity().cloned(),
                     denial.message().to_string(),
-                ))
+                )?)
             }
             Err(WorthQueryRuntimeError::MutationTargetReferenceDenied(denial)) => {
                 let kind = match denial.kind() {
@@ -86,7 +86,7 @@ impl WorthQueryWorkspace {
                     Some(denial.reference().symbol().to_string()),
                     denial.reference().target_collection_identity().cloned(),
                     denial.message().to_string(),
-                ))
+                )?)
             }
             other => other,
         }

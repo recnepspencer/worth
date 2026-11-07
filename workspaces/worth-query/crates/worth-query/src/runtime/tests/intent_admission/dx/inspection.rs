@@ -137,6 +137,7 @@ fn inspect_intent_common_path_helper_executes_through_canonical_handoff() {
         .inspections()
         .expect("inspection lane should be admitted")
         .inspect_intent(&live)
+        .expect("fixture digest must fit")
         .execute(request_execution)
         .expect("generic inspection common path should execute");
 
@@ -175,6 +176,7 @@ fn inspect_intent_advanced_path_helper_exposes_request_eligibility_decision_and_
         .inspections()
         .expect("inspection lane should be admitted")
         .inspect_intent(&live)
+        .expect("fixture digest must fit")
         .review()
         .expect("generic inspection review should succeed");
 

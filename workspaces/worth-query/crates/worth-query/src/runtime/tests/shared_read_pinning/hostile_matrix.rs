@@ -99,7 +99,8 @@ fn shared_read_pinning_boundary_closes_only_with_all_evidence() {
         portability,
         stale_denial,
         counters,
-    );
+    )
+    .expect("fixture digest must fit");
     let closure = certification.closure();
 
     assert_eq!(

@@ -155,12 +155,17 @@ impl<Schema> ApplicationSchemaDeclaration<Schema> {
 #[derive(Clone, Debug)]
 pub struct ApplicationSchemaDeclarationBuilder<Schema> {
     owner: &'static str,
-    name: &'static str,
+    pub(super) name: &'static str,
     major: u32,
     minor: u32,
     members: Vec<ApplicationSchemaMember>,
     contributions: Vec<AuthoredApplicationSchemaContribution>,
     pub(super) member_provenance: ApplicationSchemaMemberProvenance,
+    pub(super) principal_fields: super::principal_fields::PrincipalFieldExpectations,
+    pub(super) correction_fields: super::correction_fields::CorrectionFieldExpectations,
+    pub(super) mutation_references: super::mutation_references::MutationReferences,
+    pub(super) feature_owner: Option<String>,
+    pub(super) refusal: Option<ApplicationSchemaDeclarationDenial>,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -209,6 +214,11 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             members,
             contributions: Vec::new(),
             member_provenance: ApplicationSchemaMemberProvenance::default(),
+            correction_fields: Default::default(),
+            mutation_references: Default::default(),
+            principal_fields: Default::default(),
+            feature_owner: None,
+            refusal: None,
             _schema: PhantomData,
         }
     }
@@ -263,6 +273,11 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             members: Vec::new(),
             contributions: Vec::new(),
             member_provenance: ApplicationSchemaMemberProvenance::default(),
+            correction_fields: Default::default(),
+            mutation_references: Default::default(),
+            principal_fields: Default::default(),
+            feature_owner: None,
+            refusal: None,
             _schema: PhantomData,
         }
     }
@@ -284,6 +299,14 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             PrincipalIdentityBinding,
         >,
     ) -> Self {
+        self.principal_fields.expect(
+            binding.name(),
+            [
+                &binding.mapping_field_bindings()[0],
+                &binding.mapping_field_bindings()[1],
+                binding.principal_identity_binding_recipe(),
+            ],
+        );
         for field in binding.mapping_field_bindings() {
             self.member_provenance.fragments.expect_field(field.clone());
         }

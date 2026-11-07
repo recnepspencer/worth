@@ -2,6 +2,33 @@ use super::ApplicationOperationDependencyLocus;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ApplicationSchemaDeclarationDenial {
+    InvalidCorrectionMechanism {
+        correction: String,
+        cause: crate::application_aftermath::DeclaredCorrectionMechanismDenial,
+    },
+
+    InvalidQueryDefinition {
+        owner: String,
+        query: String,
+        cause: crate::application_query::ApplicationQueryDefinitionDenial,
+    },
+    InvalidCorrectionDemand {
+        correction: String,
+        cause: crate::application_aftermath::DeclaredPreImageDemandDenial,
+    },
+
+    MissingReferencedMutation {
+        operation: String,
+        binding: String,
+    },
+    InvalidPrincipalBindingField {
+        binding: String,
+        field: super::ApplicationFieldBindingLocus,
+    },
+    InvalidCorrectionField {
+        correction: String,
+        field: super::ApplicationFieldBindingLocus,
+    },
     ExtensionRelationMinimum {
         path: String,
     },

@@ -22,9 +22,9 @@ fn contributed_domain_invariant_denial_preserves_owner_evidence() {
                 "components=2;symbolic_entities=1;symbolic_relations=0;declared_collections=2;declared_symbols=1;target_combinations=1;lifecycle_families=1",
                 "topology.non_manifold_edge_split",
                 "loop successor rewire would create a non-manifold adjacency fanout",
-            ),
+            ).expect("fixture digest must fit"),
         ),
-    ));
+    ).expect("fixture digest must fit"));
     let expected_digest = denial.denial_digest().to_string();
     assert_eq!(denial.invariant_family(), "non_manifold_topology");
     assert_eq!(denial.owner_family(), "domain_capability_invariant_owner");
@@ -47,10 +47,15 @@ fn ready_lower_runtime_invariant(
     crate::domain_capabilities::WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
 > {
     let target = lower_runtime_target("boundary-graph");
-    let requested = authoring.bind_to_lower_runtime_boundary_target(target.clone());
+    let requested = authoring
+        .bind_to_lower_runtime_boundary_target(target.clone())
+        .expect("fixture digest must fit");
     let eligible = success(evaluate_requested_domain_capability_contribution(requested));
     let admitted = success(admit_eligible_domain_capability_contribution(eligible));
-    success(prepare_admitted_domain_capability_contribution_for_materialization(admitted, target))
+    success(
+        prepare_admitted_domain_capability_contribution_for_materialization(admitted, target)
+            .expect("fixture digest must fit"),
+    )
 }
 
 fn lower_runtime_target(
@@ -72,14 +77,16 @@ fn lower_runtime_envelope(
             crate::evidence_identity::WorthQueryEvidenceTag::new("fixture"),
             label,
         )
-        .seal();
+        .seal()
+        .expect("fixture digest must fit");
     let request = crate::lower_runtime_routing::WorthQueryLowerRuntimeCapabilityRequest::new(
         crate::lower_runtime_routing::WorthQueryLowerRuntimeSeamKey::SignalInvalidationRouting,
         crate::lower_runtime_routing::WorthQueryLowerRuntimeRouteKind::RoutePlanning,
         crate::lower_runtime_routing::WorthQueryLowerRuntimeAuthorityOwner::Query,
         "signal-invalidation-routing",
         subject_identity,
-    );
+    )
+    .expect("fixture digest must fit");
     let detail_identity = crate::evidence_identity::WorthQueryEvidenceIdentity::compose(
         crate::evidence_identity::WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
     )
@@ -87,18 +94,19 @@ fn lower_runtime_envelope(
         crate::evidence_identity::WorthQueryEvidenceTag::new("fixture_detail"),
         label,
     )
-    .seal();
+    .seal()
+    .expect("fixture digest must fit");
     let eligibility =
         crate::lower_runtime_routing::WorthQueryLowerRuntimeCapabilityEligibility::admitted_with_evidence_identity(
             request,
             &detail_identity,
-        );
+        ).expect("fixture digest must fit");
     let route = crate::lower_runtime_routing::WorthQueryLowerRuntimeRoutePlan::new(
         eligibility,
         crate::lower_runtime_routing::WorthQueryLowerRuntimeRouteSubjectIdentity::from_evidence_identity(
             "graph-composition-domain-capability-fixture-route",
             &detail_identity,
-        ),
+        ).expect("fixture digest must fit"),
     );
     let retained_evidence =
         crate::lower_runtime_routing::worth_query_lower_runtime_retained_evidence_identity(
@@ -110,8 +118,10 @@ fn lower_runtime_envelope(
                 crate::evidence_identity::WorthQueryEvidenceTag::new("fixture_retained"),
                 label,
             )
-            .seal(),
-        );
+            .seal()
+            .expect("fixture digest must fit"),
+        )
+        .expect("fixture digest must fit");
     let boundary =
         crate::lower_runtime_routing::WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(
             &route,

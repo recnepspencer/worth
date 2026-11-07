@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct EvidenceReportError {
     kind: EvidenceReportErrorKind,
@@ -31,6 +32,7 @@ impl std::error::Error for EvidenceReportError {}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum EvidenceReportErrorKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     EmptyReportName,
     EmptyScope,
     InvalidScopeSegment,
@@ -40,4 +42,13 @@ pub enum EvidenceReportErrorKind {
     MissingParticipatingField,
     FieldNotFound,
     FieldKindMismatch,
+}
+
+impl From<IdentityDerivationDenial> for EvidenceReportError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::new(
+            EvidenceReportErrorKind::EvidenceIdentityDerivationDenied(cause),
+            "evidence report identity exceeded its digest bounds",
+        )
+    }
 }

@@ -45,7 +45,7 @@ pub(super) fn commit_bootstrap_rows(
                 initialization_guard = Some(graph.integration_handle().managed_derived_views()
                     .begin_source_initialization(execution, &options, &mut initialization)
                     .map_err(|cause| primary_graph_denial(WorthQueryPrimaryGraphInstallationDenialKind::RelationalCommitRejected,
-                        format!("initial Source session: {cause:?}")))?);
+                        format!("initial Source session: {cause:?}")).with_managed_source_cause(cause))?);
             }
             let mut transaction = runtime
                 .begin_branch_transaction(
@@ -99,6 +99,7 @@ pub(super) fn map_bootstrap_basis_denial(
         kind,
         format!("Relational bootstrap basis denied: {denial:?}"),
     )
+    .with_branch_basis_cause(denial)
 }
 
 pub(super) fn map_bootstrap_transaction_admission_denial(
@@ -118,6 +119,7 @@ pub(super) fn map_bootstrap_transaction_admission_denial(
         kind,
         format!("Relational bootstrap transaction admission denied: {denial:?}"),
     )
+    .with_transaction_admission_cause(denial)
 }
 
 pub(super) fn map_bootstrap_staging_denial(
@@ -147,6 +149,7 @@ pub(super) fn map_bootstrap_staging_denial(
         kind,
         format!("Relational bootstrap staging denied: {denial:?}"),
     )
+    .with_staging_cause(denial)
 }
 
 pub(crate) mod commit_denial;
@@ -312,7 +315,8 @@ pub fn identity_indexes_built(
         return Err(primary_graph_denial(
             kind,
             format!("identity index execution refused: {denial:?}"),
-        ));
+        )
+        .with_index_execution_cause(denial));
     }
     if build.failed_indexes.is_empty() && build.generations.len() == requested_indexes {
         Ok(())

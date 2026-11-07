@@ -51,7 +51,16 @@ pub(super) fn try_resolve_retry(
         WorthServerIdempotentRetryReceipt::previously_completed(
             key,
             request_digest,
-            stored.mutation().canonical_digest(),
+            stored.mutation().canonical_digest().map_err(|cause| {
+                WorthServerQueryHandoffDenial::new(
+                    WorthServerQueryHandoffDenialCode::EvidenceIdentityDerivationDenied(cause),
+                    prepared_request
+                        .admission()
+                        .request_context()
+                        .diagnostics_profile(),
+                    "retained mutation identity was refused",
+                )
+            })?,
         ),
     )))
 }

@@ -3,6 +3,7 @@ use crate::identity::data::RelationId;
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use crate::storage::overlay::PartitionState;
 use crate::storage::partition::{AdjacencyKindBasis, RegionRelationProjection};
+use crate::storage::substrate::maintenance::ReconstructionLane;
 use std::collections::{BTreeMap, BTreeSet};
 
 /// Conservative coexistence claims precede each map/set insertion. The callback
@@ -16,13 +17,15 @@ pub(super) type ProjectionRetention<'a> = dyn FnMut(
     + 'a;
 
 pub(super) fn capture(
+    lane: &ReconstructionLane<'_>,
     partition: &PartitionState,
     basis: AdjacencyKindBasis,
 ) -> Result<Vec<RegionRelationProjection>, Cause> {
-    capture_controlled(partition, basis, &mut |_, _| Ok(()))
+    capture_controlled(lane, partition, basis, &mut |_, _| Ok(()))
 }
 
 pub(super) fn capture_controlled(
+    _lane: &ReconstructionLane<'_>,
     partition: &PartitionState,
     basis: AdjacencyKindBasis,
     checkpoint: &mut ProjectionCheckpoint<'_>,
@@ -78,8 +81,9 @@ pub(super) use reconstruction::{
 };
 
 pub(crate) fn rebuild_region_history_kind_buckets(
+    lane: &ReconstructionLane<'_>,
     partition: &mut PartitionState,
 ) -> Result<(), Cause> {
-    let projection = canonical_history(partition)?;
-    rebuild(partition, &projection, AdjacencyKindBasis::Historical)
+    let projection = canonical_history(lane, partition)?;
+    rebuild(lane, partition, &projection, AdjacencyKindBasis::Historical)
 }

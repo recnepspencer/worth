@@ -240,6 +240,7 @@ pub(in crate::harness::tests::pricing_shock) fn pricing_aspect_value_text(
     match value {
         worth_foundational::facade::AspectValue::String(value) => match value {
             worth_foundational::facade::InternedString::Raw(text) => text.clone(),
+            worth_foundational::facade::InternedString::Stored(text) => text.as_str().to_owned(),
             worth_foundational::facade::InternedString::Symbol(symbol) => {
                 format!("symbol:{}", symbol.0)
             }

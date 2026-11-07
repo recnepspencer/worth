@@ -65,7 +65,7 @@ pub fn actor_result<Schema: BodySchemaBinding>(
 ) -> ApplicationQueryResultFieldRef<AuditQuery, AuditActorSlot, Schema, AuditActorField> {
     ApplicationQueryResultFieldRef::new("actor", AuditActorField::at("AuditActorField"))
 }
-pub fn audit_query_definition<const DESTINATION: u64>() -> ApplicationQueryDefinition<
+pub fn audit_query_definition<const DESTINATION: u64>() -> ApplicationQueryDefinitionBuilder<
     DocumentRetentionSchema<DESTINATION>,
     AuditQuery,
     DocumentQueryParameters,
@@ -97,8 +97,6 @@ pub fn audit_query_definition<const DESTINATION: u64>() -> ApplicationQueryDefin
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 
 impl<const DESTINATION: u64>

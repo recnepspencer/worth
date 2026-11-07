@@ -19,9 +19,11 @@ impl fragment::Record<ExternalIdentityValue> for BodyModelBindings {
         field("ExternalIdentityField", |row: &ExternalIdentityValue| {
             row.external_identity_field.clone()
         })
+        .equality_queryable(true)
         .and("MappingStatusField", |row: &ExternalIdentityValue| {
             row.mapping_status_field
         })
+        .equality_queryable(true)
         .build(
             |external_identity_field, mapping_status_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ExternalIdentityValue {
@@ -50,6 +52,7 @@ impl fragment::Record<PrincipalFactsValue> for BodyModelBindings {
         field("PrincipalIdentityField", |row: &PrincipalFactsValue| {
             row.principal_identity_field
         })
+        .equality_queryable(true)
         .read_only()
         .build(
             |principal_identity_field, _: &mut ValueDecodeAdmission<'_>| {
@@ -80,13 +83,16 @@ impl fragment::Record<DocumentFactsValue> for BodyModelBindings {
         field("DocumentIdentityField", |row: &DocumentFactsValue| {
             row.document_identity_field.clone()
         })
+        .equality_queryable(true)
         .read_only()
         .and("DocumentRetentionField", |row: &DocumentFactsValue| {
             row.document_retention_field
         })
+        .equality_queryable(true)
         .and("DocumentAuditSourceField", |row: &DocumentFactsValue| {
             row.document_audit_source_field
         })
+        .equality_queryable(true)
         .build(
             |document_identity_field,
              document_retention_field,
@@ -148,14 +154,17 @@ impl fragment::Record<AuditFactsValue> for BodyModelBindings {
         field("AuditIdentityField", |row: &AuditFactsValue| {
             row.audit_identity_field.clone()
         })
+        .equality_queryable(true)
         .read_only()
         .and("AuditRetentionField", |row: &AuditFactsValue| {
             row.audit_retention_field
         })
+        .equality_queryable(true)
         .read_only()
         .and("AuditPriorRetentionField", |row: &AuditFactsValue| {
             row.audit_prior_retention_field
         })
+        .equality_queryable(true)
         .read_only()
         .build(
             |audit_identity_field,
@@ -189,6 +198,7 @@ impl fragment::Record<AuditActorFactsValue> for BodyModelBindings {
         field("AuditActorField", |row: &AuditActorFactsValue| {
             row.audit_actor_field
         })
+        .equality_queryable(true)
         .read_only()
         .build(|audit_actor_field, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(AuditActorFactsValue { audit_actor_field })
@@ -213,6 +223,7 @@ impl fragment::Record<SnapshotFactsValue> for BodyModelBindings {
         field("SnapshotIdentity", |row: &SnapshotFactsValue| {
             row.snapshot_identity
         })
+        .equality_queryable(true)
         .read_only()
         .build(|snapshot_identity, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(SnapshotFactsValue { snapshot_identity })
@@ -237,6 +248,7 @@ impl fragment::Record<TenantFactsValue> for BodyModelBindings {
         field("TenantIdentity", |row: &TenantFactsValue| {
             row.tenant_identity
         })
+        .equality_queryable(true)
         .read_only()
         .build(|tenant_identity, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(TenantFactsValue { tenant_identity })

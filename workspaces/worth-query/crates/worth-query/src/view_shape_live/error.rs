@@ -1,10 +1,12 @@
 use crate::basis::BasisPreflightError;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::live::{LiveExecutionError, LivePromotionError};
 
 use super::counters::ViewShapeLiveCounters;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ViewShapeLiveFailureClass {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     BasisPreflightRejected,
     BasisInvariantRejected,
     LivePromotionRejected,
@@ -26,6 +28,16 @@ pub struct ViewShapeLiveError {
 }
 
 impl ViewShapeLiveError {
+    pub(crate) fn identity_refused(
+        cause: IdentityDerivationDenial,
+        counters: ViewShapeLiveCounters,
+    ) -> Self {
+        Self::new(
+            ViewShapeLiveFailureClass::EvidenceIdentityDerivationDenied(cause),
+            "grouped execution evidence identity refused",
+            counters,
+        )
+    }
     pub(crate) fn new(
         failure_class: ViewShapeLiveFailureClass,
         message: impl Into<String>,

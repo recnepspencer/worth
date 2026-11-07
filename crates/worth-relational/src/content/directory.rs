@@ -63,14 +63,9 @@ impl ContentDirectory {
         changed: &[RecordRef],
         version: crate::identity::data::VersionId,
         source: Option<&Self>,
-        complete: bool,
     ) -> Result<Self, Denial> {
         let staged = ContentFrameAdmission::admit(execution, &schema.content_formats, attachments)?;
-        let mut next = if complete {
-            Self::default()
-        } else {
-            self.clone()
-        };
+        let mut next = self.clone();
         let view = InvariantStateView::new(state, version);
         let mut resolved = ExecutionOrderedMap::default();
         let mut resolution = ContentResolution::new(
@@ -80,14 +75,8 @@ impl ContentDirectory {
             source,
             &mut resolved,
         );
-        if complete {
-            super::reconstruction::visit_records(execution, state, &mut |record| {
-                next.replace_record(execution, schema, &view, record, &mut resolution)
-            })?;
-        } else {
-            for record in changed {
-                next.replace_record(execution, schema, &view, record, &mut resolution)?;
-            }
+        for record in changed {
+            next.replace_record(execution, schema, &view, record, &mut resolution)?;
         }
         Ok(next)
     }

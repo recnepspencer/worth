@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -129,6 +130,6 @@ fn workflow_identity(
             WorthQueryEvidenceTag::new("mutation"),
             mutation.identity().evidence_identity(),
         )
-        .seal(),
+        .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens"),
     }
 }

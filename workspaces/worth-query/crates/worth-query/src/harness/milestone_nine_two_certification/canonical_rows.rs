@@ -5,6 +5,7 @@ use super::{
     MilestoneNineTwoCertificationRow, MilestoneNineTwoPerturbationClass,
     SubscriptionLifecycleCertificationBundle,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::harness::certification::{HostileExpectation, ParityAnchor};
 use crate::live::LiveQueryFamily;
 use crate::subscription::QuerySubscriptionMaintenanceDeltaKind;
@@ -24,7 +25,8 @@ pub(super) fn canonical_rows() -> Vec<MilestoneNineTwoCertificationRow> {
                 "manager_id",
                 1,
                 0,
-            ),
+            )
+            .expect("fixture digest must fit"),
             lifecycle_lane(
                 LiveQueryFamily::Detail,
                 None,
@@ -32,7 +34,8 @@ pub(super) fn canonical_rows() -> Vec<MilestoneNineTwoCertificationRow> {
                 "manager_id",
                 1,
                 0,
-            ),
+            )
+            .expect("fixture digest must fit"),
             lifecycle_lane(
                 LiveQueryFamily::Detail,
                 None,
@@ -40,16 +43,17 @@ pub(super) fn canonical_rows() -> Vec<MilestoneNineTwoCertificationRow> {
                 "manager_id",
                 1,
                 0,
-            ),
+            )
+            .expect("fixture digest must fit"),
         ),
         row(
             "equivalent-subscription-sharing-fanout",
             MilestoneNineTwoPerturbationClass::EquivalentSharingFanout,
             HostileExpectation::EquivalentToControl,
             ParityAnchor::Control,
-            sharing_lane("consumer-a", "consumer-b"),
-            sharing_lane("consumer-a", "consumer-b"),
-            sharing_lane("consumer-a", "consumer-b"),
+            sharing_lane("consumer-a", "consumer-b").expect("fixture digest must fit"),
+            sharing_lane("consumer-a", "consumer-b").expect("fixture digest must fit"),
+            sharing_lane("consumer-a", "consumer-b").expect("fixture digest must fit"),
         ),
         row(
             "grouped-membership-query-shaped-delivery",
@@ -63,7 +67,8 @@ pub(super) fn canonical_rows() -> Vec<MilestoneNineTwoCertificationRow> {
                 "employee:engineering-to-design",
                 2,
                 0,
-            ),
+            )
+            .expect("fixture digest must fit"),
             lifecycle_lane(
                 LiveQueryFamily::OrderedCollection,
                 Some(LiveViewShapeFamily::KanbanGrouped),
@@ -71,7 +76,8 @@ pub(super) fn canonical_rows() -> Vec<MilestoneNineTwoCertificationRow> {
                 "employee:engineering-to-design",
                 2,
                 0,
-            ),
+            )
+            .expect("fixture digest must fit"),
             lifecycle_lane(
                 LiveQueryFamily::OrderedCollection,
                 Some(LiveViewShapeFamily::KanbanGrouped),
@@ -79,7 +85,8 @@ pub(super) fn canonical_rows() -> Vec<MilestoneNineTwoCertificationRow> {
                 "employee:engineering-to-design",
                 2,
                 0,
-            ),
+            )
+            .expect("fixture digest must fit"),
         ),
         row(
             "identity-continuation-remap-delivery",
@@ -93,7 +100,8 @@ pub(super) fn canonical_rows() -> Vec<MilestoneNineTwoCertificationRow> {
                 "employee:name",
                 1,
                 0,
-            ),
+            )
+            .expect("fixture digest must fit"),
             lifecycle_lane(
                 LiveQueryFamily::Detail,
                 None,
@@ -101,7 +109,8 @@ pub(super) fn canonical_rows() -> Vec<MilestoneNineTwoCertificationRow> {
                 "employee:old-to-new",
                 1,
                 1,
-            ),
+            )
+            .expect("fixture digest must fit"),
             lifecycle_lane(
                 LiveQueryFamily::Detail,
                 None,
@@ -109,25 +118,26 @@ pub(super) fn canonical_rows() -> Vec<MilestoneNineTwoCertificationRow> {
                 "employee:old-to-new",
                 1,
                 1,
-            ),
+            )
+            .expect("fixture digest must fit"),
         ),
         row(
             "preview-discard-zero-authoritative-residue",
             MilestoneNineTwoPerturbationClass::PreviewDiscardIsolation,
             HostileExpectation::EquivalentToControl,
             ParityAnchor::Control,
-            preview_discard_lane(),
-            preview_discard_lane(),
-            preview_discard_lane(),
+            preview_discard_lane().expect("fixture digest must fit"),
+            preview_discard_lane().expect("fixture digest must fit"),
+            preview_discard_lane().expect("fixture digest must fit"),
         ),
         row(
             "preview-promotion-boundary-handoff",
             MilestoneNineTwoPerturbationClass::PreviewPromotionBoundary,
             HostileExpectation::DistinctFromControl,
             ParityAnchor::Hostile,
-            preview_discard_lane(),
-            preview_promotion_lane(),
-            preview_promotion_lane(),
+            preview_discard_lane().expect("fixture digest must fit"),
+            preview_promotion_lane().expect("fixture digest must fit"),
+            preview_promotion_lane().expect("fixture digest must fit"),
         ),
         row(
             "performance-receipt-posture-sensitive",
@@ -141,9 +151,10 @@ pub(super) fn canonical_rows() -> Vec<MilestoneNineTwoCertificationRow> {
                 "manager_id",
                 1,
                 0,
-            ),
-            lifecycle_lane_with_posture(),
-            lifecycle_lane_with_posture(),
+            )
+            .expect("fixture digest must fit"),
+            lifecycle_lane_with_posture().expect("fixture digest must fit"),
+            lifecycle_lane_with_posture().expect("fixture digest must fit"),
         ),
         row(
             "scale-slope-width-bounded-lifecycle",
@@ -157,7 +168,8 @@ pub(super) fn canonical_rows() -> Vec<MilestoneNineTwoCertificationRow> {
                 "manager_id",
                 1,
                 0,
-            ),
+            )
+            .expect("fixture digest must fit"),
             lifecycle_lane(
                 LiveQueryFamily::Detail,
                 None,
@@ -165,7 +177,8 @@ pub(super) fn canonical_rows() -> Vec<MilestoneNineTwoCertificationRow> {
                 "manager_id",
                 3,
                 2,
-            ),
+            )
+            .expect("fixture digest must fit"),
             lifecycle_lane(
                 LiveQueryFamily::Detail,
                 None,
@@ -173,7 +186,8 @@ pub(super) fn canonical_rows() -> Vec<MilestoneNineTwoCertificationRow> {
                 "manager_id",
                 3,
                 2,
-            ),
+            )
+            .expect("fixture digest must fit"),
         ),
     ]
 }

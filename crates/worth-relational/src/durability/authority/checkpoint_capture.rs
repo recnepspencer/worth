@@ -196,8 +196,14 @@ impl CapturedCheckpointBasis {
         }
         let index_state = runtime.indexes.snapshot();
         let derived_index_checkpoint =
-            super::super::derived_index_artifacts::DerivedIndexCheckpointArtifacts::capture(
-                index_state.retained_generations(&retained),
+            crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
+                |lane| {
+                    super::super::derived_index_artifacts::DerivedIndexCheckpointArtifacts::capture(
+                        lane,
+                        index_state.retained_generations(lane, &retained),
+                        index_state.basis_checkpoint(lane, &retained),
+                    )
+                },
             )?;
         let captured = Self {
             envelope_cells: artifacts

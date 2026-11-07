@@ -17,6 +17,7 @@ pub(super) struct ManifestDirectoryFacts {
 }
 
 pub(super) fn validate(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     manifest: &RelationalCheckpointManifest,
 ) -> Result<ManifestDirectoryFacts, DurabilityError> {
     if manifest.index_generation_frontier == 0 {
@@ -111,7 +112,7 @@ pub(super) fn validate(
     validate_pages(&manifest.lineage)?;
     super::lineage_event_directory::validate(manifest)?;
     let history_members = manifest
-        .readmit_history_members()
+        .readmit_history_members(lane)
         .map_err(|cause| corrupt(format!("history member dependencies: {cause:?}")))?;
     Ok(ManifestDirectoryFacts {
         heads,

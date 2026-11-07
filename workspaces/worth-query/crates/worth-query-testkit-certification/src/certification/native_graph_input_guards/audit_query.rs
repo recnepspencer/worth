@@ -23,7 +23,7 @@ worth_query_application_query!(pub Query for Schema, identity "AuditQuery", para
 pub fn value() -> ApplicationQueryResultFieldRef<Query, ValueSlot, Schema, AuditValue> {
     ApplicationQueryResultFieldRef::new("value", AuditValue::at("AuditValue"))
 }
-pub fn definition() -> ApplicationQueryDefinition<Schema, Query, (), Value, Audit> {
+pub fn definition() -> ApplicationQueryDefinitionBuilder<Schema, Query, (), Value, Audit> {
     ApplicationQueryDefinitionBuilder::declare(Query::reference())
         .root(Audit::reference())
         .scope(Audit::reference())
@@ -39,8 +39,6 @@ pub fn definition() -> ApplicationQueryDefinition<Schema, Query, (), Value, Audi
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<Schema, Query> for Value {
     fn project(

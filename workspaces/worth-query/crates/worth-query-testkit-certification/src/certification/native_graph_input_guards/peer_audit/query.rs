@@ -78,7 +78,7 @@ pub fn details() -> ApplicationQueryResultRelationRef<
 > {
     ApplicationQueryResultRelationRef::forward_optional("detail", JournalDetails::reference())
 }
-pub fn definition() -> ApplicationQueryDefinition<Schema, Query, (), Value, Parent> {
+pub fn definition() -> ApplicationQueryDefinitionBuilder<Schema, Query, (), Value, Parent> {
     ApplicationQueryDefinitionBuilder::declare(Query::reference()).root(Journal::reference()).scope(Parent::reference())
         .result_shape(ApplicationQueryResultShapeBuilder::<Schema,Query,Journal,Value,ResultBinding>::new(Journal::reference()).field(name()).field(revision()).field(actor())
             .relation(details(),ApplicationQueryResultShapeBuilder::<Schema,Query,Detail,String,DetailResult>::new(Detail::reference()).field(label())).build())
@@ -86,7 +86,7 @@ pub fn definition() -> ApplicationQueryDefinition<Schema, Query, (), Value, Pare
 
         .disclosure(ApplicationQueryDisclosureContract::public()).basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot()).public()
-        .root_path(ApplicationQueryRootPath::from(Parent::reference()).forward(ParentJournal::reference())).build().unwrap()
+        .root_path(ApplicationQueryRootPath::from(Parent::reference()).forward(ParentJournal::reference()))
 }
 impl WorthQueryApplicationProjection<Schema, Query> for Value {
     fn project(

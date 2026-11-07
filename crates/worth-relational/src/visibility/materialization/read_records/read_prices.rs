@@ -3,7 +3,7 @@
 pub(crate) const EXAMINE_SLOT: u64 = 1;
 /// One selected record admitted before cloning it into the answer.
 pub(crate) const RESERVE_RECORD: u64 = 1;
-/// One keyed record borrowed or materialized.
+/// One keyed record borrowed or materialized, including its fixed shared-state reference copy.
 pub(crate) const KEYED_RECORD: u64 = 1;
 
 /// One declared aspect binding visited and cloned.

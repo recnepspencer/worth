@@ -11,7 +11,7 @@ worth_query_declaration::worth_query_application_query!(
     name "public_scoped_account_summary"
 );
 
-pub fn public_scoped_definition() -> ApplicationQueryDefinition<
+pub fn public_scoped_definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     PublicScopedAccountSummaryQuery,
     AccountSummaryParameters,
@@ -37,6 +37,4 @@ pub fn public_scoped_definition() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }

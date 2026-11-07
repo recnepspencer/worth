@@ -150,22 +150,18 @@ impl ApplicationCorrectionBinding<NumericSchema> for CorrectDefinition {
             .no_external_effect()
     }
     fn mechanism() -> DeclaredCorrectionMechanism<NumericSchema> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [
-                    DeclaredPreImageLocus::from_field(Primary::at("Primary")).unwrap(),
-                    DeclaredPreImageLocus::from_field(DefinitionRevision::at("DefinitionRevision"))
-                        .unwrap(),
-                ],
-                InlineCounterBinding::encode(&Counter(u64::MAX))
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [
+                DeclaredPreImageLocus::from_field(Primary::at("Primary")),
+                DeclaredPreImageLocus::from_field(DefinitionRevision::at("DefinitionRevision")),
+            ],
+            InlineCounterBinding::encode(&Counter(u64::MAX))
+                .unwrap()
+                .semantic_byte_width()
+                + U64ApplicationValueBinding::encode(&u64::MAX)
                     .unwrap()
-                    .semantic_byte_width()
-                    + U64ApplicationValueBinding::encode(&u64::MAX)
-                        .unwrap()
-                        .semantic_byte_width(),
-            )
-            .unwrap(),
-        )
+                    .semantic_byte_width(),
+        ))
     }
     fn derive_correction(
         original: &Change,
@@ -175,18 +171,15 @@ impl ApplicationCorrectionBinding<NumericSchema> for CorrectDefinition {
             return Err(ApplicationCorrectionDerivationDenial::UnsupportedSourceMeaning);
         };
         let value = preimage
-            .field(&DeclaredPreImageLocus::from_field(Primary::at("Primary")).unwrap())
+            .field(&DeclaredPreImageLocus::from_field(Primary::at("Primary")))
             .ok_or(ApplicationCorrectionDerivationDenial::MissingPreImage)?;
         Ok(Change {
             key: original.key.clone(),
             revision: U64ApplicationValueBinding::decode(
                 preimage
-                    .field(
-                        &DeclaredPreImageLocus::from_field(DefinitionRevision::at(
-                            "DefinitionRevision",
-                        ))
-                        .unwrap(),
-                    )
+                    .field(&DeclaredPreImageLocus::from_field(DefinitionRevision::at(
+                        "DefinitionRevision",
+                    )))
                     .ok_or(ApplicationCorrectionDerivationDenial::MissingPreImage)?,
             )
             .map_err(|_| ApplicationCorrectionDerivationDenial::InvalidPreImage)?,

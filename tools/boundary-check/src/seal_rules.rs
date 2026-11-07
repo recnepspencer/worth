@@ -1,4 +1,5 @@
 //! Closed caller sets for named test controls and certification factories.
+mod reconstruction;
 use crate::{
     config::*,
     inputs::Inputs,
@@ -227,6 +228,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
             }
         }
     }
+    out.extend(reconstruction::check(input));
     out
 }
 #[cfg(test)]

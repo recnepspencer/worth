@@ -194,11 +194,11 @@ fn typed_field_uses_complete_optional_aspect_and_real_nested_codec() {
         }],
     };
     let encoded = Binding::encode(&value).unwrap();
-    let schema::ApplicationValue::String(domain::InternedString::Raw(text)) = encoded else {
+    let schema::ApplicationValue::String(text) = encoded else {
         panic!("canonical text")
     };
     assert_eq!(
-        text,
+        text.raw_text().expect("canonical text is textual"),
         r#"{"nested":[{"Selected":{"label":"δ","count":17}}]}"#
     );
 }

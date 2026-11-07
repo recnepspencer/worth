@@ -20,7 +20,6 @@ impl fragment::BindingSet for CapabilityBindings {
 impl fragment::Scalar<u64> for CapabilityBindings {
     type Binding = U64ApplicationValueBinding;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl fragment::Entity for Grant {
     const NAME: &'static str = "Grant";
@@ -35,16 +34,27 @@ pub(super) struct GrantRow(u64, u64, u64, u64, u64, u64, u64, u64, u64, u64, u64
 impl fragment::Record<GrantRow> for CapabilityBindings {
     fn record() -> impl fragment::Shape<GrantRow, Self> {
         fragment::field("Action", |row: &GrantRow| row.0)
+            .equality_queryable(true)
             .and("Amount", |row: &GrantRow| row.1)
+            .equality_queryable(true)
             .and("Field", |row: &GrantRow| row.2)
+            .equality_queryable(true)
             .and("OtherAction", |row: &GrantRow| row.3)
+            .equality_queryable(true)
             .and("Purpose", |row: &GrantRow| row.4)
+            .equality_queryable(true)
             .and("Status", |row: &GrantRow| row.5)
+            .equality_queryable(true)
             .and("DelegationLimit", |row: &GrantRow| row.6)
+            .equality_queryable(true)
             .and("Identity", |row: &GrantRow| row.7)
+            .equality_queryable(true)
             .and("ValidFrom", |row: &GrantRow| row.8)
+            .equality_queryable(true)
             .and("ValidThrough", |row: &GrantRow| row.9)
+            .equality_queryable(true)
             .and("Workflow", |row: &GrantRow| row.10)
+            .equality_queryable(true)
             .build(
                 |v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, _: &mut ValueDecodeAdmission<'_>| {
                     Ok::<_, std::convert::Infallible>(GrantRow(
@@ -66,11 +76,11 @@ impl fragment::Aspect for ResourceFacts {
 pub(super) struct ResourceRow(u64);
 impl fragment::Record<ResourceRow> for CapabilityBindings {
     fn record() -> impl fragment::Shape<ResourceRow, Self> {
-        fragment::field("ResourceWorkflow", |row: &ResourceRow| row.0).build(
-            |v0, _: &mut ValueDecodeAdmission<'_>| {
+        fragment::field("ResourceWorkflow", |row: &ResourceRow| row.0)
+            .equality_queryable(true)
+            .build(|v0, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ResourceRow(v0))
-            },
-        )
+            })
     }
 }
 pub(super) fn field(

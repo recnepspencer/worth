@@ -140,9 +140,7 @@ pub fn declare(
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .parameter(parameter())
-        .build()
-        .unwrap();
+        .parameter(parameter());
     let history = ApplicationHistoryQueryDefinition::<Schema, Relations>::relation(
         children(),
         ApplicationQueryDisclosureContract::public(),

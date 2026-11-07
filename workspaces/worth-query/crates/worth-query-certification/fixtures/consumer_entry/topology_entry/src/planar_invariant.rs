@@ -87,7 +87,7 @@ impl<Schema: TopologyModelBinding> WorthQueryApplicationInvariantRule<Schema>
     fn prepare_scope(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Schema>,
-    ) -> Result<Self::Scope, WorthQueryApplicationInvariantPreparationError> {
+    ) -> Result<Self::Scope, WorthQueryApplicationInvariantError> {
         self.prepare_with_budget(planner, None)
     }
 
@@ -99,7 +99,7 @@ impl<Schema: TopologyModelBinding> WorthQueryApplicationInvariantRule<Schema>
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Schema>,
         budget: &dyn CustomInvariantLeaseBudget,
-    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantPreparationError>> {
+    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantError>> {
         Some(self.prepare_with_budget(planner, Some(budget)))
     }
 
@@ -109,10 +109,7 @@ impl<Schema: TopologyModelBinding> WorthQueryApplicationInvariantRule<Schema>
         scope: &Self::Scope,
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Option<
-        Result<
-            WorthQueryApplicationInvariantVerdict<()>,
-            WorthQueryApplicationInvariantExecutionError,
-        >,
+        Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>,
     > {
         Some(self.evaluate_with_budget(context, scope, Some(budget)))
     }
@@ -121,10 +118,8 @@ impl<Schema: TopologyModelBinding> WorthQueryApplicationInvariantRule<Schema>
         &self,
         context: &WorthQueryApplicationInvariantContext<'_, '_, Schema>,
         scope: &Self::Scope,
-    ) -> Result<
-        WorthQueryApplicationInvariantVerdict<()>,
-        WorthQueryApplicationInvariantExecutionError,
-    > {
+    ) -> Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>
+    {
         self.evaluate_with_budget(context, scope, None)
     }
 }

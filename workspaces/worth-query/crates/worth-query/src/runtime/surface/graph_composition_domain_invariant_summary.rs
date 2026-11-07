@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -24,7 +25,7 @@ impl WorthQueryGraphCompositionDomainInvariantSummary {
         program_digest: WorthQueryEvidenceIdentity,
         breadth_digest: WorthQueryEvidenceIdentity,
         counter_snapshot: String,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let summary_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
                 .field_shape(
@@ -65,8 +66,8 @@ impl WorthQueryGraphCompositionDomainInvariantSummary {
                     WorthQueryEvidenceTag::new("lifecycle_family"),
                     lifecycle_families.iter().map(String::as_str),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             declared_collections,
             declared_symbols,
             target_combination_families,
@@ -75,7 +76,7 @@ impl WorthQueryGraphCompositionDomainInvariantSummary {
             breadth_digest,
             counter_snapshot,
             summary_digest,
-        }
+        })
     }
 
     pub fn declared_collections(&self) -> &[String] {

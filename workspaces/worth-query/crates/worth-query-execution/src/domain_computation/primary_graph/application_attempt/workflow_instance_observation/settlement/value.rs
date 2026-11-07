@@ -26,6 +26,10 @@ pub(super) fn observed_text(
         ));
     };
     let text = match value {
+        InternedString::Stored(value) => {
+            let value = value.as_string();
+            value.clone()
+        }
         InternedString::Raw(value) => value.clone(),
         InternedString::Symbol(_) => {
             return Err(denial(
@@ -108,7 +112,7 @@ pub(super) fn optional_identity(
     else {
         return Ok(None);
     };
-    let AspectValue::String(InternedString::Raw(text)) = &value else {
+    let Some(text) = (&value).raw_text() else {
         return Err(denial(
             "workflow operation receipt identity has the wrong type",
         ));

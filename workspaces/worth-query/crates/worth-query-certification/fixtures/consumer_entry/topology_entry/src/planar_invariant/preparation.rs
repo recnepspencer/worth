@@ -9,7 +9,7 @@ impl<Schema: TopologyModelBinding> PositiveTurnRule<Schema> {
         budget: Option<&dyn CustomInvariantLeaseBudget>,
     ) -> Result<
         <Self as WorthQueryApplicationInvariantRule<Schema>>::Scope,
-        WorthQueryApplicationInvariantPreparationError,
+        WorthQueryApplicationInvariantError,
     > {
         let outcome = self.prepare_inner(planner, budget);
         self.observe(PlanarInvariantReadEvent::Prepared {
@@ -25,7 +25,7 @@ impl<Schema: TopologyModelBinding> PositiveTurnRule<Schema> {
         budget: Option<&dyn CustomInvariantLeaseBudget>,
     ) -> Result<
         <Self as WorthQueryApplicationInvariantRule<Schema>>::Scope,
-        WorthQueryApplicationInvariantPreparationError,
+        WorthQueryApplicationInvariantError,
     > {
         preparation_checkpoint(budget, 0)?;
         self.probe.fetch_add(1, Ordering::SeqCst);
@@ -116,7 +116,7 @@ impl<S> PreparedTriangles<S> {
         &mut self,
         orbit: &WorthQueryApplicationInvariantOrbit<S, PlanarSuccessor, Body>,
         budget: Option<&dyn CustomInvariantLeaseBudget>,
-    ) -> Result<(), WorthQueryApplicationInvariantPreparationError> {
+    ) -> Result<(), WorthQueryApplicationInvariantError> {
         for (index, root) in orbit.members().enumerate() {
             preparation_checkpoint(budget, PLANAR_CANDIDATE_WORK)?;
             self.ordered.insert(root.entity_id());
@@ -131,11 +131,7 @@ impl<S> PreparedTriangles<S> {
                 .iter()
                 .any(|entity| self.touched.contains(&entity.entity_id()))
             {
-                self.triples.try_reserve(1).map_err(|_| {
-                    WorthQueryApplicationInvariantPreparationError::new(
-                        "planar triangle allocation refused",
-                    )
-                })?;
+                self.triples.try_reserve(1)?;
                 self.triples.push([root, middle, next]);
             }
         }
@@ -148,29 +144,25 @@ fn triples_storage<Schema: TopologyModelBinding>(
     budget: Option<&dyn CustomInvariantLeaseBudget>,
 ) -> Result<
     Vec<[WorthQueryApplicationInvariantEntity<Schema, Body>; 3]>,
-    WorthQueryApplicationInvariantPreparationError,
+    WorthQueryApplicationInvariantError,
 > {
     preparation_checkpoint(budget, 0)?;
     let mut triples = Vec::new();
-    triples.try_reserve_exact(count).map_err(|_| {
-        WorthQueryApplicationInvariantPreparationError::new("planar triangle allocation refused")
-    })?;
+    triples.try_reserve_exact(count)?;
     Ok(triples)
 }
 
 pub(super) fn preparation_checkpoint(
     budget: Option<&dyn CustomInvariantLeaseBudget>,
     work: u64,
-) -> Result<(), WorthQueryApplicationInvariantPreparationError> {
+) -> Result<(), WorthQueryApplicationInvariantError> {
     if budget.is_some_and(|budget| !budget.checkpoint(work)) {
-        return Err(WorthQueryApplicationInvariantPreparationError::new(
-            "planar preparation refused",
-        ));
+        return Err(WorthQueryApplicationInvariantError::Stopped);
     }
     Ok(())
 }
 fn preparation_error(
-    error: WorthQueryInvariantAccessDenial,
-) -> WorthQueryApplicationInvariantPreparationError {
-    WorthQueryApplicationInvariantPreparationError::new(error.to_string())
+    error: impl Into<WorthQueryApplicationInvariantError>,
+) -> WorthQueryApplicationInvariantError {
+    error.into()
 }

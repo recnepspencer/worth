@@ -14,9 +14,11 @@ use crate::domain_capabilities::payloads::WorthQueryAdmissionContributionPosture
 use crate::domain_capabilities::{
     WorthQueryDomainCapabilityTargetKind, WorthQueryInstalledDeclarationContributionTarget,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::intent::WorthQueryIntentDomainContributionSurface;
-use super::shared::{materialize_common_lane, qualify_semantic_code};
+use super::materialization::materialize_common_lane;
+use super::semantic_code::qualify_semantic_code;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryIntentAdmissionDraft {
@@ -80,24 +82,27 @@ pub struct WorthQueryIntentAdmissionContribution {
 impl WorthQueryIntentAdmissionContribution {
     pub fn try_materialize(
         self,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<
-        WorthQueryCanonicalAdmissionArtifact<WorthQueryInstalledDeclarationContributionTarget>,
+    ) -> Result<
+        WorthQueryCheckedDomainCapabilityOutcome<
+            WorthQueryCanonicalAdmissionArtifact<WorthQueryInstalledDeclarationContributionTarget>,
+        >,
+        IdentityDerivationDenial,
     > {
         let semantic_code = qualify_semantic_code(self.target.authority(), &self.semantic_code);
         let target = self.target.clone();
-        let requested = match self.posture {
+        let requested = (match self.posture {
             WorthQueryAdmissionContributionPosture::Advisory => {
-                WorthQueryAdmissionContributionAuthoring::advisory(semantic_code, self.detail)
+                WorthQueryAdmissionContributionAuthoring::advisory(semantic_code, self.detail)?
                     .bind_to_installed_target(self.target)
             }
             WorthQueryAdmissionContributionPosture::Violation => {
-                WorthQueryAdmissionContributionAuthoring::violation(semantic_code, self.detail)
+                WorthQueryAdmissionContributionAuthoring::violation(semantic_code, self.detail)?
                     .bind_to_installed_target(self.target)
             }
             WorthQueryAdmissionContributionPosture::SupportOnly => unreachable!(),
-        };
+        })?;
 
-        materialize_common_lane(
+        Ok(materialize_common_lane(
             "admission",
             WorthQueryDomainCapabilityTargetKind::IntentDeclaration,
             self.posture.as_str(),
@@ -110,11 +115,11 @@ impl WorthQueryIntentAdmissionContribution {
                 )
             },
             |ready| {
-                worth_proof::TransitionOutcome::Success(materialize_canonical_admission_artifact(
-                    ready,
+                Ok(worth_proof::TransitionOutcome::Success(
+                    materialize_canonical_admission_artifact(ready)?,
                 ))
             },
-        )
+        )?)
     }
 
     pub fn materialize(
@@ -123,6 +128,6 @@ impl WorthQueryIntentAdmissionContribution {
         WorthQueryCanonicalAdmissionArtifact<WorthQueryInstalledDeclarationContributionTarget>,
         WorthQueryDomainCapabilityMaterializationError,
     > {
-        self.try_materialize().into_result()
+        self.try_materialize()?.into_result()
     }
 }

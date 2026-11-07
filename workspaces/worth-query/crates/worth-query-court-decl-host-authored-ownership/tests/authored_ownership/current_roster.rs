@@ -40,7 +40,7 @@ fn dropped_added_and_repointed_current_routes_refuse_after_real_frame_admission(
         })
         .unwrap();
     let bytes = checkpoint.bytes();
-    let magic = b"WORTH-REL-CHK18\n";
+    let magic = b"WORTH-REL-CHK20\n";
     let start = bytes
         .windows(magic.len())
         .position(|part| part == magic)
@@ -143,8 +143,8 @@ fn a_pre_roster_store_cannot_be_read_as_empty_current_ownership() {
         .unwrap();
     let mut bytes = checkpoint.bytes().to_vec();
     let position = bytes
-        .windows(b"WORTH-REL-CHK18\n".len())
-        .position(|slice| slice == b"WORTH-REL-CHK18\n")
+        .windows(b"WORTH-REL-CHK20\n".len())
+        .position(|slice| slice == b"WORTH-REL-CHK20\n")
         .unwrap();
     bytes[position..position + b"WORTH-REL-CHK17\n".len()].copy_from_slice(b"WORTH-REL-CHK17\n");
     let checksum = Sha256::digest(&bytes[40..]);

@@ -28,19 +28,23 @@ impl fragment::Record<CapabilityGrantRecordValue> for BankRecordsBindings {
             "CapabilityGrantIdentityField",
             |row: &CapabilityGrantRecordValue| row.capability_grant_identity_field,
         )
+        .equality_queryable(true)
         .unique()
         .and(
             "CapabilityOperationField",
             |row: &CapabilityGrantRecordValue| row.capability_operation_field,
         )
+        .equality_queryable(true)
         .and(
             "CapabilityPurposeField",
             |row: &CapabilityGrantRecordValue| row.capability_purpose_field,
         )
+        .equality_queryable(true)
         .and(
             "CapabilityDisclosureField",
             |row: &CapabilityGrantRecordValue| row.capability_disclosure_field,
         )
+        .equality_queryable(true)
         .and(
             "CapabilityAmountCeilingField",
             |row: &CapabilityGrantRecordValue| row.capability_amount_ceiling_field,
@@ -49,22 +53,27 @@ impl fragment::Record<CapabilityGrantRecordValue> for BankRecordsBindings {
             "CapabilityValidFromField",
             |row: &CapabilityGrantRecordValue| row.capability_valid_from_field,
         )
+        .equality_queryable(true)
         .and(
             "CapabilityValidThroughField",
             |row: &CapabilityGrantRecordValue| row.capability_valid_through_field,
         )
+        .equality_queryable(true)
         .and(
             "CapabilityDelegationLimitField",
             |row: &CapabilityGrantRecordValue| row.capability_delegation_limit_field,
         )
+        .equality_queryable(true)
         .and(
             "CapabilityWorkflowStageField",
             |row: &CapabilityGrantRecordValue| row.capability_workflow_stage_field,
         )
+        .equality_queryable(true)
         .and(
             "CapabilityGrantStatusField",
             |row: &CapabilityGrantRecordValue| row.capability_grant_status_field,
         )
+        .equality_queryable(true)
         .build(
             |capability_grant_identity_field,
              capability_operation_field,
@@ -117,26 +126,32 @@ impl fragment::Record<EmergencyAccessRecordValue> for BankRecordsBindings {
             "EmergencyAccessIdentityField",
             |row: &EmergencyAccessRecordValue| row.emergency_access_identity_field,
         )
+        .equality_queryable(true)
         .and(
             "EmergencyAccessReasonField",
             |row: &EmergencyAccessRecordValue| row.emergency_access_reason_field,
         )
+        .equality_queryable(true)
         .and(
             "EmergencyAccessStatusField",
             |row: &EmergencyAccessRecordValue| row.emergency_access_status_field,
         )
+        .equality_queryable(true)
         .and(
             "EmergencyAccessIssuedAtField",
             |row: &EmergencyAccessRecordValue| row.emergency_access_issued_at_field,
         )
+        .equality_queryable(true)
         .and(
             "EmergencyAccessExpiresAtField",
             |row: &EmergencyAccessRecordValue| row.emergency_access_expires_at_field,
         )
+        .equality_queryable(true)
         .and(
             "EmergencyAccessClosedAtField",
             |row: &EmergencyAccessRecordValue| row.emergency_access_closed_at_field,
         )
+        .equality_queryable(true)
         .build(
             |emergency_access_identity_field,
              emergency_access_reason_field,
@@ -179,18 +194,22 @@ impl fragment::Record<MandatoryReviewRecordValue> for BankRecordsBindings {
             "MandatoryReviewIdentityField",
             |row: &MandatoryReviewRecordValue| row.mandatory_review_identity_field,
         )
+        .equality_queryable(true)
         .and(
             "MandatoryReviewStatusField",
             |row: &MandatoryReviewRecordValue| row.mandatory_review_status_field,
         )
+        .equality_queryable(true)
         .and(
             "MandatoryReviewReviewedAtField",
             |row: &MandatoryReviewRecordValue| row.mandatory_review_reviewed_at_field,
         )
+        .equality_queryable(true)
         .and(
             "MandatoryReviewKindField",
             |row: &MandatoryReviewRecordValue| row.mandatory_review_kind_field,
         )
+        .equality_queryable(true)
         .build(
             |mandatory_review_identity_field,
              mandatory_review_status_field,

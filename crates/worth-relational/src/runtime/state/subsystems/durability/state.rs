@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 
 use crate::durability::data::DurableCheckpoint;
@@ -18,13 +18,13 @@ pub(super) struct CheckpointEnvelopeLocation {
 /// carry them out of the subsystem lock without copying them.
 #[derive(Debug, Clone, Default)]
 pub(crate) struct DurabilityState {
-    pub(super) log: Vec<(
+    pub(super) log: VecDeque<(
         CommitId,
         PatchStreamPosition,
         Arc<RelationalCommitEnvelopeResidency>,
     )>,
     pub(super) checkpoints: Vec<Arc<DurableCheckpoint>>,
-    log_commit_index: HashMap<CommitId, usize>,
+    log_commit_index: HashMap<CommitId, Arc<RelationalCommitEnvelopeResidency>>,
     checkpoint_commit_index: HashMap<CommitId, CheckpointEnvelopeLocation>,
 }
 
@@ -37,8 +37,8 @@ impl DurabilityState {
             Arc<RelationalCommitEnvelopeResidency>,
         ),
     ) {
-        self.log_commit_index.insert(commit.0, self.log.len());
-        self.log.push(commit);
+        self.log_commit_index.insert(commit.0, commit.2.clone());
+        self.log.push_back(commit);
     }
 
     pub(super) fn push_checkpoint(&mut self, checkpoint: DurableCheckpoint) {
@@ -73,20 +73,24 @@ impl DurabilityState {
 
     pub(super) fn set_log(
         &mut self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         log: Vec<(
             CommitId,
             PatchStreamPosition,
             Arc<RelationalCommitEnvelopeResidency>,
         )>,
     ) {
-        self.log = log;
-        self.rebuild_log_commit_index();
+        self.log = log.into();
+        self.rebuild_log_commit_index(lane);
     }
 
-    pub(super) fn rebuild_log_commit_index(&mut self) {
+    pub(super) fn rebuild_log_commit_index(
+        &mut self,
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+    ) {
         self.log_commit_index.clear();
-        for (index, envelope) in self.log.iter().enumerate() {
-            self.log_commit_index.insert(envelope.0, index);
+        for envelope in &self.log {
+            self.log_commit_index.insert(envelope.0, envelope.2.clone());
         }
     }
 
@@ -96,23 +100,31 @@ impl DurabilityState {
         self.log.retain(|entry| entry.0 != commit_id);
         let changed = before != self.log.len();
         if changed {
-            self.rebuild_log_commit_index();
+            self.rebuild_log_commit_index(
+                &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            );
         }
         changed
     }
 
     /// Drop every envelope at or below a checkpoint's coverage frontier.
     pub(super) fn retain_log_after(&mut self, commit_id: CommitId) {
-        self.log.retain(|entry| entry.0 > commit_id);
-        self.rebuild_log_commit_index();
+        self.log.retain(|entry| {
+            let retain = entry.0 > commit_id;
+            if !retain {
+                self.log_commit_index.remove(&entry.0);
+            }
+            retain
+        });
     }
 
     pub(super) fn trim_log_front(&mut self, count: usize) {
         if count == 0 {
             return;
         }
-        self.log.drain(0..count);
-        self.rebuild_log_commit_index();
+        for entry in self.log.drain(0..count) {
+            self.log_commit_index.remove(&entry.0);
+        }
     }
 
     pub(super) fn durable_log_envelope(
@@ -121,8 +133,7 @@ impl DurabilityState {
     ) -> Option<Arc<PositionedCanonicalCommit>> {
         self.log_commit_index
             .get(&commit_id)
-            .and_then(|index| self.log.get(*index))
-            .and_then(|entry| entry.2.positioned_if_resident())
+            .and_then(|entry| entry.positioned_if_resident())
             .map(Arc::new)
     }
 

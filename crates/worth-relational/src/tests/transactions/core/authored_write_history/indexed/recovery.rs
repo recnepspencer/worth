@@ -21,6 +21,16 @@ fn index_rebuild_requires_live_verified_canonical_evidence() {
         ),
         Err(RelationalAuthoredWriteDenial::IncompleteIndexHistory)
     ));
+    let built = runtime.index_authority().build_for_basis(
+        &execution,
+        crate::facade::indexes::DerivedIndexBuildRequest {
+            source_commit_id: source.observation().commit_id().unwrap(),
+            branch_id: BranchId("main".into()),
+            index_ids: vec![definition.index_id],
+        },
+        &source,
+    );
+    assert!(built.failed_indexes.is_empty());
     create_branch_from_main(&runtime, "index-source");
     let equal = update_entity(&execution, &runtime, entity, "before");
     let target = test_owner_main_basis(&runtime).unwrap();

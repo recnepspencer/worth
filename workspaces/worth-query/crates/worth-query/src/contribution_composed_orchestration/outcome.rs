@@ -3,6 +3,7 @@ use crate::application::{
     WorthQueryDomainEntryMarker,
 };
 use crate::binding_pipeline::WorthQueryBindingLinkedArtifacts;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::ordinary_outcome::{
     WorthQueryOrdinaryCheckedTopology, WorthQueryOrdinaryContributionComposedCheckedTopologyKind,
     WorthQueryOrdinaryNextStep, WorthQueryOrdinaryOutcome, WorthQueryOrdinaryPosture,
@@ -107,6 +108,7 @@ pub enum WorthQueryContributionComposedOrchestrationOutcome<
     D: WorthQueryDomainEntryMarker,
     I: WorthQueryDeclarationInput<D>,
 > {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     Bound(WorthQueryContributionComposedOrchestration<D, I>),
     Deferred(WorthQueryContributionComposedOrchestrationPosture<D, I>),
     DeclarationDenied(WorthQueryContributionComposedOrchestrationPosture<D, I>),
@@ -125,8 +127,14 @@ pub(crate) fn ordinary_outcome_from_contribution_composed_checked<
     I: WorthQueryDeclarationInput<D>,
 >(
     checked: WorthQueryContributionComposedOrchestrationChecked<D, I>,
-) -> WorthQueryOrdinaryOutcome<WorthQueryContributionComposedOrchestration<D, I>> {
-    match checked {
+) -> Result<
+    WorthQueryOrdinaryOutcome<WorthQueryContributionComposedOrchestration<D, I>>,
+    IdentityDerivationDenial,
+> {
+    Ok(match checked {
+        WorthQueryContributionComposedOrchestrationOutcome::EvidenceIdentityDerivationDenied(
+            cause,
+        ) => return Err(cause),
         WorthQueryContributionComposedOrchestrationOutcome::Bound(value) => {
             WorthQueryOrdinaryOutcome::Bound(value)
         }
@@ -172,7 +180,7 @@ pub(crate) fn ordinary_outcome_from_contribution_composed_checked<
                 WorthQueryOrdinaryContributionComposedCheckedTopologyKind::Failed,
             ))
         }
-    }
+    })
 }
 
 fn ordinary_posture<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>(
@@ -240,5 +248,13 @@ fn ordinary_next_step(
         WorthQueryContributionComposedOrchestrationCheckedKind::Failed => {
             WorthQueryOrdinaryNextStep::EscalateFailure
         }
+    }
+}
+
+impl<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>
+    From<IdentityDerivationDenial> for WorthQueryContributionComposedOrchestrationOutcome<D, I>
+{
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
     }
 }

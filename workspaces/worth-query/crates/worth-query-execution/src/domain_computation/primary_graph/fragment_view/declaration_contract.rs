@@ -15,7 +15,9 @@ fn resolve_kernel(
     view: &mut View<'_, Fixture, Reading<'_>>,
     value: u64,
 ) -> Result<ObservedEntity<Item>, FragmentDenial> {
-    let field = record_field(Fixture, Item, Metrics, "components[1]").unwrap();
+    let field = record_field(Fixture, Item, Metrics, "components[1]")
+        .resolve()
+        .unwrap();
     view.resolve(field, value)
 }
 fn write_kernel(

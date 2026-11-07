@@ -71,8 +71,12 @@ fn runtime_public_handle_contract_freezes_inspection_sections_and_future_state_l
     let workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("task.handle-contract")
         .expect("task runtime should open a named workspace");
-    let contract = workspace.public_handle_contract();
-    let support_contract = workspace.public_api_contract();
+    let contract = workspace
+        .public_handle_contract()
+        .expect("fixture digest must fit");
+    let support_contract = workspace
+        .public_api_contract()
+        .expect("fixture digest must fit");
 
     assert_eq!(
         contract.support_contract_digest(),
@@ -338,11 +342,13 @@ fn runtime_workspace_state_snapshots_are_async_safe_and_support_gated() {
 fn runtime_state_snapshot_rejects_ready_state_through_deferred_constructor() {
     let _ = WorthQueryRuntimeStateSnapshot::deferred(
         WorthQueryRuntimeStateKind::Ready,
-        runtime_state_snapshot_basis_label_identity(&runtime_state_snapshot_test_subject_identity(
-            "basis:current",
-        )),
+        runtime_state_snapshot_basis_label_identity(
+            &runtime_state_snapshot_test_subject_identity("basis:current")
+                .expect("fixture digest must fit"),
+        ),
         runtime_state_snapshot_result_shape_label_identity(
-            &runtime_state_snapshot_test_subject_identity("shape:table"),
+            &runtime_state_snapshot_test_subject_identity("shape:table")
+                .expect("fixture digest must fit"),
         ),
         WorthQueryAuthorityLane::AuthoritativeTruth,
         "ready state must not enter through the deferred constructor",

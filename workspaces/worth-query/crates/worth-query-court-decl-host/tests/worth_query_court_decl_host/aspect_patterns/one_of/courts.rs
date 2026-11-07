@@ -38,7 +38,7 @@ fn class_transition_is_atomic_and_invalid_final_states_do_not_publish() {
             denial
                 .decode_invariant_refusal::<rule::RefusalBinding>()
                 .unwrap(),
-            rule::Refusal {
+            rule::Refusal::Membership {
                 subject: "record".into(),
                 present
             }

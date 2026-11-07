@@ -36,6 +36,11 @@ impl<K: Ord + Copy, V: Clone> SharedMap<K, V> {
             root: MapNode::from_sorted_unique(&mut values, len),
         }
     }
+    pub(crate) fn construction_allocation_bound(entries: usize) -> Option<u64> {
+        (entries as u64).checked_mul(
+            Arc::<MapNode<K, V>>::layout_bytes().checked_add(Arc::<V>::layout_bytes())?,
+        )
+    }
     pub(crate) fn len(&self) -> usize {
         self.root.as_ref().map_or(0, |root| root.len)
     }
@@ -130,6 +135,10 @@ impl<K: Ord + Copy, V: Clone> SharedMap<K, V> {
 
     pub(crate) fn iter(&self) -> SharedMapIter<'_, K, V> {
         SharedMapIter::new(self.root.as_deref())
+    }
+    /// Seek once, then walk the ordered suffix without revisiting earlier keys.
+    pub(crate) fn iter_from(&self, first: &K) -> SharedMapIter<'_, K, V> {
+        SharedMapIter::from_key(self.root.as_deref(), first)
     }
     pub(crate) fn try_iter<Stop>(
         &self,

@@ -6,6 +6,7 @@ use crate::basis::{
     resolve_snapshot_basis, BasisAuthorityFamily, BasisResolutionMode, ExecutionBasisIntent,
     ResolvedSnapshotIdentity, SnapshotLineageClass,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::{BasisDigest, CanonicalQueryDigest, SchemaBasisDigest};
 use crate::identity_evolution::{
     admit_identity_evolution_query_for_scenario, execute_admitted_identity_evolution_query,
@@ -65,8 +66,10 @@ fn detail_canonical() -> crate::canonicalization::CanonicalQueryBundle {
     .unwrap()
 }
 
-fn runtime_basis(schema_basis: SchemaBasisDigest) -> crate::basis::ResolvedSnapshotBasis {
-    resolve_snapshot_basis(
+fn runtime_basis(
+    schema_basis: SchemaBasisDigest,
+) -> Result<crate::basis::ResolvedSnapshotBasis, IdentityDerivationDenial> {
+    Ok(resolve_snapshot_basis(
         ExecutionBasisIntent::new(
             BasisAuthorityFamily::Runtime,
             SnapshotLineageClass::CurrentHead,
@@ -75,14 +78,14 @@ fn runtime_basis(schema_basis: SchemaBasisDigest) -> crate::basis::ResolvedSnaps
         ResolvedSnapshotIdentity::new(
             BasisAuthorityFamily::Runtime,
             None,
-            crate::memory_workspace::admit_external_snapshot_label("phase-five-snapshot")
+            crate::memory_workspace::admit_external_snapshot_label("phase-five-snapshot")?
                 .evidence_identity(),
             schema_basis,
             SnapshotLineageClass::CurrentHead,
         ),
         BasisResolutionMode::RuntimeDirect,
     )
-    .unwrap()
+    .unwrap())
 }
 
 fn planned_view(
@@ -160,12 +163,13 @@ fn change() -> BridgeChangeSummary {
 }
 
 #[test]
-fn observed_inspector_runtime_backed_lane_is_verified_without_residual_debt() {
+fn observed_inspector_runtime_backed_lane_is_verified_without_residual_debt(
+) -> Result<(), IdentityDerivationDenial> {
     let canonical = detail_canonical();
     let plan = planned_view(&canonical, ViewShapeDescriptor::inspector_detail_observed());
     let live = lower_view_shape_plan_to_live(
         &plan,
-        runtime_basis(plan.validated().query().schema_basis().clone()),
+        runtime_basis(plan.validated().query().schema_basis().clone())?,
         None,
         None,
     )
@@ -181,10 +185,13 @@ fn observed_inspector_runtime_backed_lane_is_verified_without_residual_debt() {
         Some(ViewShapePatchFamily::ObservedInspectorPatch)
     );
     assert_eq!(execution.counters().complexity_status_debt_count(), 0);
+
+    Ok(())
 }
 
 #[test]
-fn identity_aware_observed_inspector_requires_bound_identity_and_emits_it() {
+fn identity_aware_observed_inspector_requires_bound_identity_and_emits_it(
+) -> Result<(), IdentityDerivationDenial> {
     let canonical = detail_canonical();
     let plan = planned_view(
         &canonical,
@@ -192,7 +199,7 @@ fn identity_aware_observed_inspector_requires_bound_identity_and_emits_it() {
     );
     let missing_error = lower_view_shape_plan_to_live(
         &plan,
-        runtime_basis(plan.validated().query().schema_basis().clone()),
+        runtime_basis(plan.validated().query().schema_basis().clone())?,
         None,
         None,
     )
@@ -204,7 +211,7 @@ fn identity_aware_observed_inspector_requires_bound_identity_and_emits_it() {
 
     let live = lower_view_shape_plan_to_live(
         &plan,
-        runtime_basis(plan.validated().query().schema_basis().clone()),
+        runtime_basis(plan.validated().query().schema_basis().clone())?,
         None,
         Some(inspector_identity_artifact(
             InspectorIdentityClassification::AuthoritativeContinuity,
@@ -219,10 +226,13 @@ fn identity_aware_observed_inspector_requires_bound_identity_and_emits_it() {
     };
     assert!(patch.inspector_identity().is_some());
     assert_eq!(execution.counters().complexity_status_debt_count(), 0);
+
+    Ok(())
 }
 
 #[test]
-fn focused_inspector_runtime_backed_lane_is_verified_and_still_denies_widening() {
+fn focused_inspector_runtime_backed_lane_is_verified_and_still_denies_widening(
+) -> Result<(), IdentityDerivationDenial> {
     let canonical = detail_canonical();
     let plan = planned_view(
         &canonical,
@@ -232,7 +242,7 @@ fn focused_inspector_runtime_backed_lane_is_verified_and_still_denies_widening()
     );
     let live = lower_view_shape_plan_to_live(
         &plan,
-        runtime_basis(plan.validated().query().schema_basis().clone()),
+        runtime_basis(plan.validated().query().schema_basis().clone())?,
         None,
         None,
     )
@@ -270,10 +280,13 @@ fn focused_inspector_runtime_backed_lane_is_verified_and_still_denies_widening()
         widening_error.failure_class(),
         &ViewShapeLiveFailureClass::FocusedInspectorWideningDenied
     );
+
+    Ok(())
 }
 
 #[test]
-fn identity_aware_focused_inspector_requires_matching_classification() {
+fn identity_aware_focused_inspector_requires_matching_classification(
+) -> Result<(), IdentityDerivationDenial> {
     let canonical = detail_canonical();
     let plan = planned_view(
         &canonical,
@@ -284,7 +297,7 @@ fn identity_aware_focused_inspector_requires_matching_classification() {
     );
     let mismatch_error = lower_view_shape_plan_to_live(
         &plan,
-        runtime_basis(plan.validated().query().schema_basis().clone()),
+        runtime_basis(plan.validated().query().schema_basis().clone())?,
         None,
         Some(inspector_identity_artifact(
             InspectorIdentityClassification::AuthoritativeContinuity,
@@ -298,7 +311,7 @@ fn identity_aware_focused_inspector_requires_matching_classification() {
 
     let live = lower_view_shape_plan_to_live(
         &plan,
-        runtime_basis(plan.validated().query().schema_basis().clone()),
+        runtime_basis(plan.validated().query().schema_basis().clone())?,
         None,
         Some(inspector_identity_artifact(
             InspectorIdentityClassification::IdentityBreak,
@@ -320,4 +333,6 @@ fn identity_aware_focused_inspector_requires_matching_classification() {
         InspectorIdentityClassification::IdentityBreak
     );
     assert_eq!(execution.counters().complexity_status_debt_count(), 0);
+
+    Ok(())
 }

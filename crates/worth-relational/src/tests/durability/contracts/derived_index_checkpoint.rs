@@ -66,6 +66,7 @@ fn reclamation_and_checkpoint_keep_sibling_head_generation() {
     let first = create_entity_outcome(execution, &runtime, "sibling-index-first");
     let sibling = create_branch_from_main(&runtime, "index-sibling");
     let index = name_index(&runtime);
+    build(execution, &runtime, index.index_id, &first);
     let sibling_commit = create_entity_outcome_on_branch(
         execution,
         &runtime,
@@ -186,7 +187,7 @@ fn checkpoint_index_artifact_survives_tail_replay_without_envelope_caches() {
     let first_generation = build(execution, &runtime, index.index_id, &first);
     let checkpoint = crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
     assert!(checkpoint.derived_index_artifacts.is_empty());
-    assert_eq!(checkpoint.derived_index_checkpoint_format, 2);
+    assert_eq!(checkpoint.derived_index_checkpoint_format, 3);
     let second = create_entity_outcome(execution, &runtime, "checkpoint-index-tail");
     let unjournaled_cache = build(execution, &runtime, index.index_id, &second);
     let plan = crate::tests::support::recovery_plan_for(
@@ -270,15 +271,17 @@ fn checkpoint_recovery_denies_a_digest_valid_foreign_generation_affinity() {
         .derived_index_checkpoint
         .as_ref()
         .unwrap()
-        .readmit()
+        .readmit(&crate::storage::substrate::maintenance::ReconstructionLane::oracle())
         .unwrap()
         .pop()
         .unwrap();
     generation.applicability.branch_id = BranchId("foreign".into());
     checkpoint.derived_index_checkpoint = Some(
-        crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::capture(vec![
-            std::sync::Arc::new(generation),
-        ])
+        crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::capture(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            vec![std::sync::Arc::new(generation)],
+            Vec::new(),
+        )
         .unwrap(),
     );
     let mut recovered = durable_runtime_with_test_schema();

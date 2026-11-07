@@ -52,6 +52,11 @@ pub fn bundle_admitted_query_subscription_diagnostics(
     ),
     QuerySubscriptionDiagnosticBundleError,
 > {
+    let refusal_counters = trace.counters().clone();
+    let identity_refused = |cause| {
+        QuerySubscriptionDiagnosticBundleError::identity_refused(cause, refusal_counters.clone())
+    };
+
     let selection_context = QuerySubscriptionDiagnosticSelectionContext::from_selection(selection);
     validate_selection_and_declaration(&selection_context, declaration)?;
     validate_declaration_and_lowering(declaration, lowering)?;
@@ -78,7 +83,8 @@ pub fn bundle_admitted_query_subscription_diagnostics(
         lowering,
         support.support_posture(),
         "runtime_lifecycle_certified",
-    );
+    )
+    .map_err(&identity_refused)?;
     let bundle_width =
         QuerySubscriptionDiagnosticBundleWidth::new(trace.stage_traces().len(), 0, 0);
     let receipt = DiagnosticAssemblyReceipt::new(
@@ -87,7 +93,8 @@ pub fn bundle_admitted_query_subscription_diagnostics(
         semantic_label_count(&semantic_labels),
         0,
         bundle_width.clone(),
-    );
+    )
+    .map_err(&identity_refused)?;
     let counters = QuerySubscriptionDiagnosticCounters::admitted_bundle_emitted(
         trace.counters().diagnostic_trace_emission_count(),
         bundle_width.stage_evidence_count() as u64,
@@ -103,7 +110,8 @@ pub fn bundle_admitted_query_subscription_diagnostics(
         continuation.map(|value| value.evidence_identity()),
         preview.map(|value| value.isolation_identity()),
         lifecycle_closeout.map(|value| value.evidence_identity()),
-    );
+    )
+    .map_err(&identity_refused)?;
 
     Ok((
         QuerySubscriptionAdmittedDiagnosticBundle::from_parts(AdmittedDiagnosticBundleParts {
@@ -137,6 +145,11 @@ pub fn bundle_denied_query_subscription_diagnostics(
     ),
     QuerySubscriptionDiagnosticBundleError,
 > {
+    let refusal_counters = trace.counters().clone();
+    let identity_refused = |cause| {
+        QuerySubscriptionDiagnosticBundleError::identity_refused(cause, refusal_counters.clone())
+    };
+
     validate_denied_selection_context(
         selection_context,
         failure.stage(),
@@ -172,7 +185,8 @@ pub fn bundle_denied_query_subscription_diagnostics(
         lowering,
         support,
         failure.stage().as_str(),
-    );
+    )
+    .map_err(&identity_refused)?;
     let omitted_stages = omitted_stages_after_failure(*failure.stage());
     let bundle_width =
         QuerySubscriptionDiagnosticBundleWidth::new(trace.stage_traces().len(), 1, 0);
@@ -182,7 +196,8 @@ pub fn bundle_denied_query_subscription_diagnostics(
         semantic_label_count(&semantic_labels),
         0,
         bundle_width.clone(),
-    );
+    )
+    .map_err(&identity_refused)?;
     let counters = QuerySubscriptionDiagnosticCounters::denied_bundle_emitted(
         trace.counters().diagnostic_trace_emission_count(),
         (bundle_width.stage_evidence_count() + bundle_width.failure_evidence_count()) as u64,
@@ -194,7 +209,8 @@ pub fn bundle_denied_query_subscription_diagnostics(
         receipt.assembly_receipt_identity(),
         &counters.evidence_identity(),
         support.map(|value| value.report_identity()),
-    );
+    )
+    .map_err(&identity_refused)?;
 
     Ok((
         QuerySubscriptionDeniedDiagnosticBundle::from_parts(DeniedDiagnosticBundleParts {

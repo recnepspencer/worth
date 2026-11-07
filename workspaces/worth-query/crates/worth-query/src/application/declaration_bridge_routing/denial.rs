@@ -2,6 +2,7 @@ use crate::application::{
     WorthQueryDeclarationBridgeContinuationFamily, WorthQueryDeclarationBridgeContinuationRequest,
     WorthQueryDeclarationEnvelope, WorthQueryDeclarationInput, WorthQueryDomainEntryMarker,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryDeclarationBridgeRoutingDenialCause {
@@ -151,6 +152,7 @@ pub enum WorthQueryDeclarationBridgeRoutingTerminalError<
     D: WorthQueryDomainEntryMarker,
     I: WorthQueryDeclarationInput<D>,
 > {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     Deferred(WorthQueryDeclarationBridgeRoutingDeferred<D, I>),
     Denied(WorthQueryDeclarationBridgeRoutingDenied<D, I>),
     Failed(WorthQueryDeclarationBridgeRoutingFailed<D, I>),
@@ -160,6 +162,23 @@ pub enum WorthQueryDeclarationEntryBridgeRoutingError<
     D: WorthQueryDomainEntryMarker,
     I: WorthQueryDeclarationInput<D>,
 > {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     Entry(crate::application::WorthQueryDeclarationEntryEnvelopeError<D, I>),
     Routing(WorthQueryDeclarationBridgeRoutingTerminalError<D, I>),
+}
+
+impl<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>
+    From<IdentityDerivationDenial> for WorthQueryDeclarationBridgeRoutingTerminalError<D, I>
+{
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
+    }
+}
+
+impl<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>
+    From<IdentityDerivationDenial> for WorthQueryDeclarationEntryBridgeRoutingError<D, I>
+{
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
+    }
 }

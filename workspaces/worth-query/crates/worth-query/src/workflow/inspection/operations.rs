@@ -17,6 +17,7 @@ use super::report::{
     QueryPostMergeInspectionArtifact,
 };
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 #[cfg(test)]
 use crate::workflow::foundation::WorkflowDeclarationFamily;
 use crate::workflow::foundation::{QueryWorkflowDeclaration, WorkflowPredictionDriftOutcome};
@@ -109,7 +110,8 @@ pub(crate) fn inspect_merge_conflicts(
                 merge_class_shape.class,
                 merge_class_admission.as_str(),
                 row.row_digest(),
-            );
+            )
+            .expect("positive fixture identity fits canonical digest bounds");
             ConflictInspectionRow {
                 workflow_basis_digest: declaration.binding().basis_for_reporting().to_string(),
                 merge_class,

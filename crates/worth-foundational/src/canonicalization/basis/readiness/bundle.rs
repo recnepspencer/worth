@@ -20,6 +20,15 @@ impl CanonicalBasisBundle {
         Self { version, sequences }
     }
 
+    pub(in crate::canonicalization) fn into_parts(
+        self,
+    ) -> (
+        CanonicalizationRuleVersion,
+        Vec<CanonicalBasisReadyArtifact>,
+    ) {
+        (self.version, self.sequences)
+    }
+
     pub fn version(&self) -> &CanonicalizationRuleVersion {
         &self.version
     }

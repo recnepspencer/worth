@@ -23,36 +23,51 @@ impl PartitionHistoryFrontiers {
 impl PartitionContentCommitment {
     pub(crate) fn history_frontiers(
         &self,
+        lane: &ReconstructionLane<'_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         partition: &PartitionState,
-    ) -> Option<PartitionHistoryFrontiers> {
-        Some(PartitionHistoryFrontiers {
-            entities: self.entities.history_frontiers(&partition.entity_arena)?,
-            relations: self
-                .relations
-                .history_frontiers(&partition.relation_arena)?,
+    ) -> Result<PartitionHistoryFrontiers, PartitionContentDigestError> {
+        lane.recover(execution, |lane, work| {
+            Ok(PartitionHistoryFrontiers {
+                entities: self
+                    .entities
+                    .history_frontiers(lane, &partition.entity_arena, work)?,
+                relations: self.relations.history_frontiers(
+                    lane,
+                    &partition.relation_arena,
+                    work,
+                )?,
+            })
         })
     }
 
     /// The caller must compare the resulting digest with the committed leaf.
     /// Frontier structure alone never promotes supplied hashes into authority.
     pub(crate) fn capture_head(
+        lane: &ReconstructionLane<'_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         partition: &PartitionState,
         symbols: &StringInterner,
         frontiers: &PartitionHistoryFrontiers,
-    ) -> Option<Self> {
-        let seed = Self {
-            entities: records::RecordContentIndex::from_history_frontiers(
-                &frontiers.entities,
-                &partition.entity_arena,
-            )?,
-            relations: records::RecordContentIndex::from_history_frontiers(
-                &frontiers.relations,
-                &partition.relation_arena,
-            )?,
-            ..Self::default()
-        };
-        Self::capture_seeded(partition, symbols, None, seed)
-            .ok()
-            .map(|(commitment, _)| commitment)
+    ) -> Result<Self, PartitionContentDigestError> {
+        lane.recover(execution, |lane, work| {
+            let seed = Self {
+                entities: records::RecordContentIndex::from_history_frontiers(
+                    lane,
+                    work,
+                    &frontiers.entities,
+                    &partition.entity_arena,
+                )?,
+                relations: records::RecordContentIndex::from_history_frontiers(
+                    lane,
+                    work,
+                    &frontiers.relations,
+                    &partition.relation_arena,
+                )?,
+                ..Self::default()
+            };
+            Self::capture_seeded(lane, work, partition, symbols, seed)
+                .map(|(commitment, _)| commitment)
+        })
     }
 }

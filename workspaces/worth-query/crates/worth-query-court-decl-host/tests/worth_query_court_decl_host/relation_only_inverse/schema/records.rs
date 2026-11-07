@@ -18,15 +18,12 @@ impl BindingSet for Bindings {
 }
 impl Scalar<WorthQueryExternalPrincipalIdentity> for Bindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl Scalar<WorthQueryPrincipalMappingStatus> for Bindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl Scalar<u64> for Bindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 pub struct Mapping;
 impl Entity for Mapping {
@@ -51,8 +48,10 @@ pub struct MappingFactsRow(
 impl fragment::Record<MappingFactsRow> for Bindings {
     fn record() -> impl Shape<MappingFactsRow, Self> {
         fragment::field("ExternalId", |row: &MappingFactsRow| row.0.clone())
+            .equality_queryable(true)
             .read_only()
             .and("Status", |row: &MappingFactsRow| row.1)
+            .equality_queryable(true)
             .build(|v0, v1, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(MappingFactsRow(v0, v1))
             })
@@ -82,6 +81,7 @@ pub struct PrincipalFactsRow(u64);
 impl fragment::Record<PrincipalFactsRow> for Bindings {
     fn record() -> impl Shape<PrincipalFactsRow, Self> {
         fragment::field("PrincipalId", |row: &PrincipalFactsRow| row.0)
+            .equality_queryable(true)
             .read_only()
             .build(|v0, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(PrincipalFactsRow(v0))
@@ -109,6 +109,7 @@ pub struct FactsRow(u64);
 impl fragment::Record<FactsRow> for Bindings {
     fn record() -> impl Shape<FactsRow, Self> {
         fragment::field("Id", |row: &FactsRow| row.0)
+            .equality_queryable(true)
             .read_only()
             .unique()
             .build(|v0, _: &mut ValueDecodeAdmission<'_>| {

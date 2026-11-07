@@ -41,12 +41,11 @@ fn cold_reconstruction_is_paid_and_short_requests_publish_nothing() {
     // Quote the complete request, including preparation beyond native visits.
     let (baseline, baseline_report) = execution
         .run(ExecutionWorkCeiling::new(None), |_| {
-            runtime.index_authority().refresh_for_basis(
+            runtime.index_authority().reconstruct_for_basis(
+                execution,
                 request.clone(),
                 &basis,
-                None,
                 cold_budget(),
-                execution,
             )
         })
         .unwrap();
@@ -60,12 +59,11 @@ fn cold_reconstruction_is_paid_and_short_requests_publish_nothing() {
     let needed = baseline_report.charged_work();
     let (short, _) = execution
         .run(ExecutionWorkCeiling::new(Some(needed - 1)), |_| {
-            runtime.index_authority().refresh_for_basis(
+            runtime.index_authority().reconstruct_for_basis(
+                execution,
                 request.clone(),
                 &basis,
-                None,
                 cold_budget(),
-                execution,
             )
         })
         .unwrap();
@@ -82,12 +80,11 @@ fn cold_reconstruction_is_paid_and_short_requests_publish_nothing() {
     let next_request = &worth_execution::ExecutionRequest::serial(&next_host);
     let (enough, report) = next_request
         .run(ExecutionWorkCeiling::new(Some(needed)), |_| {
-            runtime.index_authority().refresh_for_basis(
+            runtime.index_authority().reconstruct_for_basis(
+                next_request,
                 request,
                 &basis,
-                None,
                 cold_budget(),
-                next_request,
             )
         })
         .unwrap();
@@ -134,12 +131,11 @@ fn cold_retry_and_cancellation_use_the_same_request_payer() {
         .unwrap();
     let (baseline, baseline_report) = execution
         .run(ExecutionWorkCeiling::new(None), |_| {
-            runtime.index_authority().refresh_for_basis(
+            runtime.index_authority().reconstruct_for_basis(
+                execution,
                 request.clone(),
                 &basis,
-                None,
                 cold_budget(),
-                execution,
             )
         })
         .unwrap();
@@ -172,12 +168,11 @@ fn cold_retry_and_cancellation_use_the_same_request_payer() {
                 .refresh_for_basis(request.clone(), &basis, None, ordinary, execution)
                 .unwrap_err();
             assert_eq!(first.kind, Denial::ColdReconstructionRequired);
-            runtime.index_authority().refresh_for_basis(
+            runtime.index_authority().reconstruct_for_basis(
+                execution,
                 request.clone(),
                 &basis,
-                None,
                 cold_budget(),
-                execution,
             )
         })
         .unwrap();
@@ -197,13 +192,10 @@ fn cold_retry_and_cancellation_use_the_same_request_payer() {
             source.cancel();
         }
     });
-    let cancelled = runtime.index_authority().refresh_for_basis(
-        request,
-        &basis,
-        None,
-        cold_budget(),
-        execution,
-    );
+    let cancelled =
+        runtime
+            .index_authority()
+            .reconstruct_for_basis(execution, request, &basis, cold_budget());
     drop(rendezvous);
     let cancelled_kind = cancelled
         .map(|_| None)

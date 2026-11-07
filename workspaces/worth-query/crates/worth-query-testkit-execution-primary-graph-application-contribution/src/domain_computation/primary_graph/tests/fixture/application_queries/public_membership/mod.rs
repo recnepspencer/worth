@@ -47,7 +47,7 @@ impl
     }
 }
 
-pub fn public_membership_definition() -> ApplicationQueryDefinition<
+pub fn public_membership_definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     PublicAccountMembershipQuery,
     AccountSummaryParameters,
@@ -72,8 +72,6 @@ pub fn public_membership_definition() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 
 pub fn tag_result_field() -> ApplicationQueryResultFieldRef<

@@ -51,7 +51,7 @@ pub use membership::{In, Position};
 pub use one_of::{CaseDefinition, GroupDefinition};
 #[doc(hidden)]
 pub use one_of::{CaseRows, CaseWitness, GroupWitness, OptionalCaseWitness, OptionalGroupWitness};
-pub use one_of::{Exclusive, OneOf};
+pub use one_of::{Exclusive, JoinCases, OneOf};
 pub use provenance::RecordBinding;
 pub use record::{field, BindingSet, Record, Scalar, Shape};
 pub use references::{entity, relation};

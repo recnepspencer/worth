@@ -73,27 +73,32 @@ fn evidence_reference_resolution_consumes_anchor_and_emits_sealed_reference_set(
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         "query-inspection-reference",
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::RelationalAuthority,
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         "relational-authority-reference",
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::BridgeRoute,
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         "bridge-route-reference",
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::SignalInvalidation,
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         "signal-invalidation-reference",
                     ),
-                ),
+                )
+                .expect("positive fixture identity fits canonical digest bounds"),
             ],
-        ),
+        )
+        .expect("positive fixture identity fits canonical digest bounds"),
         CausalInspectionReason::ChangedResult,
     )
     .unwrap();
@@ -106,7 +111,8 @@ fn evidence_reference_resolution_consumes_anchor_and_emits_sealed_reference_set(
             CausalEvidenceFamily::RelationalAuthority,
             CausalEvidenceFamily::SignalInvalidation,
         ],
-    );
+    )
+    .expect("fixture digest must fit");
 
     let CausalEvidenceReferenceResolution::Resolved {
         reference_set,
@@ -158,8 +164,10 @@ fn evidence_reference_resolution_denies_requested_family_missing_from_anchor() {
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "query-denial-reference",
                 ),
-            )],
-        ),
+            )
+            .expect("fixture digest must fit")],
+        )
+        .expect("positive fixture identity fits canonical digest bounds"),
         CausalInspectionReason::DeniedResult,
     )
     .unwrap();
@@ -171,7 +179,8 @@ fn evidence_reference_resolution_denies_requested_family_missing_from_anchor() {
             CausalEvidenceFamily::QueryInspection,
             CausalEvidenceFamily::BridgeRoute,
         ],
-    );
+    )
+    .expect("fixture digest must fit");
 
     let CausalEvidenceReferenceResolution::MissingRequiredEvidence { denial, counters } =
         resolution
@@ -206,20 +215,24 @@ fn evidence_reference_resolution_defaults_to_anchor_carried_families() {
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         "replay-query-inspection-reference",
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::BridgeReplay,
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         "bridge-replay-reference",
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
             ],
-        ),
+        )
+        .expect("positive fixture identity fits canonical digest bounds"),
         CausalInspectionReason::HistoricalReplayResult,
     )
     .unwrap();
 
-    let resolution = resolve_causal_evidence_references(anchor, &[]);
+    let resolution =
+        resolve_causal_evidence_references(anchor, &[]).expect("fixture digest must fit");
 
     let CausalEvidenceReferenceResolution::Resolved {
         reference_set,

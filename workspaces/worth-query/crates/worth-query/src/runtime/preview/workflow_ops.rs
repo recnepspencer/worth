@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -42,7 +43,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
                     &promotion_snapshot_identity,
                     staged_preview_write_count,
                     self.handle_bindings.len(),
-                ),
+                )?,
             ));
         }
         if staged_preview_write_count > 1 {
@@ -55,7 +56,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
                         &promotion_snapshot_identity,
                         staged_preview_write_count,
                         self.handle_bindings.len(),
-                    ),
+                    )?,
                 ),
             );
         }
@@ -83,7 +84,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
                     WorthQueryEvidenceTag::new("preview_binding_count"),
                     self.handle_bindings.len(),
                 )
-                .seal();
+                .seal()?;
         if crossed_authoritative_residue_count > 0 {
             return Err(WorthQueryRuntimeError::PreviewPromotionRebindingRequired(
                 WorthQueryPreviewPromotionDenialEvidence::rebinding_required(
@@ -95,7 +96,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
                     self.handle_bindings.len(),
                     crossed_authoritative_residue_count,
                     promotion_rebinding_digest,
-                ),
+                )?,
             ));
         }
         let mut promoted_writes = 0;
@@ -120,7 +121,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
                         index + 1,
                         self.handle_bindings.len(),
                         reason,
-                    );
+                    )?;
                     return Err(WorthQueryRuntimeError::PreviewPromotionWriteFailed { evidence });
                 }
             }
@@ -138,7 +139,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
             residue_snapshot,
             &promotion_snapshot_identity,
             Some(promotion_rebinding_digest),
-        );
+        )?;
         Ok(WorthQueryPreviewOutcome {
             session_label: self.label.clone(),
             effect_policy: self.effect_policy,
@@ -156,7 +157,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
         })
     }
 
-    pub fn discard(mut self) -> WorthQueryPreviewOutcome {
+    pub fn discard(mut self) -> Result<WorthQueryPreviewOutcome, IdentityDerivationDenial> {
         self.discarded = true;
         let staged_preview_write_count = self.pending_commands.len();
         let residue_snapshot = self.residue_snapshot();
@@ -172,8 +173,8 @@ impl<'a> WorthQueryPreviewSession<'a> {
             residue_snapshot,
             &self.basis_snapshot_identity,
             None,
-        );
-        WorthQueryPreviewOutcome {
+        )?;
+        Ok(WorthQueryPreviewOutcome {
             session_label: self.label.clone(),
             effect_policy: self.effect_policy,
             promoted: self.promoted,
@@ -187,7 +188,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
             closeout_evidence,
             source_lane: WorthQueryAuthorityLane::PreviewTruth,
             target_lane: WorthQueryAuthorityLane::PreviewTruth,
-        }
+        })
     }
 
     pub fn execute_intent(
@@ -216,7 +217,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
             self.effect_policy,
             &self.basis_admission,
             admission,
-        );
+        )?;
         self.intent_receipts.push(receipt.clone());
         self.execution_evidence
             .push(WorthQueryPreviewExecutionEvidence::for_intent_strategy(
@@ -224,7 +225,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
                 declaration.name(),
                 receipt.receipt_identity(),
                 declaration.strategy_name(),
-            ));
+            )?);
         Ok(receipt)
     }
 

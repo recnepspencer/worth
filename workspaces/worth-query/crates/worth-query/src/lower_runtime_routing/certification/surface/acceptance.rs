@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::hash_parts;
 use crate::lower_runtime_routing::worth_query_lower_runtime_crossing_inventory;
 
@@ -93,12 +94,12 @@ impl WorthQueryLowerRuntimeAcceptanceSuite {
 
 pub fn worth_query_lower_runtime_acceptance_suite(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> WorthQueryLowerRuntimeAcceptanceSuite {
-    let surface = worth_query_lower_runtime_representative_surface(execution);
-    WorthQueryLowerRuntimeAcceptanceSuite::new(vec![
+) -> Result<WorthQueryLowerRuntimeAcceptanceSuite, IdentityDerivationDenial> {
+    let surface = worth_query_lower_runtime_representative_surface(execution)?;
+    Ok(WorthQueryLowerRuntimeAcceptanceSuite::new(vec![
         WorthQueryLowerRuntimeAcceptanceRow::new(
             WorthQueryLowerRuntimeAcceptanceLane::Control,
-            control_digest(&surface),
+            control_digest(&surface)?,
             format!(
                 "crossings={} requests={} route_plans={} receipts={} envelopes={} concrete={} synthetic={} required_concrete_seams={} synthetic_tail_digest={} synthetic_tail={}",
                 worth_query_lower_runtime_crossing_inventory().rows().len(),
@@ -127,7 +128,7 @@ pub fn worth_query_lower_runtime_acceptance_suite(
             surface.route_parity_digest().to_string(),
             "equivalent admitted crossings normalize to shared lower-runtime route meaning while intentionally different families diverge".to_string(),
         ),
-    ])
+    ]))
 }
 
 #[cfg(test)]
@@ -135,11 +136,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn acceptance_suite_exposes_control_hostile_and_parity_lanes() {
+    fn acceptance_suite_exposes_control_hostile_and_parity_lanes(
+    ) -> Result<(), IdentityDerivationDenial> {
         let host_request = crate::test_execution_policy::serial_request();
         let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-        let suite = worth_query_lower_runtime_acceptance_suite(request_execution);
+        let suite = worth_query_lower_runtime_acceptance_suite(request_execution)?;
 
         assert_eq!(suite.rows().len(), 3);
         assert!(!suite.suite_digest().is_empty());
@@ -155,14 +157,17 @@ mod tests {
             .rows()
             .iter()
             .any(|row| row.lane() == WorthQueryLowerRuntimeAcceptanceLane::Parity));
+
+        Ok(())
     }
 
     #[test]
-    fn acceptance_suite_control_lane_proves_exact_cardinality() {
+    fn acceptance_suite_control_lane_proves_exact_cardinality(
+    ) -> Result<(), IdentityDerivationDenial> {
         let host_request = crate::test_execution_policy::serial_request();
         let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-        let suite = worth_query_lower_runtime_acceptance_suite(request_execution);
+        let suite = worth_query_lower_runtime_acceptance_suite(request_execution)?;
         let control = suite.lane(WorthQueryLowerRuntimeAcceptanceLane::Control);
 
         assert!(control.detail().contains("crossings="));
@@ -172,14 +177,17 @@ mod tests {
         assert!(control.detail().contains("synthetic="));
         assert!(control.detail().contains("synthetic_tail_digest="));
         assert!(control.detail().contains("synthetic_tail="));
+
+        Ok(())
     }
 
     #[test]
-    fn acceptance_suite_hostile_digest_stays_distinct_from_control() {
+    fn acceptance_suite_hostile_digest_stays_distinct_from_control(
+    ) -> Result<(), IdentityDerivationDenial> {
         let host_request = crate::test_execution_policy::serial_request();
         let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-        let suite = worth_query_lower_runtime_acceptance_suite(request_execution);
+        let suite = worth_query_lower_runtime_acceptance_suite(request_execution)?;
 
         assert_ne!(
             suite
@@ -189,5 +197,7 @@ mod tests {
                 .lane(WorthQueryLowerRuntimeAcceptanceLane::Hostile)
                 .digest()
         );
+
+        Ok(())
     }
 }

@@ -1,6 +1,6 @@
 use worth_query_decl::facade::{
     application_query::{
-        ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
+        ApplicationQueryBasisSupport, ApplicationQueryCardinality,
         ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
         ApplicationQueryLaneEligibility, ApplicationQueryOrderingDirection,
         ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder,
@@ -59,7 +59,7 @@ worth_query_decl::facade::worth_query_query_binding!(
 
 );
 
-pub fn account_discovery_definition() -> ApplicationQueryDefinition<
+pub fn account_discovery_definition() -> ApplicationQueryDefinitionBuilder<
     BankSchema,
     AccountDiscoveryQuery,
     AccountDiscoveryQueryParameters,
@@ -94,8 +94,6 @@ pub fn account_discovery_definition() -> ApplicationQueryDefinition<
                 .forward(BusinessAccount::reference()),
         )
         .order_by(identity, ApplicationQueryOrderingDirection::Ascending)
-        .build()
-        .expect("bank account discovery query is statically canonical")
 }
 
 impl WorthQueryApplicationProjection<BankSchema, AccountDiscoveryQuery> for VisibleAccount {

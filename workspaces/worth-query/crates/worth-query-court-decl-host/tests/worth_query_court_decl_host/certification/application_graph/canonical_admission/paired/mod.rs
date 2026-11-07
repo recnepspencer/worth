@@ -171,6 +171,10 @@ fn late_swallowed_pair_decode_refusal_keeps_the_view_cold_and_fresh_retry_recons
                     .expect("the native scope ran the actual pair owner");
                 (result, projected, report)
             };
+            // Certify source codecs, then discard the actual derived image so
+            // the measured reconstruction still performs every member read.
+            assert!(run(super::FUNDED_WORK, false).0.is_ok());
+            view.discard();
             let (keys, projected, funded) = run(super::FUNDED_WORK, false);
             let keys = keys.expect("funded real pair reconstructs both members");
             assert_eq!(projected, 2);
@@ -186,16 +190,16 @@ fn late_swallowed_pair_decode_refusal_keeps_the_view_cold_and_fresh_retry_recons
             }
             view.discard();
 
-            let AspectValue::String(worth_foundational::facade::InternedString::Raw(wire)) = super::binding::NestedBinding::encode(
+            let AspectValue::String(wire) = super::binding::NestedBinding::encode(
                 &opaque::SwallowingValue(super::value()),
             ).unwrap() else { panic!("the installed canonical binding has a string carrier"); };
-            // Use the real native owner's public bill, not a copied budget
-            // model. Its final canonical comparison charges exactly wire.len()
-            // bytes. The last seed alone visits sixteen 256-byte tags, so
-            // removing another half-wire reaches that seed after member one
-            // was staged. The assertions below independently qualify that window.
+            let wire = wire.raw_text().expect("canonical string carrier is textual");
+            // Use the real native bill. A sealed read omits canonical comparison
+            // but still parses sixteen 256-byte tags. Removing half a wire
+            // reaches the last seed after member one was staged. Assertions
+            // below independently qualify that genuine refusal window.
             let narrow_work = funded.charged_work()
-                .checked_sub(u64::try_from(wire.len() * 3 / 2).unwrap())
+                .checked_sub(u64::try_from(wire.len() / 2).unwrap())
                 .expect("the funded pair contains more work than its final decoder tail");
             let (refused, projected, _) = run(narrow_work, false);
             let refused = refused.expect_err("the narrow original pair request must refuse");

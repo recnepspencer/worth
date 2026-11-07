@@ -31,10 +31,9 @@ pub(super) fn aftermath_contract() -> PortableApplicationAftermathContract {
                 DeclaredAftermathPostcondition::BusinessPostcondition {
                     identity: text("neutralized"),
                 },
-            )
-            .unwrap(),
+            ),
         )),
-        Some(DeclaredReconciliationProcedure::new("reconcile").unwrap()),
+        Some(DeclaredReconciliationProcedure::new("reconcile")),
     )
 }
 
@@ -49,7 +48,7 @@ pub(super) fn inverse_aftermath_contract() -> PortableApplicationAftermathContra
     );
     let inverse = PortableRecordedInverse::from_untrusted_fields(
         text("Reverse"),
-        DeclaredLoweringCorrespondenceRef::new("reverse-correspondence").unwrap(),
+        DeclaredLoweringCorrespondenceRef::new("reverse-correspondence"),
         DeclaredAftermathPostcondition::ExactPriorTruth,
         demand,
     );

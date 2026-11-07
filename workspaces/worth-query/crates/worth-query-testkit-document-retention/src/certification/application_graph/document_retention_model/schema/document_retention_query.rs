@@ -6,10 +6,9 @@
 
 pub use worth_query_host::facade::declaration;
 pub use worth_query_host::facade::declaration::application_query::{
-    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryResultFieldRef,
-    ApplicationQueryResultShapeBuilder,
+    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
+    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder,
 };
 pub use worth_query_host::facade::{
     worth_query_application_query, worth_query_portable_type, worth_query_structured_value_binding,
@@ -61,7 +60,7 @@ worth_query_application_query!(
     name "document_retention_condition_query"
 );
 
-pub fn document_retention_query_definition() -> ApplicationQueryDefinition<
+pub fn document_retention_query_definition() -> ApplicationQueryDefinitionBuilder<
     DocumentRetentionSchema,
     DocumentRetentionQuery,
     DocumentQueryParameters,
@@ -87,11 +86,9 @@ pub fn document_retention_query_definition() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .expect("the document retention query is canonical")
 }
 
-pub fn document_retention_condition_query_definition() -> ApplicationQueryDefinition<
+pub fn document_retention_condition_query_definition() -> ApplicationQueryDefinitionBuilder<
     DocumentRetentionSchema,
     DocumentRetentionConditionQuery,
     DocumentQueryParameters,
@@ -116,8 +113,6 @@ pub fn document_retention_condition_query_definition() -> ApplicationQueryDefini
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .expect("the document condition query is canonical")
 }
 
 pub type ResultField<Slot, Field> =

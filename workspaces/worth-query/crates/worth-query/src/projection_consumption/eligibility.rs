@@ -1,3 +1,9 @@
+mod outcomes;
+use outcomes::{
+    admitted_projection_consumption, deferred_projection_consumption,
+    denied_projection_consumption, source_mismatched_projection_consumption,
+};
+
 use super::contracts::MaterializedProjectionContract;
 use super::declaration::ProjectionConsumptionDeclaration;
 use super::facts::{ProjectionFactKind, ProjectionFactRequest};
@@ -9,6 +15,7 @@ use super::identity::{
 use super::source::ProjectionSourceFamily;
 use super::support::{support_for_kind, ProjectionConsumptionSupportPosture};
 use super::visibility::visibility_denial;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ProjectionConsumptionDenialReason {
@@ -43,13 +50,15 @@ pub struct ProjectionConsumptionWarnings {
 }
 
 impl ProjectionConsumptionWarnings {
-    pub(crate) fn for_certification(kind: ProjectionConsumptionWarningKind) -> Self {
+    pub(crate) fn for_certification(
+        kind: ProjectionConsumptionWarningKind,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let warning_kinds = vec![kind];
-        let warning_digest = compose_eligibility_warning_kinds_digest(&warning_kinds);
-        Self {
+        let warning_digest = compose_eligibility_warning_kinds_digest(&warning_kinds)?;
+        Ok(Self {
             warning_kinds,
             warning_digest,
-        }
+        })
     }
 
     pub fn warning_kinds(&self) -> &[ProjectionConsumptionWarningKind] {
@@ -144,8 +153,12 @@ impl AdmittedProjectionConsumption {
         &self.warning_kinds
     }
 
-    pub fn bind_contract(&self) -> MaterializedProjectionContract {
-        super::contracts::bind_materialized_projection_contract(self)
+    pub fn bind_contract(
+        &self,
+    ) -> Result<MaterializedProjectionContract, IdentityDerivationDenial> {
+        Ok(super::contracts::bind_materialized_projection_contract(
+            self,
+        )?)
     }
 }
 
@@ -239,7 +252,7 @@ pub enum ProjectionConsumptionEligibility {
 
 pub fn evaluate_projection_consumption_eligibility(
     declaration: &ProjectionConsumptionDeclaration,
-) -> ProjectionConsumptionEligibility {
+) -> Result<ProjectionConsumptionEligibility, IdentityDerivationDenial> {
     let mut counters = ProjectionConsumptionEligibilityCounters {
         requested_fact_count: declaration.requested().requested_count(),
         ..ProjectionConsumptionEligibilityCounters::default()
@@ -248,21 +261,30 @@ pub fn evaluate_projection_consumption_eligibility(
 
     for requested_fact in declaration.requested().requested() {
         counters.evaluated_fact_count += 1;
-        match admit_requested_fact(declaration, requested_fact, &mut counters) {
-            Ok(Some(warning)) => warnings.push(warning),
-            Ok(None) => {}
-            Err(terminal) => return terminal,
+        match admit_requested_fact(declaration, requested_fact, &mut counters)? {
+            RequestedFactAdmission::Admitted(Some(warning)) => warnings.push(warning),
+            RequestedFactAdmission::Admitted(None) => {}
+            RequestedFactAdmission::Terminal(terminal) => return Ok(terminal),
         }
     }
 
-    admitted_projection_consumption(declaration, counters, warnings)
+    Ok(admitted_projection_consumption(
+        declaration,
+        counters,
+        warnings,
+    )?)
+}
+
+enum RequestedFactAdmission {
+    Admitted(Option<ProjectionConsumptionWarningKind>),
+    Terminal(ProjectionConsumptionEligibility),
 }
 
 fn admit_requested_fact(
     declaration: &ProjectionConsumptionDeclaration,
     requested_fact: &ProjectionFactRequest,
     counters: &mut ProjectionConsumptionEligibilityCounters,
-) -> Result<Option<ProjectionConsumptionWarningKind>, ProjectionConsumptionEligibility> {
+) -> Result<RequestedFactAdmission, IdentityDerivationDenial> {
     let warning = match support_for_kind(declaration.source(), requested_fact.kind()) {
         ProjectionConsumptionSupportPosture::Admitted => None,
         ProjectionConsumptionSupportPosture::AdmittedWithWarnings(kind) => {
@@ -271,130 +293,26 @@ fn admit_requested_fact(
         }
         ProjectionConsumptionSupportPosture::Deferred(reason) => {
             counters.deferred_count = 1;
-            return Err(deferred_projection_consumption(
-                declaration,
-                reason,
-                counters.clone(),
+            return Ok(RequestedFactAdmission::Terminal(
+                deferred_projection_consumption(declaration, reason, counters.clone())?,
             ));
         }
         ProjectionConsumptionSupportPosture::SourceMismatch => {
             counters.source_mismatch_count = 1;
-            return Err(source_mismatched_projection_consumption(
-                declaration,
-                requested_fact.kind(),
-                counters.clone(),
+            return Ok(RequestedFactAdmission::Terminal(
+                source_mismatched_projection_consumption(
+                    declaration,
+                    requested_fact.kind(),
+                    counters.clone(),
+                )?,
             ));
         }
     };
     if let Some(denial) = visibility_denial(declaration, requested_fact) {
         counters.denied_count = 1;
-        return Err(denied_projection_consumption(
-            declaration,
-            denial,
-            counters.clone(),
+        return Ok(RequestedFactAdmission::Terminal(
+            denied_projection_consumption(declaration, denial, counters.clone())?,
         ));
     }
-    Ok(warning)
-}
-
-fn deferred_projection_consumption(
-    declaration: &ProjectionConsumptionDeclaration,
-    reason: DeferredProjectionConsumptionReason,
-    counters: ProjectionConsumptionEligibilityCounters,
-) -> ProjectionConsumptionEligibility {
-    ProjectionConsumptionEligibility::Deferred(DeferredProjectionConsumption {
-        declaration_digest: declaration.declaration_digest().to_string(),
-        source_family: declaration.source().family(),
-        reason,
-        counters,
-        trace: ProjectionConsumptionEligibilityTrace {
-            rule_label: "fact_family_deferred_for_source",
-            explanation:
-                "the requested fact family remains deferred for this source family in the current milestone slice",
-        },
-        failure_digest: compose_eligibility_deferred_failure_digest(
-            declaration.declaration_digest(),
-        ),
-    })
-}
-
-fn source_mismatched_projection_consumption(
-    declaration: &ProjectionConsumptionDeclaration,
-    requested_fact_kind: ProjectionFactKind,
-    counters: ProjectionConsumptionEligibilityCounters,
-) -> ProjectionConsumptionEligibility {
-    ProjectionConsumptionEligibility::SourceMismatch(SourceMismatchedProjectionConsumption {
-        declaration_digest: declaration.declaration_digest().to_string(),
-        source_family: declaration.source().family(),
-        requested_fact_kind,
-        counters,
-        trace: ProjectionConsumptionEligibilityTrace {
-            rule_label: "source_family_does_not_prove_fact_family",
-            explanation: "the named source family does not prove the requested fact family",
-        },
-        failure_digest: compose_eligibility_source_mismatch_failure_digest(
-            declaration.declaration_digest(),
-            declaration.source().family(),
-            requested_fact_kind,
-        ),
-    })
-}
-
-fn denied_projection_consumption(
-    declaration: &ProjectionConsumptionDeclaration,
-    reason: ProjectionConsumptionDenialReason,
-    counters: ProjectionConsumptionEligibilityCounters,
-) -> ProjectionConsumptionEligibility {
-    ProjectionConsumptionEligibility::Denied(DeniedProjectionConsumption {
-        declaration_digest: declaration.declaration_digest().to_string(),
-        reason,
-        counters,
-        trace: ProjectionConsumptionEligibilityTrace {
-            rule_label: "authorized_projection_visibility_denial",
-            explanation:
-                "the requested field-backed fact is not visible in the bound authorized projection",
-        },
-        failure_digest: compose_eligibility_denied_failure_digest(declaration.declaration_digest()),
-    })
-}
-
-fn admitted_projection_consumption(
-    declaration: &ProjectionConsumptionDeclaration,
-    counters: ProjectionConsumptionEligibilityCounters,
-    warnings: Vec<ProjectionConsumptionWarningKind>,
-) -> ProjectionConsumptionEligibility {
-    let admitted = AdmittedProjectionConsumption {
-        declaration: declaration.clone(),
-        declaration_digest: declaration.declaration_digest().to_string(),
-        query_digest: declaration.source().query_digest().unwrap_or("").to_string(),
-        basis_digest: declaration.source().basis_digest().unwrap_or("").to_string(),
-        result_shape_digest: declaration.binding().result_shape_digest().to_string(),
-        authorized_projection_identity: declaration
-            .binding()
-            .authorized_projection_identity()
-            .to_string(),
-        warning_kinds: warnings.clone(),
-        counters: counters.clone(),
-        trace: ProjectionConsumptionEligibilityTrace {
-            rule_label: "all_requested_fact_families_admitted",
-            explanation:
-                "every requested fact family remained within the supported and visible surface for the declared source family",
-        },
-        eligibility_digest: compose_eligibility_admitted_digest(
-            declaration.declaration_digest(),
-            warnings.len(),
-        ),
-    };
-    if warnings.is_empty() {
-        ProjectionConsumptionEligibility::Admitted(admitted)
-    } else {
-        let warning_digest = compose_eligibility_warning_kinds_digest(&warnings);
-        ProjectionConsumptionEligibility::AdmittedWithWarnings(
-            admitted,
-            ProjectionConsumptionWarnings {
-                warning_kinds: warnings,
-                warning_digest,
-            },
-        )
-    }
+    Ok(RequestedFactAdmission::Admitted(warning))
 }

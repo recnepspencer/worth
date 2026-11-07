@@ -17,6 +17,7 @@ pub(super) struct DeferredIndexImage {
     directory: Arc<RelationalCheckpointDirectory>,
     _placement: crate::durability::medium::RelationalDurableMemberCustody,
     history: HistorySubsystem,
+    projections: crate::indexes::CheckpointIndexProjections,
     admitted: Mutex<Option<Result<Arc<IndexingState>, RelationalStorageUnavailable>>>,
 }
 
@@ -45,29 +46,34 @@ impl DeferredIndexImage {
             ),
             cause,
         };
-        let result = (|| {
-            let key = self.directory.manifest.derived_indexes;
-            let bytes = self
-                .directory
-                .source
-                .read_member(key, 1 << 30)
-                .map_err(refusal)?;
-            let payload =
-                member_frame::decode(&bytes, key, MemberKind::DerivedIndex).map_err(refusal)?;
-            let (legacy, checkpoint, format): (
+        let result =
+            crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
+                |lane| {
+                    let key = self.directory.manifest.derived_indexes;
+                    let bytes = self
+                        .directory
+                        .source
+                        .read_member(key, 1 << 30)
+                        .map_err(refusal)?;
+                    let payload = member_frame::decode(&bytes, key, MemberKind::DerivedIndex)
+                        .map_err(refusal)?;
+                    let (legacy, checkpoint, format): (
                 crate::indexes::data::DerivedIndexArtifacts,
                 Option<crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts>,
                 u16,
             ) = rmp_serde::from_slice(payload).map_err(|_| refusal(Cause::Damaged))?;
-            if !crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::supports_outer_format(format, checkpoint.is_some()) {
+                    if !crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::supports_outer_format(format, checkpoint.is_some()) {
                 return Err(refusal(Cause::Damaged).into());
             }
-            let mut state = IndexingState::default();
-            state.restore_generation_frontier(self.directory.manifest.index_generation_frontier);
-            for definition in &self.directory.manifest.index_definitions {
-                state.insert_definition(definition.clone());
-            }
-            crate::durability::derived_index_artifacts::restore_checkpoint_derived_index_artifacts(
+                    let mut state = IndexingState::default();
+                    state.restore_generation_frontier(
+                        self.directory.manifest.index_generation_frontier,
+                    );
+                    for definition in &self.directory.manifest.index_definitions {
+                        state.insert_definition(definition.clone());
+                    }
+                    crate::durability::derived_index_artifacts::restore_checkpoint_derived_index_artifacts(
+                lane,
                 &mut state,
                 &self.history,
                 &legacy,
@@ -76,9 +82,35 @@ impl DeferredIndexImage {
                 &mut Default::default(),
             )
             .map_err(|_| refusal(Cause::Damaged))?;
-            crate::execution::check_request(execution).map_err(Failure::Request)?;
-            Ok(Arc::new(state))
-        })();
+                    if let Some(checkpoint) = &checkpoint {
+                        crate::indexes::verify_checkpoint_index_bases(
+                            execution,
+                            &state,
+                            checkpoint.bases(),
+                            &self.projections,
+                        )
+                        .map_err(|stop| match stop {
+                            crate::durability::data::RelationalRecoveryStop::Request(cause) => {
+                                Failure::Request(cause)
+                            }
+                            crate::durability::data::RelationalRecoveryStop::Content(cause) => {
+                                Failure::Content(cause)
+                            }
+                            crate::durability::data::RelationalRecoveryStop::Durability(error) => {
+                                error
+                                    .storage_unavailable
+                                    .map(Failure::StorageUnavailable)
+                                    .unwrap_or_else(|| {
+                                        Failure::StorageUnavailable(refusal(Cause::Damaged))
+                                    })
+                            }
+                            _ => Failure::StorageUnavailable(refusal(Cause::Damaged)),
+                        })?;
+                    }
+                    crate::execution::check_request(execution).map_err(Failure::Request)?;
+                    Ok(Arc::new(state))
+                },
+            );
         match &result {
             Ok(state) => {
                 *admitted = Some(Ok(state.clone()));
@@ -96,8 +128,9 @@ impl DeferredIndexImage {
 impl IndexingSubsystem {
     pub(crate) fn install_cold_checkpoint(
         &self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         directory: Arc<RelationalCheckpointDirectory>,
-        history: &HistorySubsystem,
+        runtime: &crate::runtime::RelationalRuntime,
     ) -> Result<(), RelationalStorageUnavailable> {
         let placement = directory
             .source
@@ -119,25 +152,25 @@ impl IndexingSubsystem {
         for definition in &directory.manifest.index_definitions {
             state.insert_definition(definition.clone());
         }
-        let history =
-            history
-                .detached_owner_snapshot()
-                .map_err(|_| RelationalStorageUnavailable {
-                    subject: RelationalStorageSubject::Index(
-                        directory
-                            .manifest
-                            .index_definitions
-                            .first()
-                            .map_or(crate::indexes::data::DerivedIndexId(0), |definition| {
-                                definition.index_id
-                            }),
-                    ),
-                    cause: Cause::Damaged,
-                })?;
+        let history = runtime.history.detached_owner_snapshot().map_err(|_| {
+            RelationalStorageUnavailable {
+                subject: RelationalStorageSubject::Index(
+                    directory
+                        .manifest
+                        .index_definitions
+                        .first()
+                        .map_or(crate::indexes::data::DerivedIndexId(0), |definition| {
+                            definition.index_id
+                        }),
+                ),
+                cause: Cause::Damaged,
+            }
+        })?;
         state.cold_checkpoint = Some(Arc::new(DeferredIndexImage {
             _placement: placement,
             directory,
             history,
+            projections: crate::indexes::checkpoint_index_projections(lane, runtime),
             admitted: Mutex::new(None),
         }));
         self.install(state);
@@ -183,6 +216,7 @@ fn demand(
         for generation in admitted.generations.all() {
             state.restore_generation(generation.as_ref().clone());
         }
+        state.bases.merge(&admitted.bases);
         state.cold_checkpoint = None;
     }
     Ok(())
@@ -200,6 +234,7 @@ impl IndexingState {
         for generation in admitted.generations.all() {
             self.restore_generation(generation.as_ref().clone());
         }
+        self.bases.merge(&admitted.bases);
         self.cold_checkpoint = None;
         Ok(())
     }

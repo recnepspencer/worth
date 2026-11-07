@@ -52,7 +52,10 @@ impl<E> RootPathReadDenial<E> {
     }
     pub(in crate::domain_computation::primary_graph) fn frontier<L>(
         subject: &str,
-        cause: BoundedFrontierReadStop<L, worth_execution::WorkCeilingDenial>,
+        cause: BoundedFrontierReadStop<
+            L,
+            worth_relational::facade::transactions::RelationalExecutionDenialCause,
+        >,
     ) -> Self {
         match cause {
             BoundedFrontierReadStop::Limit(_) => Self::FrontierLimit {

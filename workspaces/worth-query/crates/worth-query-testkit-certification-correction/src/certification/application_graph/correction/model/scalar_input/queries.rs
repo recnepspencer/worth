@@ -32,14 +32,14 @@ macro_rules! query {
             fn scalar() -> ApplicationQueryOptionalAspectFieldRef<Query, ScalarSlot, NumericSchema, Value> {
                 ApplicationQueryOptionalAspectFieldRef::new("scalar", Value::at("Value"))
             }
-            pub fn definition() -> ApplicationQueryDefinition<NumericSchema, Query, Parameters, Row, Number> {
+            pub fn definition() -> ApplicationQueryDefinitionBuilder<NumericSchema, Query, Parameters, Row, Number> {
                 let shape = ApplicationQueryResultShapeBuilder::<NumericSchema, Query, Number, Row, ResultBinding>::new(Number::reference())
                     .field(primary()).optional_aspect_field(scalar()).build();
                 ApplicationQueryDefinitionBuilder::declare(Query::reference())
                     .root(Number::reference()).scope(Number::reference()).result_shape(shape)
                     .cardinality(ApplicationQueryCardinality::Many).disclosure(query!(@disclosure $audience, primary(), scalar()))
                     .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
-                    .lanes(ApplicationQueryLaneEligibility::one_shot()).public().build().unwrap()
+                    .lanes(ApplicationQueryLaneEligibility::one_shot()).public()
             }
             impl WorthQueryApplicationProjection<NumericSchema, Query> for Row {
                 fn project(row: &WorthQueryApplicationProjectionRow<'_, NumericSchema, Query>) -> Result<Self, WorthQueryApplicationProjectionDenial> {

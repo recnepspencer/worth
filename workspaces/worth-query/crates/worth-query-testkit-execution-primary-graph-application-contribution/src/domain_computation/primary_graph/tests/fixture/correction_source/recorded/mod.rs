@@ -34,16 +34,12 @@ impl ApplicationCorrectionBinding<IdentityExecutionSchema> for RecordedLabelEdit
         EditLabel::reference().definition().no_external_effect()
     }
     fn mechanism() -> DeclaredCorrectionMechanism<IdentityExecutionSchema> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [
-                    DeclaredPreImageLocus::from_field(AccountLabel::at("AccountLabel"))
-                        .expect("record field contract"),
-                ],
-                512,
-            )
-            .unwrap(),
-        )
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [DeclaredPreImageLocus::from_field(AccountLabel::at(
+                "AccountLabel",
+            ))],
+            512,
+        ))
     }
     fn derive_correction(
         original: &LabelEdit,
@@ -56,10 +52,9 @@ impl ApplicationCorrectionBinding<IdentityExecutionSchema> for RecordedLabelEdit
             return Err(UnsupportedSourceMeaning);
         };
         let prior = preimage
-            .field(
-                &DeclaredPreImageLocus::from_field(AccountLabel::at("AccountLabel"))
-                    .expect("record field contract"),
-            )
+            .field(&DeclaredPreImageLocus::from_field(AccountLabel::at(
+                "AccountLabel",
+            )))
             .ok_or(MissingPreImage)?;
         Ok(LabelEdit {
             status: original.status.clone(),

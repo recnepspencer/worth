@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::super::super::evidence_identities::diagnostic_stage_trace_identity;
 use super::super::bundle::QuerySubscriptionDiagnosticCounters;
@@ -17,20 +18,22 @@ pub struct QuerySubscriptionDiagnosticStageTrace {
 }
 
 impl QuerySubscriptionDiagnosticStageTrace {
-    pub(super) fn from_evidence(evidence: &QuerySubscriptionDiagnosticEvidence) -> Self {
+    pub(super) fn from_evidence(
+        evidence: &QuerySubscriptionDiagnosticEvidence,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let stage_trace_identity = diagnostic_stage_trace_identity(
             evidence.stage().as_str(),
             evidence.outcome().as_str(),
             evidence.source_identity(),
             evidence.evidence_identity(),
-        );
-        Self {
+        )?;
+        Ok(Self {
             stage: *evidence.stage(),
             outcome: *evidence.outcome(),
             source_identity: evidence.source_identity().clone(),
             evidence_identity: evidence.evidence_identity().clone(),
             stage_trace_identity,
-        }
+        })
     }
 
     pub fn stage(&self) -> &QuerySubscriptionDiagnosticStage {

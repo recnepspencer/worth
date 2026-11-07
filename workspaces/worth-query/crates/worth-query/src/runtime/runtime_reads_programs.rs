@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQuerySnapshotIdentity;
 
 impl WorthQueryRuntime {
@@ -87,7 +88,10 @@ impl WorthQueryRuntime {
             .and_then(|review| {
                 self.resolve_reviewed_admitted_derived_materialization_handoff(review)
             })
-            .map(|handoff| self.prepare_derived_materialization_execution_binding(handoff))
+            .and_then(|handoff| {
+                self.prepare_derived_materialization_execution_binding(handoff)
+                    .map_err(Into::into)
+            })
             .and_then(|binding| {
                 self.execute_derived_materialization_execution_binding(execution, binding)
             })
@@ -100,7 +104,7 @@ impl WorthQueryRuntime {
     ) -> Result<WorthQueryComputedInspectionEvidence, WorthQueryRuntimeError> {
         let review = self.review_runtime_derived_inspection(view.name().to_string())?;
         let handoff = self.resolve_reviewed_admitted_derived_inspection_handoff(review)?;
-        let binding = self.prepare_derived_inspection_execution_binding(handoff);
+        let binding = self.prepare_derived_inspection_execution_binding(handoff)?;
         self.execute_derived_inspection_execution_binding(execution, binding)
             .map(|result| result.evidence().clone())
     }
@@ -136,6 +140,7 @@ impl WorthQueryRuntime {
         self.effects
             .get(&effect_target)
             .map(WorthQueryEffectInspectionEvidence::from_runtime)
+            .transpose()?
             .ok_or_else(|| WorthQueryRuntimeError::MissingEffect(effect_name.to_string()))
     }
 
@@ -153,10 +158,15 @@ impl WorthQueryRuntime {
 
     pub(super) fn live_artifact_target_collections(
         &self,
-    ) -> BTreeMap<WorthQueryLiveArtifactTarget, WorthQueryMutationTargetCollectionIdentity> {
+    ) -> Result<
+        BTreeMap<WorthQueryLiveArtifactTarget, WorthQueryMutationTargetCollectionIdentity>,
+        IdentityDerivationDenial,
+    > {
         self.live_subscriptions
             .iter()
-            .map(|(target, state)| (target.clone(), state.request.target_collection_identity()))
+            .map(|(target, state)| {
+                Ok((target.clone(), state.request.target_collection_identity()?))
+            })
             .collect()
     }
 

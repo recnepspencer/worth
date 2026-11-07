@@ -225,6 +225,21 @@ impl crate::visibility::materialization::read_records::ProjectionRecordSource
     ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
         crate::execution::check_request(execution)
     }
+    fn demand_regions_head(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        partitions: impl IntoIterator<Item = crate::identity::data::PartitionId>,
+    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+        self.basis
+            .demand_regions_head(execution, partitions)
+            .map_err(Into::into)
+    }
+    fn admitted_head_region(
+        &self,
+        id: crate::identity::data::PartitionId,
+    ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
+        self.basis.head_region(id)
+    }
     fn selected_root(&self) -> Option<&Arc<crate::branch::RelationalBranchRoot>> {
         Some(self.basis.root())
     }

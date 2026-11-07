@@ -213,6 +213,7 @@ impl PreviewCertificationRejection {
     ) -> Self {
         Self {
             failure_class: match error.failure_class() {
+                crate::preview::PreviewWorkflowFoundationFailureClass::EvidenceIdentityDerivationDenied(cause) => PreviewFailureClass::EvidenceIdentityDerivationDenied(*cause),
                 crate::preview::PreviewWorkflowFoundationFailureClass::ReadOnlyPreviewWritebackFoundationForbidden => {
                     PreviewFailureClass::WorkflowFoundationAuthorityDenied
                 }

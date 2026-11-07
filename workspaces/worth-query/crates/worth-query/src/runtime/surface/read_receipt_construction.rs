@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::{WorthQueryEntity, WorthQuerySnapshotIdentity};
 use crate::planning::{FallbackDisposition, PlannedExecutionRoute};
 use crate::query_context::{QueryContextExecutionArtifact, QueryContextExecutionFamily};

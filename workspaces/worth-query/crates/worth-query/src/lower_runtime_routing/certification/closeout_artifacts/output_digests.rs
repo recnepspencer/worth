@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::hash_parts;
 use crate::lower_runtime_routing::{
     worth_query_lower_runtime_closeout_registry, worth_query_lower_runtime_crossing_inventory,
@@ -26,13 +27,13 @@ pub(super) fn certification_output_digests(
     non_bypass: &WorthQueryLowerRuntimeNonBypassAudit,
     slopes: &WorthQueryLowerRuntimePerformanceSlopeReport,
     certification_rows: &[WorthQueryLowerRuntimeCertificationRow],
-) -> Vec<WorthQueryLowerRuntimeCertificationOutputDigest> {
+) -> Result<Vec<WorthQueryLowerRuntimeCertificationOutputDigest>, IdentityDerivationDenial> {
     let crossings = worth_query_lower_runtime_crossing_inventory();
     let gaps = worth_query_lower_runtime_gap_registry();
     let closeout = worth_query_lower_runtime_closeout_registry();
     let support = worth_query_lower_runtime_support_matrix();
 
-    vec![
+    Ok(vec![
         output("query_digest", surface.query_digest().to_string()),
         output("capability_request_digest", digest_requests(surface)),
         output("capability_family_digest", digest_capability_families()),
@@ -55,23 +56,26 @@ pub(super) fn certification_output_digests(
         output(
             "crossing_inventory_digest",
             crossings
-                .inventory_digest()
+                .inventory_digest()?
                 .terminal_projection_for_reporting()
                 .to_string(),
         ),
         output(
             "crossing_classification_digest",
             crossings
-                .classification_digest()
+                .classification_digest()?
                 .terminal_projection_for_reporting()
                 .to_string(),
         ),
-        output("compatibility_debt_registry_digest", gaps.registry_digest()),
+        output(
+            "compatibility_debt_registry_digest",
+            gaps.registry_digest()?,
+        ),
         output(
             "debt_exit_criteria_digest",
             hash_parts(&[
-                gaps.debt_exit_criteria_digest(),
-                closeout.required_closeout_digest(),
+                gaps.debt_exit_criteria_digest()?,
+                closeout.required_closeout_digest()?,
             ]),
         ),
         output(
@@ -90,7 +94,7 @@ pub(super) fn certification_output_digests(
             "route_failure_topology_digest",
             digest_envelope_field(surface, "failure"),
         ),
-        output("route_support_matrix_digest", support.matrix_digest()),
+        output("route_support_matrix_digest", support.matrix_digest()?),
         output(
             "route_public_surface_digest",
             non_bypass.route_public_surface_digest().to_string(),
@@ -119,13 +123,13 @@ pub(super) fn certification_output_digests(
         ),
         output(
             "route_synthetic_tail_report_digest",
-            worth_query_lower_runtime_synthetic_tail_report(execution)
+            worth_query_lower_runtime_synthetic_tail_report(execution)?
                 .report_digest()
                 .to_string(),
         ),
         output(
             "route_synthetic_tail_justification_digest",
-            worth_query_lower_runtime_synthetic_tail_report(execution)
+            worth_query_lower_runtime_synthetic_tail_report(execution)?
                 .justification_digest()
                 .to_string(),
         ),
@@ -149,7 +153,7 @@ pub(super) fn certification_output_digests(
             "route_non_bypass_digest",
             non_bypass.route_non_bypass_digest().to_string(),
         ),
-        output("lower_runtime_gap_registry_digest", gaps.registry_digest()),
+        output("lower_runtime_gap_registry_digest", gaps.registry_digest()?),
         output(
             "failure_digest",
             hash_parts(
@@ -216,7 +220,7 @@ pub(super) fn certification_output_digests(
         ),
         output(
             "route_synthetic_tail_width",
-            worth_query_lower_runtime_synthetic_tail_report(execution)
+            worth_query_lower_runtime_synthetic_tail_report(execution)?
                 .rows()
                 .len()
                 .to_string(),
@@ -245,7 +249,7 @@ pub(super) fn certification_output_digests(
             "debt_registry_lookup_slope_digest",
             slope_digest(slopes, "debt_registry_lookup_slope_digest"),
         ),
-    ]
+    ])
 }
 
 fn output(name: &'static str, digest: String) -> WorthQueryLowerRuntimeCertificationOutputDigest {

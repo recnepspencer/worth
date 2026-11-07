@@ -63,6 +63,7 @@ impl RelationalPublishedPartitionDelta {
 
     pub(crate) fn projected_partitions_from_access(
         &self,
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         current: &impl PartitionAccess,
     ) -> BTreeMap<crate::identity::data::PartitionId, PartitionState> {
         let mut projected = current
@@ -164,8 +165,10 @@ mod tests {
             [(partition_id, (overlay, journal))],
         ));
 
-        let projected = delta
-            .projected_partitions_from_access(&BTreeMap::from([(partition_id, current_partition)]));
+        let projected = delta.projected_partitions_from_access(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            &BTreeMap::from([(partition_id, current_partition)]),
+        );
         let projected = &projected[&partition_id];
         assert_eq!(projected.entity_arena.slot_count(), 1);
         assert_eq!(projected.relation_arena.slot_count(), 1);

@@ -241,7 +241,8 @@ fn explicit_merge(
         &scope,
         branch_snapshot_identity(&runtime, "main"),
         BranchId("main".to_string()),
-    );
+    )
+    .expect("fixture digest must fit");
     let basis = basis_lifecycle()
         .branch_head("main", true)
         .prepare_mutation()
@@ -264,10 +265,11 @@ fn explicit_merge(
         },
     )
     .expect("explicit merge should normalize");
-    let eligibility = match evaluate_effect_eligibility(normalized) {
-        EffectEligibilityOutcome::Admitted(eligibility) => eligibility,
-        other => panic!("explicit merge should admit, got {other:?}"),
-    };
+    let eligibility =
+        match evaluate_effect_eligibility(normalized).expect("fixture digest must fit") {
+            EffectEligibilityOutcome::Admitted(eligibility) => eligibility,
+            other => panic!("explicit merge should admit, got {other:?}"),
+        };
     let lowered = scope_admitted_effect_plan(admit_effect_intent(eligibility))
         .lower()
         .expect("explicit merge should lower");
@@ -278,7 +280,10 @@ fn explicit_merge(
         )
         .expect("explicit merge should execute")
         .receipt();
-    let diagnostics = materialize_diagnostics
-        .then(|| receipt.materialize_diagnostics(EffectDiagnosticsRequest::forensic()));
+    let diagnostics = materialize_diagnostics.then(|| {
+        receipt
+            .materialize_diagnostics(EffectDiagnosticsRequest::forensic())
+            .expect("fixture digest must fit")
+    });
     (receipt, diagnostics)
 }

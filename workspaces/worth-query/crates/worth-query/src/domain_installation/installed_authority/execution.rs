@@ -1,4 +1,5 @@
 use super::WorthQueryInstalledDomainAuthorityWitness;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -43,8 +44,8 @@ impl WorthQueryInstalledDomainCapabilityKind {
 pub struct WorthQueryInstalledDomainCapabilityStop<S> {
     installed_authority: WorthQueryInstalledDomainAuthorityWitness,
     capability: WorthQueryInstalledDomainCapabilityKind,
-    declaration_identity: WorthQueryEvidenceIdentity,
-    stop: S,
+    declaration_identity: Option<WorthQueryEvidenceIdentity>,
+    stop: Result<S, IdentityDerivationDenial>,
 }
 
 impl<S> WorthQueryInstalledDomainCapabilityStop<S> {
@@ -57,8 +58,8 @@ impl<S> WorthQueryInstalledDomainCapabilityStop<S> {
         Self {
             installed_authority,
             capability,
-            declaration_identity,
-            stop,
+            declaration_identity: Some(declaration_identity),
+            stop: Ok(stop),
         }
     }
 
@@ -70,15 +71,29 @@ impl<S> WorthQueryInstalledDomainCapabilityStop<S> {
         self.capability
     }
 
-    pub fn declaration_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.declaration_identity
+    pub(crate) fn identity_refused(
+        installed_authority: WorthQueryInstalledDomainAuthorityWitness,
+        capability: WorthQueryInstalledDomainCapabilityKind,
+        declaration_identity: Option<WorthQueryEvidenceIdentity>,
+        cause: IdentityDerivationDenial,
+    ) -> Self {
+        Self {
+            installed_authority,
+            capability,
+            declaration_identity,
+            stop: Err(cause),
+        }
     }
 
-    pub fn stop(&self) -> &S {
-        &self.stop
+    pub fn declaration_identity(&self) -> Option<&WorthQueryEvidenceIdentity> {
+        self.declaration_identity.as_ref()
     }
 
-    pub fn into_stop(self) -> S {
+    pub fn stop(&self) -> Result<&S, IdentityDerivationDenial> {
+        self.stop.as_ref().map_err(|cause| *cause)
+    }
+
+    pub fn into_stop(self) -> Result<S, IdentityDerivationDenial> {
         self.stop
     }
 }
@@ -161,7 +176,7 @@ impl WorthQueryInstalledDomainExecutionReceipt {
                     WorthQueryEvidenceTag::new("managed_live_resource"),
                     managed_live_resource_identity.as_ref(),
                 )
-                .seal();
+                .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens");
         Self {
             installed_authority,
             capability,
@@ -173,11 +188,16 @@ impl WorthQueryInstalledDomainExecutionReceipt {
         }
     }
 
-    pub(crate) fn label_identity(role: &'static str, value: &str) -> WorthQueryEvidenceIdentity {
-        worth_query_evidence_identity(WorthQueryEvidenceScope::InstalledDomainExecution)
-            .field_shape(WorthQueryEvidenceTag::new("role"), role)
-            .field_value(WorthQueryEvidenceTag::new("query_minted_value"), value)
-            .seal()
+    pub(crate) fn label_identity(
+        role: &'static str,
+        value: &str,
+    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(
+            worth_query_evidence_identity(WorthQueryEvidenceScope::InstalledDomainExecution)
+                .field_shape(WorthQueryEvidenceTag::new("role"), role)
+                .field_value(WorthQueryEvidenceTag::new("query_minted_value"), value)
+                .seal()?,
+        )
     }
 
     pub(crate) fn derive(

@@ -19,9 +19,11 @@ impl Record<ExternalIdentityValue> for FinancialModelBindings {
         field("ExternalIdentityField", |row: &ExternalIdentityValue| {
             row.external_identity_field.clone()
         })
+        .equality_queryable(true)
         .and("MappingStatusField", |row: &ExternalIdentityValue| {
             row.mapping_status_field
         })
+        .equality_queryable(true)
         .build(
             |external_identity_field, mapping_status_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ExternalIdentityValue {
@@ -50,6 +52,7 @@ impl Record<PrincipalFactsValue> for FinancialModelBindings {
         field("PrincipalIdentityField", |row: &PrincipalFactsValue| {
             row.principal_identity_field
         })
+        .equality_queryable(true)
         .read_only()
         .build(
             |principal_identity_field, _: &mut ValueDecodeAdmission<'_>| {
@@ -83,22 +86,28 @@ impl Record<MarketIdentityValue> for FinancialModelBindings {
         field("MarketIdentityField", |row: &MarketIdentityValue| {
             row.market_identity_field.clone()
         })
+        .equality_queryable(true)
         .read_only()
         .and("MarketRevisionField", |row: &MarketIdentityValue| {
             row.market_revision_field
         })
+        .equality_queryable(true)
         .and("MarketDueField", |row: &MarketIdentityValue| {
             row.market_due_field
         })
+        .equality_queryable(true)
         .and("MarketLifecycleField", |row: &MarketIdentityValue| {
             row.market_lifecycle_field.clone()
         })
+        .equality_queryable(true)
         .and("MarketInputField", |row: &MarketIdentityValue| {
             row.market_input_field.clone()
         })
+        .equality_queryable(true)
         .and("MarketGateField", |row: &MarketIdentityValue| {
             row.market_gate_field.clone()
         })
+        .equality_queryable(true)
         .build(
             |market_identity_field,
              market_revision_field,
@@ -139,14 +148,17 @@ impl Record<CurveFactsValue> for FinancialModelBindings {
         field("CurvePartitionField", |row: &CurveFactsValue| {
             row.curve_partition_field.clone()
         })
+        .equality_queryable(true)
         .read_only()
         .and("CurveDetailField", |row: &CurveFactsValue| {
             row.curve_detail_field.clone()
         })
+        .equality_queryable(true)
         .read_only()
         .and("CurveZeroRateField", |row: &CurveFactsValue| {
             row.curve_zero_rate_field
         })
+        .equality_queryable(true)
         .build(
             |curve_partition_field,
              curve_detail_field,
@@ -179,6 +191,7 @@ impl Record<VolatilityFactsValue> for FinancialModelBindings {
         field("VolatilitySurfaceField", |row: &VolatilityFactsValue| {
             row.volatility_surface_field
         })
+        .equality_queryable(true)
         .read_only()
         .build(
             |volatility_surface_field, _: &mut ValueDecodeAdmission<'_>| {
@@ -204,11 +217,11 @@ pub struct PriceFactsValue {
 }
 impl Record<PriceFactsValue> for FinancialModelBindings {
     fn record() -> impl Shape<PriceFactsValue, Self> {
-        field("QuoteMidField", |row: &PriceFactsValue| row.quote_mid_field).build(
-            |quote_mid_field, _: &mut ValueDecodeAdmission<'_>| {
+        field("QuoteMidField", |row: &PriceFactsValue| row.quote_mid_field)
+            .equality_queryable(true)
+            .build(|quote_mid_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(PriceFactsValue { quote_mid_field })
-            },
-        )
+            })
     }
 }
 pub struct RiskFacts;
@@ -229,6 +242,7 @@ impl Record<RiskFactsValue> for FinancialModelBindings {
         field("RiskValueField", |row: &RiskFactsValue| {
             row.risk_value_field
         })
+        .equality_queryable(true)
         .build(|risk_value_field, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(RiskFactsValue { risk_value_field })
         })
@@ -254,12 +268,15 @@ impl Record<PortfolioFactsValue> for FinancialModelBindings {
         field("PortfolioValueField", |row: &PortfolioFactsValue| {
             row.portfolio_value_field
         })
+        .equality_queryable(true)
         .and("PortfolioDeskField", |row: &PortfolioFactsValue| {
             row.portfolio_desk_field.clone()
         })
+        .equality_queryable(true)
         .and("PortfolioRankField", |row: &PortfolioFactsValue| {
             row.portfolio_rank_field
         })
+        .equality_queryable(true)
         .build(
             |portfolio_value_field,
              portfolio_desk_field,
@@ -292,6 +309,7 @@ impl Record<AuditFactsValue> for FinancialModelBindings {
         field("AuditLabelField", |row: &AuditFactsValue| {
             row.audit_label_field.clone()
         })
+        .equality_queryable(true)
         .read_only()
         .build(|audit_label_field, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(AuditFactsValue { audit_label_field })

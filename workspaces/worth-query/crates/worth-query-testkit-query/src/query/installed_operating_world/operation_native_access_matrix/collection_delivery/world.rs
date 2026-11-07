@@ -116,7 +116,10 @@ impl CollectionDeliveryWorld {
             &admitted,
             &self.workspace,
         );
-        let foundational = admitted.delta().foundational_projection();
+        let foundational = admitted
+            .delta()
+            .foundational_projection()
+            .expect("fixture digest must fit");
         assert_move_patch(&patch, &self.moved, &foundational);
         let duplicate = required_patch(
             request_execution,
@@ -169,7 +172,8 @@ impl CollectionDeliveryWorld {
         };
         let outcome = self
             .consumer
-            .plan_patch(request_execution, &admitted, &self.workspace);
+            .plan_patch(request_execution, &admitted, &self.workspace)
+            .expect("positive fixture identity fits canonical digest bounds");
         let domain::WorthQueryCollectionDeliveryOutcome::NoDelivery(denial) = outcome else {
             panic!("out-of-window change invented a collection patch")
         };

@@ -70,33 +70,29 @@ impl WorthQueryApplicationInvariantRule<Catalog> for Rule {
     fn prepare_scope(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Catalog>,
-    ) -> Result<Self::Scope, WorthQueryApplicationInvariantPreparationError> {
+    ) -> Result<Self::Scope, WorthQueryApplicationInvariantError> {
         planner
             .retain_managed_index(&self.index)
-            .map_err(|e| WorthQueryApplicationInvariantPreparationError::new(format!("{e:?}")))
+            .map_err(WorthQueryApplicationInvariantError::from)
     }
     fn prepare_scope_checked(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Catalog>,
         budget: &dyn CustomInvariantLeaseBudget,
-    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantPreparationError>> {
+    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantError>> {
         Some(if budget.checkpoint(1) {
             self.prepare_scope(planner)
         } else {
-            Err(WorthQueryApplicationInvariantPreparationError::new(
-                "original preparation stopped",
-            ))
+            Err(WorthQueryApplicationInvariantError::Stopped)
         })
     }
     fn evaluate(
         &self,
         _: &WorthQueryApplicationInvariantContext<'_, '_, Catalog>,
         _: &Self::Scope,
-    ) -> Result<
-        WorthQueryApplicationInvariantVerdict<()>,
-        WorthQueryApplicationInvariantExecutionError,
-    > {
-        Err(execution("checked budget required"))
+    ) -> Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>
+    {
+        Err(WorthQueryApplicationInvariantError::CheckedHookRequired)
     }
     fn evaluate_checked(
         &self,
@@ -104,10 +100,7 @@ impl WorthQueryApplicationInvariantRule<Catalog> for Rule {
         scope: &Self::Scope,
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Option<
-        Result<
-            WorthQueryApplicationInvariantVerdict<()>,
-            WorthQueryApplicationInvariantExecutionError,
-        >,
+        Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>,
     > {
         Some(self.judge(context, scope, budget))
     }
@@ -118,16 +111,12 @@ impl Rule {
         context: &WorthQueryApplicationInvariantContext<'_, '_, Catalog>,
         scope: &WorthQueryPreparedInvariantManagedIndex<Catalog, prefix::PrefixIndex>,
         budget: &dyn CustomInvariantLeaseBudget,
-    ) -> Result<
-        WorthQueryApplicationInvariantVerdict<()>,
-        WorthQueryApplicationInvariantExecutionError,
-    > {
+    ) -> Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>
+    {
         if !budget.checkpoint(1) {
-            return Err(execution("original rule stopped"));
+            return Err(WorthQueryApplicationInvariantError::Stopped);
         }
-        let pair = context
-            .managed_index(scope)
-            .map_err(|cause| execution(format!("{cause:?}")))?;
+        let pair = context.managed_index(scope).map_err(execution)?;
         let probe = query::Probe {
             prefix: String::new(),
         };
@@ -142,10 +131,10 @@ impl Rule {
         for rows in before.iter().chain(std::iter::once(&after)) {
             bytes = bytes
                 .checked_add(layout::<query::ItemRow>(rows.capacity())?)
-                .ok_or_else(|| execution("record layout overflow"))?;
+                .ok_or(WorthQueryApplicationInvariantError::Allocation)?;
             for row in rows {
                 if !budget.checkpoint(1) {
-                    return Err(execution("original row visit stopped"));
+                    return Err(WorthQueryApplicationInvariantError::Stopped);
                 }
                 bytes = add(bytes, row.identity.capacity())?;
                 bytes = add(bytes, row.name.capacity())?;
@@ -164,7 +153,7 @@ impl Rule {
                 row.name == "forbidden" || row.children.iter().chain(&row.parents).any(forbidden);
         }
         if !budget.claim_result(bytes as u64) {
-            return Err(execution("original record storage stopped"));
+            return Err(WorthQueryApplicationInvariantError::Stopped);
         }
         let id = scope.scope_identity();
         self.calls.records.lock().unwrap().push(Record {
@@ -189,9 +178,9 @@ fn forbidden(node: &super::shape::Node) -> bool {
 fn size_nodes(
     node: &super::shape::Node,
     budget: &dyn CustomInvariantLeaseBudget,
-) -> Result<usize, WorthQueryApplicationInvariantExecutionError> {
+) -> Result<usize, WorthQueryApplicationInvariantError> {
     if !budget.checkpoint(1) {
-        return Err(execution("original descendant visit stopped"));
+        return Err(WorthQueryApplicationInvariantError::Stopped);
     }
     let mut bytes = add(node.identity.capacity(), node.name.capacity())?;
     bytes = add(
@@ -201,20 +190,22 @@ fn size_nodes(
     for child in &node.children {
         bytes = bytes
             .checked_add(size_nodes(child, budget)?)
-            .ok_or_else(|| execution("descendant record overflow"))?;
+            .ok_or(WorthQueryApplicationInvariantError::Allocation)?;
     }
     Ok(bytes)
 }
-fn execution(cause: impl std::fmt::Display) -> WorthQueryApplicationInvariantExecutionError {
-    WorthQueryApplicationInvariantExecutionError::new(cause.to_string())
+fn execution(
+    cause: impl Into<WorthQueryApplicationInvariantError>,
+) -> WorthQueryApplicationInvariantError {
+    cause.into()
 }
 
-fn add(left: usize, right: usize) -> Result<usize, WorthQueryApplicationInvariantExecutionError> {
+fn add(left: usize, right: usize) -> Result<usize, WorthQueryApplicationInvariantError> {
     left.checked_add(right)
-        .ok_or_else(|| execution("retained observation size overflow"))
+        .ok_or(WorthQueryApplicationInvariantError::Allocation)
 }
-fn layout<T>(count: usize) -> Result<usize, WorthQueryApplicationInvariantExecutionError> {
+fn layout<T>(count: usize) -> Result<usize, WorthQueryApplicationInvariantError> {
     count
         .checked_mul(size_of::<T>())
-        .ok_or_else(|| execution("retained observation layout overflow"))
+        .ok_or(WorthQueryApplicationInvariantError::Allocation)
 }

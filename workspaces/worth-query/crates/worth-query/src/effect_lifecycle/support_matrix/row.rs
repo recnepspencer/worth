@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceTag};
 
 use super::super::inventory::{EffectLoweredArtifactKind, EffectReceiptArtifactKind};
@@ -31,7 +32,7 @@ impl EffectLifecycleSupportRow {
         receipt_artifact_kind: EffectReceiptArtifactKind,
         posture: EffectSupportPosture,
         cause: EffectSupportCause,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let row_identity = WorthQueryEvidenceIdentity::compose(EFFECT_LIFECYCLE_IDENTITY_SCOPE)
             .field_shape(
                 WorthQueryEvidenceTag::new("identity_family"),
@@ -59,8 +60,8 @@ impl EffectLifecycleSupportRow {
             )
             .field_shape(WorthQueryEvidenceTag::new("posture"), posture.as_str())
             .field_shape(WorthQueryEvidenceTag::new("cause"), cause.as_str())
-            .seal();
-        Self {
+            .seal()?;
+        Ok(Self {
             basis_family,
             effect_family,
             authority_owner,
@@ -69,7 +70,7 @@ impl EffectLifecycleSupportRow {
             posture,
             cause,
             row_identity,
-        }
+        })
     }
 
     pub fn basis_family(&self) -> BasisFamily {

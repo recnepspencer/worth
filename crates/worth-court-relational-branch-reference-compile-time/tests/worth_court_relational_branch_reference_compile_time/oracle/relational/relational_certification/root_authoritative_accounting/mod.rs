@@ -35,7 +35,7 @@ fn full_authoritative_accounting_deduplicates_one_shared_envelope_and_root() {
 
     let observation = world
         .runtime
-        .observe_branch_sharing(&identities)
+        .observe_branch_sharing(execution, &identities)
         .expect("sharing inspection accepts exact owner identities");
     let ledger = world
         .runtime

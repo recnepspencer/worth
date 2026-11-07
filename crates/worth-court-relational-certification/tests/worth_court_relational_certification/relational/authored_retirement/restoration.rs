@@ -118,16 +118,13 @@ pub(super) fn check(
             .is_err(),
         "one retired cascade cannot be restored twice"
     );
-    let view = runtime
-        .read_truth()
-        .project_observation(&basis.observation())
-        .unwrap();
+    let view = pinned.project_read();
     let mut names = std::collections::BTreeMap::new();
     for record in &application {
         if let RecordRef::Entity(id) = record {
             let name = view
                 .read_exact_entity_state(execution, *id, |_, state| {
-                    text(state.unwrap(), "name", pinned.symbols())
+                    text(state.unwrap(), "name", &pinned.symbols())
                 })
                 .unwrap()
                 .unwrap();
@@ -155,7 +152,7 @@ pub(super) fn check(
             let ends = view
                 .read_exact_relation_state(execution, *id, |metadata, state| {
                     assert_eq!(
-                        text(state.unwrap(), "label", pinned.symbols()),
+                        text(state.unwrap(), "label", &pinned.symbols()),
                         "source association"
                     );
                     let name = |id| {
@@ -257,6 +254,62 @@ pub(super) fn check(
             )
         );
     }
+    // Compare carried counts only after the cold/warm restoration and its
+    // original record/route assertions, so this oracle cannot warm that path.
+    let (_, selected) = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    let handle = runtime
+        .snapshots()
+        .snapshot_for_observation(&selected.observation())
+        .unwrap();
+    let counts = runtime
+        .read_truth()
+        .inspect_snapshot(execution, &handle)
+        .unwrap()
+        .unwrap();
+    let rows = runtime
+        .read_truth()
+        .read_snapshot(&handle, execution)
+        .unwrap()
+        .unwrap();
+    assert_eq!(counts.entity_count, rows.entities().len());
+    assert_eq!(counts.relation_count, rows.relations().len());
+    // The directory must name the freshly restored generations, including
+    // relation identities, rather than the retired slot occupants.
+    let directory_entities = view
+        .bounded_entities_of_kind(execution, KindId(1), usize::MAX)
+        .unwrap()
+        .unwrap()
+        .into_records();
+    assert_eq!(
+        directory_entities
+            .iter()
+            .map(|row| row.entity_id)
+            .collect::<Vec<_>>(),
+        rows.entities()
+            .iter()
+            .filter(|row| row.kind.kind_id == KindId(1))
+            .map(|row| row.entity_id)
+            .collect::<Vec<_>>()
+    );
+    let directory_relations = view
+        .bounded_relations_of_kind(execution, KindId(2), usize::MAX)
+        .unwrap()
+        .unwrap()
+        .into_records();
+    assert_eq!(
+        directory_relations
+            .iter()
+            .map(|row| row.relation_id)
+            .collect::<Vec<_>>(),
+        rows.relations()
+            .iter()
+            .filter(|row| row.kind.kind_id == KindId(2))
+            .map(|row| row.relation_id)
+            .collect::<Vec<_>>()
+    );
+    runtime.snapshots().release_snapshot(&handle).unwrap();
 }
 
 pub(super) fn text(
@@ -268,6 +321,7 @@ pub(super) fn text(
     match state.get(&aspect_key(aspect)).unwrap().view() {
         View::Scalar(AspectValue::String(value)) => match value {
             worth_foundational::facade::InternedString::Raw(value) => value.clone(),
+            worth_foundational::facade::InternedString::Stored(value) => value.as_str().to_owned(),
             worth_foundational::facade::InternedString::Symbol(value) => symbols
                 .resolve(worth_relational::facade::symbols::Symbol(value.0))
                 .unwrap()

@@ -1,9 +1,9 @@
 use worth_query_decl::facade::application_query::{
-    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryOrderingDirection,
-    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
-    ApplicationQueryResultShapeBuilder, ExactlyOneResult, ManyResults, ReverseResultTraversal,
+    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
+    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryOrderingDirection, ApplicationQueryResultFieldRef,
+    ApplicationQueryResultRelationRef, ApplicationQueryResultShapeBuilder, ExactlyOneResult,
+    ManyResults, ReverseResultTraversal,
 };
 use worth_query_decl::facade::worth_query_application_query;
 use worth_query_host::facade::primary_graph::{
@@ -115,7 +115,7 @@ type PrincipalIdentitySelector = ApplicationQueryResultFieldRef<
     PrincipalIdentityField,
 >;
 
-pub fn account_authorized_users_definition() -> ApplicationQueryDefinition<
+pub fn account_authorized_users_definition() -> ApplicationQueryDefinitionBuilder<
     BankSchema,
     AccountAuthorizedUsersQuery,
     AccountAuthorizedUsersQueryParameters,
@@ -163,8 +163,6 @@ pub fn account_authorized_users_definition() -> ApplicationQueryDefinition<
             ApplicationQueryOrderingDirection::Ascending,
         )
         .continue_by(account_authorizations())
-        .build()
-        .expect("bank authorized account users query is statically canonical")
 }
 
 impl WorthQueryApplicationProjection<BankSchema, AccountAuthorizedUsersQuery>

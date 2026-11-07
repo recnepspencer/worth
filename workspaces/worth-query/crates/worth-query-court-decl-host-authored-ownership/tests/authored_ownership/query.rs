@@ -22,7 +22,7 @@ worth_query_portable_type!(ValueSlot => "authored-ownership.value-slot.v1");
 fn parameter<S: Scenario>() -> ApplicationQueryResultFieldRef<Query, ValueSlot, S, Value<S>> {
     ApplicationQueryResultFieldRef::new("value", schema::value::<S>())
 }
-pub fn definition<S: Scenario>() -> ApplicationQueryDefinition<S, Query, (), Row, Node<S>> {
+pub fn definition<S: Scenario>() -> ApplicationQueryDefinitionBuilder<S, Query, (), Row, Node<S>> {
     let query = ApplicationQueryDefinitionBuilder::declare(Query::reference())
         .root(schema::node::<S>())
         .scope(schema::node::<S>())
@@ -39,14 +39,13 @@ pub fn definition<S: Scenario>() -> ApplicationQueryDefinition<S, Query, (), Row
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public();
-    let query = if matches!(S::MODE, 2 | 3) {
+    if matches!(S::MODE, 2 | 3) {
         query.root_path(
             ApplicationQueryRootPath::from(schema::node::<S>()).forward(Peer::reference()),
         )
     } else {
         query
-    };
-    query.build().unwrap()
+    }
 }
 impl<S: Scenario> WorthQueryApplicationProjection<S, Query> for Row {
     fn project(

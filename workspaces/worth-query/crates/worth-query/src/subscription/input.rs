@@ -1,5 +1,6 @@
 use crate::basis_lifecycle::{BasisFamily, ScopedSubscriptionDeclarationBasis};
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::live::{LivePromotionDescriptor, LiveQueryFamily};
 use crate::view_shape_live::LiveViewShapeFamily;
 
@@ -47,13 +48,13 @@ impl LiveQueryAdmissionArtifact {
         descriptor: &LivePromotionDescriptor,
         scoped_declaration_basis: ScopedSubscriptionDeclarationBasis,
         dimensions: QuerySubscriptionAdmissionDimensions,
-    ) -> Self {
-        Self::from_live_promotion_with_future_selection(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::from_live_promotion_with_future_selection(
             descriptor,
             scoped_declaration_basis,
-            QuerySubscriptionFutureSelection::ordinary(),
+            QuerySubscriptionFutureSelection::ordinary()?,
             dimensions,
-        )
+        )?)
     }
 
     pub fn from_live_promotion_with_future_selection(
@@ -61,15 +62,15 @@ impl LiveQueryAdmissionArtifact {
         scoped_declaration_basis: ScopedSubscriptionDeclarationBasis,
         future_selection: QuerySubscriptionFutureSelection,
         dimensions: QuerySubscriptionAdmissionDimensions,
-    ) -> Self {
-        Self::from_promotion_parts(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::from_promotion_parts(
             descriptor,
             scoped_declaration_basis,
             None,
             dimensions,
             QuerySubscriptionConstructionSource::FacadeLive,
             future_selection,
-        )
+        )?)
     }
 
     pub fn from_live_promotion_with_view(
@@ -77,14 +78,14 @@ impl LiveQueryAdmissionArtifact {
         scoped_declaration_basis: ScopedSubscriptionDeclarationBasis,
         view_family: LiveViewShapeFamily,
         dimensions: QuerySubscriptionAdmissionDimensions,
-    ) -> Self {
-        Self::from_live_promotion_with_view_and_future_selection(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::from_live_promotion_with_view_and_future_selection(
             descriptor,
             scoped_declaration_basis,
             view_family,
-            QuerySubscriptionFutureSelection::ordinary(),
+            QuerySubscriptionFutureSelection::ordinary()?,
             dimensions,
-        )
+        )?)
     }
 
     pub fn from_live_promotion_with_view_and_future_selection(
@@ -93,15 +94,15 @@ impl LiveQueryAdmissionArtifact {
         view_family: LiveViewShapeFamily,
         future_selection: QuerySubscriptionFutureSelection,
         dimensions: QuerySubscriptionAdmissionDimensions,
-    ) -> Self {
-        Self::from_promotion_parts(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::from_promotion_parts(
             descriptor,
             scoped_declaration_basis,
             Some(view_family),
             dimensions,
             QuerySubscriptionConstructionSource::FacadeLive,
             future_selection,
-        )
+        )?)
     }
 
     fn from_promotion_parts(
@@ -111,23 +112,23 @@ impl LiveQueryAdmissionArtifact {
         dimensions: QuerySubscriptionAdmissionDimensions,
         construction_source: QuerySubscriptionConstructionSource,
         future_selection: QuerySubscriptionFutureSelection,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let basis_posture = subscription_posture_for_basis(&scoped_declaration_basis);
         let query_identity =
-            crate::identity::validated_query_evidence_identity(descriptor.query_digest());
+            crate::identity::validated_query_evidence_identity(descriptor.query_digest())?;
         let plan_identity = descriptor.plan_digest().evidence_identity().clone();
         let collection_identity = descriptor
             .collection_digest()
             .map(crate::identity::collection_plan_evidence_identity)
-            .unwrap_or_else(lifecycle_context_collection_absent_identity);
+            .unwrap_or_else(|| Ok(lifecycle_context_collection_absent_identity()))?;
         let relevance_identity =
             live_relevance_identity(descriptor.family(), &query_identity, &plan_identity);
         let delivery_intent_identity =
             live_delivery_intent_projection_identity(descriptor.family());
-        let policy_context_identity = lifecycle_context_policy_identity("none");
-        let tenant_context_identity = lifecycle_context_tenant_basis_identity("none");
+        let policy_context_identity = lifecycle_context_policy_identity("none")?;
+        let tenant_context_identity = lifecycle_context_tenant_basis_identity("none")?;
         let relationship_proof_context_identity =
-            lifecycle_context_relationship_proof_identity("none");
+            lifecycle_context_relationship_proof_identity("none")?;
         let mut artifact = Self {
             live_family: descriptor.family().clone(),
             query_identity,
@@ -148,7 +149,7 @@ impl LiveQueryAdmissionArtifact {
             diagnostic_source_identity: WorthQueryEvidenceIdentity::compose(
                 crate::evidence_identity::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
             )
-            .seal(),
+            .seal()?,
             authorized_projection_width: dimensions.authorized_projection_width,
             ordering_width: dimensions.ordering_width,
             grouping_width: dimensions.grouping_width,
@@ -156,8 +157,8 @@ impl LiveQueryAdmissionArtifact {
             view_shape_metadata_width: dimensions.view_shape_metadata_width,
             construction_source,
         };
-        artifact.diagnostic_source_identity = diagnostic_source_identity(&artifact);
-        artifact
+        artifact.diagnostic_source_identity = diagnostic_source_identity(&artifact)?;
+        Ok(artifact)
     }
 
     pub fn live_family(&self) -> &LiveQueryFamily {

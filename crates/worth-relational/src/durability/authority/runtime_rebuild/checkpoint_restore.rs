@@ -44,16 +44,47 @@ pub(super) fn restore_checkpoint_state(
     work: &mut CheckpointRestoreWork,
 ) -> Result<(), RelationalRecoveryStop> {
     if let Some(directory) = checkpoint.directory.clone() {
-        cold_directory::restore(execution, restored, &checkpoint, directory, work)?;
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            cold_directory::restore(
+                lane,
+                execution,
+                restored,
+                &checkpoint,
+                directory.clone(),
+                work,
+            )
+        })?;
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            restored
+                .indexes
+                .install_cold_checkpoint(lane, directory, restored)
+        })?;
+        restored
+            .index_authority()
+            .recover_installed_index_routing(execution)?;
         super::unshared_state(restored)?
             .durability
             .push_checkpoint(checkpoint);
         return Ok(());
     }
     let prepared = prepare_checkpoint_state(execution, restored, &checkpoint, work)?;
-    let restored = super::unshared_state(restored)?;
-    install_checkpoint_state(restored, prepared);
-    restored.durability.push_checkpoint(checkpoint);
+    install_checkpoint_state(super::unshared_state(restored)?, prepared);
+    restored
+        .index_authority()
+        .recover_installed_index_routing(execution)?;
+    if let Some(artifact) = &checkpoint.derived_index_checkpoint {
+        crate::indexes::verify_checkpoint_index_bases(
+            execution,
+            &restored.indexes.snapshot(),
+            artifact.bases(),
+            &crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
+                |lane| crate::indexes::checkpoint_index_projections(lane, restored),
+            ),
+        )?;
+    }
+    super::unshared_state(restored)?
+        .durability
+        .push_checkpoint(checkpoint);
     Ok(())
 }
 
@@ -64,26 +95,43 @@ fn prepare_checkpoint_state(
     work: &mut CheckpointRestoreWork,
 ) -> Result<PreparedCheckpointState, RelationalRecoveryStop> {
     validate_checkpoint_lineage_artifact(checkpoint)?;
-    let symbols = prepare_symbols(restored, checkpoint)?;
+    let symbols =
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            prepare_symbols(lane, restored, checkpoint)
+        })?;
     let record_identity = prepare_record_identity(checkpoint)?;
-    let branch_root_images = restore_branch_root_images(restored, checkpoint, work)?;
+    let branch_root_images =
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            restore_branch_root_images(lane, execution, restored, checkpoint, work)
+        })?;
     recovered_schema_meaning::check_current_schema_meaning(
         execution,
         checkpoint,
         &branch_root_images,
         &restored.config.schema.registry,
     )?;
-    let partitions = prepare_partitions(restored, checkpoint, &branch_root_images, work)?;
-    let history = prepare_history(
-        execution,
-        restored,
-        checkpoint,
-        branch_root_images,
-        &symbols,
-        work,
-    )?;
-    let lineage = prepare_lineage(restored, checkpoint);
-    let indexes = prepare_indexes(checkpoint, &history, work)?;
+    let partitions =
+        prepare_partitions(execution, restored, checkpoint, &branch_root_images, work)?;
+    let history =
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            prepare_history(
+                lane,
+                execution,
+                restored,
+                checkpoint,
+                branch_root_images,
+                &symbols,
+                work,
+            )
+        })?;
+    let lineage =
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            prepare_lineage(lane, restored, checkpoint)
+        });
+    let indexes =
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            prepare_indexes(lane, checkpoint, &history, work)
+        })?;
     Ok(PreparedCheckpointState {
         symbols,
         record_identity,
@@ -95,11 +143,12 @@ fn prepare_checkpoint_state(
 }
 
 fn prepare_symbols(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     restored: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
 ) -> Result<crate::symbols::data::StringInterner, DurabilityError> {
     let mut symbols = restored.services.symbols.interner_snapshot();
-    symbols.restore_snapshot(checkpoint.symbol_table.clone());
+    symbols.restore_snapshot(lane, checkpoint.symbol_table.clone());
     symbols
         .reserve_frontier(checkpoint.symbol_identity_frontier)
         .map_err(|detail| {
@@ -112,6 +161,7 @@ fn prepare_symbols(
 }
 
 fn prepare_partitions(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
     branch_roots: &branch_root_images::RestoredBranchRootImages,
@@ -121,21 +171,26 @@ fn prepare_partitions(
         crate::identity::data::PartitionId,
         crate::storage::overlay::PartitionState,
     >,
-    DurabilityError,
+    RelationalRecoveryStop,
 > {
     let aspect_contracts = crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog::readmit(
         &checkpoint.aspect_contracts,
     )?;
-    partition_images::restore_partition_mirror(
-        checkpoint,
-        branch_roots,
-        &restored.schema_contract_runtime.aspect_contract_plans,
-        &aspect_contracts,
-        work,
-    )
+    crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+        partition_images::restore_partition_mirror(
+            lane,
+            execution,
+            checkpoint,
+            branch_roots,
+            &restored.schema_contract_runtime.aspect_contract_plans,
+            &aspect_contracts,
+            work,
+        )
+    })
 }
 
 fn prepare_lineage(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     restored: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
 ) -> LineageState {
@@ -160,11 +215,12 @@ fn prepare_lineage(
         .collect::<Vec<_>>();
     let mut events = events;
     events.sort_by_key(|(event, _)| event.event_id);
-    lineage.replace_events(events);
+    lineage.replace_events(lane, events);
     lineage
 }
 
 fn prepare_indexes(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     checkpoint: &DurableCheckpoint,
     history: &HistorySubsystem,
     work: &mut CheckpointRestoreWork,
@@ -185,6 +241,7 @@ fn prepare_indexes(
         work.index_definitions_readmitted += 1;
     }
     restore_checkpoint_derived_index_artifacts(
+        lane,
         &mut indexes,
         history,
         &checkpoint.derived_index_artifacts,
@@ -226,88 +283,17 @@ pub(super) fn clear_recovery_partition_pins(restored: &mut RelationalRuntime) {
 }
 
 pub(super) fn finalize_restored_runtime(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
 ) -> Result<(), crate::durability::data::RelationalRecoveryStop> {
-    // The eager image lane rebuilds this optional inspection cache. In the
-    // native member lane, selected-state invariant scans remain authoritative;
-    // index generations retain their explicit deferred readmission cell.
-    if restored
-        .durability
-        .checkpoint_selection()
-        .snapshot()
-        .is_none()
-    {
-        restored
-            .index_authority()
-            .rebuild_unique_entity_aspect_field_indexes(execution)
-            .map_err(|denial| {
-                use crate::durability::data::RelationalRecoveryStop as Stop;
-                use crate::indexes::data::DerivedIndexMaintenanceDenialKind as Denial;
-                match denial {
-                    Denial::Execution(cause) => Stop::Request(cause),
-                    Denial::Basis(basis) => restored_index_stop(basis),
-                    Denial::SnapshotUnavailable
-                    | Denial::CommitMismatch
-                    | Denial::BeforeRootMismatch
-                    | Denial::IndexUnavailable(_)
-                    | Denial::GenerationKindMismatch(_)
-                    | Denial::PriorEntryMismatch
-                    | Denial::ColdReconstructionRequired
-                    | Denial::WorkBudgetExceeded
-                    | Denial::ForeignCandidate
-                    | Denial::CandidateLifetimeExpired { .. }
-                    | Denial::CandidateUnavailable
-                    | Denial::CandidateIndexesAlreadyPrepared
-                    | Denial::GenerationIdentityExhausted => DurabilityError::new(
-                        crate::durability::data::RecoveryFailureClass::ReplayFailure,
-                        format!("recovered unique-index admission failed: {denial:?}"),
-                    )
-                    .into(),
-                }
-            })?;
-    }
-    restored.history.rebuild_branch_head_version_index();
+    restored
+        .index_authority()
+        .recover_installed_index_routing(execution)?;
+    restored.history.rebuild_branch_head_version_index(lane);
     restored.visibility.cache.clear();
     restored
         .visibility_pins()
-        .rebuild_branch_head_visibility_residency();
+        .rebuild_branch_head_visibility_residency(lane);
     Ok(())
 }
-
-fn restored_index_stop(
-    denial: crate::branch::RelationalBranchBasisDenial,
-) -> crate::durability::data::RelationalRecoveryStop {
-    use crate::branch::RelationalBranchBasisDenial as Denial;
-    use crate::durability::data::RelationalRecoveryStop as Stop;
-    use crate::execution::RelationalExecutionDenialCause as Cause;
-    match denial {
-        Denial::Cancelled => Stop::Request(Cause::Cancelled),
-        Denial::TimedOut => Stop::Request(Cause::DeadlineElapsed),
-        Denial::MalformedDescriptor
-        | Denial::UnsupportedDescriptorVersion { .. }
-        | Denial::ForeignRuntime { .. }
-        | Denial::UnknownBranch(_)
-        | Denial::ArchivedBranch(_)
-        | Denial::DeletingBranch(_)
-        | Denial::StaleReferenceGeneration
-        | Denial::WrongBranchLocalTruthVersion
-        | Denial::EmptyCommittedTargetMismatch
-        | Denial::WrongImmutableTarget
-        | Denial::MixedAxis(_)
-        | Denial::MaterializationUnavailable
-        | Denial::UnavailableRetainedTarget
-        | Denial::RetentionCapacityExhausted
-        | Denial::RetentionIdentityExhausted
-        | Denial::SnapshotIdentityExhausted
-        | Denial::OwnerUnavailable
-        | Denial::OwnerFailure => DurabilityError::new(
-            crate::durability::data::RecoveryFailureClass::ReplayFailure,
-            format!("recovered unique-index basis admission failed: {denial:?}"),
-        )
-        .into(),
-    }
-}
-
-#[cfg(test)]
-mod stop_tests;

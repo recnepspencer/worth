@@ -72,7 +72,7 @@ fn reclamation_keeps_pinned_old_and_sibling_versions_and_cleans_bindings() {
         ..Default::default()
     };
     assert_eq!(
-        catalog.reclaim_except_versions(&retained, &BTreeSet::new()),
+        catalog.reclaim_except_versions(&retained, &BTreeSet::new(), &BTreeSet::new()),
         1
     );
     assert_eq!(
@@ -112,7 +112,10 @@ fn repeated_global_builds_at_one_live_basis_retain_only_selectable_generation() 
     };
     let global = BTreeSet::from([DerivedIndexId(1)]);
     assert_eq!(catalog.retained(&retained, &global).len(), 1);
-    assert_eq!(catalog.reclaim_except_versions(&retained, &global), 127);
+    assert_eq!(
+        catalog.reclaim_except_versions(&retained, &global, &BTreeSet::new()),
+        127
+    );
     assert_eq!(catalog.all().len(), 1);
     assert_eq!(
         id(catalog.exact(DerivedIndexId(1), None, VersionId(7), SchemaVersionId(1))),
@@ -160,7 +163,10 @@ fn global_exact_reclamation_keeps_pinned_history_and_sibling_basis() {
         latest_branches: BTreeSet::from([BranchId("branch-1".into()), BranchId("branch-2".into())]),
     };
     let global = BTreeSet::from([DerivedIndexId(1)]);
-    assert_eq!(catalog.reclaim_except_versions(&retained, &global), 2);
+    assert_eq!(
+        catalog.reclaim_except_versions(&retained, &global, &BTreeSet::new()),
+        2
+    );
     for (version, selected) in [(3, 2), (4, 4), (5, 5)] {
         assert_eq!(
             id(catalog.exact(
@@ -185,7 +191,10 @@ fn failed_only_global_basis_retains_its_selected_typed_denial_candidate() {
         ..Default::default()
     };
     let global = BTreeSet::from([DerivedIndexId(1)]);
-    assert_eq!(catalog.reclaim_except_versions(&retained, &global), 1);
+    assert_eq!(
+        catalog.reclaim_except_versions(&retained, &global, &BTreeSet::new()),
+        1
+    );
     assert_eq!(
         id(catalog.candidate(DerivedIndexId(1), None, VersionId(7), SchemaVersionId(1))),
         Some(DerivedIndexGenerationId(2))
@@ -208,7 +217,11 @@ fn failed_latest_does_not_displace_published_exact_at_retained_basis() {
         ..Default::default()
     };
     assert_eq!(
-        catalog.reclaim_except_versions(&retained, &BTreeSet::from([DerivedIndexId(1)])),
+        catalog.reclaim_except_versions(
+            &retained,
+            &BTreeSet::from([DerivedIndexId(1)]),
+            &BTreeSet::new()
+        ),
         1
     );
     assert_eq!(

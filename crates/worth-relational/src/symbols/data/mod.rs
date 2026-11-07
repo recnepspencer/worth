@@ -27,3 +27,6 @@ pub(crate) use field_text::field_text_recovery_stop;
 mod commit_texts;
 
 pub(crate) use commit_texts::required_commit_symbols;
+
+mod snapshot_observation;
+pub use snapshot_observation::observe_symbol_snapshot_materialization;

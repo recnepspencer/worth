@@ -11,6 +11,7 @@ impl<'a> From<&'a InternedString> for CanonicalTextView<'a> {
     fn from(value: &'a InternedString) -> Self {
         match value {
             InternedString::Raw(value) => Self::Raw(value),
+            InternedString::Stored(value) => Self::Raw(value.as_str()),
             InternedString::Symbol(value) => Self::Symbol(value.0),
         }
     }

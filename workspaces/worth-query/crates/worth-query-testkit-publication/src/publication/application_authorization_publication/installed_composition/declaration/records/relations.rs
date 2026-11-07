@@ -155,7 +155,6 @@ impl Scalar<u64> for GrantBindings {
 impl Scalar<GrantKey> for GrantBindings {
     type Binding = GrantKeyBinding;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct GrantKey(String);
@@ -164,10 +163,7 @@ impl GrantKey {
         self.0.clone().into()
     }
     fn checked(value: worth_foundational::facade::InternedString) -> Option<Self> {
-        match value {
-            worth_foundational::facade::InternedString::Raw(value) => Some(Self(value)),
-            worth_foundational::facade::InternedString::Symbol(_) => None,
-        }
+        value.into_raw_text().map(Self)
     }
 }
 impl From<String> for GrantKey {

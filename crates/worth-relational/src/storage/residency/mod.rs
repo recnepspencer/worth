@@ -1,10 +1,20 @@
 //! Shared region residency. Only an accepted, counted lease lends read views.
+mod record_directory;
+pub(crate) use record_directory::{
+    DirectoryError as RecordDirectoryError, KindRegionDirectory, PortableRecordDirectory,
+    RegionRecordDirectory,
+};
+mod live_counts;
+pub(crate) use live_counts::LiveRecordCounts;
 mod cell;
 mod content_capture;
 pub(crate) use content_capture::RegionContentFailure;
 mod kind_admission;
 mod kind_authority;
 mod kind_commitment;
+mod kind_history;
+mod kind_incremental;
+mod kind_index;
 mod kind_projection;
 pub(crate) use kind_commitment::RelationalRegionKindCommitment;
 pub(crate) use kind_projection::rebuild_region_history_kind_buckets;
@@ -21,8 +31,10 @@ mod history_capture;
 pub(crate) mod history_capture_bound;
 mod history_fold;
 mod history_kind_cache;
+mod history_presence;
 mod region_capture;
 mod region_image;
+mod region_initialization;
 mod region_load;
 mod region_publication;
 mod resident_history;
@@ -38,7 +50,7 @@ pub(crate) use region_capture::capture_region_members;
 pub(crate) use views::{RelationalRegionFullView, RelationalRegionHeadView};
 
 use cell::ResidentRegion;
-pub(crate) use cell::{RelationalColdRegion, RelationalRegionResidency};
+pub(crate) use cell::{ReconstructedRegionHead, RelationalColdRegion, RelationalRegionResidency};
 
 mod retention;
 pub(crate) use retention::RelationalRegionRetention;
@@ -63,4 +75,15 @@ mod required_symbols;
 pub(crate) use probe::probe_full_sources;
 pub(crate) use probe::{probe_full, PartitionProbe};
 mod symbol_admission_identity;
+mod symbol_changes;
+pub(crate) use symbol_changes::RegionSymbolChanges;
+mod symbol_inheritance;
 pub(crate) use symbol_admission_identity::RelationalRegionSymbolAdmissionIdentity;
+mod symbol_publication;
+pub(crate) use symbol_publication::{
+    RegionSymbolPublication, SymbolPublicationAdmission, SymbolPublicationKey,
+};
+
+pub(crate) use content_capture::restore_failure as content_reconstruction_failure;
+
+pub(crate) use checkpoint_capture::verify_checkpoint_directory;

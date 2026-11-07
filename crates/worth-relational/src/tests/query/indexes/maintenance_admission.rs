@@ -43,11 +43,16 @@ fn budget() -> DerivedIndexMaintenanceBudget {
 }
 
 #[test]
-fn selected_field_cold_admission_matches_native_build_and_warm_reuse_is_not_cold() {
+fn selected_field_admission_reuses_installed_generation_even_with_cold_allowance() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (runtime, basis, request) = fixture(execution);
+    assert!(runtime
+        .index_authority()
+        .build_for_basis(execution, request.clone(), &basis)
+        .failed_indexes
+        .is_empty());
     let mut work = 0;
     let mut bytes = 0;
     let refreshed = runtime
@@ -65,7 +70,7 @@ fn selected_field_cold_admission_matches_native_build_and_warm_reuse_is_not_cold
         )
         .unwrap();
     assert!(work > 0 && bytes > 0);
-    assert!(refreshed.work.cold_record_slots > 0);
+    assert_eq!(refreshed.work.cold_record_slots, 0);
     let rebuilt = runtime
         .index_authority()
         .build_for_basis(execution, request.clone(), &basis);
@@ -105,6 +110,11 @@ fn selected_field_refusals_preserve_original_stop_and_publish_no_partial_generat
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (measure_runtime, measure_basis, measure_request) = fixture(execution);
+    assert!(measure_runtime
+        .index_authority()
+        .build_for_basis(execution, measure_request.clone(), &measure_basis)
+        .failed_indexes
+        .is_empty());
     let (mut total_work, mut total_bytes, mut calls) = (0, 0, 0);
     measure_runtime
         .index_authority()
@@ -128,6 +138,10 @@ fn selected_field_refusals_preserve_original_stop_and_publish_no_partial_generat
         (u64::MAX, u64::MAX, calls, OriginalStop::Cancelled),
     ] {
         let (runtime, basis, request) = fixture(execution);
+        let seeded = runtime
+            .index_authority()
+            .build_for_basis(execution, request.clone(), &basis);
+        assert!(seeded.failed_indexes.is_empty());
         let before = runtime.current_version_id();
         let (mut work_used, mut bytes_used, mut call) = (0, 0, 0);
         let denied = runtime
@@ -159,15 +173,19 @@ fn selected_field_refusals_preserve_original_stop_and_publish_no_partial_generat
         };
         assert_eq!(stop, expected);
         assert_eq!(runtime.current_version_id(), before);
-        assert!(runtime
-            .index_access()
-            .read_published_generation_for_observation(
-                execution,
-                request.index_ids[0],
-                &basis.observation(),
-            )
-            .unwrap()
-            .is_none());
+        assert!(
+            runtime
+                .index_access()
+                .read_published_generation_for_observation(
+                    execution,
+                    request.index_ids[0],
+                    &basis.observation(),
+                )
+                .unwrap()
+                .unwrap()
+                .generation_id
+                == seeded.generations[0].generation_id
+        );
     }
 }
 

@@ -6,6 +6,7 @@ use crate::continuation_pipeline::{
     WorthQueryContinuationExecutionOutcome, WorthQueryContinuationExecutionReadmissionStop,
     WorthQueryContinuationExecutionReadmissionStopKind, WorthQueryContinuationExecutionTranscript,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::support::transcript_digest;
 
@@ -16,8 +17,8 @@ pub(super) fn transcript_from_readmission_denial<
     request_descriptor: WorthQueryBindingRequestDescriptor,
     linked: crate::binding_pipeline::WorthQueryBindingLinkedArtifacts,
     stop: WorthQueryContinuationExecutionReadmissionStop,
-) -> WorthQueryContinuationExecutionTranscript<D, I> {
-    match stop.kind() {
+) -> Result<WorthQueryContinuationExecutionTranscript<D, I>, IdentityDerivationDenial> {
+    Ok(match stop.kind() {
         WorthQueryContinuationExecutionReadmissionStopKind::StaleBasis => transcript(
             request_descriptor,
             linked,
@@ -25,7 +26,7 @@ pub(super) fn transcript_from_readmission_denial<
             "basis_freshness",
             "retained continuation basis evidence is stale",
             "stale",
-        ),
+        )?,
         WorthQueryContinuationExecutionReadmissionStopKind::AsyncRequestDrift => transcript(
             request_descriptor,
             linked,
@@ -33,7 +34,7 @@ pub(super) fn transcript_from_readmission_denial<
             "async_request_alignment",
             "current continuation async request identity drifted from the retained request",
             "async_request_drift",
-        ),
+        )?,
         WorthQueryContinuationExecutionReadmissionStopKind::ReplayDrift => transcript(
             request_descriptor,
             linked,
@@ -41,7 +42,7 @@ pub(super) fn transcript_from_readmission_denial<
             "replay_alignment",
             "current continuation replay identity drifted from the retained replay witness",
             "replay_drift",
-        ),
+        )?,
         WorthQueryContinuationExecutionReadmissionStopKind::PolicyRemaskDrift => transcript(
             request_descriptor,
             linked,
@@ -49,7 +50,7 @@ pub(super) fn transcript_from_readmission_denial<
             "remask_alignment",
             "current continuation meaning was remasked before execution",
             "remask_drift",
-        ),
+        )?,
         WorthQueryContinuationExecutionReadmissionStopKind::PreviewCrossedResidue => transcript(
             request_descriptor,
             linked,
@@ -57,7 +58,7 @@ pub(super) fn transcript_from_readmission_denial<
             "preview_residue_alignment",
             "current continuation crossed preview residue before execution",
             "preview_crossed_residue",
-        ),
+        )?,
         WorthQueryContinuationExecutionReadmissionStopKind::StaleCompletion => transcript(
             request_descriptor,
             linked,
@@ -65,7 +66,7 @@ pub(super) fn transcript_from_readmission_denial<
             "completion_freshness",
             "current continuation completion posture is stale at execution time",
             "stale_completion",
-        ),
+        )?,
         WorthQueryContinuationExecutionReadmissionStopKind::BasisMismatch => transcript(
             request_descriptor,
             linked,
@@ -73,7 +74,7 @@ pub(super) fn transcript_from_readmission_denial<
             "basis_alignment",
             "current lower-runtime basis evidence drifted from the retained continuation basis",
             "basis_mismatch",
-        ),
+        )?,
         WorthQueryContinuationExecutionReadmissionStopKind::LowerBindingMismatch => transcript(
             request_descriptor,
             linked,
@@ -81,7 +82,7 @@ pub(super) fn transcript_from_readmission_denial<
             "lower_binding_alignment",
             "current lower-runtime binding drifted from the retained continuation binding",
             "lower_binding_mismatch",
-        ),
+        )?,
         WorthQueryContinuationExecutionReadmissionStopKind::AuthorityMismatch => transcript(
             request_descriptor,
             linked,
@@ -89,8 +90,8 @@ pub(super) fn transcript_from_readmission_denial<
             "authority_alignment",
             "current lower-runtime authority no longer matches retained continuation authority",
             "authority_mismatch",
-        ),
-    }
+        )?,
+    })
 }
 
 fn transcript<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>(
@@ -100,8 +101,8 @@ fn transcript<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>(
     failed_check: &'static str,
     failure_reason: &'static str,
     outcome_token: &'static str,
-) -> WorthQueryContinuationExecutionTranscript<D, I> {
-    WorthQueryContinuationExecutionTranscript::new(
+) -> Result<WorthQueryContinuationExecutionTranscript<D, I>, IdentityDerivationDenial> {
+    Ok(WorthQueryContinuationExecutionTranscript::new(
         request_descriptor,
         outcome,
         vec![
@@ -114,7 +115,7 @@ fn transcript<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>(
             I::Family::semantic_family_key(),
             &linked,
             outcome_token,
-        ),
+        )?,
         linked,
-    )
+    ))
 }

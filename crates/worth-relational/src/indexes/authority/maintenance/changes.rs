@@ -1,7 +1,7 @@
+use super::root_view::IndexRootView;
 use super::work::MaintenanceWork;
 use crate::identity::data::{EntityId, RelationId};
 use crate::indexes::data::DerivedIndexMaintenanceDenialKind as Denial;
-use crate::runtime::VisibilityProjectionView;
 use crate::storage::data::RecordLifecycleState;
 use crate::transactions::data::RecordRef;
 use std::collections::BTreeSet;
@@ -13,29 +13,28 @@ pub(super) struct ChangedRecords {
 
 impl ChangedRecords {
     pub(super) fn patch(
-        root: &crate::branch::RelationalBranchRoot,
+        change: &crate::storage::substrate::maintenance::CommitChange,
         work: &mut MaintenanceWork,
     ) -> Result<Self, Denial> {
-        let patches = &root
-            .canonical_envelope()
-            .ok_or(Denial::CommitMismatch)?
-            .patch
-            .authoritative_record_patches;
-        work.charge(patches.len())?;
-        work.note_patch_records(patches.len());
         let mut changed = Self {
             entities: BTreeSet::new(),
             relations: BTreeSet::new(),
         };
-        for patch in patches {
-            match patch.target {
-                RecordRef::Entity(id) => {
-                    work.ordered::<EntityId, ()>(changed.entities.len(), 1, 0)?;
-                    changed.entities.insert(id);
-                }
-                RecordRef::Relation(id) => {
-                    work.ordered::<RelationId, ()>(changed.relations.len(), 1, 0)?;
-                    changed.relations.insert(id);
+        for (_, partition) in change.partitions() {
+            work.note_patch_records(partition.records().len());
+            for record in partition.records() {
+                work.charge(1)?;
+                for state in record.before.iter().chain(&record.after) {
+                    match state.record {
+                        RecordRef::Entity(id) => {
+                            work.ordered::<EntityId, ()>(changed.entities.len(), 1, 0)?;
+                            changed.entities.insert(id);
+                        }
+                        RecordRef::Relation(id) => {
+                            work.ordered::<RelationId, ()>(changed.relations.len(), 1, 0)?;
+                            changed.relations.insert(id);
+                        }
+                    }
                 }
             }
         }
@@ -43,10 +42,12 @@ impl ChangedRecords {
     }
 
     pub(super) fn cold(
-        view: &VisibilityProjectionView,
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        view: &IndexRootView,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         work: &mut MaintenanceWork,
     ) -> Result<Self, Denial> {
-        let root = view.selected_root().ok_or(Denial::CommitMismatch)?;
+        let root = view.root();
         let slots = root
             .entity_slot_count()
             .saturating_add(root.relation_slot_count())
@@ -69,17 +70,12 @@ impl ChangedRecords {
                 return work.prepare(1, 0);
             };
             work.prepare(33, 0)?;
-            let Some(partition) = root.partition_state(partition_id).map_err(|failure| {
-                Denial::Execution(
-                    crate::execution::RelationalExecutionDenialCause::StorageUnavailable(failure),
-                )
-            })?
-            else {
+            let Some(partition) = view.head(execution, partition_id, work)? else {
                 return Ok(());
             };
-            for slot in partition.entity_arena.live_bitset.iter_set_slots() {
+            for slot in partition.entity_arena().live_slots() {
                 work.read()?;
-                let Some(slot_view) = partition.entity_arena.get_slot(slot) else {
+                let Some(slot_view) = partition.entity_arena().get_slot(slot) else {
                     continue;
                 };
                 let id = EntityId::new(partition_id, slot as u64, slot_view.generation());
@@ -96,9 +92,9 @@ impl ChangedRecords {
                     entities.insert(id);
                 }
             }
-            for slot in partition.relation_arena.live_bitset.iter_set_slots() {
+            for slot in partition.relation_arena().live_slots() {
                 work.read()?;
-                let Some(slot_view) = partition.relation_arena.get_slot(slot) else {
+                let Some(slot_view) = partition.relation_arena().get_slot(slot) else {
                     continue;
                 };
                 let id = RelationId::new(partition_id, slot as u64, slot_view.generation());

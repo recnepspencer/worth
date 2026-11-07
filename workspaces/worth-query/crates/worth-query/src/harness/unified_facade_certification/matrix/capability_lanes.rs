@@ -14,7 +14,7 @@ pub(super) fn identity_evolution_lane() -> UnifiedFacadeLane {
     let facade = WorthQueryApplicationFacade::runtime_backed_default();
     let preflight = execution_preflights::direct_runtime_preflight();
     let support = facade.support_matrix();
-    let report = facade.support_report();
+    let report = facade.support_report().expect("fixture digest must fit");
     let identity = facade
         .identity_evolution_capability()
         .expect("identity evolution should admit");
@@ -69,7 +69,7 @@ pub(super) fn query_read_lane() -> UnifiedFacadeLane {
     let facade = WorthQueryApplicationFacade::runtime_backed_default();
     let preflight = execution_preflights::direct_runtime_preflight();
     let support = facade.support_matrix();
-    let report = facade.support_report();
+    let report = facade.support_report().expect("fixture digest must fit");
     let query_reads = facade
         .query_read_capability()
         .expect("query reads should admit");
@@ -102,7 +102,7 @@ pub(super) fn live_lane() -> UnifiedFacadeLane {
     let facade = WorthQueryApplicationFacade::runtime_backed_default();
     let preflight = execution_preflights::direct_runtime_preflight();
     let support = facade.support_matrix();
-    let report = facade.support_report();
+    let report = facade.support_report().expect("fixture digest must fit");
     let live = facade
         .live_query_capability()
         .expect("live queries should admit");
@@ -135,7 +135,7 @@ pub(super) fn preview_lane() -> UnifiedFacadeLane {
     let facade = WorthQueryApplicationFacade::runtime_backed_default();
     let preflight = execution_preflights::direct_runtime_preflight();
     let support = facade.support_matrix();
-    let report = facade.support_report();
+    let report = facade.support_report().expect("fixture digest must fit");
     let preview = facade
         .preview_query_capability()
         .expect("preview sessions should admit");
@@ -176,7 +176,7 @@ pub(super) fn workflow_lane() -> UnifiedFacadeLane {
     let facade = WorthQueryApplicationFacade::runtime_backed_default();
     let preflight = execution_preflights::direct_runtime_preflight();
     let support = facade.support_matrix();
-    let report = facade.support_report();
+    let report = facade.support_report().expect("fixture digest must fit");
     let preview = facade
         .preview_query_capability()
         .expect("preview sessions should admit");
@@ -239,7 +239,7 @@ pub(super) fn historical_lane() -> UnifiedFacadeLane {
     let facade = WorthQueryApplicationFacade::runtime_backed_default();
     let preflight = execution_preflights::direct_runtime_preflight();
     let support = facade.support_matrix();
-    let report = facade.support_report();
+    let report = facade.support_report().expect("fixture digest must fit");
     let historical = facade
         .historical_query_capability()
         .expect("historical capability should be admitted in the unified facade");

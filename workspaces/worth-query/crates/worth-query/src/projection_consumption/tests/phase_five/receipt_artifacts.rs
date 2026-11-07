@@ -22,10 +22,11 @@ fn consumed_fact_set_issues_receipt_with_stable_operational_fields() {
                 ]),
             ),
     )
-    .bind_contract();
+    .bind_contract()
+    .expect("fixture digest must fit");
     let consumed = contract.extract_from_relational_row_set(&row_set).unwrap();
 
-    let receipt = consumed.issue_receipt();
+    let receipt = consumed.issue_receipt().expect("fixture digest must fit");
 
     assert_eq!(receipt.contract_digest(), contract.contract_digest());
     assert_eq!(receipt.fact_set_digest(), consumed.fact_set_digest());
@@ -47,10 +48,11 @@ fn projection_consumption_transition_rules_name_implemented_and_deferred_neighbo
         binding(&["identity.id"]),
         ProjectMaterializedFacts::declare().entity_identities(),
     )
-    .bind_contract();
+    .bind_contract()
+    .expect("fixture digest must fit");
     let consumed = contract.extract_from_relational_row_set(&row_set).unwrap();
-    let receipt = consumed.issue_receipt();
-    let rules = receipt.transition_rules();
+    let receipt = consumed.issue_receipt().expect("fixture digest must fit");
+    let rules = receipt.transition_rules().expect("fixture digest must fit");
 
     assert!(rules.rules().iter().any(
         |rule: &crate::projection_consumption::ProjectionConsumptionTransitionRule| {
@@ -85,11 +87,14 @@ fn receipt_derives_self_describing_projection_consumption_envelope() {
                 ]),
             ),
     )
-    .bind_contract();
+    .bind_contract()
+    .expect("fixture digest must fit");
     let consumed = contract.extract_from_relational_row_set(&row_set).unwrap();
-    let receipt = consumed.issue_receipt();
+    let receipt = consumed.issue_receipt().expect("fixture digest must fit");
 
-    let envelope = receipt.projection_consumption_envelope();
+    let envelope = receipt
+        .projection_consumption_envelope()
+        .expect("fixture digest must fit");
 
     assert_eq!(envelope.source_family(), receipt.source_family());
     assert_eq!(envelope.source_identity(), receipt.source_identity());
@@ -105,7 +110,10 @@ fn receipt_derives_self_describing_projection_consumption_envelope() {
     );
     assert_eq!(
         envelope.transition_rules_digest(),
-        receipt.transition_rules().rules_digest()
+        receipt
+            .transition_rules()
+            .expect("fixture digest must fit")
+            .rules_digest()
     );
     assert!(!envelope.envelope_digest().is_empty());
 }
@@ -114,10 +122,14 @@ fn receipt_derives_self_describing_projection_consumption_envelope() {
 fn receipt_and_envelope_surfaces_are_publicly_reachable() {
     let _receipt_issue: fn(
         &super::super::super::ConsumedProjectionFactSet,
-    ) -> ProjectionConsumptionReceipt =
-        super::super::super::ConsumedProjectionFactSet::issue_receipt;
+    ) -> Result<
+        ProjectionConsumptionReceipt,
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    > = super::super::super::ConsumedProjectionFactSet::issue_receipt;
     let _envelope_derive: fn(
         &ProjectionConsumptionReceipt,
-    ) -> SelfDescribingProjectionConsumptionEnvelope =
-        ProjectionConsumptionReceipt::projection_consumption_envelope;
+    ) -> Result<
+        SelfDescribingProjectionConsumptionEnvelope,
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    > = ProjectionConsumptionReceipt::projection_consumption_envelope;
 }

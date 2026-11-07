@@ -23,7 +23,8 @@ fn future_checked_signal_compatibility_stays_future_typed_when_orchestration_sto
             &handle,
             FutureSignalInput::<TemporalFutureSignalFamily>::new("face-a"),
         ),
-    );
+    )
+    .expect("fixture digest must fit");
     let async_signal = orchestrated_outcome_from_signal_checked_on_handle(
         &handle,
         AsyncFutureSignalFamily::aspect_contract(),
@@ -32,7 +33,8 @@ fn future_checked_signal_compatibility_stays_future_typed_when_orchestration_sto
             &handle,
             FutureSignalInput::<AsyncFutureSignalFamily>::new("face-a"),
         ),
-    );
+    )
+    .expect("fixture digest must fit");
 
     match temporal {
         WorthQuerySignalCompatibilityOrchestrationOutcome::Bound(value) => {
@@ -68,7 +70,8 @@ fn public_future_signal_posture_still_stops_before_preparation_under_orchestrati
             &handle,
             FutureSignalInput::<TemporalFutureSignalFamily>::new("face-a"),
         ),
-    );
+    )
+    .expect("fixture digest must fit");
     let async_signal = orchestrated_outcome_from_signal_checked_on_handle(
         &handle,
         AsyncFutureSignalFamily::aspect_contract(),
@@ -77,7 +80,8 @@ fn public_future_signal_posture_still_stops_before_preparation_under_orchestrati
             &handle,
             FutureSignalInput::<AsyncFutureSignalFamily>::new("face-a"),
         ),
-    );
+    )
+    .expect("fixture digest must fit");
 
     match temporal {
         WorthQuerySignalCompatibilityOrchestrationOutcome::Bound(value) => {

@@ -1,11 +1,10 @@
 //! A rule governing only the ledger, which no account publication touches.
+use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantError;
 use crate::domain_computation::primary_graph::tests::application_attempt::typed_invariant_refusal::rule::Refusal;
 use crate::domain_computation::primary_graph::tests::application_attempt::typed_invariant_refusal::rule::RefusalBinding;
 use crate::domain_computation::primary_graph::tests::application_attempt::typed_invariant_refusal::schema::RefusalSchema;
 use worth_relational::facade::runtime::CustomInvariantLeaseBudget;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantContext;
-use worth_relational::facade::runtime::CustomInvariantExecutionError as WorthQueryApplicationInvariantExecutionError;
-use worth_relational::facade::runtime::CustomInvariantPreparationError as WorthQueryApplicationInvariantPreparationError;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantRule;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantScopePlanner;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantVerdict;
@@ -47,13 +46,13 @@ impl WorthQueryApplicationInvariantRule<RefusalSchema> for LedgerRule {
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, RefusalSchema>,
         _: &dyn CustomInvariantLeaseBudget,
-    ) -> Option<Result<(), WorthQueryApplicationInvariantPreparationError>> {
+    ) -> Option<Result<(), WorthQueryApplicationInvariantError<Refusal>>> {
         Some(self.prepare_scope(planner))
     }
     fn prepare_scope(
         &self,
         _: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, RefusalSchema>,
-    ) -> Result<(), WorthQueryApplicationInvariantPreparationError> {
+    ) -> Result<(), WorthQueryApplicationInvariantError<Refusal>> {
         Ok(())
     }
     fn evaluate(
@@ -62,7 +61,7 @@ impl WorthQueryApplicationInvariantRule<RefusalSchema> for LedgerRule {
         _: &(),
     ) -> Result<
         WorthQueryApplicationInvariantVerdict<Refusal>,
-        WorthQueryApplicationInvariantExecutionError,
+        WorthQueryApplicationInvariantError<Refusal>,
     > {
         Ok(WorthQueryApplicationInvariantVerdict::Pass)
     }

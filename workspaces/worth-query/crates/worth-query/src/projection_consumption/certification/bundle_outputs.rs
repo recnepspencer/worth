@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::identity::{
     compose_closeout_forbidden_fallback_surface_row_digest,
     compose_closeout_oracle_surface_row_digest, compose_closeout_proof_shape_surface_row_digest,
@@ -39,17 +40,17 @@ pub fn assemble_closeout_bundle_outputs(
     oracle_report: &ProjectionConsumptionOracleReport,
     seeded_report: &ProjectionConsumptionSeededCertificationReport,
     slope_report: &ProjectionConsumptionSlopeReport,
-) -> ProjectionConsumptionBundleOutputs {
-    let transition_rules = ProjectionConsumptionTransitionRules::current_phase_five_surface();
-    let target_dx_digest = target_dx_digest();
+) -> Result<ProjectionConsumptionBundleOutputs, IdentityDerivationDenial> {
+    let transition_rules = ProjectionConsumptionTransitionRules::current_phase_five_surface()?;
+    let target_dx_digest = target_dx_digest()?;
     let negative_dx_boundary_digest = compose_negative_dx_boundary_digest(
         public_boundary_audit.audit_digest(),
         proof_shape_audit.proof_shape_digest(),
-    );
+    )?;
     let failure_digest = compose_failure_digest_bundle(
-        &denied_masked_field_failure_digest(),
-        &source_mismatch_failure_digest(),
-    );
+        &denied_masked_field_failure_digest()?,
+        &source_mismatch_failure_digest()?,
+    )?;
     let rows = vec![
         certification_row(
             ProjectionConsumptionCertificationLane::SupportMatrixSurface,
@@ -63,7 +64,7 @@ pub fn assemble_closeout_bundle_outputs(
                 family_inventory.inventory_digest(),
                 support_matrix.matrix_digest(),
                 support_matrix.support_traceability_digest(),
-            ),
+            )?,
         ),
         certification_row(
             ProjectionConsumptionCertificationLane::PublicBoundarySurface,
@@ -75,7 +76,7 @@ pub fn assemble_closeout_bundle_outputs(
             compose_closeout_public_boundary_surface_row_digest(
                 public_boundary_audit.audit_digest(),
                 negative_dx_boundary_digest.as_str(),
-            ),
+            )?,
         ),
         certification_row(
             ProjectionConsumptionCertificationLane::ProofShapeSurface,
@@ -87,7 +88,7 @@ pub fn assemble_closeout_bundle_outputs(
             compose_closeout_proof_shape_surface_row_digest(
                 proof_shape_audit.proof_shape_digest(),
                 proof_shape_audit.phase_progression_digest(),
-            ),
+            )?,
         ),
         certification_row(
             ProjectionConsumptionCertificationLane::ForbiddenFallbackSurface,
@@ -99,7 +100,7 @@ pub fn assemble_closeout_bundle_outputs(
             compose_closeout_forbidden_fallback_surface_row_digest(
                 forbidden_fallback_audit.audit_digest(),
                 forbidden_fallback_audit.total_occurrence_count(),
-            ),
+            )?,
         ),
         certification_row(
             ProjectionConsumptionCertificationLane::OracleSurface,
@@ -111,7 +112,7 @@ pub fn assemble_closeout_bundle_outputs(
             compose_closeout_oracle_surface_row_digest(
                 oracle_report.oracle_digest(),
                 oracle_report.manifest_digest(),
-            ),
+            )?,
         ),
         certification_row(
             ProjectionConsumptionCertificationLane::SeededReplaySurface,
@@ -125,7 +126,7 @@ pub fn assemble_closeout_bundle_outputs(
                 seeded_report.seeded_sequence_digest(),
                 seeded_report.seed_replay_digest(),
                 seeded_report.seed_generator_class_digest(),
-            ),
+            )?,
         ),
     ];
     let outputs = vec![
@@ -187,11 +188,11 @@ pub fn assemble_closeout_bundle_outputs(
         ),
         (
             "projection_source_digest",
-            source_digest(lifecycle.contract()),
+            source_digest(lifecycle.contract())?,
         ),
         (
             "projection_source_receipt_digest",
-            source_receipt_digest(lifecycle.contract()),
+            source_receipt_digest(lifecycle.contract())?,
         ),
         (
             "projection_fact_family_inventory_digest",
@@ -305,7 +306,7 @@ pub fn assemble_closeout_bundle_outputs(
             slope_report.support_lookup_slope_digest().to_string(),
         ),
     ];
-    ProjectionConsumptionBundleOutputs { rows, outputs }
+    Ok(ProjectionConsumptionBundleOutputs { rows, outputs })
 }
 
 fn certification_row(
@@ -320,6 +321,6 @@ fn certification_row(
     }
 }
 
-fn target_dx_digest() -> String {
-    compose_target_dx_digest()
+fn target_dx_digest() -> Result<String, IdentityDerivationDenial> {
+    Ok(compose_target_dx_digest()?)
 }

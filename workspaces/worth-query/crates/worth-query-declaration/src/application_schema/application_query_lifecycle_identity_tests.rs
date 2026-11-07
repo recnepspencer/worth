@@ -343,7 +343,6 @@ impl fragment::BindingSet for QueryBindings {
 impl fragment::Scalar<u64> for QueryBindings {
     type Binding = super::U64ApplicationValueBinding;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl fragment::Entity for Root {
     const NAME: &'static str = "Root";
@@ -366,11 +365,11 @@ impl fragment::Aspect for ChildAspect {
 struct QueryRow0(u64);
 impl fragment::Record<QueryRow0> for QueryBindings {
     fn record() -> impl fragment::Shape<QueryRow0, Self> {
-        fragment::field("Id", |row: &QueryRow0| row.0).build(
-            |value, _: &mut super::ValueDecodeAdmission<'_>| {
+        fragment::field("Id", |row: &QueryRow0| row.0)
+            .equality_queryable(true)
+            .build(|value, _: &mut super::ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(QueryRow0(value))
-            },
-        )
+            })
     }
 }
 type RootIdentity = fragment::FieldSelection<QueryModel, Root, RootAspect, u64>;

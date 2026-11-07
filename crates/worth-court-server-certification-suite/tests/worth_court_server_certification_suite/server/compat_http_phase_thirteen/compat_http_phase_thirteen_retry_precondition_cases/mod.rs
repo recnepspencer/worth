@@ -20,8 +20,14 @@ fn compat_http_retry_and_precondition_matrix_keeps_authority_and_resume_honest()
     assert!(!first.envelope().retry_receipt().is_previously_completed());
     assert!(retry.envelope().retry_receipt().is_previously_completed());
     assert_eq!(
-        first.mutation_result().result_digest(),
-        retry.mutation_result().result_digest(),
+        first
+            .mutation_result()
+            .result_digest()
+            .expect("admitted mutation result identity"),
+        retry
+            .mutation_result()
+            .result_digest()
+            .expect("admitted mutation result identity"),
     );
     assert_denial_contains(
         &conflict,
