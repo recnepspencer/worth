@@ -118,33 +118,28 @@ fn native_empty_predecessor_and_seeded_updates_match_cold_at_every_step() {
             .unwrap(),
     );
     let entity = changed_entities(&first)[0];
-    let mut previous = first;
     let mut court = worth_testkit_relational::maintenance::MaintainedCourt::new(
         "native_indexes",
         Arc::new(Vec::new()),
     );
-    for ordinal in 0..16 {
-        let candidate = candidate_for_update(
-            execution,
-            &runtime,
-            entity,
-            &format!("seeded-{}", (ordinal * 7) % 11),
-        );
-        let next = publish_native(execution, &runtime, candidate);
+    let mut check = |commit: &crate::transactions::data::CommitResult| {
         let maintained = runtime
             .indexes
             .published_generation_for_commit(
                 index_id,
-                Some(&next.commit.branch_id),
-                next.commit.commit_id,
-                next.commit.version_id,
+                Some(&commit.commit.branch_id),
+                commit.commit.commit_id,
+                commit.commit.version_id,
             )
             .unwrap();
-        let cold = runtime.index_authority().build_for_commit(
+        // Cold reconstruction belongs to an isolated world: it must never
+        // replace the maintained predecessor used by the next incremental step.
+        let oracle = runtime.fork().unwrap();
+        let cold = oracle.index_authority().build_for_commit(
             execution,
             DerivedIndexBuildRequest {
-                source_commit_id: next.commit.commit_id,
-                branch_id: next.commit.branch_id.clone(),
+                source_commit_id: commit.commit.commit_id,
+                branch_id: commit.commit.branch_id.clone(),
                 index_ids: vec![index_id],
             },
         );
@@ -156,6 +151,18 @@ fn native_empty_predecessor_and_seeded_updates_match_cold_at_every_step() {
                 |left, right| left == right,
             )
             .unwrap();
+    };
+    check(&first);
+    let mut previous = first;
+    for ordinal in 0..16 {
+        let candidate = candidate_for_update(
+            execution,
+            &runtime,
+            entity,
+            &format!("seeded-{}", (ordinal * 7) % 11),
+        );
+        let next = publish_native(execution, &runtime, candidate);
+        check(&next);
         release_test_commit_snapshot(&runtime, &previous);
         previous = next;
     }
