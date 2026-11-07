@@ -66,6 +66,7 @@ mod mutation_description_validation;
 mod mutation_intent_traits;
 mod mutation_precondition;
 mod mutation_precondition_authoring;
+mod mutation_references;
 mod operation_component_read;
 mod operation_contract_cardinality;
 mod operation_definition;

@@ -750,11 +750,13 @@ role operations are generated from their members.
 
 An ordinary member uses `action name(Binding, Delivery, HandlerType)` with its
 explicit completed `operation:` definition and the normal action clauses.
-When a correction member already declares an action's operation and mutation
+When another member already declares an action's operation and mutation
 binding, use `action_ref name(Binding, Delivery, HandlerType) { ... };` with the
 normal action clauses and no `operation:` clause. The feature retains its action,
-delivery roots and handler configuration while the correction remains the sole
-operation owner. Declaring the operation again still returns `DuplicateMember`.
+delivery roots and handler configuration while that member remains the sole
+operation owner. The owner may be a correction or an ordinary member. A missing
+operation or binding returns `MissingReferencedMutation` at schema composition,
+naming both; declaring either twice still returns `DuplicateMember`.
 
 ```rust,ignore
 action_ref create(CreateBinding<Schema>, SourceDelivery<Schema>, CreateHandler) {};

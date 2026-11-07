@@ -144,7 +144,9 @@ macro_rules! __worth_query_complete_feature {
             }
         }
     };
-    (@declare $schema:ident, $Schema:ident, $Binding:ty, [owned]) => { $schema };
+    (@declare $schema:ident, $Schema:ident, $Binding:ty, [owned]) => {
+        $schema.reference_application_mutation_binding::<$Binding>()
+    };
     (@declare $schema:ident, $Schema:ident, $Binding:ty, [declare $operation:expr]) => {
         $schema.declared_operation::<<$Binding as $crate::facade::declaration::application_operation::ApplicationMutationBinding<$Schema>>::Operation>($operation)
             .application_mutation_binding::<$Binding>()

@@ -163,6 +163,7 @@ pub struct ApplicationSchemaDeclarationBuilder<Schema> {
     pub(super) member_provenance: ApplicationSchemaMemberProvenance,
     pub(super) principal_fields: super::principal_fields::PrincipalFieldExpectations,
     pub(super) correction_fields: super::correction_fields::CorrectionFieldExpectations,
+    pub(super) mutation_references: super::mutation_references::MutationReferences,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -212,6 +213,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             contributions: Vec::new(),
             member_provenance: ApplicationSchemaMemberProvenance::default(),
             correction_fields: Default::default(),
+            mutation_references: Default::default(),
             principal_fields: Default::default(),
             _schema: PhantomData,
         }
@@ -268,6 +270,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             contributions: Vec::new(),
             member_provenance: ApplicationSchemaMemberProvenance::default(),
             correction_fields: Default::default(),
+            mutation_references: Default::default(),
             principal_fields: Default::default(),
             _schema: PhantomData,
         }

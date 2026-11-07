@@ -34,6 +34,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
         validate_operation_contract_cardinality(&self.members)?;
         self.members.sort();
         self.member_provenance.normalize();
+        self.mutation_references.validate(&self.member_provenance)?;
         self.correction_fields
             .validate(&self.member_provenance.fragments.catalog)?;
         self.principal_fields

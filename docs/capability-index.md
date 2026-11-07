@@ -81,7 +81,11 @@ For a new installed feature, use the
 first: `host::worth_query_application_contribution! { pub feature ... }` projects
 schema members, action meaning, typed runtime configuration, required roles and
 delivery roots. Supply actual handlers and domain configuration through the
-generated runtime constructor. An `action_ref` member names an operation already declared by a correction member, with the same action and runtime projections. Use lower-level builders for specialized composition.
+generated runtime constructor. An `action_ref` member names an operation and binding
+already declared by one correction or ordinary member, with the same action and
+runtime projections. Schema composition refuses a missing owner with
+`MissingReferencedMutation`; duplicate declarations remain `DuplicateMember`.
+Use lower-level builders for specialized composition.
 For tracked numerical work, use the
 [managed/partitioned computation lifecycle](build-an-application.md#36-declare-and-install-a-partitioned-managed-computation):
 declare semantic membership, gather tracked inputs, compute with the original

@@ -2,6 +2,10 @@ use super::ApplicationOperationDependencyLocus;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ApplicationSchemaDeclarationDenial {
+    MissingReferencedMutation {
+        operation: String,
+        binding: String,
+    },
     InvalidPrincipalBindingField {
         binding: String,
         field: super::ApplicationFieldBindingLocus,

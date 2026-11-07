@@ -1,4 +1,4 @@
-//! A complete feature references its correction-owned action and installs one handler.
+//! A complete feature references exactly one typed operation owner and installs one handler.
 use super::{lifecycle::*, *};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
@@ -10,6 +10,10 @@ struct Delivery;
 impl<S: Scenario> ApplicationActionDelivery<S, CreateBinding<S>> for Delivery {
     type Mode = ApplicationSourceCompletion;
     const IDENTITY: &'static str = "ownership.reference-completion.v1";
+}
+impl<S: Scenario> ApplicationActionDelivery<S, PlainBinding<S>> for Delivery {
+    type Mode = ApplicationSourceCompletion;
+    const IDENTITY: &'static str = "ownership.reference-plain-completion.v1";
 }
 struct Handler {
     observed: Option<Arc<AtomicUsize>>,
@@ -50,6 +54,12 @@ worth_query_host::facade::worth_query_application_contribution! {
         };
     }
 }
+worth_query_host::facade::worth_query_application_contribution! {
+    feature OrdinaryDefinition<S: Scenario> for program::Entry => OrdinaryRuntime {
+        schema: |schema| { schema };
+        action_ref plain(PlainBinding<S>, Delivery, lifecycle_handlers::Handler) {};
+    }
+}
 thread_local! { static OBSERVER: std::cell::RefCell<Option<Arc<AtomicUsize>>> = const { std::cell::RefCell::new(None) }; }
 struct Observe;
 impl Drop for Observe {
@@ -70,6 +80,68 @@ fn builder() -> ApplicationSchemaDeclarationBuilder<Model<0>> {
         PhantomData,
     ))
     .unwrap()
+}
+fn model_only() -> ApplicationSchemaDeclarationBuilder<Model<0>> {
+    ApplicationSchemaDeclarationBuilder::from_fragment(OwnershipModel::<false>).unwrap()
+}
+fn assert_missing_owner(builder: ApplicationSchemaDeclarationBuilder<Model<0>>) {
+    let denial = Definition::<Model<0>>::declare_members(builder)
+        .build()
+        .unwrap_err();
+    assert_eq!(
+        denial,
+        ApplicationSchemaDeclarationDenial::MissingReferencedMutation {
+            operation: CreateOp::reference::<Model<0>>().name().to_owned(),
+            binding: CreateBinding::<Model<0>>::descriptor()
+                .identity()
+                .to_owned(),
+        }
+    );
+    let rendered = denial.to_string();
+    assert!(rendered.contains(CreateOp::reference::<Model<0>>().name()));
+    assert!(rendered.contains("ownership.create.v1"), "{rendered}");
+}
+#[test]
+fn an_action_reference_without_an_owner_is_refused_at_composition() {
+    assert_missing_owner(model_only());
+}
+#[test]
+fn an_action_reference_requires_the_binding_owner_as_well_as_the_operation() {
+    assert_missing_owner(
+        model_only().declared_operation(
+            CreateOp::reference()
+                .definition()
+                .no_external_effect()
+                .no_aftermath()
+                .finish(),
+        ),
+    );
+}
+#[test]
+fn an_action_reference_requires_the_operation_owner_as_well_as_the_binding() {
+    assert_missing_owner(model_only().application_mutation_binding::<CreateBinding<Model<0>>>());
+}
+#[test]
+fn an_action_reference_accepts_one_ordinary_operation_owner() {
+    let schema = OrdinaryDefinition::<Model<0>>::declare_members(builder())
+        .build()
+        .unwrap();
+    let operation = PlainOp::reference::<Model<0>>().name();
+    assert_eq!(schema.erased().members().iter().filter(|member| matches!(member, ApplicationSchemaMember::Operation { operation: name, .. } if name == operation)).count(), 1);
+    assert!(schema
+        .member_provenance()
+        .mutation_bindings()
+        .contains(&PlainBinding::<Model<0>>::descriptor()));
+}
+#[test]
+fn an_action_reference_with_a_duplicate_ordinary_owner_is_still_refused() {
+    let duplicate = lifecycle::declare(builder());
+    assert_eq!(
+        OrdinaryDefinition::<Model<0>>::declare_members(duplicate)
+            .build()
+            .unwrap_err(),
+        ApplicationSchemaDeclarationDenial::DuplicateMember
+    );
 }
 #[test]
 fn an_action_reference_preserves_one_correction_owned_operation() {
