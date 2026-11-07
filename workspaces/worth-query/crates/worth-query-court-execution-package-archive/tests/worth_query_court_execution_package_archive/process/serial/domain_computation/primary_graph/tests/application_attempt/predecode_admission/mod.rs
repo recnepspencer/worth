@@ -16,9 +16,10 @@ fn installed_handler_reader_admits_actual_raw_scalar_and_uses_declared_decoder()
                         AccountStatus::at("AccountStatus"),
                         |raw, check| {
                             check().unwrap();
-                            let AspectValue::String(InternedString::Raw(text)) = raw else {
+                            let AspectValue::String(text) = raw else {
                                 panic!("actual native string carrier expected")
                             };
+                            let text = text.raw_text().expect("native scalar text");
                             assert_eq!(text, "open");
                             assert_eq!(raw.semantic_byte_width(), 5);
                             assert!(raw.owned_allocation_capacity_bytes() >= text.len());
@@ -125,9 +126,10 @@ fn large_carrier_denial_allocates_only_projection_metadata_before_decoder() {
                             scope,
                             AccountLabel::at("AccountLabel"),
                             |raw, _| {
-                                let AspectValue::String(InternedString::Raw(actual)) = raw else {
+                                let AspectValue::String(actual) = raw else {
                                     panic!("actual label carrier expected")
                                 };
+                                let actual = actual.raw_text().expect("native label text");
                                 assert_eq!(actual.len(), payload.len());
                                 Err::<(), _>("owner-work-limit")
                             },

@@ -65,10 +65,12 @@ pub(super) fn retained_string_field(
     let value = row
         .scalar_value_at(&field_path)
         .expect("retained row should carry requested string field");
-    let AspectValue::String(worth_foundational::facade::InternedString::Raw(value)) = value else {
+    let AspectValue::String(text) = value else {
         panic!("expected retained string field `{field}`, got {value:?}");
     };
-    value.clone()
+    text.raw_text()
+        .expect("retained string is textual")
+        .to_owned()
 }
 
 pub(super) fn retained_u64_field(row: &WorthQueryRetainedMaterializedRow, field: &str) -> u64 {

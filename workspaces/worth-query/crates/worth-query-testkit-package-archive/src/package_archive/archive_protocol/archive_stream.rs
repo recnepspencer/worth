@@ -7,7 +7,8 @@ pub use std::ops::Range;
 
 pub use worth_query_installation::facade::{
     WorthQueryExpectedPortablePackageIdentity, WorthQueryPortablePackageReconstruction,
-    WorthQueryPortablePackageReconstructionLimits, WorthQueryPortablePackageRecordFamily as Family,
+    WorthQueryPortablePackageReconstructionDenial, WorthQueryPortablePackageReconstructionLimits,
+    WorthQueryPortablePackageRecordFamily as Family,
 };
 pub use worth_query_package_archive::facade::*;
 
@@ -34,8 +35,11 @@ pub const RETAINED_RECORD_SIXTEEN_MINIMAL_ARCHIVE_HEX: &str =
     include_str!("archive_stream/archive_v2_record_v16.hex");
 pub const RETAINED_RECORD_SEVENTEEN_MINIMAL_ARCHIVE_HEX: &str =
     include_str!("archive_stream/archive_v2_record_v17.hex");
-pub const VERSION_TWO_MINIMAL_ARCHIVE_HEX: &str =
+// D1289: the framing stays v18; canonical identities use sha256-canonical-v2.
+pub const LEGACY_CANONICAL_POLICY_MINIMAL_ARCHIVE_HEX: &str =
     include_str!("archive_stream/archive_v2_record_v18.hex");
+pub const VERSION_TWO_MINIMAL_ARCHIVE_HEX: &str =
+    include_str!("archive_stream/archive_v2_record_v18_policy_v2.hex");
 
 pub fn frame_ranges(bytes: &[u8]) -> Vec<Range<usize>> {
     let mut ranges = Vec::new();
