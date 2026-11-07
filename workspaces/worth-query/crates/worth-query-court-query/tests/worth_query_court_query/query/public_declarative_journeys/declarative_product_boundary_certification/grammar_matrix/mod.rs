@@ -12,8 +12,7 @@ fn grammar_read_journey_executes() {
     let outcome: WorthQueryReadOutcome = declare(fixture::identity_detail)
         .expect("read should declare")
         .using(current())
-        .run(request_execution, &mut workspace)
-        .expect("fixture digest must fit");
+        .run(request_execution, &mut workspace);
     assert!(outcome.completed().is_some());
     type_exists::<WorthQueryReadStop>();
     type_exists::<WorthQueryReadNextAction>();
@@ -32,8 +31,7 @@ fn grammar_aggregate_journey_executes() {
     let outcome: WorthQueryCountOutcome = declare(fixture::identity_collection)
         .expect("count should declare")
         .using(current())
-        .run(request_execution, &mut workspace)
-        .expect("fixture digest must fit");
+        .run(request_execution, &mut workspace);
     assert!(outcome.completed().is_some());
     type_exists::<WorthQueryCountDeclarationStop>();
     type_exists::<WorthQueryReadNextAction>();
@@ -110,8 +108,7 @@ fn grammar_comparison_journey_executes() {
         .expect("comparison should declare")
         .diff()
         .using(context)
-        .run(request_execution, (&mut left, &mut right))
-        .expect("fixture digest must fit");
+        .run(request_execution, (&mut left, &mut right));
     assert!(outcome.completed().is_some());
     type_exists::<WorthQueryComparisonStop>();
     type_exists::<WorthQueryComparisonNextAction>();
@@ -196,7 +193,6 @@ fn grammar_inspection_journey_executes() {
         .expect("read should declare")
         .using(current())
         .run(request_execution, &mut workspace)
-        .expect("fixture digest must fit")
         .into_result()
         .expect("read should complete");
     let outcome: WorthQueryInspectionOutcome = declare(&completion)

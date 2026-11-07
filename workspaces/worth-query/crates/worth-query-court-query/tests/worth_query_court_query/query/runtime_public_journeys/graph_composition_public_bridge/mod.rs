@@ -125,6 +125,7 @@ fn graph_composition_public_bridge_executes_symbolic_followup_and_relation_retir
     assert_eq!(
         receipt
             .graph_composition_lifecycle_outcomes()
+            .expect("fixture digest must fit")
             .expect("graph composition receipt should expose lifecycle outcomes")
             .entries()[2]
             .outcome_kind(),
@@ -133,6 +134,7 @@ fn graph_composition_public_bridge_executes_symbolic_followup_and_relation_retir
     assert_eq!(
         receipt
             .graph_composition_lifecycle_outcomes()
+            .expect("fixture digest must fit")
             .expect("graph composition receipt should expose lifecycle outcomes")
             .entries()[3]
             .outcome_kind(),

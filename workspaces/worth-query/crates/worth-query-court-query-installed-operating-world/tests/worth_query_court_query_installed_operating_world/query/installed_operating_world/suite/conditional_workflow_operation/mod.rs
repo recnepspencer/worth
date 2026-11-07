@@ -102,7 +102,10 @@ fn deferred_operation_condition_returns_fresh_retry_authority_and_zero_stage_wor
     );
     let first_identity = first.run_identity().to_owned();
 
-    let TransitionOutcome::Deferred(second) = first.retry(&mut workspace) else {
+    let TransitionOutcome::Deferred(second) = first
+        .retry(&mut workspace)
+        .expect("fixture digest must fit")
+    else {
         panic!("a retry must perform a fresh operation-level conditional attempt")
     };
     assert_zero_stage_work(second.counters());

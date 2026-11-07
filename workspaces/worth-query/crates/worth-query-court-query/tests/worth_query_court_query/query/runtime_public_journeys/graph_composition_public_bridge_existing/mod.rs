@@ -98,6 +98,7 @@ fn graph_composition_public_bridge_supports_existing_target_retarget_lifecycle()
     assert_eq!(
         receipt
             .graph_composition_lifecycle_outcomes()
+            .expect("fixture digest must fit")
             .expect("graph composition receipt should expose lifecycle")
             .entries()[1]
             .outcome_kind(),

@@ -133,6 +133,8 @@ fn workflow_journey_uses_only_workflow_capability_vocabulary() {
         .run(request_execution, &mut workspace);
     assert_eq!(
         outcome
+            .as_ref()
+            .expect("fixture digest must fit")
             .completed()
             .expect("workflow should complete")
             .aftermath()
@@ -228,6 +230,8 @@ fn domain_journey_lowers_contributed_vocabulary_through_query() {
         .unwrap();
     assert_eq!(
         outcome
+            .as_ref()
+            .expect("fixture digest must fit")
             .completed()
             .expect("domain workflow should complete")
             .completion()

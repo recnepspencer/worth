@@ -109,8 +109,7 @@ fn comparison_transcript_executes_using_only_comparison_capability_vocabulary() 
     .expect("branch bases should admit");
     let outcome = declaration
         .using(context)
-        .run(request_execution, (&mut left, &mut right))
-        .expect("fixture digest must fit");
+        .run(request_execution, (&mut left, &mut right));
 
     let completion = outcome.completed().expect("diff should complete");
     assert_eq!(completion.change(), WorthQueryComparisonChange::Unchanged);
