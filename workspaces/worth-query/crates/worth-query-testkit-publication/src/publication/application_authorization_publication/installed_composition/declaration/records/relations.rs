@@ -155,7 +155,6 @@ impl Scalar<u64> for GrantBindings {
 impl Scalar<GrantKey> for GrantBindings {
     type Binding = GrantKeyBinding;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct GrantKey(String);

@@ -30,7 +30,6 @@ impl BindingSet for Bindings {
 impl Scalar<String> for Bindings {
     type Binding = RawBytes;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 pub(super) struct RawEntity;
 impl fragment::Entity for RawEntity {
@@ -49,11 +48,11 @@ pub(super) struct Row {
 }
 impl fragment::Record<Row> for Bindings {
     fn record() -> impl Shape<Row, Self> {
-        field("RawField", |row: &Row| row.value.clone()).build(
-            |value, _: &mut ValueDecodeAdmission<'_>| {
+        field("RawField", |row: &Row| row.value.clone())
+            .equality_queryable(true)
+            .build(|value, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(Row { value })
-            },
-        )
+            })
     }
 }
 pub(super) type RawField = FieldSelection<RawEquality, RawEntity, RawAspect, String>;

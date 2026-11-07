@@ -26,7 +26,7 @@ impl
     > for InboundModelBindings
 {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl
@@ -35,17 +35,17 @@ impl
     > for InboundModelBindings
 {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<u64> for InboundModelBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<String> for InboundModelBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 pub struct Mapping;
@@ -90,9 +90,11 @@ impl fragment::Record<MappingFactsValue> for InboundModelBindings {
         fragment::field("MappingIdentity", |row: &MappingFactsValue| {
             row.mapping_identity.clone()
         })
+        .equality_queryable(true)
         .and("MappingStatus", |row: &MappingFactsValue| {
             row.mapping_status
         })
+        .equality_queryable(true)
         .build(
             |mapping_identity, mapping_status, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(MappingFactsValue {
@@ -117,6 +119,7 @@ impl fragment::Record<PrincipalFactsValue> for InboundModelBindings {
         fragment::field("PrincipalIdentity", |row: &PrincipalFactsValue| {
             row.principal_identity
         })
+        .equality_queryable(true)
         .build(|principal_identity, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(PrincipalFactsValue { principal_identity })
         })
@@ -133,11 +136,11 @@ pub struct TargetFactsValue {
 }
 impl fragment::Record<TargetFactsValue> for InboundModelBindings {
     fn record() -> impl fragment::Shape<TargetFactsValue, Self> {
-        fragment::field("TargetKey", |row: &TargetFactsValue| row.target_key.clone()).build(
-            |target_key, _: &mut ValueDecodeAdmission<'_>| {
+        fragment::field("TargetKey", |row: &TargetFactsValue| row.target_key.clone())
+            .equality_queryable(true)
+            .build(|target_key, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(TargetFactsValue { target_key })
-            },
-        )
+            })
     }
 }
 pub type MappingIdentity = FieldSelection<

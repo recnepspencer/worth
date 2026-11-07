@@ -19,22 +19,22 @@ impl BindingSet for DispatchModelBindings {
 }
 impl Scalar<WorthQueryExternalPrincipalIdentity> for DispatchModelBindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl Scalar<WorthQueryPrincipalMappingStatus> for DispatchModelBindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<u64> for DispatchModelBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<String> for DispatchModelBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 #[derive(Clone, Copy)]
@@ -96,10 +96,10 @@ impl fragment::Record<MappingFactsValue> for DispatchModelBindings {
     fn record() -> impl Shape<MappingFactsValue, Self> {
         field("ExternalIdentity", |row: &MappingFactsValue| {
             row.external_identity.clone()
-        })
+        }).equality_queryable(true)
         .and("MappingStatus", |row: &MappingFactsValue| {
             row.mapping_status
-        })
+        }).equality_queryable(true)
         .build(
             |external_identity, mapping_status, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(MappingFactsValue {
@@ -123,7 +123,7 @@ impl fragment::Record<PrincipalFactsValue> for DispatchModelBindings {
     fn record() -> impl Shape<PrincipalFactsValue, Self> {
         field("PrincipalIdentity", |row: &PrincipalFactsValue| {
             row.principal_identity
-        })
+        }).equality_queryable(true)
         .read_only()
         .build(|principal_identity, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(PrincipalFactsValue { principal_identity })
@@ -144,11 +144,11 @@ pub struct FactsValue {
 }
 impl fragment::Record<FactsValue> for DispatchModelBindings {
     fn record() -> impl Shape<FactsValue, Self> {
-        field("Key", |row: &FactsValue| row.key.clone())
+        field("Key", |row: &FactsValue| row.key.clone()).equality_queryable(true)
             .unique()
-            .and("ParentName", |row: &FactsValue| row.parent_name.clone())
-            .and("Value", |row: &FactsValue| row.value)
-            .and("Width", |row: &FactsValue| row.width)
+            .and("ParentName", |row: &FactsValue| row.parent_name.clone()).equality_queryable(true)
+            .and("Value", |row: &FactsValue| row.value).equality_queryable(true)
+            .and("Width", |row: &FactsValue| row.width).equality_queryable(true)
             .build(
                 |key, parent_name, value, width, _: &mut ValueDecodeAdmission<'_>| {
                     Ok::<_, std::convert::Infallible>(FactsValue {
@@ -172,7 +172,7 @@ pub struct OutputFactsValue {
 }
 impl fragment::Record<OutputFactsValue> for DispatchModelBindings {
     fn record() -> impl Shape<OutputFactsValue, Self> {
-        field("Produced", |row: &OutputFactsValue| row.produced).build(
+        field("Produced", |row: &OutputFactsValue| row.produced).equality_queryable(true).build(
             |produced, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(OutputFactsValue { produced })
             },
@@ -193,11 +193,11 @@ impl fragment::Record<RealizationFactsValue> for DispatchModelBindings {
     fn record() -> impl Shape<RealizationFactsValue, Self> {
         field("RealizationKey", |row: &RealizationFactsValue| {
             row.realization_key.clone()
-        })
+        }).equality_queryable(true)
         .unique()
         .and("RealizedValue", |row: &RealizationFactsValue| {
             row.realized_value
-        })
+        }).equality_queryable(true)
         .build(
             |realization_key, realized_value, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(RealizationFactsValue {

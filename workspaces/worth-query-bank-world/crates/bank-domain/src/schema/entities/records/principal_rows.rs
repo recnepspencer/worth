@@ -20,10 +20,12 @@ impl fragment::Record<ExternalPrincipalIdentityValue> for BankRecordsBindings {
             "ExternalIdentityKey",
             |row: &ExternalPrincipalIdentityValue| row.external_identity_key.clone(),
         )
+        .equality_queryable(true)
         .and(
             "ExternalMappingStatus",
             |row: &ExternalPrincipalIdentityValue| row.external_mapping_status,
         )
+        .equality_queryable(true)
         .build(
             |external_identity_key, external_mapping_status, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ExternalPrincipalIdentityValue {
@@ -52,6 +54,7 @@ impl fragment::Record<PrincipalIdentityValue> for BankRecordsBindings {
         fragment::field("PrincipalIdentityField", |row: &PrincipalIdentityValue| {
             row.principal_identity_field
         })
+        .equality_queryable(true)
         .build(
             |principal_identity_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(PrincipalIdentityValue {

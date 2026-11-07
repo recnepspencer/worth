@@ -12,16 +12,14 @@ impl BindingSet for GraphBindings {
 }
 impl Scalar<u64> for GraphBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl Scalar<WorthQueryExternalPrincipalIdentity> for GraphBindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl Scalar<WorthQueryPrincipalMappingStatus> for GraphBindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 pub struct ExternalMapping;
 impl Entity for ExternalMapping {
@@ -73,7 +71,9 @@ impl fragment::Record<MappingRow> for GraphBindings {
         field("ExternalIdentityField", |row: &MappingRow| {
             row.identity.clone()
         })
+        .equality_queryable(true)
         .and("MappingStatusField", |row: &MappingRow| row.status)
+        .equality_queryable(true)
         .build(|identity, status, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(MappingRow { identity, status })
         })
@@ -88,6 +88,7 @@ pub struct PrincipalRow(u64);
 impl fragment::Record<PrincipalRow> for GraphBindings {
     fn record() -> impl Shape<PrincipalRow, Self> {
         field("PrincipalKey", |row: &PrincipalRow| row.0)
+            .equality_queryable(true)
             .read_only()
             .build(|value, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(PrincipalRow(value))
@@ -102,11 +103,12 @@ impl Aspect for LeafFacts {
 pub struct LeafRow(u64);
 impl fragment::Record<LeafRow> for GraphBindings {
     fn record() -> impl Shape<LeafRow, Self> {
-        field("LeafKey", |row: &LeafRow| row.0).read_only().build(
-            |value, _: &mut ValueDecodeAdmission<'_>| {
+        field("LeafKey", |row: &LeafRow| row.0)
+            .equality_queryable(true)
+            .read_only()
+            .build(|value, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(LeafRow(value))
-            },
-        )
+            })
     }
 }
 pub struct NodeFacts;
@@ -117,11 +119,12 @@ impl Aspect for NodeFacts {
 pub struct NodeRow(u64);
 impl fragment::Record<NodeRow> for GraphBindings {
     fn record() -> impl Shape<NodeRow, Self> {
-        field("NodeKey", |row: &NodeRow| row.0).read_only().build(
-            |value, _: &mut ValueDecodeAdmission<'_>| {
+        field("NodeKey", |row: &NodeRow| row.0)
+            .equality_queryable(true)
+            .read_only()
+            .build(|value, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(NodeRow(value))
-            },
-        )
+            })
     }
 }
 pub type ExternalIdentityField = FieldSelection<

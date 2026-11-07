@@ -35,4 +35,5 @@ pub(super) fn map_initial_schema_installation_denial(
         }
     };
     WorthQueryPrimaryGraphInstallationDenial::new(kind, denial.detail())
+        .with_initial_schema_cause(denial)
 }

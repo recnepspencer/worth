@@ -4,6 +4,7 @@ use super::resources::{execution_policy, product_world_resources};
 use super::*;
 use std::time::Duration;
 use worth_query_decl::facade::authentication::WorthQueryPrincipalMappingStatus;
+use worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial;
 use worth_query_host::facade::runtime::WorthQueryExecutionRuntimeInstaller;
 
 #[derive(Clone, Copy)]
@@ -38,6 +39,25 @@ impl World {
             WorthQueryApplicationEntitySeed<Fixture, Item>,
         ) -> WorthQueryApplicationEntitySeed<Fixture, Item>,
     ) -> Self {
+        Self::try_seeded(mode, seed_fields).unwrap()
+    }
+    pub(super) fn try_seeded(
+        mode: Mode,
+        seed_fields: impl FnOnce(
+            WorthQueryApplicationEntitySeed<Fixture, Item>,
+        ) -> WorthQueryApplicationEntitySeed<Fixture, Item>,
+    ) -> Result<Self, WorthQueryInMemoryApplicationDenial> {
+        Self::install_seeded(mode, Box::new(seed_fields))
+    }
+    fn install_seeded(
+        mode: Mode,
+        seed_fields: Box<
+            dyn FnOnce(
+                    WorthQueryApplicationEntitySeed<Fixture, Item>,
+                ) -> WorthQueryApplicationEntitySeed<Fixture, Item>
+                + '_,
+        >,
+    ) -> Result<Self, WorthQueryInMemoryApplicationDenial> {
         worth_query_host::facade::application_contribution::with_bootstrap_advancement(
             execution_policy(),
             |phase| {
@@ -141,7 +161,9 @@ impl World {
                             .unwrap();
                     }
                 }
-                bootstrap.bind_entity(seed_fields(seed)).unwrap();
+                bootstrap
+                    .bind_entity(seed_fields(seed))
+                    .map_err(WorthQueryInMemoryApplicationDenial::InitialState)?;
                 bootstrap
                     .bind_entity(
                         WorthQueryApplicationEntitySeed::new(
@@ -175,19 +197,21 @@ impl World {
                     .unwrap();
                 let invariant = bootstrap.retain_invariant_projection_authority();
                 let application = bootstrap
-                    .publish_application_runtime(
+                    .conditional_application_runtime_installation(
                         &phase,
                         runtime,
                         authority,
                         schema,
                         SignalConditionalEvaluationBudget::development(),
                     )
-                    .unwrap();
-                Self {
+                    .map_err(WorthQueryInMemoryApplicationDenial::ConditionalPublication)?
+                    .publish(&phase)
+                    .map_err(WorthQueryInMemoryApplicationDenial::ConditionalPublication)?;
+                Ok(Self {
                     application,
                     binding,
                     invariant,
-                }
+                })
             },
         )
         .unwrap()

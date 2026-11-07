@@ -21,7 +21,6 @@ impl fragment::BindingSet for Bindings {
 impl fragment::Scalar<u64> for Bindings {
     type Binding = crate::application_schema::U64ApplicationValueBinding;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl fragment::Entity for Entity {
     const NAME: &'static str = "Entity";
@@ -64,10 +63,12 @@ pub(super) struct FixtureRow {
 }
 impl fragment::Record<FixtureRow> for Bindings {
     fn record() -> impl fragment::Shape<FixtureRow, Self> {
-        fragment::field("Field", |row: &FixtureRow| row.value).build(
-            |value, _: &mut crate::application_schema::ValueDecodeAdmission<'_>| {
-                Ok::<_, std::convert::Infallible>(FixtureRow { value })
-            },
-        )
+        fragment::field("Field", |row: &FixtureRow| row.value)
+            .equality_queryable(true)
+            .build(
+                |value, _: &mut crate::application_schema::ValueDecodeAdmission<'_>| {
+                    Ok::<_, std::convert::Infallible>(FixtureRow { value })
+                },
+            )
     }
 }

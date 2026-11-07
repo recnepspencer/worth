@@ -21,24 +21,24 @@ impl Scalar<declaration::authentication::WorthQueryExternalPrincipalIdentity>
     for FinancialModelBindings
 {
     type Binding = declaration::authentication::WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl Scalar<declaration::authentication::WorthQueryPrincipalMappingStatus>
     for FinancialModelBindings
 {
     type Binding = declaration::authentication::WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<u64> for FinancialModelBindings {
     type Binding = declaration::application_schema::U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<String> for FinancialModelBindings {
     type Binding = declaration::application_schema::StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 

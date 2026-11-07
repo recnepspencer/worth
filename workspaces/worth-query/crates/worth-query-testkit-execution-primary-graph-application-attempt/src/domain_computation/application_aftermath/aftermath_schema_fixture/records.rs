@@ -25,7 +25,6 @@ impl BindingSet for Bindings {
 impl Scalar<WorthQueryExternalPrincipalIdentity> for Bindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl Scalar<WorthQueryPrincipalMappingStatus> for Bindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
@@ -33,7 +32,6 @@ impl Scalar<WorthQueryPrincipalMappingStatus> for Bindings {
 impl Scalar<u64> for Bindings {
     type Binding = U64ApplicationValueBinding;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl Scalar<bool> for Bindings {
     type Binding = BoolApplicationValueBinding;
@@ -75,8 +73,10 @@ pub struct Facts {
 impl fragment::Record<Facts> for Bindings {
     fn record() -> impl Shape<Facts, Self> {
         field("ExternalIdentityField", |r: &Facts| r.identity.clone())
+            .equality_queryable(true)
             .and("MappingStatusField", |r: &Facts| r.status)
             .and("PrincipalIdentityField", |r: &Facts| r.principal)
+            .equality_queryable(true)
             .and("frozen", |r: &Facts| r.frozen)
             .and("note", |r: &Facts| r.note.clone())
             .and("balance", |r: &Facts| r.balance)

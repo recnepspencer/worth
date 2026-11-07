@@ -169,10 +169,30 @@ fn run() {
     }
 }
 
+#[cfg_attr(test, test)]
 fn hostile_binding_identity_and_unit_cannot_preserve_schema_identity() {
     let baseline = <hostile::baseline::Schema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap();
     let wrong_identity = <hostile::wrong_identity::Schema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap();
     let wrong_unit = <hostile::wrong_unit::Schema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap();
+    for schema in [
+        baseline.erased(),
+        wrong_identity.erased(),
+        wrong_unit.erased(),
+    ] {
+        let postures = schema
+            .members()
+            .iter()
+            .filter_map(|member| match member {
+                worth_query_decl::facade::application_schema::ApplicationSchemaMember::Field {
+                    field,
+                    equality_queryable,
+                    ..
+                } => Some((field.as_str(), *equality_queryable)),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(postures, vec![("value", true)]);
+    }
 
     assert_ne!(baseline.identity(), wrong_identity.identity());
     assert_ne!(baseline.identity(), wrong_unit.identity());

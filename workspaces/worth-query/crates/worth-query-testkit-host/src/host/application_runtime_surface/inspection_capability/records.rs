@@ -25,17 +25,17 @@ impl BindingSet for InspectionGrantsBindings {
 }
 impl Scalar<String> for InspectionGrantsBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<bool> for InspectionGrantsBindings {
     type Binding = BoolApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<u64> for InspectionGrantsBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = true;
 }
 pub struct InspectionGrant;
@@ -75,6 +75,7 @@ impl Record<InspectionGrantFactsValue> for InspectionGrantsBindings {
         field("GrantIdentity", |row: &InspectionGrantFactsValue| {
             row.grant_identity.clone()
         })
+        .equality_queryable(true)
         .read_only()
         .and("GrantAction", |row: &InspectionGrantFactsValue| {
             row.grant_action.clone()
@@ -194,5 +195,4 @@ impl GrantParent {
 
 impl fragment::Scalar<InspectionGrantKey> for InspectionGrantsBindings {
     type Binding = InspectionGrantKeyBinding;
-    const EQUALITY_QUERYABLE: bool = true;
 }

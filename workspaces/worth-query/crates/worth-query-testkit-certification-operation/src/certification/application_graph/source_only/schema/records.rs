@@ -21,24 +21,24 @@ impl Scalar<declaration::authentication::WorthQueryExternalPrincipalIdentity>
     for RetentionModelBindings
 {
     type Binding = declaration::authentication::WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl Scalar<declaration::authentication::WorthQueryPrincipalMappingStatus>
     for RetentionModelBindings
 {
     type Binding = declaration::authentication::WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<u64> for RetentionModelBindings {
     type Binding = declaration::application_schema::U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<String> for RetentionModelBindings {
     type Binding = declaration::application_schema::StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 #[derive(Clone, Copy)]
@@ -96,9 +96,11 @@ impl Record<ExternalIdentityValue> for RetentionModelBindings {
         field("ExternalIdentityField", |row: &ExternalIdentityValue| {
             row.external_identity_field.clone()
         })
+        .equality_queryable(true)
         .and("MappingStatusField", |row: &ExternalIdentityValue| {
             row.mapping_status_field
         })
+        .equality_queryable(true)
         .build(
             |external_identity_field, mapping_status_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ExternalIdentityValue {
@@ -127,6 +129,7 @@ impl Record<PrincipalFactsValue> for RetentionModelBindings {
         field("PrincipalIdentityField", |row: &PrincipalFactsValue| {
             row.principal_identity_field
         })
+        .equality_queryable(true)
         .read_only()
         .build(
             |principal_identity_field, _: &mut ValueDecodeAdmission<'_>| {
@@ -156,9 +159,11 @@ impl Record<DocumentFactsValue> for RetentionModelBindings {
         field("DocumentIdentityField", |row: &DocumentFactsValue| {
             row.document_identity_field.clone()
         })
+        .equality_queryable(true)
         .and("DocumentRetentionField", |row: &DocumentFactsValue| {
             row.document_retention_field
         })
+        .equality_queryable(true)
         .build(
             |document_identity_field,
              document_retention_field,

@@ -30,7 +30,6 @@ impl BindingSet for Bindings {
 impl Scalar<u64> for Bindings {
     type Binding = U64ApplicationValueBinding;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = false;
 }
 pub(super) struct LegacyEntity;
 impl fragment::Entity for LegacyEntity {

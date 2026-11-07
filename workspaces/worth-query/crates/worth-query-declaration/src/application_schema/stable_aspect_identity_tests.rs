@@ -38,7 +38,6 @@ impl BindingSet for Bindings {
 impl Scalar<u64> for Bindings {
     type Binding = super::U64ApplicationValueBinding;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 struct Account;
 impl Entity for Account {
@@ -49,7 +48,7 @@ impl Entity for Account {
 struct AccountFacts;
 impl Aspect for AccountFacts {
     const NAME: &'static str = "AccountFacts";
-    type Row = u64;
+    type Row = IdentityRow;
 }
 fn aspect_contract(
     declaration: &super::ErasedApplicationSchemaDeclaration,
@@ -202,4 +201,15 @@ fn canonical_entries_golden(entries: &[worth_foundational::facade::CanonicalBasi
         })
         .collect::<Vec<_>>()
         .join("\n")
+}
+
+pub struct IdentityRow(u64);
+impl super::fragment::Record<IdentityRow> for Bindings {
+    fn record() -> impl super::fragment::Shape<IdentityRow, Self> {
+        super::fragment::field("value", |row: &IdentityRow| row.0)
+            .equality_queryable(true)
+            .build(|value, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(IdentityRow(value))
+            })
+    }
 }

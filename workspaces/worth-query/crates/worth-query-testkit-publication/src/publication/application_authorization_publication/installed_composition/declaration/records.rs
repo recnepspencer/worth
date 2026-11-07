@@ -27,7 +27,7 @@ impl
 {
     type Binding =
         worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl
@@ -37,18 +37,18 @@ impl
 {
     type Binding =
         worth_query_declaration::facade::authentication::WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<u64> for PublicationRecordsBindings {
     type Binding = worth_query_declaration::facade::application_schema::U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<String> for PublicationRecordsBindings {
     type Binding =
         worth_query_declaration::facade::application_schema::StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 

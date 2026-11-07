@@ -47,3 +47,25 @@ fn duplicate_field_names_refuse_before_an_encoder_can_overwrite_a_value() {
     assert_eq!(denied.path(), "fixture.item.interval.value");
     assert!(matches!(denied.kind(), RecordRefusalKind::DuplicateField));
 }
+
+struct ContainingInterval(Interval);
+impl Record<ContainingInterval> for Bindings {
+    fn record() -> impl Shape<ContainingInterval, Self> {
+        field("interval", |row: &ContainingInterval| row.0.clone())
+            .equality_queryable(true)
+            .build(|interval, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(ContainingInterval(interval))
+            })
+    }
+}
+#[test]
+fn containing_records_cannot_override_their_leaf_fields_queryability() {
+    let denial = <Bindings as Record<ContainingInterval>>::record()
+        .columns("row")
+        .unwrap_err();
+    assert_eq!(denial.path(), "row.interval");
+    assert!(matches!(
+        denial.kind(),
+        RecordRefusalKind::QueryabilityNeedsScalar
+    ));
+}

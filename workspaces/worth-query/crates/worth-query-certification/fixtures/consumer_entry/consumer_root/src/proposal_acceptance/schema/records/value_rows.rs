@@ -19,9 +19,11 @@ impl fragment::Record<ExternalIdentityValue> for ProposalRecordsBindings {
         fragment::field("ExternalIdentityField", |row: &ExternalIdentityValue| {
             row.external_identity_field.clone()
         })
+        .equality_queryable(true)
         .and("MappingStatus", |row: &ExternalIdentityValue| {
             row.mapping_status
         })
+        .equality_queryable(true)
         .build(
             |external_identity_field, mapping_status, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ExternalIdentityValue {
@@ -32,30 +34,10 @@ impl fragment::Record<ExternalIdentityValue> for ProposalRecordsBindings {
         )
     }
 }
-pub struct PrincipalFacts;
-impl fragment::Aspect for PrincipalFacts {
-    const NAME: &'static str = "PrincipalFacts";
-    type Row = PrincipalFactsValue;
-}
-impl PrincipalFacts {
-    pub fn reference() -> AspectSelection<ProposalRecords, Principal, Self> {
-        aspect(ProposalRecords, Principal, Self)
-    }
-}
-pub struct PrincipalFactsValue {
-    pub principal_identity: u64,
-}
-impl fragment::Record<PrincipalFactsValue> for ProposalRecordsBindings {
-    fn record() -> impl fragment::Shape<PrincipalFactsValue, Self> {
-        fragment::field("PrincipalIdentity", |row: &PrincipalFactsValue| {
-            row.principal_identity
-        })
-        .read_only()
-        .build(|principal_identity, _: &mut ValueDecodeAdmission<'_>| {
-            Ok::<_, std::convert::Infallible>(PrincipalFactsValue { principal_identity })
-        })
-    }
-}
+#[path = "value_rows/principal.rs"]
+mod principal;
+pub use principal::PrincipalFacts;
+
 pub struct RegistryFacts;
 impl fragment::Aspect for RegistryFacts {
     const NAME: &'static str = "RegistryFacts";
@@ -74,6 +56,7 @@ impl fragment::Record<RegistryFactsValue> for ProposalRecordsBindings {
         fragment::field("RegistryName", |row: &RegistryFactsValue| {
             row.registry_name.clone()
         })
+        .equality_queryable(true)
         .build(|registry_name, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(RegistryFactsValue { registry_name })
         })
@@ -94,11 +77,11 @@ pub struct ModelFactsValue {
 }
 impl fragment::Record<ModelFactsValue> for ProposalRecordsBindings {
     fn record() -> impl fragment::Shape<ModelFactsValue, Self> {
-        fragment::field("ModelName", |row: &ModelFactsValue| row.model_name.clone()).build(
-            |model_name, _: &mut ValueDecodeAdmission<'_>| {
+        fragment::field("ModelName", |row: &ModelFactsValue| row.model_name.clone())
+            .equality_queryable(true)
+            .build(|model_name, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ModelFactsValue { model_name })
-            },
-        )
+            })
     }
 }
 pub struct TargetFacts;
@@ -120,7 +103,9 @@ impl fragment::Record<TargetFactsValue> for ProposalRecordsBindings {
         fragment::field("TargetName", |row: &TargetFactsValue| {
             row.target_name.clone()
         })
+        .equality_queryable(true)
         .and("Retention", |row: &TargetFactsValue| row.retention)
+        .equality_queryable(true)
         .build(|target_name, retention, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(TargetFactsValue {
                 target_name,
@@ -148,9 +133,11 @@ impl fragment::Record<ProposalFactsValue> for ProposalRecordsBindings {
         fragment::field("ProposalName", |row: &ProposalFactsValue| {
             row.proposal_name.clone()
         })
+        .equality_queryable(true)
         .and("ProposalData", |row: &ProposalFactsValue| {
             row.proposal_data.clone()
         })
+        .equality_queryable(true)
         .build(
             |proposal_name, proposal_data, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ProposalFactsValue {
@@ -186,31 +173,39 @@ impl fragment::Record<MutationGrantFactsValue> for ProposalRecordsBindings {
         fragment::field("GrantIdentity", |row: &MutationGrantFactsValue| {
             row.grant_identity.clone()
         })
+        .equality_queryable(true)
         .and("GrantAction", |row: &MutationGrantFactsValue| {
             row.grant_action
         })
+        .equality_queryable(true)
         .read_only()
         .and("GrantPurpose", |row: &MutationGrantFactsValue| {
             row.grant_purpose
         })
+        .equality_queryable(true)
         .read_only()
         .and("GrantStatus", |row: &MutationGrantFactsValue| {
             row.grant_status
         })
+        .equality_queryable(true)
         .and("GrantScope", |row: &MutationGrantFactsValue| {
             row.grant_scope.clone()
         })
+        .equality_queryable(true)
         .and("GrantNotBefore", |row: &MutationGrantFactsValue| {
             row.grant_not_before
         })
+        .equality_queryable(true)
         .read_only()
         .and("GrantNotAfter", |row: &MutationGrantFactsValue| {
             row.grant_not_after
         })
+        .equality_queryable(true)
         .read_only()
         .and("GrantDepth", |row: &MutationGrantFactsValue| {
             row.grant_depth
         })
+        .equality_queryable(true)
         .read_only()
         .build(
             |grant_identity,
@@ -253,7 +248,9 @@ pub struct ClaimFactsValue {
 impl fragment::Record<ClaimFactsValue> for ProposalRecordsBindings {
     fn record() -> impl fragment::Shape<ClaimFactsValue, Self> {
         fragment::field("ClaimName", |row: &ClaimFactsValue| row.claim_name.clone())
+            .equality_queryable(true)
             .and("ClaimData", |row: &ClaimFactsValue| row.claim_data.clone())
+            .equality_queryable(true)
             .build(|claim_name, claim_data, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ClaimFactsValue {
                     claim_name,
@@ -281,9 +278,11 @@ impl fragment::Record<ResultFactsValue> for ProposalRecordsBindings {
         fragment::field("ResultName", |row: &ResultFactsValue| {
             row.result_name.clone()
         })
+        .equality_queryable(true)
         .and("ResultData", |row: &ResultFactsValue| {
             row.result_data.clone()
         })
+        .equality_queryable(true)
         .build(
             |result_name, result_data, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ResultFactsValue {
@@ -322,30 +321,41 @@ impl fragment::Record<GrantFactsValue> for ProposalRecordsBindings {
         fragment::field("GrantIdentity", |row: &GrantFactsValue| {
             row.grant_identity.clone()
         })
+        .equality_queryable(true)
         .and("GrantAction", |row: &GrantFactsValue| row.grant_action)
+        .equality_queryable(true)
         .read_only()
         .and("GrantReadKind", |row: &GrantFactsValue| row.grant_read_kind)
+        .equality_queryable(true)
         .read_only()
         .and("GrantPurpose", |row: &GrantFactsValue| row.grant_purpose)
+        .equality_queryable(true)
         .read_only()
         .and("GrantStatus", |row: &GrantFactsValue| row.grant_status)
+        .equality_queryable(true)
         .and("GrantReadStatus", |row: &GrantFactsValue| {
             row.grant_read_status
         })
+        .equality_queryable(true)
         .and("GrantScope", |row: &GrantFactsValue| {
             row.grant_scope.clone()
         })
+        .equality_queryable(true)
         .and("GrantNotBefore", |row: &GrantFactsValue| {
             row.grant_not_before
         })
+        .equality_queryable(true)
         .read_only()
         .and("GrantNotAfter", |row: &GrantFactsValue| row.grant_not_after)
+        .equality_queryable(true)
         .read_only()
         .and("GrantDepth", |row: &GrantFactsValue| row.grant_depth)
+        .equality_queryable(true)
         .read_only()
         .and("GrantDisclosure", |row: &GrantFactsValue| {
             row.grant_disclosure
         })
+        .equality_queryable(true)
         .read_only()
         .build(
             |grant_identity,

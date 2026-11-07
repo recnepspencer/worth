@@ -19,9 +19,11 @@ impl fragment::Record<ExternalIdentityValue> for ExecutionRecordsBindings {
         fragment::field("ExternalIdentityField", |row: &ExternalIdentityValue| {
             row.external_identity_field.clone()
         })
+        .equality_queryable(true)
         .and("MappingStatusField", |row: &ExternalIdentityValue| {
             row.mapping_status_field
         })
+        .equality_queryable(true)
         .build(
             |external_identity_field, mapping_status_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ExternalIdentityValue {
@@ -50,6 +52,7 @@ impl fragment::Record<PrincipalIdentityValue> for PrincipalBindings {
         fragment::field("PrincipalIdentityField", |row: &PrincipalIdentityValue| {
             row.principal_identity_field
         })
+        .equality_queryable(true)
         .read_only()
         .build(
             |principal_identity_field, _: &mut ValueDecodeAdmission<'_>| {
@@ -82,16 +85,20 @@ impl fragment::Record<AccountPolicyValue> for ExecutionRecordsBindings {
         fragment::field("AccountIdentity", |row: &AccountPolicyValue| {
             row.account_identity.clone()
         })
+        .equality_queryable(true)
         .read_only()
         .and("AccountStatus", |row: &AccountPolicyValue| {
             row.account_status.clone()
         })
+        .equality_queryable(true)
         .and("AccountLabel", |row: &AccountPolicyValue| {
             row.account_label.clone()
         })
+        .equality_queryable(true)
         .and("AccountNote", |row: &AccountPolicyValue| {
             row.account_note.clone()
         })
+        .equality_queryable(true)
         .and("AccountScore", |row: &AccountPolicyValue| row.account_score)
         .build(
             |account_identity,
@@ -152,6 +159,7 @@ impl fragment::Record<AccountMembershipValue> for ExecutionRecordsBindings {
         fragment::field("AccountMembershipTag", |row: &AccountMembershipValue| {
             row.account_membership_tag.clone()
         })
+        .equality_queryable(true)
         .read_only()
         .build(|account_membership_tag, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(AccountMembershipValue {
@@ -179,6 +187,7 @@ impl fragment::Record<ActivityFactsValue> for ExecutionRecordsBindings {
         fragment::field("ActivityIdentity", |row: &ActivityFactsValue| {
             row.activity_identity.clone()
         })
+        .equality_queryable(true)
         .read_only()
         .and("ActivitySequence", |row: &ActivityFactsValue| {
             row.activity_sequence

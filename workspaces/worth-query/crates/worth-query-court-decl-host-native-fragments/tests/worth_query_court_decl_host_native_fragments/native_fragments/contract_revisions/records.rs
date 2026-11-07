@@ -34,6 +34,10 @@ pub struct OptionalFieldRow {
     pub left: Option<u64>,
     pub right: bool,
 }
+pub struct QueryableFieldRow {
+    pub left: u64,
+    pub right: bool,
+}
 pub struct OtherRow {
     pub flag: bool,
 }
@@ -72,7 +76,13 @@ pub enum ChoiceRow<R> {
 macro_rules! choice_row {
     ($($row:ty),+) => { $(impl From<$row> for ChoiceRow<$row> { fn from(row: $row) -> Self { Self::Main(row) } })+ };
 }
-choice_row!(Row, ReorderedRow, RenamedFieldRow, OptionalFieldRow);
+choice_row!(
+    Row,
+    ReorderedRow,
+    RenamedFieldRow,
+    OptionalFieldRow,
+    QueryableFieldRow
+);
 impl<R> From<OtherRow> for ChoiceRow<R> {
     fn from(row: OtherRow) -> Self {
         Self::Other(row)
@@ -111,3 +121,16 @@ impl ApplicationReadableScalarValueBinding for AlternateU64 {
     }
 }
 impl ApplicationIdentityScalarValueBinding for AlternateU64 {}
+
+impl<C: ApplicationReadableScalarValueBinding<Value = u64>> Record<QueryableFieldRow>
+    for Bindings<C>
+{
+    fn record() -> impl Shape<QueryableFieldRow, Self> {
+        field("left", |row: &QueryableFieldRow| row.left)
+            .equality_queryable(true)
+            .and("right", |row: &QueryableFieldRow| row.right)
+            .build(|left, right, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(QueryableFieldRow { left, right })
+            })
+    }
+}

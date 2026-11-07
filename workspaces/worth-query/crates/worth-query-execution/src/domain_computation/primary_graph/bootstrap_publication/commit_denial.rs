@@ -99,7 +99,5 @@ pub fn map_bootstrap_commit_denial(
             error.detail()
         ),
     );
-    denial.with_native_validation_failure(
-        super::super::provider::invariant_execution_failure::map_validation_failure(error),
-    )
+    denial.with_native_commit_denial(error)
 }

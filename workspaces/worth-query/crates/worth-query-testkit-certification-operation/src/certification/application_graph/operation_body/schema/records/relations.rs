@@ -86,5 +86,4 @@ impl AlternateSelection {
 
 impl fragment::Scalar<DraftNote> for BodyModelBindings {
     type Binding = DraftNoteBinding;
-    const EQUALITY_QUERYABLE: bool = false;
 }

@@ -31,7 +31,6 @@ impl BindingSet for Bindings {
 impl Scalar<u64> for Bindings {
     type Binding = U64ApplicationValueBinding;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 pub struct FirstNamedEntity;
 impl Entity for FirstNamedEntity {
@@ -66,11 +65,11 @@ pub struct Row {
 }
 impl fragment::Record<Row> for Bindings {
     fn record() -> impl Shape<Row, Self> {
-        field("SameField", |row: &Row| row.value).build(
-            |value, _: &mut ValueDecodeAdmission<'_>| {
+        field("SameField", |row: &Row| row.value)
+            .equality_queryable(true)
+            .build(|value, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(Row { value })
-            },
-        )
+            })
     }
 }
 pub type FirstField = FieldSelection<CollisionRecords, FirstNamedEntity, NamedAspect, u64>;

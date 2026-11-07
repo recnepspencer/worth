@@ -359,7 +359,6 @@ impl fragment::BindingSet for QueryBindings {
 impl fragment::Scalar<u64> for QueryBindings {
     type Binding = crate::application_schema::U64ApplicationValueBinding;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl fragment::Entity for Account {
     const NAME: &'static str = "Account";
@@ -373,11 +372,13 @@ impl fragment::Aspect for AccountFacts {
 struct QueryRow0(u64);
 impl fragment::Record<QueryRow0> for QueryBindings {
     fn record() -> impl fragment::Shape<QueryRow0, Self> {
-        fragment::field("AccountId", |row: &QueryRow0| row.0).build(
-            |value, _: &mut crate::application_schema::ValueDecodeAdmission<'_>| {
-                Ok::<_, std::convert::Infallible>(QueryRow0(value))
-            },
-        )
+        fragment::field("AccountId", |row: &QueryRow0| row.0)
+            .equality_queryable(true)
+            .build(
+                |value, _: &mut crate::application_schema::ValueDecodeAdmission<'_>| {
+                    Ok::<_, std::convert::Infallible>(QueryRow0(value))
+                },
+            )
     }
 }
 type AccountId = fragment::FieldSelection<QueryModel, Account, AccountFacts, u64>;

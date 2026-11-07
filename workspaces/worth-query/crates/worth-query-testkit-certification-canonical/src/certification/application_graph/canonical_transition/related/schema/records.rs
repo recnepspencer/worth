@@ -20,32 +20,32 @@ impl BindingSet for StorageModelBindings {
 }
 impl Scalar<WorthQueryExternalPrincipalIdentity> for StorageModelBindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl Scalar<WorthQueryPrincipalMappingStatus> for StorageModelBindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<u64> for StorageModelBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl Scalar<String> for StorageModelBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl Scalar<NestedValue> for StorageModelBindings {
     type Binding = NestedBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<output::DerivedValue> for StorageModelBindings {
     type Binding = output::DerivedBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 #[derive(Clone, Copy)]
@@ -115,9 +115,11 @@ impl Record<ExternalIdentityValue> for StorageModelBindings {
         field("ExternalIdentityField", |row: &ExternalIdentityValue| {
             row.external_identity_field.clone()
         })
+        .equality_queryable(true)
         .and("MappingStatusField", |row: &ExternalIdentityValue| {
             row.mapping_status_field
         })
+        .equality_queryable(true)
         .build(
             |external_identity_field, mapping_status_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ExternalIdentityValue {
@@ -146,6 +148,7 @@ impl Record<PrincipalFactsValue> for StorageModelBindings {
         field("PrincipalIdentityField", |row: &PrincipalFactsValue| {
             row.principal_identity_field
         })
+        .equality_queryable(true)
         .build(
             |principal_identity_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(PrincipalFactsValue {
@@ -174,9 +177,11 @@ impl Record<DocumentFactsValue> for StorageModelBindings {
         field("DocumentIdentityField", |row: &DocumentFactsValue| {
             row.document_identity_field.clone()
         })
+        .equality_queryable(true)
         .and("DocumentValueField", |row: &DocumentFactsValue| {
             row.document_value_field.clone()
         })
+        .equality_queryable(true)
         .build(
             |document_identity_field, document_value_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(DocumentFactsValue {
@@ -206,9 +211,11 @@ impl Record<DerivedFactsValue> for StorageModelBindings {
         field("DerivedIdentityField", |row: &DerivedFactsValue| {
             row.derived_identity_field.clone()
         })
+        .equality_queryable(true)
         .and("DerivedValueField", |row: &DerivedFactsValue| {
             row.derived_value_field.clone()
         })
+        .equality_queryable(true)
         .build(
             |derived_identity_field, derived_value_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(DerivedFactsValue {

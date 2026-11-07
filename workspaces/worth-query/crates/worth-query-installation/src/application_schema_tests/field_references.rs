@@ -22,12 +22,10 @@ impl BindingSet for InstallationBindings {
 impl Scalar<u64> for InstallationBindings {
     type Binding = U64ApplicationValueBinding;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl Scalar<WorthQueryExternalPrincipalIdentity> for InstallationBindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl Scalar<WorthQueryPrincipalMappingStatus> for InstallationBindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
@@ -53,10 +51,12 @@ impl Record<InstallationIdentity> for InstallationBindings {
         field("ExternalIdentityField", |r: &InstallationIdentity| {
             r.external.clone()
         })
+        .equality_queryable(true)
         .and("MappingStatusField", |r: &InstallationIdentity| r.status)
         .and("PrincipalIdentityField", |r: &InstallationIdentity| {
             r.principal
         })
+        .equality_queryable(true)
         .build(
             |external, status, principal, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(InstallationIdentity {

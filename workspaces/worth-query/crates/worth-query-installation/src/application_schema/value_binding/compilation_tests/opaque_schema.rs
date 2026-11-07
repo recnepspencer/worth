@@ -30,7 +30,6 @@ impl BindingSet for Bindings {
 impl Scalar<String> for Bindings {
     type Binding = OpaqueBinding;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = false;
 }
 pub(super) struct OpaqueEntity;
 impl fragment::Entity for OpaqueEntity {

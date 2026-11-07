@@ -383,3 +383,9 @@ pub use crate::domain_computation::{
 };
 
 pub use worth_runtime_bridge::facade::BridgeExecutionBasisFinalizationFailureKind;
+
+/// Original field refusals carried through primary-graph installation.
+pub use worth_foundational::facade::{ContractValidationDenial, PortableAspectReadmissionDenial};
+pub use worth_relational::facade::transactions::{
+    ConflictClass, RecordAspectPatchDenial, RecordAspectPatchTarget, TransactionCommitError,
+};

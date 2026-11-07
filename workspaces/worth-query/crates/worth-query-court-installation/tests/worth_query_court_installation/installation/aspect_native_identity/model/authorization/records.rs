@@ -42,7 +42,7 @@ pub struct MappingRow {
 pub struct PrincipalRow(u64);
 impl fragment::Scalar<WorthQueryExternalPrincipalIdentity> for Set {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<WorthQueryPrincipalMappingStatus> for Set {
@@ -51,6 +51,7 @@ impl fragment::Scalar<WorthQueryPrincipalMappingStatus> for Set {
 impl fragment::Record<MappingRow> for Set {
     fn record() -> impl fragment::Shape<MappingRow, Self> {
         fragment::field("ExternalId", |r: &MappingRow| r.external.clone())
+            .equality_queryable(true)
             .read_only()
             .and("Status", |r: &MappingRow| r.status)
             .build(|external, status, _: &mut ValueDecodeAdmission<'_>| {
@@ -61,6 +62,7 @@ impl fragment::Record<MappingRow> for Set {
 impl fragment::Record<PrincipalRow> for Set {
     fn record() -> impl fragment::Shape<PrincipalRow, Self> {
         fragment::field("Identity", |r: &PrincipalRow| r.0)
+            .equality_queryable(true)
             .read_only()
             .build(|value, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(PrincipalRow(value))

@@ -32,22 +32,22 @@ impl BindingSet for BodyModelBindings {
 }
 impl Scalar<u64> for BodyModelBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<WorthQueryExternalPrincipalIdentity> for BodyModelBindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl Scalar<WorthQueryPrincipalMappingStatus> for BodyModelBindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<String> for BodyModelBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 

@@ -26,11 +26,11 @@ impl BindingSet for FactsBindings {
 impl Scalar<String> for FactsBindings {
     type Binding = StringApplicationValueBinding;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = true;
+
 }
 impl Scalar<u64> for FactsBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
 }
 #[derive(Clone, Copy, Debug)]
 pub struct EntrySet;
@@ -79,8 +79,8 @@ pub struct SetEntryValue {
 }
 impl fragment::Record<EntrySetValue> for FactsBindings {
     fn record() -> impl Shape<EntrySetValue, Self> {
-        field("EntrySetKey", |row: &EntrySetValue| row.key.clone())
-            .and("EntrySetWeight", |row: &EntrySetValue| row.weight)
+        field("EntrySetKey", |row: &EntrySetValue| row.key.clone()).equality_queryable(true)
+            .and("EntrySetWeight", |row: &EntrySetValue| row.weight).equality_queryable(true)
             .build(|key, weight, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(EntrySetValue { key, weight })
             })
@@ -88,12 +88,12 @@ impl fragment::Record<EntrySetValue> for FactsBindings {
 }
 impl fragment::Record<SetEntryValue> for FactsBindings {
     fn record() -> impl Shape<SetEntryValue, Self> {
-        field("EntryWork", |row: &SetEntryValue| row.work)
+        field("EntryWork", |row: &SetEntryValue| row.work).equality_queryable(true)
             .read_only()
-            .and("EntryNumber", |row: &SetEntryValue| row.number)
-            .and("EntryRegion", |row: &SetEntryValue| row.region)
-            .and("EntryValueBits", |row: &SetEntryValue| row.value_bits)
-            .and("EntryFault", |row: &SetEntryValue| row.fault)
+            .and("EntryNumber", |row: &SetEntryValue| row.number).equality_queryable(true)
+            .and("EntryRegion", |row: &SetEntryValue| row.region).equality_queryable(true)
+            .and("EntryValueBits", |row: &SetEntryValue| row.value_bits).equality_queryable(true)
+            .and("EntryFault", |row: &SetEntryValue| row.fault).equality_queryable(true)
             .build(
                 |work, number, region, value_bits, fault, _: &mut ValueDecodeAdmission<'_>| {
                     Ok::<_, std::convert::Infallible>(SetEntryValue {

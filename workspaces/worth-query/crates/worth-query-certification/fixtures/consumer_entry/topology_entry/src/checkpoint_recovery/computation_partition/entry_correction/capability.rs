@@ -20,12 +20,12 @@ impl BindingSet for CorrectionGrantBindings {
 }
 impl Scalar<u64> for CorrectionGrantBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl Scalar<String> for CorrectionGrantBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 pub struct CorrectionGrant;
@@ -56,12 +56,19 @@ pub struct GrantRow {
 impl fragment::Record<GrantRow> for CorrectionGrantBindings {
     fn record() -> impl Shape<GrantRow, Self> {
         field("CorrectionAction", |row: &GrantRow| row.action)
+            .equality_queryable(true)
             .and("CorrectionPurpose", |row: &GrantRow| row.purpose)
+            .equality_queryable(true)
             .and("CorrectionStatus", |row: &GrantRow| row.status)
+            .equality_queryable(true)
             .and("CorrectionNotBefore", |row: &GrantRow| row.not_before)
+            .equality_queryable(true)
             .and("CorrectionNotAfter", |row: &GrantRow| row.not_after)
+            .equality_queryable(true)
             .and("CorrectionDepth", |row: &GrantRow| row.depth)
+            .equality_queryable(true)
             .and("CorrectionScopeKey", |row: &GrantRow| row.scope_key.clone())
+            .equality_queryable(true)
             .build(
                 |action,
                  purpose,

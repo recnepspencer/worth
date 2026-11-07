@@ -113,7 +113,6 @@ impl BindingSet for HostileBindings {
 }
 impl Scalar<String> for HostileBindings {
     type Binding = OtherNativeCodec;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl Scalar<u64> for HostileBindings {
     type Binding = U64ApplicationValueBinding;
@@ -123,16 +122,20 @@ impl fragment::Record<AccountPolicyValue> for HostileBindings {
         fragment::field("AccountIdentity", |row: &AccountPolicyValue| {
             row.account_identity.clone()
         })
+        .equality_queryable(true)
         .read_only()
         .and("AccountStatus", |row: &AccountPolicyValue| {
             row.account_status.clone()
         })
+        .equality_queryable(true)
         .and("AccountLabel", |row: &AccountPolicyValue| {
             row.account_label.clone()
         })
+        .equality_queryable(true)
         .and("AccountNote", |row: &AccountPolicyValue| {
             row.account_note.clone()
         })
+        .equality_queryable(true)
         .and("AccountScore", |row: &AccountPolicyValue| row.account_score)
         .build(
             |account_identity,

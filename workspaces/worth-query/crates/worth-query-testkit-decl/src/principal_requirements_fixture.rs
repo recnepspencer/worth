@@ -16,6 +16,7 @@ pub struct StatusRow(WorthQueryPrincipalMappingStatus);
 pub struct IdentityRow {
     value: u64,
     nested: NestedIdentityRow,
+    unindexed: u64,
 }
 pub struct NestedIdentityRow(u64);
 pub struct Actor;
@@ -78,7 +79,6 @@ impl<const D: u8> BindingSet for Bindings<D> {
 impl<const D: u8> Scalar<WorthQueryExternalPrincipalIdentity> for Bindings<D> {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
     const WRITABLE: bool = D == 3;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl<const D: u8> Scalar<WorthQueryPrincipalMappingStatus> for Bindings<D> {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
@@ -87,15 +87,14 @@ impl<const D: u8> Scalar<WorthQueryPrincipalMappingStatus> for Bindings<D> {
 impl<const D: u8> Scalar<u64> for Bindings<D> {
     type Binding = U64ApplicationValueBinding;
     const WRITABLE: bool = D == 5;
-    const EQUALITY_QUERYABLE: bool = D != 6;
 }
 impl<const D: u8> Record<ExternalRow> for Bindings<D> {
     fn record() -> impl Shape<ExternalRow, Self> {
-        field("value", |r: &ExternalRow| r.0.clone()).build(
-            |value, _: &mut ValueDecodeAdmission<'_>| {
+        field("value", |r: &ExternalRow| r.0.clone())
+            .equality_queryable(true)
+            .build(|value, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ExternalRow(value))
-            },
-        )
+            })
     }
 }
 impl<const D: u8> Record<StatusRow> for Bindings<D> {
@@ -108,10 +107,18 @@ impl<const D: u8> Record<StatusRow> for Bindings<D> {
 impl<const D: u8> Record<IdentityRow> for Bindings<D> {
     fn record() -> impl Shape<IdentityRow, Self> {
         field("value", |r: &IdentityRow| r.value)
+            .equality_queryable(D != 6)
             .and("nested", |r: &IdentityRow| NestedIdentityRow(r.nested.0))
-            .build(|value, nested, _: &mut ValueDecodeAdmission<'_>| {
-                Ok::<_, std::convert::Infallible>(IdentityRow { value, nested })
-            })
+            .and("unindexed", |r: &IdentityRow| r.unindexed)
+            .build(
+                |value, nested, unindexed, _: &mut ValueDecodeAdmission<'_>| {
+                    Ok::<_, std::convert::Infallible>(IdentityRow {
+                        value,
+                        nested,
+                        unindexed,
+                    })
+                },
+            )
     }
 }
 pub type Reference<const D: u8> = ApplicationPrincipalBindingRef<
@@ -167,6 +174,8 @@ pub fn reference<const D: u8>() -> Reference<D> {
                     Identity::<0>,
                     if D == 10 {
                         "typo"
+                    } else if D == 13 {
+                        "unindexed"
                     } else if D == 12 {
                         "nested.value"
                     } else {
@@ -214,10 +223,10 @@ pub fn wrong_codec_reference() -> ApplicationPrincipalBindingRef<
 
 impl<const D: u8> Record<NestedIdentityRow> for Bindings<D> {
     fn record() -> impl Shape<NestedIdentityRow, Self> {
-        field("value", |row: &NestedIdentityRow| row.0).build(
-            |value, _: &mut ValueDecodeAdmission<'_>| {
+        field("value", |row: &NestedIdentityRow| row.0)
+            .equality_queryable(D != 6)
+            .build(|value, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(NestedIdentityRow(value))
-            },
-        )
+            })
     }
 }

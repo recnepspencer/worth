@@ -13,6 +13,7 @@ impl Fragment for Fixture {
         (
             super::fragment_extension_fixture::Annotations,
             super::fragment_extension_fixture::Classifications,
+            super::fragment_capacity_fixture::Limited,
         ),
         SetMetric,
         super::fragment_relation_fixture::Linked,
@@ -134,7 +135,6 @@ impl BindingSet for Bindings {
 }
 impl Scalar<u64> for Bindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl Scalar<bool> for Bindings {
     type Binding = BoolApplicationValueBinding;
@@ -146,6 +146,7 @@ impl Scalar<String> for Bindings {
 impl Record<Interval> for Bindings {
     fn record() -> impl Shape<Interval, Self> {
         field("start", |value: &Interval| value.start)
+            .equality_queryable(true)
             .and("end", |value: &Interval| value.end)
             .build(|start, end, _: &mut ValueDecodeAdmission<'_>| Interval::checked(start, end))
     }
@@ -153,6 +154,7 @@ impl Record<Interval> for Bindings {
 impl Record<Measurements> for Bindings {
     fn record() -> impl Shape<Measurements, Self> {
         field("components", |value: &Measurements| value.components)
+            .equality_queryable(true)
             .and("interval", |value: &Measurements| value.interval.clone())
             .build(|components, interval, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(Measurements {
@@ -277,10 +279,18 @@ pub(crate) fn sample_with<T: Any + Eq>(
 }
 
 pub fn samples(binding: &RecordBinding) -> Vec<Box<dyn BindingSample>> {
+    if binding.binding_set() == TypeId::of::<super::fragment_capacity_fixture::Bindings>() {
+        return super::fragment_capacity_fixture::samples(binding.value_type());
+    }
     if binding.binding_set() == TypeId::of::<super::fragment_context_fixture::ContextBindings>() {
         return super::fragment_context_fixture::samples(binding.value_type());
     }
     let value = binding.value_type();
+    if value == TypeId::of::<super::fragment_extension_fixture::EdgeWeightRow>() {
+        return vec![row_sample(
+            super::fragment_extension_fixture::EdgeWeightRow(7),
+        )];
+    }
     if let Some(samples) = super::fragment_codec_fixture::samples(value) {
         return samples;
     }

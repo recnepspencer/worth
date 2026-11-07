@@ -50,9 +50,11 @@ impl Record<ExternalIdentityValue> for NumericModelBindings {
         field("ExternalIdentityField", |row: &ExternalIdentityValue| {
             row.external_identity_field.clone()
         })
+        .equality_queryable(true)
         .and("MappingStatusField", |row: &ExternalIdentityValue| {
             row.mapping_status_field
         })
+        .equality_queryable(true)
         .build(
             |external_identity_field, mapping_status_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ExternalIdentityValue {
@@ -81,6 +83,7 @@ impl Record<PrincipalFactsValue> for NumericModelBindings {
         field("PrincipalIdentityField", |row: &PrincipalFactsValue| {
             row.principal_identity_field
         })
+        .equality_queryable(true)
         .read_only()
         .build(
             |principal_identity_field, _: &mut ValueDecodeAdmission<'_>| {
@@ -113,13 +116,19 @@ pub struct NumberFactsValue {
 impl Record<NumberFactsValue> for NumericModelBindings {
     fn record() -> impl Shape<NumberFactsValue, Self> {
         field("Key", |row: &NumberFactsValue| row.key.clone())
+            .equality_queryable(true)
             .read_only()
             .and("Primary", |row: &NumberFactsValue| row.primary)
             .and("Secondary", |row: &NumberFactsValue| row.secondary)
+            .equality_queryable(true)
             .and("ReadEnabled", |row: &NumberFactsValue| row.read_enabled)
+            .equality_queryable(true)
             .and("Ceiling", |row: &NumberFactsValue| row.ceiling)
+            .equality_queryable(true)
             .and("Calculated", |row: &NumberFactsValue| row.calculated)
+            .equality_queryable(true)
             .and("Operand", |row: &NumberFactsValue| row.operand)
+            .equality_queryable(true)
             .build(
                 |key,
                  primary,
@@ -157,11 +166,11 @@ pub struct ScalarFactsValue {
 }
 impl Record<ScalarFactsValue> for NumericModelBindings {
     fn record() -> impl Shape<ScalarFactsValue, Self> {
-        field("Value", |row: &ScalarFactsValue| row.value).build(
-            |value, _: &mut ValueDecodeAdmission<'_>| {
+        field("Value", |row: &ScalarFactsValue| row.value)
+            .equality_queryable(true)
+            .build(|value, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ScalarFactsValue { value })
-            },
-        )
+            })
     }
 }
 pub struct ScalarResult;
@@ -179,11 +188,11 @@ pub struct ScalarResultValue {
 }
 impl Record<ScalarResultValue> for NumericModelBindings {
     fn record() -> impl Shape<ScalarResultValue, Self> {
-        field("Total", |row: &ScalarResultValue| row.total).build(
-            |total, _: &mut ValueDecodeAdmission<'_>| {
+        field("Total", |row: &ScalarResultValue| row.total)
+            .equality_queryable(true)
+            .build(|total, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ScalarResultValue { total })
-            },
-        )
+            })
     }
 }
 pub struct DefinitionRevisionFacts;
@@ -205,6 +214,7 @@ impl Record<DefinitionRevisionFactsValue> for NumericModelBindings {
             "DefinitionRevision",
             |row: &DefinitionRevisionFactsValue| row.definition_revision,
         )
+        .equality_queryable(true)
         .build(|definition_revision, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(DefinitionRevisionFactsValue {
                 definition_revision,
@@ -229,7 +239,9 @@ pub struct InputFactsValue {
 impl Record<InputFactsValue> for NumericModelBindings {
     fn record() -> impl Shape<InputFactsValue, Self> {
         field("Bias", |row: &InputFactsValue| row.bias)
+            .equality_queryable(true)
             .and("Sibling", |row: &InputFactsValue| row.sibling)
+            .equality_queryable(true)
             .build(|bias, sibling, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(InputFactsValue { bias, sibling })
             })
@@ -259,33 +271,42 @@ pub struct GrantFactsValue {
 impl Record<GrantFactsValue> for NumericModelBindings {
     fn record() -> impl Shape<GrantFactsValue, Self> {
         field("Disclosure", |row: &GrantFactsValue| row.disclosure.clone())
+            .equality_queryable(true)
             .read_only()
             .and("GrantIdentity", |row: &GrantFactsValue| {
                 row.grant_identity.clone()
             })
+            .equality_queryable(true)
             .read_only()
             .and("GrantAction", |row: &GrantFactsValue| {
                 row.grant_action.clone()
             })
+            .equality_queryable(true)
             .read_only()
             .and("GrantPurpose", |row: &GrantFactsValue| {
                 row.grant_purpose.clone()
             })
+            .equality_queryable(true)
             .read_only()
             .and("GrantStatus", |row: &GrantFactsValue| {
                 row.grant_status.clone()
             })
+            .equality_queryable(true)
             .and("GrantScopeKey", |row: &GrantFactsValue| {
                 row.grant_scope_key.clone()
             })
+            .equality_queryable(true)
             .read_only()
             .and("GrantNotBefore", |row: &GrantFactsValue| {
                 row.grant_not_before
             })
+            .equality_queryable(true)
             .read_only()
             .and("GrantNotAfter", |row: &GrantFactsValue| row.grant_not_after)
+            .equality_queryable(true)
             .read_only()
             .and("GrantDepth", |row: &GrantFactsValue| row.grant_depth)
+            .equality_queryable(true)
             .read_only()
             .build(
                 |disclosure,

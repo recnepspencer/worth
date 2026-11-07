@@ -22,17 +22,17 @@ impl fragment::BindingSet for PreviewRecordsBindings {
 }
 impl fragment::Scalar<WorthQueryExternalPrincipalIdentity> for PreviewRecordsBindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<WorthQueryPrincipalMappingStatus> for PreviewRecordsBindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<u64> for PreviewRecordsBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 pub struct PreviewEntity;
@@ -64,9 +64,11 @@ impl fragment::Record<MappingAspectValue> for PreviewRecordsBindings {
         fragment::field("MappingIdentity", |row: &MappingAspectValue| {
             row.mapping_identity.clone()
         })
+        .equality_queryable(true)
         .and("MappingStatus", |row: &MappingAspectValue| {
             row.mapping_status
         })
+        .equality_queryable(true)
         .build(
             |mapping_identity, mapping_status, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(MappingAspectValue {
@@ -91,6 +93,7 @@ impl fragment::Record<PrincipalAspectValue> for PreviewRecordsBindings {
         fragment::field("PrincipalIdentity", |row: &PrincipalAspectValue| {
             row.principal_identity
         })
+        .equality_queryable(true)
         .build(|principal_identity, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(PrincipalAspectValue { principal_identity })
         })

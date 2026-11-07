@@ -24,24 +24,24 @@ impl Scalar<declaration::authentication::WorthQueryExternalPrincipalIdentity>
     for TemporalModelBindings
 {
     type Binding = declaration::authentication::WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl Scalar<declaration::authentication::WorthQueryPrincipalMappingStatus>
     for TemporalModelBindings
 {
     type Binding = declaration::authentication::WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<u64> for TemporalModelBindings {
     type Binding = declaration::application_schema::U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<String> for TemporalModelBindings {
     type Binding = declaration::application_schema::StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 pub struct ExternalMapping;
@@ -107,9 +107,11 @@ impl Record<ExternalIdentityValue> for TemporalModelBindings {
         field("ExternalIdentityField", |row: &ExternalIdentityValue| {
             row.external_identity_field.clone()
         })
+        .equality_queryable(true)
         .and("MappingStatusField", |row: &ExternalIdentityValue| {
             row.mapping_status_field
         })
+        .equality_queryable(true)
         .build(
             |external_identity_field, mapping_status_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ExternalIdentityValue {
@@ -138,6 +140,7 @@ impl Record<PrincipalFactsValue> for TemporalModelBindings {
         field("PrincipalIdentityField", |row: &PrincipalFactsValue| {
             row.principal_identity_field
         })
+        .equality_queryable(true)
         .read_only()
         .build(
             |principal_identity_field, _: &mut ValueDecodeAdmission<'_>| {
@@ -172,25 +175,32 @@ impl Record<IntentFactsValue> for TemporalModelBindings {
         field("IntentIdentityField", |row: &IntentFactsValue| {
             row.intent_identity_field.clone()
         })
+        .equality_queryable(true)
         .read_only()
         .and("IntentRevisionField", |row: &IntentFactsValue| {
             row.intent_revision_field
         })
+        .equality_queryable(true)
         .and("IntentDueField", |row: &IntentFactsValue| {
             row.intent_due_field
         })
+        .equality_queryable(true)
         .and("IntentLifecycleField", |row: &IntentFactsValue| {
             row.intent_lifecycle_field.clone()
         })
+        .equality_queryable(true)
         .and("IntentInputField", |row: &IntentFactsValue| {
             row.intent_input_field.clone()
         })
+        .equality_queryable(true)
         .and("IntentGateField", |row: &IntentFactsValue| {
             row.intent_gate_field.clone()
         })
+        .equality_queryable(true)
         .and("IntentEffectField", |row: &IntentFactsValue| {
             row.intent_effect_field.clone()
         })
+        .equality_queryable(true)
         .build(
             |intent_identity_field,
              intent_revision_field,
@@ -231,6 +241,7 @@ impl Record<UnrelatedFactsValue> for TemporalModelBindings {
         field("UnrelatedValueField", |row: &UnrelatedFactsValue| {
             row.unrelated_value_field
         })
+        .equality_queryable(true)
         .read_only()
         .build(|unrelated_value_field, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(UnrelatedFactsValue {

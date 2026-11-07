@@ -22,13 +22,13 @@ impl fragment::BindingSet for QueryRecordsBindings {
 }
 impl fragment::Scalar<u64> for QueryRecordsBindings {
     type Binding = worth_query_declaration::facade::application_schema::U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<String> for QueryRecordsBindings {
     type Binding =
         worth_query_declaration::facade::application_schema::StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 pub struct Account;
@@ -64,11 +64,11 @@ pub struct AccountFactsValue {
 }
 impl fragment::Record<AccountFactsValue> for QueryRecordsBindings {
     fn record() -> impl fragment::Shape<AccountFactsValue, Self> {
-        fragment::field("AccountId", |row: &AccountFactsValue| row.account_id).build(
-            |account_id, _: &mut ValueDecodeAdmission<'_>| {
+        fragment::field("AccountId", |row: &AccountFactsValue| row.account_id)
+            .equality_queryable(true)
+            .build(|account_id, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(AccountFactsValue { account_id })
-            },
-        )
+            })
     }
 }
 pub struct Identity;
@@ -82,11 +82,11 @@ pub struct IdentityValue {
 }
 impl fragment::Record<IdentityValue> for QueryRecordsBindings {
     fn record() -> impl fragment::Shape<IdentityValue, Self> {
-        fragment::field("Id", |row: &IdentityValue| row.id.clone()).build(
-            |id, _: &mut ValueDecodeAdmission<'_>| {
+        fragment::field("Id", |row: &IdentityValue| row.id.clone())
+            .equality_queryable(true)
+            .build(|id, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(IdentityValue { id })
-            },
-        )
+            })
     }
 }
 pub struct ActivityFacts;
@@ -103,6 +103,7 @@ impl fragment::Record<ActivityFactsValue> for QueryRecordsBindings {
         fragment::field("ActivitySequence", |row: &ActivityFactsValue| {
             row.activity_sequence
         })
+        .equality_queryable(true)
         .build(|activity_sequence, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(ActivityFactsValue { activity_sequence })
         })

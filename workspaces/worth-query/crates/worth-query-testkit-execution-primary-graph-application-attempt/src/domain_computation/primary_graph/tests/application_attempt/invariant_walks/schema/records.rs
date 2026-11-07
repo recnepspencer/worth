@@ -22,22 +22,22 @@ impl fragment::BindingSet for WalkSchemaRecordsBindings {
 }
 impl fragment::Scalar<WorthQueryExternalPrincipalIdentity> for WalkSchemaRecordsBindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<WorthQueryPrincipalMappingStatus> for WalkSchemaRecordsBindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<u64> for WalkSchemaRecordsBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<bool> for WalkSchemaRecordsBindings {
     type Binding = BoolApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 pub struct ExternalMapping;
@@ -84,9 +84,11 @@ impl fragment::Record<ExternalIdentityValue> for WalkSchemaRecordsBindings {
         fragment::field("ExternalIdentityField", |row: &ExternalIdentityValue| {
             row.external_identity_field.clone()
         })
+        .equality_queryable(true)
         .and("MappingStatusField", |row: &ExternalIdentityValue| {
             row.mapping_status_field
         })
+        .equality_queryable(true)
         .build(
             |external_identity_field, mapping_status_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ExternalIdentityValue {
@@ -111,6 +113,7 @@ impl fragment::Record<PrincipalIdentityValue> for WalkSchemaRecordsBindings {
         fragment::field("PrincipalIdentityField", |row: &PrincipalIdentityValue| {
             row.principal_identity_field
         })
+        .equality_queryable(true)
         .build(
             |principal_identity_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(PrincipalIdentityValue {
@@ -134,8 +137,11 @@ pub struct NodeDataValue {
 impl fragment::Record<NodeDataValue> for WalkSchemaRecordsBindings {
     fn record() -> impl fragment::Shape<NodeDataValue, Self> {
         fragment::field("NodeKey", |row: &NodeDataValue| row.node_key)
+            .equality_queryable(true)
             .and("Active", |row: &NodeDataValue| row.active)
+            .equality_queryable(true)
             .and("Blocked", |row: &NodeDataValue| row.blocked)
+            .equality_queryable(true)
             .build(
                 |node_key, active, blocked, _: &mut ValueDecodeAdmission<'_>| {
                     Ok::<_, std::convert::Infallible>(NodeDataValue {

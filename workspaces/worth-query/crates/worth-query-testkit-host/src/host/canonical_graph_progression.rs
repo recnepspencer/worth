@@ -47,7 +47,6 @@ impl BindingSet for Bindings {
 impl Scalar<u64> for Bindings {
     type Binding = U64ApplicationValueBinding;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 pub struct Record;
 impl Entity for Record {
@@ -58,7 +57,7 @@ impl Entity for Record {
 pub struct RecordFacts;
 impl Aspect for RecordFacts {
     const NAME: &'static str = "RecordFacts";
-    type Row = u64;
+    type Row = IdentityRow;
 }
 impl Registration<HostileConsumerSchema> for RecordQuery {
     fn register(
@@ -126,4 +125,15 @@ pub fn record_query_definition() -> ApplicationQueryDefinition<
         .public()
         .build()
         .expect("hostile-consumer query declaration should be valid")
+}
+
+pub struct IdentityRow(u64);
+impl fragment::Record<IdentityRow> for Bindings {
+    fn record() -> impl fragment::Shape<IdentityRow, Self> {
+        fragment::field("value", |row: &IdentityRow| row.0)
+            .equality_queryable(true)
+            .build(|value, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(IdentityRow(value))
+            })
+    }
 }

@@ -22,7 +22,7 @@ impl fragment::BindingSet for PlanningModelBindings {
 }
 impl fragment::Scalar<u64> for PlanningModelBindings {
     type Binding = worth_query_declaration::facade::application_schema::U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 pub struct Account;
@@ -58,11 +58,11 @@ pub struct AccountFactsValue {
 }
 impl fragment::Record<AccountFactsValue> for PlanningModelBindings {
     fn record() -> impl fragment::Shape<AccountFactsValue, Self> {
-        fragment::field("AccountId", |row: &AccountFactsValue| row.account_id).build(
-            |account_id, _: &mut ValueDecodeAdmission<'_>| {
+        fragment::field("AccountId", |row: &AccountFactsValue| row.account_id)
+            .equality_queryable(true)
+            .build(|account_id, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(AccountFactsValue { account_id })
-            },
-        )
+            })
     }
 }
 pub struct ActivityFacts;
@@ -76,11 +76,11 @@ pub struct ActivityFactsValue {
 }
 impl fragment::Record<ActivityFactsValue> for PlanningModelBindings {
     fn record() -> impl fragment::Shape<ActivityFactsValue, Self> {
-        fragment::field("Sequence", |row: &ActivityFactsValue| row.sequence).build(
-            |sequence, _: &mut ValueDecodeAdmission<'_>| {
+        fragment::field("Sequence", |row: &ActivityFactsValue| row.sequence)
+            .equality_queryable(true)
+            .build(|sequence, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ActivityFactsValue { sequence })
-            },
-        )
+            })
     }
 }
 pub type AccountId = FieldSelection<PlanningModel, Account, AccountFacts, u64>;

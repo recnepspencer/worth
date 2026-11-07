@@ -264,3 +264,8 @@ fn an_unrelated_sibling_aspect_keeps_every_existing_revision() {
     let changed = lower!(Standard, (Owner<Standard, E>, Extras<Standard, E, Row>));
     assert_eq!(revisions(&rows!(Standard, Row)), revisions(&changed));
 }
+
+#[test]
+fn changing_field_queryability_moves_owned_extension_payload_and_case_revisions() {
+    assert_all_move(&rows!(Standard, Row), &rows!(Standard, QueryableFieldRow));
+}

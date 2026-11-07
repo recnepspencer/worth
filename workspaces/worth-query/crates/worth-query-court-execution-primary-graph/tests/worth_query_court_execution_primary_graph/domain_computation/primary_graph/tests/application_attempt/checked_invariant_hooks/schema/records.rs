@@ -22,22 +22,22 @@ impl fragment::BindingSet for HookSchemaRecordsBindings {
 }
 impl fragment::Scalar<WorthQueryExternalPrincipalIdentity> for HookSchemaRecordsBindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<u64> for HookSchemaRecordsBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<WorthQueryPrincipalMappingStatus> for HookSchemaRecordsBindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<String> for HookSchemaRecordsBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 pub struct ExternalMapping;
@@ -84,9 +84,11 @@ impl fragment::Record<ExternalIdentityValue> for HookSchemaRecordsBindings {
         fragment::field("ExternalIdentityField", |row: &ExternalIdentityValue| {
             row.external_identity_field.clone()
         })
+        .equality_queryable(true)
         .and("MappingStatusField", |row: &ExternalIdentityValue| {
             row.mapping_status_field
         })
+        .equality_queryable(true)
         .build(
             |external_identity_field, mapping_status_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ExternalIdentityValue {
@@ -111,6 +113,7 @@ impl fragment::Record<PrincipalIdentityValue> for HookSchemaRecordsBindings {
         fragment::field("PrincipalIdentityField", |row: &PrincipalIdentityValue| {
             row.principal_identity_field
         })
+        .equality_queryable(true)
         .build(
             |principal_identity_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(PrincipalIdentityValue {
@@ -135,10 +138,12 @@ impl fragment::Record<AccountPolicyValue> for HookSchemaRecordsBindings {
         fragment::field("AccountIdentity", |row: &AccountPolicyValue| {
             row.account_identity.clone()
         })
+        .equality_queryable(true)
         .read_only()
         .and("AccountStatus", |row: &AccountPolicyValue| {
             row.account_status.clone()
         })
+        .equality_queryable(true)
         .build(
             |account_identity, account_status, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(AccountPolicyValue {

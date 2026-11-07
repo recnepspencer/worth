@@ -42,16 +42,13 @@ impl BindingSet for IdentityBindings {
 impl Scalar<WorthQueryExternalPrincipalIdentity> for IdentityBindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl Scalar<WorthQueryPrincipalMappingStatus> for IdentityBindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl Scalar<u64> for IdentityBindings {
     type Binding = U64ApplicationValueBinding;
     const WRITABLE: bool = false;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 pub struct ExternalMapping;
 impl Entity for ExternalMapping {
@@ -73,7 +70,7 @@ impl Aspect for ExternalIdentity {
 pub struct PrincipalIdentity;
 impl Aspect for PrincipalIdentity {
     const NAME: &'static str = "PrincipalIdentity";
-    type Row = u64;
+    type Row = IdentityRow;
 }
 pub struct MappingTarget;
 impl Relation for MappingTarget {
@@ -87,7 +84,9 @@ pub struct MappingRow {
 impl Record<MappingRow> for IdentityBindings {
     fn record() -> impl Shape<MappingRow, Self> {
         field("identity", |row: &MappingRow| row.identity.clone())
+            .equality_queryable(true)
             .and("status", |row: &MappingRow| row.status)
+            .equality_queryable(true)
             .build(|identity, status, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(MappingRow { identity, status })
             })
@@ -242,4 +241,15 @@ fn principal_binding_rejects_wrong_target_principal_identity_type() {
             }
         }
     });
+}
+
+pub struct IdentityRow(u64);
+impl fragment::Record<IdentityRow> for IdentityBindings {
+    fn record() -> impl fragment::Shape<IdentityRow, Self> {
+        fragment::field("value", |row: &IdentityRow| row.0)
+            .equality_queryable(true)
+            .build(|value, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(IdentityRow(value))
+            })
+    }
 }

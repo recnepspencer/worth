@@ -46,14 +46,17 @@ places traits and struct types in the same namespace.
 A fragment's `BindingSet` supplies the original checked-constructor context through
 `Work<'a>` and its scalar admission callback through `with_admission`. Implement
 `Scalar<T>` on the set for each scalar value and `Record<T>` once for each row.
-Bindings retain their units, equality and write postures. A record field defaults
-to the binding's write posture. `.read_only()` handles existing field exceptions;
+Codecs retain their units and representation. Equality queryability belongs only
+to each record field: it defaults to false, and `.equality_queryable(true)`
+requests an equality index. Two fields using the same codec may differ. A record
+field defaults to the binding's write posture. `.read_only()` handles existing field exceptions;
 `.unique()` requires exactly one lowered scalar.
 
 ```rust
 impl Record<Interval> for Bindings {
     fn record() -> impl Shape<Interval, Self> {
         field("start", |row: &Interval| row.start)
+            .equality_queryable(true)
             .and("end", |row: &Interval| row.end)
             .build(|start, end, _: &mut ValueDecodeAdmission<'_>| {
                 Interval::checked(start, end)
@@ -61,6 +64,14 @@ impl Record<Interval> for Bindings {
     }
 }
 ```
+
+Queryability is a declared value, not a type parameter. It participates in the
+derived aspect revision, including extension aspects and relation payloads.
+A scalar array applies its field posture to each element. A containing record
+cannot override its nested leaf declarations: marking it queryable returns
+`QueryabilityNeedsScalar`. Declare queryability on the nested record's own fields.
+Bare scalar aspect rows have no queryable field declaration; use a named record
+row when that aspect needs an equality index.
 
 Arrays lower to `components[0]`, `components[1]`, and so on. A nested interval
 lowers to `interval.start` and `interval.end`. These remain ordinary scalar fields.
@@ -146,3 +157,13 @@ History queries accept `aspect(fragment, entity, aspect)` and
 `relation_aspect(fragment, source_entity, relation, aspect)`. Both selectors
 prove membership and check the installed fragment owner before resolving the
 portable contract, including when another fragment reuses native names.
+
+Installation preserves typed failures. A deferred bootstrap field codec refusal
+provides its `ApplicationFieldBindingLocus` and original
+`ApplicationValueEncodeDenial` through `field_encoding_denial()`. A conditional
+installation's `PrimaryGraphPublication` variant carries the original primary
+graph denial. Native commit refusals are available through
+`native_commit_denial()`. The Host primary-graph facade re-exports the original
+transaction and field-refusal vocabulary. Schema, runtime construction, branch, transaction,
+staging, index execution, value encoding and authorization causes retain their original types too. Display text
+is diagnostic output and is unnecessary for matching the cause.

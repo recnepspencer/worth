@@ -22,7 +22,7 @@ impl fragment::BindingSet for UniqueRecordsBindings {
 }
 impl fragment::Scalar<u64> for UniqueRecordsBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 pub struct Member;
@@ -49,9 +49,11 @@ pub struct MemberProfileValue {
 impl fragment::Record<MemberProfileValue> for UniqueRecordsBindings {
     fn record() -> impl fragment::Shape<MemberProfileValue, Self> {
         fragment::field("MemberHandle", |row: &MemberProfileValue| row.member_handle)
+            .equality_queryable(true)
             .unique()
             .read_only()
             .and("MemberTier", |row: &MemberProfileValue| row.member_tier)
+            .equality_queryable(true)
             .build(
                 |member_handle, member_tier, _: &mut ValueDecodeAdmission<'_>| {
                     Ok::<_, std::convert::Infallible>(MemberProfileValue {

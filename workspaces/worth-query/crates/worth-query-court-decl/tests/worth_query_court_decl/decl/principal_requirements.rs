@@ -139,3 +139,13 @@ fn a_malformed_principal_path_retains_its_owner_and_path() {
 fn a_principal_requirement_accepts_a_nested_record_field_path() {
     Model::<12>::declaration().unwrap();
 }
+
+#[test]
+fn principal_posture_uses_the_selected_field_instead_of_its_queryable_sibling() {
+    Model::<0>::declaration().unwrap();
+    refused::<13>(
+        "principal",
+        FieldSelection::<Model<0>, Principal<0>, Identity<0>, u64>::at("unindexed").aspect(),
+        "unindexed",
+    );
+}

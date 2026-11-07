@@ -19,22 +19,22 @@ impl fragment::BindingSet for PatternModelBindings {
 }
 impl fragment::Scalar<WorthQueryExternalPrincipalIdentity> for PatternModelBindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<WorthQueryPrincipalMappingStatus> for PatternModelBindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<u64> for PatternModelBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<String> for PatternModelBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 pub struct Mapping;
@@ -77,7 +77,9 @@ impl fragment::Record<MappingFactsValue> for PatternModelBindings {
         fragment::field("ExternalId", |row: &MappingFactsValue| {
             row.external_id.clone()
         })
+        .equality_queryable(true)
         .and("Status", |row: &MappingFactsValue| row.status)
+        .equality_queryable(true)
         .build(|external_id, status, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(MappingFactsValue {
                 external_id,
@@ -98,6 +100,7 @@ pub struct PrincipalFactsValue {
 impl fragment::Record<PrincipalFactsValue> for PatternModelBindings {
     fn record() -> impl fragment::Shape<PrincipalFactsValue, Self> {
         fragment::field("PrincipalId", |row: &PrincipalFactsValue| row.principal_id)
+            .equality_queryable(true)
             .read_only()
             .build(|principal_id, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(PrincipalFactsValue { principal_id })
@@ -116,6 +119,7 @@ pub struct IdentityValue {
 impl fragment::Record<IdentityValue> for PatternModelBindings {
     fn record() -> impl fragment::Shape<IdentityValue, Self> {
         fragment::field("Key", |row: &IdentityValue| row.key.clone())
+            .equality_queryable(true)
             .unique()
             .build(|key, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(IdentityValue { key })
@@ -138,11 +142,11 @@ pub struct FirstRow {
 }
 impl fragment::Record<FirstRow> for PatternModelBindings {
     fn record() -> impl fragment::Shape<FirstRow, Self> {
-        fragment::field("FirstValue", |row: &FirstRow| row.first_value).build(
-            |first_value, _: &mut ValueDecodeAdmission<'_>| {
+        fragment::field("FirstValue", |row: &FirstRow| row.first_value)
+            .equality_queryable(true)
+            .build(|first_value, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(FirstRow { first_value })
-            },
-        )
+            })
     }
 }
 pub struct Second;
@@ -163,7 +167,9 @@ pub struct SecondRow {
 impl fragment::Record<SecondRow> for PatternModelBindings {
     fn record() -> impl fragment::Shape<SecondRow, Self> {
         fragment::field("SecondValue", |row: &SecondRow| row.second_value)
+            .equality_queryable(true)
             .and("SecondRequired", |row: &SecondRow| row.second_required)
+            .equality_queryable(true)
             .build(
                 |second_value, second_required, _: &mut ValueDecodeAdmission<'_>| {
                     Ok::<_, std::convert::Infallible>(SecondRow {
@@ -190,11 +196,11 @@ pub struct ThirdRow {
 }
 impl fragment::Record<ThirdRow> for PatternModelBindings {
     fn record() -> impl fragment::Shape<ThirdRow, Self> {
-        fragment::field("ThirdValue", |row: &ThirdRow| row.third_value).build(
-            |third_value, _: &mut ValueDecodeAdmission<'_>| {
+        fragment::field("ThirdValue", |row: &ThirdRow| row.third_value)
+            .equality_queryable(true)
+            .build(|third_value, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ThirdRow { third_value })
-            },
-        )
+            })
     }
 }
 pub type ExternalId =

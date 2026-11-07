@@ -183,6 +183,14 @@ where
                         WorthQueryPrimaryGraphInstallationDenialKind::BindingSchemaMismatch,
                         format!("principal identity encoding was rejected: {denial:?}"),
                     )
+                    .with_field_encoding_denial(
+                        worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus::new(
+                            installed_binding.principal_entity(),
+                            installed_binding.principal_identity_aspect(),
+                            installed_binding.principal_identity_field(),
+                        ),
+                        denial,
+                    )
                 })?,
             identity,
             status,

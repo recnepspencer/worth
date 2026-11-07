@@ -22,22 +22,22 @@ impl BindingSet for IdentityModelBindings {
 }
 impl Scalar<WorthQueryExternalPrincipalIdentity> for IdentityModelBindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl Scalar<u64> for IdentityModelBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl Scalar<WorthQueryPrincipalMappingStatus> for IdentityModelBindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl Scalar<String> for IdentityModelBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 pub struct ExternalMapping;
@@ -95,9 +95,11 @@ impl Record<ExternalIdentityValue> for IdentityModelBindings {
         field("ExternalIdentityField", |row: &ExternalIdentityValue| {
             row.external_identity_field.clone()
         })
+        .equality_queryable(true)
         .and("MappingStatusField", |row: &ExternalIdentityValue| {
             row.mapping_status_field
         })
+        .equality_queryable(true)
         .build(
             |external_identity_field, mapping_status_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ExternalIdentityValue {
@@ -126,6 +128,7 @@ impl Record<PrincipalIdentityValue> for IdentityModelBindings {
         field("PrincipalIdentityField", |row: &PrincipalIdentityValue| {
             row.principal_identity_field
         })
+        .equality_queryable(true)
         .build(
             |principal_identity_field, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(PrincipalIdentityValue {
@@ -153,6 +156,7 @@ impl Record<AccountIdentityValue> for IdentityModelBindings {
         field("AccountNumber", |row: &AccountIdentityValue| {
             row.account_number.clone()
         })
+        .equality_queryable(true)
         .build(|account_number, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(AccountIdentityValue { account_number })
         })

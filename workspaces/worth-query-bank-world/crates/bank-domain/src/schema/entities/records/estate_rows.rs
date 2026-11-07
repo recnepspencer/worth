@@ -18,6 +18,7 @@ impl fragment::Record<BranchIdentityValue> for BankRecordsBindings {
         fragment::field("BranchIdentityField", |row: &BranchIdentityValue| {
             row.branch_identity_field
         })
+        .equality_queryable(true)
         .build(|branch_identity_field, _: &mut ValueDecodeAdmission<'_>| {
             Ok::<_, std::convert::Infallible>(BranchIdentityValue {
                 branch_identity_field,
@@ -45,9 +46,11 @@ impl fragment::Record<DeathNoticeRecordValue> for BankRecordsBindings {
             "DeathNoticeIdentityField",
             |row: &DeathNoticeRecordValue| row.death_notice_identity_field,
         )
+        .equality_queryable(true)
         .and("DeathNoticeStatusField", |row: &DeathNoticeRecordValue| {
             row.death_notice_status_field
         })
+        .equality_queryable(true)
         .build(
             |death_notice_identity_field,
              death_notice_status_field,
@@ -80,12 +83,15 @@ impl fragment::Record<EstateCaseRecordValue> for BankRecordsBindings {
         fragment::field("EstateCaseIdentityField", |row: &EstateCaseRecordValue| {
             row.estate_case_identity_field
         })
+        .equality_queryable(true)
         .and("EstateWorkflowStageField", |row: &EstateCaseRecordValue| {
             row.estate_workflow_stage_field
         })
+        .equality_queryable(true)
         .and("EstateCaseStatusField", |row: &EstateCaseRecordValue| {
             row.estate_case_status_field
         })
+        .equality_queryable(true)
         .build(
             |estate_case_identity_field,
              estate_workflow_stage_field,
@@ -121,14 +127,17 @@ impl fragment::Record<LegalAuthorityRecordValue> for BankRecordsBindings {
             "LegalAuthorityIdentityField",
             |row: &LegalAuthorityRecordValue| row.legal_authority_identity_field,
         )
+        .equality_queryable(true)
         .and(
             "LegalAuthorityKindField",
             |row: &LegalAuthorityRecordValue| row.legal_authority_kind_field,
         )
+        .equality_queryable(true)
         .and(
             "LegalAuthorityRecognizedField",
             |row: &LegalAuthorityRecordValue| row.legal_authority_recognized_field,
         )
+        .equality_queryable(true)
         .build(
             |legal_authority_identity_field,
              legal_authority_kind_field,

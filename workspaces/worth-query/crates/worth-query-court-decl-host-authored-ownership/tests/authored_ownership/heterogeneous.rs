@@ -192,6 +192,7 @@ pub struct BodyKeyRow(u64);
 impl fragment::Record<BodyKeyRow> for OwnershipModelBindings {
     fn record() -> impl Shape<BodyKeyRow, Self> {
         fragment::field("BodyKey", |row: &BodyKeyRow| row.0)
+            .equality_queryable(true)
             .read_only()
             .unique()
             .build(|value, _: &mut ValueDecodeAdmission<'_>| {

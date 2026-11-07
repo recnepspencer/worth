@@ -22,12 +22,12 @@ impl fragment::BindingSet for LifecycleRecordsBindings {
 }
 impl fragment::Scalar<u64> for LifecycleRecordsBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<ApplicationSigningSupersession> for LifecycleRecordsBindings {
     type Binding = ApplicationSigningSupersessionBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 pub(super) struct Parent;
@@ -55,11 +55,11 @@ pub(super) struct ParentFactsValue {
 }
 impl fragment::Record<ParentFactsValue> for LifecycleRecordsBindings {
     fn record() -> impl fragment::Shape<ParentFactsValue, Self> {
-        fragment::field("Revision", |row: &ParentFactsValue| row.revision).build(
-            |revision, _: &mut ValueDecodeAdmission<'_>| {
+        fragment::field("Revision", |row: &ParentFactsValue| row.revision)
+            .equality_queryable(true)
+            .build(|revision, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ParentFactsValue { revision })
-            },
-        )
+            })
     }
 }
 pub(super) struct ConsequenceFacts;
@@ -73,11 +73,11 @@ pub(super) struct ConsequenceFactsValue {
 }
 impl fragment::Record<ConsequenceFactsValue> for LifecycleRecordsBindings {
     fn record() -> impl fragment::Shape<ConsequenceFactsValue, Self> {
-        fragment::field("Record", |row: &ConsequenceFactsValue| row.record.clone()).build(
-            |record, _: &mut ValueDecodeAdmission<'_>| {
+        fragment::field("Record", |row: &ConsequenceFactsValue| row.record.clone())
+            .equality_queryable(true)
+            .build(|record, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ConsequenceFactsValue { record })
-            },
-        )
+            })
     }
 }
 pub(super) type Revision = FieldSelection<LifecycleRecords, Parent, ParentFacts, u64>;

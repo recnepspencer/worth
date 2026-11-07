@@ -38,57 +38,57 @@ impl fragment::BindingSet for ExecutionRecordsBindings {
 }
 impl fragment::Scalar<WorthQueryExternalPrincipalIdentity> for ExecutionRecordsBindings {
     type Binding = WorthQueryExternalPrincipalIdentityBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<u64> for ExecutionRecordsBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<WorthQueryPrincipalMappingStatus> for ExecutionRecordsBindings {
     type Binding = WorthQueryPrincipalMappingStatusBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<String> for ExecutionRecordsBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<CapabilityElevationStatus> for ElevationBindings {
     type Binding = CapabilityElevationStatusBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<CapabilityReviewKind> for ExecutionRecordsBindings {
     type Binding = CapabilityReviewKindBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<CapabilityReviewStatus> for ExecutionRecordsBindings {
     type Binding = CapabilityReviewStatusBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = true;
 }
 impl fragment::Scalar<CapabilityAction> for GrantBindings {
     type Binding = CapabilityActionBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<CapabilityPurpose> for GrantBindings {
     type Binding = CapabilityPurposeBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<CapabilityDisclosure> for GrantBindings {
     type Binding = CapabilityDisclosureBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = false;
 }
 impl fragment::Scalar<CapabilityStatus> for GrantBindings {
     type Binding = CapabilityStatusBinding;
-    const EQUALITY_QUERYABLE: bool = false;
+
     const WRITABLE: bool = true;
 }
 

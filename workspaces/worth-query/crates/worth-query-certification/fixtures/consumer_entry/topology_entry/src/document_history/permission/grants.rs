@@ -19,11 +19,10 @@ impl BindingSet for HistoryGrantBindings {
 }
 impl Scalar<String> for HistoryGrantBindings {
     type Binding = StringApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
 }
 impl Scalar<u64> for HistoryGrantBindings {
     type Binding = U64ApplicationValueBinding;
-    const EQUALITY_QUERYABLE: bool = true;
+
     const WRITABLE: bool = false;
 }
 pub struct PlanarHistoryGrant;
@@ -57,22 +56,30 @@ impl fragment::Record<HistoryGrant> for HistoryGrantBindings {
         field("PlanarHistoryGrantIdentity", |row: &HistoryGrant| {
             row.value_0.clone()
         })
+        .equality_queryable(true)
         .unique()
         .and("PlanarHistoryScopeKey", |row: &HistoryGrant| {
             row.value_1.clone()
         })
+        .equality_queryable(true)
         .and("PlanarHistoryAction", |row: &HistoryGrant| {
             row.value_2.clone()
         })
+        .equality_queryable(true)
         .and("PlanarHistoryPurpose", |row: &HistoryGrant| {
             row.value_3.clone()
         })
+        .equality_queryable(true)
         .and("PlanarHistoryStatus", |row: &HistoryGrant| {
             row.value_4.clone()
         })
+        .equality_queryable(true)
         .and("PlanarHistoryNotBefore", |row: &HistoryGrant| row.value_5)
+        .equality_queryable(true)
         .and("PlanarHistoryNotAfter", |row: &HistoryGrant| row.value_6)
+        .equality_queryable(true)
         .and("PlanarHistoryDepth", |row: &HistoryGrant| row.value_7)
+        .equality_queryable(true)
         .build(
             |value_0,
              value_1,

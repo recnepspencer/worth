@@ -17,7 +17,6 @@ pub trait BindingSet: Sized + 'static {
 pub trait Scalar<T: 'static>: BindingSet {
     type Binding: ApplicationReadableScalarValueBinding<Value = T>;
     const WRITABLE: bool = true;
-    const EQUALITY_QUERYABLE: bool = false;
     fn content_format() -> Option<super::super::ApplicationContentBindingRecipe> {
         None
     }
@@ -30,6 +29,11 @@ pub trait Record<T: 'static>: BindingSet {
 /// A record emits only ordinary flat scalar fields. Constructors receive the
 /// original decode admission, including its owner's cancellation controls.
 pub trait Shape<T, Bindings: BindingSet>: private::Sealed {
+    #[doc(hidden)]
+    #[inline(always)]
+    fn is_scalar(&self) -> bool {
+        false
+    }
     #[doc(hidden)]
     fn bindings(&self) -> Vec<super::RecordBinding>;
     #[doc(hidden)]
@@ -146,6 +150,7 @@ where
             name,
             get,
             read_only: false,
+            equality_queryable: false,
             unique: false,
             marker: PhantomData,
         },),
@@ -157,6 +162,7 @@ pub struct Accessor<Value, Get> {
     pub(crate) name: &'static str,
     pub(crate) get: Get,
     pub(crate) read_only: bool,
+    pub(crate) equality_queryable: bool,
     pub(crate) unique: bool,
     pub(crate) marker: PhantomData<fn() -> Value>,
 }
