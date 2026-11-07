@@ -7,6 +7,7 @@ impl RetainedStorageMeasurement for EdgeTopology {
     fn retained_heap_charge(&self, work: &mut Preparation) -> Result<Charge, Denial> {
         work.visit()?;
         let Self {
+            declared_dependents,
             dependency_snapshots,
             dependency_snapshot_shapes,
             dependency_snapshot_storage_custody: _,
@@ -17,6 +18,7 @@ impl RetainedStorageMeasurement for EdgeTopology {
             pending_revalidation_storage_custody: _,
         } = self;
         Charge::ZERO
+            .checked_add(declared_dependents.retained_heap_charge(work)?)?
             .checked_add(dependency_snapshots.retained_heap_charge(work)?)?
             .checked_add(dependency_snapshot_shapes.retained_heap_charge(work)?)?
             .checked_add(dependency_edges.retained_heap_charge(work)?)?
@@ -35,6 +37,7 @@ impl RetainedStorageForkPreparation for EdgeTopology {
     ) -> Result<RetainedStorageForkCharge, Denial> {
         work.visit()?;
         let Self {
+            declared_dependents,
             dependency_snapshots,
             dependency_snapshot_shapes,
             dependency_snapshot_storage_custody: _,
@@ -45,6 +48,7 @@ impl RetainedStorageForkPreparation for EdgeTopology {
             pending_revalidation_storage_custody: _,
         } = self;
         RetainedStorageForkCharge::unchanged(Charge::ZERO)
+            .checked_add(declared_dependents.prepare_fork_charge(work)?)?
             .checked_add(dependency_snapshots.prepare_fork_charge(work)?)?
             .checked_add(dependency_snapshot_shapes.prepare_fork_charge(work)?)?
             .checked_add(dependency_edges.prepare_fork_charge(work)?)?

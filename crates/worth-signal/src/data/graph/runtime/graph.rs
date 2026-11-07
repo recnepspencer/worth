@@ -283,6 +283,7 @@ impl<'de> Deserialize<'de> for SignalGraph {
             epoch_output_preparation_fault_after: Default::default(),
         };
         graph.rebind_observation_capture_state();
+        graph.rebuild_declared_dependents();
         Ok(graph)
     }
 }

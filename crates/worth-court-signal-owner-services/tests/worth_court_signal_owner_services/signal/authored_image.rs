@@ -14,6 +14,93 @@ fn request() -> SerialRequest {
 }
 
 #[test]
+fn retiring_a_source_removes_declarations_after_evaluation_changes_the_read_set() {
+    let funding = request();
+    let execution = ExecutionRequest::serial(&funding);
+    for discovered_only in [false, true] {
+        let mut graph = SignalGraph::new();
+        let source = graph.node().build();
+        let retained = graph.node().build();
+        let consumer = graph.node().on_demand().build();
+        graph
+            .set_dependencies(
+                consumer,
+                [
+                    DependencyEdge::new(source, Aspect::new(0)),
+                    DependencyEdge::new(retained, Aspect::new(0)),
+                ],
+            )
+            .unwrap();
+        if discovered_only {
+            graph
+                .set_evaluated_dependencies(
+                    consumer,
+                    [DependencyEdge::new(retained, Aspect::new(0))],
+                )
+                .unwrap();
+        }
+        // Both memory-only reconstruction doors must rebuild the declaration index.
+        let encoded = serde_json::to_vec(&graph).unwrap();
+        let decoded: SignalGraph = serde_json::from_slice(&encoded).unwrap();
+        let rebound = graph
+            .reconstitute_for_runtime_rebind()
+            .unwrap()
+            .into_parts()
+            .0;
+        for mut actual in [graph, decoded, rebound] {
+            let mut reference = actual.clone();
+            reference
+                .set_dependencies(consumer, [DependencyEdge::new(retained, Aspect::new(0))])
+                .unwrap();
+            reference.unregister_node(source).unwrap();
+            actual.unregister_node(source).unwrap();
+            assert_eq!(
+                actual.declared_dependencies_of(consumer).unwrap(),
+                reference.declared_dependencies_of(consumer).unwrap()
+            );
+            assert_eq!(
+                actual
+                    .capture_authored_image(&execution)
+                    .unwrap()
+                    .as_bytes(),
+                reference
+                    .capture_authored_image(&execution)
+                    .unwrap()
+                    .as_bytes()
+            );
+            let reused = actual.create_node();
+            assert_eq!(reused.index(), source.index());
+            assert_ne!(reused, source);
+            assert!(actual.declared_dependencies_of(reused).unwrap().is_empty());
+            actual
+                .set_dependencies(consumer, [DependencyEdge::new(reused, Aspect::new(0))])
+                .unwrap();
+            actual.unregister_node(reused).unwrap();
+            assert!(actual
+                .declared_dependencies_of(consumer)
+                .unwrap()
+                .is_empty());
+        }
+    }
+}
+
+#[test]
+fn declaration_cycles_refuse_when_evaluation_has_removed_the_runtime_edge() {
+    let mut graph = SignalGraph::new();
+    let left = graph.create_node();
+    let right = graph.create_node();
+    graph
+        .set_dependencies(left, [DependencyEdge::new(right, Aspect::new(0))])
+        .unwrap();
+    graph.set_evaluated_dependencies(left, []).unwrap();
+    assert!(graph
+        .set_dependencies(right, [DependencyEdge::new(left, Aspect::new(0))])
+        .is_err());
+    assert!(graph.declared_dependencies_of(right).unwrap().is_empty());
+    assert!(graph.dependencies_of(right).unwrap().is_empty());
+}
+
+#[test]
 fn authored_bytes_exclude_evaluated_edges_versions_and_node_state() {
     let funding = request();
     let execution = ExecutionRequest::serial(&funding);

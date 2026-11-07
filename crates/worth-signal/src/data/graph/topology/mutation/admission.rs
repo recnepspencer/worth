@@ -15,9 +15,15 @@ impl SignalGraph {
         desired: impl IntoIterator<Item = DependencyEdge>,
     ) -> Result<(), SignalError> {
         let desired = CanonicalDependencies::new(desired);
+        self.validate_declared_edits(&[(node, desired.clone())])
+            .inspect_err(|_| {
+                self.invalidation_performed_counter_state().add(
+                    crate::data::telemetry::InvalidationPerformedCounter::RejectedTopologyMutations,
+                    1,
+                );
+            })?;
         let _ = self.reconcile_dependencies(node, desired.as_slice())?;
-        self.arena.definitions[node.index() as usize].declared_dependencies =
-            (!desired.is_empty()).then_some(desired);
+        self.install_declared_dependencies(node, desired);
         Ok(())
     }
 
@@ -95,10 +101,16 @@ impl SignalGraph {
             .map(|entry| (entry.node, entry.dependencies.clone()))
             .collect::<Vec<_>>();
         let declarations = reconciliations.clone();
+        self.validate_declared_edits(&declarations)
+            .inspect_err(|_| {
+                self.invalidation_performed_counter_state().add(
+                    crate::data::telemetry::InvalidationPerformedCounter::RejectedTopologyMutations,
+                    1,
+                );
+            })?;
         let _ = self.reconcile_dependencies_batch(&reconciliations)?;
         for (node, dependencies) in declarations {
-            self.arena.definitions[node.index() as usize].declared_dependencies =
-                (!dependencies.is_empty()).then_some(dependencies);
+            self.install_declared_dependencies(node, dependencies);
         }
         Ok(())
     }
