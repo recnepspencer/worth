@@ -1,5 +1,4 @@
 use super::*;
-use crate::facade::indexes::DerivedIndexMaintenanceBudget as Budget;
 use crate::facade::transactions::{
     CreateIntent, DeleteEntityIntent, EntityMutationIntent, MutationIntent, WorkerIntentBatch,
 };
@@ -86,27 +85,12 @@ fn a_two_row_commit_prices_its_paths_in_a_two_thousand_row_index() {
         transaction
             .push_batch(edits, setup.allocation_policy())
             .unwrap();
-        let mut candidate = runtime
-            .prepare_branch_transaction(&setup, transaction)
-            .unwrap();
-        let work = runtime.index_authority().prepare_for_candidate(
-            &mut candidate,
-            &[index],
-            Some(&first.snapshot),
-            Budget {
-                maximum_work_units: Some(100_000),
-                maximum_cold_record_slots: Some(0),
-                maximum_derived_rows: Some(100_000),
-            },
-            &execution,
-        );
+        let prepared = runtime.prepare_branch_transaction(&execution, transaction);
         if memory == REFUSED_MEMORY {
-            let denied = work.unwrap_err();
+            let denied = prepared.unwrap_err();
             assert!(matches!(
-                denied.kind,
-                crate::indexes::data::DerivedIndexMaintenanceDenialKind::Execution(
-                    crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted { .. }
-                )
+                denied,
+                crate::transactions::data::TransactionCommitError::Execution { .. }
             ));
             assert_eq!(
                 runtime
@@ -117,10 +101,10 @@ fn a_two_row_commit_prices_its_paths_in_a_two_thousand_row_index() {
                     .source_commit_id,
                 first.commit.commit_id
             );
-            drop(candidate);
             continue;
         }
-        let work = work.expect("two copied paths fit the caller's memory");
+        let candidate = prepared.expect("native preparation fits the caller's memory");
+        let work = candidate.prepared_index_maintenance_work().unwrap();
         // Candidate ownership also reserves deferred catalog insertions. The
         // independently priced field paths are only part of that full bill;
         // all of it must fit the original sub-population memory allowance.

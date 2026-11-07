@@ -14,28 +14,7 @@ struct Exception {
 
 const CREATED_UTC_DAY: u64 = 20763; // 2026-11-06; expires at 2026-11-20T00:00Z.
 const BASE: &str = "5f454efe0341d3527c43471ce219aa5005abb194";
-const EXCEPTIONS: &[Exception] = &[
-    Exception {
-        specimen: "native",
-        metric: Metric {
-            phase: Phase::WholeCommit,
-            name: "charged_work",
-        },
-        axis: Axis::Installed,
-        lane: "P2 pub-indexes",
-        issue: 86,
-    },
-    Exception {
-        specimen: "native",
-        metric: Metric {
-            phase: Phase::IndexMaintenance,
-            name: "charged_work",
-        },
-        axis: Axis::Installed,
-        lane: "P2 pub-indexes",
-        issue: 86,
-    },
-];
+const EXCEPTIONS: &[Exception] = &[];
 
 pub fn verify(specimen: &str, samples: &[Sample; 4]) {
     let failures = growth::compare(samples);

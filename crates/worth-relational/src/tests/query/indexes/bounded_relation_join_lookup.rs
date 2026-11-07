@@ -132,6 +132,12 @@ fn relation_join_requires_an_exact_generation_and_reports_bounded_overflow() {
         .visibility_authority()
         .snapshot()
         .expect("current snapshot fixture is admitted");
+    runtime
+        .index_authority()
+        .discard_generations(crate::indexes::data::DerivedIndexDiscardRequest::all_bases(
+            index.index_id,
+        ))
+        .unwrap();
     let missing = runtime
         .index_access()
         .execute_bounded_relation_join_lookup(

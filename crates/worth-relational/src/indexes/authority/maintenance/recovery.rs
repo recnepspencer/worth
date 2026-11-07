@@ -33,7 +33,7 @@ impl super::IndexAuthority<'_> {
                 super::basis::validate(&request, &observation, None, &projection)?;
                 let after = IndexRootView::from_projection(&projection)?;
                 self.runtime.indexes.install_routing(
-                    after.root().schema_authority().schema_version(),
+                    after.root().schema_authority().authority_digest(),
                     after.root().schema_authority().aspect_plans(),
                 );
                 self.maintenance()
@@ -139,7 +139,7 @@ impl super::IndexAuthority<'_> {
                     return Err(DerivedIndexMaintenanceDenialKind::CommitMismatch);
                 }
                 self.runtime.indexes.install_routing(
-                    root.schema_authority().schema_version(),
+                    root.schema_authority().authority_digest(),
                     root.schema_authority().aspect_plans(),
                 );
                 let after = root_view::IndexRootView::from_projection(&projection)?;

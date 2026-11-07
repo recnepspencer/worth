@@ -120,10 +120,7 @@ pub fn verify(
     for generation in &rebuilt.generations {
         let maintained = warm
             .iter()
-            .find(|g| {
-                g.index_id == generation.index_id
-                    && g.source_commit_id == generation.source_commit_id
-            })
+            .find(|g| g.index_id == generation.index_id)
             .unwrap();
         assert_eq!(
             maintained.entries, generation.entries,

@@ -102,12 +102,7 @@ impl Projection<'_, '_, '_, '_, '_> {
     fn record(&mut self, entity: EntityId, aspect: Option<&AspectKey>) -> Result<(), Denial> {
         let before = values::live(&self.execution, self.selected, entity)?;
         let after = values::live(&self.execution, self.working, entity)?;
-        let schema = self
-            .runtime
-            .config
-            .schema
-            .registry
-            .primary_schema_version_id();
+        let schema = self.runtime.schema_contract_runtime.schema_authority_digest;
         let Some(routing) = self.catalog.routing(schema) else {
             self.unavailable = true;
             return Ok(());

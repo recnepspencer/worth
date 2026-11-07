@@ -16,9 +16,9 @@ mod diagnostics;
 mod discard;
 mod maintenance;
 mod recovery_build;
-pub(crate) use maintenance::candidate::PreparedCandidateIndexPublication;
 #[cfg(test)]
 pub(crate) use maintenance::charge_rendezvous::at_next_charges;
+pub(crate) use maintenance::PreparedCandidateIndexPublication;
 pub(crate) use maintenance::PreparedForkIndexSelection;
 mod packet_planning;
 
@@ -92,14 +92,14 @@ impl<'runtime> IndexAuthority<'runtime> {
     }
 
     fn install_known_schema_routing(&self) {
-        use crate::capabilities::{AspectPlanSource, SchemaVersionSource};
+        use crate::capabilities::AspectPlanSource;
         self.runtime.indexes.install_routing(
-            self.runtime.primary_schema_version_id(),
+            self.runtime.schema_contract_runtime.schema_authority_digest,
             self.runtime.aspect_plan_catalog(),
         );
         for root in self.runtime.history.current_root_storage_inventory() {
             self.runtime.indexes.install_routing(
-                root.schema_authority().schema_version(),
+                root.schema_authority().authority_digest(),
                 root.schema_authority().aspect_plans(),
             );
         }

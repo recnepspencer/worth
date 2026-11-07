@@ -182,13 +182,9 @@ impl World {
             .push_batch(edits, execution.allocation_policy())
             .unwrap();
         let ((result, observation), report) = execution.run(ExecutionWorkCeiling::new(None), |_| observe_maintenance_work(64, || {
-            let (mut candidate, prepare) = execution.run(ExecutionWorkCeiling::new(None), |_| self.runtime.prepare_branch_transaction(execution, transaction).unwrap()).unwrap();
+            let (candidate, prepare) = execution.run(ExecutionWorkCeiling::new(None), |_| self.runtime.prepare_branch_transaction(execution, transaction).unwrap()).unwrap();
             sample.record(Phase::CommitPreparation, "charged_work", prepare.charged_work());
-            let (work, index_report) = execution.run(ExecutionWorkCeiling::new(None), |_| self.runtime.index_authority().prepare_incremental_indexes_for_candidate(
-                &mut candidate, &self.indexes, &self.head.snapshot, DerivedIndexMaintenanceBudget {
-                    maximum_work_units: None, maximum_cold_record_slots: Some(0), maximum_derived_rows: None,
-                }, execution).unwrap()).unwrap();
-            sample.record(Phase::IndexMaintenance, "charged_work", index_report.charged_work());
+            let work = candidate.prepared_index_maintenance_work().expect("native receipt");
             sample.record(Phase::IndexMaintenance, "entry_edits", work.entry_edits as u64);
             sample.record(Phase::IndexMaintenance, "record_reads", work.record_reads as u64);
             let (result, publication) = execution.run(ExecutionWorkCeiling::new(None), |_| {
@@ -269,30 +265,23 @@ fn indexed_commit(
     runtime: &RelationalRuntime,
     execution: &ExecutionRequest<'_, '_>,
     batch: WorkerIntentBatch,
-    indexes: &[DerivedIndexId],
-    before: &CommitResult,
+    _indexes: &[DerivedIndexId],
+    _before: &CommitResult,
 ) -> CommitResult {
     let mut transaction = begin_main_transaction(runtime);
     transaction
         .push_batch(batch, execution.allocation_policy())
         .unwrap();
-    let mut candidate = runtime
+    let candidate = runtime
         .prepare_branch_transaction(execution, transaction)
         .unwrap();
-    runtime
-        .index_authority()
-        .prepare_incremental_indexes_for_candidate(
-            &mut candidate,
-            indexes,
-            &before.snapshot,
-            DerivedIndexMaintenanceBudget {
-                maximum_work_units: None,
-                maximum_cold_record_slots: Some(0),
-                maximum_derived_rows: None,
-            },
-            execution,
-        )
-        .unwrap();
+    assert_eq!(
+        candidate
+            .prepared_index_maintenance_work()
+            .unwrap()
+            .cold_record_slots,
+        0
+    );
     let worth_relational::facade::mvcc::RelationalPublicationOutcome::Performed(performed) =
         runtime
             .publication_port()

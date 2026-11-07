@@ -103,6 +103,7 @@ impl PhaseWorkSource for worth_relational::facade::inspection::MaintenanceWorkOb
             let phase = match row.phase {
                 "root_admission" => Phase::RootAdmission,
                 "kind_commitment" => Phase::KindCommitment,
+                "index_maintenance" => Phase::IndexMaintenance,
                 other => Phase::OwnerDefined(other),
             };
             *totals.entry(phase).or_default() += row.charged_work;

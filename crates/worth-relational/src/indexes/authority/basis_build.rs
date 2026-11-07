@@ -170,8 +170,11 @@ impl IndexAuthority<'_> {
                 };
             }
         };
-        if let Some(plans) = projection.aspect_plans() {
-            self.runtime.indexes.install_routing(schema_version, plans);
+        if let (Some(digest), Some(plans)) = (
+            projection.schema_authority_digest(),
+            projection.aspect_plans(),
+        ) {
+            self.runtime.indexes.install_routing(digest, plans);
         }
         let publication_basis = IndexGenerationPublicationBasis::new(
             &request,

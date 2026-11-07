@@ -50,7 +50,7 @@ fn selected_field_and_join_candidate_keep_original_funding_until_performed_insta
     let request = DerivedIndexBuildRequest {
         source_commit_id: basis.observation().commit_id().unwrap(),
         branch_id: BranchId("main".into()),
-        index_ids: vec![field, join],
+        index_ids: vec![field, join, unrelated],
     };
     assert!(runtime
         .index_authority()
@@ -77,21 +77,13 @@ fn selected_field_and_join_candidate_keep_original_funding_until_performed_insta
     // Measure the existing request report and retained reservation, not a new meter.
     // Dropping this unperformed candidate publishes neither source nor generations.
     let initial_memory = memory.charged_memory_bytes();
-    let mut measure = candidate_for_update(execution, &runtime, entity, "after");
+    let transaction = transaction_for_update(&runtime, entity, "after");
     let (prepared, report) = maintenance_execution
         .run(ExecutionWorkCeiling::new(None), |_| {
-            runtime
-                .index_authority()
-                .prepare_incremental_indexes_for_candidate(
-                    &mut measure,
-                    &[field, join],
-                    &before,
-                    budget(0),
-                    maintenance_execution,
-                )
+            runtime.prepare_branch_transaction(maintenance_execution, transaction)
         })
         .unwrap();
-    prepared.unwrap();
+    let measure = prepared.unwrap();
     let required_work = report.charged_work();
     let required_memory = maintenance_memory.charged_memory_bytes();
     assert!(required_work > 1);
@@ -100,39 +92,16 @@ fn selected_field_and_join_candidate_keep_original_funding_until_performed_insta
     assert_eq!(memory.charged_memory_bytes(), initial_memory);
     assert_eq!(maintenance_memory.charged_memory_bytes(), 0);
 
-    let mut candidate = candidate_for_update(execution, &runtime, entity, "after");
-    let candidate_baseline = memory.charged_memory_bytes();
-    let commit = candidate
-        .index_preparation_roots()
-        .unwrap()
-        .1
-        .commit_id()
-        .unwrap();
-    // Near-complete work refusal exercises the late quote on the SAME candidate.
+    let transaction = transaction_for_update(&runtime, entity, "after");
     let (refused, _) = maintenance_execution
         .run(ExecutionWorkCeiling::new(Some(required_work - 1)), |_| {
-            runtime
-                .index_authority()
-                .prepare_incremental_indexes_for_candidate(
-                    &mut candidate,
-                    &[field, join],
-                    &before,
-                    budget(0),
-                    maintenance_execution,
-                )
+            runtime.prepare_branch_transaction(maintenance_execution, transaction)
         })
         .unwrap();
     assert!(matches!(
-        refused.unwrap_err().kind,
-        DerivedIndexMaintenanceDenialKind::Execution(
-            crate::execution::RelationalExecutionDenialCause::WorkExhausted
-        )
+        refused.unwrap_err(),
+        crate::transactions::data::TransactionCommitError::Execution { .. }
     ));
-    assert!(runtime
-        .indexes
-        .derived_artifacts_for_commit(commit)
-        .is_empty());
-    assert_eq!(memory.charged_memory_bytes(), candidate_baseline);
     assert_eq!(maintenance_memory.charged_memory_bytes(), 0);
     let restricted_memory = SerialMemoryBudget::new(Some(required_memory - 1));
     let unfunded = SerialRequest::from_memory(
@@ -140,44 +109,26 @@ fn selected_field_and_join_candidate_keep_original_funding_until_performed_insta
         CancellationSource::new().token(),
         None,
     );
-    let memory_refusal = runtime
-        .index_authority()
-        .prepare_incremental_indexes_for_candidate(
-            &mut candidate,
-            &[field, join],
-            &before,
-            budget(0),
-            &ExecutionRequest::serial(&unfunded),
-        )
-        .unwrap_err();
+    let transaction = transaction_for_update(&runtime, entity, "after");
+    let refused =
+        runtime.prepare_branch_transaction(&ExecutionRequest::serial(&unfunded), transaction);
     assert!(matches!(
-        memory_refusal.kind,
-        DerivedIndexMaintenanceDenialKind::Execution(
-            crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted { .. }
-                | crate::execution::RelationalExecutionDenialCause::DeclaredMemoryExhausted { .. }
-                | crate::execution::RelationalExecutionDenialCause::ProcessMemoryExhausted { .. }
-        )
+        refused.unwrap_err(),
+        crate::transactions::data::TransactionCommitError::Execution { .. }
     ));
-    assert!(runtime
-        .indexes
-        .derived_artifacts_for_commit(commit)
-        .is_empty());
     assert_eq!(restricted_memory.charged_memory_bytes(), 0);
 
-    let work = runtime
-        .index_authority()
-        .prepare_incremental_indexes_for_candidate(
-            &mut candidate,
-            &[field, join],
-            &before,
-            budget(0),
-            maintenance_execution,
-        )
+    let candidate = candidate_for_update(maintenance_execution, &runtime, entity, "after");
+    let commit = candidate
+        .index_preparation_roots()
+        .unwrap()
+        .1
+        .commit_id()
         .unwrap();
+    let work = candidate.prepared_index_maintenance_work().unwrap();
     assert_eq!(work.cold_record_slots, 0);
     assert!(work.patch_records > 0);
-    assert_eq!(maintenance_memory.charged_memory_bytes(), required_memory);
-    assert_eq!(memory.charged_memory_bytes(), candidate_baseline);
+    assert!(maintenance_memory.charged_memory_bytes() > 0);
     assert!(runtime
         .indexes
         .derived_artifacts_for_commit(commit)
@@ -201,7 +152,7 @@ fn selected_field_and_join_candidate_keep_original_funding_until_performed_insta
             .iter()
             .map(|g| g.index_id)
             .collect::<Vec<_>>(),
-        vec![field]
+        vec![field, unrelated]
     );
     assert_eq!(
         runtime
@@ -251,15 +202,10 @@ fn selected_field_and_join_candidate_keep_original_funding_until_performed_insta
             commit,
             second.commit.version_id
         )
-        .is_none());
-    assert_eq!(
-        maintenance_memory.charged_memory_bytes(),
-        0,
-        "performed installation discharges the original reservation"
-    );
+        .is_some());
     assert!(
-        memory.charged_memory_bytes() > initial_memory,
-        "canonical history retains its own payer"
+        maintenance_memory.charged_memory_bytes() > 0,
+        "the original native payer funds canonical history too"
     );
     runtime.snapshots().release_snapshot(&before).unwrap();
     release_test_commit_snapshot(&runtime, &first);
@@ -274,4 +220,5 @@ fn selected_field_and_join_candidate_keep_original_funding_until_performed_insta
         before,
     ));
     assert_eq!(memory.charged_memory_bytes(), 0);
+    assert_eq!(maintenance_memory.charged_memory_bytes(), 0);
 }

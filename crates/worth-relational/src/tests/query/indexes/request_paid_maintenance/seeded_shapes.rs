@@ -270,21 +270,13 @@ fn prove_commit_paths(
             .unwrap();
     }
     let transaction = test_owner_begin_transaction_for_main(runtime);
-    let mut candidate = runtime
-        .prepare_branch_transaction(execution, transaction)
-        .unwrap();
-    let (prepared, report) = execution
+    let (candidate, report) = execution
         .run(ExecutionWorkCeiling::new(None), |_| {
-            runtime.index_authority().prepare_for_candidate(
-                &mut candidate,
-                &request.index_ids,
-                Some(&created.snapshot),
-                cold_budget(),
-                execution,
-            )
+            runtime.prepare_branch_transaction(execution, transaction)
         })
         .unwrap();
-    let prepared = prepared.unwrap();
+    let candidate = candidate.unwrap();
+    let prepared = candidate.prepared_index_maintenance_work().unwrap();
     assert!(report.charged_work() >= prepared.work_units as u64);
     assert_eq!(prepared.patch_records, 0);
     assert!(request.index_ids.iter().all(|index| runtime

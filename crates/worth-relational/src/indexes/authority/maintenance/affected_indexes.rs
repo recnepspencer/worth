@@ -13,7 +13,7 @@ pub(super) fn select(
     after: &IndexRootView,
     work: &mut MaintenanceWork,
 ) -> Result<BTreeSet<DerivedIndexId>, Denial> {
-    let schema = after.root().schema_authority().schema_version();
+    let schema = after.root().schema_authority().authority_digest();
     let routes = indexes
         .definition_read_binding()
         .snapshot()

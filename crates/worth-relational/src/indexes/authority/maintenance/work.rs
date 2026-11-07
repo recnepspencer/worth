@@ -22,7 +22,6 @@ enum MaintenancePayer<'a, 'run, 'lease> {
 enum MaintenanceRestriction {
     Unrestricted,
     FieldIndexes,
-    IncrementalIndexes,
     RoutedIndexes,
 }
 
@@ -82,9 +81,6 @@ impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
 
     pub(super) fn restrict_to_field_indexes(&mut self) {
         self.restriction = MaintenanceRestriction::FieldIndexes;
-    }
-    pub(super) fn restrict_to_incremental_indexes(&mut self) {
-        self.restriction = MaintenanceRestriction::IncrementalIndexes;
     }
     pub(super) fn restrict_to_routed_indexes(&mut self) {
         self.restriction = MaintenanceRestriction::RoutedIndexes;

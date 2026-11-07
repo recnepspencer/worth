@@ -84,24 +84,18 @@ provide the same interface.
 ## Ratchet registry
 
 The executable registry is `tests/worth_query_court_decl_host_replay/cost/ratchet.rs`.
-It admits only these measured failing coordinates:
+The registry is empty after P2's native index-maintenance cutover. Every measured
+phase and independent axis must satisfy the growth guard.
 
-| Specimen | Phase / metric | Axis | Owner | Issue |
-|---|---|---|---|---|
-| Native | Whole commit / charged work | Unrelated installed indexes | P2 `pub-indexes` | #86 |
-| Native | Index maintenance / charged work | Unrelated installed indexes | P2 `pub-indexes` | #86 |
-
-Entries were created 2026-11-06 UTC and expire 2026-11-20T00:00Z. They also
-expire when a subsequent `Fixes #86` closeout reaches fetched `origin/master`.
-Every new failing metric or axis fails the gate. A healed coordinate fails
-until its owning lane removes the stale exception in its landing change.
-Kind commitment and root admission have no exception.
-
-At the retained specimen sizes, installed-index doubling yields **1.706x**
-whole-commit work and **1.750x** index-maintenance work. Kind commitment
-independently yields **1.072x** under model doubling and **1.000x** under
-history doubling. These are recorded measurements, not exact-count test
-assertions.
+At records=128, history=64 and installed indexes=8, doubling only installed
+indexes to 16 measures **62,541 → 62,673 whole-commit work (1.002×)** and
+**54,700 → 54,777 index-maintenance work (1.001×)**. The former ratchet entries
+were 1.706× and 1.750× respectively. Model doubling measures 1.031× whole
+commit and 1.029× index maintenance; history doubling measures 1.015× and
+1.017×. These are observations, never exact-count assertions. Preparation
+runs once in the native commit pipeline under its original request; phase
+work comes from the owner's inclusive observation. Carried generations may
+retain their creation commit while remaining selected at the successor basis.
 
 The injected-loop fixture charges actual whole-state visits through Execution.
 It checks every phase and every axis, rejects the loop through both the growth
