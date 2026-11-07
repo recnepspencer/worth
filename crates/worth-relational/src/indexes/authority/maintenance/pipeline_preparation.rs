@@ -60,7 +60,7 @@ impl IndexDefinitionReadBinding {
             return Ok(None);
         }
         let owner = IndexMaintenanceOwner { indexes: &indexes };
-        let (prepared, _) = request_payment::run(
+        let (prepared, counts) = request_payment::run(
             execution,
             DerivedIndexMaintenanceBudget {
                 maximum_work_units: None,
@@ -129,6 +129,7 @@ impl IndexDefinitionReadBinding {
         Ok(Some(PreparedCandidateIndexPublication {
             prepared,
             funding,
+            work: counts,
         }))
     }
 }

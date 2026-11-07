@@ -10,6 +10,7 @@ use std::sync::Arc;
 pub(crate) struct PreparedCandidateIndexPublication {
     pub(super) prepared: CandidateIndexPreparation,
     pub(super) funding: worth_execution::ExecutionMemoryReservation,
+    pub(super) work: crate::indexes::data::DerivedIndexMaintenanceWork,
 }
 
 pub(super) struct CandidateIndexPreparation {
@@ -22,6 +23,10 @@ pub(super) struct CandidateIndexPreparation {
 }
 
 impl PreparedCandidateIndexPublication {
+    pub(crate) fn work(&self) -> crate::indexes::data::DerivedIndexMaintenanceWork {
+        self.work
+    }
+
     pub(crate) fn matches_root(&self, root: &Arc<RelationalBranchRoot>) -> bool {
         root.id() == self.prepared.root_id
             && root.commit_id() == Some(self.prepared.commit_id)

@@ -34,7 +34,11 @@ impl IndexAuthority<'_> {
             self.prepare_candidate_indexes(candidate, index_ids, before, work, execution)
         })?;
         let (prepared, funding) = prepared.into_funded_parts();
-        let publication = PreparedCandidateIndexPublication { prepared, funding };
+        let publication = PreparedCandidateIndexPublication {
+            prepared,
+            funding,
+            work: counts,
+        };
         candidate
             .attach_prepared_indexes(publication)
             .map(|()| counts)
@@ -57,7 +61,11 @@ impl IndexAuthority<'_> {
             self.prepare_candidate_indexes(candidate, index_ids, Some(before), work, execution)
         })?;
         let (prepared, funding) = prepared.into_funded_parts();
-        let publication = PreparedCandidateIndexPublication { prepared, funding };
+        let publication = PreparedCandidateIndexPublication {
+            prepared,
+            funding,
+            work: counts,
+        };
         candidate
             .attach_prepared_indexes(publication)
             .map(|()| counts)
@@ -78,7 +86,11 @@ impl IndexAuthority<'_> {
         })?;
         let (prepared, funding) = prepared.into_funded_parts();
         candidate
-            .attach_prepared_indexes(PreparedCandidateIndexPublication { prepared, funding })
+            .attach_prepared_indexes(PreparedCandidateIndexPublication {
+                prepared,
+                funding,
+                work: counts,
+            })
             .map(|()| counts)
             .map_err(|kind| DerivedIndexMaintenanceDenial { kind, work: counts })
     }
