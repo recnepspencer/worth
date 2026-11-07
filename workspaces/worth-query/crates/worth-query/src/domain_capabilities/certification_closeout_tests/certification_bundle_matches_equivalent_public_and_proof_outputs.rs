@@ -34,7 +34,7 @@ fn certification_bundle_matches_equivalent_public_and_proof_outputs(
                 "worth.spatial.traceability.edge_split",
                 "declaration-scoped support remains declaration scoped",
             )?
-            .bind_to_installed_target(declaration_target.clone()),
+            .bind_to_installed_target(declaration_target.clone())?,
         )?)?,
     );
     assert_eq!(support, support_proof);
@@ -63,7 +63,7 @@ fn certification_bundle_matches_equivalent_public_and_proof_outputs(
                 "preview-session:certification",
             ),
         )?
-        .bind_to_installed_target(declaration_target.clone()),
+        .bind_to_installed_target(declaration_target.clone())?,
     )?)?);
     assert_eq!(workflow.workflow_declaration(), &workflow_proof);
     assert_eq!(
@@ -103,7 +103,7 @@ fn certification_bundle_matches_equivalent_public_and_proof_outputs(
                 CausalInspectionRedactionPolicy::PreserveDetail,
                 CausalInspectionMaterializationPolicy::OfflineInterpretableArtifact,
             )?
-            .bind_to_installed_target(lower_runtime_target),
+            .bind_to_installed_target(lower_runtime_target)?,
         )?,
     )?);
     assert_eq!(explanation, explanation_proof);
@@ -126,7 +126,7 @@ fn certification_bundle_matches_equivalent_public_and_proof_outputs(
                 "worth.spatial.invariant.edge_split",
                 "geometry kernel must reject invalid edge splits",
             )?
-            .bind_to_installed_target(declaration_target),
+            .bind_to_installed_target(declaration_target)?,
         )?,
     )?);
     assert_eq!(invariant, invariant_proof);

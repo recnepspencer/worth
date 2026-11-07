@@ -132,7 +132,7 @@ pub(super) fn validate_parity_sources(
                     validation_shape_role_evidence_identity(
                         "declaration_family",
                         declaration.family().as_str(),
-                    ),
+                    )?,
                     validation_shape_role_evidence_identity(
                         "witness_query_family",
                         witness.query_family_label(),
@@ -193,7 +193,7 @@ pub(super) fn validate_parity_sources(
                     validation_shape_role_evidence_identity(
                         "lowering_bridge_family",
                         lowering.bridge_family().as_str(),
-                    ),
+                    )?,
                     validation_shape_role_evidence_identity(
                         "witness_bridge_family",
                         witness.bridge_family_label(),
@@ -257,7 +257,7 @@ pub(super) fn validate_parity_sources(
                     validation_shape_role_evidence_identity(
                         "declaration_basis",
                         declaration.basis_posture().as_str(),
-                    ),
+                    )?,
                     validation_shape_role_evidence_identity(
                         "witness_basis",
                         witness.basis_posture_label(),
@@ -314,7 +314,7 @@ pub(super) fn validate_parity_sources(
                     validation_shape_role_evidence_identity(
                         "lowering_signal_strategy",
                         lowering.signal_strategy_request().request_kind().as_str(),
-                    ),
+                    )?,
                     validation_shape_role_evidence_identity(
                         "witness_signal_strategy",
                         witness.signal_strategy_class_label(),

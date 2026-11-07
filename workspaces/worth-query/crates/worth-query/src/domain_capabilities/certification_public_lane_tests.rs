@@ -76,7 +76,7 @@ fn public_common_and_checked_lanes_converge_for_named_categories(
             .expect("installed contribution authority must remain current")
             .supports_traceability("traceability.edge_split")
             .because("public common and checked support lanes must agree")
-            .try_materialize()
+            .try_materialize()?
             .into_transition_outcome(),
     );
     assert_eq!(support_common, support_checked);
@@ -94,7 +94,7 @@ fn public_common_and_checked_lanes_converge_for_named_categories(
             .expect("installed contribution authority must remain current")
             .advises("admission.routing_gap")
             .because("public common and checked admission lanes must agree")
-            .try_materialize()
+            .try_materialize()?
             .into_transition_outcome(),
     );
     assert_eq!(admission_common, admission_checked);
@@ -122,7 +122,7 @@ fn public_common_and_checked_lanes_converge_for_named_categories(
                 ),
             )
             .because("public common and checked workflow lanes must agree")
-            .try_materialize()
+            .try_materialize()?
             .into_transition_outcome(),
     );
     assert_eq!(workflow_common, workflow_checked);
@@ -140,7 +140,7 @@ fn public_common_and_checked_lanes_converge_for_named_categories(
             .expect("installed contribution authority must remain current")
             .preserves_continuity("continuity.edge_split", "edge:before", "edge:after")
             .because("public common and checked continuity lanes must agree")
-            .try_materialize()
+            .try_materialize()?
             .into_transition_outcome(),
     );
     assert_eq!(continuity_common, continuity_checked);
@@ -164,7 +164,7 @@ fn public_common_and_checked_lanes_converge_for_named_categories(
                 projection_contract_request()?,
             )
             .because("public common and checked aftermath lanes must agree")
-            .try_materialize()
+            .try_materialize()?
             .into_transition_outcome(),
     );
     assert_eq!(aftermath_common, aftermath_checked);
@@ -188,7 +188,7 @@ fn public_common_and_checked_lanes_converge_for_named_categories(
                 store_backed_replay_gap_request()?,
             )
             .because("public common and checked explanation lanes must agree")
-            .try_materialize_artifact()
+            .try_materialize_artifact()?
             .into_transition_outcome(),
     );
     assert_eq!(explanation_common, explanation_checked);
@@ -206,7 +206,7 @@ fn public_common_and_checked_lanes_converge_for_named_categories(
             .expect("installed contribution authority must remain current")
             .register_invariant_catalog("invariant.edge_split", InvariantCatalog::default())
             .because("public common and checked invariant lanes must agree")
-            .try_materialize()
+            .try_materialize()?
             .into_transition_outcome(),
     );
     assert_eq!(invariant_common, invariant_checked);

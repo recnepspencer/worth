@@ -225,5 +225,6 @@ fn receipt_value_identities(
                 .field_value(WorthQueryEvidenceTag::new("value"), value)
                 .seal()
         })
-        .collect()
+        .collect::<Result<_, _>>()
+        .expect("fixture digests must fit")
 }

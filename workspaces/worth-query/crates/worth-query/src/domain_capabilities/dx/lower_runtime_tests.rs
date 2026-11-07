@@ -159,16 +159,16 @@ fn checked_lower_runtime_review_lane_preserves_denied_metadata(
         .try_review();
 
     assert_eq!(
-        checked.kind(),
+        checked?.kind(),
         WorthQueryDomainCapabilityOutcomeKind::Denied
     );
-    assert_eq!(checked.category(), "explanation-inspection");
-    assert_eq!(checked.semantic_posture(), "explains-ambiguity");
+    assert_eq!(checked?.category(), "explanation-inspection");
+    assert_eq!(checked?.semantic_posture(), "explains-ambiguity");
     assert_eq!(
-        checked.target_kind(),
+        checked?.target_kind(),
         crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind::LowerRuntimeBoundaryEnvelope
     );
-    assert!(checked.denial().is_some());
+    assert!(checked?.denial().is_some());
 
     Ok(())
 }

@@ -41,12 +41,12 @@ fn every_contribution_family_materializes_under_one_installed_authority(
     macro_rules! assert_installed_authority {
         ($artifact:expr) => {{
             let artifact = $artifact;
-            let authority = artifact
+            let authority = artifact?
                 .installed_authority()
                 .expect("installed contribution materialization must retain authority");
             assert_eq!(authority.authority_identity(), &expected_authority);
             assert_eq!(authority.package_identity(), &expected_package);
-            assert_eq!(artifact.installed_world_identity(), Some(&expected_world));
+            assert_eq!(artifact?.installed_world_identity(), Some(&expected_world));
         }};
     }
 
@@ -54,55 +54,55 @@ fn every_contribution_family_materializes_under_one_installed_authority(
         WorthQueryAdmissionContributionAuthoring::advisory(
             "worth.spatial.admission.matrix",
             "admission remains installed",
-        )
+        )?
         .bind_to_installed_target(admitted_target.clone()),
-    )));
+    )?));
     assert_installed_authority!(materialize_canonical_support_traceability_artifact(
         admitted_ready(
             WorthQuerySupportContributionAuthoring::declaration_traceability(
                 "worth.spatial.support.matrix",
                 "support remains installed",
-            )
+            )?
             .bind_to_installed_target(declaration_target.clone()),
-        ),
+        )?,
     ));
     assert_installed_authority!(materialize_canonical_invariant_capability_artifact(
         admitted_ready(
             WorthQueryInvariantCapabilityContributionAuthoring::capability_gap(
                 "worth.spatial.invariant.matrix",
                 "invariant posture remains installed",
-            )
+            )?
             .bind_to_installed_target(declaration_target.clone()),
-        ),
+        )?,
     ));
     assert_installed_authority!(materialize_canonical_workflow_artifact(admitted_ready(
         WorthQueryWorkflowContributionAuthoring::preview_only(
             "worth.spatial.workflow.matrix",
             "workflow remains installed",
-        )
+        )?
         .bind_to_installed_target(declaration_target.clone()),
-    )));
+    )?));
     assert_installed_authority!(materialize_canonical_continuity_artifact(admitted_ready(
         WorthQueryContinuityContributionAuthoring::preserved(
             "worth.spatial.continuity.matrix",
             "continuity remains installed",
-        )
+        )?
         .bind_to_installed_target(declaration_target),
-    )));
+    )?));
     assert_installed_authority!(materialize_canonical_aftermath_artifact(admitted_ready(
         WorthQueryAftermathContributionAuthoring::establishes_fact(
             "worth.spatial.aftermath.matrix",
             "aftermath remains installed",
-        )
+        )?
         .bind_to_installed_target(admitted_target),
-    )));
+    )?));
     assert_installed_authority!(materialize_canonical_explanation_artifact(admitted_ready(
         WorthQueryExplanationContributionAuthoring::requires_context(
             "worth.spatial.explanation.matrix",
             "explanation remains installed",
-        )
+        )?
         .bind_to_installed_target(lower_runtime_target),
-    )));
+    )?));
 
     Ok(())
 }

@@ -27,14 +27,14 @@ pub(super) fn view_family_mismatch_rejection(
     Ok(rejection(
         MilestoneNineOneFailureClass::FamilySelectionDenied,
         error.failure_class().as_str(),
-        error.diagnostic().stage().as_str(),
-        error.diagnostic().evidence_projection().label(),
+        error.diagnostic()?.stage().as_str(),
+        error.diagnostic()?.evidence_projection().label(),
         "",
         &[
             format!("message:{}", error.message()),
             format!(
                 "diagnostic:{}",
-                error.diagnostic().evidence_projection().label()
+                error.diagnostic()?.evidence_projection().label()
             ),
             format!("counters:{}", error.counters().counter_projection().label()),
         ],
@@ -59,14 +59,14 @@ pub(super) fn bridge_family_rejection(
     Ok(rejection(
         MilestoneNineOneFailureClass::BridgeLoweringDenied,
         error.denial_kind().as_str(),
-        error.diagnostic().stage().as_str(),
-        error.diagnostic().evidence_projection().label(),
+        error.diagnostic()?.stage().as_str(),
+        error.diagnostic()?.evidence_projection().label(),
         "",
         &[
             format!("message:{}", error.message()),
             format!(
                 "diagnostic:{}",
-                error.diagnostic().evidence_projection().label()
+                error.diagnostic()?.evidence_projection().label()
             ),
             format!("counters:{}", error.counters().counter_projection().label()),
         ],
@@ -92,14 +92,14 @@ pub(super) fn masked_slice_rejection(
     Ok(rejection(
         MilestoneNineOneFailureClass::DeclarationDenied,
         error.denial_kind().as_str(),
-        error.diagnostic().stage().as_str(),
-        error.diagnostic().evidence_projection().label(),
+        error.diagnostic()?.stage().as_str(),
+        error.diagnostic()?.evidence_projection().label(),
         "",
         &[
             format!("message:{}", error.message()),
             format!(
                 "diagnostic:{}",
-                error.diagnostic().evidence_projection().label()
+                error.diagnostic()?.evidence_projection().label()
             ),
             format!("counters:{}", error.counters().counter_projection().label()),
         ],
@@ -119,14 +119,14 @@ pub(super) fn broken_relationship_proof_rejection(
     Ok(rejection(
         MilestoneNineOneFailureClass::FamilySelectionDenied,
         error.failure_class().as_str(),
-        error.diagnostic().stage().as_str(),
-        error.diagnostic().evidence_projection().label(),
+        error.diagnostic()?.stage().as_str(),
+        error.diagnostic()?.evidence_projection().label(),
         "",
         &[
             format!("message:{}", error.message()),
             format!(
                 "diagnostic:{}",
-                error.diagnostic().evidence_projection().label()
+                error.diagnostic()?.evidence_projection().label()
             ),
             format!("counters:{}", error.counters().counter_projection().label()),
         ],
@@ -213,13 +213,13 @@ pub(super) fn scale_source_mismatch_rejection(
         MilestoneNineOneFailureClass::CertificationDenied,
         error.denial_kind().as_str(),
         QuerySubscriptionDiagnosticStage::Certification.as_str(),
-        error.failure_projection().label(),
+        error.failure_projection()?.label(),
         "",
         &[
             format!("message:{}", error.message()),
-            format!("failure:{}", error.failure_projection().label()),
+            format!("failure:{}", error.failure_projection()?.label()),
         ],
-        error.failure_projection().label().to_string(),
+        error.failure_projection()?.label().to_string(),
     ))
 }
 
@@ -252,13 +252,13 @@ pub(super) fn scale_zero_row_rejection(
         MilestoneNineOneFailureClass::CertificationDenied,
         error.denial_kind().as_str(),
         QuerySubscriptionDiagnosticStage::Certification.as_str(),
-        error.failure_projection().label(),
+        error.failure_projection()?.label(),
         "",
         &[
             format!("message:{}", error.message()),
-            format!("failure:{}", error.failure_projection().label()),
+            format!("failure:{}", error.failure_projection()?.label()),
         ],
-        error.failure_projection().label().to_string(),
+        error.failure_projection()?.label().to_string(),
     ))
 }
 

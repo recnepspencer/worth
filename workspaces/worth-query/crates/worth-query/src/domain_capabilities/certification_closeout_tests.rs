@@ -232,7 +232,7 @@ fn certification_bundle_boundary_and_failure_outputs_track_live_surfaces(
         bundle.output_digest("public_boundary_digest"),
         Some(
             worth_query_domain_capability_public_surface_inventory()
-                .public_surface_digest()
+                .public_surface_digest()?
                 .as_str()
         )
     );

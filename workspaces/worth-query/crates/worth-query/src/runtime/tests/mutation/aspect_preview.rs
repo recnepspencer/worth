@@ -28,7 +28,7 @@ fn preview_insert_uses_aspect_native_authoring_and_stays_preview_local() {
             )
         })
         .expect("preview insert should stage");
-    let outcome = preview.discard();
+    let outcome = preview.discard().expect("fixture digest must fit");
 
     assert_eq!(
         receipt.authority_lane(),

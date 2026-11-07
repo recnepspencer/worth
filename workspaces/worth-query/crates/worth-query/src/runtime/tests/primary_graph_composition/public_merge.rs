@@ -238,7 +238,8 @@ fn lowered_merge(
         &scope,
         branch_snapshot_identity(relational, "main"),
         BranchId("main".to_owned()),
-    );
+    )
+    .expect("fixture digest must fit");
     let basis = basis_lifecycle()
         .branch_head("main", true)
         .prepare_mutation()

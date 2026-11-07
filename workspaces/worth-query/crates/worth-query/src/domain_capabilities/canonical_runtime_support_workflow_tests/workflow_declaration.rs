@@ -335,7 +335,7 @@ fn ready_workflow(
 > {
     Ok(ready(authoring.bind_to_declaration_target(
         declaration_target("intent-workflow"),
-    ))?)
+    )?)?)
 }
 
 fn ready_workflow_plan(
@@ -347,5 +347,5 @@ fn ready_workflow_plan(
     >,
     IdentityDerivationDenial,
 > {
-    Ok(ready(authoring.bind_to_admitted_plan_target(target))?)
+    Ok(ready(authoring.bind_to_admitted_plan_target(target)?)?)
 }

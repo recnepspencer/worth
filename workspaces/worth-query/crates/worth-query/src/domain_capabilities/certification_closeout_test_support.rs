@@ -135,7 +135,7 @@ pub(super) fn lower_runtime_envelope(
         &route,
         &boundary,
         &retained_evidence,
-    )?)
+    ))
 }
 
 pub(super) fn replay_gap_inputs() -> Result<

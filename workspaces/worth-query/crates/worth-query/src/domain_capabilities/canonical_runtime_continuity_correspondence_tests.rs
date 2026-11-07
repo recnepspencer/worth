@@ -160,7 +160,7 @@ fn ready_continuity(
 > {
     Ok(ready_continuity_payload(
         authoring
-            .bind_to_admitted_plan_target(admitted_plan_target("plan-continuity-correspondence")?)
+            .bind_to_admitted_plan_target(admitted_plan_target("plan-continuity-correspondence")?)?
             .payload()
             .payload()
             .clone(),

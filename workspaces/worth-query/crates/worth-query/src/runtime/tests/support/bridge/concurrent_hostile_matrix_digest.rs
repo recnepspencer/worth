@@ -91,6 +91,7 @@ pub(super) fn raw_matrix_digest(
         counters.published_artifact_registry_lease_count(),
     )
     .seal()
+    .expect("fixture digest must fit")
     .terminal_projection_for_reporting()
     .to_string()
 }

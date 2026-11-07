@@ -109,7 +109,7 @@ pub(super) fn probe_existing_truth(
             aspect_touch.clone(),
             value.clone(),
         );
-        fields.push(field);
+        fields.push(field?);
     }
     WorthQueryExistingTruthProbe::backend_verified(request, fields)
 }

@@ -56,16 +56,16 @@ pub(super) fn authoritative_crud_lane(
         authority_lane_label: delete.authority_lane().to_string(),
         mutation_family_label: delete.mutation_family().to_string(),
         support_matrix_digest: workspace
-            .public_support_matrix()
+            .public_support_matrix()?
             .matrix_digest()
             .terminal_projection_for_reporting()
             .to_string(),
         mutation_surface_report_digest: workspace
-            .public_mutation_surface_report()
+            .public_mutation_surface_report()?
             .report_digest()
             .to_string(),
         closeout_digest: workspace
-            .public_aspect_api_finalization_closeout()
+            .public_aspect_api_finalization_closeout()?
             .closeout_digest()
             .to_string(),
         receipt_digest: write_receipt_digest(&delete)?,
@@ -121,16 +121,16 @@ pub(super) fn clear_lane(
         authority_lane_label: receipt.authority_lane().to_string(),
         mutation_family_label: receipt.mutation_family().to_string(),
         support_matrix_digest: workspace
-            .public_support_matrix()
+            .public_support_matrix()?
             .matrix_digest()
             .terminal_projection_for_reporting()
             .to_string(),
         mutation_surface_report_digest: workspace
-            .public_mutation_surface_report()
+            .public_mutation_surface_report()?
             .report_digest()
             .to_string(),
         closeout_digest: workspace
-            .public_aspect_api_finalization_closeout()
+            .public_aspect_api_finalization_closeout()?
             .closeout_digest()
             .to_string(),
         receipt_digest: write_receipt_digest(&receipt)?,

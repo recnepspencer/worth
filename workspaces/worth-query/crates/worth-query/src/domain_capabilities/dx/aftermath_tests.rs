@@ -195,16 +195,16 @@ fn checked_aftermath_lane_preserves_denied_metadata() -> Result<(), IdentityDeri
         .try_materialize();
 
     assert_eq!(
-        checked.kind(),
+        checked?.kind(),
         WorthQueryDomainCapabilityOutcomeKind::Denied
     );
-    assert_eq!(checked.category(), "consequence-aftermath");
-    assert_eq!(checked.semantic_posture(), "consumes-fact");
+    assert_eq!(checked?.category(), "consequence-aftermath");
+    assert_eq!(checked?.semantic_posture(), "consumes-fact");
     assert_eq!(
-        checked.target_kind(),
+        checked?.target_kind(),
         crate::domain_capabilities::WorthQueryDomainCapabilityTargetKind::AdmittedIntentPlan
     );
-    assert!(checked.denial().is_some());
+    assert!(checked?.denial().is_some());
 
     Ok(())
 }

@@ -180,7 +180,7 @@ mod tests {
             WorthQueryLowerRuntimeSeamKey::LiveViewSchemaAdmission,
             &readmission,
             &boundary,
-        )?;
+        );
         let summary = summarize_lower_runtime_boundary(&envelope);
 
         assert_eq!(
@@ -254,7 +254,7 @@ mod tests {
                 &route,
                 &boundary,
                 &retained_evidence,
-            )?;
+            );
         let inspection = inspect_lower_runtime_boundary(&envelope);
 
         assert_eq!(

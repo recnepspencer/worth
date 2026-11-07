@@ -20,7 +20,7 @@ fn support_traceability_materializer_builds_domain_scoped_report(
             "spatial.arbitration.support",
             "multiple candidates remain admissible",
         )?)?,
-    ));
+    )?);
 
     assert_eq!(report.rows().len(), 1);
     let row = &report.rows()[0];
@@ -53,7 +53,7 @@ fn equivalent_support_meaning_materializes_same_traceability_digest(
                 "query admission support is declaration-scoped",
             )?,
         )?,
-    ));
+    )?);
     let direct = success(materialize_intent_admission_support_traceability_report(
         ready(
             super::super::proof_integration::create_requested_domain_capability_contribution(
@@ -65,7 +65,7 @@ fn equivalent_support_meaning_materializes_same_traceability_digest(
                 ),
             )?,
         )?,
-    ));
+    )?);
 
     assert_eq!(
         authored.decision_support_traceability_digest(),
@@ -94,7 +94,7 @@ fn support_traceability_digest_changes_when_admitted_plan_scope_changes(
                 ),
             )?,
         )?,
-    ));
+    )?);
     let right = success(materialize_intent_admission_support_traceability_report(
         ready(
             super::super::proof_integration::create_requested_domain_capability_contribution(
@@ -111,7 +111,7 @@ fn support_traceability_digest_changes_when_admitted_plan_scope_changes(
                 ),
             )?,
         )?,
-    ));
+    )?);
 
     assert_ne!(
         left.decision_support_traceability_digest(),
@@ -131,5 +131,5 @@ fn ready_support(
 > {
     Ok(ready(authoring.bind_to_admitted_plan_target(
         admitted_plan_target("plan-support")?,
-    ))?)
+    )?)?)
 }

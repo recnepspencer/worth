@@ -38,7 +38,8 @@ impl MilestoneFivePointFourCorrespondenceHistoryCertificationAdapter {
             rejection_rows: CORRESPONDENCE_HISTORY_REJECTION_ROW_SPECS
                 .iter()
                 .map(|spec| rejection_row(spec, &lanes))
-                .collect(),
+                .collect::<Result<_, _>>()
+                .expect("fixture digests must fit"),
         }
     }
 

@@ -45,7 +45,7 @@ fn common_lower_runtime_explanation_review_matches_proof_lane_review(
         )?
         .bind_to_installed_target(target);
     let proof_admitted = success(admit_eligible_domain_capability_contribution(success(
-        evaluate_requested_domain_capability_contribution(proof_requested),
+        evaluate_requested_domain_capability_contribution(proof_requested?),
     )));
     let proof_target = proof_admitted.payload().target().clone();
     let proof = materialize_query_causal_inspection_review(success(

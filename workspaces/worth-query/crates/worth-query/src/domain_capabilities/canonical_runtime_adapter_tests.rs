@@ -308,7 +308,7 @@ fn ready_continuity(
 > {
     Ok(ready_continuity_payload(
         authoring
-            .bind_to_admitted_plan_target(admitted_plan_target("plan-continuity")?)
+            .bind_to_admitted_plan_target(admitted_plan_target("plan-continuity")?)?
             .payload()
             .payload()
             .clone(),

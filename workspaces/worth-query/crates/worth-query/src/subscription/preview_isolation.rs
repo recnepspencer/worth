@@ -169,7 +169,7 @@ pub fn admit_preview_subscription_isolation(
         attachment,
         preview_epoch,
         preview_residue_budget_width,
-    ))
+    )?)
 }
 
 pub fn deny_preview_authoritative_sharing(

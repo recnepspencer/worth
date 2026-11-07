@@ -125,7 +125,7 @@ impl WorthQueryRuntimeExistingTruthVerificationAdapter for TestExistingTruthVeri
                 aspect_touch.clone(),
                 value.clone(),
             );
-            fields.push(field);
+            fields.push(field?);
         }
         Ok(fields)
     }

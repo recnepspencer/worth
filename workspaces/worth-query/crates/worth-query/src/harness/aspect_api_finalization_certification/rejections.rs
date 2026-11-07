@@ -79,12 +79,12 @@ pub(super) fn duplicate_aspect_authoring_rejection(
             failure_kind: "workspace-authoring".to_string(),
             failure_digest: crate::harness::certification::digest_parts(&[error.to_string()]),
             support_matrix_digest: workspace
-                .public_support_matrix()
+                .public_support_matrix()?
                 .matrix_digest()
                 .terminal_projection_for_reporting()
                 .to_string(),
-            mutation_surface_report_digest: report.report_digest().to_string(),
-            closeout_digest: closeout.closeout_digest().to_string(),
+            mutation_surface_report_digest: report?.report_digest().to_string(),
+            closeout_digest: closeout?.closeout_digest().to_string(),
         },
         other => panic!("expected workspace authoring denial, got {other:?}"),
     })

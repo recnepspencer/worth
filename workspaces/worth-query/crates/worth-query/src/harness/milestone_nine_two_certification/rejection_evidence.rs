@@ -143,7 +143,7 @@ pub(super) fn dense_refresh_rejection(
     Ok(rejection(
         MilestoneNineTwoFailureClass::DeliveryDenied,
         error.denial_kind().as_str(),
-        error.source_projection().label(),
+        error.source_projection()?.label(),
         error.counters().counter_projection().label().to_string(),
     ))
 }

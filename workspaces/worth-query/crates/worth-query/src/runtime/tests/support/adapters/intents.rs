@@ -147,7 +147,8 @@ impl WorthQueryIntentAuthorityAdapter for InvariantViolationIntentAuthority {
             ],
             crate::memory_workspace::admit_external_snapshot_label(
                 "external-intent-invariant-denial-snapshot-1",
-            ),
+            )
+            .expect("fixture digest must fit"),
         ))
     }
 }

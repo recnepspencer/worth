@@ -202,7 +202,7 @@ fn ready_invariant_registration(
 > {
     Ok(ready(authoring.bind_to_declaration_target(
         declaration_target("intent-invariant"),
-    ))?)
+    )?)?)
 }
 
 fn ready_invariant_registration_payload(

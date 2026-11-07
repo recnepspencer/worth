@@ -301,7 +301,7 @@ fn extract_authorized(
     else {
         panic!("native declaration should admit")
     };
-    bind_materialized_projection_contract(&admitted).extract_from_read_result(result)
+    bind_materialized_projection_contract(&admitted)?.extract_from_read_result(result)
 }
 
 pub(super) fn read_result(rows: Vec<WorthQueryEntity>) -> WorthQueryReadResult {

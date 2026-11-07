@@ -36,7 +36,7 @@ pub fn admit_subscription_continuation_evidence(
         continuation_class,
         source_identity,
         target_identity,
-        QuerySubscriptionFutureSelection::ordinary(),
+        QuerySubscriptionFutureSelection::ordinary()?,
         basis_identity,
         checkpoint_identity,
         authority_identity,
@@ -90,5 +90,5 @@ pub fn admit_subscription_continuation_evidence_with_active_identity(
         checkpoint_identity,
         authority_identity,
         remap_width,
-    ))
+    )?)
 }

@@ -183,7 +183,7 @@ pub fn explain_query_subscription_bridge_parity(
     let receipt = BridgeParityReceipt::new(
         *witness.assembly_posture(),
         parity_class,
-        comparison_width,
+        comparison_width?,
         0,
     );
     let counters = QuerySubscriptionBridgeParityCounters::admitted(parity_class);
@@ -206,7 +206,7 @@ pub fn explain_query_subscription_bridge_parity(
     let explanation_identity = bridge_parity_explanation_identity(
         comparison.comparison_identity(),
         witness.evidence_identity(),
-        receipt.receipt_identity(),
+        receipt?.receipt_identity(),
         &counter_identity,
     );
 
@@ -224,6 +224,6 @@ pub fn explain_query_subscription_bridge_parity(
             counters,
             witness,
         },
-        receipt,
+        receipt?,
     ))
 }
