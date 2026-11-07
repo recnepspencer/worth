@@ -50,7 +50,7 @@ impl StructAspectShape {
 
 #[derive(Clone, Serialize)]
 pub struct StructAspectValue {
-    fields: im::OrdMap<FieldKey, std::sync::Arc<AspectValue>>,
+    fields: super::field_tree::StructFields,
     #[serde(skip)]
     allocation_bytes: u128,
     #[serde(skip)]
@@ -90,7 +90,7 @@ impl StructAspectValue {
         fields: impl IntoIterator<Item = (FieldKey, AspectValue)>,
     ) -> Result<Self, StructAspectValueConstructionDenial> {
         let mut value = Self {
-            fields: im::OrdMap::new(),
+            fields: super::field_tree::StructFields::new(),
             allocation_bytes: 0,
             semantic_bytes: 0,
         };
@@ -146,9 +146,7 @@ impl StructAspectValue {
     }
 }
 fn field_extent(key: &FieldKey, value: &AspectValue) -> (u128, u128) {
-    let allocation = std::mem::size_of::<(FieldKey, std::sync::Arc<AspectValue>)>() as u128
-        + std::mem::size_of::<AspectValue>() as u128
-        + (2 * std::mem::size_of::<usize>()) as u128
+    let allocation = super::field_tree::StructFields::allocation_bytes_per_field() as u128
         + key.owned_allocation_capacity_bytes() as u128
         + value.owned_allocation_capacity_bytes() as u128;
     (
