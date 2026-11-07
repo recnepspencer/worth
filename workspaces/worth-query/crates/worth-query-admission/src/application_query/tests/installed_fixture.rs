@@ -1,7 +1,7 @@
 use super::*;
 
 pub(super) fn query_definition(
-) -> worth_query_declaration::facade::application_query::ApplicationQueryDefinition<
+) -> worth_query_declaration::facade::application_query::ApplicationQueryDefinitionBuilder<
     PlanningTestSchema,
     ActivityQuery,
     ActivityParameters,
@@ -58,8 +58,6 @@ pub(super) fn query_definition(
         .order_by(sequence, ApplicationQueryOrderingDirection::Ascending)
         .continue_by(activity_relation)
         .live_by::<Activity, live_lane::PlanningLiveCause>(account_id, sequence)
-        .build()
-        .unwrap()
 }
 
 pub(super) fn installed_schema(

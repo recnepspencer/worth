@@ -107,13 +107,10 @@ impl ApplicationCorrectionBinding<Schema> for Restore {
         Ok(ApplicationQueryParameterSet::new())
     }
     fn mechanism() -> DeclaredCorrectionMechanism<Schema> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(Values::at("Values"))],
-                4096,
-            )
-            .unwrap(),
-        )
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [DeclaredPreImageLocus::from_field(Values::at("Values"))],
+            4096,
+        ))
     }
     fn derive_correction(
         original: &Revise,

@@ -86,8 +86,8 @@ result_field!(
     "numeric-full-read.calculated.v1"
 );
 
-pub fn definition() -> ApplicationQueryDefinition<NumericSchema, FullQuery, Parameters, Row, Number>
-{
+pub fn definition(
+) -> ApplicationQueryDefinitionBuilder<NumericSchema, FullQuery, Parameters, Row, Number> {
     let shape = ApplicationQueryResultShapeBuilder::<
         NumericSchema,
         FullQuery,
@@ -111,8 +111,6 @@ pub fn definition() -> ApplicationQueryDefinition<NumericSchema, FullQuery, Para
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<NumericSchema, FullQuery> for Row {
     fn project(

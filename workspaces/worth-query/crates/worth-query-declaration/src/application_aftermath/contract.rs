@@ -160,11 +160,17 @@ impl<Schema> DeclaredApplicationAftermathContract<Schema> {
                     .map(|locus| locus.recipe.clone()),
             );
         }
-        let contract = self
-            .correction_binding
-            .as_ref()
-            .map(|binding| binding.compose())
-            .transpose()
+        let demand_check = validate_expression(correction, self.mechanism.as_ref(), self.reconciliation.as_ref()).and_then(|()| match &self.mechanism {
+            Some(DeclaredCorrectionMechanism::RecordedInverse(inverse)) => inverse.preimage_demand().validate().map_err(|cause| crate::application_schema::ApplicationSchemaDeclarationDenial::InvalidCorrectionDemand { correction: correction.to_owned(), cause }),
+            _ => Ok(()),
+        });
+        let contract = demand_check
+            .and_then(|()| {
+                self.correction_binding
+                    .as_ref()
+                    .map(|binding| binding.compose(self.reconciliation.clone()))
+                    .transpose()
+            })
             .map(|composed| {
                 let binding = composed.map(|composed| {
                     fields.extend(composed.fields);
@@ -250,4 +256,42 @@ pub(crate) struct AssociatedAftermathContract {
         String,
         crate::application_schema::ApplicationFieldBindingRecipe,
     )>,
+}
+
+fn validate_expression<Schema>(
+    correction: &str,
+    mechanism: Option<&DeclaredCorrectionMechanism<Schema>>,
+    reconciliation: Option<&DeclaredReconciliationProcedure>,
+) -> Result<(), crate::application_schema::ApplicationSchemaDeclarationDenial> {
+    use super::DeclaredCorrectionMechanismDenial as Cause;
+    let check = (|| {
+        if let Some(reconciliation) = reconciliation {
+            reconciliation.validate()?;
+        }
+        match mechanism {
+            Some(DeclaredCorrectionMechanism::RecordedInverse(inverse)) => {
+                if inverse.inverse_operation_slot().trim().is_empty() {
+                    return Err(Cause::EmptyInverseOperation);
+                }
+                inverse.lowering_correspondence().validate()?;
+                if !matches!(
+                    inverse.postcondition(),
+                    super::DeclaredAftermathPostcondition::ExactPriorTruth
+                ) {
+                    return Err(Cause::RecordedInverseRequiresExactPriorTruth);
+                }
+                Ok(())
+            }
+            Some(DeclaredCorrectionMechanism::Compensation(compensation)) => {
+                compensation.validate()
+            }
+            _ => Ok(()),
+        }
+    })();
+    check.map_err(|cause| {
+        crate::application_schema::ApplicationSchemaDeclarationDenial::InvalidCorrectionMechanism {
+            correction: correction.to_owned(),
+            cause,
+        }
+    })
 }

@@ -37,17 +37,14 @@ impl ApplicationCorrectionBinding<Schema> for RestoreReviewedRetention {
         Ok(ApplicationQueryParameterSet::new())
     }
     fn mechanism() -> DeclaredCorrectionMechanism<Schema> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(
-                    DocumentRetentionField::at("DocumentRetentionField"),
-                )],
-                U64ApplicationValueBinding::encode(&u64::MAX)
-                    .unwrap()
-                    .semantic_byte_width(),
-            )
-            .unwrap(),
-        )
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [DeclaredPreImageLocus::from_field(
+                DocumentRetentionField::at("DocumentRetentionField"),
+            )],
+            U64ApplicationValueBinding::encode(&u64::MAX)
+                .unwrap()
+                .semantic_byte_width(),
+        ))
     }
     fn derive_correction(
         original: &SetRetentionInput,

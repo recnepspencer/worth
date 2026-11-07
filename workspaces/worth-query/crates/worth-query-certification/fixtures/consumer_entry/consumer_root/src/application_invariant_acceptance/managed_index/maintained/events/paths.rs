@@ -60,23 +60,26 @@ worth_query_query_binding!(pub InverseBinding for Inverse,schema Catalog,identit
 pub(super) fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Catalog>,
 ) -> ApplicationSchemaDeclarationBuilder<Catalog> {
-    let round: ApplicationQueryDefinition<Catalog, RoundTripQuery, Parameters, ItemRow, Directory> =
-        query::base(
-            RoundTripQuery::reference(),
-            ApplicationQueryLaneEligibility::one_shot(),
-        )
-        .root_path(
-            ApplicationQueryRootPath::from(Directory::reference())
-                .forward_derived(LiveItems::reference())
-                .reverse_derived(LiveItems::reference())
-                .forward_derived(LiveItems::reference()),
-        )
-        .order_by(
-            query::identity(),
-            ApplicationQueryOrderingDirection::Ascending,
-        )
-        .build()
-        .unwrap();
+    let round: ApplicationQueryDefinitionBuilder<
+        Catalog,
+        RoundTripQuery,
+        Parameters,
+        ItemRow,
+        Directory,
+    > = query::base(
+        RoundTripQuery::reference(),
+        ApplicationQueryLaneEligibility::one_shot(),
+    )
+    .root_path(
+        ApplicationQueryRootPath::from(Directory::reference())
+            .forward_derived(LiveItems::reference())
+            .reverse_derived(LiveItems::reference())
+            .forward_derived(LiveItems::reference()),
+    )
+    .order_by(
+        query::identity(),
+        ApplicationQueryOrderingDirection::Ascending,
+    );
     let shape = ApplicationQueryResultShapeBuilder::<
         Catalog,
         InverseQuery,
@@ -102,9 +105,7 @@ pub(super) fn declare(
         .order_by(
             event_identity(),
             ApplicationQueryOrderingDirection::Ascending,
-        )
-        .build()
-        .unwrap();
+        );
     schema
         .application_query(round)
         .application_query_binding::<RoundBinding>()

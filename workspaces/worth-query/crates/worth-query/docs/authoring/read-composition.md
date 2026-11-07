@@ -153,8 +153,7 @@ let definition = ApplicationQueryDefinitionBuilder::declare(AccountActivity::ref
 .public()
 .parameter(account_parameter)
 .where_equal(AccountId::reference(), account_parameter)
-.order_by(activity_sequence, ApplicationQueryOrderingDirection::Descending)
-.build()?;
+.order_by(activity_sequence, ApplicationQueryOrderingDirection::Descending);
 ```
 
 Filter a relation at the result-shape boundary when the application needs one

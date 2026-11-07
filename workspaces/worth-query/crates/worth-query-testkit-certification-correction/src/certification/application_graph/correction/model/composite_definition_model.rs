@@ -150,21 +150,18 @@ impl ApplicationCorrectionBinding<NumericSchema> for CorrectDefinition {
             .no_external_effect()
     }
     fn mechanism() -> DeclaredCorrectionMechanism<NumericSchema> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [
-                    DeclaredPreImageLocus::from_field(Primary::at("Primary")),
-                    DeclaredPreImageLocus::from_field(DefinitionRevision::at("DefinitionRevision")),
-                ],
-                InlineCounterBinding::encode(&Counter(u64::MAX))
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [
+                DeclaredPreImageLocus::from_field(Primary::at("Primary")),
+                DeclaredPreImageLocus::from_field(DefinitionRevision::at("DefinitionRevision")),
+            ],
+            InlineCounterBinding::encode(&Counter(u64::MAX))
+                .unwrap()
+                .semantic_byte_width()
+                + U64ApplicationValueBinding::encode(&u64::MAX)
                     .unwrap()
-                    .semantic_byte_width()
-                    + U64ApplicationValueBinding::encode(&u64::MAX)
-                        .unwrap()
-                        .semantic_byte_width(),
-            )
-            .unwrap(),
-        )
+                    .semantic_byte_width(),
+        ))
     }
     fn derive_correction(
         original: &Change,

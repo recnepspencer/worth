@@ -1,9 +1,8 @@
 use worth_query_decl::facade::application_query::{
-    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryResultFieldRef,
-    ApplicationQueryResultRelationRef, ApplicationQueryResultShapeBuilder, OptionalOneResult,
-    ReverseResultTraversal,
+    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
+    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
+    ApplicationQueryResultShapeBuilder, OptionalOneResult, ReverseResultTraversal,
 };
 use worth_query_decl::facade::worth_query_application_query;
 use worth_query_host::facade::primary_graph::{
@@ -105,7 +104,7 @@ type BusinessIdentitySelector = ApplicationQueryResultFieldRef<
     BusinessIdentityField,
 >;
 
-pub fn account_detail_definition() -> ApplicationQueryDefinition<
+pub fn account_detail_definition() -> ApplicationQueryDefinitionBuilder<
     BankSchema,
     AccountDetailQuery,
     AccountDetailQueryParameters,
@@ -154,8 +153,6 @@ pub fn account_detail_definition() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .requires_ability(ViewAccount::reference())
-        .build()
-        .expect("bank account detail query is statically canonical")
 }
 
 impl WorthQueryApplicationProjection<BankSchema, AccountDetailQuery> for AccountDetail {

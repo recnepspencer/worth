@@ -46,8 +46,11 @@ pub(super) fn decode(
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     };
     let reconciliation = decode_optional(input, |input| {
-        DeclaredReconciliationProcedure::new(input.text()?.to_owned())
-            .map_err(|_| Denial::new(Kind::InvalidRecordShape))
+        let expression = DeclaredReconciliationProcedure::new(input.text()?.to_owned());
+        expression
+            .validate()
+            .map_err(|_| Denial::new(Kind::InvalidRecordShape))?;
+        Ok(expression)
     })?;
     let contract = PortableApplicationAftermathContract::from_untrusted_fields(
         authority,
@@ -98,9 +101,11 @@ fn decode_mechanism(
         2 => {
             let slot = input.text()?.to_owned();
             let postcondition = decode_postcondition(input)?;
-            DeclaredCompensation::new(slot, postcondition)
-                .map(PortableCorrectionMechanism::Compensation)
-                .map_err(|_| Denial::new(Kind::InvalidRecordShape))
+            let expression = DeclaredCompensation::new(slot, postcondition);
+            expression
+                .validate()
+                .map_err(|_| Denial::new(Kind::InvalidRecordShape))?;
+            Ok(PortableCorrectionMechanism::Compensation(expression))
         }
         3 => {
             let value = decode_recorded_inverse(input, budget)?;
@@ -151,7 +156,9 @@ fn decode_recorded_inverse(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<PortableRecordedInverse, Denial> {
     let inverse_operation_slot = input.text()?.to_owned();
-    let lowering_correspondence = DeclaredLoweringCorrespondenceRef::new(input.text()?.to_owned())
+    let lowering_correspondence = DeclaredLoweringCorrespondenceRef::new(input.text()?.to_owned());
+    lowering_correspondence
+        .validate()
         .map_err(|_| Denial::new(Kind::InvalidRecordShape))?;
     let postcondition = decode_postcondition(input)?;
     let loci = decode_sequence(input, budget, 12, |input, _| {

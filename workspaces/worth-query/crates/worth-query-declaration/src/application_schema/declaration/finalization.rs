@@ -19,6 +19,9 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
     pub fn build(
         mut self,
     ) -> Result<ApplicationSchemaDeclaration<Schema>, ApplicationSchemaDeclarationDenial> {
+        if let Some(denial) = self.refusal {
+            return Err(denial);
+        }
         crate::application_schema::fragment::expand_record_access(
             &self.member_provenance.fragments.catalog,
             &self.member_provenance.fragments.access,

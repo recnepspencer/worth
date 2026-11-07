@@ -167,3 +167,55 @@ graph denial. Native commit refusals are available through
 transaction and field-refusal vocabulary. Schema, runtime construction, branch, transaction,
 staging, index execution, value encoding and authorization causes retain their original types too. Display text
 is diagnostic output and is unnecessary for matching the cause.
+
+## Declaration expressions and composition refusals
+
+Correction retention demands are infallible expressions: `DeclaredPreImageDemand::new`,
+`relations_only` and `with_relations` record the requested fields, relations and finite
+byte bound. Correction association checks the complete expression once. An empty demand,
+a zero byte bound, an empty locus axis or a duplicate locus returns
+`ApplicationSchemaDeclarationDenial::InvalidCorrectionDemand { correction, cause }`,
+retaining the original `DeclaredPreImageDemandDenial`. Created-entity inverses retain
+their separate, SDK-declared no-preimage posture. Heterogeneous field roles still defer
+the authored anchor admission to installation.
+
+Compensation, recorded inverse, lowering correspondence and reconciliation constructors
+also record expressions. Association checks their closed grammar and returns
+`InvalidCorrectionMechanism { correction, cause }`; archive decoding uses the same
+expression validators before accepting descriptive values. The captured reconciliation
+expression is reused in the associated binding, rather than calling its hook again.
+
+Pass an unfinished `ApplicationQueryDefinitionBuilder` directly to
+`schema.application_query(definition)`. Schema registration builds it and schema
+composition returns `InvalidQueryDefinition { owner, query, cause }` on failure,
+with the original `ApplicationQueryDefinitionDenial`. There is no public query-builder
+`build` admission path. `into_erased` projects unvalidated descriptive meaning only.
+Operation-body query contexts and query-backed external emissions also consume the
+unfinished builder as descriptive input; composition still requires an exact match
+to the declared query. A feature implements the infallible `ApplicationFeatureDefinition::members` callback;
+call `declare_members` to compose it. That entry scopes any query denial to its feature,
+including nested feature tuples and the complete-feature macro's schema block.
+
+The declaration-constructor audit also checked the principal, authored identity,
+correction-output and preimage-field callbacks (already infallible), as well as the
+fallible `Registration::register` boundary. History/inspection/resource definitions,
+capability scope and rule constructors, operation bodies and workflow builders retain
+their fallible APIs: they are independently authored on fallible registration paths,
+rather than required results of an infallible callback. Value encoding, request admission,
+portable decoding and explicit `validate` methods remain fallible boundaries.
+
+Audit boundaries retained deliberately:
+
+| Constructor or boundary | Why it remains fallible |
+| --- | --- |
+| `DeclaredCorrectionBinding::of`; authored/output expression `declaration` and `into_declaration` | Explicit conversion/composition, not a constructor required by an infallible callback. The callbacks return the unchecked expressions. |
+| `ApplicationHistoryQueryDefinitionBuilder::{aspect, finish}`, `ApplicationQueryInspectionDefinition::new`, `ApplicationResourceDefinition::request_response` | Independently authored metadata on fallible `Registration::register` / `ApplicationSchema::declaration` paths; no infallible binding hook requires these definitions. |
+| `ApplicationCapabilityFieldBinding::from_reference`, `ApplicationCapabilityValueBinding::new`, `ApplicationCapabilityFieldDimension::bound`, `ApplicationCapabilityAcceptedValues::one_of`, `ApplicationQueryDisclosureContract::use_field_by`, authorization/root-path predicates | Fallible schema registration and capability authoring, not infallible binding callback results. |
+| Operation body `with_body` and body builders; workflow authoring/builders | Explicit fallible authoring phases; the definition/registration path can propagate their own denials. |
+| `WorthQueryExternalEffectCorrelationFamily::new`, authentication/name/identity parsers, encoded scalar construction | Intrinsically checked vocabulary also admitted from runtime or archive input, not hook-only schema expressions. Their value validity remains their type owner's responsibility. |
+| Query/resource `parameters`, source-disclosure parameters, input/key encoders | Runtime input/value admission, not declaration composition. |
+
+Principal references in mutation, query, workflow-read and program-adoption callbacks
+all use the same already-infallible requirement expressions. Fragment records, one-of
+members, declared access, managed-index refinements and program feature specs introduce
+no additional hook-only fallible constructor.

@@ -84,17 +84,13 @@ pub fn correlation_family() -> WorthQueryExternalEffectCorrelationFamily {
 pub fn external_owner_aftermath() -> DeclaredApplicationAftermathContract<ContractInspectionSchema>
 {
     DeclaredApplicationAftermathContract::runtime_with_external_owner(
-        DeclaredCorrectionMechanism::Compensation(
-            DeclaredCompensation::new(
-                RECONCILIATION_SLOT,
-                DeclaredAftermathPostcondition::BusinessPostcondition {
-                    identity: "contract-inspected".into(),
-                },
-            )
-            .expect("the compensation declaration is valid"),
-        ),
-        DeclaredReconciliationProcedure::new(RECONCILIATION_SLOT)
-            .expect("the reconciliation procedure is valid"),
+        DeclaredCorrectionMechanism::Compensation(DeclaredCompensation::new(
+            RECONCILIATION_SLOT,
+            DeclaredAftermathPostcondition::BusinessPostcondition {
+                identity: "contract-inspected".into(),
+            },
+        )),
+        DeclaredReconciliationProcedure::new(RECONCILIATION_SLOT),
     )
 }
 

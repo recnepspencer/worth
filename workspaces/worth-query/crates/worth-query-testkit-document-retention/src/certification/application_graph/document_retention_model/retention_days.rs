@@ -6,7 +6,7 @@ pub use worth_query_host::facade::declaration::{
     self,
     application_query::{
         ApplicationQueryBasisSupport, ApplicationQueryBinding, ApplicationQueryBindingLimits,
-        ApplicationQueryCardinality, ApplicationQueryDefinition, ApplicationQueryDefinitionBuilder,
+        ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
         ApplicationQueryDisclosureContract, ApplicationQueryFieldScope, ApplicationQueryIntent,
         ApplicationQueryLaneEligibility, ApplicationQueryParameterSet,
         ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder,
@@ -42,7 +42,7 @@ worth_query_application_query!(
     name "document_retention_days_query"
 );
 
-pub fn document_retention_days_query_definition() -> ApplicationQueryDefinition<
+pub fn document_retention_days_query_definition() -> ApplicationQueryDefinitionBuilder<
     DocumentRetentionSchema,
     DocumentRetentionDaysQuery,
     super::schema::DocumentQueryParameters,
@@ -67,8 +67,6 @@ pub fn document_retention_days_query_definition() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .expect("the document days query is canonical")
 }
 
 pub fn days_result() -> ApplicationQueryResultFieldRef<

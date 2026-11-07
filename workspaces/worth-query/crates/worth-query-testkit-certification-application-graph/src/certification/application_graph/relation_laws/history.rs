@@ -142,9 +142,7 @@ pub fn declare(
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .order_by(child_key(), ApplicationQueryOrderingDirection::Descending)
-        .build()
-        .unwrap();
+        .order_by(child_key(), ApplicationQueryOrderingDirection::Descending);
     let entities = ApplicationHistoryQueryDefinition::<Schema, Entities>::entity(
         node::<Schema>(),
         ApplicationQueryDisclosureContract::public(),

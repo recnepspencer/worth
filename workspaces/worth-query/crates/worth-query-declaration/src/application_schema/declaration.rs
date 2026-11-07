@@ -155,7 +155,7 @@ impl<Schema> ApplicationSchemaDeclaration<Schema> {
 #[derive(Clone, Debug)]
 pub struct ApplicationSchemaDeclarationBuilder<Schema> {
     owner: &'static str,
-    name: &'static str,
+    pub(super) name: &'static str,
     major: u32,
     minor: u32,
     members: Vec<ApplicationSchemaMember>,
@@ -164,6 +164,8 @@ pub struct ApplicationSchemaDeclarationBuilder<Schema> {
     pub(super) principal_fields: super::principal_fields::PrincipalFieldExpectations,
     pub(super) correction_fields: super::correction_fields::CorrectionFieldExpectations,
     pub(super) mutation_references: super::mutation_references::MutationReferences,
+    pub(super) feature_owner: Option<String>,
+    pub(super) refusal: Option<ApplicationSchemaDeclarationDenial>,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -215,6 +217,8 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             correction_fields: Default::default(),
             mutation_references: Default::default(),
             principal_fields: Default::default(),
+            feature_owner: None,
+            refusal: None,
             _schema: PhantomData,
         }
     }
@@ -272,6 +276,8 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             correction_fields: Default::default(),
             mutation_references: Default::default(),
             principal_fields: Default::default(),
+            feature_owner: None,
+            refusal: None,
             _schema: PhantomData,
         }
     }

@@ -151,14 +151,11 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for UndoRetire<S> {
             } else {
                 18
             },
-        )
-        .unwrap();
+        );
         let demand = if matches!(S::MODE, 30 | 39 | 40 | 41) {
-            demand
-                .with_relations([DeclaredPreImageRelationLocus::from_relation(
-                    PreviousStage::reference(),
-                )])
-                .unwrap()
+            demand.with_relations([DeclaredPreImageRelationLocus::from_relation(
+                PreviousStage::reference(),
+            )])
         } else {
             demand
         };

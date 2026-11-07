@@ -52,8 +52,13 @@ pub fn children() -> ApplicationQueryResultRelationRef<
     ApplicationQueryResultRelationRef::forward_many("children", ChildLink::reference())
 }
 
-pub fn definition(
-) -> ApplicationQueryDefinition<AdmissionSchema, PageQuery, query::Parameters, PageRow, Document> {
+pub fn definition() -> ApplicationQueryDefinitionBuilder<
+    AdmissionSchema,
+    PageQuery,
+    query::Parameters,
+    PageRow,
+    Document,
+> {
     let child = ApplicationQueryResultShapeBuilder::<
         AdmissionSchema,
         PageQuery,
@@ -86,8 +91,6 @@ pub fn definition(
             ApplicationQueryOrderingDirection::Ascending,
         )
         .continue_by(children())
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<AdmissionSchema, PageQuery> for PageRow {
     fn project(

@@ -53,7 +53,7 @@ result_field!(
     ReadWrite,
     "dispatch.parameter.width"
 );
-pub fn definition() -> ApplicationQueryDefinition<Schema, RouteQuery, (), Row, Node> {
+pub fn definition() -> ApplicationQueryDefinitionBuilder<Schema, RouteQuery, (), Row, Node> {
     ApplicationQueryDefinitionBuilder::declare(RouteQuery::reference())
         .root(Node::reference())
         .scope(Node::reference())
@@ -73,8 +73,6 @@ pub fn definition() -> ApplicationQueryDefinition<Schema, RouteQuery, (), Row, N
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
         .parameter(partition())
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<Schema, RouteQuery> for Row {
     fn project(

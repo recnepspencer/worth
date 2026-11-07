@@ -20,8 +20,7 @@ impl ApplicationCorrectionBinding<Schema> for Resize {
             DeclaredPreImageDemand::new(
                 [DeclaredPreImageLocus::from_field(Width::at("Width"))],
                 9,
-            )
-            .unwrap(),
+            ),
         )
     }
     fn derive_correction(

@@ -24,16 +24,13 @@ impl ApplicationCorrectionBinding<Schema> for Restore {
         Ok(ApplicationQueryParameterSet::new())
     }
     fn mechanism() -> DeclaredCorrectionMechanism<Schema> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(FirstValue::at(
-                    "FirstValue",
-                ))],
-                // One UInt64 atom: eight payload bytes and one scalar tag.
-                9,
-            )
-            .unwrap(),
-        )
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [DeclaredPreImageLocus::from_field(FirstValue::at(
+                "FirstValue",
+            ))],
+            // One UInt64 atom: eight payload bytes and one scalar tag.
+            9,
+        ))
     }
     fn derive_correction(
         original: &authoring::Edit,

@@ -176,15 +176,12 @@ impl ApplicationCorrectionBinding<NumericSchema> for ReverseLink {
         Ok(query::parameters())
     }
     fn mechanism() -> DeclaredCorrectionMechanism<NumericSchema> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(Primary::at("Primary"))],
-                InlineCounterBinding::encode(&Counter(u64::MAX))
-                    .unwrap()
-                    .semantic_byte_width(),
-            )
-            .unwrap(),
-        )
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [DeclaredPreImageLocus::from_field(Primary::at("Primary"))],
+            InlineCounterBinding::encode(&Counter(u64::MAX))
+                .unwrap()
+                .semantic_byte_width(),
+        ))
     }
     fn derive_correction(
         original: &Link,

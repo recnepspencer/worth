@@ -1,10 +1,9 @@
 use worth_query_decl::facade::{
     application_query::{
         ApplicationLiveQueryIntent, ApplicationQueryBasisSupport, ApplicationQueryCardinality,
-        ApplicationQueryDefinition, ApplicationQueryDefinitionBuilder,
-        ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
-        ApplicationQueryParameterSet, ApplicationQueryResultFieldRef,
-        ApplicationQueryResultShapeBuilder,
+        ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
+        ApplicationQueryLaneEligibility, ApplicationQueryParameterSet,
+        ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder,
     },
     application_schema::U64ApplicationValueBinding,
     worth_query_application_query, worth_query_portable_type, worth_query_query_binding,
@@ -130,7 +129,7 @@ fn revision() -> RevisionSelector {
     )
 }
 
-pub(crate) fn status_query_definition() -> ApplicationQueryDefinition<
+pub(crate) fn status_query_definition() -> ApplicationQueryDefinitionBuilder<
     WorthUiApplicationSchema,
     WorthUiStatusQuery,
     WorthUiStatusQueryParameters,
@@ -158,8 +157,6 @@ pub(crate) fn status_query_definition() -> ApplicationQueryDefinition<
         .lanes(ApplicationQueryLaneEligibility::one_shot().with_live())
         .public()
         .live_root_by::<WorthUiStatusLiveCause>(identity(), identity())
-        .build()
-        .expect("the UI status query is statically canonical")
 }
 
 impl WorthQueryApplicationProjection<WorthUiApplicationSchema, WorthUiStatusQuery>

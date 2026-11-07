@@ -174,9 +174,7 @@ pub fn declare(
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
-        .public()
-        .build()
-        .unwrap();
+        .public();
     let op = EditDirectory::reference();
     schema
         .operation(op.definition().no_external_effect().no_aftermath().finish())

@@ -62,7 +62,8 @@ pub fn shape<Q: ApplicationQueryMarkerIdentity<DecisionReadSchema>>(
 }
 
 pub fn source(
-) -> ApplicationQueryDefinition<DecisionReadSchema, SourceQuery, (), PrincipalRow, Principal> {
+) -> ApplicationQueryDefinitionBuilder<DecisionReadSchema, SourceQuery, (), PrincipalRow, Principal>
+{
     ApplicationQueryDefinitionBuilder::declare(SourceQuery::reference())
         .root(Principal::reference())
         .scope(Principal::reference())
@@ -72,12 +73,11 @@ pub fn source(
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 
 pub fn parent(
-) -> ApplicationQueryDefinition<DecisionReadSchema, ParentQuery, (), PrincipalRow, Principal> {
+) -> ApplicationQueryDefinitionBuilder<DecisionReadSchema, ParentQuery, (), PrincipalRow, Principal>
+{
     ApplicationQueryDefinitionBuilder::declare(ParentQuery::reference())
         .root(Principal::reference())
         .scope(Principal::reference())
@@ -95,8 +95,6 @@ pub fn parent(
                 ProbeBinding,
             >::from_query_identifier("probe"),
         )
-        .build()
-        .unwrap()
 }
 
 pub struct SourceBinding;

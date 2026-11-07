@@ -39,7 +39,7 @@ pub fn identity_field() -> ApplicationQueryResultFieldRef<
         DocumentIdentityField::at("DocumentIdentityField"),
     )
 }
-pub fn definition() -> ApplicationQueryDefinition<
+pub fn definition() -> ApplicationQueryDefinitionBuilder<
     CapabilitySchema,
     RetentionQuery,
     DocumentQueryParameters,
@@ -65,8 +65,6 @@ pub fn definition() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<CapabilitySchema, RetentionQuery> for DocumentRetentionRow {
     fn project(

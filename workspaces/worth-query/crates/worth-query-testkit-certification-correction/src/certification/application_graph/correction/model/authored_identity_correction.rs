@@ -109,20 +109,17 @@ impl ApplicationCorrectionBinding<NumericSchema> for UndoRetire {
         >())
     }
     fn mechanism() -> DeclaredCorrectionMechanism<NumericSchema> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [
-                    DeclaredPreImageLocus::from_field(Key::at("Key")),
-                    DeclaredPreImageLocus::from_field(Primary::at("Primary")),
-                    DeclaredPreImageLocus::from_field(Secondary::at("Secondary")),
-                    DeclaredPreImageLocus::from_field(ReadEnabled::at("ReadEnabled")),
-                    DeclaredPreImageLocus::from_field(Ceiling::at("Ceiling")),
-                    DeclaredPreImageLocus::from_field(Calculated::at("Calculated")),
-                ],
-                usize::MAX,
-            )
-            .unwrap(),
-        )
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [
+                DeclaredPreImageLocus::from_field(Key::at("Key")),
+                DeclaredPreImageLocus::from_field(Primary::at("Primary")),
+                DeclaredPreImageLocus::from_field(Secondary::at("Secondary")),
+                DeclaredPreImageLocus::from_field(ReadEnabled::at("ReadEnabled")),
+                DeclaredPreImageLocus::from_field(Ceiling::at("Ceiling")),
+                DeclaredPreImageLocus::from_field(Calculated::at("Calculated")),
+            ],
+            usize::MAX,
+        ))
     }
     fn derive_correction(
         original: &Retire,

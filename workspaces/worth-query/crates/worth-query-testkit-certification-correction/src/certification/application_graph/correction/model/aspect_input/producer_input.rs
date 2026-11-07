@@ -34,7 +34,8 @@ fn bias() -> ApplicationQueryOptionalAspectFieldRef<Query, BiasSlot, NumericSche
 fn sibling() -> ApplicationQueryOptionalAspectFieldRef<Query, SiblingSlot, NumericSchema, Sibling> {
     ApplicationQueryOptionalAspectFieldRef::new("sibling", Sibling::at("Sibling"))
 }
-pub fn definition() -> ApplicationQueryDefinition<NumericSchema, Query, Parameters, Row, Number> {
+pub fn definition(
+) -> ApplicationQueryDefinitionBuilder<NumericSchema, Query, Parameters, Row, Number> {
     let shape = ApplicationQueryResultShapeBuilder::<
         NumericSchema,
         Query,
@@ -55,8 +56,6 @@ pub fn definition() -> ApplicationQueryDefinition<NumericSchema, Query, Paramete
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<NumericSchema, Query> for Row {
     fn project(

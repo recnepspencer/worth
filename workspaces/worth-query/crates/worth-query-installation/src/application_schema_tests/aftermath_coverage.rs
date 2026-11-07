@@ -52,15 +52,12 @@ fn aftermath_schema_members<Schema: ApplicationSchema>(
         ))
     };
     test_schema_members::<Schema>(Some(DeclaredApplicationAftermathContract::runtime_alone(
-        DeclaredCorrectionMechanism::RecordedInverse(
-            DeclaredRecordedInverse::new(
-                "restore-prior",
-                DeclaredLoweringCorrespondenceRef::new("test-inverse").unwrap(),
-                DeclaredAftermathPostcondition::ExactPriorTruth,
-                DeclaredPreImageDemand::new([preimage_locus], 256).unwrap(),
-            )
-            .unwrap(),
-        ),
+        DeclaredCorrectionMechanism::RecordedInverse(DeclaredRecordedInverse::new(
+            "restore-prior",
+            DeclaredLoweringCorrespondenceRef::new("test-inverse"),
+            DeclaredAftermathPostcondition::ExactPriorTruth,
+            DeclaredPreImageDemand::new([preimage_locus], 256),
+        )),
     )))
 }
 

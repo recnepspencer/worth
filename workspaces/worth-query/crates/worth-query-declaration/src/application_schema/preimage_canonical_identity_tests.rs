@@ -84,11 +84,10 @@ fn identity(
     };
     let inverse = DeclaredRecordedInverse::new(
         "restore",
-        DeclaredLoweringCorrespondenceRef::new("exact-inverse").unwrap(),
+        DeclaredLoweringCorrespondenceRef::new("exact-inverse"),
         DeclaredAftermathPostcondition::ExactPriorTruth,
-        DeclaredPreImageDemand::new([locus], maximum_encoded_bytes).unwrap(),
-    )
-    .unwrap();
+        DeclaredPreImageDemand::new([locus], maximum_encoded_bytes),
+    );
     let definition = ApplicationOperationRef::<Schema, Operation, ()>::from_declaration()
         .definition()
         .no_external_effect()

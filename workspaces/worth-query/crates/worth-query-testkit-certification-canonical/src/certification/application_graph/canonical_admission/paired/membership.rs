@@ -59,7 +59,7 @@ pub fn child_identity() -> ApplicationQueryResultFieldRef<
     )
 }
 
-pub fn definition() -> ApplicationQueryDefinition<
+pub fn definition() -> ApplicationQueryDefinitionBuilder<
     AdmissionSchema,
     MembershipQuery,
     query::Parameters,
@@ -93,8 +93,6 @@ pub fn definition() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<AdmissionSchema, MembershipQuery> for Members {
     fn project(

@@ -1,6 +1,6 @@
 use worth_query_decl::facade::{
     application_query::{
-        ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
+        ApplicationQueryBasisSupport, ApplicationQueryCardinality,
         ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
         ApplicationQueryInfluenceContract, ApplicationQueryLaneEligibility,
         ApplicationQueryObservableInfluence, ApplicationQueryOrderingDirection,
@@ -161,7 +161,7 @@ impl worth_query_decl::facade::application_query::ApplicationLiveQueryIntent<Ban
     type LiveCause = EstateEmergencyAccessActivityLiveCause;
 }
 
-pub fn estate_emergency_access_activity_definition() -> ApplicationQueryDefinition<
+pub fn estate_emergency_access_activity_definition() -> ApplicationQueryDefinitionBuilder<
     BankSchema,
     EstateEmergencyAccessActivityQuery,
     EstateEmergencyAccessActivityQueryParameters,
@@ -247,6 +247,4 @@ pub fn estate_emergency_access_activity_definition() -> ApplicationQueryDefiniti
             estate_id(),
             access_id(),
         )
-        .build()
-        .expect("estate emergency-access activity query is statically canonical")
 }

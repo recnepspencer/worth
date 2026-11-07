@@ -22,7 +22,7 @@ worth_query_application_query!(pub Query for Schema, identity "RevisionQuery", p
 pub fn field() -> ApplicationQueryResultFieldRef<Query, RevisionSlot, Schema, ParentRevision> {
     ApplicationQueryResultFieldRef::new("revision", ParentRevision::at("ParentRevision"))
 }
-pub fn definition() -> ApplicationQueryDefinition<Schema, Query, (), Value, Row> {
+pub fn definition() -> ApplicationQueryDefinitionBuilder<Schema, Query, (), Value, Row> {
     ApplicationQueryDefinitionBuilder::declare(Query::reference())
         .root(Parent::reference())
         .scope(Row::reference())
@@ -41,8 +41,6 @@ pub fn definition() -> ApplicationQueryDefinition<Schema, Query, (), Value, Row>
         .root_path(
             ApplicationQueryRootPath::from(Row::reference()).reverse(ParentRows::reference()),
         )
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<Schema, Query> for Value {
     fn project(

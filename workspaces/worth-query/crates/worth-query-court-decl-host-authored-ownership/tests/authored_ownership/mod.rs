@@ -125,3 +125,5 @@ mod native_boundary;
 mod owned_action_feature;
 
 mod principal_callbacks;
+
+mod query_feature;

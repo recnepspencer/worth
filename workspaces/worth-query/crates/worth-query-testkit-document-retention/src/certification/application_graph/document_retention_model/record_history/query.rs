@@ -114,7 +114,7 @@ pub fn parameters(identity: &str) -> ApplicationQueryParameterSet<Query> {
         .unwrap()
 }
 pub fn definition(
-) -> ApplicationQueryDefinition<DocumentRetentionSchema, Query, Parameters, Row, Document> {
+) -> ApplicationQueryDefinitionBuilder<DocumentRetentionSchema, Query, Parameters, Row, Document> {
     let influence = ApplicationQueryInfluenceContract::permit_all();
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
         "record-history-subject",
@@ -158,8 +158,6 @@ pub fn definition(
             DocumentIdentityField::at("DocumentIdentityField"),
             parameter(),
         )
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<DocumentRetentionSchema, Query> for Row {
     fn project(

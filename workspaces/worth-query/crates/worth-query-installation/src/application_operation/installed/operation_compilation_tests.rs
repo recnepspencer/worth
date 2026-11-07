@@ -269,11 +269,10 @@ fn recorded_inverse_member(operation: &'static str, bound: usize) -> Application
     let field = Balance::at("balance");
     let inverse = DeclaredRecordedInverse::new(
         "unfreeze",
-        DeclaredLoweringCorrespondenceRef::new("inverse").unwrap(),
+        DeclaredLoweringCorrespondenceRef::new("inverse"),
         DeclaredAftermathPostcondition::ExactPriorTruth,
-        DeclaredPreImageDemand::new([DeclaredPreImageLocus::from_field(field)], bound).unwrap(),
-    )
-    .unwrap();
+        DeclaredPreImageDemand::new([DeclaredPreImageLocus::from_field(field)], bound),
+    );
     let contract = DeclaredApplicationAftermathContract::runtime_alone(
         DeclaredCorrectionMechanism::RecordedInverse(inverse),
     );

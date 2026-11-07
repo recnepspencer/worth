@@ -1,6 +1,6 @@
 use worth_query_decl::facade::application_query::{
-    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryLaneEligibility,
+    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
+    ApplicationQueryLaneEligibility,
 };
 use worth_query_decl::facade::worth_query_application_query;
 
@@ -65,7 +65,7 @@ worth_query_decl::facade::worth_query_query_binding!(
     limits results 1_024
 );
 
-pub fn estate_governance_definition() -> ApplicationQueryDefinition<
+pub fn estate_governance_definition() -> ApplicationQueryDefinitionBuilder<
     BankSchema,
     EstateGovernanceQuery,
     EstateGovernanceQueryParameters,
@@ -81,6 +81,4 @@ pub fn estate_governance_definition() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .requires_ability(ViewEstateCase::reference())
-        .build()
-        .expect("bank estate governance query is statically canonical")
 }

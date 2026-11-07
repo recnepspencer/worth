@@ -45,8 +45,13 @@ impl<Schema: TopologySchemaBinding> ApplicationQueryMarkerIdentity<Schema> for C
     const SCOPE_TYPE_NAME: &'static str = "Body";
 }
 pub fn counted_query_definition<Schema: TopologySchemaBinding>(
-) -> ApplicationQueryDefinition<Schema, CountedQuery, CountedReadParameters, CountedReadResult, Body>
-{
+) -> ApplicationQueryDefinitionBuilder<
+    Schema,
+    CountedQuery,
+    CountedReadParameters,
+    CountedReadResult,
+    Body,
+> {
     let second_successor_shape = ApplicationQueryResultShapeBuilder::<
         Schema,
         CountedQuery,
@@ -90,8 +95,6 @@ pub fn counted_query_definition<Schema: TopologySchemaBinding>(
     .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
     .lanes(ApplicationQueryLaneEligibility::one_shot())
     .public()
-    .build()
-    .expect("planar query is canonical")
 }
 fn successor_position_y_result<Schema: TopologySchemaBinding>(
 ) -> ApplicationQueryResultFieldRef<CountedQuery, SuccessorPositionYSlot, Schema, PositionY> {

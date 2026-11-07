@@ -2,11 +2,11 @@
 mod schema_records;
 use schema_records::*;
 use worth_query_declaration::facade::application_query::{
-    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryReference, ApplicationQueryResultFieldRef,
-    ApplicationQueryResultRelationRef, ApplicationQueryResultShapeBuilder, ExactlyOneResult,
-    ForwardResultTraversal, ManyResults, OptionalOneResult,
+    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
+    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility, ApplicationQueryReference,
+    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
+    ApplicationQueryResultShapeBuilder, ExactlyOneResult, ForwardResultTraversal, ManyResults,
+    OptionalOneResult,
 };
 use worth_query_declaration::{
     worth_query_application_query, worth_query_portable_type, worth_query_structured_value_binding,
@@ -111,7 +111,7 @@ fn query_definition<Query, Parameters>(
         Parent,
     >,
     cardinality: ApplicationQueryCardinality,
-) -> ApplicationQueryDefinition<CardinalitySchema, Query, Parameters, ParentResult, Parent>
+) -> ApplicationQueryDefinitionBuilder<CardinalitySchema, Query, Parameters, ParentResult, Parent>
 where
     Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity<
         CardinalitySchema,
@@ -195,8 +195,6 @@ where
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 
 fn installed_schema() -> crate::facade::WorthQueryInstalledApplicationSchema<CardinalitySchema> {

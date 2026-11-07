@@ -137,7 +137,6 @@ impl ApplicationCorrectionBinding<NumericSchema> for NeutralizeCredit {
                 identity: "original-credit-neutralized".to_owned(),
             },
         )
-        .expect("the numeric compensation declares a business postcondition")
     }
     fn derive_correction(
         original: &Credit,

@@ -153,6 +153,11 @@ impl<S: Scenario> Registration<S> for Contracts {
                     .application_query_binding::<query::Binding<S>>(),
             ))
             .correction::<correction::UndoCreate<S>>();
+            let schema = if S::MODE == 71 {
+                query_feature::Manual::<S, false>::declare_members(schema)
+            } else {
+                schema
+            };
             let schema = if matches!(S::MODE, 13 | 14) {
                 schema.components(
                     ApplicationComponentSetDefinition::new(Components::reference())

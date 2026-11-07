@@ -741,7 +741,13 @@ worth_query_host::facade::worth_query_application_contribution! {
 }
 ```
 
-`ApplicationFeatureDefinition<Schema>` exposes `declare_members`, `feature_specs`
+Query definitions in a feature's schema block remain unfinished builders:
+`schema.application_query(query_definition())`. Composition builds the query and
+retains its feature owner, query name and typed cause on refusal; callers do not
+unwrap a query builder. Correction `mechanism()` callbacks likewise construct
+retention demands directly, without `expect`; association checks the complete demand.
+
+`ApplicationFeatureDefinition<Schema>` exposes the owner-scoped `declare_members` entry, an infallible `members` callback, `feature_specs`
 and its actual typed `Outputs`. `WorthQueryFeatureDefinition<Schema>` supplies
 `Configuration`, `contracts` and `configure` through the existing installation
 owners. A tuple composes these definitions, so an application selects each family
@@ -4165,10 +4171,10 @@ For an authored splice that changes relations, add typed relation loci to the
 recorded inverse's pre-image demand:
 
 ```rust,ignore
-let demand = DeclaredPreImageDemand::new(field_loci, maximum_encoded_bytes)?
+let demand = DeclaredPreImageDemand::new(field_loci, maximum_encoded_bytes)
     .with_relations([
         DeclaredPreImageRelationLocus::from_relation(PreviousStage::reference()),
-    ])?;
+    ]);
 ```
 
 Use `relations_only` when the inverse needs no field material. The original
@@ -6874,9 +6880,13 @@ The maintained exact-name Parent selects that explicit access mode:
 
 <!-- compiled: managed_exact_refinement.rs -->
 ```rust
-pub fn definition(
-) -> ApplicationQueryDefinition<Catalog, ExactQuery, source::Parameters, source::ItemRow, Directory>
-{
+pub fn definition() -> ApplicationQueryDefinitionBuilder<
+    Catalog,
+    ExactQuery,
+    source::Parameters,
+    source::ItemRow,
+    Directory,
+> {
     source::base(
         ExactQuery::reference(),
         ApplicationQueryLaneEligibility::one_shot().with_live(),
@@ -6886,8 +6896,6 @@ pub fn definition(
         source::identity(),
         ApplicationQueryOrderingDirection::Ascending,
     )
-    .build()
-    .unwrap()
 }
 ```
 

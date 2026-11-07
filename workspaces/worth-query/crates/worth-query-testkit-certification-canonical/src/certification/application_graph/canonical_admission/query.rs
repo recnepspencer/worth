@@ -27,7 +27,7 @@ pub fn value_field(
 }
 
 pub fn definition(
-) -> ApplicationQueryDefinition<AdmissionSchema, ValueQuery, Parameters, Row, Document> {
+) -> ApplicationQueryDefinitionBuilder<AdmissionSchema, ValueQuery, Parameters, Row, Document> {
     let shape = ApplicationQueryResultShapeBuilder::<
         AdmissionSchema,
         ValueQuery,
@@ -47,8 +47,6 @@ pub fn definition(
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<AdmissionSchema, ValueQuery> for Row {
     fn project(

@@ -38,7 +38,6 @@ impl ApplicationCorrectionBinding<NumericSchema> for RecordIssued {
                 identity: "original-issued-value-recorded".to_owned(),
             },
         )
-        .unwrap()
     }
     fn source_output_fields() -> Vec<ApplicationCorrectionOutputField<NumericSchema>> {
         vec![key_field(), payload_field()]

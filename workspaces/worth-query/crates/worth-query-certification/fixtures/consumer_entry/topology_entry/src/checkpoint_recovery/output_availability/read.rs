@@ -21,7 +21,7 @@ fn snapshot() -> ApplicationQueryResultFieldRef<Query, SnapshotSlot, Schema, Qua
     ApplicationQueryResultFieldRef::new("snapshot", QuantitySnapshot::at("QuantitySnapshot"))
 }
 pub(super) fn definition(
-) -> ApplicationQueryDefinition<Schema, Query, Parameters, Snapshot, Quantity> {
+) -> ApplicationQueryDefinitionBuilder<Schema, Query, Parameters, Snapshot, Quantity> {
     let shape = ApplicationQueryResultShapeBuilder::<
         Schema,
         Query,
@@ -46,8 +46,6 @@ pub(super) fn definition(
     .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
     .lanes(ApplicationQueryLaneEligibility::one_shot())
     .public()
-    .build()
-    .unwrap()
 }
 impl worth_query_host::facade::primary_graph::WorthQueryApplicationProjection<Schema, Query>
     for Snapshot

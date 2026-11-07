@@ -36,7 +36,8 @@ fn output() -> ApplicationQueryResultFieldRef<Query, OutputSlot, NumericSchema, 
 fn operand() -> ApplicationQueryOptionalResultFieldRef<Query, OperandSlot, NumericSchema, Operand> {
     ApplicationQueryOptionalResultFieldRef::new("operand", Operand::at("Operand"))
 }
-pub fn definition() -> ApplicationQueryDefinition<NumericSchema, Query, Parameters, Row, Number> {
+pub fn definition(
+) -> ApplicationQueryDefinitionBuilder<NumericSchema, Query, Parameters, Row, Number> {
     let shape = ApplicationQueryResultShapeBuilder::<
         NumericSchema,
         Query,
@@ -76,8 +77,6 @@ pub fn definition() -> ApplicationQueryDefinition<NumericSchema, Query, Paramete
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<NumericSchema, Query> for Row {
     fn project(

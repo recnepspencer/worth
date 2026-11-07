@@ -43,7 +43,7 @@ worth_query_query_binding!(pub(super) Access for ReadIntent, schema Schema,
     principal_field principal_identity_field(), limits results 1);
 
 pub(super) fn query(
-) -> ApplicationQueryDefinition<Schema, AccessQuery, Parameters, QueryResult, Principal> {
+) -> ApplicationQueryDefinitionBuilder<Schema, AccessQuery, Parameters, QueryResult, Principal> {
     let principal = ApplicationEntityRef::<Schema, Principal>::from_schema_identifier("Principal");
     let shape = ApplicationQueryResultShapeBuilder::<
         Schema,
@@ -68,8 +68,6 @@ pub(super) fn query(
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 
 pub(super) struct Resource;

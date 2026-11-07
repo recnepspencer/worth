@@ -21,12 +21,12 @@ macro_rules! worlds_certification_native_graph_input_guards_reference_input_sign
         pub struct $slot;worth_query_portable_type!($slot=>$slot_id);
         worth_query_application_query!(pub $query for Schema,identity $query_id,parameters Parameters,result ResultBinding,scope Row=>"Row",name $query_id);
         fn $field()->ApplicationQueryResultFieldRef<$query, $slot, Schema, SignedIdentity> {ApplicationQueryResultFieldRef::new("identity",SignedIdentity::at("SignedIdentity"))}
-        pub fn $definition()->ApplicationQueryDefinition<Schema,$query,(),Value,Row> {
+        pub fn $definition()->ApplicationQueryDefinitionBuilder<Schema,$query,(),Value,Row> {
             ApplicationQueryDefinitionBuilder::declare($query::reference()).root(Evidence::reference()).scope(Row::reference())
                 .result_shape(ApplicationQueryResultShapeBuilder::<Schema,$query,Evidence,Value,ResultBinding>::new(Evidence::reference()).field($field()).build())
                 .cardinality(ApplicationQueryCardinality::Many)
                 .disclosure(ApplicationQueryDisclosureContract::public()).basis_support(ApplicationQueryBasisSupport::current_and_pinned()).lanes(ApplicationQueryLaneEligibility::one_shot()).public()
-                .root_path(ApplicationQueryRootPath::from(Row::reference()).forward(<$relation>::reference())).build().unwrap()
+                .root_path(ApplicationQueryRootPath::from(Row::reference()).forward(<$relation>::reference()))
         }
         impl WorthQueryApplicationProjection<Schema,$query> for Value {
             fn project(row:&WorthQueryApplicationProjectionRow<'_,Schema,$query>)->Result<Self,WorthQueryApplicationProjectionDenial> {Ok(Self(row.field($field())?,row.entity_id()))}

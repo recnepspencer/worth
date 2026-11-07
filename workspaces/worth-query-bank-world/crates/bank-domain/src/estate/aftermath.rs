@@ -39,11 +39,9 @@ pub fn declared_aftermath_for(
                         DeclaredAftermathPostcondition::BusinessPostcondition {
                             identity: "death-notice-confirmed".into(),
                         },
-                    )
-                    .expect("estate compensation is well-formed"),
+                    ),
                 ),
-                DeclaredReconciliationProcedure::new("confirm-death-notice-with-authority")
-                    .expect("estate reconciliation is well-formed"),
+                DeclaredReconciliationProcedure::new("confirm-death-notice-with-authority"),
             ),
         ),
         EstateCapabilityOperation::FreezeAccount => Some(
@@ -76,8 +74,7 @@ pub fn declared_aftermath_for(
                         DeclaredAftermathPostcondition::BusinessPostcondition {
                             identity: "estate-journal-settled".into(),
                         },
-                    )
-                    .expect("estate compensation is well-formed"),
+                    ),
                 ),
             ))
         }
@@ -97,16 +94,11 @@ fn runtime_alone_inverse(
     preimage_locus: DeclaredPreImageLocus<BankSchema>,
 ) -> DeclaredApplicationAftermathContract<BankSchema> {
     DeclaredApplicationAftermathContract::runtime_alone(
-        DeclaredCorrectionMechanism::RecordedInverse(
-            DeclaredRecordedInverse::new(
-                inverse_operation,
-                DeclaredLoweringCorrespondenceRef::new(lowering)
-                    .expect("estate lowering correspondence is well-formed"),
-                DeclaredAftermathPostcondition::ExactPriorTruth,
-                DeclaredPreImageDemand::new([preimage_locus], 256)
-                    .expect("estate pre-image demand is well-formed"),
-            )
-            .expect("estate recorded inverse is well-formed"),
-        ),
+        DeclaredCorrectionMechanism::RecordedInverse(DeclaredRecordedInverse::new(
+            inverse_operation,
+            DeclaredLoweringCorrespondenceRef::new(lowering),
+            DeclaredAftermathPostcondition::ExactPriorTruth,
+            DeclaredPreImageDemand::new([preimage_locus], 256),
+        )),
     )
 }

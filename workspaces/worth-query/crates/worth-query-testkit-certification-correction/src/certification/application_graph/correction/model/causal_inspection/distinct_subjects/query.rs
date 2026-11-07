@@ -50,7 +50,8 @@ fn references() -> ApplicationQueryResultRelationRef<
 > {
     ApplicationQueryResultRelationRef::forward_many("references", AuthoredReference::reference())
 }
-pub fn definition() -> ApplicationQueryDefinition<NumericSchema, Query, Parameters, Row, Number> {
+pub fn definition(
+) -> ApplicationQueryDefinitionBuilder<NumericSchema, Query, Parameters, Row, Number> {
     let child =
         ApplicationQueryResultShapeBuilder::<NumericSchema, Query, Number, (), ChildBinding>::new(
             Number::reference(),
@@ -100,8 +101,6 @@ pub fn definition() -> ApplicationQueryDefinition<NumericSchema, Query, Paramete
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<NumericSchema, Query> for Row {
     fn project(

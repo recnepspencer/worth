@@ -1,6 +1,6 @@
 use worth_query_decl::facade::{
     application_query::{
-        ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
+        ApplicationQueryBasisSupport, ApplicationQueryCardinality,
         ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
         ApplicationQueryLaneEligibility, ApplicationQueryOrderingDirection,
         ApplicationQueryRootPath,
@@ -61,7 +61,7 @@ worth_query_decl::facade::worth_query_query_binding!(
 
 );
 
-pub fn pending_payments_definition() -> ApplicationQueryDefinition<
+pub fn pending_payments_definition() -> ApplicationQueryDefinitionBuilder<
     BankSchema,
     PendingPaymentsQuery,
     PendingPaymentsQueryParameters,
@@ -102,8 +102,6 @@ pub fn pending_payments_definition() -> ApplicationQueryDefinition<
                 .expect("owned record selection is valid"),
         )
         .order_by(identity, ApplicationQueryOrderingDirection::Ascending)
-        .build()
-        .expect("bank pending payments query is statically canonical")
 }
 
 impl WorthQueryApplicationProjection<BankSchema, PendingPaymentsQuery> for PaymentSummary {

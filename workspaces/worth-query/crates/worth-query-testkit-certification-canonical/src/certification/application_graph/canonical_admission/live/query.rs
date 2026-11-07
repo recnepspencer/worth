@@ -38,7 +38,7 @@ pub fn counter_field(
 }
 
 pub fn definition(
-) -> ApplicationQueryDefinition<AdmissionSchema, LiveQuery, Parameters, Row, Document> {
+) -> ApplicationQueryDefinitionBuilder<AdmissionSchema, LiveQuery, Parameters, Row, Document> {
     let shape = ApplicationQueryResultShapeBuilder::<
         AdmissionSchema,
         LiveQuery,
@@ -60,8 +60,6 @@ pub fn definition(
         .lanes(ApplicationQueryLaneEligibility::one_shot().with_live())
         .public()
         .live_root_by::<LiveCause>(identity_field(), identity_field())
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<AdmissionSchema, LiveQuery> for Row {
     fn project(

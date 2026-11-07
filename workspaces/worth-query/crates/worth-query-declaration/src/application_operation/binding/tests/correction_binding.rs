@@ -45,15 +45,12 @@ impl ApplicationCorrectionBinding<MutationSchema> for Inverse {
     }
 
     fn mechanism() -> DeclaredCorrectionMechanism<MutationSchema> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(AccountIdField::at(
-                    "AccountIdField",
-                ))],
-                64,
-            )
-            .unwrap(),
-        )
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [DeclaredPreImageLocus::from_field(AccountIdField::at(
+                "AccountIdField",
+            ))],
+            64,
+        ))
     }
 
     fn derive_correction(

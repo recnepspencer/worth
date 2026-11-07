@@ -59,9 +59,13 @@ pub fn child_identity() -> ApplicationQueryResultFieldRef<
     )
 }
 
-pub fn definition(
-) -> ApplicationQueryDefinition<CanonicalSchema, MembershipQuery, query::Parameters, Members, Derived>
-{
+pub fn definition() -> ApplicationQueryDefinitionBuilder<
+    CanonicalSchema,
+    MembershipQuery,
+    query::Parameters,
+    Members,
+    Derived,
+> {
     let child = ApplicationQueryResultShapeBuilder::<
         CanonicalSchema,
         MembershipQuery,
@@ -89,8 +93,6 @@ pub fn definition(
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<CanonicalSchema, MembershipQuery> for Members {
     fn project(

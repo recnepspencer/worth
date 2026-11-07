@@ -53,25 +53,27 @@ fn incomplete_filtered_reordered_and_non_orbit_declarations_refuse() {
             ApplicationQueryDisclosureContract::public(),
         )
     };
-    assert!(public()
-        .root_path(ApplicationQueryRootPath::from(Node::reference()).forward(Next::reference()))
-        .build()
-        .is_err());
-    assert!(public()
-        .order_by(
+    assert_eq!(
+        refusal(public().root_path(
+            ApplicationQueryRootPath::from(Node::reference()).forward(Next::reference())
+        )),
+        ApplicationQueryDefinitionDenial::InvalidOrbitShape
+    );
+    assert_eq!(
+        refusal(public().order_by(
             key::<OrbitSchema<true>, Orbit>(),
             ApplicationQueryOrderingDirection::Ascending
-        )
-        .build()
-        .is_err());
+        )),
+        ApplicationQueryDefinitionDenial::InvalidOrbitShape
+    );
     let collision = ApplicationQueryOrbitRef::<OrbitSchema<true>, Orbit, KeySlot, Next, Node>::new(
         "orbit",
         Next::reference(),
     );
-    assert!(matches!(
-        public().orbit(collision).build(),
-        Err(ApplicationQueryDefinitionDenial::DuplicateResultSlot)
-    ));
+    assert_eq!(
+        refusal(public().orbit(collision)),
+        ApplicationQueryDefinitionDenial::DuplicateResultSlot
+    );
     for edit in [
         (|parts: &mut WorthQueryPortableApplicationQueryParts| {
             parts.cardinality = ApplicationQueryCardinality::OptionalOne
@@ -122,4 +124,17 @@ fn incomplete_filtered_reordered_and_non_orbit_declarations_refuse() {
         .is_err(),
         "a caller's typed selector cannot install the orbit law"
     );
+}
+
+fn refusal<Q, P, R, Scope>(
+    expression: ApplicationQueryDefinitionBuilder<OrbitSchema<true>, Q, P, R, Scope>,
+) -> ApplicationQueryDefinitionDenial {
+    match ApplicationSchemaDeclarationBuilder::<OrbitSchema<true>>::for_schema()
+        .application_query(expression)
+        .build()
+        .unwrap_err()
+    {
+        ApplicationSchemaDeclarationDenial::InvalidQueryDefinition { cause, .. } => cause,
+        other => panic!("expected query grammar refusal: {other:?}"),
+    }
 }

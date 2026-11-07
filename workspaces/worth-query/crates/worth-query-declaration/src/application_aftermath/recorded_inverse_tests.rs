@@ -73,15 +73,14 @@ type SecondPart = FieldSelection<Fixture, FirstEntity, SecondAspect, u64>;
 fn duplicate_exact_locus_is_denied() {
     let first = locus(First::at("first"));
     assert_eq!(
-        DeclaredPreImageDemand::new([first.clone(), first], 64),
+        DeclaredPreImageDemand::new([first.clone(), first], 64).validate(),
         Err(DeclaredPreImageDemandDenial::DuplicateLocus)
     );
 }
 #[test]
 fn heterogeneous_loci_defer_authored_anchor_admission_to_installation() {
     let demand =
-        DeclaredPreImageDemand::new([locus(First::at("first")), locus(Second::at("second"))], 64)
-            .unwrap();
+        DeclaredPreImageDemand::new([locus(First::at("first")), locus(Second::at("second"))], 64);
     assert_eq!(demand.loci().len(), 2);
 }
 #[test]
@@ -92,8 +91,7 @@ fn multiple_exact_fields_on_one_entity_role_are_admissible() {
             locus(SecondPart::at("second")),
         ],
         64,
-    )
-    .unwrap();
+    );
     assert_eq!(demand.loci().len(), 2);
 }
 fn locus<F: RecordSelection>(field: F) -> DeclaredPreImageLocus<Schema> {

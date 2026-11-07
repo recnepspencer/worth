@@ -30,17 +30,14 @@ impl<Schema: TopologySchemaBinding> ApplicationCorrectionBinding<Schema>
             .no_external_effect()
     }
     fn mechanism() -> DeclaredCorrectionMechanism<Schema> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(EntryValueBits::at(
-                    "EntryValueBits",
-                ))],
-                U64ApplicationValueBinding::encode(&u64::MAX)
-                    .unwrap()
-                    .semantic_byte_width(),
-            )
-            .unwrap(),
-        )
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [DeclaredPreImageLocus::from_field(EntryValueBits::at(
+                "EntryValueBits",
+            ))],
+            U64ApplicationValueBinding::encode(&u64::MAX)
+                .unwrap()
+                .semantic_byte_width(),
+        ))
     }
     fn derive_correction(
         original: &EntryCorrection,

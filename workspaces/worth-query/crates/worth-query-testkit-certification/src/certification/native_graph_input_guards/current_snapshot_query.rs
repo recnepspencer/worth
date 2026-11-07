@@ -22,12 +22,12 @@ worth_query_application_query!(pub Query for Schema,identity "CurrentSnapshotQue
 pub fn field() -> ApplicationQueryResultFieldRef<Query, IdentitySlot, Schema, SnapshotIdentity> {
     ApplicationQueryResultFieldRef::new("identity", SnapshotIdentity::at("SnapshotIdentity"))
 }
-pub fn definition() -> ApplicationQueryDefinition<Schema, Query, (), Value, Row> {
+pub fn definition() -> ApplicationQueryDefinitionBuilder<Schema, Query, (), Value, Row> {
     ApplicationQueryDefinitionBuilder::declare(Query::reference()).root(Snapshot::reference()).scope(Row::reference())
         .result_shape(ApplicationQueryResultShapeBuilder::<Schema,Query,Snapshot,Value,ResultBinding>::new(Snapshot::reference()).field(field()).build())
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
         .disclosure(ApplicationQueryDisclosureContract::public()).basis_support(ApplicationQueryBasisSupport::current_and_pinned()).lanes(ApplicationQueryLaneEligibility::one_shot()).public()
-        .root_path(ApplicationQueryRootPath::from(Row::reference()).forward(CurrentSnapshot::reference())).build().unwrap()
+        .root_path(ApplicationQueryRootPath::from(Row::reference()).forward(CurrentSnapshot::reference()))
 }
 impl WorthQueryApplicationProjection<Schema, Query> for Value {
     fn project(

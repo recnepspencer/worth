@@ -1,6 +1,5 @@
 use worth_query_declaration::facade::application_query::ApplicationQueryBasisSupport;
 use worth_query_declaration::facade::application_query::ApplicationQueryCardinality;
-use worth_query_declaration::facade::application_query::ApplicationQueryDefinition;
 use worth_query_declaration::facade::application_query::ApplicationQueryDefinitionBuilder;
 use worth_query_declaration::facade::application_query::ApplicationQueryDisclosureContract;
 use worth_query_declaration::facade::application_query::ApplicationQueryLaneEligibility;
@@ -67,7 +66,7 @@ worth_query_application_query!(
     name "optional_account_field"
 );
 
-pub fn optional_account_field_definition() -> ApplicationQueryDefinition<
+pub fn optional_account_field_definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     OptionalAccountFieldQuery,
     AccountSummaryParameters,
@@ -95,8 +94,6 @@ pub fn optional_account_field_definition() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .expect("the optional field fixture is statically canonical")
 }
 
 impl WorthQueryApplicationProjection<IdentityExecutionSchema, OptionalAccountFieldQuery>

@@ -381,15 +381,13 @@ fn recorded_inverse_at(
     let field = FixturePrincipalIdentityField::at("PrincipalIdentityField");
     let inverse = DeclaredRecordedInverse::new(
         "restore-test-operation",
-        DeclaredLoweringCorrespondenceRef::new("test-operation-inverse").unwrap(),
+        DeclaredLoweringCorrespondenceRef::new("test-operation-inverse"),
         DeclaredAftermathPostcondition::ExactPriorTruth,
         DeclaredPreImageDemand::new(
             [DeclaredPreImageLocus::from_field(field)],
             maximum_encoded_bytes,
-        )
-        .unwrap(),
-    )
-    .unwrap();
+        ),
+    );
     DeclaredApplicationAftermathContract::runtime_alone(
         DeclaredCorrectionMechanism::RecordedInverse(inverse),
     )

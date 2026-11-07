@@ -38,8 +38,7 @@ impl ApplicationCorrectionBinding<Schema> for UndoSpawn {
                     Holds::reference(),
                 )],
                 4096,
-            )
-            .unwrap(),
+            ),
         )
     }
     fn derive_correction(

@@ -232,16 +232,30 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
         self
     }
 
-    pub fn build(
+    /// Projects unvalidated descriptive meaning. Schema registration remains the admission boundary.
+    pub fn into_erased(mut self) -> super::super::ErasedApplicationQueryDefinition {
+        self.normalize();
+        self.definition.into_erased()
+    }
+
+    fn normalize(&mut self) {
+        self.definition.parameters.sort();
+        self.definition.predicates.sort();
+        self.definition.root_paths.sort();
+        self.definition.root_paths.dedup();
+    }
+
+    pub(crate) fn name(&self) -> &'static str {
+        self.definition.name()
+    }
+
+    pub(crate) fn build(
         mut self,
     ) -> Result<
         ApplicationQueryDefinition<Schema, Query, Parameters, QueryResult, Scope>,
         ApplicationQueryDefinitionDenial,
     > {
-        self.definition.parameters.sort();
-        self.definition.predicates.sort();
-        self.definition.root_paths.sort();
-        self.definition.root_paths.dedup();
+        self.normalize();
         let portable =
             super::super::WorthQueryPortableApplicationQueryParts::project_typed(&self.definition);
         crate::application_query::validate_portable_application_query_freshly(&portable)?;

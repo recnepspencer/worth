@@ -1,6 +1,5 @@
 use worth_query_declaration::facade::application_query::ApplicationQueryBasisSupport;
 use worth_query_declaration::facade::application_query::ApplicationQueryCardinality;
-use worth_query_declaration::facade::application_query::ApplicationQueryDefinition;
 use worth_query_declaration::facade::application_query::ApplicationQueryDefinitionBuilder;
 use worth_query_declaration::facade::application_query::ApplicationQueryDisclosureContract;
 use worth_query_declaration::facade::application_query::ApplicationQueryLaneEligibility;
@@ -116,7 +115,7 @@ pub fn live_account_parameters(
         .expect("fixture account identity must encode")
 }
 
-pub fn live_account_activity_definition() -> ApplicationQueryDefinition<
+pub fn live_account_activity_definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     LiveAccountActivityQuery,
     AccountSummaryParameters,
@@ -162,8 +161,6 @@ pub fn live_account_activity_definition() -> ApplicationQueryDefinition<
         )
         .continue_by(activities())
         .live_by::<Activity, LiveAccountActivityCause>(account_identity(), activity_identity())
-        .build()
-        .unwrap()
 }
 
 impl

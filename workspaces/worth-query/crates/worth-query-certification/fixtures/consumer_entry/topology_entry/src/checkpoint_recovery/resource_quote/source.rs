@@ -43,7 +43,7 @@ fn count<S: TopologySchemaBinding>(
     ApplicationQueryResultFieldRef::new("count", RequestedRows::at("RequestedRows"))
 }
 pub(super) fn definition<S: TopologySchemaBinding>(
-) -> ApplicationQueryDefinition<S, Query, Parameters, Source, Body> {
+) -> ApplicationQueryDefinitionBuilder<S, Query, Parameters, Source, Body> {
     let shape = ApplicationQueryResultShapeBuilder::<S, Query, Body, Source, ResultValue>::new(
         Body::reference(),
     )
@@ -65,8 +65,6 @@ pub(super) fn definition<S: TopologySchemaBinding>(
     .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
     .lanes(ApplicationQueryLaneEligibility::one_shot())
     .public()
-    .build()
-    .unwrap()
 }
 impl<S: TopologySchemaBinding> WorthQueryApplicationProjection<S, Query> for Source {
     fn project(

@@ -69,7 +69,7 @@ pub(super) fn authoring<
         .lanes(lanes)
 }
 pub fn source_definition(
-) -> ApplicationQueryDefinition<Catalog, SourceQuery, Parameters, ItemRow, Directory> {
+) -> ApplicationQueryDefinitionBuilder<Catalog, SourceQuery, Parameters, ItemRow, Directory> {
     base(
         SourceQuery::reference(),
         ApplicationQueryLaneEligibility::one_shot(),
@@ -77,12 +77,10 @@ pub fn source_definition(
     .root_path(super::source_path())
     .order_by(name(), ApplicationQueryOrderingDirection::Descending)
     .order_by(identity(), ApplicationQueryOrderingDirection::Descending)
-    .build()
-    .unwrap()
 }
 
 pub fn prefix_definition(
-) -> ApplicationQueryDefinition<Catalog, PrefixQuery, Parameters, ItemRow, Directory> {
+) -> ApplicationQueryDefinitionBuilder<Catalog, PrefixQuery, Parameters, ItemRow, Directory> {
     base(
         PrefixQuery::reference(),
         ApplicationQueryLaneEligibility::one_shot().with_live(),
@@ -91,8 +89,6 @@ pub fn prefix_definition(
     .parameter(enabled_parameter())
     .where_equal(ItemEnabled::at("ItemEnabled"), enabled_parameter())
     .order_by(identity(), ApplicationQueryOrderingDirection::Ascending)
-    .build()
-    .unwrap()
 }
 impl<Q: ApplicationQueryMarkerIdentity<Catalog>> WorthQueryApplicationProjection<Catalog, Q>
     for ItemRow

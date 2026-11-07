@@ -1,8 +1,7 @@
 pub use worth_query_declaration::facade::application_query::{
-    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryResultFieldRef,
-    ApplicationQueryResultShapeBuilder,
+    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
+    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder,
 };
 pub use worth_query_declaration::facade::application_schema::U64ApplicationValueBinding;
 use worth_query_declaration::facade::application_schema::{
@@ -91,7 +90,7 @@ worth_query_application_query!(
     name "record_query"
 );
 
-pub fn record_query_definition() -> ApplicationQueryDefinition<
+pub fn record_query_definition() -> ApplicationQueryDefinitionBuilder<
     HostileConsumerSchema,
     RecordQuery,
     RecordQueryParameters,
@@ -123,8 +122,6 @@ pub fn record_query_definition() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .expect("hostile-consumer query declaration should be valid")
 }
 
 pub struct IdentityRow(u64);

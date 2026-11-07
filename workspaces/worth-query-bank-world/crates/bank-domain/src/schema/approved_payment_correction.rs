@@ -75,10 +75,11 @@ impl ApplicationCorrectionBinding<BankSchema> for ReverseApprovedPayment {
                 identity: "bank.approved-payment-journal-compensated.v1".to_owned(),
             },
         )
-        .expect("the completed payment's journal has an explicit business compensation")
     }
     fn completed_external_reconciliation() -> Option<DeclaredReconciliationProcedure> {
-        Some(DeclaredReconciliationProcedure::new("confirm-approved-payment-settlement").unwrap())
+        Some(DeclaredReconciliationProcedure::new(
+            "confirm-approved-payment-settlement",
+        ))
     }
     fn source_output_fields() -> Vec<ApplicationCorrectionOutputField<BankSchema>> {
         vec![journal_field(), institution_field()]

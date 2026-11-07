@@ -52,15 +52,12 @@ impl ApplicationCorrectionBinding<Catalog> for Note {
             .no_external_effect()
     }
     fn mechanism() -> DeclaredCorrectionMechanism<Catalog> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(DirectoryNote::at(
-                    "DirectoryNote",
-                ))],
-                PREIMAGE_BYTES,
-            )
-            .unwrap(),
-        )
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [DeclaredPreImageLocus::from_field(DirectoryNote::at(
+                "DirectoryNote",
+            ))],
+            PREIMAGE_BYTES,
+        ))
     }
     fn derive_correction(
         original: &note::Input,
@@ -114,13 +111,10 @@ impl ApplicationCorrectionBinding<Catalog> for Mover {
             .no_external_effect()
     }
     fn mechanism() -> DeclaredCorrectionMechanism<Catalog> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(ItemName::at("ItemName"))],
-                PREIMAGE_BYTES,
-            )
-            .unwrap(),
-        )
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [DeclaredPreImageLocus::from_field(ItemName::at("ItemName"))],
+            PREIMAGE_BYTES,
+        ))
     }
     fn derive_correction(
         original: &mover::Input,
@@ -177,15 +171,12 @@ impl ApplicationCorrectionBinding<Catalog> for Motion {
             .no_external_effect()
     }
     fn mechanism() -> DeclaredCorrectionMechanism<Catalog> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(
-                    super::super::geometry::schema::VertexRegion::at("VertexRegion"),
-                )],
-                PREIMAGE_BYTES,
-            )
-            .unwrap(),
-        )
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [DeclaredPreImageLocus::from_field(
+                super::super::geometry::schema::VertexRegion::at("VertexRegion"),
+            )],
+            PREIMAGE_BYTES,
+        ))
     }
     fn derive_correction(
         original: &motion::Input,

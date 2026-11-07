@@ -33,9 +33,13 @@ pub fn counter(
     ApplicationQueryResultFieldRef::new("counter", CounterField::at("CounterField"))
 }
 
-pub fn definition(
-) -> ApplicationQueryDefinition<AdmissionSchema, FirstQuery, query::Parameters, query::Row, Document>
-{
+pub fn definition() -> ApplicationQueryDefinitionBuilder<
+    AdmissionSchema,
+    FirstQuery,
+    query::Parameters,
+    query::Row,
+    Document,
+> {
     let shape = ApplicationQueryResultShapeBuilder::<
         AdmissionSchema,
         FirstQuery,
@@ -56,8 +60,6 @@ pub fn definition(
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<AdmissionSchema, FirstQuery> for query::Row {
     fn project(

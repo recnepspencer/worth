@@ -55,7 +55,8 @@ impl<Schema: TopologySchemaBinding> ApplicationQueryMarkerIdentity<Schema> for P
     const SCOPE_TYPE_NAME: &'static str = "Body";
 }
 
-pub fn planar_output_query_definition<Schema: TopologySchemaBinding>() -> ApplicationQueryDefinition<
+pub fn planar_output_query_definition<Schema: TopologySchemaBinding>(
+) -> ApplicationQueryDefinitionBuilder<
     Schema,
     PlanarOutputQuery,
     PlanarOutputReadParameters,
@@ -96,8 +97,6 @@ pub fn planar_output_query_definition<Schema: TopologySchemaBinding>() -> Applic
     .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
     .lanes(ApplicationQueryLaneEligibility::one_shot())
     .public()
-    .build()
-    .expect("planar output query is canonical")
 }
 
 fn body_key_result<Schema: TopologySchemaBinding>(

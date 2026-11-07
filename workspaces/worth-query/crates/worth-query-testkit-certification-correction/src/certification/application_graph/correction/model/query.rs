@@ -40,8 +40,8 @@ fn operand(
 ) -> ApplicationQueryOptionalResultFieldRef<ReadQuery, OperandSlot, NumericSchema, Operand> {
     ApplicationQueryOptionalResultFieldRef::new("operand", Operand::at("Operand"))
 }
-pub fn definition() -> ApplicationQueryDefinition<NumericSchema, ReadQuery, Parameters, Row, Number>
-{
+pub fn definition(
+) -> ApplicationQueryDefinitionBuilder<NumericSchema, ReadQuery, Parameters, Row, Number> {
     let shape = ApplicationQueryResultShapeBuilder::<
         NumericSchema,
         ReadQuery,
@@ -64,8 +64,6 @@ pub fn definition() -> ApplicationQueryDefinition<NumericSchema, ReadQuery, Para
         .public()
         .parameter(read_parameter())
         .where_equal(ReadEnabled::at("ReadEnabled"), read_parameter())
-        .build()
-        .unwrap()
 }
 pub fn parameters() -> ApplicationQueryParameterSet<ReadQuery> {
     ApplicationQueryParameterSet::new()

@@ -33,7 +33,7 @@ worth_query_portable_type!(ThirdValueSlot => "native-record-patterns.third-slot.
 fn third() -> ApplicationQueryOptionalAspectFieldRef<Query, ThirdValueSlot, Schema, ThirdValue> {
     ApplicationQueryOptionalAspectFieldRef::new("third", ThirdValue::at("ThirdValue"))
 }
-pub fn definition() -> ApplicationQueryDefinition<Schema, Query, Parameters, Row, Record> {
+pub fn definition() -> ApplicationQueryDefinitionBuilder<Schema, Query, Parameters, Row, Record> {
     let shape =
         ApplicationQueryResultShapeBuilder::<Schema, Query, Record, Row, ResultBinding>::new(
             Record::reference(),
@@ -52,8 +52,6 @@ pub fn definition() -> ApplicationQueryDefinition<Schema, Query, Parameters, Row
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<Schema, Query> for Row {
     fn project(

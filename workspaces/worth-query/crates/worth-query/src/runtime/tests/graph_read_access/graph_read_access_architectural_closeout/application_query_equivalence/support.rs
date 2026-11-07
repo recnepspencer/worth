@@ -226,7 +226,7 @@ fn query_reference() -> ApplicationQueryReference<
 }
 
 fn query_definition(
-) -> worth_query_declaration::facade::application_query::ApplicationQueryDefinition<
+) -> worth_query_declaration::facade::application_query::ApplicationQueryDefinitionBuilder<
     EquivalenceSchema,
     ActivityQuery,
     ActivityParameters,
@@ -296,8 +296,6 @@ fn query_definition(
             identity_ordering,
             ApplicationQueryOrderingDirection::Ascending,
         )
-        .build()
-        .unwrap()
 }
 
 fn mature_schema() -> QuerySchemaView {

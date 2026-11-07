@@ -110,7 +110,8 @@ fn body_key<
     ApplicationQueryResultFieldRef::new("body_key", BodyKey::at("BodyKey"))
 }
 
-pub fn planar_discovery_definition<Schema: TopologySchemaBinding>() -> ApplicationQueryDefinition<
+pub fn planar_discovery_definition<Schema: TopologySchemaBinding>(
+) -> ApplicationQueryDefinitionBuilder<
     Schema,
     PlanarDiscoveryQuery,
     PlanarDiscoveryParameters,
@@ -143,8 +144,6 @@ pub fn planar_discovery_definition<Schema: TopologySchemaBinding>() -> Applicati
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .expect("planar neighbor discovery is canonical")
 }
 
 impl<Schema: TopologySchemaBinding> WorthQueryApplicationProjection<Schema, PlanarDiscoveryQuery>

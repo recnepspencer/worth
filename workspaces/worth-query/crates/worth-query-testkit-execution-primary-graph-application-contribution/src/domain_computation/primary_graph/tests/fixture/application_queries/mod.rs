@@ -14,7 +14,6 @@ use crate::domain_computation::primary_graph::tests::fixture::TouchAccountCapabi
 use crate::domain_computation::primary_graph::tests::fixture::ViewAccount;
 use worth_query_declaration::facade::application_query::ApplicationQueryBasisSupport;
 use worth_query_declaration::facade::application_query::ApplicationQueryCardinality;
-use worth_query_declaration::facade::application_query::ApplicationQueryDefinition;
 use worth_query_declaration::facade::application_query::ApplicationQueryDefinitionBuilder;
 use worth_query_declaration::facade::application_query::ApplicationQueryDisclosureContract;
 use worth_query_declaration::facade::application_query::ApplicationQueryInfluenceContract;
@@ -153,7 +152,7 @@ pub fn label_result_field<Query>(
 
 pub fn cross_root_definition(
     status: &str,
-) -> ApplicationQueryDefinition<
+) -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     CrossRootQuery,
     AccountSummaryParameters,
@@ -200,8 +199,6 @@ pub fn cross_root_definition(
             activity_sequence_result_field(),
             ApplicationQueryOrderingDirection::Ascending,
         )
-        .build()
-        .unwrap()
 }
 
 pub fn definition<
@@ -220,7 +217,7 @@ pub fn definition<
     ordered: bool,
     requires_view: bool,
     advanced_read_lanes: bool,
-) -> ApplicationQueryDefinition<
+) -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     Query,
     AccountSummaryParameters,
@@ -275,15 +272,14 @@ where
     }
     .parameter(status_parameter())
     .where_equal(AccountStatus::at("AccountStatus"), status_parameter());
-    let builder = if ordered {
+    if ordered {
         builder.order_by(
             label_result_field::<Query>(),
             ApplicationQueryOrderingDirection::Ascending,
         )
     } else {
         builder
-    };
-    builder.build().unwrap()
+    }
 }
 
 pub type EncodedDisclosure = ApplicationEncodedScalarValue<CapabilityDisclosureBinding>;

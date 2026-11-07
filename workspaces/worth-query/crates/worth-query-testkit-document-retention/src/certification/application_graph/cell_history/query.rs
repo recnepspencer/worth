@@ -77,9 +77,7 @@ pub fn declare(
         .public()
         .root_path(
             ApplicationQueryRootPath::from(Feature::reference()).forward(OwnsCell::reference()),
-        )
-        .build()
-        .unwrap();
+        );
     schema
         .application_query(query)
         .application_query_binding::<ReadBinding>()

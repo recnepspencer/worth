@@ -99,7 +99,7 @@ pub fn shape<Q: ApplicationQueryMarkerIdentity<Schema>>(
     .optional_field(note())
     .relation(details(), nested)
 }
-pub fn definition() -> ApplicationQueryDefinition<Schema, Query, (), Value, Row> {
+pub fn definition() -> ApplicationQueryDefinitionBuilder<Schema, Query, (), Value, Row> {
     ApplicationQueryDefinitionBuilder::declare(Query::reference())
         .root(Cell::reference())
         .scope(Row::reference())
@@ -110,10 +110,9 @@ pub fn definition() -> ApplicationQueryDefinition<Schema, Query, (), Value, Row>
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
         .root_path(ApplicationQueryRootPath::from(Row::reference()).forward(RowCells::reference()))
-        .build()
-        .unwrap()
 }
-pub fn archive_definition() -> ApplicationQueryDefinition<Schema, ArchiveQuery, (), Value, Row> {
+pub fn archive_definition(
+) -> ApplicationQueryDefinitionBuilder<Schema, ArchiveQuery, (), Value, Row> {
     ApplicationQueryDefinitionBuilder::declare(ArchiveQuery::reference())
         .root(Cell::reference())
         .scope(Row::reference())
@@ -126,8 +125,6 @@ pub fn archive_definition() -> ApplicationQueryDefinition<Schema, ArchiveQuery, 
         .root_path(
             ApplicationQueryRootPath::from(Row::reference()).forward(RowCellArchive::reference()),
         )
-        .build()
-        .unwrap()
 }
 impl<Q: ApplicationQueryMarkerIdentity<Schema>> WorthQueryApplicationProjection<Schema, Q>
     for Value

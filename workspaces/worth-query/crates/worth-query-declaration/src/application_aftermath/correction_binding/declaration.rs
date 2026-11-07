@@ -9,7 +9,9 @@ use std::any::TypeId;
 pub(crate) struct CorrectionBindingDeclaration {
     marker: TypeId,
     pub(crate) identity: &'static str,
-    compose: fn() -> Result<ComposedCorrectionBinding, ApplicationSchemaDeclarationDenial>,
+    compose: fn(
+        Option<super::super::DeclaredReconciliationProcedure>,
+    ) -> Result<ComposedCorrectionBinding, ApplicationSchemaDeclarationDenial>,
 }
 impl CorrectionBindingDeclaration {
     pub(crate) fn of<S: ApplicationSchema, C: ApplicationCorrectionBinding<S>>() -> Self {
@@ -21,8 +23,9 @@ impl CorrectionBindingDeclaration {
     }
     pub(crate) fn compose(
         &self,
+        reconciliation: Option<super::super::DeclaredReconciliationProcedure>,
     ) -> Result<ComposedCorrectionBinding, ApplicationSchemaDeclarationDenial> {
-        (self.compose)()
+        (self.compose)(reconciliation)
     }
 }
 impl PartialEq for CorrectionBindingDeclaration {

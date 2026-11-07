@@ -60,7 +60,6 @@ impl ApplicationCorrectionBinding<BankSchema> for ReverseSentMoney {
                 identity: "bank.original-journal-balanced-reversal.v1".to_owned(),
             },
         )
-        .expect("Bank compensation declares a named business postcondition")
     }
 
     fn source_output_fields() -> Vec<ApplicationCorrectionOutputField<BankSchema>> {

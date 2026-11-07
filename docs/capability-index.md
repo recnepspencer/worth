@@ -70,6 +70,11 @@ the existing field and View APIs. See [shared entity extensions](build-an-applic
 Fragment `View::read` preserves typed record refusals and complete field paths for damaged stored rows; the [installed corruption courts](../workspaces/worth-query/crates/worth-query-court-decl-host-native-fragments/tests/worth_query_court_decl_host_native_fragments/native_fragments/stored_value_corruption.rs) cover owned and extension aspects.
 Aspect contract revisions derive from portable fields, codec identities, absence and exclusive membership; the [revision courts](../workspaces/worth-query/crates/worth-query-court-decl-host-native-fragments/tests/worth_query_court_decl_host_native_fragments/native_fragments/contract_revisions.rs) cover contract changes and stability under declaration order and Rust marker renames, including relation payloads.
 Preimage loci, historical correction-output fields and authored logical keys record unchecked selections; operation association and schema build refuse invalid correction fields with the correction identity and full field path, including codec mismatches. Principal record requirements are also infallible selections; composition refuses missing fields, codec mismatches and invalid write/equality posture with the principal binding name and field path.
+Retention demands and correction mechanism expressions are infallible; composition
+checks them once and retains the correction identity with the typed demand or mechanism
+cause. Pass unfinished query builders to `application_query`; feature composition
+preserves the feature owner, query name and original query-definition denial. See
+[declaration expressions](native-schema-fragments.md#declaration-expressions-and-composition-refusals).
 Installation denials preserve typed field codec failures and their loci through
 `field_encoding_denial()`. Conditional `PrimaryGraphPublication` carries the
 original primary-graph denial, including its typed Native commit and preparation

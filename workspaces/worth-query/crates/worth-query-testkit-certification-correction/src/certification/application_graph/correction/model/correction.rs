@@ -26,13 +26,10 @@ impl ApplicationCorrectionBinding<NumericSchema> for RecordedEdit {
         let encoded_width = InlineCounterBinding::encode(&Counter(u64::MAX))
             .unwrap()
             .semantic_byte_width();
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(Primary::at("Primary"))],
-                encoded_width,
-            )
-            .unwrap(),
-        )
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [DeclaredPreImageLocus::from_field(Primary::at("Primary"))],
+            encoded_width,
+        ))
     }
     fn derive_correction(
         original: &Edit,

@@ -51,9 +51,7 @@ pub fn declare<const MODE: u64>(
         .root_path(
             ApplicationQueryRootPath::from(Document::reference())
                 .forward(DocumentTenant::reference()),
-        )
-        .build()
-        .unwrap();
+        );
     schema
         .application_query(query)
         .application_query_binding::<TenantBinding<MODE>>()

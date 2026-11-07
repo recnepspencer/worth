@@ -7,7 +7,8 @@ use super::{
 use crate::{
     application_operation::{ApplicationMutationBinding, ApplicationMutationSourceExpectation},
     application_query::{
-        ApplicationQueryCardinality, ApplicationQueryDefinition, ErasedApplicationQueryDefinition,
+        ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
+        ErasedApplicationQueryDefinition,
     },
     application_schema::{ApplicationSchema, ApplicationSchemaMember as Member},
 };
@@ -20,12 +21,13 @@ impl<Schema: ApplicationSchema, Operation>
     pub fn query_context<Binding, Query, Parameters, QueryResult, Scope>(
         self,
         name: &str,
-        query: ApplicationQueryDefinition<Schema, Query, Parameters, QueryResult, Scope>,
+        query: ApplicationQueryDefinitionBuilder<Schema, Query, Parameters, QueryResult, Scope>,
     ) -> Result<Self, Denial>
     where
         Binding: ApplicationMutationBinding<Schema, Operation = Operation>,
         Binding::SourceExpectation: ApplicationMutationSourceExpectation<Schema, Query = Query>,
     {
+        let query = query.into_erased();
         if !query.parameters().is_empty()
             || query.cardinality() != ApplicationQueryCardinality::ExactlyOne
         {
@@ -35,7 +37,7 @@ impl<Schema: ApplicationSchema, Operation>
             name,
             Source::QueryContext {
                 mutation_binding: Binding::IDENTITY.to_owned(),
-                query: Box::new(query.into_erased()),
+                query: Box::new(query),
             },
         )
     }

@@ -63,9 +63,11 @@ pub(super) fn decode(
             authored_identity::decode(input, budget)
         })?,
         completed_external_reconciliation: decode_optional(input, |input| {
-            DeclaredReconciliationProcedure::new(input.text()?.to_owned()).map_err(|_| {
+            let expression = DeclaredReconciliationProcedure::new(input.text()?.to_owned());
+            expression.validate().map_err(|_| {
                 Denial::new(crate::denial::WorthQueryPackageArchiveDenialKind::InvalidRecordShape)
-            })
+            })?;
+            Ok(expression)
         })?,
         reapplication_source: decode_optional(input, decode_type_identity)?,
     });

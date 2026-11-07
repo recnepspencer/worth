@@ -1,10 +1,9 @@
 use worth_query_decl::facade::application_query::{
-    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryOrderingDirection,
-    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
-    ApplicationQueryResultShapeBuilder, ExactlyOneResult, ManyResults, OptionalOneResult,
-    ReverseResultTraversal,
+    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
+    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryOrderingDirection, ApplicationQueryResultFieldRef,
+    ApplicationQueryResultRelationRef, ApplicationQueryResultShapeBuilder, ExactlyOneResult,
+    ManyResults, OptionalOneResult, ReverseResultTraversal,
 };
 use worth_query_decl::facade::worth_query_application_query;
 use worth_query_host::facade::primary_graph::{
@@ -138,7 +137,7 @@ type JournalPurposeSelector = ApplicationQueryResultFieldRef<
     JournalPurpose,
 >;
 
-pub fn account_activity_definition() -> ApplicationQueryDefinition<
+pub fn account_activity_definition() -> ApplicationQueryDefinitionBuilder<
     BankSchema,
     AccountActivityQuery,
     AccountActivityQueryParameters,
@@ -204,8 +203,6 @@ pub fn account_activity_definition() -> ApplicationQueryDefinition<
         )
         .continue_by(account_postings())
         .live_by::<Posting, AccountActivityLiveCause>(account_identity(), posting_identity())
-        .build()
-        .expect("bank account activity query is statically canonical")
 }
 
 impl WorthQueryApplicationProjection<BankSchema, AccountActivityQuery>

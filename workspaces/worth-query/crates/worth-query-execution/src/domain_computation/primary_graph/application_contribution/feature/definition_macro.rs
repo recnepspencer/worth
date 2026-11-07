@@ -105,7 +105,7 @@ macro_rules! __worth_query_complete_feature {
             type Outputs = $crate::facade::declaration::application_program::ApplicationFeatureOutputs<
                 $crate::__worth_query_complete_feature!(@roots $(($Binding, $Delivery))*)
             >;
-            fn declare_members(
+            fn members(
                 $schema: $crate::facade::declaration::application_schema::ApplicationSchemaDeclarationBuilder<$Schema>,
             ) -> $crate::facade::declaration::application_schema::ApplicationSchemaDeclarationBuilder<$Schema> {
                 let $schema = $body;

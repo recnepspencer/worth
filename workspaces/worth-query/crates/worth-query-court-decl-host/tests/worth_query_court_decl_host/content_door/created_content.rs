@@ -144,7 +144,6 @@ impl<const DAMAGE: u8> ApplicationCorrectionBinding<Schema> for Capture<DAMAGE> 
                 identity: "original-content-restored-through-declared-output".into(),
             },
         )
-        .unwrap()
     }
     fn source_output_fields() -> Vec<ApplicationCorrectionOutputField<Schema>> {
         if DAMAGE == 1 {

@@ -29,7 +29,7 @@ pub fn value_field(
 }
 
 pub fn definition(
-) -> ApplicationQueryDefinition<CanonicalSchema, ValueQuery, Parameters, String, Companion> {
+) -> ApplicationQueryDefinitionBuilder<CanonicalSchema, ValueQuery, Parameters, String, Companion> {
     let shape = ApplicationQueryResultShapeBuilder::<
         CanonicalSchema,
         ValueQuery,
@@ -49,8 +49,6 @@ pub fn definition(
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<CanonicalSchema, ValueQuery> for String {
     fn project(

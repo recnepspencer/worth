@@ -46,6 +46,13 @@ impl<const DAMAGE: u8> ApplicationCorrectionBinding<S> for Correction<DAMAGE> {
         correction::UndoCreate::<S>::disclosure_parameters(original)
     }
     fn mechanism() -> DeclaredCorrectionMechanism<S> {
+        if (21..=31).contains(&DAMAGE) {
+            return aftermath_expressions::mechanism::<DAMAGE>();
+        }
+        if DAMAGE >= 10 {
+            return retention::mechanism::<DAMAGE>();
+        }
+
         if DAMAGE >= 3 {
             return DeclaredCorrectionMechanism::recorded_create_inverse_binding::<Self>();
         }
@@ -58,9 +65,13 @@ impl<const DAMAGE: u8> ApplicationCorrectionBinding<S> for Correction<DAMAGE> {
                 "Id"
             }))
         };
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new([locus], 16).unwrap(),
-        )
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [locus],
+            16,
+        ))
+    }
+    fn completed_external_reconciliation() -> Option<DeclaredReconciliationProcedure> {
+        aftermath_expressions::reconciliation::<DAMAGE>()
     }
     fn source_output_fields() -> Vec<ApplicationCorrectionOutputField<S>> {
         if DAMAGE == 9 {
@@ -299,4 +310,22 @@ fn composition_checks_one_output_expression_without_evaluating_it_again() {
     }
     let _reset = Reset;
     refused::<9>(false, "output_typo");
+}
+
+mod retention;
+
+mod aftermath_expressions;
+
+fn compose<const DAMAGE: u8>(
+) -> Result<ApplicationSchemaDeclaration<S>, ApplicationSchemaDeclarationDenial> {
+    ApplicationSchemaDeclarationBuilder::<S>::from_fragment(OwnershipModel::<false>)
+        .unwrap()
+        .operation(
+            Correction::<DAMAGE>::source_definition()
+                .aftermath(DeclaredApplicationAftermathContract::correction_binding::<
+                    Correction<DAMAGE>,
+                >())
+                .finish(),
+        )
+        .build()
 }

@@ -95,7 +95,7 @@ worth_query_query_binding!(pub Access for ReadIntent, schema Schema,
     scope PrincipalIdentity,
     principal_field PrincipalIdentity::at("PrincipalIdentity"), limits results 1);
 
-fn query() -> ApplicationQueryDefinition<Schema, Query, Parameters, ReadResult, Principal> {
+fn query() -> ApplicationQueryDefinitionBuilder<Schema, Query, Parameters, ReadResult, Principal> {
     let shape = ApplicationQueryResultShapeBuilder::<
         Schema,
         Query,
@@ -117,8 +117,6 @@ fn query() -> ApplicationQueryDefinition<Schema, Query, Parameters, ReadResult, 
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 pub struct Resource;
 pub struct Provider;
