@@ -6,6 +6,9 @@ use crate::{
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthServerOperationPlanDenialCode {
+    EvidenceIdentityDerivationDenied(
+        worth_query::facade::runtime::WorthQueryEvidenceIdentityDerivationDenial,
+    ),
     PreparedIntentMismatch,
     WorkspaceBindingFailed,
     SupportDenied,

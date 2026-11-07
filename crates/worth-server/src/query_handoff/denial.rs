@@ -211,6 +211,9 @@ impl WorthServerQueryHandoffDenialFacts {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthServerQueryHandoffDenialCode {
+    EvidenceIdentityDerivationDenied(
+        worth_query::facade::runtime::WorthQueryEvidenceIdentityDerivationDenial,
+    ),
     AuthorityDenied,
     AuthorizationDenied,
     OperationFamilyNotRegistered,

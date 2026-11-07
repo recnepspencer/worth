@@ -153,11 +153,14 @@ impl WorthServerDirectMutationResult {
         }
     }
 
-    pub fn result_digest(&self) -> &str {
+    pub fn result_digest(
+        &self,
+    ) -> Result<&str, worth_query::facade::runtime::WorthQueryEvidenceIdentityDerivationDenial>
+    {
         match self {
-            Self::Single { receipt, .. } => receipt
+            Self::Single { receipt, .. } => Ok(receipt
                 .commit_evidence_identity()
-                .terminal_projection_for_reporting(),
+                .terminal_projection_for_reporting()),
             Self::Batch { receipt, .. } => receipt.batch_digest(),
         }
     }
