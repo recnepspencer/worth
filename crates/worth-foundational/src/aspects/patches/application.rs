@@ -7,7 +7,6 @@ use crate::aspects::state::{
     AuthoritativeRecordAspectState, AuthoritativeRecordAspectStateAdmitted,
     AuthoritativeRecordAspectStateArtifact, CanonicalAspectStateMap,
 };
-use crate::aspects::structs::StructAspectValue;
 use crate::aspects::validation::{
     validate_aspect_value, ContractValidatedAspectValue, ContractValidatedAspectValueView,
     ContractValidationInput,
@@ -51,11 +50,13 @@ impl AuthoritativeRecordAspectPatch {
         }
     }
 
+    /// Cost: O(changed aspects * log(record aspects) + changed struct fields).
+    /// Untouched aspect values and contracts retain their allocation identity.
     fn apply_to_state(
         &self,
         state: &AuthoritativeRecordAspectState,
     ) -> Result<AuthoritativeRecordAspectState, AuthoritativePatchApplicationDenial> {
-        let mut entries = state.aspects().cloned_entries();
+        let mut entries = state.aspects().clone();
 
         for cleared_key in self.whole_aspect_clears.keys() {
             entries.remove(cleared_key);
@@ -70,9 +71,7 @@ impl AuthoritativeRecordAspectPatch {
             entries.insert(field_patch.key().clone(), updated_entry);
         }
 
-        Ok(AuthoritativeRecordAspectState::from_canonical_map(
-            CanonicalAspectStateMap::from_canonical_entries(entries),
-        ))
+        Ok(AuthoritativeRecordAspectState::from_canonical_map(entries))
     }
 
     fn apply_to_absent_state(
@@ -86,16 +85,18 @@ impl AuthoritativeRecordAspectPatch {
             );
         }
         Ok(AuthoritativeRecordAspectState::from_canonical_map(
-            CanonicalAspectStateMap::from_canonical_entries(self.whole_aspect_sets.clone()),
+            CanonicalAspectStateMap::from_canonical_entries(
+                self.whole_aspect_sets
+                    .iter()
+                    .map(|(key, value)| (key.clone(), value.clone()))
+                    .collect(),
+            ),
         ))
     }
 }
 
 fn apply_field_patch_to_entry(
-    entries: &std::collections::BTreeMap<
-        crate::aspects::keys::AspectKey,
-        ContractValidatedAspectValue,
-    >,
+    entries: &CanonicalAspectStateMap,
     field_patch: &FieldLevelAspectPatch,
 ) -> Result<ContractValidatedAspectValue, AuthoritativePatchApplicationDenial> {
     let current_entry = entries.get(field_patch.key()).ok_or_else(|| {
@@ -110,21 +111,27 @@ fn apply_field_patch_to_entry(
         );
     };
 
-    let mut next_fields = current_struct
-        .fields()
-        .map(|(field_key, field_value)| (field_key.clone(), field_value.clone()))
-        .collect::<std::collections::BTreeMap<_, _>>();
-
-    for field_key in field_patch.field_clears() {
-        next_fields.remove(field_key);
+    if current_entry
+        .contract()
+        .shares_definition(field_patch.contract())
+    {
+        let crate::aspects::contracts::AspectShape::Struct(shape) = field_patch.contract().shape()
+        else {
+            unreachable!("a field patch is admitted only for its immutable struct definition")
+        };
+        // The admitted source proves all unchanged fields. Construction already
+        // checked required clears and set membership; validate each new value.
+        for (key, value) in field_patch.field_sets() {
+            crate::aspects::validation::validate_struct_field(shape, key, value)
+                .map_err(AuthoritativePatchApplicationDenial::ContractValidationDenied)?;
+        }
+        return Ok(ContractValidatedAspectValue::struct_value(
+            field_patch.contract().clone(),
+            current_struct.patched(field_patch.field_sets(), field_patch.field_clears()),
+        ));
     }
-
-    for (field_key, field_value) in field_patch.field_sets() {
-        next_fields.insert(field_key.clone(), field_value.clone());
-    }
-
-    let next_struct = StructAspectValue::new(next_fields)
-        .map_err(AuthoritativePatchApplicationDenial::StructValueConstructionDenied)?;
+    // A different definition is a rebind: retained value proof cannot authorize it.
+    let next_struct = current_struct.patched(field_patch.field_sets(), field_patch.field_clears());
     let validation = validate_aspect_value(
         field_patch.contract(),
         ContractValidationInput::Struct(next_struct),

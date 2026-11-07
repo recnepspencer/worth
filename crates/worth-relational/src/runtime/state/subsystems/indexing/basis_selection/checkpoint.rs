@@ -25,12 +25,16 @@ impl IndexingState {
             }
         }
         for (version, schema) in &retained.historical_versions {
-            if let Some(basis) = self
-                .bases
-                .get(None, *version)
-                .filter(|basis| basis.schema == *schema)
-            {
-                bases.insert((basis.branch.clone(), basis.version), basis);
+            // Historical custody is version-wide. Keep the concrete branch
+            // selections too; the global view intentionally owns no scoped rows.
+            if let Some(selected) = self.bases.versions.get(version) {
+                for basis in selected
+                    .branches
+                    .values()
+                    .filter(|basis| basis.schema == *schema)
+                {
+                    bases.insert((basis.branch.clone(), basis.version), basis);
+                }
             }
         }
         bases

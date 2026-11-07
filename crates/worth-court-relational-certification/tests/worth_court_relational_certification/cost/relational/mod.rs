@@ -18,3 +18,5 @@ mod lazy_pin;
 mod snapshot_counts;
 
 mod symbol_admission;
+
+mod shared_aspect_reads;

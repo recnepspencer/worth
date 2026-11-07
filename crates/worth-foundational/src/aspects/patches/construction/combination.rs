@@ -71,16 +71,11 @@ fn combine_field_patches(
     right: FieldLevelAspectPatch,
 ) -> Result<FieldLevelAspectPatch, AuthoritativePatchConstructionDenial> {
     let key = left.key().clone();
-    let left_fields = left
-        .field_sets
-        .keys()
-        .chain(left.field_clears.iter())
-        .collect::<std::collections::BTreeSet<_>>();
     let overlaps = right
         .field_sets
         .keys()
         .chain(right.field_clears.iter())
-        .any(|field| left_fields.contains(field));
+        .any(|field| left.field_sets.contains_key(field) || left.field_clears.contains(field));
     if left.contract != right.contract || overlaps {
         return Err(AuthoritativePatchConstructionDenial::DuplicateFieldPatch(
             key,

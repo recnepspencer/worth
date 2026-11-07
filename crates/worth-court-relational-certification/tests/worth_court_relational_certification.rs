@@ -1,3 +1,5 @@
+// Nested persistent Native/Foundational data needs trait-solver headroom in this court.
+#![recursion_limit = "256"]
 #![cfg_attr(test, allow(clippy::disallowed_methods))]
 #[path = "worth_court_relational_certification/content/mod.rs"]
 mod content;

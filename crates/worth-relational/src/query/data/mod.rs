@@ -11,7 +11,9 @@ pub(crate) use canonical_digest::{
 };
 #[cfg(test)]
 pub(crate) use canonical_digest::{query_index_parity_basis_digest, query_result_reduction_digest};
-pub(crate) use checked_fragment_reduction::reduce_query_fragments_checked;
+pub(crate) use checked_fragment_reduction::{
+    query_reduction_scratch_bound, reduce_query_fragments_checked,
+};
 #[cfg(test)]
 pub use fragment_reduction::reduce_query_fragments;
 pub use fragment_reduction::{

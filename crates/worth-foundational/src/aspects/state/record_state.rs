@@ -31,6 +31,14 @@ impl AuthoritativeRecordAspectState {
         self.aspects.get(key)
     }
 
+    /// A record copy shares the persistent map root and immutable admitted values.
+    /// Inline reference storage is already part of the destination record's size;
+    /// cloning allocates no additional heap backing. Its fixed shared-reference
+    /// work remains part of the Native record-read checkpoint.
+    pub fn clone_allocation_capacity_bytes(&self) -> usize {
+        0
+    }
+
     /// Owner-accounted allocation reachable from this authoritative state,
     /// excluding the state's inline wrapper.
     pub fn owned_allocation_capacity_bytes(&self) -> usize {

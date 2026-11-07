@@ -7,7 +7,7 @@ pub(crate) fn entity(record: &EntityReadRecord) -> u64 {
             record
                 .authoritative_aspect_state
                 .as_ref()
-                .map_or(0, |state| state.owned_allocation_capacity_bytes() as u64),
+                .map_or(0, |state| state.clone_allocation_capacity_bytes() as u64),
         )
 }
 
@@ -18,7 +18,7 @@ pub(crate) fn relation(record: &RelationReadRecord) -> u64 {
             record
                 .authoritative_aspect_state
                 .as_ref()
-                .map_or(0, |state| state.owned_allocation_capacity_bytes() as u64),
+                .map_or(0, |state| state.clone_allocation_capacity_bytes() as u64),
         )
 }
 
