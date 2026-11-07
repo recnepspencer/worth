@@ -18,12 +18,27 @@ for name in ('invariant_reads','required_feature','shared_execution','worth-quer
  pe=Frames(manifest[name]);reserves[name]=struct.unpack_from('<Q',pe.data,pe.u32(0x3c)+24+72)[0];del pe;gc.collect()
 assert set(reserves.values())=={1048576},reserves
 (e/'layout-main-stack-reserves.json').write_text(json.dumps(reserves,indent=2))
+# The four ordinary artifacts were already scanned/identified at the same production inputs.
+# Reuse their exact PE/PDB hash-bound records; scan only the three new court artifacts.
+import hashlib
+prior=json.loads((e/'layout-r3-four-identified.json').read_text())
+for binary in prior['binaries']:
+    assert manifest[binary['binary']]==binary['exe']
+    identity=binary['artifact_identity']
+    assert hashlib.file_digest(open(binary['exe'],'rb'),'sha256').hexdigest()==identity['exe_sha256']
+    assert hashlib.file_digest(open(identity['pdb_path'],'rb'),'sha256').hexdigest()==identity['pdb_sha256']
+remaining={name:path for name,path in manifest.items() if name not in {b['binary'] for b in prior['binaries']}}
+(e/'layout-after-court-inputs.json').write_text(json.dumps(remaining,indent=2))
 commands=[
- ['whole_binary_frames.py','layout-after-frame-inputs.json','layout-after-frames.json'],
- ['pdb_public_frames.py','layout-after-frames.json','layout-after-frames-publics.json'],
- ['coff_frame_attribution.py','layout-after-frames-publics.json','layout-after-frames-identified.json'],
- ['analyze_whole_frames.py','layout-after-frames-identified.json']]
+ ['whole_binary_frames.py','layout-after-court-inputs.json','layout-after-court-frames.json'],
+ ['pdb_public_frames.py','layout-after-court-frames.json','layout-after-court-publics.json'],
+ ['coff_frame_attribution.py','layout-after-court-publics.json','layout-after-court-identified.json']]
 for command in commands:
  code=subprocess.call([sys.executable,*[str(e/item) for item in command]])
  if code:raise SystemExit(code)
+courts=json.loads((e/'layout-after-court-identified.json').read_text())
+combined={'binaries':prior['binaries']+courts['binaries']}
+(e/'layout-after-frames-identified.json').write_text(json.dumps(combined,indent=2))
+code=subprocess.call([sys.executable,str(e/'analyze_whole_frames.py'),str(e/'layout-after-frames-identified.json')])
+if code:raise SystemExit(code)
 print('All seven final-source artifacts censused; ordinary PE reserve unchanged.',reserves)
