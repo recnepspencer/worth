@@ -140,7 +140,9 @@ fn native_string_field_contract(
     );
     let admitted = match evaluate_projection_consumption_eligibility(
         &declare_projection_consumption(source, binding, requested).unwrap(),
-    ) {
+    )
+    .expect("fixture digest must fit")
+    {
         ProjectionConsumptionEligibility::Admitted(admitted) => admitted,
         outcome => panic!("native refinement fixture did not admit: {outcome:?}"),
     };

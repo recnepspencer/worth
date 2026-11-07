@@ -20,17 +20,20 @@ pub(super) fn canonical_rows() -> Vec<MilestoneNineOneCertificationRow> {
                 LiveQueryFamily::Detail,
                 None,
                 QuerySubscriptionConstructionSource::Direct,
-            )?,
+            )
+            .expect("fixture digest must fit"),
             hostile_lane: certified_lane(
                 LiveQueryFamily::Detail,
                 None,
                 QuerySubscriptionConstructionSource::TemplateInstantiated,
-            )?,
+            )
+            .expect("fixture digest must fit"),
             parity_lane: certified_lane(
                 LiveQueryFamily::Detail,
                 None,
                 QuerySubscriptionConstructionSource::SavedExactReuse,
-            )?,
+            )
+            .expect("fixture digest must fit"),
         },
         MilestoneNineOneCertificationRow {
             row_name: "direct-scope-template-saved-subscription-parity",
@@ -42,17 +45,20 @@ pub(super) fn canonical_rows() -> Vec<MilestoneNineOneCertificationRow> {
                 LiveQueryFamily::Detail,
                 None,
                 QuerySubscriptionConstructionSource::Direct,
-            )?,
+            )
+            .expect("fixture digest must fit"),
             hostile_lane: certified_lane(
                 LiveQueryFamily::Detail,
                 None,
                 QuerySubscriptionConstructionSource::ScopeExpanded,
-            )?,
+            )
+            .expect("fixture digest must fit"),
             parity_lane: certified_lane(
                 LiveQueryFamily::Detail,
                 None,
                 QuerySubscriptionConstructionSource::TemplateInstantiated,
-            )?,
+            )
+            .expect("fixture digest must fit"),
         },
         MilestoneNineOneCertificationRow {
             row_name: "facade-helper-subscription-parity",
@@ -63,17 +69,20 @@ pub(super) fn canonical_rows() -> Vec<MilestoneNineOneCertificationRow> {
                 LiveQueryFamily::OrderedCollection,
                 Some(LiveViewShapeFamily::Table),
                 QuerySubscriptionConstructionSource::Direct,
-            )?,
+            )
+            .expect("fixture digest must fit"),
             hostile_lane: certified_lane(
                 LiveQueryFamily::OrderedCollection,
                 Some(LiveViewShapeFamily::Table),
                 QuerySubscriptionConstructionSource::SavedExactReuse,
-            )?,
+            )
+            .expect("fixture digest must fit"),
             parity_lane: certified_lane(
                 LiveQueryFamily::OrderedCollection,
                 Some(LiveViewShapeFamily::Table),
                 QuerySubscriptionConstructionSource::FacadeLive,
-            )?,
+            )
+            .expect("fixture digest must fit"),
         },
         MilestoneNineOneCertificationRow {
             row_name: "collection-table-bridge-lowering-parity",
@@ -84,17 +93,20 @@ pub(super) fn canonical_rows() -> Vec<MilestoneNineOneCertificationRow> {
                 LiveQueryFamily::OrderedCollection,
                 Some(LiveViewShapeFamily::Table),
                 QuerySubscriptionConstructionSource::Direct,
-            )?,
+            )
+            .expect("fixture digest must fit"),
             hostile_lane: certified_lane(
                 LiveQueryFamily::OrderedCollection,
                 Some(LiveViewShapeFamily::Table),
                 QuerySubscriptionConstructionSource::ScopeExpanded,
-            )?,
+            )
+            .expect("fixture digest must fit"),
             parity_lane: certified_lane(
                 LiveQueryFamily::OrderedCollection,
                 Some(LiveViewShapeFamily::Table),
                 QuerySubscriptionConstructionSource::FacadeLive,
-            )?,
+            )
+            .expect("fixture digest must fit"),
         },
         MilestoneNineOneCertificationRow {
             row_name: "grouped-query-meaning-shares-collection-bridge-family",
@@ -105,17 +117,20 @@ pub(super) fn canonical_rows() -> Vec<MilestoneNineOneCertificationRow> {
                 LiveQueryFamily::OrderedCollection,
                 Some(LiveViewShapeFamily::Table),
                 QuerySubscriptionConstructionSource::FacadeLive,
-            )?,
+            )
+            .expect("fixture digest must fit"),
             hostile_lane: certified_lane(
                 LiveQueryFamily::OrderedCollection,
                 Some(LiveViewShapeFamily::KanbanGrouped),
                 QuerySubscriptionConstructionSource::FacadeLive,
-            )?,
+            )
+            .expect("fixture digest must fit"),
             parity_lane: certified_lane(
                 LiveQueryFamily::OrderedCollection,
                 Some(LiveViewShapeFamily::KanbanGrouped),
                 QuerySubscriptionConstructionSource::TemplateInstantiated,
-            )?,
+            )
+            .expect("fixture digest must fit"),
         },
         MilestoneNineOneCertificationRow {
             row_name: "inspector-query-meaning-shares-detail-bridge-family",
@@ -126,17 +141,20 @@ pub(super) fn canonical_rows() -> Vec<MilestoneNineOneCertificationRow> {
                 LiveQueryFamily::Detail,
                 Some(LiveViewShapeFamily::Detail),
                 QuerySubscriptionConstructionSource::FacadeLive,
-            )?,
+            )
+            .expect("fixture digest must fit"),
             hostile_lane: certified_lane(
                 LiveQueryFamily::Detail,
                 Some(LiveViewShapeFamily::InspectorDetailFocused),
                 QuerySubscriptionConstructionSource::FacadeLive,
-            )?,
+            )
+            .expect("fixture digest must fit"),
             parity_lane: certified_lane(
                 LiveQueryFamily::Detail,
                 Some(LiveViewShapeFamily::InspectorDetailFocused),
                 QuerySubscriptionConstructionSource::SavedExactReuse,
-            )?,
+            )
+            .expect("fixture digest must fit"),
         },
         MilestoneNineOneCertificationRow {
             row_name: "bounded-materialization-relation-scope-lowering",
@@ -147,17 +165,20 @@ pub(super) fn canonical_rows() -> Vec<MilestoneNineOneCertificationRow> {
                 LiveQueryFamily::BoundedMaterialization,
                 None,
                 QuerySubscriptionConstructionSource::Direct,
-            )?,
+            )
+            .expect("fixture digest must fit"),
             hostile_lane: certified_lane(
                 LiveQueryFamily::BoundedMaterialization,
                 None,
                 QuerySubscriptionConstructionSource::ScopeExpanded,
-            )?,
+            )
+            .expect("fixture digest must fit"),
             parity_lane: certified_lane(
                 LiveQueryFamily::BoundedMaterialization,
                 None,
                 QuerySubscriptionConstructionSource::FacadeLive,
-            )?,
+            )
+            .expect("fixture digest must fit"),
         },
         MilestoneNineOneCertificationRow {
             row_name: "activation-certification-source-binding",
@@ -169,18 +190,21 @@ pub(super) fn canonical_rows() -> Vec<MilestoneNineOneCertificationRow> {
                 LiveQueryFamily::Detail,
                 None,
                 QuerySubscriptionConstructionSource::Direct,
-            )?,
+            )
+            .expect("fixture digest must fit"),
             hostile_lane: certified_lane_with_basis(
                 LiveQueryFamily::Detail,
                 None,
                 QuerySubscriptionConstructionSource::Direct,
                 crate::subscription::QuerySubscriptionBasisPosture::BranchHead,
-            )?,
+            )
+            .expect("fixture digest must fit"),
             parity_lane: certified_lane(
                 LiveQueryFamily::Detail,
                 None,
                 QuerySubscriptionConstructionSource::FacadeLive,
-            )?,
+            )
+            .expect("fixture digest must fit"),
         },
         MilestoneNineOneCertificationRow {
             row_name: "basis-request-binds-policy-tenant-meaning",
@@ -194,7 +218,8 @@ pub(super) fn canonical_rows() -> Vec<MilestoneNineOneCertificationRow> {
                 "policy-alpha",
                 "tenant-alpha",
                 "relationship-proof",
-            )?,
+            )
+            .expect("fixture digest must fit"),
             hostile_lane: certified_lane_with_context(
                 LiveQueryFamily::Detail,
                 None,
@@ -202,7 +227,8 @@ pub(super) fn canonical_rows() -> Vec<MilestoneNineOneCertificationRow> {
                 "policy-alpha",
                 "tenant-beta",
                 "relationship-proof",
-            )?,
+            )
+            .expect("fixture digest must fit"),
             parity_lane: certified_lane_with_context(
                 LiveQueryFamily::Detail,
                 None,
@@ -210,7 +236,8 @@ pub(super) fn canonical_rows() -> Vec<MilestoneNineOneCertificationRow> {
                 "policy-alpha",
                 "tenant-beta",
                 "relationship-proof",
-            )?,
+            )
+            .expect("fixture digest must fit"),
         },
         MilestoneNineOneCertificationRow {
             row_name: "relationship-proof-binds-subscription-meaning",
@@ -224,7 +251,8 @@ pub(super) fn canonical_rows() -> Vec<MilestoneNineOneCertificationRow> {
                 "policy-alpha",
                 "tenant-alpha",
                 "relationship-proof-alpha",
-            )?,
+            )
+            .expect("fixture digest must fit"),
             hostile_lane: certified_lane_with_context(
                 LiveQueryFamily::Detail,
                 None,
@@ -232,7 +260,8 @@ pub(super) fn canonical_rows() -> Vec<MilestoneNineOneCertificationRow> {
                 "policy-alpha",
                 "tenant-alpha",
                 "relationship-proof-beta",
-            )?,
+            )
+            .expect("fixture digest must fit"),
             parity_lane: certified_lane_with_context(
                 LiveQueryFamily::Detail,
                 None,
@@ -240,7 +269,8 @@ pub(super) fn canonical_rows() -> Vec<MilestoneNineOneCertificationRow> {
                 "policy-alpha",
                 "tenant-alpha",
                 "relationship-proof-beta",
-            )?,
+            )
+            .expect("fixture digest must fit"),
         },
         MilestoneNineOneCertificationRow {
             row_name: "scale-slope-row-count-only-honesty",
@@ -251,19 +281,22 @@ pub(super) fn canonical_rows() -> Vec<MilestoneNineOneCertificationRow> {
                 LiveQueryFamily::OrderedCollection,
                 Some(LiveViewShapeFamily::Table),
                 QuerySubscriptionConstructionSource::Direct,
-            )?,
+            )
+            .expect("fixture digest must fit"),
             hostile_lane: certified_lane_with_scale(
                 LiveQueryFamily::OrderedCollection,
                 Some(LiveViewShapeFamily::Table),
                 QuerySubscriptionConstructionSource::Direct,
                 [2, 20, 200],
-            )?,
+            )
+            .expect("fixture digest must fit"),
             parity_lane: certified_lane_with_scale(
                 LiveQueryFamily::OrderedCollection,
                 Some(LiveViewShapeFamily::Table),
                 QuerySubscriptionConstructionSource::FacadeLive,
                 [3, 30, 300],
-            )?,
+            )
+            .expect("fixture digest must fit"),
         },
     ]
 }

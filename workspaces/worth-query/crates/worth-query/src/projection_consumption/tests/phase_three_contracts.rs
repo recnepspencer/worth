@@ -44,7 +44,9 @@ pub(super) fn admitted(
 ) -> AdmittedProjectionConsumption {
     let declaration = declare_projection_consumption(source, binding, requested)
         .expect("declaration should be valid");
-    match evaluate_projection_consumption_eligibility(&declaration) {
+    match evaluate_projection_consumption_eligibility(&declaration)
+        .expect("fixture digest must fit")
+    {
         ProjectionConsumptionEligibility::Admitted(admitted) => admitted,
         ProjectionConsumptionEligibility::AdmittedWithWarnings(admitted, _) => admitted,
         other => panic!("expected admitted posture, got {other:?}"),
@@ -104,7 +106,9 @@ fn visibility_admission_requires_exact_native_aspect_field_key() {
     )
     .expect("declaration should be valid");
 
-    let denied = match evaluate_projection_consumption_eligibility(&declaration) {
+    let denied = match evaluate_projection_consumption_eligibility(&declaration)
+        .expect("fixture digest must fit")
+    {
         ProjectionConsumptionEligibility::Denied(denied) => denied,
         other => panic!("expected exact native field-key visibility denial, got {other:?}"),
     };

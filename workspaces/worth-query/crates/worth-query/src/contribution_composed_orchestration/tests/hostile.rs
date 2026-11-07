@@ -17,23 +17,25 @@ fn partial_composition_preserves_admitted_truth_when_later_intent_denies() {
 
     let handle = admitted_handle(request_execution);
     let installed_authority = handle.installed_authority().witness_identity().clone();
-    let checked = handle.orchestrate_declaration_with_contributions_checked(
-        WorthQueryContributionComposedOrchestrationInput::new(ContributionInput::new("face-b"))
-            .with_contribution(WorthQueryContributionIntent::support(
-                WorthQuerySupportContributionAuthoring::declaration_traceability(
-                    "domain.traceability.face",
-                    "face selection remains traceable through declaration entry",
-                )
-                .expect("fixture digest must fit"),
-            ))
-            .with_contribution(WorthQueryContributionIntent::support(
-                WorthQuerySupportContributionAuthoring::declaration_traceability(
-                    "domain.traceability.face",
-                    "",
-                )
-                .expect("fixture digest must fit"),
-            )),
-    );
+    let checked = handle
+        .orchestrate_declaration_with_contributions_checked(
+            WorthQueryContributionComposedOrchestrationInput::new(ContributionInput::new("face-b"))
+                .with_contribution(WorthQueryContributionIntent::support(
+                    WorthQuerySupportContributionAuthoring::declaration_traceability(
+                        "domain.traceability.face",
+                        "face selection remains traceable through declaration entry",
+                    )
+                    .expect("fixture digest must fit"),
+                ))
+                .with_contribution(WorthQueryContributionIntent::support(
+                    WorthQuerySupportContributionAuthoring::declaration_traceability(
+                        "domain.traceability.face",
+                        "",
+                    )
+                    .expect("fixture digest must fit"),
+                )),
+        )
+        .expect("fixture digest must fit");
 
     match checked {
         crate::contribution_composed_orchestration::WorthQueryContributionComposedOrchestrationOutcome::Bound(
@@ -80,18 +82,20 @@ fn package_contribution_policy_denies_before_admission_or_materialization() {
     };
 
     let handle = super::support::admitted_handle_without_contributions(request_execution);
-    let outcome = handle.orchestrate_declaration_with_contributions_checked(
-        WorthQueryContributionComposedOrchestrationInput::new(ContributionInput::new(
-            "policy-denial",
-        ))
-        .with_contribution(WorthQueryContributionIntent::support(
-            WorthQuerySupportContributionAuthoring::declaration_traceability(
-                "domain.traceability.policy",
-                "package policy remains authoritative",
-            )
-            .expect("fixture digest must fit"),
-        )),
-    );
+    let outcome = handle
+        .orchestrate_declaration_with_contributions_checked(
+            WorthQueryContributionComposedOrchestrationInput::new(ContributionInput::new(
+                "policy-denial",
+            ))
+            .with_contribution(WorthQueryContributionIntent::support(
+                WorthQuerySupportContributionAuthoring::declaration_traceability(
+                    "domain.traceability.policy",
+                    "package policy remains authoritative",
+                )
+                .expect("fixture digest must fit"),
+            )),
+        )
+        .expect("fixture digest must fit");
 
     let WorthQueryContributionComposedOrchestrationOutcome::ContributionDenied(_) = outcome else {
         panic!("an uninstalled contribution category must deny composition")
@@ -136,26 +140,30 @@ fn no_admitted_contributions_stay_contribution_owned_denial() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let handle = admitted_handle(request_execution);
-    let checked = handle.orchestrate_declaration_with_contributions_checked(
-        WorthQueryContributionComposedOrchestrationInput::new(ContributionInput::new("face-c"))
-            .with_contribution(WorthQueryContributionIntent::support(
-                WorthQuerySupportContributionAuthoring::declaration_traceability(
-                    "domain.traceability.face",
-                    "",
-                )
-                .expect("fixture digest must fit"),
-            )),
-    );
-    let ordinary = handle.orchestrate_declaration_with_contributions_outcome(
-        WorthQueryContributionComposedOrchestrationInput::new(ContributionInput::new("face-c"))
-            .with_contribution(WorthQueryContributionIntent::support(
-                WorthQuerySupportContributionAuthoring::declaration_traceability(
-                    "domain.traceability.face",
-                    "",
-                )
-                .expect("fixture digest must fit"),
-            )),
-    );
+    let checked = handle
+        .orchestrate_declaration_with_contributions_checked(
+            WorthQueryContributionComposedOrchestrationInput::new(ContributionInput::new("face-c"))
+                .with_contribution(WorthQueryContributionIntent::support(
+                    WorthQuerySupportContributionAuthoring::declaration_traceability(
+                        "domain.traceability.face",
+                        "",
+                    )
+                    .expect("fixture digest must fit"),
+                )),
+        )
+        .expect("fixture digest must fit");
+    let ordinary = handle
+        .orchestrate_declaration_with_contributions_outcome(
+            WorthQueryContributionComposedOrchestrationInput::new(ContributionInput::new("face-c"))
+                .with_contribution(WorthQueryContributionIntent::support(
+                    WorthQuerySupportContributionAuthoring::declaration_traceability(
+                        "domain.traceability.face",
+                        "",
+                    )
+                    .expect("fixture digest must fit"),
+                )),
+        )
+        .expect("fixture digest must fit");
 
     assert!(matches!(
         checked,
@@ -180,30 +188,34 @@ fn declaration_deferred_stays_distinct_on_composed_lane() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let handle = admitted_handle(request_execution);
-    let checked = handle.orchestrate_declaration_with_contributions_checked(
-        WorthQueryContributionComposedOrchestrationInput::new(DeferredContributionInput::new(
-            "face-deferred",
-        ))
-        .with_contribution(WorthQueryContributionIntent::support(
-            WorthQuerySupportContributionAuthoring::declaration_traceability(
-                "domain.traceability.face",
-                "deferred declaration still carries an attached contribution request",
-            )
-            .expect("fixture digest must fit"),
-        )),
-    );
-    let ordinary = handle.orchestrate_declaration_with_contributions_outcome(
-        WorthQueryContributionComposedOrchestrationInput::new(DeferredContributionInput::new(
-            "face-deferred",
-        ))
-        .with_contribution(WorthQueryContributionIntent::support(
-            WorthQuerySupportContributionAuthoring::declaration_traceability(
-                "domain.traceability.face",
-                "deferred declaration still carries an attached contribution request",
-            )
-            .expect("fixture digest must fit"),
-        )),
-    );
+    let checked = handle
+        .orchestrate_declaration_with_contributions_checked(
+            WorthQueryContributionComposedOrchestrationInput::new(DeferredContributionInput::new(
+                "face-deferred",
+            ))
+            .with_contribution(WorthQueryContributionIntent::support(
+                WorthQuerySupportContributionAuthoring::declaration_traceability(
+                    "domain.traceability.face",
+                    "deferred declaration still carries an attached contribution request",
+                )
+                .expect("fixture digest must fit"),
+            )),
+        )
+        .expect("fixture digest must fit");
+    let ordinary = handle
+        .orchestrate_declaration_with_contributions_outcome(
+            WorthQueryContributionComposedOrchestrationInput::new(DeferredContributionInput::new(
+                "face-deferred",
+            ))
+            .with_contribution(WorthQueryContributionIntent::support(
+                WorthQuerySupportContributionAuthoring::declaration_traceability(
+                    "domain.traceability.face",
+                    "deferred declaration still carries an attached contribution request",
+                )
+                .expect("fixture digest must fit"),
+            )),
+        )
+        .expect("fixture digest must fit");
 
     assert!(matches!(
         checked,
@@ -293,9 +305,13 @@ fn empty_contribution_request_is_rejected_as_unsupported() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let handle = admitted_handle(request_execution);
-    let checked = handle.orchestrate_declaration_with_contributions_checked(
-        WorthQueryContributionComposedOrchestrationInput::new(ContributionInput::new("face-empty")),
-    );
+    let checked = handle
+        .orchestrate_declaration_with_contributions_checked(
+            WorthQueryContributionComposedOrchestrationInput::new(ContributionInput::new(
+                "face-empty",
+            )),
+        )
+        .expect("fixture digest must fit");
 
     assert!(matches!(
         checked,

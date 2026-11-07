@@ -16,16 +16,20 @@ fn stale_basis_stops_before_later_work() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (workspace, handle) = admitted_workspace(request_execution, "main");
-    let prepared = match handle.prepare_continuation_from_target(target_request::<RuntimeFamily>(
-        &handle,
-        "face-a",
-        runtime_route_request(),
-    )) {
+    let prepared = match handle
+        .prepare_continuation_from_target(target_request::<RuntimeFamily>(
+            &handle,
+            "face-a",
+            runtime_route_request(),
+        ))
+        .expect("fixture digest must fit")
+    {
         WorthQueryPreparedContinuationOutcome::Prepared(prepared) => prepared,
         _ => panic!("expected prepared continuation"),
     };
     let stop = match drifted_readmission_handle_in(&workspace, "main", ReadmissionDrift::Stale)
         .execute_prepared_continuation(prepared)
+        .expect("fixture digest must fit")
     {
         WorthQueryContinuationExecutionOutcome::Stale(stop) => stop,
         _ => panic!("stale basis must stop at continuation readmission"),
@@ -44,15 +48,21 @@ fn basis_mismatch_prescribes_basis_refresh_before_later_work() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (workspace, handle) = admitted_workspace(request_execution, "main");
-    let prepared = match handle.prepare_continuation_from_target(
-        target_request::<HistoricalFamily>(&handle, "face-a", historical_truth_view_request()),
-    ) {
+    let prepared = match handle
+        .prepare_continuation_from_target(target_request::<HistoricalFamily>(
+            &handle,
+            "face-a",
+            historical_truth_view_request(),
+        ))
+        .expect("fixture digest must fit")
+    {
         WorthQueryPreparedContinuationOutcome::Prepared(prepared) => prepared,
         _ => panic!("expected prepared historical continuation"),
     };
     let stop =
         match drifted_readmission_handle_in(&workspace, "main", ReadmissionDrift::BasisMismatch)
             .execute_prepared_continuation(prepared)
+            .expect("fixture digest must fit")
         {
             WorthQueryContinuationExecutionOutcome::BasisMismatch(stop) => stop,
             _ => panic!("basis mismatch must stop at continuation readmission"),
@@ -71,9 +81,14 @@ fn lower_binding_mismatch_prescribes_proof_inspection_before_later_work() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (workspace, handle) = admitted_workspace(request_execution, "main");
-    let prepared = match handle.prepare_continuation_from_target(
-        target_request::<HistoricalFamily>(&handle, "face-a", historical_truth_view_request()),
-    ) {
+    let prepared = match handle
+        .prepare_continuation_from_target(target_request::<HistoricalFamily>(
+            &handle,
+            "face-a",
+            historical_truth_view_request(),
+        ))
+        .expect("fixture digest must fit")
+    {
         WorthQueryPreparedContinuationOutcome::Prepared(prepared) => prepared,
         _ => panic!("expected prepared historical continuation"),
     };
@@ -89,7 +104,10 @@ fn lower_binding_mismatch_prescribes_proof_inspection_before_later_work() {
         &installed_authority,
         "lower-binding drift must occur beneath the retained installed authority"
     );
-    let stop = match drifted_handle.execute_prepared_continuation(prepared) {
+    let stop = match drifted_handle
+        .execute_prepared_continuation(prepared)
+        .expect("fixture digest must fit")
+    {
         WorthQueryContinuationExecutionOutcome::LowerBindingMismatch(stop) => stop,
         _ => panic!("lower binding mismatch must stop at its owning boundary"),
     };
@@ -107,11 +125,14 @@ fn authority_mismatch_prescribes_proof_inspection_before_later_work() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (workspace, handle) = admitted_workspace(request_execution, "main");
-    let prepared = match handle.prepare_continuation_from_target(target_request::<RuntimeFamily>(
-        &handle,
-        "face-a",
-        runtime_route_request(),
-    )) {
+    let prepared = match handle
+        .prepare_continuation_from_target(target_request::<RuntimeFamily>(
+            &handle,
+            "face-a",
+            runtime_route_request(),
+        ))
+        .expect("fixture digest must fit")
+    {
         WorthQueryPreparedContinuationOutcome::Prepared(prepared) => prepared,
         _ => panic!("expected prepared runtime continuation"),
     };
@@ -121,6 +142,7 @@ fn authority_mismatch_prescribes_proof_inspection_before_later_work() {
         ReadmissionDrift::AuthorityMismatch,
     )
     .execute_prepared_continuation(prepared)
+    .expect("fixture digest must fit")
     {
         WorthQueryContinuationExecutionOutcome::AuthorityMismatch(stop) => stop,
         _ => panic!("authority mismatch must stop at continuation readmission"),
@@ -139,17 +161,21 @@ fn async_request_drift_prescribes_context_rebind_before_later_work() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (workspace, handle) = admitted_workspace(request_execution, "main");
-    let prepared = match handle.prepare_continuation_from_target(target_request::<RuntimeFamily>(
-        &handle,
-        "face-a",
-        runtime_route_request(),
-    )) {
+    let prepared = match handle
+        .prepare_continuation_from_target(target_request::<RuntimeFamily>(
+            &handle,
+            "face-a",
+            runtime_route_request(),
+        ))
+        .expect("fixture digest must fit")
+    {
         WorthQueryPreparedContinuationOutcome::Prepared(prepared) => prepared,
         _ => panic!("expected prepared runtime continuation"),
     };
     let stop =
         match drifted_readmission_handle_in(&workspace, "main", ReadmissionDrift::AsyncRequest)
             .execute_prepared_continuation(prepared)
+            .expect("fixture digest must fit")
         {
             WorthQueryContinuationExecutionOutcome::AsyncRequestDrift(stop) => stop,
             _ => panic!("async request drift must stop at continuation readmission"),
@@ -168,14 +194,20 @@ fn replay_drift_prescribes_basis_refresh_before_later_work() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (workspace, handle) = admitted_workspace(request_execution, "main");
-    let prepared = match handle.prepare_continuation_from_target(
-        target_request::<HistoricalFamily>(&handle, "face-a", historical_truth_view_request()),
-    ) {
+    let prepared = match handle
+        .prepare_continuation_from_target(target_request::<HistoricalFamily>(
+            &handle,
+            "face-a",
+            historical_truth_view_request(),
+        ))
+        .expect("fixture digest must fit")
+    {
         WorthQueryPreparedContinuationOutcome::Prepared(prepared) => prepared,
         _ => panic!("expected prepared historical continuation"),
     };
     let stop = match drifted_readmission_handle_in(&workspace, "main", ReadmissionDrift::Replay)
         .execute_prepared_continuation(prepared)
+        .expect("fixture digest must fit")
     {
         WorthQueryContinuationExecutionOutcome::ReplayDrift(stop) => stop,
         _ => panic!("replay drift must stop at continuation readmission"),
@@ -194,16 +226,20 @@ fn policy_remask_drift_prescribes_support_check_before_later_work() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (workspace, handle) = admitted_workspace(request_execution, "main");
-    let prepared = match handle.prepare_continuation_from_target(target_request::<RuntimeFamily>(
-        &handle,
-        "face-a",
-        runtime_route_request(),
-    )) {
+    let prepared = match handle
+        .prepare_continuation_from_target(target_request::<RuntimeFamily>(
+            &handle,
+            "face-a",
+            runtime_route_request(),
+        ))
+        .expect("fixture digest must fit")
+    {
         WorthQueryPreparedContinuationOutcome::Prepared(prepared) => prepared,
         _ => panic!("expected prepared runtime continuation"),
     };
     let stop = match drifted_readmission_handle_in(&workspace, "main", ReadmissionDrift::Remask)
         .execute_prepared_continuation(prepared)
+        .expect("fixture digest must fit")
     {
         WorthQueryContinuationExecutionOutcome::RemaskDrift(stop) => stop,
         _ => panic!("policy remask drift must stop at continuation readmission"),
@@ -222,11 +258,14 @@ fn preview_residue_prescribes_explicit_handoff_before_later_work() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (workspace, handle) = admitted_workspace(request_execution, "main");
-    let prepared = match handle.prepare_continuation_from_target(target_request::<PreviewFamily>(
-        &handle,
-        "face-a",
-        preview_session_request(),
-    )) {
+    let prepared = match handle
+        .prepare_continuation_from_target(target_request::<PreviewFamily>(
+            &handle,
+            "face-a",
+            preview_session_request(),
+        ))
+        .expect("fixture digest must fit")
+    {
         WorthQueryPreparedContinuationOutcome::Prepared(prepared) => prepared,
         _ => panic!("expected prepared preview continuation"),
     };
@@ -236,6 +275,7 @@ fn preview_residue_prescribes_explicit_handoff_before_later_work() {
         ReadmissionDrift::PreviewCrossedResidue,
     )
     .execute_prepared_continuation(prepared)
+    .expect("fixture digest must fit")
     {
         WorthQueryContinuationExecutionOutcome::PreviewCrossedResidue(stop) => stop,
         _ => panic!("preview residue must stop at continuation readmission"),
@@ -254,17 +294,21 @@ fn stale_completion_prescribes_basis_refresh_before_later_work() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (workspace, handle) = admitted_workspace(request_execution, "main");
-    let prepared = match handle.prepare_continuation_from_target(target_request::<RuntimeFamily>(
-        &handle,
-        "face-a",
-        runtime_route_request(),
-    )) {
+    let prepared = match handle
+        .prepare_continuation_from_target(target_request::<RuntimeFamily>(
+            &handle,
+            "face-a",
+            runtime_route_request(),
+        ))
+        .expect("fixture digest must fit")
+    {
         WorthQueryPreparedContinuationOutcome::Prepared(prepared) => prepared,
         _ => panic!("expected prepared runtime continuation"),
     };
     let stop =
         match drifted_readmission_handle_in(&workspace, "main", ReadmissionDrift::StaleCompletion)
             .execute_prepared_continuation(prepared)
+            .expect("fixture digest must fit")
         {
             WorthQueryContinuationExecutionOutcome::StaleCompletion(stop) => stop,
             _ => panic!("stale completion must stop at continuation readmission"),

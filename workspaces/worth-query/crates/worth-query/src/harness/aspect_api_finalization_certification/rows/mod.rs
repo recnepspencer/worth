@@ -37,28 +37,34 @@ pub(super) fn canonical_rows(
                 "Buy milk",
                 "Buy oat milk",
                 "task-1",
-            )?,
+            )
+            .expect("fixture digest must fit"),
             hostile_lane: authoritative_crud_lane(
                 request_execution,
                 "Read docs",
                 "Read better docs",
                 "task-2",
-            )?,
+            )
+            .expect("fixture digest must fit"),
             parity_lane: authoritative_crud_lane(
                 request_execution,
                 "Pay bills",
                 "Pay rent",
                 "task-3",
-            )?,
+            )
+            .expect("fixture digest must fit"),
         },
         CanonicalCertificationRow {
             row_name: "typed-clear-narrows-by-touched-meaning",
             perturbation_class: AspectApiFinalizationPerturbationClass::TypedClearNarrowing,
             hostile_expectation: HostileExpectation::DistinctFromControl,
             parity_anchor: ParityAnchor::Hostile,
-            control_lane: clear_lane(request_execution, description_value_touch())?,
-            hostile_lane: clear_lane(request_execution, title_value_touch())?,
-            parity_lane: clear_lane(request_execution, title_value_touch())?,
+            control_lane: clear_lane(request_execution, description_value_touch())
+                .expect("fixture digest must fit"),
+            hostile_lane: clear_lane(request_execution, title_value_touch())
+                .expect("fixture digest must fit"),
+            parity_lane: clear_lane(request_execution, title_value_touch())
+                .expect("fixture digest must fit"),
         },
         CanonicalCertificationRow {
             row_name: "preview-batch-lane-isolation",
@@ -104,7 +110,8 @@ pub(super) fn rejection_rows(
             perturbation_class:
                 AspectApiFinalizationPerturbationClass::DuplicateAspectAuthoringDenied,
             control_lane: mutation_surface_contract_lane(request_execution),
-            hostile_lane: duplicate_aspect_authoring_rejection(request_execution)?,
+            hostile_lane: duplicate_aspect_authoring_rejection(request_execution)
+                .expect("fixture digest must fit"),
             parity_lane: mutation_surface_contract_lane(request_execution),
         },
     ]

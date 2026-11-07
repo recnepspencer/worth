@@ -23,7 +23,8 @@ fn admitted_query_causal_artifact_materializes_sealed_bridge_envelope() {
     let flow = admit_causal_inspection(request_for(
         reference_set,
         CausalInspectionRichness::ReferenceOnly,
-    ));
+    ))
+    .expect("fixture digest must fit");
     let CausalInspectionProofFlow::Admitted(admitted) = flow else {
         panic!("reference-only cross-runtime inspection should admit");
     };
@@ -148,7 +149,8 @@ fn advisory_query_causal_artifact_redacts_detail_without_changing_bridge_identit
     let flow = admit_causal_inspection(request_for(
         reference_set,
         CausalInspectionRichness::MaterializedDetail,
-    ));
+    ))
+    .expect("fixture digest must fit");
     let CausalInspectionProofFlow::Advisory(advisory) = flow else {
         panic!("materialized detail should narrow to advisory");
     };
@@ -277,7 +279,8 @@ fn admitted_materialization_rejects_wrong_bridge_summary_kind() {
     let flow = admit_causal_inspection(request_for(
         reference_set,
         CausalInspectionRichness::ReferenceOnly,
-    ));
+    ))
+    .expect("fixture digest must fit");
     let CausalInspectionProofFlow::Admitted(admitted) = flow else {
         panic!("reference-only cross-runtime inspection should admit");
     };

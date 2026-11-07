@@ -83,7 +83,9 @@ pub(crate) fn admitted(
     requested: ProjectMaterializedFacts,
 ) -> AdmittedProjectionConsumption {
     let declaration = declare_projection_consumption(source, binding, requested).unwrap();
-    match evaluate_projection_consumption_eligibility(&declaration) {
+    match evaluate_projection_consumption_eligibility(&declaration)
+        .expect("fixture digest must fit")
+    {
         ProjectionConsumptionEligibility::Admitted(admitted) => admitted,
         ProjectionConsumptionEligibility::AdmittedWithWarnings(admitted, _) => admitted,
         other => panic!("expected admitted eligibility, got {other:?}"),

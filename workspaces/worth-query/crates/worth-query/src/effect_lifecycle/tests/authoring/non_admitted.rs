@@ -33,10 +33,11 @@ fn tenant_merge_denial_retains_normalized_effect_proof() {
     )
     .expect("tenant merge should normalize");
 
-    let denial = match evaluate_effect_eligibility(normalized.clone()) {
-        EffectEligibilityOutcome::Denied(denial) => denial,
-        other => panic!("expected denied effect, got {other:?}"),
-    };
+    let denial =
+        match evaluate_effect_eligibility(normalized.clone()).expect("fixture digest must fit") {
+            EffectEligibilityOutcome::Denied(denial) => denial,
+            other => panic!("expected denied effect, got {other:?}"),
+        };
 
     assert_eq!(
         denial.denial_kind(),
@@ -68,10 +69,11 @@ fn preview_writeback_rebind_retains_normalized_effect_proof() {
     )
     .expect("preview writeback should normalize");
 
-    let rebind = match evaluate_effect_eligibility(normalized.clone()) {
-        EffectEligibilityOutcome::RebindRequired(rebind) => rebind,
-        other => panic!("expected rebind-required effect, got {other:?}"),
-    };
+    let rebind =
+        match evaluate_effect_eligibility(normalized.clone()).expect("fixture digest must fit") {
+            EffectEligibilityOutcome::RebindRequired(rebind) => rebind,
+            other => panic!("expected rebind-required effect, got {other:?}"),
+        };
 
     assert_eq!(
         rebind.denial_kind(),
@@ -100,10 +102,11 @@ fn store_backed_writeback_returns_real_deferred_effect_proof() {
     )
     .expect("store-backed writeback should normalize");
 
-    let deferred = match evaluate_effect_eligibility(normalized.clone()) {
-        EffectEligibilityOutcome::Deferred(deferred) => deferred,
-        other => panic!("expected deferred effect, got {other:?}"),
-    };
+    let deferred =
+        match evaluate_effect_eligibility(normalized.clone()).expect("fixture digest must fit") {
+            EffectEligibilityOutcome::Deferred(deferred) => deferred,
+            other => panic!("expected deferred effect, got {other:?}"),
+        };
 
     assert_eq!(
         deferred.denial_kind(),
@@ -137,10 +140,11 @@ fn durable_reload_writeback_returns_real_deferred_effect_proof() {
     )
     .expect("durable reload writeback should normalize");
 
-    let deferred = match evaluate_effect_eligibility(normalized.clone()) {
-        EffectEligibilityOutcome::Deferred(deferred) => deferred,
-        other => panic!("expected deferred effect, got {other:?}"),
-    };
+    let deferred =
+        match evaluate_effect_eligibility(normalized.clone()).expect("fixture digest must fit") {
+            EffectEligibilityOutcome::Deferred(deferred) => deferred,
+            other => panic!("expected deferred effect, got {other:?}"),
+        };
 
     assert_eq!(
         deferred.denial_kind(),

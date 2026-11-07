@@ -324,7 +324,8 @@ fn material_attachment_helper_preserves_contribution_checked_topology() {
                     )
                     .expect("fixture digest must fit"),
                 ),
-        );
+        )
+        .expect("fixture digest must fit");
 
     match outcome {
         WorthQueryOrdinaryOutcome::Bound(_) => {}

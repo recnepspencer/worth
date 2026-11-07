@@ -52,7 +52,8 @@ fn common_intent_support_lane_matches_proof_lane_materialization() {
         prepare_admitted_domain_capability_contribution_for_materialization(
             proof_admitted,
             proof_target,
-        ),
+        )
+        .expect("fixture digest must fit"),
     ))
     .expect("fixture digest must fit");
 
@@ -94,7 +95,8 @@ fn common_intent_advisory_lane_matches_proof_lane_materialization() {
         prepare_admitted_domain_capability_contribution_for_materialization(
             proof_admitted,
             proof_target,
-        ),
+        )
+        .expect("fixture digest must fit"),
     ))
     .expect("fixture digest must fit");
 
@@ -144,7 +146,8 @@ fn common_admission_lane_matches_proof_lane_materialization() {
         prepare_admitted_domain_capability_contribution_for_materialization(
             proof_admitted,
             proof_target,
-        ),
+        )
+        .expect("fixture digest must fit"),
     ));
 
     assert_eq!(common, success(proof));
@@ -193,7 +196,8 @@ fn common_intent_preview_inspection_lane_matches_proof_lane_materialization() {
         prepare_admitted_domain_capability_contribution_for_materialization(
             proof_admitted,
             proof_target,
-        ),
+        )
+        .expect("fixture digest must fit"),
     ));
 
     assert_eq!(common, success(proof));
@@ -239,7 +243,8 @@ fn common_continuity_lane_matches_proof_lane_materialization() {
         prepare_admitted_domain_capability_contribution_for_materialization(
             proof_admitted,
             proof_target,
-        ),
+        )
+        .expect("fixture digest must fit"),
     ))
     .expect("fixture digest must fit");
 
@@ -284,7 +289,8 @@ fn common_invariant_registration_lane_matches_proof_lane_materialization() {
         prepare_admitted_domain_capability_contribution_for_materialization(
             proof_admitted,
             proof_target,
-        ),
+        )
+        .expect("fixture digest must fit"),
     ))
     .expect("fixture digest must fit");
 
@@ -379,15 +385,6 @@ fn intent_declaration(name: &str) -> WorthQueryIntentDeclaration {
     )
 }
 
-fn admitted_basis_observation_plan() -> crate::runtime::WorthQueryAdmittedIntentPlan {
-    let request =
-        crate::intent_admission::WorthQueryRawIntentAdmissionRequest::basis_observation_lane(
-            crate::basis_lifecycle::RawBasisIntent::CurrentHead,
-        )
-        .expect("basis-observation request should build");
-
-    match crate::intent_admission::admit_runtime_intent_request(request) {
-        crate::intent_admission::WorthQueryIntentAdmissionDecision::Admitted(plan) => plan,
-        other => panic!("expected admitted basis-observation plan, got {other:?}"),
-    }
-}
+#[path = "tests/admitted_basis_observation_plan.rs"]
+mod admitted_basis_observation_plan;
+use admitted_basis_observation_plan::admitted_basis_observation_plan;

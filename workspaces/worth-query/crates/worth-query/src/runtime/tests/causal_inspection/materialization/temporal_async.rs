@@ -19,6 +19,7 @@ fn reference_set_for(
     .expect("temporal/async fixture should anchor");
     let CausalEvidenceReferenceResolution::Resolved { reference_set, .. } =
         resolve_causal_evidence_references(anchor, requested_families)
+            .expect("fixture digest must fit")
     else {
         panic!("temporal/async fixture references should resolve");
     };
@@ -58,7 +59,8 @@ fn admitted_temporal_wake_materialization_projects_query_owned_temporal_explanat
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "signal-invalidation:temporal-wake",
                 ),
-            ),
+            )
+            .expect("fixture digest must fit"),
         ],
         &[
             CausalEvidenceFamily::BridgeRoute,
@@ -73,7 +75,9 @@ fn admitted_temporal_wake_materialization_projects_query_owned_temporal_explanat
             CausalEvidenceFamily::SignalInvalidation,
         ],
     );
-    let CausalInspectionProofFlow::Admitted(admitted) = admit_causal_inspection(request) else {
+    let CausalInspectionProofFlow::Admitted(admitted) =
+        admit_causal_inspection(request).expect("fixture digest must fit")
+    else {
         panic!("reference-only temporal wake should admit");
     };
     let summary = crate::runtime::tests::causal_inspection::bridge_admitted_summary(&admitted);
@@ -163,7 +167,8 @@ fn advisory_async_completion_materialization_projects_query_owned_async_explanat
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "signal-evaluation:async-completion",
                 ),
-            ),
+            )
+            .expect("fixture digest must fit"),
         ],
         &[
             CausalEvidenceFamily::BridgeRoute,
@@ -178,7 +183,9 @@ fn advisory_async_completion_materialization_projects_query_owned_async_explanat
             CausalEvidenceFamily::SignalEvaluation,
         ],
     );
-    let CausalInspectionProofFlow::Advisory(advisory) = admit_causal_inspection(request) else {
+    let CausalInspectionProofFlow::Advisory(advisory) =
+        admit_causal_inspection(request).expect("fixture digest must fit")
+    else {
         panic!("materialized async completion should narrow to advisory");
     };
     let summary = crate::runtime::tests::causal_inspection::bridge_advisory_summary(&advisory);
@@ -266,7 +273,8 @@ fn admitted_mixed_cause_suppression_materialization_retains_suppression_identity
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "signal-invalidation:mixed-suppressed",
                 ),
-            ),
+            )
+            .expect("fixture digest must fit"),
             CausalObservationEvidenceIdentity::new(
                 CausalEvidenceFamily::SignalEvaluation,
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
@@ -289,7 +297,9 @@ fn admitted_mixed_cause_suppression_materialization_retains_suppression_identity
             CausalEvidenceFamily::SignalEvaluation,
         ],
     );
-    let CausalInspectionProofFlow::Admitted(admitted) = admit_causal_inspection(request) else {
+    let CausalInspectionProofFlow::Admitted(admitted) =
+        admit_causal_inspection(request).expect("fixture digest must fit")
+    else {
         panic!("reference-only mixed suppression should admit");
     };
     let summary = crate::runtime::tests::causal_inspection::bridge_admitted_summary(&admitted);

@@ -120,7 +120,9 @@ fn live_binding_eligibility_admits_honest_fact_families() {
         )
         .expect("live binding declaration should succeed");
 
-    match evaluate_projection_consumption_eligibility(&declaration) {
+    match evaluate_projection_consumption_eligibility(&declaration)
+        .expect("fixture digest must fit")
+    {
         ProjectionConsumptionEligibility::Admitted(admitted) => {
             assert_eq!(
                 admitted.declaration().source().family(),

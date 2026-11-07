@@ -33,7 +33,8 @@ fn temporal_async_reason_helpers_materialize_bridge_backed_explanations() {
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         "signal-invalidation:dx-temporal-wake",
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
             ],
         )
         .expect("fixture digest must fit"),
@@ -65,7 +66,8 @@ fn temporal_async_reason_helpers_materialize_bridge_backed_explanations() {
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         "signal-evaluation:dx-async-completion",
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
             ],
         )
         .expect("fixture digest must fit"),

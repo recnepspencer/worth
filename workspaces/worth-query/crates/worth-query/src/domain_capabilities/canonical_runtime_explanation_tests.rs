@@ -37,6 +37,7 @@ fn explanation_runtime_materializer_builds_denied_causal_artifact(
     .expect("historical replay observation should anchor");
     let CausalEvidenceReferenceResolution::Resolved { reference_set, .. } =
         resolve_causal_evidence_references(anchor, &[CausalEvidenceFamily::QueryInspection])
+            .expect("fixture digest must fit")
     else {
         panic!("query-inspection-only replay evidence should resolve");
     };
@@ -115,6 +116,7 @@ fn explanation_runtime_review_preserves_denied_plan_identity(
     .expect("historical replay observation should anchor");
     let CausalEvidenceReferenceResolution::Resolved { reference_set, .. } =
         resolve_causal_evidence_references(anchor, &[CausalEvidenceFamily::QueryInspection])
+            .expect("fixture digest must fit")
     else {
         panic!("query-inspection-only replay evidence should resolve");
     };

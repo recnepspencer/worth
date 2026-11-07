@@ -324,7 +324,7 @@ pub(super) fn admitted_tenant_writeback_effect() -> AdmittedEffectIntent {
 fn admit_from_normalized(
     normalized: crate::effect_lifecycle::NormalizedEffectIntent,
 ) -> AdmittedEffectIntent {
-    match evaluate_effect_eligibility(normalized) {
+    match evaluate_effect_eligibility(normalized).expect("fixture digest must fit") {
         EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         EffectEligibilityOutcome::Advisory(advisory) => {
             panic!("expected admitted effect, got advisory {advisory:?}")

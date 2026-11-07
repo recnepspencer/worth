@@ -16,7 +16,8 @@ fn selection_denied_diagnostic_bundle_localizes_family_selection_failure_and_omi
     let failure = QuerySubscriptionDiagnosticFailure::from_family_selection_error(&selection_error)
         .expect("fixture digest must fit");
     let selection_context =
-        QuerySubscriptionDiagnosticSelectionContext::from_selection_denial(&live, &selection_error);
+        QuerySubscriptionDiagnosticSelectionContext::from_selection_denial(&live, &selection_error)
+            .expect("fixture digest must fit");
     let trace = trace_denied_query_subscription_diagnostics(
         &selection_context,
         None,
@@ -143,7 +144,8 @@ fn selection_denied_trace_rejects_mismatched_failure_source() {
     let selection_context = QuerySubscriptionDiagnosticSelectionContext::from_selection_denial(
         &first_live,
         &first_error,
-    );
+    )
+    .expect("fixture digest must fit");
     let failure = QuerySubscriptionDiagnosticFailure::from_family_selection_error(&second_error)
         .expect("fixture digest must fit");
 

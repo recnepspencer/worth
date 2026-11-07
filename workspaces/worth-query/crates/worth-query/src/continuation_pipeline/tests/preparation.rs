@@ -66,11 +66,14 @@ fn prepare_runtime_continuation_from_target_keeps_execution_explicit() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let handle = admitted_handle(request_execution, "main");
-    let prepared = match handle.prepare_continuation_from_target(target_request::<RuntimeFamily>(
-        &handle,
-        "face-a",
-        runtime_route_request(),
-    )) {
+    let prepared = match handle
+        .prepare_continuation_from_target(target_request::<RuntimeFamily>(
+            &handle,
+            "face-a",
+            runtime_route_request(),
+        ))
+        .expect("fixture digest must fit")
+    {
         WorthQueryPreparedContinuationOutcome::Prepared(prepared) => prepared,
         _ => panic!("expected prepared continuation"),
     };
@@ -167,25 +170,36 @@ fn preparation_keeps_current_historical_and_preview_truth_distinct() {
 
     let handle = admitted_handle(request_execution, "main");
 
-    let current = match handle.prepare_continuation_from_target(target_request::<RuntimeFamily>(
-        &handle,
-        "face-a",
-        runtime_route_request(),
-    )) {
+    let current = match handle
+        .prepare_continuation_from_target(target_request::<RuntimeFamily>(
+            &handle,
+            "face-a",
+            runtime_route_request(),
+        ))
+        .expect("fixture digest must fit")
+    {
         WorthQueryPreparedContinuationOutcome::Prepared(prepared) => prepared,
         _ => panic!("expected current preparation"),
     };
-    let historical = match handle.prepare_continuation_from_target(
-        target_request::<HistoricalFamily>(&handle, "face-a", historical_truth_view_request()),
-    ) {
+    let historical = match handle
+        .prepare_continuation_from_target(target_request::<HistoricalFamily>(
+            &handle,
+            "face-a",
+            historical_truth_view_request(),
+        ))
+        .expect("fixture digest must fit")
+    {
         WorthQueryPreparedContinuationOutcome::Prepared(prepared) => prepared,
         _ => panic!("expected historical preparation"),
     };
-    let preview = match handle.prepare_continuation_from_target(target_request::<PreviewFamily>(
-        &handle,
-        "face-a",
-        preview_session_request(),
-    )) {
+    let preview = match handle
+        .prepare_continuation_from_target(target_request::<PreviewFamily>(
+            &handle,
+            "face-a",
+            preview_session_request(),
+        ))
+        .expect("fixture digest must fit")
+    {
         WorthQueryPreparedContinuationOutcome::Prepared(prepared) => prepared,
         _ => panic!("expected preview preparation"),
     };

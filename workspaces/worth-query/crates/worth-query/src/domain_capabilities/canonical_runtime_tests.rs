@@ -116,7 +116,8 @@ fn all_categories_materialize_profile_independent_canonical_artifacts(
                 WorthQuerySupportContributionPosture::DeclarationTraceability,
                 "runtime.boundary.traceability",
                 "reconstructed boundary evidence stays attributable",
-            ),
+            )
+            .expect("fixture digest must fit"),
         )?)?;
     let invariant =
         materialize_canonical_invariant_capability_artifact(declaration_ready_contribution(

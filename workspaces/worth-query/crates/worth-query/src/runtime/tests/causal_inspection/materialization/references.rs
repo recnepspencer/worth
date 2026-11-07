@@ -64,6 +64,7 @@ pub(in crate::runtime::tests::causal_inspection) fn changed_reference_set(
                 CausalEvidenceFamily::BridgeRoute,
             ],
         )
+        .expect("fixture digest must fit")
     else {
         panic!("changed references should resolve");
     };
@@ -95,7 +96,8 @@ pub(in crate::runtime::tests::causal_inspection) fn replay_reference_set_with_si
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         signal_replay_cursor_identity,
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
             ],
         ),
         CausalInspectionReason::HistoricalReplayResult,
@@ -110,6 +112,7 @@ pub(in crate::runtime::tests::causal_inspection) fn replay_reference_set_with_si
                 CausalEvidenceFamily::SignalReplayCursor,
             ],
         )
+        .expect("fixture digest must fit")
     else {
         panic!("replay references should resolve");
     };

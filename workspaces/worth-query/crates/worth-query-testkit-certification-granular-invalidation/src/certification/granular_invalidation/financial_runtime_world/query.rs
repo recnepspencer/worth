@@ -178,7 +178,6 @@ pub fn settle(
         .admit_execution_resources((), query_domain::resource_request(), &*workspace)
         .unwrap()
         .execute(workspace)
-        .expect("certification execution identity fits digest bounds")
         .unwrap()
         .publish()
         .unwrap();

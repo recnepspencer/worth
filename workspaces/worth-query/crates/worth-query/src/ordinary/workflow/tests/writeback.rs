@@ -279,10 +279,11 @@ fn explicit_writeback(
         },
     )
     .expect("explicit writeback should normalize");
-    let eligibility = match evaluate_effect_eligibility(normalized) {
-        EffectEligibilityOutcome::Admitted(eligibility) => eligibility,
-        other => panic!("explicit writeback should admit, got {other:?}"),
-    };
+    let eligibility =
+        match evaluate_effect_eligibility(normalized).expect("fixture digest must fit") {
+            EffectEligibilityOutcome::Admitted(eligibility) => eligibility,
+            other => panic!("explicit writeback should admit, got {other:?}"),
+        };
     let lowered = scope_admitted_effect_plan(admit_effect_intent(eligibility))
         .lower()
         .expect("explicit writeback should lower");

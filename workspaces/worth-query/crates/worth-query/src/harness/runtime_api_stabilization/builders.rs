@@ -37,7 +37,8 @@ pub(super) fn canonical_rows(
                 "inspect",
             ],
             9,
-        )?,
+        )
+        .expect("fixture digest must fit"),
         canonical_row(
             request_execution,
             "geometry-kernel-golden-transcript",
@@ -51,7 +52,8 @@ pub(super) fn canonical_rows(
                 "inspect",
             ],
             8,
-        )?,
+        )
+        .expect("fixture digest must fit"),
         canonical_row(
             request_execution,
             "table-spreadsheet-golden-transcript",
@@ -65,8 +67,9 @@ pub(super) fn canonical_rows(
                 "batched-intent",
             ],
             8,
-        )?,
-        adversarial_composed_row(request_execution)?,
+        )
+        .expect("fixture digest must fit"),
+        adversarial_composed_row(request_execution).expect("fixture digest must fit"),
     ]
 }
 
@@ -86,14 +89,16 @@ pub(super) fn rejection_rows(
             RuntimeApiStabilizationPerturbationClass::StoreBackedParityDeferredGate,
             WorthQueryRuntimeFacadeFamily::StoreBackedExecution,
             RuntimeApiStabilizationFailureClass::DeferredStoreDurableGate,
-        )?,
+        )
+        .expect("fixture digest must fit"),
         rejection_row(
             request_execution,
             "durable-restart-deferred-gate",
             RuntimeApiStabilizationPerturbationClass::DurableRestartDeferredGate,
             WorthQueryRuntimeFacadeFamily::DurableArtifacts,
             RuntimeApiStabilizationFailureClass::DeferredStoreDurableGate,
-        )?,
+        )
+        .expect("fixture digest must fit"),
     ]
 }
 

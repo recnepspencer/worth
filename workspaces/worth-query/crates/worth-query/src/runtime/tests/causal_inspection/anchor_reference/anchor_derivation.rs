@@ -46,7 +46,8 @@ fn anchors_cover_changed_suppressed_denied_preview_and_replay_observations() {
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         format!("signal-invalidation-{}", outcome.as_str()),
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
             ],
         );
 
@@ -87,7 +88,8 @@ fn anchor_counters_are_exact_and_width_bound_to_carried_reference_families() {
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "relational-authority-a",
                 ),
-            ),
+            )
+            .expect("fixture digest must fit"),
             CausalObservationEvidenceIdentity::new(
                 CausalEvidenceFamily::BridgeRoute,
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(

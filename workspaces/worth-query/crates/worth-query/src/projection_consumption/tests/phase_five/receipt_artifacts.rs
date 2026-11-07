@@ -52,7 +52,7 @@ fn projection_consumption_transition_rules_name_implemented_and_deferred_neighbo
     .expect("fixture digest must fit");
     let consumed = contract.extract_from_relational_row_set(&row_set).unwrap();
     let receipt = consumed.issue_receipt().expect("fixture digest must fit");
-    let rules = receipt.transition_rules();
+    let rules = receipt.transition_rules().expect("fixture digest must fit");
 
     assert!(rules.rules().iter().any(
         |rule: &crate::projection_consumption::ProjectionConsumptionTransitionRule| {
@@ -92,7 +92,9 @@ fn receipt_derives_self_describing_projection_consumption_envelope() {
     let consumed = contract.extract_from_relational_row_set(&row_set).unwrap();
     let receipt = consumed.issue_receipt().expect("fixture digest must fit");
 
-    let envelope = receipt.projection_consumption_envelope();
+    let envelope = receipt
+        .projection_consumption_envelope()
+        .expect("fixture digest must fit");
 
     assert_eq!(envelope.source_family(), receipt.source_family());
     assert_eq!(envelope.source_identity(), receipt.source_identity());
@@ -108,7 +110,10 @@ fn receipt_derives_self_describing_projection_consumption_envelope() {
     );
     assert_eq!(
         envelope.transition_rules_digest(),
-        receipt.transition_rules().rules_digest()
+        receipt
+            .transition_rules()
+            .expect("fixture digest must fit")
+            .rules_digest()
     );
     assert!(!envelope.envelope_digest().is_empty());
 }

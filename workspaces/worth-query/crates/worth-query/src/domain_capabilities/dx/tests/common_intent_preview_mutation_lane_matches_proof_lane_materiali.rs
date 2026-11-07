@@ -45,7 +45,8 @@ fn common_intent_preview_mutation_lane_matches_proof_lane_materialization() {
         prepare_admitted_domain_capability_contribution_for_materialization(
             proof_admitted,
             proof_target,
-        ),
+        )
+        .expect("fixture digest must fit"),
     ))
     .expect("fixture digest must fit");
 

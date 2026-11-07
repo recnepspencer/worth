@@ -24,7 +24,8 @@ fn changed_reference_set() -> CausalEvidenceReferenceSet {
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         "admission-signal-invalidation-reference",
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
             ],
         ),
         CausalInspectionReason::ChangedResult,
@@ -40,6 +41,7 @@ fn changed_reference_set() -> CausalEvidenceReferenceSet {
                 CausalEvidenceFamily::SignalInvalidation,
             ],
         )
+        .expect("fixture digest must fit")
     else {
         panic!("expected changed fixture references to resolve");
     };
@@ -78,7 +80,7 @@ fn causal_inspection_admission_success_carries_reference_permissions_and_trace()
         CausalInspectionExplanationFamily::CrossRuntimeCausalExplanation,
     );
     let request_digest = request.request_for_reporting().to_string();
-    let flow = admit_causal_inspection(request);
+    let flow = admit_causal_inspection(request).expect("fixture digest must fit");
 
     let CausalInspectionProofFlow::Admitted(admitted) = flow else {
         panic!("expected reference-only cross-runtime inspection to admit");
@@ -133,7 +135,8 @@ fn causal_inspection_advisory_narrows_materialized_detail_before_bridge_envelope
     let flow = admit_causal_inspection(request(
         CausalInspectionRichness::MaterializedDetail,
         CausalInspectionExplanationFamily::CrossRuntimeCausalExplanation,
-    ));
+    ))
+    .expect("fixture digest must fit");
 
     let CausalInspectionProofFlow::Advisory(advisory) = flow else {
         panic!("expected materialized detail to narrow into advisory");
@@ -173,7 +176,8 @@ fn causal_inspection_denies_unsupported_explanation_family_before_envelope_reque
     let flow = admit_causal_inspection(request(
         CausalInspectionRichness::ReferenceOnly,
         CausalInspectionExplanationFamily::DurableCausalArchive,
-    ));
+    ))
+    .expect("fixture digest must fit");
 
     let CausalInspectionProofFlow::Denied(denied) = flow else {
         panic!("expected unsupported explanation family to deny");

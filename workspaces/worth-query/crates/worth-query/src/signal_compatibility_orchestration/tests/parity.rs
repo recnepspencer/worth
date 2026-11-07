@@ -19,7 +19,9 @@ fn compatible_only_orchestration_matches_retained_signal_truth() {
         ))
         .unwrap_or_else(|_| panic!("expected retained signal compatibility"));
 
-    let outcome = handle.orchestrate_signal_compatibility(orchestration_input(&handle, "face-a"));
+    let outcome = handle
+        .orchestrate_signal_compatibility(orchestration_input(&handle, "face-a"))
+        .expect("fixture digest must fit");
     match outcome {
         crate::signal_compatibility_orchestration::WorthQuerySignalCompatibilityOrchestrationOutcome::Bound(value) => {
             assert_eq!(

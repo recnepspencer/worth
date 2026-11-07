@@ -36,6 +36,7 @@ fn handle_bound_contribution_matches_internal_oracle_and_retains_installed_witne
     };
     let worth_proof::TransitionOutcome::Success(ready) =
         prepare_admitted_domain_capability_contribution_for_materialization(admitted, target)
+            .expect("fixture digest must fit")
     else {
         panic!("installed contribution oracle must be ready")
     };
@@ -204,6 +205,7 @@ fn generation_turnover_denies_each_query_owned_contribution_transition() {
             admitted,
             preparation_target,
         )
+        .expect("fixture digest must fit")
     else {
         panic!("stale admitted contribution must not become materialization-ready")
     };

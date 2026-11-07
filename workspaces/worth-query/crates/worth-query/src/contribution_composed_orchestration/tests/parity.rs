@@ -46,7 +46,9 @@ fn composed_orchestration_matches_explicit_declaration_bound_support_pipeline() 
     let ready = match prepare_admitted_domain_capability_contribution_for_materialization(
         admitted,
         target_for_envelope(&handle, "face-a"),
-    ) {
+    )
+    .expect("fixture digest must fit")
+    {
         worth_proof::TransitionOutcome::Success(value) => value,
         _ => panic!("expected ready contribution"),
     };

@@ -138,7 +138,7 @@ fn mismatched_runtime_floor_eligibility_stops_as_violation() {
         request.clone(),
     )
     .expect("fixture digest must fit");
-    let decision = admit_runtime_intent_request(request);
+    let decision = admit_runtime_intent_request(request).expect("fixture digest must fit");
 
     assert_eq!(
         eligibility.capability_posture(),
@@ -192,7 +192,7 @@ fn authority_lane_mismatch_stops_as_violation() {
         request.clone(),
     )
     .expect("fixture digest must fit");
-    let decision = admit_runtime_intent_request(request);
+    let decision = admit_runtime_intent_request(request).expect("fixture digest must fit");
 
     assert_eq!(
         eligibility.capability_posture(),

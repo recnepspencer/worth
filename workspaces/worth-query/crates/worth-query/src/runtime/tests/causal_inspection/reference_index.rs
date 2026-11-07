@@ -27,7 +27,8 @@ fn changed_anchor_with_route_signal_and_inspection() -> CausalObservationAnchor 
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         "indexed-signal-invalidation-reference",
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
             ],
         ),
         CausalInspectionReason::ChangedResult,
@@ -66,7 +67,8 @@ fn indexed_evidence_reference_resolution_uses_index_records_without_scan_fallbac
             CausalEvidenceFamily::SignalInvalidation,
         ],
         &index,
-    );
+    )
+    .expect("fixture digest must fit");
 
     let CausalEvidenceReferenceResolution::Resolved {
         reference_set,
@@ -126,7 +128,8 @@ fn indexed_reference_resolution_denies_missing_index_record_for_anchor_carried_f
         anchor,
         &[CausalEvidenceFamily::BridgeRoute],
         &index,
-    );
+    )
+    .expect("fixture digest must fit");
 
     let CausalEvidenceReferenceResolution::MissingRequiredEvidence { denial, counters } =
         resolution
@@ -183,7 +186,8 @@ fn indexed_reference_resolution_ignores_unrelated_retained_index_records() {
         anchor,
         &[CausalEvidenceFamily::BridgeRoute],
         &index,
-    );
+    )
+    .expect("fixture digest must fit");
 
     let CausalEvidenceReferenceResolution::Resolved {
         reference_set,
@@ -239,7 +243,8 @@ fn indexed_reference_resolution_lookup_cost_follows_anchor_reference_width_not_r
             anchor,
             &[CausalEvidenceFamily::BridgeRoute],
             &index,
-        );
+        )
+        .expect("fixture digest must fit");
 
         let CausalEvidenceReferenceResolution::Resolved { counters, .. } = resolution else {
             panic!("expected exact indexed bridge route reference to resolve");

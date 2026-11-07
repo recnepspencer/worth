@@ -97,7 +97,9 @@ fn declaration_drift_requires_rebind() {
     match prepare_admitted_domain_capability_contribution_for_materialization(
         admitted,
         rebound_target,
-    ) {
+    )
+    .expect("fixture digest must fit")
+    {
         TransitionOutcome::RebindRequired(rebind) => {
             assert_eq!(rebind.category(), "admission");
             assert_eq!(
@@ -112,21 +114,28 @@ fn declaration_drift_requires_rebind() {
 #[test]
 fn lower_runtime_boundary_drift_is_stale_not_rebind() {
     let requested = create_requested_domain_capability_contribution(
-        lower_runtime_target("envelope-a"),
+        lower_runtime_target("envelope-a").expect("fixture digest must fit"),
         WorthQuerySupportContributionPayload::new(
             WorthQuerySupportContributionPosture::DeclarationSupport,
             "runtime.boundary.support",
             "support posture comes from a lower-runtime seam",
-        ),
+        )
+        .expect("fixture digest must fit"),
+    )
+    .expect("fixture digest must fit")
+    .expect("fixture digest must fit");
+    let eligible = success.expect("fixture digest must fit")(
+        evaluate_requested_domain_capability_contribution(requested),
     )
     .expect("fixture digest must fit");
-    let eligible = success(evaluate_requested_domain_capability_contribution(requested));
-    let admitted = success(admit_eligible_domain_capability_contribution(eligible));
+    let admitted = success.expect("fixture digest must fit")(
+        admit_eligible_domain_capability_contribution(eligible),
+    )
+    .expect("fixture digest must fit");
 
-    match prepare_admitted_domain_capability_contribution_for_materialization(
-        admitted,
-        lower_runtime_target("envelope-b"),
-    ) {
+    match prepare_admitted_domain_capability_contribution_for_materialization
+        .expect("fixture digest must fit")(admitted, lower_runtime_target("envelope-b"))
+    {
         TransitionOutcome::Stale(stale) => {
             assert_eq!(stale.category(), "support-traceability");
             assert_ne!(

@@ -112,7 +112,9 @@ fn historical_query_context_identity_requests_fail_as_source_mismatch() {
     )
     .expect("historical query-context declaration should be valid");
 
-    match evaluate_projection_consumption_eligibility(&declaration) {
+    match evaluate_projection_consumption_eligibility(&declaration)
+        .expect("fixture digest must fit")
+    {
         ProjectionConsumptionEligibility::SourceMismatch(mismatch) => {
             assert_eq!(
                 mismatch.requested_fact_kind(),
@@ -148,7 +150,9 @@ fn non_preview_query_context_display_fields_warn_as_row_bound_not_preview_derive
     )
     .expect("historical query-context display declaration should be valid");
 
-    match evaluate_projection_consumption_eligibility(&declaration) {
+    match evaluate_projection_consumption_eligibility(&declaration)
+        .expect("fixture digest must fit")
+    {
         ProjectionConsumptionEligibility::AdmittedWithWarnings(_, warnings) => {
             assert_eq!(
                 warnings.warning_kinds(),

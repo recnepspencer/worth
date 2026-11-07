@@ -103,7 +103,8 @@ fn declaration_support_traceability_digest_changes_when_scope_changes(
                     WorthQuerySupportContributionPosture::DeclarationSupport,
                     "intent.scope.support",
                     "support stays scoped to a declaration binding",
-                ),
+                )
+                .expect("fixture digest must fit"),
             )?,
         )?)?,
     );
@@ -115,7 +116,8 @@ fn declaration_support_traceability_digest_changes_when_scope_changes(
                     WorthQuerySupportContributionPosture::DeclarationSupport,
                     "intent.scope.support",
                     "support stays scoped to a declaration binding",
-                ),
+                )
+                .expect("fixture digest must fit"),
             )?,
         )?)?,
     );
@@ -153,7 +155,8 @@ fn equivalent_declaration_support_meaning_materializes_same_artifact_digest(
                     WorthQuerySupportContributionPosture::DeclarationSupport,
                     "intent.scope.support",
                     "support stays scoped to a declaration binding",
-                ),
+                )
+                .expect("fixture digest must fit"),
             )?,
         )?)?,
     );
@@ -177,7 +180,8 @@ fn lower_runtime_support_traceability_digest_changes_when_scope_changes(
                     WorthQuerySupportContributionPosture::DeclarationTraceability,
                     "boundary.scope.traceability",
                     "support stays scoped to a lower-runtime binding",
-                ),
+                )
+                .expect("fixture digest must fit"),
             )?,
         )?,
     )?);
@@ -189,7 +193,8 @@ fn lower_runtime_support_traceability_digest_changes_when_scope_changes(
                     WorthQuerySupportContributionPosture::DeclarationTraceability,
                     "boundary.scope.traceability",
                     "support stays scoped to a lower-runtime binding",
-                ),
+                )
+                .expect("fixture digest must fit"),
             )?,
         )?,
     )?);
@@ -227,7 +232,8 @@ fn equivalent_lower_runtime_support_meaning_materializes_same_artifact_digest(
                     WorthQuerySupportContributionPosture::DeclarationTraceability,
                     "boundary.scope.traceability",
                     "support stays scoped to a lower-runtime binding",
-                ),
+                )
+                .expect("fixture digest must fit"),
             )?,
         )?,
     )?);

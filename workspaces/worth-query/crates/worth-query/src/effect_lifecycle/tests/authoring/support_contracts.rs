@@ -170,7 +170,7 @@ fn preview_derived_mutation_returns_real_advisory_effect_posture() {
     let discovery =
         discover_effect_lifecycle_support(BasisFamily::PreviewDerived, EffectFamily::Mutation)
             .expect("fixture digest must fit");
-    let advisory = match evaluate_effect_eligibility(normalized) {
+    let advisory = match evaluate_effect_eligibility(normalized).expect("fixture digest must fit") {
         EffectEligibilityOutcome::Advisory(advisory) => advisory,
         other => panic!("expected advisory effect, got {other:?}"),
     };

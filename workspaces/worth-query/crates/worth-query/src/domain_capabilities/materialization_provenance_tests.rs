@@ -20,11 +20,14 @@ use worth_foundational::{
 fn lower_runtime_descriptive_outputs_do_not_claim_current_fresh_provenance(
 ) -> Result<(), IdentityDerivationDenial> {
     let support = materialize_support_traceability_support_report(
-        lower_runtime_ready_contribution(WorthQuerySupportContributionPayload::new(
-            WorthQuerySupportContributionPosture::DeclarationTraceability,
-            "runtime.boundary.traceability.replay",
-            "lower runtime support remains replay-derived through replay-capable delivery",
-        ))?,
+        lower_runtime_ready_contribution(
+            WorthQuerySupportContributionPayload::new(
+                WorthQuerySupportContributionPosture::DeclarationTraceability,
+                "runtime.boundary.traceability.replay",
+                "lower runtime support remains replay-derived through replay-capable delivery",
+            )
+            .expect("fixture digest must fit"),
+        )?,
         forensic_support_profile(),
         FoundationalDiagnosticDeliveryClass::ReconstructableFromReplay,
     )

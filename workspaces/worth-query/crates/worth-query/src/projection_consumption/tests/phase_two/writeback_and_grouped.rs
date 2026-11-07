@@ -197,7 +197,9 @@ fn grouped_sources_admit_membership_and_view_local_identity_but_not_entity_ident
             ProjectMaterializedFacts::declare().entity_identities(),
         )
         .expect("identity declaration should be valid");
-        match evaluate_projection_consumption_eligibility(&identity_declaration) {
+        match evaluate_projection_consumption_eligibility(&identity_declaration)
+            .expect("fixture digest must fit")
+        {
             ProjectionConsumptionEligibility::SourceMismatch(mismatch) => {
                 assert_eq!(mismatch.source_family(), family);
                 assert_eq!(

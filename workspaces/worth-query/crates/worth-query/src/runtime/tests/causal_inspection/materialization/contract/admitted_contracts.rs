@@ -56,7 +56,8 @@ fn bridge_request_rejects_missing_query_observation_binding_before_materializati
     let flow = admit_causal_inspection(request_for(
         reference_set,
         CausalInspectionRichness::ReferenceOnly,
-    ));
+    ))
+    .expect("fixture digest must fit");
     let CausalInspectionProofFlow::Admitted(admitted) = flow else {
         panic!("reference-only inspection should admit");
     };
@@ -94,7 +95,8 @@ fn bridge_request_rejects_multiple_query_observation_bindings_before_materializa
     let flow = admit_causal_inspection(request_for(
         reference_set,
         CausalInspectionRichness::ReferenceOnly,
-    ));
+    ))
+    .expect("fixture digest must fit");
     let CausalInspectionProofFlow::Admitted(admitted) = flow else {
         panic!("reference-only inspection should admit");
     };

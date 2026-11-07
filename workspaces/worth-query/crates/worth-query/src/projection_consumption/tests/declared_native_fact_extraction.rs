@@ -297,7 +297,7 @@ fn extract_authorized(
     );
     let declaration = declare_projection_consumption(source, binding, requested).unwrap();
     let ProjectionConsumptionEligibility::Admitted(admitted) =
-        evaluate_projection_consumption_eligibility(&declaration)
+        evaluate_projection_consumption_eligibility(&declaration).expect("fixture digest must fit")
     else {
         panic!("native declaration should admit")
     };

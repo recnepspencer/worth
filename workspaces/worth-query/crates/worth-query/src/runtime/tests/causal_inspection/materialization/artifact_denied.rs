@@ -34,7 +34,7 @@ fn denied_query_causal_artifact_carries_boundary_context_without_bridge_envelope
         &[CausalEvidenceFamily::BridgeRoute],
     )
     .expect("causal inspection request should reach admission boundary");
-    let flow = admit_causal_inspection(request);
+    let flow = admit_causal_inspection(request).expect("fixture digest must fit");
     let CausalInspectionProofFlow::Denied(denied) = flow else {
         panic!("durable causal archive should deny for phase-5 materialization");
     };
@@ -44,7 +44,8 @@ fn denied_query_causal_artifact_carries_boundary_context_without_bridge_envelope
         None,
         CausalInspectionRedactionPolicy::PreserveDetail,
         CausalInspectionMaterializationPolicy::OfflineInterpretableArtifact,
-    );
+    )
+    .expect("fixture digest must fit");
     let QueryCausalInspectionArtifact::Denied(artifact) = artifact else {
         panic!("expected denied query causal artifact");
     };
@@ -95,7 +96,9 @@ fn denied_query_causal_artifact_carries_bridge_denial_posture_and_counters() {
         &[CausalEvidenceFamily::BridgeRoute],
     )
     .expect("causal inspection request should reach admission boundary");
-    let CausalInspectionProofFlow::Denied(denied) = admit_causal_inspection(request) else {
+    let CausalInspectionProofFlow::Denied(denied) =
+        admit_causal_inspection(request).expect("fixture digest must fit")
+    else {
         panic!("durable causal archive should deny before materialization");
     };
     let summary = BridgeCausalInspectionAdmissionSummary::admitted(
@@ -146,7 +149,8 @@ fn denied_query_causal_artifact_carries_bridge_denial_posture_and_counters() {
         Some(&bridge_denial),
         CausalInspectionRedactionPolicy::PreserveDetail,
         CausalInspectionMaterializationPolicy::OfflineInterpretableArtifact,
-    );
+    )
+    .expect("fixture digest must fit");
     let QueryCausalInspectionArtifact::Denied(artifact) = artifact else {
         panic!("expected denied query causal artifact");
     };

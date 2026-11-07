@@ -34,7 +34,10 @@ fn installed_live_checkpoint_resume_and_close_preserve_the_package_witness() {
         &expected
     );
     assert_live_projection(request_execution, &live, &mut workspace, &expected);
-    let continuation = match live.checkpoint(&mut workspace) {
+    let continuation = match live
+        .checkpoint(&mut workspace)
+        .expect("fixture digest must fit")
+    {
         WorthQueryInstalledDomainLiveCheckpointOutcome::Checkpointed(continuation) => continuation,
         _ => panic!("installed live checkpoint must succeed"),
     };
@@ -45,7 +48,10 @@ fn installed_live_checkpoint_resume_and_close_preserve_the_package_witness() {
             .witness_identity(),
         &expected
     );
-    let resumed = match continuation.resume(&mut workspace) {
+    let resumed = match continuation
+        .resume(&mut workspace)
+        .expect("fixture digest must fit")
+    {
         WorthQueryInstalledDomainLiveResumeOutcome::Resumed(completion) => completion,
         _ => panic!("installed live resume must succeed"),
     };
@@ -143,11 +149,17 @@ fn foreign_runtime_live_resume_retains_the_continuation_for_its_owner() {
         &mut owner_workspace,
         "installed.foreign-resume",
     );
-    let continuation = match live.checkpoint(&mut owner_workspace) {
+    let continuation = match live
+        .checkpoint(&mut owner_workspace)
+        .expect("fixture digest must fit")
+    {
         WorthQueryInstalledDomainLiveCheckpointOutcome::Checkpointed(continuation) => continuation,
         _ => panic!("installed live checkpoint must succeed"),
     };
-    let continuation = match continuation.resume(&mut foreign_workspace) {
+    let continuation = match continuation
+        .resume(&mut foreign_workspace)
+        .expect("fixture digest must fit")
+    {
         WorthQueryInstalledDomainLiveResumeOutcome::AuthorityStopped(continuation, drift) => {
             assert_drift(
                 &drift,
@@ -158,7 +170,10 @@ fn foreign_runtime_live_resume_retains_the_continuation_for_its_owner() {
         }
         _ => panic!("foreign runtime must not resume an installed continuation"),
     };
-    let resumed = match continuation.resume(&mut owner_workspace) {
+    let resumed = match continuation
+        .resume(&mut owner_workspace)
+        .expect("fixture digest must fit")
+    {
         WorthQueryInstalledDomainLiveResumeOutcome::Resumed(completion) => completion,
         _ => panic!("owning runtime must still resume the retained continuation"),
     };
@@ -182,7 +197,10 @@ fn generation_turnover_prevents_live_continuation_revival() {
         &mut workspace,
         "installed.stale-resume",
     );
-    let continuation = match live.checkpoint(&mut workspace) {
+    let continuation = match live
+        .checkpoint(&mut workspace)
+        .expect("fixture digest must fit")
+    {
         WorthQueryInstalledDomainLiveCheckpointOutcome::Checkpointed(continuation) => continuation,
         _ => panic!("installed live checkpoint must succeed"),
     };
@@ -190,8 +208,9 @@ fn generation_turnover_prevents_live_continuation_revival() {
         .replace_domain_installation_with_successor_generation()
         .unwrap();
 
-    let WorthQueryInstalledDomainLiveResumeOutcome::AuthorityStopped(_, drift) =
-        continuation.resume(&mut workspace)
+    let WorthQueryInstalledDomainLiveResumeOutcome::AuthorityStopped(_, drift) = continuation
+        .resume(&mut workspace)
+        .expect("fixture digest must fit")
     else {
         panic!("a stale installed continuation must not revive")
     };

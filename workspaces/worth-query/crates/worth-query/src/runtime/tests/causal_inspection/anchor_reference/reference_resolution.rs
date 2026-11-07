@@ -87,7 +87,8 @@ fn evidence_reference_resolution_consumes_anchor_and_emits_sealed_reference_set(
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         "bridge-route-reference",
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::SignalInvalidation,
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
@@ -108,7 +109,8 @@ fn evidence_reference_resolution_consumes_anchor_and_emits_sealed_reference_set(
             CausalEvidenceFamily::RelationalAuthority,
             CausalEvidenceFamily::SignalInvalidation,
         ],
-    );
+    )
+    .expect("fixture digest must fit");
 
     let CausalEvidenceReferenceResolution::Resolved {
         reference_set,
@@ -174,7 +176,8 @@ fn evidence_reference_resolution_denies_requested_family_missing_from_anchor() {
             CausalEvidenceFamily::QueryInspection,
             CausalEvidenceFamily::BridgeRoute,
         ],
-    );
+    )
+    .expect("fixture digest must fit");
 
     let CausalEvidenceReferenceResolution::MissingRequiredEvidence { denial, counters } =
         resolution
@@ -224,7 +227,8 @@ fn evidence_reference_resolution_defaults_to_anchor_carried_families() {
     )
     .unwrap();
 
-    let resolution = resolve_causal_evidence_references(anchor, &[]);
+    let resolution =
+        resolve_causal_evidence_references(anchor, &[]).expect("fixture digest must fit");
 
     let CausalEvidenceReferenceResolution::Resolved {
         reference_set,

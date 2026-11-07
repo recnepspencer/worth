@@ -154,6 +154,7 @@ pub(super) fn replay_gap_inputs() -> Result<
     .expect("historical replay observation should anchor");
     let CausalEvidenceReferenceResolution::Resolved { reference_set, .. } =
         resolve_causal_evidence_references(anchor, &[CausalEvidenceFamily::QueryInspection])
+            .expect("fixture digest must fit")
     else {
         panic!("query-inspection replay evidence should resolve");
     };
