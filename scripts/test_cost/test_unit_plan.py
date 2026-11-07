@@ -53,6 +53,33 @@ class RequiredUnitPlanTests(unittest.TestCase):
             with self.assertRaises(CompilerUnitRefusal):
                 attribute(observed, plan)
 
+    def test_explicit_example_and_tests_preserve_ordinary_and_harness_obligations(self):
+        example = unit('observer', kind='example', dependencies=[3])
+        example['target']['test'] = True
+        other = unit('other', kind='example', dependencies=[3])
+        other['target']['test'] = True
+        source = graph(example, example, other, unit('dependency'))
+        source['roots'] = [0, 1, 2]
+        before = json.dumps(source, sort_keys=True)
+        with tempfile.TemporaryDirectory() as temporary:
+            for selector in (['--example', 'observer'], ['--example=observer']):
+                plan = declare(['cargo', 'check', '--tests', *selector],
+                               temporary, {}, json.dumps(source))
+                ordinary = attribute(event(example), plan)
+                checked = event(example)
+                checked['profile']['test'] = True
+                harness = attribute(checked, plan)
+                self.assertFalse(ordinary['test_harness'])
+                self.assertTrue(harness['test_harness'])
+                self.assertNotEqual(ordinary['identity'], harness['identity'])
+                self.assertEqual(ordinary['dependency_units'], harness['dependency_units'])
+                other_checked = event(other)
+                other_checked['profile']['test'] = True
+                self.assertTrue(attribute(other_checked, plan)['test_harness'])
+                with self.assertRaises(CompilerUnitRefusal):
+                    attribute(event(other), plan)
+        self.assertEqual(json.dumps(source, sort_keys=True), before)
+
     def test_checked_mixed_library_keeps_ordinary_and_harness_obligations_separate(self):
         library = unit('owner', dependencies=[2])
         library['target'].update(kind=['cdylib', 'rlib'], crate_types=['cdylib', 'rlib'])

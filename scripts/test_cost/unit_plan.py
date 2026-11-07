@@ -126,7 +126,9 @@ def inputs(command, cwd, environment, manifests=()):
 def checked_test_roots(command, graph):
     if command[1] not in ('check', 'clippy'):
         return ()
-    if '--tests' in command and not any(flag in command for flag in
+    explicit_example = any(argument == '--example' or argument.startswith('--example=')
+                           for argument in command)
+    if '--tests' in command and not explicit_example and not any(flag in command for flag in
             ('--all-targets', '--lib', '--bins', '--examples', '--benches')):
         return graph['roots']
     if '--all-targets' not in command and '--tests' not in command:
@@ -149,13 +151,23 @@ def checked_test_roots(command, graph):
     only_test_binaries = '--tests' in cargo_arguments and not any(
         argument in ('--all-targets', '--bins', '--bin') or argument.startswith('--bin=')
         for argument in cargo_arguments)
+    ordinary_examples = {
+        argument.split('=', 1)[1] if argument.startswith('--example=') else cargo_arguments[index + 1]
+        for index, argument in enumerate(cargo_arguments)
+        if argument.startswith('--example=') or argument == '--example'
+    }
+    only_test_examples = '--tests' in cargo_arguments and not any(
+        argument in ('--all-targets', '--examples') for argument in cargo_arguments)
     for indices in groups.values():
-        if len(indices) == 1 and only_test_binaries:
+        if len(indices) == 1 and (only_test_binaries or only_test_examples):
             index = indices[0]
             row = graph['units'][index]
-            # Mixed --lib --tests selects binary harnesses without requesting
-            # ordinary binaries. Cargo still labels their graph mode "check".
-            if (row['target']['kind'] == ['bin'] and row['target'].get('test', False)
+            # --tests includes test-enabled examples that were not explicitly
+            # selected for an ordinary stage. Their harness is a singleton.
+            test_selection = ((row['target']['kind'] == ['bin'] and only_test_binaries)
+                or (row['target']['kind'] == ['example'] and only_test_examples
+                    and row['target']['name'] not in ordinary_examples))
+            if (test_selection and row['target'].get('test', False)
                     and index in graph['roots'] and index not in incoming):
                 harnesses.append(index)
         if len(indices) != 2:
