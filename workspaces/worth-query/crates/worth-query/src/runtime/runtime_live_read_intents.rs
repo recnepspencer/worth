@@ -170,6 +170,7 @@ impl WorthQueryRuntime {
                     &source_rows,
                 )
             });
+        let projected_rows = projected_rows.transpose()?;
         let (rows, maintenance_source_rows) = match projected_rows {
             Some(rows) => (rows, Some(source_rows)),
             None => (source_rows, None),

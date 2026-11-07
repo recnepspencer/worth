@@ -47,7 +47,7 @@ impl WorthQueryExistingTruthProbeDenial {
         Self::from_denied_aspect_touch(binding, kind, probed_aspect_touch, message)
     }
 
-    fn from_admitted_touch(
+    pub(super) fn from_admitted_touch(
         binding: &WorthQueryExistingTruthTargetBinding,
         kind: WorthQueryExistingTruthProbeDenialKind,
         probed_aspect_touch: WorthQueryAspectTouch,

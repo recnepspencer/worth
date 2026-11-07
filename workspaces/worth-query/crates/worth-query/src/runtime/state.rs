@@ -273,7 +273,7 @@ impl WorthQueryRuntimeStateTarget for &WorthQueryBatchWriteReceipt {
             self.authority_lane(),
             format!(
                 "batch write receipt `{}` is ready with {} component writes over `{}` basis lane",
-                self.batch_identity().as_str(),
+                self.batch_identity()?.as_str(),
                 self.write_count(),
                 self.basis_lane()
             ),
