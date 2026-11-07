@@ -5,7 +5,6 @@ use crate::facade::indexes::{
 use crate::storage::data::AuthoritativeFieldComparisonKey;
 use crate::tests::support::*;
 
-
 #[test]
 fn derived_index_build_materializes_latest_visible_entity_field_values() {
     let host_request = crate::test_execution_policy::serial_request();
