@@ -1,7 +1,7 @@
 use super::*;
 
 pub(super) fn external_commit(label: &str) -> WorthQueryCommitIdentity {
-    crate::memory_workspace::admit_external_commit_label(label)
+    crate::memory_workspace::admit_external_commit_label(label).expect("fixture digest must fit")
 }
 
 pub(super) fn touch(path: &str) -> WorthQueryAspectTouch {

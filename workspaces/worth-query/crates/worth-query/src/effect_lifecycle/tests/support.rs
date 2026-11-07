@@ -130,6 +130,7 @@ pub(super) fn runtime_workflow_binding_for_branch(
         snapshot_identity,
         BranchId(branch.to_string()),
     )
+    .expect("fixture digest must fit")
 }
 
 pub(super) fn preview_workflow_binding() -> WorkflowContextBinding {

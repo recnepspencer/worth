@@ -37,7 +37,8 @@ impl WorthQueryDerivedViewMaintainer for ConcurrentMatrixMaintainer {
             crate::memory_workspace::admit_external_commit_label(format!(
                 "phase16-publication-{}",
                 title
-            )),
+            ))
+            .expect("fixture digest must fit"),
             [test_aspect_touch("title.value")],
             WorthQueryDerivedPatchPayload::from_retained_row(retained_row),
             format!("phase16-publication-{}", title),

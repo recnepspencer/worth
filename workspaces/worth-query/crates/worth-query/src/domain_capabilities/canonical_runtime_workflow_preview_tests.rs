@@ -345,9 +345,11 @@ fn ready_workflow(
     >,
     IdentityDerivationDenial,
 > {
-    Ok(ready(authoring.bind_to_declaration_target(
-        declaration_target("intent-workflow"),
-    ))?)
+    Ok(ready(
+        authoring
+            .bind_to_declaration_target(declaration_target("intent-workflow"))
+            .expect("fixture digest must fit"),
+    )?)
 }
 
 fn ready_workflow_plan(
@@ -359,5 +361,9 @@ fn ready_workflow_plan(
     >,
     IdentityDerivationDenial,
 > {
-    Ok(ready(authoring.bind_to_admitted_plan_target(target))?)
+    Ok(ready(
+        authoring
+            .bind_to_admitted_plan_target(target)
+            .expect("fixture digest must fit"),
+    )?)
 }

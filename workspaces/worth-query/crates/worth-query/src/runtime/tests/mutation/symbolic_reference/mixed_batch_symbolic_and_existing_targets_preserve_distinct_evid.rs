@@ -90,12 +90,14 @@ fn mixed_batch_symbolic_and_existing_targets_preserve_distinct_evidence() {
     assert_eq!(
         receipt
             .batch_mutation_evidence()
+            .expect("fixture digest must fit")
             .existing_truth_binding_count(),
         1
     );
     assert_eq!(
         receipt
             .batch_mutation_evidence()
+            .expect("fixture digest must fit")
             .symbolic_target_reference_count(),
         1
     );

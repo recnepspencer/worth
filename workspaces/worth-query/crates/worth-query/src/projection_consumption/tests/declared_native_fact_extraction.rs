@@ -313,7 +313,8 @@ pub(super) fn read_result(rows: Vec<WorthQueryEntity>) -> WorthQueryReadResult {
             "basis:test",
             "result:test",
             WorthQueryReadExecutionEngine::QueryRuntimeCurrent,
-        ),
+        )
+        .expect("fixture digest must fit"),
     )
 }
 

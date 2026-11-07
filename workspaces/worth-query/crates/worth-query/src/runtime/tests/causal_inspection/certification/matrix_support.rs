@@ -153,7 +153,8 @@ fn missing_evidence_digest(family: CausalEvidenceFamily) -> String {
                     "query-inspection:missing-{}",
                     family.as_str()
                 )),
-            )],
+            )
+            .expect("fixture digest must fit")],
         ),
         CausalInspectionReason::ChangedResult,
     )

@@ -61,6 +61,7 @@ pub fn descriptor(label: &str) -> WorthQueryEvidenceIdentity {
     WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::CausalObservationAnchor)
         .field_shape(WorthQueryEvidenceTag::new("legacy-test-descriptor"), label)
         .seal()
+        .expect("fixture digest must fit")
 }
 
 #[test]

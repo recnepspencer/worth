@@ -46,7 +46,8 @@ fn test_snapshot_identity(label: &'static str) -> WorthQuerySnapshotIdentity {
     WorthQuerySnapshotIdentity::preview(
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WriteReceiptSnapshotIdentity)
             .field_shape(WorthQueryEvidenceTag::new("test_snapshot"), label)
-            .seal(),
+            .seal()
+            .expect("fixture digest must fit"),
     )
 }
 

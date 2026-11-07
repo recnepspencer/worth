@@ -90,7 +90,9 @@ fn batch_verify_existing_preserves_aggregate_assertion_digest() {
         })
         .expect("mixed batch should execute");
 
-    let evidence = receipt.batch_mutation_evidence();
+    let evidence = receipt
+        .batch_mutation_evidence()
+        .expect("fixture digest must fit");
     assert_eq!(evidence.existing_truth_assertion_count(), 1);
     assert!(evidence
         .aggregate_existing_truth_assertion_digest()

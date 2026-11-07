@@ -10,7 +10,8 @@ fn changed_reference_set() -> CausalEvidenceReferenceSet {
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         "admission-query-inspection-reference",
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::BridgeRoute,
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
@@ -202,7 +203,8 @@ fn causal_inspection_denies_unsupported_explanation_family_before_envelope_reque
 fn causal_inspection_request_denies_target_and_unresolved_family_mismatches() {
     let reference_set = changed_reference_set();
     let unrelated =
-        QueryObservationReceipt::fixture(CausalObservationOutcome::Suppressed, Vec::new());
+        QueryObservationReceipt::fixture(CausalObservationOutcome::Suppressed, Vec::new())
+            .expect("fixture digest must fit");
     let bad_target = causal_inspection_target(
         unrelated.observation_target().clone(),
         reference_set

@@ -44,7 +44,9 @@ fn batch_write_delegates_to_canonical_admission_and_execution_handoff() {
     let handoff = canonical_runtime
         .resolve_reviewed_admitted_authoritative_write_batch_handoff(review)
         .expect("canonical batch handoff should admit");
-    let binding = canonical_runtime.prepare_authoritative_mutation_batch_execution_binding(handoff);
+    let binding = canonical_runtime
+        .prepare_authoritative_mutation_batch_execution_binding(handoff)
+        .expect("fixture digest must fit");
     let canonical = canonical_runtime
         .execute_authoritative_mutation_batch_execution_binding(request_execution, binding)
         .expect("canonical batch binding should execute");

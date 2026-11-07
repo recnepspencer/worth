@@ -145,7 +145,7 @@ fn native_string_field_contract(
         outcome => panic!("native refinement fixture did not admit: {outcome:?}"),
     };
     (
-        bind_materialized_projection_contract(&admitted),
+        bind_materialized_projection_contract(&admitted).expect("fixture digest must fit"),
         declaration,
     )
 }

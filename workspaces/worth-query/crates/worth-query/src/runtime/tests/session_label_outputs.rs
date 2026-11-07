@@ -35,11 +35,13 @@ fn display_colliding_preview_labels_produce_distinct_closeout_digests() {
     let left_outcome = runtime
         .preview(request_execution, left.clone())
         .expect("left preview should admit")
-        .discard();
+        .discard()
+        .expect("fixture digest must fit");
     let right_outcome = runtime
         .preview(request_execution, right.clone())
         .expect("right preview should admit")
-        .discard();
+        .discard()
+        .expect("fixture digest must fit");
 
     assert_eq!(left.display(), right.display());
     assert_ne!(left.identity_digest(), right.identity_digest());
@@ -262,7 +264,8 @@ fn canonical_session_label_intake_outputs_are_non_empty_and_stable() {
     let render_collision_outcome = runtime
         .preview(request_execution, render_collision_right.clone())
         .expect("right render-collision label should admit")
-        .discard();
+        .discard()
+        .expect("fixture digest must fit");
     let render_collision_admission_digest = render_collision_outcome
         .closeout_evidence()
         .closeout_digest()

@@ -58,6 +58,7 @@ fn composed_runtime_surface_proves_facade_handles_stay_proof_bearing_across_prev
                 ),
                 "strategy.intent.reconcile",
             )
+            .expect("fixture digest must fit")
             .with_condition(WorthQueryEffectCondition::expression(
                 "expr.validation.ready",
                 test_aspect_touches(["validation.state"]),
@@ -122,8 +123,18 @@ fn composed_runtime_surface_proves_facade_handles_stay_proof_bearing_across_prev
             && evidence.source_lane() == WorthQueryAuthorityLane::PendingWriteIntent
             && evidence.preview_lane() == WorthQueryAuthorityLane::PreviewTruth
     }));
-    assert_eq!(preview_outcome.pending_write_intent_residue_count(), 1);
-    assert_eq!(preview_outcome.authoritative_residue_count(), 0);
+    assert_eq!(
+        preview_outcome
+            .expect("fixture digest must fit")
+            .pending_write_intent_residue_count(),
+        1
+    );
+    assert_eq!(
+        preview_outcome
+            .expect("fixture digest must fit")
+            .authoritative_residue_count(),
+        0
+    );
     assert!(runtime
         .drain_patches(&live)
         .query_delivery_batches

@@ -8,6 +8,7 @@ fn entry(index: usize) -> String {
 
 fn digest(family: &'static str, entries: impl IntoIterator<Item = String>) -> String {
     compose_consumed_projection_fact_family_digest(family, entries)
+        .expect("fixture digest must fit")
 }
 
 #[test]

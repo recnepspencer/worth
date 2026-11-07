@@ -11,7 +11,8 @@ fn evidence_identity_resists_joined_string_folklore() {
             "alpha",
             "beta|gamma",
         ]),
-    );
+    )
+    .expect("fixture digest must fit");
     let right = crate::runtime::WorthQueryPreviewBasisAdmission::new(
         &authority,
         test_session_label("preview"),
@@ -20,7 +21,8 @@ fn evidence_identity_resists_joined_string_folklore() {
             "basis|alpha",
             "beta|gamma",
         ]),
-    );
+    )
+    .expect("fixture digest must fit");
 
     assert_ne!(
         left.admission_digest(),

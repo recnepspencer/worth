@@ -127,7 +127,9 @@ fn recovery_retains_foreign_runtime_authority_drift_without_promoting_it() {
     let prepared = prepared_runtime_continuation(&owner);
 
     let brief = worth_query_recovery_brief_from_continuation_execution_checked(
-        foreign.execute_prepared_continuation_checked(prepared),
+        foreign
+            .execute_prepared_continuation_checked(prepared)
+            .expect("fixture digest must fit"),
     )
     .expect("foreign installed authority must produce a recovery brief");
     let drift = brief

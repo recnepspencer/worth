@@ -58,6 +58,7 @@ fn basis_identity(
                 .map(|row| row.row_digest().terminal_projection_for_reporting()),
         )
         .seal()
+        .expect("fixture digest must fit")
 }
 
 fn assert_session_label_collision(

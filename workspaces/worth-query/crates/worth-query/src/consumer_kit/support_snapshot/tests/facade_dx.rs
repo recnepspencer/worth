@@ -8,9 +8,12 @@ fn public_consumer_kit_facade_projects_exports_loads_and_compares_snapshot() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let workspace = support_snapshot_workspace(request_execution);
-    let matrix = workspace.public_support_matrix();
+    let matrix = workspace
+        .public_support_matrix()
+        .expect("fixture digest must fit");
 
-    let snapshot = facade::consumer_kit::project_workspace_support_snapshot(&workspace);
+    let snapshot = facade::consumer_kit::project_workspace_support_snapshot(&workspace)
+        .expect("fixture digest must fit");
     let terminal_json_document = snapshot
         .to_canonical_terminal_json_document()
         .expect("facade snapshot export should encode");

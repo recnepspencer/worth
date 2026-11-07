@@ -158,7 +158,8 @@ fn runtime_downstream_delivery_projects_mixed_cause_and_async_truth_without_recl
             &WorthQueryRuntimeAsyncResultProjection::completion_state(
                 BridgeAsyncCompletionState::Admitted(BridgeAsyncCompletionClass::Fulfilled),
                 "async:downstream-current",
-            ),
+            )
+            .expect("fixture digest must fit"),
             &basis_digest,
             &generation_digest,
         )

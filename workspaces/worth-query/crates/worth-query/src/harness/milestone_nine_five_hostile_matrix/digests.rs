@@ -13,7 +13,9 @@ use crate::runtime::{
 };
 
 pub fn application_support_report() -> WorthQuerySupportReport {
-    WorthQueryApplicationFacade::runtime_backed_default().support_report()
+    WorthQueryApplicationFacade::runtime_backed_default()
+        .support_report()
+        .expect("fixture digest must fit")
 }
 
 pub fn application_default_bootstrap_digest(report: &WorthQuerySupportReport) -> String {

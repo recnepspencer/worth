@@ -53,6 +53,7 @@ fn bridge_request_path_matches_explicit_continuation_preparation_posture() {
             bridge_request(),
             SignalFamily::aspect_contract(),
         )
+        .expect("fixture digest must fit")
         .into_checked()
         .into_outcome();
     let orchestrated = handle.orchestrate_signal_compatibility(

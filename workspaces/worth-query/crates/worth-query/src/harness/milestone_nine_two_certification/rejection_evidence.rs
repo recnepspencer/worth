@@ -46,7 +46,10 @@ pub(super) fn raw_cdc_rejection() -> MilestoneNineTwoRejectionBundle {
     rejection(
         MilestoneNineTwoFailureClass::DeliveryDenied,
         error.denial_kind().as_str(),
-        error.source_projection().label(),
+        error
+            .source_projection()
+            .expect("fixture digest must fit")
+            .label(),
         error.counters().counter_projection().label().to_string(),
     )
 }
@@ -56,7 +59,10 @@ pub(super) fn raw_bridge_rejection() -> MilestoneNineTwoRejectionBundle {
     rejection(
         MilestoneNineTwoFailureClass::DeliveryDenied,
         error.denial_kind().as_str(),
-        error.source_projection().label(),
+        error
+            .source_projection()
+            .expect("fixture digest must fit")
+            .label(),
         error.counters().counter_projection().label().to_string(),
     )
 }

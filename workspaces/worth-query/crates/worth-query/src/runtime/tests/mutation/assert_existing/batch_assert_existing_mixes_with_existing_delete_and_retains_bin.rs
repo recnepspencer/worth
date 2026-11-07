@@ -102,17 +102,20 @@ fn batch_assert_existing_mixes_with_existing_delete_and_retains_binding_evidence
     assert_eq!(
         receipt
             .batch_mutation_evidence()
+            .expect("fixture digest must fit")
             .existing_truth_assertion_count(),
         1
     );
     assert_eq!(
         receipt
             .batch_mutation_evidence()
+            .expect("fixture digest must fit")
             .existing_truth_binding_count(),
         2
     );
     assert!(receipt
         .batch_mutation_evidence()
+        .expect("fixture digest must fit")
         .aggregate_existing_truth_assertion_digest()
         .is_some());
 }
