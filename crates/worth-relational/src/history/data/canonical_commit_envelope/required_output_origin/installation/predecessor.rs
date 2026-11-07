@@ -3,14 +3,14 @@ use super::*;
 
 pub(super) fn validate<'a>(
     candidate: &CanonicalCommitEnvelopeBody,
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     predecessor: &'a crate::mvcc::RelationalRequiredOutputPublication,
     meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<&'a CanonicalRequiredOutputOrigin, TransactionCommitError> {
-    if predecessor.runtime_instance_id != runtime.runtime_instance_id() {
+    if predecessor.runtime_instance_id != runtime.runtime.runtime_instance_id() {
         return Err(crate::mvcc::origin_denial(
             "foreign native predecessor publication custody",
         ));
@@ -55,7 +55,7 @@ pub(super) fn validate<'a>(
     }
     let canonical = runtime
         .history
-        .canonical_envelope_for_version(origin.commit.version_id)
+        .canonical_envelope_for_version(origin.commit.version_id, context).map_err(crate::history::data::canonical_commit_envelope::required_output_origin::installation::relation_stop)?
         .ok_or_else(|| {
             crate::mvcc::origin_denial("retained predecessor canonical position absent")
         })?;
@@ -69,7 +69,11 @@ pub(super) fn validate<'a>(
         origin,
         None,
         &mut |commit| runtime.history.canonical_envelope(commit),
-        &mut |version| runtime.history.canonical_envelope_for_version(version),
+        &mut |version, context| {
+            runtime
+                .history
+                .canonical_envelope_for_version(version, context)
+        },
         runtime.history.canonical_catalog_len(),
         lease,
         context,

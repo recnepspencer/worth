@@ -18,7 +18,7 @@ pub(crate) fn current(
     mut next: Option<CommitId>,
     bound: usize,
     installed: Option<&RelationalInstalledApplicationPublicationAuthority>,
-    load: &mut dyn FnMut(CommitId) -> Option<Arc<CanonicalCommitEnvelope>>,
+    load: &mut dyn FnMut(CommitId) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop>,
     validate: &mut dyn FnMut(
         &CanonicalCommitEnvelope,
         &mut MapKernelContext<'_, '_>,
@@ -29,7 +29,7 @@ pub(crate) fn current(
     for _ in 0..bound {
         let Some(commit) = next else { break };
         charge(context, bound.saturating_add(1))?;
-        let envelope = load(commit).ok_or("source-scope closure lost canonical history")?;
+        let envelope = load(commit)?.ok_or("source-scope closure lost canonical history")?;
         require_linear_history(&envelope)?;
         for (ordinal, origin) in envelope.output_origins().enumerate() {
             charge(context, latest.len() + 1)?;
@@ -137,16 +137,12 @@ pub(crate) fn select(
 
 pub(crate) fn validate_preparation_history(
     envelope: &CanonicalCommitEnvelope,
-    history: &crate::runtime::RelationalPreparationHistory,
+    load: &mut impl FnMut(CommitId) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop>,
+    bound: usize,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), Stop> {
     if envelope.required_output_materialization.is_some() {
-        super::materialization::validate_header(
-            envelope,
-            &mut |commit| history.canonical_envelope(commit),
-            history.canonical_catalog_len(),
-            context,
-        )?;
+        super::materialization::validate_header(envelope, load, bound, context)?;
     }
     Ok(())
 }

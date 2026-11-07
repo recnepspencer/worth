@@ -4,7 +4,7 @@ use crate::publication::patch::data::RecordStructuralChange as Change;
 use crate::schema::data::AspectContractPlanCatalog;
 
 pub(super) fn validate(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     envelope: &Arc<CanonicalCommitEnvelope>,
     event: &CanonicalRequiredOutputCodecRetirement,
     plans: &AspectContractPlanCatalog,
@@ -13,6 +13,7 @@ pub(super) fn validate(
 ) -> Result<(), Stop> {
     let id = event.activation.entity_id;
     let root = runtime
+        .runtime
         .history
         .branch_cell(&envelope.branch_context)
         .and_then(|cell| cell.root())
@@ -29,7 +30,7 @@ pub(super) fn validate(
         .entity_plans
         .get(&kind)
         .ok_or("codec disposition omits the actual protected program contract")?;
-    let bound = runtime.history.catalog_len();
+    let bound = runtime.runtime.history.catalog_len();
     let _memory = super::super::reserve(
         lease,
         bound
@@ -43,8 +44,7 @@ pub(super) fn validate(
         let commit = next.ok_or("protected program history has no native allocation")?;
         charge(context, bound.saturating_add(1))?;
         let current = runtime
-            .history
-            .canonical_envelope(commit)
+            .commit(commit)?
             .ok_or("protected program history absent")?;
         super::super::require_linear_history(&current)?;
         charge(context, current.patch.authoritative_record_patches.len())?;

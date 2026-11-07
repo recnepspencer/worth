@@ -7,6 +7,15 @@ use crate::publication::patch::data::PatchStreamPosition;
 use super::HistorySubsystem;
 
 impl HistorySubsystem {
+    pub(crate) fn commit_for_version_in_context(
+        &self,
+        version: VersionId,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<Option<CommitId>, crate::execution::RelationalExecutionDenialCause> {
+        self.canonical_publication_routes
+            .commit_for_version_in_context(version, context)
+    }
+
     pub(crate) fn retain_original_empty_birth(
         &self,
         schema: Arc<crate::branch::RelationalBranchRootSchemaAuthority>,

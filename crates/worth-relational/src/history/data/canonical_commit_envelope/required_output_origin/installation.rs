@@ -31,6 +31,7 @@ impl CanonicalCommitEnvelopeBody {
         admission
             .installed
             .demand_source_scope(execution, basis, &admission.publication)?;
+        let runtime = &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest::new(runtime, execution);
         let result = execution
             .in_scope(|lease| {
                 worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
@@ -57,7 +58,7 @@ impl CanonicalCommitEnvelopeBody {
     #[allow(clippy::too_many_arguments)]
     pub(super) fn install_completion(
         &mut self,
-        runtime: &crate::runtime::RelationalPreparationRuntime,
+        runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
         basis: &AdmittedRelationalBranchBasis,
         created: &CommitCreatedEntityBindings,
         created_relations: &CommitCreatedRelationBindings,
@@ -74,9 +75,12 @@ impl CanonicalCommitEnvelopeBody {
         context
             .checkpoint(publication.admission_work())
             .map_err(origin_request)?;
-        if installed.runtime_instance_id != runtime.runtime_instance_id()
+        if installed.runtime_instance_id != runtime.runtime.runtime_instance_id()
             || installed.custom_invariant_generation
-                != runtime.schema_contract_runtime.custom_invariant_generation
+                != runtime
+                    .runtime
+                    .schema_contract_runtime
+                    .custom_invariant_generation
             || installed.schema_digest != basis.inner.root.schema_authority().authority_digest()
             || !publication.admitted_by(&installed)
             || self.branch_context != *basis.descriptor().branch_id()

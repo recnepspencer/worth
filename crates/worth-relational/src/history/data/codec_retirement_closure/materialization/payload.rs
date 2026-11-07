@@ -10,7 +10,7 @@ use crate::storage::overlay::{
 use worth_execution::ExecutionResourceLease;
 
 pub(super) fn candidate_matches(
-    runtime: &crate::runtime::RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     basis: &crate::branch::AdmittedRelationalBranchBasis,
     state: &WorkingState,
     original: &Arc<CanonicalCommitEnvelope>,
@@ -111,7 +111,7 @@ pub(super) fn candidate_matches(
 }
 
 pub(super) fn validate(
-    runtime: &crate::runtime::RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     envelope: &CanonicalCommitEnvelope,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
@@ -124,8 +124,7 @@ pub(super) fn validate(
     let mut oldest = None;
     for id in &event.producer_publications {
         let version = runtime
-            .history
-            .canonical_envelope(*id)
+            .commit(*id)?
             .ok_or("maintenance producer history absent")?
             .commit
             .version_id;
@@ -133,11 +132,10 @@ pub(super) fn validate(
     }
     let oldest = oldest.ok_or("maintenance producers absent")?;
     let mut next = Some(event.source_commit);
-    for _ in 0..runtime.history.catalog_len() {
+    for _ in 0..runtime.runtime.history.catalog_len() {
         charge(context, 1)?;
         let previous = runtime
-            .history
-            .canonical_envelope(next.ok_or("maintenance source ancestry absent")?)
+            .commit(next.ok_or("maintenance source ancestry absent")?)?
             .ok_or("maintenance source history absent")?;
         if previous.commit.version_id <= oldest {
             return Ok(());
@@ -157,7 +155,7 @@ pub(super) fn validate(
 }
 
 fn validate_one(
-    runtime: &crate::runtime::RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     envelope: &CanonicalCommitEnvelope,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
@@ -167,15 +165,21 @@ fn validate_one(
         .as_ref()
         .ok_or("maintenance absent")?;
     for member in &event.records {
-        let original = event
-            .producer_publications
-            .iter()
-            .find_map(|id| {
-                let envelope = runtime.history.canonical_envelope(*id)?;
-                header::owns(envelope.required_output_origin.as_deref()?, &member.record)
-                    .then_some(envelope)
-            })
-            .ok_or("maintenance producer association absent")?;
+        let mut original = None;
+        for id in &event.producer_publications {
+            let Some(envelope) = runtime.commit(*id)? else {
+                continue;
+            };
+            if envelope
+                .required_output_origin
+                .as_deref()
+                .is_some_and(|origin| header::owns(origin, &member.record))
+            {
+                original = Some(envelope);
+                break;
+            }
+        }
+        let original = original.ok_or("maintenance producer association absent")?;
         let source = original
             .required_output_origin
             .as_ref()
@@ -189,7 +193,7 @@ fn validate_one(
 }
 
 fn validate_record(
-    runtime: &crate::runtime::RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     envelope: &CanonicalCommitEnvelope,
     original: &Arc<CanonicalCommitEnvelope>,
     member: &CanonicalRequiredOutputMaterializationRecord,
@@ -205,6 +209,7 @@ fn validate_record(
                 .find(|entry| entry.id == id)
                 .ok_or("maintenance entity absent")?;
             let plan = runtime
+                .runtime
                 .schema_contract_runtime
                 .aspect_contract_plans
                 .entity_plans
@@ -229,6 +234,7 @@ fn validate_record(
                 .find(|entry| entry.id == id)
                 .ok_or("maintenance relation absent")?;
             let plan = runtime
+                .runtime
                 .schema_contract_runtime
                 .aspect_contract_plans
                 .relation_plans

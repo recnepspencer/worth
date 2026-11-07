@@ -30,7 +30,7 @@ pub(crate) struct CanonicalAuthoredRestoration {
 #[allow(clippy::too_many_arguments)]
 pub(super) fn install(
     envelope: &mut CanonicalCommitEnvelopeBody,
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     created: &CommitCreatedEntityBindings,
     created_relations: &CommitCreatedRelationBindings,
@@ -131,7 +131,7 @@ pub(super) fn install(
         let predecessor = origin.publication.predecessor().ok_or_else(refuse)?;
         let original = runtime
             .history
-            .canonical_envelope(predecessor)
+            .canonical_envelope(predecessor).map_err(crate::history::data::canonical_commit_envelope::required_output_origin::installation::relation_stop)?
             .ok_or_else(refuse)?;
         let live = original
             .output_origin_for_route(&origin.meaning, context)

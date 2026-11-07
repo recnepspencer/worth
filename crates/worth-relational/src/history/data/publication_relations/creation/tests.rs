@@ -361,15 +361,16 @@ fn run(
                 lease,
                 None,
                 |context| {
-                    let mut lookup = |version| {
-                        if version == birth.commit.version_id {
-                            Some(Arc::clone(birth))
-                        } else if version == write.commit.version_id {
-                            Some(Arc::clone(write))
-                        } else {
-                            None
-                        }
-                    };
+                    let mut lookup =
+                        |version, _context: &mut worth_execution::MapKernelContext<'_, '_>| {
+                            Ok(if version == birth.commit.version_id {
+                                Some(Arc::clone(birth))
+                            } else if version == write.commit.version_id {
+                                Some(Arc::clone(write))
+                            } else {
+                                None
+                            })
+                        };
                     if owned {
                         validate_owned(state, id, selected, &mut lookup, context)
                     } else {

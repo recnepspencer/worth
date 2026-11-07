@@ -4,7 +4,6 @@ use crate::capabilities::AspectPlanSource;
 use crate::history::data::{
     canonical_commit_envelope::*, CanonicalCommitEnvelope, RequiredOutputRoutePosition,
 };
-use crate::runtime::RelationalRuntime;
 use crate::transactions::data::{
     EntityMutationIntent, MutationIntent, RecordRef, RelationMutationIntent,
 };
@@ -16,7 +15,7 @@ mod effect_coverage;
 mod metadata;
 
 pub(super) fn validate(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     envelope: &Arc<CanonicalCommitEnvelope>,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
@@ -48,7 +47,7 @@ pub(super) fn validate(
 }
 
 fn validate_group(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     envelope: &Arc<CanonicalCommitEnvelope>,
     event: &CanonicalRequiredOutputCodecRetirement,
     context: &mut MapKernelContext<'_, '_>,
@@ -85,12 +84,10 @@ fn validate_group(
     }
     super::require_linear_history(envelope)?;
     let source = runtime
-        .history
-        .canonical_envelope(source_commit)
+        .commit(source_commit)?
         .ok_or("codec disposition source schema history absent")?;
     let original = runtime
-        .history
-        .canonical_envelope(event.publication)
+        .commit(event.publication)?
         .ok_or("codec disposition original publication absent")?;
     let origin = original.validate_output_membership_header()?;
     charge(
@@ -200,6 +197,7 @@ fn validate_group(
             .find(|kind| kind.kind_id == relation.kind)
             .ok_or("codec relation target contract absent")?;
         let plan = runtime
+            .runtime
             .relation_aspect_plan(relation.kind)
             .ok_or("codec relation native contract absent")?;
         if before != after || plan.plan_revision != before.aspect_plan_revision {
@@ -231,7 +229,7 @@ fn validate_group(
 }
 
 pub(super) fn validate_birth(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     birth: &Arc<CanonicalCommitEnvelope>,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,

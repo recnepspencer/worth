@@ -12,7 +12,7 @@ use worth_execution::MapKernelContext;
 #[allow(clippy::too_many_arguments)]
 pub(super) fn capture(
     envelope: &CanonicalCommitEnvelopeBody,
-    history: &crate::runtime::RelationalPreparationHistory,
+    history: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationHistoryRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     state: &WorkingState,
     created: &CommitCreatedEntityBindings,
@@ -90,7 +90,9 @@ pub(super) fn capture(
                             member.after_write,
                             write,
                             &mut |commit| history.canonical_envelope(commit),
-                            &mut |version| history.canonical_envelope_for_version(version),
+                            &mut |version, context| {
+                                history.canonical_envelope_for_version(version, context)
+                            },
                             history.canonical_catalog_len(),
                             context,
                         )

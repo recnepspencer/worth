@@ -106,6 +106,42 @@ impl RelationalCanonicalPublicationRoutes {
                 .len()
     }
 
+    pub(crate) fn commit_for_version_in_context(
+        &self,
+        version: VersionId,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<Option<CommitId>, crate::execution::RelationalExecutionDenialCause> {
+        if context.has_accounting() {
+            context.checkpoint(1)
+        } else {
+            context.poll()
+        }
+        .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+        if let Some(route) = self
+            .by_version
+            .get(&version)
+            .filter(|route| route.is_visible())
+        {
+            return Ok(Some(route.commit.commit_id));
+        }
+        let catalog = self
+            .checkpoint_catalog
+            .read()
+            .unwrap_or_else(|error| error.into_inner());
+        let work = u64::try_from(catalog.len())
+            .map_err(|_| crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow)?;
+        if context.has_accounting() {
+            context.checkpoint(work)
+        } else {
+            context.poll()
+        }
+        .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+        Ok(catalog
+            .values()
+            .find(|artifact| artifact.version_id() == version)
+            .map(|artifact| artifact.commit_id()))
+    }
+
     pub(crate) fn by_version(&self, version_id: VersionId) -> Option<Arc<CanonicalCommitEnvelope>> {
         visible_envelope(self.by_version.get(&version_id).map(|entry| entry.clone()))
     }

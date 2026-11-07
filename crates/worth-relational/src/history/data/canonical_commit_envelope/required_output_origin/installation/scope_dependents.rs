@@ -13,7 +13,7 @@ pub(super) struct RemovedOwningScopes {
 
 pub(super) fn require_retained_sources(
     candidate: &CanonicalCommitEnvelopeBody,
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
     installed: &crate::mvcc::RelationalInstalledApplicationPublicationAuthority,
     prior: &CanonicalRequiredOutputOrigin,
     roles: &[crate::mvcc::RequiredOutputRoleTarget],
@@ -30,7 +30,7 @@ pub(super) fn require_retained_sources(
 /// Preserve the existing charged eligibility path for every non-cascading candidate.
 pub(super) fn select_removed_owning_scopes(
     candidate: &CanonicalCommitEnvelopeBody,
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
     installed: &crate::mvcc::RelationalInstalledApplicationPublicationAuthority,
     prior: &CanonicalRequiredOutputOrigin,
     roles: &[crate::mvcc::RequiredOutputRoleTarget],

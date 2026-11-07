@@ -4,13 +4,12 @@ use crate::branch::RelationalBranchRoot;
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::identity::data::RelationId;
 use crate::publication::patch::data::RecordStructuralChange as Change;
-use crate::runtime::RelationalRuntime;
 use crate::transactions::data::RecordRef;
 use std::sync::Arc;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
 
 pub(super) fn validate(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     root: &RelationalBranchRoot,
     selected: &Arc<CanonicalCommitEnvelope>,
     id: RelationId,
@@ -51,9 +50,9 @@ pub(super) fn validate(
             selected.commit.commit_id,
             entry.after_write,
             write,
-            &mut |commit| runtime.history.canonical_envelope(commit),
-            &mut |version| runtime.history.canonical_envelope_for_version(version),
-            runtime.history.catalog_len(),
+            &mut |commit| runtime.commit(commit),
+            &mut |version, context| runtime.version(version, context),
+            runtime.runtime.history.catalog_len(),
             context,
         )?
     {
@@ -78,14 +77,14 @@ pub(super) fn validate(
 }
 
 pub(super) fn reconstruct(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     selected: &Arc<CanonicalCommitEnvelope>,
     id: RelationId,
     plan: &crate::schema::data::LoweredAspectContractPlan,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<Option<super::payload_reconstruction::ReconstructedPayload>, Stop> {
-    let bound = runtime.history.catalog_len();
+    let bound = runtime.runtime.history.catalog_len();
     let _memory = reserve(
         lease,
         bound
@@ -132,8 +131,7 @@ pub(super) fn reconstruct(
             return Err("relation has predecessor under initial publication".into());
         };
         let previous = runtime
-            .history
-            .canonical_envelope(predecessor)
+            .commit(predecessor)?
             .ok_or("relation predecessor absent")?;
         let old = previous.output_origin_for_relation(id, context)?;
         charge(context, old.relations.len())?;
@@ -147,9 +145,9 @@ pub(super) fn reconstruct(
             previous.commit.commit_id,
             old.after_write,
             before,
-            &mut |commit| runtime.history.canonical_envelope(commit),
-            &mut |version| runtime.history.canonical_envelope_for_version(version),
-            runtime.history.catalog_len(),
+            &mut |commit| runtime.commit(commit),
+            &mut |version, context| runtime.version(version, context),
+            runtime.runtime.history.catalog_len(),
             context,
         )? || relation.birth != old.birth
             || relation.kind != old.kind

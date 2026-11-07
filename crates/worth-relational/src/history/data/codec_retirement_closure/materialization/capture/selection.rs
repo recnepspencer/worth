@@ -5,7 +5,7 @@ use crate::identity::data::RelationId;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
 
 pub(super) fn at_source(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     record: &RelationalMaterializationRecord,
     context: &mut MapKernelContext<'_, '_>,
@@ -48,8 +48,7 @@ pub(super) fn at_source(
     // route cannot fall back to an older endpoint or an older publication.
     optional((|| {
         let current = runtime
-            .history
-            .canonical_envelope(commit)
+            .commit(commit)?
             .ok_or("current incident producer publication absent")?;
         let current_origin = current.validate_output_membership_header()?;
         charge(
@@ -78,7 +77,7 @@ pub(super) fn at_source(
 }
 
 fn relation_birth(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     relation_id: RelationId,
     context: &mut MapKernelContext<'_, '_>,
@@ -94,8 +93,7 @@ fn relation_birth(
         .created_at_for_slot(relation_id.slot_index())
         .ok_or("incident producer relation birth position absent")?;
     let birth = runtime
-        .history
-        .canonical_envelope_for_version(created)
+        .version(created, context)?
         .ok_or("incident producer exact canonical birth absent")?;
     let origin = birth.validate_output_membership_header()?;
     // Actual Created allocation/endpoints establish producer ownership. Current
@@ -104,7 +102,7 @@ fn relation_birth(
         &*basis.inner.root,
         relation_id,
         origin,
-        &mut |version| runtime.history.canonical_envelope_for_version(version),
+        &mut |version, context| runtime.version(version, context),
         context,
     )?;
     Ok(birth)
