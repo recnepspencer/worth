@@ -137,8 +137,40 @@ fn foreign_workspace_resume_stops_without_consuming_recovery_authority() {
     assert!(closed(resumed.into_handle().close(&mut owner)).lane_terminal());
 }
 
-#[path = "live_continuation/policy_drift_requires_authority_rebind_before_resume.rs"]
-mod policy_drift_requires_authority_rebind_before_resume;
+#[test]
+fn policy_drift_requires_authority_rebind_before_resume() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = policy_drift_workspace(request_execution);
+    let continuation = checkpointed(
+        open_task_resource(
+            request_execution,
+            &mut workspace,
+            "tasks.resume-policy-drift",
+        )
+        .checkpoint(&mut workspace)
+        .expect("fixture digest must fit"),
+    );
+
+    let stop = stopped(
+        continuation
+            .resume(&mut workspace)
+            .expect("fixture digest must fit"),
+    );
+    assert_eq!(
+        stop.kind(),
+        WorthQueryManagedLiveResumeStopKind::AuthorityRebindRequired
+    );
+    assert_eq!(
+        stop.next_action(),
+        WorthQueryManagedLiveResumeNextAction::RebindAuthority
+    );
+    assert!(matches!(
+        stop.close(&mut workspace),
+        crate::ordinary::live::WorthQueryManagedLiveCloseOutcome::Closed(_)
+    ));
+}
 
 #[test]
 fn stale_basis_cannot_cross_a_managed_resume_boundary() {
@@ -329,53 +361,9 @@ fn abandoned_continuation_is_reaped_before_subsequent_runtime_work() {
         .is_empty());
 }
 
-fn checkpointed(
-    outcome: WorthQueryManagedLiveCheckpointOutcome,
-) -> crate::ordinary::live::WorthQueryManagedLiveContinuation {
-    match outcome {
-        WorthQueryManagedLiveCheckpointOutcome::Checkpointed(completion) => {
-            completion.into_continuation()
-        }
-        WorthQueryManagedLiveCheckpointOutcome::Stopped(stop) => {
-            panic!(
-                "managed checkpoint unexpectedly stopped: {:?}",
-                stop.error()
-            )
-        }
-    }
-}
-
-fn resumed(
-    outcome: WorthQueryManagedLiveResumeOutcome,
-) -> crate::ordinary::live::WorthQueryManagedLiveResumeCompletion {
-    match outcome {
-        WorthQueryManagedLiveResumeOutcome::Resumed(completion) => completion,
-        WorthQueryManagedLiveResumeOutcome::Stopped(stop) => {
-            panic!("managed resume unexpectedly stopped: {:?}", stop.kind())
-        }
-    }
-}
-
-fn stopped(
-    outcome: WorthQueryManagedLiveResumeOutcome,
-) -> crate::ordinary::live::WorthQueryManagedLiveResumeStop {
-    match outcome {
-        WorthQueryManagedLiveResumeOutcome::Stopped(stop) => stop,
-        WorthQueryManagedLiveResumeOutcome::Resumed(_) => {
-            panic!("hostile managed resume unexpectedly succeeded")
-        }
-    }
-}
-
-fn task_insert(title: &str) -> crate::runtime::WorthQueryWriteCommand {
-    insert_command(
-        "Task",
-        [
-            ("identity.id", test_string_aspect_value("")),
-            ("title.value", test_string_aspect_value(title)),
-        ],
-    )
-}
+#[path = "live_continuation/task_insert.rs"]
+mod task_insert;
+use task_insert::task_insert;
 
 fn policy_drift_workspace(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -397,3 +385,7 @@ fn policy_drift_workspace(
         .workspace("managed-live-policy-drift")
         .expect("policy-drift workspace should open")
 }
+
+#[path = "live_continuation/outcomes.rs"]
+mod outcomes;
+use outcomes::{checkpointed, resumed, stopped};

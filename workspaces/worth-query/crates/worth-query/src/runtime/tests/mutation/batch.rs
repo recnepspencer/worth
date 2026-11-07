@@ -83,91 +83,22 @@ fn workspace_batch_aggregates_touched_surfaces_and_remains_inspectable() {
     );
     assert_eq!(receipt.write_count(), 2);
     assert_eq!(receipt.considered_computed_view_count(), 1);
-    assert_eq!(
-        receipt
-            .batch_mutation_evidence()
-            .expect("fixture digest must fit")
-            .component_count(),
-        2
-    );
-    assert_eq!(
-        receipt
-            .batch_mutation_evidence()
-            .expect("fixture digest must fit")
-            .target_evidence_count(),
-        2
-    );
-    assert_eq!(
-        receipt
-            .batch_mutation_evidence()
-            .expect("fixture digest must fit")
-            .resolved_target_count(),
-        2
-    );
-    assert_eq!(
-        receipt
-            .batch_mutation_evidence()
-            .expect("fixture digest must fit")
-            .target_collection_count(),
-        0
-    );
-    assert_eq!(
-        receipt
-            .batch_mutation_evidence()
-            .expect("fixture digest must fit")
-            .target_entity_count(),
-        2
-    );
-    assert_eq!(
-        receipt
-            .batch_mutation_evidence()
-            .expect("fixture digest must fit")
-            .causality_bundle_count(),
-        2
-    );
-    assert_eq!(
-        receipt
-            .batch_mutation_evidence()
-            .expect("fixture digest must fit")
-            .provenance_bundle_count(),
-        2
-    );
-    assert_eq!(
-        receipt
-            .batch_mutation_evidence()
-            .expect("fixture digest must fit")
-            .outcome_class_count(),
-        2
-    );
-    assert_eq!(
-        receipt
-            .batch_mutation_evidence()
-            .expect("fixture digest must fit")
-            .authority_request_count(),
-        2
-    );
-    assert_eq!(
-        receipt
-            .batch_mutation_evidence()
-            .expect("fixture digest must fit")
-            .authority_receipt_count(),
-        2
-    );
-    assert!(!receipt
+    let batch_evidence = receipt
         .batch_mutation_evidence()
-        .expect("fixture digest must fit")
-        .aggregate_target_digest()
-        .is_empty());
-    assert!(receipt
-        .batch_mutation_evidence()
-        .expect("fixture digest must fit")
-        .aggregate_causality_digest()
-        .is_some());
-    assert!(receipt
-        .batch_mutation_evidence()
-        .expect("fixture digest must fit")
-        .aggregate_provenance_digest()
-        .is_some());
+        .expect("fixture digest must fit");
+    assert_eq!(batch_evidence.component_count(), 2);
+    assert_eq!(batch_evidence.target_evidence_count(), 2);
+    assert_eq!(batch_evidence.resolved_target_count(), 2);
+    assert_eq!(batch_evidence.target_collection_count(), 0);
+    assert_eq!(batch_evidence.target_entity_count(), 2);
+    assert_eq!(batch_evidence.causality_bundle_count(), 2);
+    assert_eq!(batch_evidence.provenance_bundle_count(), 2);
+    assert_eq!(batch_evidence.outcome_class_count(), 2);
+    assert_eq!(batch_evidence.authority_request_count(), 2);
+    assert_eq!(batch_evidence.authority_receipt_count(), 2);
+    assert!(!batch_evidence.aggregate_target_digest().is_empty());
+    assert!(batch_evidence.aggregate_causality_digest().is_some());
+    assert!(batch_evidence.aggregate_provenance_digest().is_some());
     assert_eq!(
         receipt.admitted_touched_aspects(),
         test_aspect_touches(["identity", "title"]).as_slice()
@@ -356,5 +287,58 @@ fn preview_batch_stages_multiple_aspect_native_writes_in_preview_lane() {
     assert_eq!(outcome.authoritative_residue_count(), 0);
 }
 
-#[path = "batch/preview_batch_uses_batch_target_evidence_without_authority_bundles.rs"]
-mod preview_batch_uses_batch_target_evidence_without_authority_bundles;
+#[test]
+fn preview_batch_uses_batch_target_evidence_without_authority_bundles() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
+        .workspace("tasks.preview-batch-evidence")
+        .expect("task runtime should open a named workspace");
+    let mut preview = workspace
+        .preview_with_options(
+            request_execution,
+            test_session_label("task-preview-batch-evidence"),
+            WorthQueryPreviewOptions::sandboxed_write_intent(),
+        )
+        .expect("preview should open");
+
+    let receipt = preview
+        .batch(request_execution, |batch| {
+            batch
+                .insert("Task", |task| {
+                    task.set_aspect(
+                        test_aspect_touch("identity.id"),
+                        test_authored_string_aspect_value("preview-task-1"),
+                    )
+                    .set_aspect(
+                        test_aspect_touch("title.value"),
+                        test_authored_string_aspect_value("Preview title one"),
+                    )
+                })
+                .insert("Task", |task| {
+                    task.set_aspect(
+                        test_aspect_touch("identity.id"),
+                        test_authored_string_aspect_value("preview-task-2"),
+                    )
+                    .set_aspect(
+                        test_aspect_touch("title.value"),
+                        test_authored_string_aspect_value("Preview title two"),
+                    )
+                })
+        })
+        .expect("preview batch should stage");
+
+    let batch_evidence = receipt
+        .batch_mutation_evidence()
+        .expect("fixture digest must fit");
+    assert_eq!(batch_evidence.component_count(), 2);
+    assert_eq!(batch_evidence.target_evidence_count(), 2);
+    assert_eq!(batch_evidence.resolved_target_count(), 0);
+    assert_eq!(batch_evidence.target_collection_count(), 2);
+    assert_eq!(batch_evidence.target_entity_count(), 0);
+    assert_eq!(batch_evidence.causality_bundle_count(), 0);
+    assert_eq!(batch_evidence.provenance_bundle_count(), 0);
+    assert!(batch_evidence.aggregate_causality_digest().is_none());
+    assert!(batch_evidence.aggregate_provenance_digest().is_none());
+}
