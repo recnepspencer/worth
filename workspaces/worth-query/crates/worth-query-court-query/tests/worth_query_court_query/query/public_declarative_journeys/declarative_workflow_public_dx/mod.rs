@@ -26,7 +26,8 @@ fn mutation_journey_uses_only_mutation_capability_vocabulary() {
     let context = authoritative(request_execution, &workspace).expect("authority should admit");
     let outcome = declaration
         .using(context)
-        .run(request_execution, &mut workspace);
+        .run(request_execution, &mut workspace)
+        .expect("fixture digest must fit");
     let completion = outcome.completed().expect("mutation should complete");
     assert_eq!(
         completion.aftermath().authority_lane(),

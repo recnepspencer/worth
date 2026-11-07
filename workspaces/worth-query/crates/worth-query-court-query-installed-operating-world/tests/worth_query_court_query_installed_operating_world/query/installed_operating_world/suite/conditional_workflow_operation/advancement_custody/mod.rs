@@ -38,7 +38,7 @@ fn deferred_start_retry_opens_before_the_same_condition_reader() {
                     &workspace,
                 )
                 .unwrap()
-                .start_workflow(&mut workspace)
+                .start_workflow(&mut workspace).expect("fixture digest must fit")
             else {
                 panic!("the declared condition produces a retained deferred start");
             };

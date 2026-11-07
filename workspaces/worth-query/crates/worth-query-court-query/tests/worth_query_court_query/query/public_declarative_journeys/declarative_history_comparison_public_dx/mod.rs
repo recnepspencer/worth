@@ -44,7 +44,8 @@ fn history_transcript_executes_using_only_history_capability_vocabulary() {
     let context = at(request_execution, &workspace);
     let outcome = declaration
         .using(context)
-        .run(request_execution, &mut workspace);
+        .run(request_execution, &mut workspace)
+        .expect("fixture digest must fit");
 
     assert!(outcome.completed().is_some());
     assert!(outcome.stop().is_none());
@@ -108,7 +109,8 @@ fn comparison_transcript_executes_using_only_comparison_capability_vocabulary() 
     .expect("branch bases should admit");
     let outcome = declaration
         .using(context)
-        .run(request_execution, (&mut left, &mut right));
+        .run(request_execution, (&mut left, &mut right))
+        .expect("fixture digest must fit");
 
     let completion = outcome.completed().expect("diff should complete");
     assert_eq!(completion.change(), WorthQueryComparisonChange::Unchanged);

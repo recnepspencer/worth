@@ -65,7 +65,13 @@ fn in_memory_test_backend_facade_admits_preview_and_invariant_denial() {
                 .set_aspect(touch("title.value"), authored_text("Preview facade proof"))
         })
         .expect("facade preview should stage schema-backed write");
-    assert_eq!(preview.discard().authoritative_residue_count(), 0);
+    assert_eq!(
+        preview
+            .discard()
+            .expect("fixture digest must fit")
+            .authoritative_residue_count(),
+        0
+    );
 
     let mut invariant_workspace = in_memory_test_runtime()
         .with_schema(schema)

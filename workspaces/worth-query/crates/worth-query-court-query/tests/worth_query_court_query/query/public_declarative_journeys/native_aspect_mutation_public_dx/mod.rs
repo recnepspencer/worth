@@ -37,7 +37,8 @@ fn ordinary_mutation_roundtrips_every_foundational_scalar_family() {
     let context = authoritative(request_execution, &workspace).unwrap();
     let outcome = declaration
         .using(context)
-        .run(request_execution, &mut workspace);
+        .run(request_execution, &mut workspace)
+        .expect("fixture digest must fit");
     assert!(outcome.completed().is_some());
     let rows = read_rows(
         request_execution,
@@ -81,7 +82,8 @@ fn ordinary_mutation_preserves_struct_set_clear_null_and_denial_boundaries() {
     })
     .unwrap()
     .using(authoritative(request_execution, &workspace).unwrap())
-    .run(request_execution, &mut workspace);
+    .run(request_execution, &mut workspace)
+    .expect("fixture digest must fit");
     let entity = insert
         .completed()
         .unwrap()
@@ -107,7 +109,8 @@ fn ordinary_mutation_preserves_struct_set_clear_null_and_denial_boundaries() {
     })
     .unwrap()
     .using(authoritative(request_execution, &workspace).unwrap())
-    .run(request_execution, &mut workspace);
+    .run(request_execution, &mut workspace)
+    .expect("fixture digest must fit");
     assert!(update.completed().is_some());
     let after_clear = read_rows(
         request_execution,
@@ -128,7 +131,8 @@ fn ordinary_mutation_preserves_struct_set_clear_null_and_denial_boundaries() {
     })
     .unwrap()
     .using(authoritative(request_execution, &workspace).unwrap())
-    .run(request_execution, &mut workspace);
+    .run(request_execution, &mut workspace)
+    .expect("fixture digest must fit");
     let WorthQueryMutationOutcome::Stopped(stop) = denied else {
         panic!("wrong-family mutation must stop before lower-runtime execution");
     };
@@ -179,7 +183,8 @@ fn invalid_native_values_deny_before_lower_runtime_execution_without_residue() {
     })
     .unwrap()
     .using(authoritative(request_execution, &workspace).unwrap())
-    .run(request_execution, &mut workspace);
+    .run(request_execution, &mut workspace)
+    .expect("fixture digest must fit");
     let entity = insert
         .completed()
         .unwrap()
@@ -209,7 +214,8 @@ fn invalid_native_values_deny_before_lower_runtime_execution_without_residue() {
         })
         .unwrap()
         .using(authoritative(request_execution, &workspace).unwrap())
-        .run(request_execution, &mut workspace);
+        .run(request_execution, &mut workspace)
+        .expect("fixture digest must fit");
         assert_pre_execution_denial(denied);
     }
 

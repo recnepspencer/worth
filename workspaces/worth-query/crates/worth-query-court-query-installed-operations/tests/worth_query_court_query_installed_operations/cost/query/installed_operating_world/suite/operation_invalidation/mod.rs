@@ -53,8 +53,12 @@ fn one_owner_epoch_fans_exact_evidence_to_two_lease_deltas_in_k_plus_l_work() {
         0
     );
 
-    let subject_projection = subject_delta.foundational_projection();
-    let candidate_projection = candidate_delta.foundational_projection();
+    let subject_projection = subject_delta
+        .foundational_projection()
+        .expect("fixture digest must fit");
+    let candidate_projection = candidate_delta
+        .foundational_projection()
+        .expect("fixture digest must fit");
     assert_eq!(subject_projection, candidate_projection);
     assert_eq!(
         subject_projection.provenance().freshness_posture(),

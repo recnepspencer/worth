@@ -21,7 +21,7 @@ fn admitted_parallel_frontier_retains_lower_proof_and_converges_with_serial_trac
         )
         .unwrap()
         .start_workflow(&mut workspace)
-        .unwrap()
+        .unwrap().unwrap()
         .advance(
             "start",
             domain::WorthQueryWorkflowValue::NotRequired,

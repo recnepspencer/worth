@@ -35,7 +35,7 @@ fn eligible_operation_condition_enters_the_run_before_any_stage_work() {
         )
         .unwrap();
     assert_eq!(admitted.resources().counters().runtime_authority_checks, 1);
-    let run = admitted.start_workflow(&mut workspace).unwrap();
+    let run = admitted.start_workflow(&mut workspace).unwrap().unwrap();
 
     let context = captured.lock().unwrap().take().unwrap();
     assert_eq!(context.run_identity.as_deref(), Some(run.identity()));
@@ -90,7 +90,7 @@ fn deferred_operation_condition_returns_fresh_retry_authority_and_zero_stage_wor
             &workspace,
         )
         .unwrap()
-        .start_workflow(&mut workspace)
+        .start_workflow(&mut workspace).expect("fixture digest must fit")
     else {
         panic!("the operation-level condition must defer workflow creation")
     };
@@ -148,7 +148,7 @@ fn ineligible_operation_condition_cannot_create_a_workflow_run() {
             &workspace,
         )
         .unwrap()
-        .start_workflow(&mut workspace)
+        .start_workflow(&mut workspace).expect("fixture digest must fit")
     else {
         panic!("a suppressed operation-level condition must not mint a workflow run")
     };
