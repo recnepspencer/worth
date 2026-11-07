@@ -26,6 +26,7 @@ impl RelationalRegionKindAuthority {
     }
     pub(crate) fn bind(
         &self,
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         regions: impl IntoIterator<Item = (PartitionId, Arc<RelationalRegionResidency>)>,
     ) -> Result<(), Cause> {
         let mut directory = BTreeMap::new();

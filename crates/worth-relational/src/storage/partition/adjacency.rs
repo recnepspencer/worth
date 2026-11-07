@@ -80,6 +80,7 @@ impl AdjacencySet {
     }
 
     pub(crate) fn compressed_from_checkpoint(
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         current: Vec<RelationId>,
         structural_revisions: Vec<(KindId, VersionId)>,
     ) -> Self {

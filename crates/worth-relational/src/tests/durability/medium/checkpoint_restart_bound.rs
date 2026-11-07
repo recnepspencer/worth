@@ -80,9 +80,12 @@ fn checkpoint_restart_cycles_preserve_full_reads_and_retention() {
             .flat_map(|root| root.regions.iter())
             .chain(captured.mirror.iter())
             .map(|leaf| leaf.history);
-        let directory =
-            RelationalHistoryMemberDirectory::readmit(&captured.history_dependencies, roots)
-                .unwrap();
+        let directory = RelationalHistoryMemberDirectory::readmit(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            &captured.history_dependencies,
+            roots,
+        )
+        .unwrap();
         let mut depth = 0;
         for leaf in captured
             .roots

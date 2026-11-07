@@ -113,6 +113,7 @@ fn recovery_rejects_a_schema_carrier_swapped_between_exact_roots() {
     assert_ne!(root.schema_carrier_digest, replacement);
     root.schema_carrier_digest = replacement;
     root.root_image_digest = crate::durability::data::branch_root_image_digest(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
         root.format_version,
         root.commit_id,
         root.partition_image_digest,

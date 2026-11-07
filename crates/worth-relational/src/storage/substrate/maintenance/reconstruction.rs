@@ -35,8 +35,16 @@ impl ReconstructionLane<'_> {
             operation(self, &mut ReconstructionWork { work })
         })
     }
+    /// Private-logic oracles exercise the same cold engines without constructing
+    /// a foreign execution runtime inside a source unit test.
     #[cfg(test)]
-    pub(in crate::storage) fn oracle() -> Self {
+    pub(crate) fn inspect_oracle<T>(
+        operation: impl FnOnce(&ReconstructionLane<'_>, &mut ReconstructionWork<'_, '_>) -> T,
+    ) -> T {
+        ChangeWork::oracle(|work| operation(&Self::oracle(), &mut ReconstructionWork { work }))
+    }
+    #[cfg(test)]
+    pub(crate) fn oracle() -> Self {
         Self {
             _scope: std::marker::PhantomData,
         }

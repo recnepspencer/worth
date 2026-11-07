@@ -48,7 +48,7 @@ impl RelationalBranchRoot {
         }
         validate_schema_root(&envelope, &committed.descriptor)?;
         require_schema_authority(&self.schema_authority, &envelope, &committed.descriptor)?;
-        self.require_current_content_binding(&committed, symbols)?;
+        self.require_current_content_binding(execution, &committed, symbols)?;
         require_visibility_commitment(&committed, &envelope)?;
         self.content
             .certify_records(
@@ -82,7 +82,7 @@ impl RelationalBranchRoot {
             source.envelope(),
             &committed.descriptor,
         )?;
-        self.require_current_content_binding(&committed, symbols)?;
+        self.require_current_content_binding(execution, &committed, symbols)?;
         self.content
             .certify_records(
                 execution,
@@ -104,6 +104,7 @@ impl RelationalBranchRoot {
     /// checkpoint without rebuilding the reconstructed storage regions.
     pub(crate) fn readmit_descriptor(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         descriptor: RelationalBranchRootDescriptor,
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
@@ -117,9 +118,9 @@ impl RelationalBranchRoot {
             &committed.canonical_envelope,
             &descriptor,
         )?;
-        self.require_current_content_binding(&committed, symbols)?;
+        self.require_current_content_binding(execution, &committed, symbols)?;
         let (reconstructed_root, reconstructed_accumulator) =
-            axes::storage_root_from_authoritative_regions(&self.regions, symbols)?;
+            self.verify_resident_storage_content(execution, symbols)?;
         require_descriptor_content(&descriptor, reconstructed_root)?;
         debug_assert_eq!(
             /* Proof: readmit rebuilds both the region set and accumulator from the same checked immutable regions before installing the new root; no caller can set the private accumulator independently. */
@@ -132,11 +133,12 @@ impl RelationalBranchRoot {
 
     fn require_current_content_binding(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         committed: &RelationalCommittedBranchRoot,
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<(), RelationalBranchRootCaptureDenial> {
         let (reconstructed_root, reconstructed_accumulator) =
-            axes::storage_root_from_authoritative_regions(&self.regions, symbols)?;
+            self.verify_resident_storage_content(execution, symbols)?;
         if self.content_accumulator != reconstructed_accumulator
             || committed.axes.storage_root != reconstructed_root
         {

@@ -111,7 +111,10 @@ fn assert_cold_inventory(runtime: &crate::runtime::RelationalRuntime) {
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
     let root = &basis.inner.root;
-    assert!(root.is_complete(&runtime.services.symbols.interner_snapshot()));
+    assert!(root.is_complete(
+        &worth_execution::ExecutionRequest::serial(&crate::test_execution_policy::serial_request()),
+        &runtime.services.symbols.interner_snapshot()
+    ));
     root.assert_derived_inventory_matches_cold();
 }
 

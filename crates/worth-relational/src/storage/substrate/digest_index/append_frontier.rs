@@ -3,6 +3,23 @@
 use super::*;
 use crate::storage::substrate::{HistoryAppendFrontier, HistoryFrontierSibling};
 impl DigestIndex {
+    /// Read only the right spine to admit the frontier output before allocation.
+    pub(crate) fn frontier_quote(&self) -> Option<(u64, u64)> {
+        let mut siblings = 0_u64;
+        let mut current = self.root.as_deref();
+        while let Some(node) = current {
+            if let Some(children) = &node.children {
+                siblings += 1;
+                current = Some(&children[1]);
+            } else {
+                break;
+            }
+        }
+        Some((
+            siblings + 1,
+            siblings.checked_mul(2 * size_of::<HistoryFrontierSibling>() as u64)?,
+        ))
+    }
     pub(crate) fn append_frontier(
         &self,
         last_value: Option<[u8; 32]>,

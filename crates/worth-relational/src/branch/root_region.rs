@@ -152,6 +152,9 @@ pub(super) fn capture_failure(
             RelationalBranchRootCaptureDenial::InvalidAdjacencyProjection(partition)
         }
         RegionContentFailure::Content(
+            crate::storage::overlay::PartitionContentDigestError::Execution(cause),
+        ) => RelationalBranchRootCaptureDenial::Execution(cause),
+        RegionContentFailure::Content(
             crate::storage::overlay::PartitionContentDigestError::UnresolvedContentSymbol(symbol),
         ) => RelationalBranchRootCaptureDenial::UnresolvedContentSymbol(symbol),
         RegionContentFailure::Content(

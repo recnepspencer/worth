@@ -190,7 +190,11 @@ impl StringInterner {
         SymbolTableSnapshot { entries }
     }
 
-    pub fn restore_snapshot(&mut self, snapshot: SymbolTableSnapshot) {
+    pub fn restore_snapshot(
+        &mut self,
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        snapshot: SymbolTableSnapshot,
+    ) {
         self.by_value = HashMap::new();
         self.by_symbol = OrdMap::new();
         self.next_symbol = 1;
@@ -265,7 +269,10 @@ mod tests {
 
         let snapshot = interner.snapshot();
         let mut restored = StringInterner::default();
-        restored.restore_snapshot(snapshot);
+        restored.restore_snapshot(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            snapshot,
+        );
 
         assert_eq!(restored.resolve(beta), Some("beta"));
         assert_eq!(restored.resolve(alpha), Some("alpha"));

@@ -28,3 +28,22 @@ crates/worth-relational/src/indexes/authority/checkpoint_admission.rs
 
 # Admit the canonical typed membership carried by untrusted checkpoint leaves.
 crates/worth-relational/src/durability/checkpoints/region_directory.rs
+
+# Explicit exact-selected authored-history reconstruction; no callback or lane result.
+crates/worth-relational/src/history/access/relevant_writes/maintenance.rs
+
+# Full admitted-plan recovery and canonical tail readmission; capabilities stay local.
+crates/worth-relational/src/durability/authority/runtime_rebuild.rs
+crates/worth-relational/src/durability/authority/runtime_rebuild/envelope_replay.rs
+
+# Explicit index-image export and lazy readmission of untrusted checkpoint bytes.
+crates/worth-relational/src/durability/authority/checkpoint_capture.rs
+crates/worth-relational/src/durability/authority/checkpoint_memory_demand.rs
+crates/worth-relational/src/runtime/state/subsystems/indexing/cold_checkpoint.rs
+
+# Native checkpoint decode and complete export-directory verification.
+crates/worth-relational/src/durability/log/native_checkpoint_codec/checkpoint_decoding.rs
+crates/worth-relational/src/durability/authority/checkpoint_native_capture.rs
+
+# A changed content schema authority alone admits full directory reconstruction.
+crates/worth-relational/src/content/schema_transition.rs

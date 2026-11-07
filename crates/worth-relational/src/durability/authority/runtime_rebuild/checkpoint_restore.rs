@@ -44,10 +44,21 @@ pub(super) fn restore_checkpoint_state(
     work: &mut CheckpointRestoreWork,
 ) -> Result<(), RelationalRecoveryStop> {
     if let Some(directory) = checkpoint.directory.clone() {
-        cold_directory::restore(execution, restored, &checkpoint, directory.clone(), work)?;
-        restored
-            .indexes
-            .install_cold_checkpoint(directory, restored)?;
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            cold_directory::restore(
+                lane,
+                execution,
+                restored,
+                &checkpoint,
+                directory.clone(),
+                work,
+            )
+        })?;
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            restored
+                .indexes
+                .install_cold_checkpoint(lane, directory, restored)
+        })?;
         restored
             .index_authority()
             .recover_installed_index_routing(execution)?;
@@ -66,7 +77,9 @@ pub(super) fn restore_checkpoint_state(
             execution,
             &restored.indexes.snapshot(),
             artifact.bases(),
-            &crate::indexes::checkpoint_index_projections(restored),
+            &crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
+                |lane| crate::indexes::checkpoint_index_projections(lane, restored),
+            ),
         )?;
     }
     super::unshared_state(restored)?
@@ -82,7 +95,10 @@ fn prepare_checkpoint_state(
     work: &mut CheckpointRestoreWork,
 ) -> Result<PreparedCheckpointState, RelationalRecoveryStop> {
     validate_checkpoint_lineage_artifact(checkpoint)?;
-    let symbols = prepare_symbols(restored, checkpoint)?;
+    let symbols =
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            prepare_symbols(lane, restored, checkpoint)
+        })?;
     let record_identity = prepare_record_identity(checkpoint)?;
     let branch_root_images =
         crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
@@ -96,16 +112,26 @@ fn prepare_checkpoint_state(
     )?;
     let partitions =
         prepare_partitions(execution, restored, checkpoint, &branch_root_images, work)?;
-    let history = prepare_history(
-        execution,
-        restored,
-        checkpoint,
-        branch_root_images,
-        &symbols,
-        work,
-    )?;
-    let lineage = prepare_lineage(restored, checkpoint);
-    let indexes = prepare_indexes(checkpoint, &history, work)?;
+    let history =
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            prepare_history(
+                lane,
+                execution,
+                restored,
+                checkpoint,
+                branch_root_images,
+                &symbols,
+                work,
+            )
+        })?;
+    let lineage =
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            prepare_lineage(lane, restored, checkpoint)
+        });
+    let indexes =
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            prepare_indexes(lane, checkpoint, &history, work)
+        })?;
     Ok(PreparedCheckpointState {
         symbols,
         record_identity,
@@ -117,11 +143,12 @@ fn prepare_checkpoint_state(
 }
 
 fn prepare_symbols(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     restored: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
 ) -> Result<crate::symbols::data::StringInterner, DurabilityError> {
     let mut symbols = restored.services.symbols.interner_snapshot();
-    symbols.restore_snapshot(checkpoint.symbol_table.clone());
+    symbols.restore_snapshot(lane, checkpoint.symbol_table.clone());
     symbols
         .reserve_frontier(checkpoint.symbol_identity_frontier)
         .map_err(|detail| {
@@ -163,6 +190,7 @@ fn prepare_partitions(
 }
 
 fn prepare_lineage(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     restored: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
 ) -> LineageState {
@@ -187,11 +215,12 @@ fn prepare_lineage(
         .collect::<Vec<_>>();
     let mut events = events;
     events.sort_by_key(|(event, _)| event.event_id);
-    lineage.replace_events(events);
+    lineage.replace_events(lane, events);
     lineage
 }
 
 fn prepare_indexes(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     checkpoint: &DurableCheckpoint,
     history: &HistorySubsystem,
     work: &mut CheckpointRestoreWork,
@@ -212,6 +241,7 @@ fn prepare_indexes(
         work.index_definitions_readmitted += 1;
     }
     restore_checkpoint_derived_index_artifacts(
+        lane,
         &mut indexes,
         history,
         &checkpoint.derived_index_artifacts,
@@ -253,16 +283,17 @@ pub(super) fn clear_recovery_partition_pins(restored: &mut RelationalRuntime) {
 }
 
 pub(super) fn finalize_restored_runtime(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
 ) -> Result<(), crate::durability::data::RelationalRecoveryStop> {
     restored
         .index_authority()
         .recover_installed_index_routing(execution)?;
-    restored.history.rebuild_branch_head_version_index();
+    restored.history.rebuild_branch_head_version_index(lane);
     restored.visibility.cache.clear();
     restored
         .visibility_pins()
-        .rebuild_branch_head_visibility_residency();
+        .rebuild_branch_head_visibility_residency(lane);
     Ok(())
 }

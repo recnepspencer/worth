@@ -76,32 +76,38 @@ impl ResidentHistoryReadmission {
                 Some(commitment) => commitment.clone(),
                 None => {
                     PartitionContentCommitment::capture_layered(
+                        lane,
+                        execution,
                         &head.partition,
                         &self.symbols.interner_snapshot(),
                     )
-                    .map_err(|_| refuse(Cause::Damaged))?
+                    .map_err(|error| super::content_capture::restore_failure(partition_id, error))?
                     .0
                 }
             };
             let mut image = partition_to_image_with_contracts(
+                lane,
                 head.partition.clone(),
                 self.schema.aspect_plans(),
                 &contracts,
             )
             .map_err(|_| refuse(Cause::Damaged))?;
-            let mut folder = HistoryFolder::new(execution, partition_id, limit);
+            let mut folder = HistoryFolder::new(lane, execution, partition_id, limit);
             restore_rows::<EntityRecordKind>(
+                lane,
                 &mut folder,
                 &head.partition.entity_arena,
                 &mut image.entity_arena.metadata_history,
             )?;
             restore_rows::<RelationRecordKind>(
+                lane,
                 &mut folder,
                 &head.partition.relation_arena,
                 &mut image.relation_arena.metadata_history,
             )?;
-            let mut partition = partition_from_image(image, self.schema.aspect_plans(), &contracts)
-                .map_err(|_| refuse(Cause::Damaged))?;
+            let mut partition =
+                partition_from_image(lane, image, self.schema.aspect_plans(), &contracts)
+                    .map_err(|_| refuse(Cause::Damaged))?;
             partition.adjacency = head.partition.adjacency.clone();
             partition.reverse_adjacency = head.partition.reverse_adjacency.clone();
             let projection = if head.kind_indexes.is_some() {
@@ -136,11 +142,12 @@ impl ResidentHistoryReadmission {
                 requirements.get(true).unwrap().ids.iter().copied(),
             )?;
             let (commitment, _) = PartitionContentCommitment::capture(
+                lane,
+                execution,
                 &partition,
                 &self.symbols.interner_snapshot(),
-                None,
             )
-            .map_err(|_| refuse(Cause::Damaged))?;
+            .map_err(|error| super::content_capture::restore_failure(partition_id, error))?;
             if commitment.digest(partition_id) != expected.digest(partition_id) {
                 return Err(refuse(Cause::IntegrityMismatch));
             }
@@ -159,6 +166,7 @@ impl ResidentHistoryReadmission {
 }
 
 fn restore_rows<K: RecordKind + HistoryRowKind>(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     folder: &mut HistoryFolder<'_, '_, '_>,
     arena: &RecordArena<K>,
     rows: &mut [Vec<K::Metadata>],
@@ -175,8 +183,12 @@ fn restore_rows<K: RecordKind + HistoryRowKind>(
                 row_index: prefix.row_index as u64,
                 kind_commitment: prefix.history_opening.kind_commitment,
             };
-            let mut earlier =
-                folder.fold_row::<K>(prefix.source.as_ref(), &prefix.history_members, reference)?;
+            let mut earlier = folder.fold_row::<K>(
+                lane,
+                prefix.source.as_ref(),
+                &prefix.history_members,
+                reference,
+            )?;
             earlier.append(suffix);
             *suffix = earlier;
         }

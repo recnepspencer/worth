@@ -16,6 +16,7 @@ use super::field_projection_scope::{
 use super::IndexProjectionSource;
 
 pub(in crate::indexes) fn build_entity_aspect_field_index(
+    _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_>,
     field_locator: &AspectFieldLocator,
@@ -42,6 +43,7 @@ pub(in crate::indexes) fn build_entity_aspect_field_index(
 }
 
 pub(in crate::indexes) fn build_entity_aspect_field_index_checked(
+    _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_>,
     field_locator: &AspectFieldLocator,

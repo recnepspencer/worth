@@ -8,7 +8,7 @@ pub(super) fn rebind(
     checkpoint: &mut DurableCheckpoint,
 ) -> Result<(), RelationalRecoveryStop> {
     let mut symbols = crate::symbols::data::StringInterner::default();
-    symbols.restore_snapshot(checkpoint.symbol_table.clone());
+    symbols.restore_snapshot(lane, checkpoint.symbol_table.clone());
     for root in &checkpoint.branch_roots {
         checkpoint
             .root_kind_images
@@ -34,6 +34,7 @@ pub(super) fn rebind(
         let mut partitions = std::collections::BTreeMap::new();
         for image in &root.partition_images {
             let partition = crate::durability::checkpoints::images::partition_from_image(
+                lane,
                 image.clone(),
                 authority.aspect_plans(),
                 &catalog,

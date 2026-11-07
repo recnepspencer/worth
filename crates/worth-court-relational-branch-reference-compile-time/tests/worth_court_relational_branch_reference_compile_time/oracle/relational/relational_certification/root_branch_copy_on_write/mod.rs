@@ -96,7 +96,7 @@ fn forked_topology_write_copies_only_touched_regions() {
     assert_rewire_matches_oracle(execution, &mut world, &rewire, expected);
     let cost = world
         .runtime
-        .observe_mvcc_cost(&cost_scope)
+        .observe_mvcc_cost(execution, &cost_scope)
         .expect("the rewire branch owns its publication cost");
     let after_rewire = region_set(cost.sharing());
     let after_main = region_set(&sharing(&world.runtime, std::slice::from_ref(&main)));
@@ -192,7 +192,7 @@ fn forked_topology_write_copies_only_touched_regions() {
         assert_eq!(
             world
                 .runtime
-                .observe_mvcc_cost(unrelated_scope)
+                .observe_mvcc_cost(execution, unrelated_scope)
                 .unwrap()
                 .sharing_cost_delta(),
             worth_relational::facade::inspection::RelationalBranchSharingCostCounters::default(),

@@ -73,7 +73,8 @@ impl IndexMaintenanceOwner<'_> {
                 .indexes
                 .definition(index)
                 .ok_or(Denial::IndexUnavailable(index))?;
-            let rows = cold_projection::project(execution, &definition, after, &records, work)?;
+            let rows =
+                cold_projection::project(lane, execution, &definition, after, &records, work)?;
             work.grow_vec(&mut entries)?;
             entries.push((index, rows));
         }

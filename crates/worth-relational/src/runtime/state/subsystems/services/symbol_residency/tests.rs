@@ -168,7 +168,12 @@ fn checkpoint_dictionary(
         failure: Mutex::new(None),
     });
     let directory = RelationalCheckpointDirectory {
-        history_members: input.manifest.readmit_history_members().unwrap(),
+        history_members: input
+            .manifest
+            .readmit_history_members(
+                &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            )
+            .unwrap(),
         manifest: input.manifest,
         source: source.clone(),
     };

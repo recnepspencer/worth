@@ -10,7 +10,7 @@ pub(crate) fn observe(
     branches: &[RelationalBranchIdentity],
 ) -> RelationalBranchSharingObservation {
     runtime
-        .observe_branch_sharing(branches)
+        .observe_branch_sharing(&worth_execution::ExecutionRequest::serial(&worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request()), branches)
         .expect("the selected branches remain inspectable")
 }
 

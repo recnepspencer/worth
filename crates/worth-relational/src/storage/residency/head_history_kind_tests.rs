@@ -151,7 +151,13 @@ fn adopting_a_different_head_carries_its_owned_historical_projection_with_the_re
     assert_owned_history(&mut partial, &mut oracle);
     assert_eq!(source.history_reads.load(Ordering::SeqCst), 0);
     let symbols = fixture.cold.symbols.interner_snapshot();
-    let (commitment, _) = PartitionContentCommitment::capture_layered(&partial, &symbols).unwrap();
+    let (commitment, _) = PartitionContentCommitment::capture_layered(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &worth_execution::ExecutionRequest::serial(&crate::test_execution_policy::serial_request()),
+        &partial,
+        &symbols,
+    )
+    .unwrap();
     let kind_indexes = Arc::new(
         super::super::kind_incremental::RegionKindIndexes::capture(
             &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),

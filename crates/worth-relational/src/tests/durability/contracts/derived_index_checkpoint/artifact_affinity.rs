@@ -22,7 +22,7 @@ fn legacy_index_affinity_is_checked_before_replacing_a_live_recovery_target() {
         .derived_index_checkpoint
         .take()
         .unwrap()
-        .readmit()
+        .readmit(&crate::storage::substrate::maintenance::ReconstructionLane::oracle())
         .unwrap();
     checkpoint.derived_index_checkpoint_format = 0;
     checkpoint.derived_index_artifacts = DerivedIndexArtifacts::new(generations.clone());
@@ -125,7 +125,9 @@ fn digest_valid_join_checkpoint_requires_complete_rows_and_leg_state() {
         let mut malformed = lawful.clone();
         let checkpoint = malformed.checkpoint.as_mut().unwrap();
         let artifact = checkpoint.derived_index_checkpoint.as_ref().unwrap();
-        let mut generations = artifact.readmit().unwrap();
+        let mut generations = artifact
+            .readmit(&crate::storage::substrate::maintenance::ReconstructionLane::oracle())
+            .unwrap();
         let generation = generations
             .iter_mut()
             .find(|generation| generation.index_id == index.index_id)
@@ -142,6 +144,7 @@ fn digest_valid_join_checkpoint_requires_complete_rows_and_leg_state() {
         // Recompute the digest: the trust boundary must check meaning as well as bytes.
         checkpoint.derived_index_checkpoint = Some(
             crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::capture(
+                &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
                 generations.into_iter().map(std::sync::Arc::new).collect(),
                 artifact.bases().to_vec(),
             )
@@ -182,7 +185,7 @@ fn digest_valid_basis_binding_cannot_carry_an_obsolete_generation_across_an_edit
     let checkpoint = plan.checkpoint.as_mut().unwrap();
     let artifact = checkpoint.derived_index_checkpoint.as_ref().unwrap();
     let mut generations: Vec<_> = artifact
-        .readmit()
+        .readmit(&crate::storage::substrate::maintenance::ReconstructionLane::oracle())
         .unwrap()
         .into_iter()
         .map(std::sync::Arc::new)
@@ -201,6 +204,7 @@ fn digest_valid_basis_binding_cannot_carry_an_obsolete_generation_across_an_edit
         .1 = prior.generation_id;
     checkpoint.derived_index_checkpoint = Some(
         crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::capture(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
             generations,
             bases,
         )

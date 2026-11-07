@@ -1,4 +1,7 @@
 mod adjacency;
+mod admission;
+mod reconstruction;
+use crate::storage::substrate::maintenance::{ReconstructionLane, ReconstructionWork};
 mod head_commitment;
 #[cfg(test)]
 #[path = "partition_content/tests.rs"]
@@ -19,6 +22,7 @@ pub(crate) enum PartitionContentDigestError {
     InvalidHistoryCoverage,
     AllocationAccountingOverflow,
     Encoding,
+    Execution(crate::execution::RelationalExecutionDenialCause),
 }
 
 impl From<crate::storage::substrate::DigestIndexError> for PartitionContentDigestError {
@@ -38,112 +42,38 @@ pub(crate) struct PartitionContentCommitment {
 }
 
 impl PartitionContentCommitment {
-    pub(crate) fn capture(
+    /// Cost: journal-selected records, changed history cells and adjacency paths.
+    /// A predecessor is mandatory; this entrance cannot perform a cold build.
+    pub(crate) fn maintain(
         partition: &PartitionState,
         symbols: &StringInterner,
-        previous: Option<(&Self, &PartitionState, &PartitionMutationJournal)>,
+        previous: (&Self, &PartitionState, &PartitionMutationJournal),
     ) -> Result<(Self, u64), PartitionContentDigestError> {
-        if previous.is_none()
-            && partition
-                .entity_arena
-                .history_prefixes
-                .iter()
-                .chain(partition.relation_arena.history_prefixes.iter())
-                .any(Option::is_some)
-        {
-            return Err(PartitionContentDigestError::InvalidHistoryCoverage);
-        }
-        Self::capture_seeded(partition, symbols, previous, Self::default())
-    }
-
-    /// Reuse only prefix openings already authenticated during Head admission.
-    /// This does not provide independent verification of omitted history.
-    pub(crate) fn capture_layered(
-        partition: &PartitionState,
-        symbols: &StringInterner,
-    ) -> Result<(Self, u64), PartitionContentDigestError> {
-        Self::capture_seeded(partition, symbols, None, Self::default())
-    }
-
-    fn capture_seeded(
-        partition: &PartitionState,
-        symbols: &StringInterner,
-        previous: Option<(&Self, &PartitionState, &PartitionMutationJournal)>,
-        seed: Self,
-    ) -> Result<(Self, u64), PartitionContentDigestError> {
-        let mut commitment = previous.map(|(cache, _, _)| cache.clone()).unwrap_or(seed);
-        let old = previous.map(|(_, partition, _)| partition);
-        let entity_slots = previous.map_or_else(
-            || partition.entity_arena.occupied_slots(),
-            |(_, _, journal)| journal.entity_slots.iter().copied().collect(),
-        );
-        let relation_slots = previous.map_or_else(
-            || partition.relation_arena.occupied_slots(),
-            |(_, _, journal)| journal.relation_slots.iter().copied().collect(),
-        );
+        let (prior, old, journal) = previous;
+        let mut commitment = prior.clone();
         let mut hashed = commitment.entities.update(
             &partition.entity_arena,
-            old.map(|old| &old.entity_arena),
-            entity_slots,
+            &old.entity_arena,
+            journal.entity_slots.iter().copied(),
             symbols,
-            |extra, symbols| {
-                let fingerprint = extra
-                    .structural_fingerprint
-                    .map(|fingerprint| {
-                        symbols
-                            .resolve(fingerprint.family)
-                            .map(|family| (family, fingerprint.value))
-                            .ok_or(PartitionContentDigestError::UnresolvedContentSymbol(
-                                fingerprint.family,
-                            ))
-                    })
-                    .transpose()?;
-                hash_value(
-                    b"entity-extra",
-                    &(
-                        fingerprint,
-                        &extra.lineage_id,
-                        &extra.authoritative_aspect_state,
-                    ),
-                )
-            },
+            entity_extra,
         )?;
         hashed += commitment.relations.update(
             &partition.relation_arena,
-            old.map(|old| &old.relation_arena),
-            relation_slots,
+            &old.relation_arena,
+            journal.relation_slots.iter().copied(),
             symbols,
             |extra, _| hash_value(b"relation-extra", extra),
         )?;
-        let adjacency_slots = previous.map_or_else(
-            || {
-                partition
-                    .adjacency
-                    .iter()
-                    .map(|(&slot, _)| slot)
-                    .collect::<Vec<_>>()
-            },
-            |(_, _, journal)| journal.adjacency_slots.iter().copied().collect(),
-        );
-        let reverse_slots = previous.map_or_else(
-            || {
-                partition
-                    .reverse_adjacency
-                    .iter()
-                    .map(|(&slot, _)| slot)
-                    .collect::<Vec<_>>()
-            },
-            |(_, _, journal)| journal.reverse_adjacency_slots.iter().copied().collect(),
-        );
         hashed += commitment.adjacency.update(
             &partition.adjacency,
-            old.map(|old| &old.adjacency),
-            adjacency_slots,
+            &old.adjacency,
+            journal.adjacency_slots.iter().copied(),
         )?;
         hashed += commitment.reverse_adjacency.update(
             &partition.reverse_adjacency,
-            old.map(|old| &old.reverse_adjacency),
-            reverse_slots,
+            &old.reverse_adjacency,
+            journal.reverse_adjacency_slots.iter().copied(),
         )?;
         Ok((commitment, hashed))
     }
@@ -182,9 +112,37 @@ impl PartitionState {
         &self,
         symbols: &StringInterner,
     ) -> Result<[u8; 32], PartitionContentDigestError> {
-        PartitionContentCommitment::capture(self, symbols, None)
+        PartitionContentCommitment::capture_oracle(self, symbols)
             .map(|(commitment, _)| commitment.digest(self.partition_id))
     }
+}
+
+fn entity_extra(
+    extra: &crate::storage::substrate::EntityExtra,
+    symbols: &StringInterner,
+) -> Result<[u8; 32], PartitionContentDigestError> {
+    hash_value(b"entity-extra", &entity_extra_material(extra, symbols)?)
+}
+fn entity_extra_material<'a>(
+    extra: &'a crate::storage::substrate::EntityExtra,
+    symbols: &'a StringInterner,
+) -> Result<impl Serialize + 'a, PartitionContentDigestError> {
+    let fingerprint = extra
+        .structural_fingerprint
+        .map(|fingerprint| {
+            symbols
+                .resolve(fingerprint.family)
+                .map(|family| (family, fingerprint.value))
+                .ok_or(PartitionContentDigestError::UnresolvedContentSymbol(
+                    fingerprint.family,
+                ))
+        })
+        .transpose()?;
+    Ok((
+        fingerprint,
+        &extra.lineage_id,
+        &extra.authoritative_aspect_state,
+    ))
 }
 
 fn hash_value(

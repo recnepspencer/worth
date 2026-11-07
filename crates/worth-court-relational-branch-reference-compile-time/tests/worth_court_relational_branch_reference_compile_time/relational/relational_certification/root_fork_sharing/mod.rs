@@ -17,7 +17,10 @@ fn fork_observation_reports_shared_root_and_distinct_cells() {
         branch_identity(&world.runtime, "storm"),
         branch_identity(&world.runtime, "maintenance"),
     ];
-    let observation = world.runtime.observe_branch_sharing(&identities).unwrap();
+    let observation = world
+        .runtime
+        .observe_branch_sharing(execution, &identities)
+        .unwrap();
     assert_eq!(
         observation.inspection_version(),
         worth_relational::facade::inspection::RELATIONAL_SHARING_INSPECTION_VERSION

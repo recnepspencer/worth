@@ -1,7 +1,18 @@
 //! Persistent replacement of only the regions named by publication.
 use super::*;
 impl RelationalPersistentRegionSet {
+    pub(crate) fn empty(set_id: u64) -> Arc<Self> {
+        Arc::new(Self {
+            set_id,
+            index_root: None,
+            count: 0,
+            live_counts: Default::default(),
+            kinds: Default::default(),
+            materialization_unavailable_records: 0,
+        })
+    }
     pub(crate) fn initial(
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         set_id: u64,
         regions: BTreeMap<PartitionId, Arc<RelationalRootRegion>>,
         issuer: &RelationalBranchRootIdentityIssuer,

@@ -26,6 +26,8 @@ pub(super) fn load_head(
                 check_member_limit(cold.head.length, limit)?;
                 let bytes = cold.source.read_member(cold.head, limit)?;
                 let frame = RelationalRegionImage::decode(
+                    lane,
+                    checkpoint,
                     &bytes,
                     cold.head,
                     cold.partition_id,
@@ -55,9 +57,13 @@ pub(super) fn load_head(
                     return Err(Cause::Damaged);
                 }
                 let contracts = contracts(cold)?;
-                let mut partition =
-                    partition_from_image(head.partition, cold.schema.aspect_plans(), &contracts)
-                        .map_err(|_| Cause::Damaged)?;
+                let mut partition = partition_from_image(
+                    lane,
+                    head.partition,
+                    cold.schema.aspect_plans(),
+                    &contracts,
+                )
+                .map_err(|_| Cause::Damaged)?;
                 super::kind_projection::rebuild(
                     lane,
                     &mut partition,
@@ -95,8 +101,10 @@ pub(super) fn load_head(
             requirements.get(false).unwrap().ids.iter().copied(),
         )?;
         let symbols = cold.symbols.interner_snapshot();
-        let commitment = PartitionContentCommitment::capture_head(&partition, &symbols, &frontiers)
-            .ok_or_else(|| unavailable(cold, Cause::Damaged))?;
+        let commitment = PartitionContentCommitment::capture_head(
+            lane, execution, &partition, &symbols, &frontiers,
+        )
+        .map_err(|error| super::content_capture::restore_failure(cold.partition_id, error))?;
         verify_leaf(cold, &partition, &commitment).map_err(|cause| unavailable(cold, cause))?;
         super::RegionRecordDirectory::verify_member(lane, execution, &cold.directory, &partition)?;
         crate::history::data::current_route_presence::admission::validate(
@@ -157,8 +165,13 @@ pub(super) fn load_full(
             kind_commitment: cold.kind_authority.history,
         };
         let mut folder =
-            super::history_fold::HistoryFolder::new(execution, cold.partition_id, limit);
-        let history = folder.read(cold.source.as_ref(), &cold.history_members, &reference)?;
+            super::history_fold::HistoryFolder::new(lane, execution, cold.partition_id, limit);
+        let history = folder.read(
+            lane,
+            cold.source.as_ref(),
+            &cold.history_members,
+            &reference,
+        )?;
         super::kind_commitment::verify(lane, &history.kind_projection, cold.kind_authority.history)
             .map_err(|cause| unavailable(cold, cause))?;
         if history.entities.len() != head.partition.entity_arena.slot_count()
@@ -167,12 +180,14 @@ pub(super) fn load_full(
             return Err(unavailable(cold, Cause::Damaged).into());
         }
         let entities = folder.fold_rows::<crate::storage::substrate::EntityRecordKind>(
+            lane,
             cold.source.as_ref(),
             &cold.history_members,
             &reference,
             history.entities.len(),
         )?;
         let relations = folder.fold_rows::<crate::storage::substrate::RelationRecordKind>(
+            lane,
             cold.source.as_ref(),
             &cold.history_members,
             &reference,
@@ -183,6 +198,7 @@ pub(super) fn load_full(
             super::kind_admission::recover(lane, execution, cold.partition_id, |checkpoint, _| {
                 let contracts = contracts(cold)?;
                 let mut image = partition_to_image_with_contracts(
+                    lane,
                     head.partition.clone(),
                     cold.schema.aspect_plans(),
                     &contracts,
@@ -204,7 +220,7 @@ pub(super) fn load_full(
                     *current = earlier;
                 }
                 let mut partition =
-                    partition_from_image(image, cold.schema.aspect_plans(), &contracts)
+                    partition_from_image(lane, image, cold.schema.aspect_plans(), &contracts)
                         .map_err(|_| Cause::Damaged)?;
                 partition.adjacency = head.partition.adjacency.clone();
                 partition.reverse_adjacency = head.partition.reverse_adjacency.clone();
@@ -231,8 +247,10 @@ pub(super) fn load_full(
             requirements.get(true).unwrap().ids.iter().copied(),
         )?;
         let symbols = cold.symbols.interner_snapshot();
-        let (commitment, _) = PartitionContentCommitment::capture(&partition, &symbols, None)
-            .map_err(|_| unavailable(cold, Cause::Damaged))?;
+        let (commitment, _) = PartitionContentCommitment::capture(
+            lane, execution, &partition, &symbols,
+        )
+        .map_err(|error| super::content_capture::restore_failure(cold.partition_id, error))?;
         verify_leaf(cold, &partition, &commitment).map_err(|cause| unavailable(cold, cause))?;
         super::RegionRecordDirectory::verify_member(lane, execution, &cold.directory, &partition)?;
         crate::execution::check_request(execution).map_err(Failure::Request)?;

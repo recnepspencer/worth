@@ -14,6 +14,6 @@ pub(crate) fn inspect_main_sharing(
     runtime: &RelationalRuntime,
 ) -> RelationalBranchSharingObservation {
     runtime
-        .observe_branch_sharing(&[runtime.main_branch_identity()])
+        .observe_branch_sharing(&worth_execution::ExecutionRequest::serial(&worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request()), &[runtime.main_branch_identity()])
         .expect("main branch sharing remains inspectable")
 }

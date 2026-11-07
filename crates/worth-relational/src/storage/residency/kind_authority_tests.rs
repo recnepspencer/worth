@@ -9,6 +9,8 @@ fn intact_member_with_forged_current_kind_cannot_serve_false_absence() {
     let mut cold = fixture.cold;
     let bytes = fixture.source.members.get(&cold.head).unwrap();
     let frame = RelationalRegionImage::decode(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &mut |_, _| Ok(()),
         bytes,
         cold.head,
         cold.partition_id,
@@ -28,6 +30,8 @@ fn intact_member_with_forged_current_kind_cannot_serve_false_absence() {
         .any(|(_, ids)| ids.contains(&fixture.relation)));
     bucket.kinds[0].0 = crate::identity::data::KindId(u32::MAX);
     let member = RelationalRegionImage::encode(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &mut |_, _| Ok(()),
         cold.partition_id,
         cold.schema_carrier_digest,
         RelationalRegionImageKind::Head,
@@ -51,6 +55,8 @@ fn intact_history_cannot_omit_authoritative_kind_membership() {
     let mut cold = fixture.cold;
     let bytes = fixture.source.members.get(&cold.history).unwrap();
     let frame = RelationalRegionImage::decode(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &mut |_, _| Ok(()),
         bytes,
         cold.history,
         cold.partition_id,
@@ -62,6 +68,8 @@ fn intact_history_cannot_omit_authoritative_kind_membership() {
     assert!(!history.relations[0].earlier.is_empty());
     history.relations[0].earlier.clear();
     let member = RelationalRegionImage::encode(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &mut |_, _| Ok(()),
         cold.partition_id,
         cold.schema_carrier_digest,
         RelationalRegionImageKind::History,

@@ -142,21 +142,19 @@ fn prepare_regions(
             schema,
             Some(change),
         )?,
-        _ => {
-            let projected = published_delta.projected_partitions_from_access(partitions);
-            crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
-                |lane| {
-                    capture::build_initial_regions(
-                        lane,
-                        execution,
-                        issuer,
-                        root_id,
-                        &projected,
-                        &symbols.interner_snapshot(),
-                    )
-                },
-            )?
-        }
+        _ => crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
+            |lane| {
+                let projected = published_delta.projected_partitions_from_access(lane, partitions);
+                capture::build_initial_regions(
+                    lane,
+                    execution,
+                    issuer,
+                    root_id,
+                    &projected,
+                    &symbols.interner_snapshot(),
+                )
+            },
+        )?,
     };
     let (entity_slot_count, relation_slot_count) =
         root_slot_counts(&regions, previous, published_delta);

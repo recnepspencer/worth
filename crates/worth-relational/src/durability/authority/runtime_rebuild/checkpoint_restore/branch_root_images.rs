@@ -46,14 +46,16 @@ pub(super) fn restore_branch_root_images(
         })?;
         let owner = format!("branch-root image `{}`", image.commit_id.0);
         reject_duplicate_partition_images(&image.partition_images, &owner)?;
-        let observed_digest =
-            crate::durability::data::branch_root_partition_image_digest(&image.partition_images)
-                .map_err(|error| {
-                    corrupt_checkpoint(format!(
-                        "branch-root image `{}` integrity encoding failed: {error}",
-                        image.commit_id.0
-                    ))
-                })?;
+        let observed_digest = crate::durability::data::branch_root_partition_image_digest(
+            lane,
+            &image.partition_images,
+        )
+        .map_err(|error| {
+            corrupt_checkpoint(format!(
+                "branch-root image `{}` integrity encoding failed: {error}",
+                image.commit_id.0
+            ))
+        })?;
         if observed_digest != image.partition_image_digest {
             return Err(corrupt_checkpoint(format!(
                 "branch-root image `{}` partition integrity mismatch",
@@ -62,11 +64,12 @@ pub(super) fn restore_branch_root_images(
             .into());
         }
         work.root_images_verified += 1;
-        let schema_authority = schema_catalog.readmit_root(restored, image, envelope)?;
+        let schema_authority = schema_catalog.readmit_root(lane, restored, image, envelope)?;
         let root_contracts = crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog::from_contracts(
             schema_authority.retained_aspect_contracts(),
         )?;
         let mut restored_partitions = restore_unique_partition_images_with_schema(
+            lane,
             &image.partition_images,
             schema_authority.aspect_plans(),
             &root_contracts,

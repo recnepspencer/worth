@@ -54,6 +54,7 @@ impl LineageResolutionIndexes {
 
     pub(super) fn rebuild<'a>(
         &mut self,
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         nodes: impl IntoIterator<Item = &'a LineageNode>,
         events: impl IntoIterator<Item = &'a LineageEventRecord>,
     ) {

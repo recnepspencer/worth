@@ -8,9 +8,10 @@ use super::*;
 impl RelationalRuntime {
     pub fn observe_branch_sharing(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         branches: &[RelationalBranchIdentity],
     ) -> Result<RelationalBranchSharingObservation, RelationalBranchSharingInspectionDenial> {
-        let scope = resolve_sharing_scope(self, branches)?;
+        let scope = resolve_sharing_scope(self, execution, branches)?;
         let inventory = inventory_sharing_scope(self, &scope)?;
         let branch_ids = scope
             .iter()

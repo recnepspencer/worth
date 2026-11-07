@@ -13,6 +13,7 @@ mod bitset_image;
 use arena_images::{arena_from_image, arena_to_image};
 
 pub(crate) fn partition_to_image_with_contracts(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     partition: PartitionState,
     catalog: &AspectContractPlanCatalog,
     contracts: &CheckpointAspectContractCatalog,
@@ -20,11 +21,13 @@ pub(crate) fn partition_to_image_with_contracts(
     Ok(PartitionCheckpointImage {
         partition_id: partition.partition_id,
         entity_arena: arena_to_image::<EntityRecordKind>(
+            lane,
             partition.entity_arena,
             catalog,
             contracts,
         )?,
         relation_arena: arena_to_image::<RelationRecordKind>(
+            lane,
             partition.relation_arena,
             catalog,
             contracts,
@@ -55,6 +58,7 @@ pub(crate) fn partition_to_image_with_contracts(
 }
 
 pub(crate) fn partition_from_image(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     image: PartitionCheckpointImage,
     catalog: &AspectContractPlanCatalog,
     contracts: &CheckpointAspectContractCatalog,
@@ -67,12 +71,14 @@ pub(crate) fn partition_from_image(
         },
         relation_overlay_is_sparse: false,
         entity_arena: arena_from_image::<EntityRecordKind>(
+            lane,
             image.partition_id,
             image.entity_arena,
             catalog,
             contracts,
         )?,
         relation_arena: arena_from_image::<RelationRecordKind>(
+            lane,
             image.partition_id,
             image.relation_arena,
             catalog,
@@ -83,6 +89,7 @@ pub(crate) fn partition_from_image(
                 (
                     entry.slot as usize,
                     AdjacencySet::compressed_from_checkpoint(
+                        lane,
                         entry.relations,
                         entry.structural_revisions,
                     ),
@@ -94,6 +101,7 @@ pub(crate) fn partition_from_image(
                 (
                     entry.slot as usize,
                     AdjacencySet::compressed_from_checkpoint(
+                        lane,
                         entry.relations,
                         entry.structural_revisions,
                     ),

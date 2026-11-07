@@ -6,6 +6,8 @@ use super::*;
 fn kind_cache_disagreement_with_authenticated_projection_is_typed() {
     let fixture = region_with_history();
     let frame = RelationalRegionImage::decode(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &mut |_, _| Ok(()),
         &fixture.source.members[&fixture.cold.head],
         fixture.cold.head,
         fixture.cold.partition_id,
@@ -21,6 +23,8 @@ fn kind_cache_disagreement_with_authenticated_projection_is_typed() {
         .kinds[0]
         .0 = crate::identity::data::KindId(999);
     let member = RelationalRegionImage::encode(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &mut |_, _| Ok(()),
         fixture.cold.partition_id,
         fixture.cold.schema_carrier_digest,
         RelationalRegionImageKind::Head,
@@ -35,6 +39,8 @@ fn kind_cache_disagreement_with_authenticated_projection_is_typed() {
 fn historical_projection_is_reconstructed_from_owned_record_history() {
     let fixture = region_with_history();
     let frame = RelationalRegionImage::decode(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &mut |_, _| Ok(()),
         &fixture.source.members[&fixture.cold.history],
         fixture.cold.history,
         fixture.cold.partition_id,
@@ -63,6 +69,8 @@ fn historical_projection_is_reconstructed_from_owned_record_history() {
     cache.kinds.retain(|(_, relations)| !relations.is_empty());
     head.history_kind_projection = history.kind_projection.clone();
     let head_member = RelationalRegionImage::encode(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &mut |_, _| Ok(()),
         fixture.cold.partition_id,
         fixture.cold.schema_carrier_digest,
         RelationalRegionImageKind::Head,
@@ -70,6 +78,8 @@ fn historical_projection_is_reconstructed_from_owned_record_history() {
     )
     .unwrap();
     let member = RelationalRegionImage::encode(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &mut |_, _| Ok(()),
         fixture.cold.partition_id,
         fixture.cold.schema_carrier_digest,
         RelationalRegionImageKind::History,

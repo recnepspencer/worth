@@ -172,9 +172,10 @@ impl RelationalRuntime {
 
     pub fn observe_mvcc_cost(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         scope: &RelationalMvccCostScope,
     ) -> Result<RelationalMvccCostObservation, RelationalBranchSharingInspectionDenial> {
-        let sharing = self.observe_branch_sharing(scope.branches())?;
+        let sharing = self.observe_branch_sharing(execution, scope.branches())?;
         let counters = self.observe_mvcc_counters(scope)?;
         Ok(RelationalMvccCostObservation { sharing, counters })
     }

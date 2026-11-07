@@ -88,13 +88,14 @@ impl DurabilitySubsystem {
 
     pub(crate) fn set_log(
         &self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         log: Vec<(
             CommitId,
             crate::publication::patch::data::PatchStreamPosition,
             Arc<crate::history::RelationalCommitEnvelopeResidency>,
         )>,
     ) {
-        self.state.write().set_log(log);
+        self.state.write().set_log(lane, log);
     }
 
     #[cfg(test)]

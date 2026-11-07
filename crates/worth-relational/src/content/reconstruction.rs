@@ -4,6 +4,7 @@ use worth_foundational::facade::{AspectShape, ScalarAspectType};
 
 /// Explicit reconstructive work, never used by an ordinary unchanged schema.
 pub(super) fn visit_records(
+    _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     state: &dyn crate::storage::overlay::CurrentPartitionAccess,
     callback: &mut dyn FnMut(

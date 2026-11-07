@@ -7,6 +7,7 @@ use crate::indexes::data::DerivedIndexArtifacts;
 use crate::runtime::RelationalRuntime;
 
 pub(crate) fn restore_checkpoint_derived_index_artifacts(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     indexes: &mut crate::runtime::IndexingState,
     history: &crate::runtime::HistorySubsystem,
     legacy: &DerivedIndexArtifacts,
@@ -21,7 +22,7 @@ pub(crate) fn restore_checkpoint_derived_index_artifacts(
         if !legacy.is_empty() {
             return Err(corrupt("checkpoint mixes legacy and delta index artifacts"));
         }
-        checkpoint.readmit()?
+        checkpoint.readmit(lane)?
     } else {
         legacy.generations().to_vec()
     };
@@ -48,7 +49,7 @@ pub(crate) fn restore_checkpoint_derived_index_artifacts(
             ));
         }
         if let Entries::RelationJoin(index) = &generation.entries {
-            if !index.consistent_legs() {
+            if !index.consistent_legs(lane) {
                 return Err(corrupt(
                     "checkpoint join leg state is missing or inconsistent",
                 ));
@@ -89,7 +90,9 @@ pub(crate) fn restore_checkpoint_derived_index_artifacts(
                     basis.schema,
                 )
                 .map_err(|detail| corrupt(&detail))?;
-            indexes.restore_basis_selection(basis).map_err(corrupt)?;
+            indexes
+                .restore_basis_selection(lane, basis)
+                .map_err(corrupt)?;
         }
     }
     Ok(())

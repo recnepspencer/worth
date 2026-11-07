@@ -7,6 +7,9 @@ pub(crate) struct DenseSlotBitSet {
 }
 
 impl DenseSlotBitSet {
+    pub(crate) fn stored_word_count(&self) -> usize {
+        self.words.len()
+    }
     pub(crate) fn changed_words_since(&self, previous: Option<&Self>) -> Vec<(usize, Option<u64>)> {
         let empty = SharedMap::default();
         let previous = previous.map(|set| &set.words).unwrap_or(&empty);
@@ -150,7 +153,10 @@ impl DenseSlotBitSet {
         })
     }
 
-    pub(crate) fn from_words(words: Vec<u64>) -> Self {
+    pub(crate) fn from_words(
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        words: Vec<u64>,
+    ) -> Self {
         let population = words.iter().map(|word| word.count_ones() as usize).sum();
         Self {
             population,
@@ -162,7 +168,10 @@ impl DenseSlotBitSet {
         }
     }
 
-    pub(crate) fn from_sparse_words(words: Vec<(u64, u64)>) -> Self {
+    pub(crate) fn from_sparse_words(
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        words: Vec<(u64, u64)>,
+    ) -> Self {
         let words: SharedMap<usize, u64> = words
             .into_iter()
             .filter(|(_, word)| *word != 0)
@@ -249,8 +258,14 @@ mod population_tests {
             assert_eq!(bits.set_slots().collect::<BTreeSet<_>>(), selected);
         }
         for rebuilt in [
-            DenseSlotBitSet::from_words(vec![u64::MAX, 0, 5]),
-            DenseSlotBitSet::from_sparse_words(vec![(4096, 7), (4096, 1), (99, 0)]),
+            DenseSlotBitSet::from_words(
+                &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+                vec![u64::MAX, 0, 5],
+            ),
+            DenseSlotBitSet::from_sparse_words(
+                &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+                vec![(4096, 7), (4096, 1), (99, 0)],
+            ),
         ] {
             assert_eq!(
                 rebuilt.count_ones(),

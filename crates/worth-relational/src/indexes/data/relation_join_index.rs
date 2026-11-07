@@ -28,12 +28,15 @@ impl RelationJoinIndex {
         self.legs = Some(Arc::new(legs));
     }
     /// cost-lane: cold restore/import. Validate both carried membership axes.
-    pub(crate) fn consistent_legs(&self) -> bool {
+    pub(crate) fn consistent_legs(
+        &self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+    ) -> bool {
         let Some(legs) = &self.legs else {
             return false;
         };
-        legs.left.consistent()
-            && legs.right.consistent()
+        legs.left.consistent(lane)
+            && legs.right.consistent(lane)
             && self.entries.iter().all(|(key, rows)| {
                 !rows.is_empty()
                     && rows.iter().all(|row| {

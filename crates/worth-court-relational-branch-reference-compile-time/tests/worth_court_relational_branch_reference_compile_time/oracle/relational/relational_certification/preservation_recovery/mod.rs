@@ -69,11 +69,14 @@ fn checkpoint_preserves_shared_and_rewired_root_shape() {
         .branch_identity(&BranchId("rewire".to_owned()))
         .expect("rewire identity is reissued");
     let sharing = recovered
-        .observe_branch_sharing(&[
-            recovered.main_branch_identity(),
-            storm.clone(),
-            rewire.clone(),
-        ])
+        .observe_branch_sharing(
+            execution,
+            &[
+                recovered.main_branch_identity(),
+                storm.clone(),
+                rewire.clone(),
+            ],
+        )
         .expect("recovered catalog artifacts retain root linkage");
     assert_eq!(sharing.unique_root_count(), 2);
     assert_eq!(sharing.unique_canonical_commit_artifacts(), 2);

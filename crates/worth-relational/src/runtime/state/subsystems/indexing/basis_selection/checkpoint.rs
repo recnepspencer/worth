@@ -12,6 +12,7 @@ impl IndexingState {
     /// cost-lane: checkpoint. Select only retained roots; no timeline inventory.
     pub(crate) fn basis_checkpoint(
         &self,
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         retained: &crate::history::retention::RetainedIndexRoots,
     ) -> Vec<crate::indexes::data::IndexBasisCheckpoint> {
         let mut bases = std::collections::BTreeMap::new();
@@ -54,8 +55,41 @@ impl IndexingState {
             })
             .collect()
     }
+    /// Retention consumes the requested roots' carried bindings directly; it
+    /// never constructs a portable checkpoint merely to discover their ids.
+    pub(in crate::runtime::state::subsystems::indexing) fn visit_retained_bindings(
+        &self,
+        retained: &crate::history::retention::RetainedIndexRoots,
+        mut visit: impl FnMut(crate::indexes::data::DerivedIndexGenerationId),
+    ) {
+        for (branch, version, schema) in retained.live.iter().chain(&retained.retired) {
+            if let Some(basis) = self
+                .bases
+                .get(Some(branch), *version)
+                .filter(|basis| basis.schema == *schema)
+            {
+                for generation in basis.state.entries.values() {
+                    visit(generation.generation_id);
+                }
+            }
+        }
+        for (version, schema) in &retained.historical_versions {
+            if let Some(selected) = self.bases.versions.get(version) {
+                for basis in selected
+                    .branches
+                    .values()
+                    .filter(|basis| basis.schema == *schema)
+                {
+                    for generation in basis.state.entries.values() {
+                        visit(generation.generation_id);
+                    }
+                }
+            }
+        }
+    }
     pub(crate) fn restore_basis_selection(
         &mut self,
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         basis: &crate::indexes::data::IndexBasisCheckpoint,
     ) -> Result<(), &'static str> {
         let mut entries = Selections::new();

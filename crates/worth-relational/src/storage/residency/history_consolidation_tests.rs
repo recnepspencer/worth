@@ -52,6 +52,7 @@ fn restart_cycles_keep_full_history_input_bounded_with_headroom() {
         let captured = capture_next(execution, &cell, &cold);
         let directory = Arc::new(
             RelationalHistoryMemberDirectory::readmit(
+                &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
                 &captured.history_dependencies,
                 [captured.leaf.history],
             )
@@ -215,6 +216,7 @@ fn reopened(
         history: captured.leaf.history,
         history_members: Arc::new(
             RelationalHistoryMemberDirectory::readmit(
+                &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
                 &captured.history_dependencies,
                 [captured.leaf.history],
             )

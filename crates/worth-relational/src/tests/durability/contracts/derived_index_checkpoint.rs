@@ -271,13 +271,14 @@ fn checkpoint_recovery_denies_a_digest_valid_foreign_generation_affinity() {
         .derived_index_checkpoint
         .as_ref()
         .unwrap()
-        .readmit()
+        .readmit(&crate::storage::substrate::maintenance::ReconstructionLane::oracle())
         .unwrap()
         .pop()
         .unwrap();
     generation.applicability.branch_id = BranchId("foreign".into());
     checkpoint.derived_index_checkpoint = Some(
         crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::capture(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
             vec![std::sync::Arc::new(generation)],
             Vec::new(),
         )

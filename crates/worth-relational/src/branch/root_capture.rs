@@ -71,7 +71,7 @@ pub(super) fn build_initial_regions_owned(
         regions.insert(partition_id, region);
     }
     let first_new_node_id = issuer.next_reachability_id();
-    let regions = RelationalPersistentRegionSet::initial(root_id, regions, issuer)?;
+    let regions = RelationalPersistentRegionSet::initial(lane, root_id, regions, issuer)?;
     let (persistent_index_path_nodes, reachability_bytes) =
         regions.newly_owned_allocation_cost(first_new_node_id);
     let cost = RelationalBranchRootPublicationCost {

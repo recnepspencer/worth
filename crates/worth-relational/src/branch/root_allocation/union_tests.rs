@@ -42,7 +42,13 @@ impl RelationalRootAllocationVisitor for UnionWalk {
 #[test]
 fn shared_radix_union_matches_independent_full_walks_in_both_orders() {
     let issuer = super::super::super::RelationalBranchRootIdentityIssuer::default();
-    let first = RelationalPersistentRegionSet::initial(101, BTreeMap::new(), &issuer).unwrap();
+    let first = RelationalPersistentRegionSet::initial(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        101,
+        BTreeMap::new(),
+        &issuer,
+    )
+    .unwrap();
     let second = RelationalPersistentRegionSet::replace(
         102,
         &first,
@@ -127,7 +133,8 @@ fn cold_region_union_refuses_without_demanding_any_payload() {
         directory: std::sync::Arc::new(crate::storage::residency::RegionRecordDirectory::empty(
             PartitionId(7),
         ))
-        .portable(),
+        .portable_oracle()
+        .unwrap(),
         live_counts: Default::default(),
         entity_slots: 0,
         relation_slots: 0,
@@ -156,6 +163,7 @@ fn cold_region_union_refuses_without_demanding_any_payload() {
     );
     let issuer = super::super::super::RelationalBranchRootIdentityIssuer::default();
     let set = RelationalPersistentRegionSet::initial(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
         101,
         [(PartitionId(7), region)].into_iter().collect(),
         &issuer,

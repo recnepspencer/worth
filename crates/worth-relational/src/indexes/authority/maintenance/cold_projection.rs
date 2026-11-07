@@ -10,6 +10,7 @@ use std::collections::BTreeMap;
 use DerivedIndexMaintenanceDenialKind as Denial;
 
 pub(super) fn project(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     definition: &DerivedIndexDefinition,
     after: &IndexRootView,
@@ -91,7 +92,7 @@ pub(super) fn project(
             seal(rows, |_| 1, work).map(DerivedIndexEntries::RelatedEntityOrdering)
         }
         DerivedIndexKind::RelationJoin(definition) => {
-            collect_join(execution, after, records, *definition, work)
+            collect_join(lane, execution, after, records, *definition, work)
                 .map(DerivedIndexEntries::RelationJoin)
         }
     }
@@ -140,6 +141,7 @@ fn seal<K: Ord + Clone, R: Clone>(
     Ok(rows.into())
 }
 fn collect_join(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     after: &IndexRootView,
     records: &ChangedRecords,
@@ -204,6 +206,6 @@ fn collect_join(
     )?;
     Ok(RelationJoinIndex::maintained(
         seal(rows, |_| 1, work)?,
-        JoinLegsState::cold(left, right),
+        JoinLegsState::cold(lane, left, right),
     ))
 }

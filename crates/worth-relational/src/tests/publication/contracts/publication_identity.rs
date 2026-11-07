@@ -286,7 +286,7 @@ fn new_partition_publication_reuses_every_prior_region() {
 
     create_entity_in_partition(execution, &runtime, "new-partition-region", PartitionId(29));
     let costs = runtime
-        .observe_mvcc_cost(&scope)
+        .observe_mvcc_cost(execution, &scope)
         .expect("main sharing remains inspectable")
         .sharing_cost_delta();
 

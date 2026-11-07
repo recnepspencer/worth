@@ -46,29 +46,34 @@ impl DeferredIndexImage {
             ),
             cause,
         };
-        let result = (|| {
-            let key = self.directory.manifest.derived_indexes;
-            let bytes = self
-                .directory
-                .source
-                .read_member(key, 1 << 30)
-                .map_err(refusal)?;
-            let payload =
-                member_frame::decode(&bytes, key, MemberKind::DerivedIndex).map_err(refusal)?;
-            let (legacy, checkpoint, format): (
+        let result =
+            crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
+                |lane| {
+                    let key = self.directory.manifest.derived_indexes;
+                    let bytes = self
+                        .directory
+                        .source
+                        .read_member(key, 1 << 30)
+                        .map_err(refusal)?;
+                    let payload = member_frame::decode(&bytes, key, MemberKind::DerivedIndex)
+                        .map_err(refusal)?;
+                    let (legacy, checkpoint, format): (
                 crate::indexes::data::DerivedIndexArtifacts,
                 Option<crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts>,
                 u16,
             ) = rmp_serde::from_slice(payload).map_err(|_| refusal(Cause::Damaged))?;
-            if !crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::supports_outer_format(format, checkpoint.is_some()) {
+                    if !crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::supports_outer_format(format, checkpoint.is_some()) {
                 return Err(refusal(Cause::Damaged).into());
             }
-            let mut state = IndexingState::default();
-            state.restore_generation_frontier(self.directory.manifest.index_generation_frontier);
-            for definition in &self.directory.manifest.index_definitions {
-                state.insert_definition(definition.clone());
-            }
-            crate::durability::derived_index_artifacts::restore_checkpoint_derived_index_artifacts(
+                    let mut state = IndexingState::default();
+                    state.restore_generation_frontier(
+                        self.directory.manifest.index_generation_frontier,
+                    );
+                    for definition in &self.directory.manifest.index_definitions {
+                        state.insert_definition(definition.clone());
+                    }
+                    crate::durability::derived_index_artifacts::restore_checkpoint_derived_index_artifacts(
+                lane,
                 &mut state,
                 &self.history,
                 &legacy,
@@ -77,30 +82,35 @@ impl DeferredIndexImage {
                 &mut Default::default(),
             )
             .map_err(|_| refusal(Cause::Damaged))?;
-            if let Some(checkpoint) = &checkpoint {
-                crate::indexes::verify_checkpoint_index_bases(
-                    execution,
-                    &state,
-                    checkpoint.bases(),
-                    &self.projections,
-                )
-                .map_err(|stop| match stop {
-                    crate::durability::data::RelationalRecoveryStop::Request(cause) => {
-                        Failure::Request(cause)
+                    if let Some(checkpoint) = &checkpoint {
+                        crate::indexes::verify_checkpoint_index_bases(
+                            execution,
+                            &state,
+                            checkpoint.bases(),
+                            &self.projections,
+                        )
+                        .map_err(|stop| match stop {
+                            crate::durability::data::RelationalRecoveryStop::Request(cause) => {
+                                Failure::Request(cause)
+                            }
+                            crate::durability::data::RelationalRecoveryStop::Content(cause) => {
+                                Failure::Content(cause)
+                            }
+                            crate::durability::data::RelationalRecoveryStop::Durability(error) => {
+                                error
+                                    .storage_unavailable
+                                    .map(Failure::StorageUnavailable)
+                                    .unwrap_or_else(|| {
+                                        Failure::StorageUnavailable(refusal(Cause::Damaged))
+                                    })
+                            }
+                            _ => Failure::StorageUnavailable(refusal(Cause::Damaged)),
+                        })?;
                     }
-                    crate::durability::data::RelationalRecoveryStop::Content(cause) => {
-                        Failure::Content(cause)
-                    }
-                    crate::durability::data::RelationalRecoveryStop::Durability(error) => error
-                        .storage_unavailable
-                        .map(Failure::StorageUnavailable)
-                        .unwrap_or_else(|| Failure::StorageUnavailable(refusal(Cause::Damaged))),
-                    _ => Failure::StorageUnavailable(refusal(Cause::Damaged)),
-                })?;
-            }
-            crate::execution::check_request(execution).map_err(Failure::Request)?;
-            Ok(Arc::new(state))
-        })();
+                    crate::execution::check_request(execution).map_err(Failure::Request)?;
+                    Ok(Arc::new(state))
+                },
+            );
         match &result {
             Ok(state) => {
                 *admitted = Some(Ok(state.clone()));
@@ -118,6 +128,7 @@ impl DeferredIndexImage {
 impl IndexingSubsystem {
     pub(crate) fn install_cold_checkpoint(
         &self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         directory: Arc<RelationalCheckpointDirectory>,
         runtime: &crate::runtime::RelationalRuntime,
     ) -> Result<(), RelationalStorageUnavailable> {
@@ -159,7 +170,7 @@ impl IndexingSubsystem {
             _placement: placement,
             directory,
             history,
-            projections: crate::indexes::checkpoint_index_projections(runtime),
+            projections: crate::indexes::checkpoint_index_projections(lane, runtime),
             admitted: Mutex::new(None),
         }));
         self.install(state);

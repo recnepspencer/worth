@@ -79,7 +79,7 @@ fn repeated_global_same_basis_builds_reclaim_duplicates_but_keep_pinned_root() {
     let saved = checkpoint
         .derived_index_checkpoint
         .unwrap()
-        .readmit()
+        .readmit(&crate::storage::substrate::maintenance::ReconstructionLane::oracle())
         .unwrap();
     assert_eq!(saved.len(), 1);
     assert_eq!(saved[0].generation_id, current);

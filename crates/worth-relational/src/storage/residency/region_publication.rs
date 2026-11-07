@@ -109,10 +109,10 @@ impl PreparedResidentRegion {
             .demand_symbol_ids(execution, symbol_changes.owned.ids.iter().copied())
             .map_err(RegionContentFailure::from)?;
         partition.clear_runtime_pin_counters();
-        let (commitment, content_values_hashed) = PartitionContentCommitment::capture(
+        let (commitment, content_values_hashed) = PartitionContentCommitment::maintain(
             &partition,
             &symbols.interner_snapshot(),
-            Some((prior_commitment, &previous.partition, journal)),
+            (prior_commitment, &previous.partition, journal),
         )
         .map_err(RegionContentFailure::Content)?;
         let inventory = partition

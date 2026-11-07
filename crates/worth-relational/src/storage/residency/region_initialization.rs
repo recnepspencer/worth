@@ -28,8 +28,9 @@ impl PreparedResidentRegion {
         .map(Arc::new)
         .map_err(RegionContentFailure::from)?;
         partition.clear_runtime_pin_counters();
-        let (commitment, hashed) = PartitionContentCommitment::capture(&partition, symbols, None)
-            .map_err(RegionContentFailure::Content)?;
+        let (commitment, hashed) =
+            PartitionContentCommitment::capture(lane, execution, &partition, symbols)
+                .map_err(RegionContentFailure::Content)?;
         let inventory = partition.allocation_inventory();
         let unavailable_records = partition.entity_arena.lifecycle_counts().unavailable
             + partition.relation_arena.lifecycle_counts().unavailable;

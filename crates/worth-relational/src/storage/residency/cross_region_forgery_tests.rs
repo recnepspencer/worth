@@ -84,6 +84,8 @@ fn rehashed_cross_region_kind_forgery_is_refused_by_the_canonical_root() {
         .collect::<BTreeMap<_, _>>();
     let schema_digest = wire.manifest.roots[0].schema_carrier_digest;
     let frame = RelationalRegionImage::decode(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &mut |_, _| Ok(()),
         &members[&leaf.head],
         leaf.head,
         a.partition_id,
@@ -104,6 +106,8 @@ fn rehashed_cross_region_kind_forgery_is_refused_by_the_canonical_root() {
         }
     }
     let (locator, bytes) = RelationalRegionImage::encode(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &mut |_, _| Ok(()),
         a.partition_id,
         schema_digest,
         RelationalRegionImageKind::Head,

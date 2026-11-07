@@ -133,13 +133,15 @@ impl ReadmittedRegionDirectory {
                 kind_authority: Some(authority.clone()),
             });
         }
-        authority
-            .bind(
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            authority.bind(
+                lane,
                 result
                     .iter()
                     .map(|region| (region.partition_id, region.cell.clone())),
             )
-            .map_err(|cause| corrupt(format!("region kind authority: {cause:?}")))?;
+        })
+        .map_err(|cause| corrupt(format!("region kind authority: {cause:?}")))?;
         Ok(result)
     }
 }

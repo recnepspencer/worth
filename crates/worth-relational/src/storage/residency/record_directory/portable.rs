@@ -15,24 +15,44 @@ pub(crate) struct PortableRecordDirectory {
     pub(crate) relations: Vec<(KindId, RelationId)>,
 }
 impl RegionRecordDirectory {
-    pub(crate) fn portable(&self) -> Arc<PortableRecordDirectory> {
-        self.portable
-            .get_or_init(|| {
-                Arc::new(PortableRecordDirectory {
-                    entities: self
-                        .entities
-                        .keys()
-                        .map(|encoded| (kind(encoded), identity(encoded, self.partition)))
-                        .collect(),
-                    relations: self
-                        .relations
-                        .keys()
-                        .map(|encoded| (kind(encoded), identity(encoded, self.partition)))
-                        .collect(),
-                })
-            })
-            .clone()
+    pub(crate) fn portable(
+        &self,
+        lane: &ReconstructionLane<'_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Arc<PortableRecordDirectory>, DirectoryError> {
+        lane.recover(execution, |lane, work| self.portable_controlled(lane, work))
     }
+    fn portable_controlled(
+        &self,
+        _lane: &ReconstructionLane<'_>,
+        work: &mut crate::storage::substrate::maintenance::ReconstructionWork<'_, '_>,
+    ) -> Result<Arc<PortableRecordDirectory>, DirectoryError> {
+        if let Some(portable) = self.portable.get() {
+            return Ok(portable.clone());
+        }
+        let portable = (|| {
+            let mut entities = Vec::new();
+            let mut relations = Vec::new();
+            for encoded in self.entities.keys() {
+                work.prepare(1, size_of::<(KindId, EntityId)>() as u64)?;
+                entities.push((kind(encoded), identity(encoded, self.partition)));
+            }
+            for encoded in self.relations.keys() {
+                work.prepare(1, size_of::<(KindId, RelationId)>() as u64)?;
+                relations.push((kind(encoded), identity(encoded, self.partition)));
+            }
+            Ok::<_, DirectoryError>(Arc::new(PortableRecordDirectory {
+                entities,
+                relations,
+            }))
+        })()?;
+        Ok(self.portable.get_or_init(|| portable).clone())
+    }
+    #[cfg(test)]
+    pub(crate) fn portable_oracle(&self) -> Result<Arc<PortableRecordDirectory>, DirectoryError> {
+        ReconstructionLane::inspect_oracle(|lane, work| self.portable_controlled(lane, work))
+    }
+
     pub(crate) fn from_portable(
         lane: &ReconstructionLane<'_>,
         partition: PartitionId,
@@ -142,7 +162,12 @@ impl RegionRecordDirectory {
                 })
             })
             .map_err(|error: DirectoryError| error.into_failure(partition.partition_id))?;
-        if actual.portable().as_ref() != expected {
+        if actual
+            .portable(lane, execution)
+            .map_err(|error| error.into_failure(partition.partition_id))?
+            .as_ref()
+            != expected
+        {
             return Err(DirectoryError::Corrupt.into_failure(partition.partition_id));
         }
         Ok(())

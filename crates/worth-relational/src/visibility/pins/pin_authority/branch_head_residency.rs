@@ -8,7 +8,10 @@ use crate::visibility::snapshot_states::VisibilitySnapshotBasis;
 use super::*;
 
 impl<'runtime> VisibilityPinAuthority<'runtime> {
-    pub(crate) fn rebuild_branch_head_visibility_residency(&self) {
+    pub(crate) fn rebuild_branch_head_visibility_residency(
+        &self,
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+    ) {
         let tracked_states = self.runtime.visibility.tracked_branch_head_states();
         self.runtime
             .visibility

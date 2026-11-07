@@ -9,6 +9,7 @@ use std::collections::BTreeMap;
 pub(crate) type CheckpointIndexProjections = BTreeMap<VersionId, VisibilityProjectionView>;
 
 pub(crate) fn checkpoint_index_projections(
+    _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     runtime: &RelationalRuntime,
 ) -> CheckpointIndexProjections {
     use crate::visibility::snapshot_states::{SnapshotStateBasis, VisibilitySnapshotBasis};

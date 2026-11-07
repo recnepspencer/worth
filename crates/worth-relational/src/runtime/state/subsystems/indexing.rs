@@ -50,6 +50,7 @@ pub(crate) struct IndexingState {
 impl IndexingState {
     pub(crate) fn retained_generations(
         &self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         retained: &crate::history::retention::RetainedIndexRoots,
     ) -> Vec<Arc<DerivedIndexGeneration>> {
         let global_indexes = self
@@ -66,7 +67,7 @@ impl IndexingState {
             .map(|generation| (generation.generation_id, generation))
             .collect();
         for (_, id) in self
-            .basis_checkpoint(retained)
+            .basis_checkpoint(lane, retained)
             .into_iter()
             .flat_map(|basis| basis.bindings)
         {
@@ -198,12 +199,10 @@ impl IndexingSubsystem {
             .map(|definition| definition.index_id)
             .collect();
         state.bases.reclaim(retained);
-        let carried = state
-            .basis_checkpoint(retained)
-            .into_iter()
-            .flat_map(|basis| basis.bindings)
-            .map(|(_, id)| id)
-            .collect();
+        let mut carried = std::collections::BTreeSet::new();
+        state.visit_retained_bindings(retained, |id| {
+            carried.insert(id);
+        });
         state
             .generations
             .reclaim_except_versions(retained, &global_indexes, &carried)

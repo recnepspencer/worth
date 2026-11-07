@@ -11,7 +11,10 @@ pub(crate) struct JoinLegState {
     relations: im::OrdMap<RelationId, (EntityId, EntityId)>,
 }
 impl JoinLegState {
-    pub(crate) fn cold(rows: ColdJoinLeg) -> Self {
+    pub(crate) fn cold(
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        rows: ColdJoinLeg,
+    ) -> Self {
         let mut state = Self::default();
         for (shared, external) in rows {
             for (external, relations) in external {
@@ -46,7 +49,10 @@ impl JoinLegState {
             .iter()
             .map(|(relation, coordinate)| (*relation, *coordinate))
     }
-    pub(crate) fn consistent(&self) -> bool {
+    pub(crate) fn consistent(
+        &self,
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+    ) -> bool {
         let members = self
             .shared
             .values()
@@ -100,10 +106,14 @@ pub(crate) struct JoinLegsState {
     pub(crate) right: JoinLegState,
 }
 impl JoinLegsState {
-    pub(crate) fn cold(left: ColdJoinLeg, right: ColdJoinLeg) -> Self {
+    pub(crate) fn cold(
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        left: ColdJoinLeg,
+        right: ColdJoinLeg,
+    ) -> Self {
         Self {
-            left: JoinLegState::cold(left),
-            right: JoinLegState::cold(right),
+            left: JoinLegState::cold(lane, left),
+            right: JoinLegState::cold(lane, right),
         }
     }
     pub(crate) fn relation_count(&self) -> usize {

@@ -33,6 +33,7 @@ mod tests {
         let right = member(3, 2048);
         let root = member(4, 2048);
         let directory = RelationalHistoryMemberDirectory::readmit(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
             &[
                 RelationalCheckpointHistoryDependency {
                     member: left,

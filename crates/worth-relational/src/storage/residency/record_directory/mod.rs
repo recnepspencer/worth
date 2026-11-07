@@ -28,6 +28,9 @@ impl Clone for RegionRecordDirectory {
     }
 }
 impl RegionRecordDirectory {
+    pub(crate) fn partition_id(&self) -> PartitionId {
+        self.partition
+    }
     pub(crate) fn empty(partition: PartitionId) -> Self {
         Self {
             partition,

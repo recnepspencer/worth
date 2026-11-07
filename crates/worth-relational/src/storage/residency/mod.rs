@@ -83,3 +83,7 @@ mod symbol_publication;
 pub(crate) use symbol_publication::{
     RegionSymbolPublication, SymbolPublicationAdmission, SymbolPublicationKey,
 };
+
+pub(crate) use content_capture::restore_failure as content_reconstruction_failure;
+
+pub(crate) use checkpoint_capture::verify_checkpoint_directory;

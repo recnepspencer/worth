@@ -67,7 +67,7 @@ fn named_supply_chain_deltas_keep_sibling_roots_and_work_independent() {
         )
         .expect("production branch state matches the independently authored oracle");
         for scope in &unrelated_scopes {
-            let cost = world.runtime.observe_mvcc_cost(scope).unwrap();
+            let cost = world.runtime.observe_mvcc_cost(execution, scope).unwrap();
             assert_eq!(
                 cost.sharing_cost_delta(),
                 worth_relational::facade::inspection::RelationalBranchSharingCostCounters::default(
@@ -83,7 +83,10 @@ fn named_supply_chain_deltas_keep_sibling_roots_and_work_independent() {
         branch_identity(&world.runtime, "maintenance"),
         branch_identity(&world.runtime, "medical-hold"),
     ];
-    let sharing = world.runtime.observe_branch_sharing(&identities).unwrap();
+    let sharing = world
+        .runtime
+        .observe_branch_sharing(execution, &identities)
+        .unwrap();
     assert_eq!(sharing.unique_root_count(), 4);
     for (branch, label, delta) in scenarios {
         let identity = branch_identity(&world.runtime, branch);
@@ -120,7 +123,7 @@ fn main_advances_before_child_read_keeps_child_snapshot_on_fork_root() {
     let child = branch_identity(&world.runtime, "storm");
     let child_root_before_main_advance = world
         .runtime
-        .observe_branch_sharing(std::slice::from_ref(&child))
+        .observe_branch_sharing(execution, std::slice::from_ref(&child))
         .expect("child root is owner-inspectable")
         .root_ids()[0];
 
@@ -129,7 +132,7 @@ fn main_advances_before_child_read_keeps_child_snapshot_on_fork_root() {
     let main = world.runtime.main_branch_identity();
     let main_root_after_advance = world
         .runtime
-        .observe_branch_sharing(std::slice::from_ref(&main))
+        .observe_branch_sharing(execution, std::slice::from_ref(&main))
         .expect("advanced main root is owner-inspectable")
         .root_ids()[0];
     assert_ne!(

@@ -34,6 +34,7 @@ pub(crate) struct CapturedManifest {
 
 impl CapturedManifest {
     pub(crate) fn capture_metadata(
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         checkpoint: &DurableCheckpoint,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         prior: Option<&RelationalCheckpointManifest>,
@@ -106,8 +107,12 @@ impl CapturedManifest {
         } else {
             Vec::new()
         };
-        let dictionary =
-            super::dictionary_capture::capture(&checkpoint.symbol_table, policy, &mut members)?;
+        let dictionary = super::dictionary_capture::capture(
+            lane,
+            &checkpoint.symbol_table,
+            policy,
+            &mut members,
+        )?;
         let symbol_pages = dictionary.by_id;
         let symbol_buckets = dictionary.by_text;
         let mut lineage_pages = Vec::new();
@@ -202,6 +207,7 @@ impl CapturedManifest {
         control: &mut super::checkpoint_encoding::CheckpointEncodingControl<'_, '_, '_, '_, '_>,
     ) -> Result<Self, RelationalNativeCheckpointCaptureDenial> {
         let mut captured = Self::capture_metadata(
+            lane,
             checkpoint,
             policy,
             None,
@@ -225,7 +231,7 @@ impl CapturedManifest {
         captured.append_lineage_events(rows, policy)?;
         let mut members = std::mem::take(&mut captured.members);
         let mut symbols = crate::symbols::data::StringInterner::default();
-        symbols.restore_snapshot(checkpoint.symbol_table.clone());
+        symbols.restore_snapshot(lane, checkpoint.symbol_table.clone());
         let mut roots = Vec::new();
         let mut schemas = BTreeMap::new();
         for image in &checkpoint.branch_root_schema_images {

@@ -11,6 +11,7 @@ use super::checked_entry_map::{checked_push, IndexKernelStop};
 use super::IndexProjectionSource;
 
 pub(in crate::indexes) fn build_relation_join_index_checked(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_>,
     definition: RelationJoinDefinition,
@@ -64,7 +65,7 @@ pub(in crate::indexes) fn build_relation_join_index_checked(
         rows.sort();
         rows.dedup_by_key(|entry| entry.shared_entity_id());
     }
-    let legs = JoinLegsState::cold(left, right);
+    let legs = JoinLegsState::cold(lane, left, right);
     context.checkpoint(legs.relation_count() as u64)?;
     context.check_result_peak(legs.owned_bytes())?;
     Ok(RelationJoinIndex::maintained(
@@ -140,6 +141,7 @@ fn collect_join_relations_checked(
 }
 
 pub(in crate::indexes) fn build_relation_join_index(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_>,
     definition: RelationJoinDefinition,
@@ -180,7 +182,7 @@ pub(in crate::indexes) fn build_relation_join_index(
     }
     Ok(RelationJoinIndex::maintained(
         entries.into(),
-        JoinLegsState::cold(left, right),
+        JoinLegsState::cold(lane, left, right),
     ))
 }
 

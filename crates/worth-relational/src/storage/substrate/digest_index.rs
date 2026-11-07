@@ -36,26 +36,41 @@ struct Node {
 impl DigestIndex {
     /// Rebuild at an explicit trust boundary. Cost: entries plus tree nodes.
     pub fn cold(
-        _lane: &super::maintenance::ReconstructionLane<'_>,
+        lane: &super::maintenance::ReconstructionLane<'_>,
         entries: &[(u128, [u8; 32])],
     ) -> Result<Self, DigestIndexError> {
         if !entries.windows(2).all(|pair| pair[0].0 < pair[1].0) {
             return Err(DigestIndexError::NonCanonicalKeys);
         }
-        Ok(Self::from_sorted_entries(entries))
+        Ok(Self::from_sorted_entries(lane, entries))
     }
 
     /// Cold reconstruction of the same key-shaped Patricia commitment without
     /// copying an immutable path for every successive insertion.
-    pub(crate) fn from_sorted_entries(entries: &[(u128, [u8; 32])]) -> Self {
+    pub(crate) fn from_sorted_entries(
+        lane: &super::maintenance::ReconstructionLane<'_>,
+        entries: &[(u128, [u8; 32])],
+    ) -> Self {
         debug_assert!(
             /* Proof: from_sorted_entries is private to commitment rebuilds: its callers sort the unique arena slot or adjacency slot keys before construction. Partial media frontiers use from_append_frontier validation instead. */
             entries.windows(2).all(|pair| pair[0].0 < pair[1].0)
         );
         Self {
-            root: (!entries.is_empty()).then(|| build_sorted(entries)),
+            root: (!entries.is_empty()).then(|| build_sorted(lane, entries)),
             history_last_value: None,
         }
+    }
+
+    pub(crate) fn construction_quote(entries: usize) -> Option<(u64, u64)> {
+        let nodes = if entries == 0 {
+            0
+        } else {
+            entries.checked_mul(2)?.checked_sub(1)?
+        };
+        Some((
+            nodes as u64,
+            (nodes as u64).checked_mul(Arc::<Node>::layout_bytes())?,
+        ))
     }
 
     pub fn is_empty(&self) -> bool {
@@ -155,7 +170,10 @@ impl DigestIndex {
     }
 }
 
-fn build_sorted(entries: &[(u128, [u8; 32])]) -> Arc<Node> {
+fn build_sorted(
+    lane: &super::maintenance::ReconstructionLane<'_>,
+    entries: &[(u128, [u8; 32])],
+) -> Arc<Node> {
     if let [(key, digest)] = entries {
         return Arc::new(Node {
             key: *key,
@@ -170,8 +188,8 @@ fn build_sorted(entries: &[(u128, [u8; 32])]) -> Arc<Node> {
     Arc::new(Node::branch(
         bit,
         [
-            build_sorted(&entries[..split]),
-            build_sorted(&entries[split..]),
+            build_sorted(lane, &entries[..split]),
+            build_sorted(lane, &entries[split..]),
         ],
     ))
 }

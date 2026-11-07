@@ -30,6 +30,7 @@ impl RelationalBranchRoot {
         regions.insert(entity.partition_id, Arc::new(replacement));
         let mut image = self.clone();
         image.regions = RelationalPersistentRegionSet::initial(
+            lane,
             self.id,
             regions,
             &RelationalBranchRootIdentityIssuer::default(),

@@ -39,11 +39,13 @@ pub(crate) struct RelationalCheckpointManifest {
 impl RelationalCheckpointManifest {
     pub(crate) fn readmit_history_members(
         &self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     ) -> Result<
         std::sync::Arc<RelationalHistoryMemberDirectory>,
         crate::storage::data::RelationalStorageUnavailableCause,
     > {
         RelationalHistoryMemberDirectory::readmit(
+            lane,
             &self.history_dependencies,
             self.roots
                 .iter()

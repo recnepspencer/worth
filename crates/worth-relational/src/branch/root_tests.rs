@@ -108,7 +108,7 @@ fn completeness_recomputes_visibility_commitment() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (runtime, root, mut altered_envelope) = committed_root_and_envelope(execution);
-    assert!(root.is_complete(&runtime.services.symbols.interner_snapshot()));
+    assert!(root.is_complete(execution, &runtime.services.symbols.interner_snapshot()));
     altered_envelope.patch.authoritative_record_patches[0].contains_opaque_aspect ^= true;
     let mut corrupted = root.as_ref().clone();
     let committed = corrupted
@@ -123,7 +123,7 @@ fn completeness_recomputes_visibility_commitment() {
     );
 
     assert!(
-        !corrupted.is_complete(&runtime.services.symbols.interner_snapshot()),
+        !corrupted.is_complete(execution, &runtime.services.symbols.interner_snapshot()),
         "completeness must reject a commitment to any different visible tuple"
     );
 }

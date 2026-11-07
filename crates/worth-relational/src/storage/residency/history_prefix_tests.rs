@@ -133,7 +133,11 @@ fn a_prefix_carries_its_authenticated_slot_opening_and_accounts_for_its_owner() 
         .commitment
         .as_ref()
         .unwrap()
-        .history_frontiers(&head.partition)
+        .history_frontiers(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            execution,
+            &head.partition,
+        )
         .unwrap()
         .into_arenas();
     let (_, expected) = openings
@@ -204,8 +208,13 @@ fn capture_preserves_a_cold_basis_and_full_admission_replaces_it_with_complete_r
             .len(),
         fixture.expected_history
     );
-    let (commitment, _) =
-        PartitionContentCommitment::capture(&full.partition, &symbols, None).unwrap();
+    let (commitment, _) = PartitionContentCommitment::capture(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &worth_execution::ExecutionRequest::serial(&crate::test_execution_policy::serial_request()),
+        &full.partition,
+        &symbols,
+    )
+    .unwrap();
     let captured = capture_region_members(
         &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
         execution,

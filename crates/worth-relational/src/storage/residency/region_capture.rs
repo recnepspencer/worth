@@ -25,6 +25,9 @@ pub(crate) fn capture_region_members(
     schema: &RelationalBranchRootSchemaAuthority,
     schema_carrier_digest: [u8; 32],
 ) -> Result<CapturedRegionMembers, super::RelationalResidencyDemandFailure> {
+    let history_frontiers = commitment
+        .history_frontiers(lane, execution, partition)
+        .map_err(|error| super::content_capture::restore_failure(partition.partition_id, error))?;
     super::kind_admission::recover(
         lane,
         execution,
@@ -39,6 +42,7 @@ pub(crate) fn capture_region_members(
             let mut checkpoint_partition = partition.clone();
             checkpoint_partition.clear_runtime_pin_counters();
             let mut image = partition_to_image_with_contracts(
+                lane,
                 checkpoint_partition,
                 schema.aspect_plans(),
                 &contracts,
@@ -64,10 +68,12 @@ pub(crate) fn capture_region_members(
                     checkpoint,
                 )?,
                 entities: super::history_capture::split_rows(
+                    lane,
                     &partition.entity_arena,
                     &mut image.entity_arena.metadata_history,
                 )?,
                 relations: super::history_capture::split_rows(
+                    lane,
                     &partition.relation_arena,
                     &mut image.relation_arena.metadata_history,
                 )?,
@@ -81,9 +87,7 @@ pub(crate) fn capture_region_members(
                 )?,
                 history_kind_projection: history.kind_projection.clone(),
                 partition: image,
-                history_frontiers: commitment
-                    .history_frontiers(partition)
-                    .ok_or(Cause::Damaged)?,
+                history_frontiers: history_frontiers,
                 adjacency_kinds: capture_kinds(
                     lane,
                     &partition.adjacency,
@@ -97,14 +101,17 @@ pub(crate) fn capture_region_members(
                     checkpoint,
                 )?,
             };
-            let bases = history.direct_bases();
+            let bases = history.direct_bases(lane);
             let history = RelationalRegionImage::encode(
+                lane,
+                checkpoint,
                 partition.partition_id,
                 schema_carrier_digest,
                 RelationalRegionImageKind::History,
                 &history,
             )?;
-            let history_members = super::history_capture::directory(partition, history.0, bases)?;
+            let history_members =
+                super::history_capture::directory(lane, partition, history.0, bases)?;
             let directory =
                 super::RegionRecordDirectory::capture(lane, partition, &mut |units, bytes| {
                     checkpoint(units, bytes).map_err(|_| super::RecordDirectoryError::Corrupt)
@@ -127,6 +134,8 @@ pub(crate) fn capture_region_members(
                 history_members,
                 kind_authority,
                 head: RelationalRegionImage::encode(
+                    lane,
+                    checkpoint,
                     partition.partition_id,
                     schema_carrier_digest,
                     RelationalRegionImageKind::Head,

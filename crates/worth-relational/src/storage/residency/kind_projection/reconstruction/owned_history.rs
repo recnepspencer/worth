@@ -44,6 +44,7 @@ pub(super) fn add_owned(
 }
 
 pub(super) fn project_owned_history(
+    _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     partition: &PartitionState,
     expected: &mut BTreeMap<RelationId, RegionRelationProjection>,
     checkpoint: &mut ProjectionCheckpoint<'_>,

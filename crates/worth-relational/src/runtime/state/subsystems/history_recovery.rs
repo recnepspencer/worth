@@ -15,6 +15,7 @@ impl HistorySubsystem {
     /// deletion or a retired name survives recovery (D8).
     pub(crate) fn restore_branch_cells(
         &mut self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         checkpoints: &[RelationalBranchCellCheckpoint],
         lifecycle: &[crate::durability::data::DurableBranchLifecycleImage],
         retired_names: &[crate::history::data::BranchId],
@@ -88,7 +89,7 @@ impl HistorySubsystem {
         }
         self.branch_cells.restore_all(cells);
         self.restore_retired_branch_names(retired_names)?;
-        self.rebuild_checkpoint_catalog(checkpoints)?;
+        self.rebuild_checkpoint_catalog(lane, checkpoints)?;
         self.try_reset_retention_owner(self.runtime_instance_id)
             .map_err(|denial| {
                 format!(

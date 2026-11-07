@@ -13,6 +13,13 @@ pub struct ChangeWork<'scope> {
     prepare: &'scope mut dyn FnMut(u64, u64) -> Result<(), MaintenanceRefusal>,
 }
 impl ChangeWork<'_> {
+    #[cfg(test)]
+    pub(super) fn oracle<T>(operation: impl FnOnce(&mut ChangeWork<'_>) -> T) -> T {
+        let mut prepare = |_, _| Ok(());
+        operation(&mut ChangeWork {
+            prepare: &mut prepare,
+        })
+    }
     /// Attribute the adopter's real nested Execution charges to a named phase.
     /// Inspection observes it only inside `observe_maintenance_work`.
     pub fn run_phase<T, E: From<MaintenanceRefusal>>(

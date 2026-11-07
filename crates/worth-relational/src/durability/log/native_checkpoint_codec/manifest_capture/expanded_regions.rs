@@ -12,7 +12,8 @@ pub(super) fn restore_images(
         CheckpointAspectContractCatalog::from_contracts(schema.retained_aspect_contracts())?;
     let mut partitions = BTreeMap::new();
     for image in images {
-        let partition = partition_from_image(image.clone(), schema.aspect_plans(), &contracts)?;
+        let partition =
+            partition_from_image(lane, image.clone(), schema.aspect_plans(), &contracts)?;
         if partitions
             .insert(partition.partition_id, partition)
             .is_some()
@@ -40,8 +41,18 @@ pub(super) fn capture_partitions(
     partitions
         .values()
         .map(|partition| {
-            let (commitment, _) = PartitionContentCommitment::capture(partition, symbols, None)
-                .map_err(|error| corrupt(format!("region commitment: {error:?}")))?;
+            let (commitment, _) = PartitionContentCommitment::capture(
+                lane, execution, partition, symbols,
+            )
+            .map_err(|error| {
+                crate::durability::checkpoints::kind_reconstruction::stop(
+                    "region commitment",
+                    crate::storage::residency::content_reconstruction_failure(
+                        partition.partition_id,
+                        error,
+                    ),
+                )
+            })?;
             let captured = crate::storage::residency::capture_region_members(
                 lane,
                 execution,
@@ -57,7 +68,10 @@ pub(super) fn capture_partitions(
                 kind_authority: captured.kind_authority,
                 partition_id: partition.partition_id,
                 content_digest: commitment.digest(partition.partition_id),
-                directory: captured.directory.portable(),
+                directory: captured
+                    .directory
+                    .portable(lane, execution)
+                    .map_err(|error| error.into_failure(partition.partition_id))?,
                 live_counts: crate::storage::residency::LiveRecordCounts::from_partition(partition),
                 entity_slots: partition.entity_arena.slot_count(),
                 relation_slots: partition.relation_arena.slot_count(),

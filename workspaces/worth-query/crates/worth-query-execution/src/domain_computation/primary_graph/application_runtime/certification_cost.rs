@@ -176,7 +176,7 @@ impl<Schema: ApplicationSchema> WorthQueryCertificationCostRuntimeExt<Schema>
             .primary_provider
             .graph
             .with_runtime(&execution, |runtime| {
-                runtime.observe_mvcc_cost(&scope.relational)
+                runtime.observe_mvcc_cost(&execution, &scope.relational)
             })?;
         let application_work = WorthQueryCertificationApplicationWork::from(
             self.runtime

@@ -50,7 +50,7 @@ pub(in crate::storage::residency) fn rebuild_controlled(
             checkpoint(1, 0)?;
             expected.remove(&id);
         }
-        project_owned_history(partition, &mut expected, checkpoint)?;
+        project_owned_history(lane, partition, &mut expected, checkpoint)?;
         if !claims_match(&expected, projection, checkpoint)? {
             return Err(Cause::IntegrityMismatch);
         }
@@ -103,7 +103,7 @@ pub(in crate::storage::residency) fn rebuild_head_history(
         }
     }
     let mut known = BTreeMap::new();
-    project_owned_history(partition, &mut known, checkpoint)?;
+    project_owned_history(lane, partition, &mut known, checkpoint)?;
     for (relation, claim) in known {
         let supplied = expected.get(&relation).ok_or(Cause::IntegrityMismatch)?;
         if claim.kind != supplied.kind
@@ -221,7 +221,7 @@ pub(in crate::storage::residency) fn canonical_history_controlled(
             expected.insert(entry.relation, entry);
         }
     }
-    project_owned_history(partition, &mut expected, checkpoint)?;
+    project_owned_history(lane, partition, &mut expected, checkpoint)?;
     let mut answer = Vec::new();
     for entry in expected.into_values() {
         checkpoint(1, 2 * size_of::<RegionRelationProjection>() as u64)?;

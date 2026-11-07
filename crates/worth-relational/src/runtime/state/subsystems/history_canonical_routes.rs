@@ -16,11 +16,12 @@ impl HistorySubsystem {
     }
     pub(crate) fn rebuild_authored_write_generation(
         &self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         execution: worth_execution::ExecutionRequest<'_, '_>,
         commit: CommitId,
     ) -> Result<usize, crate::history::RelationalAuthoredWriteDenial> {
         self.canonical_publication_routes
-            .rebuild_authored_generation(execution, commit)
+            .rebuild_authored_generation(lane, execution, commit)
     }
     pub(crate) fn authored_write_generation(
         &self,
@@ -145,6 +146,7 @@ impl HistorySubsystem {
 
     pub(crate) fn rebuild_recovered_canonical_routes(
         &mut self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         commits: impl IntoIterator<Item = Arc<crate::history::data::PositionedCanonicalCommit>>,
     ) -> Result<(), &'static str> {
         let routes = Arc::new(

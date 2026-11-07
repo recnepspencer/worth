@@ -10,6 +10,7 @@ use crate::runtime::RelationalRuntime;
 use crate::storage::residency::RelationalRegionRetention;
 
 pub(super) fn restore(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
@@ -22,7 +23,7 @@ pub(super) fn restore(
         .detached_owner_snapshot()
         .map_err(|denial| corrupt(format!("cold history snapshot denied: {denial:?}")))?;
     let mut symbols = runtime.services.symbols.interner_snapshot();
-    symbols.restore_snapshot(checkpoint.symbol_table.clone());
+    symbols.restore_snapshot(lane, checkpoint.symbol_table.clone());
     let paged_symbols = runtime.services.symbols.detached_owner_snapshot();
     paged_symbols.replace(symbols);
     paged_symbols
@@ -145,6 +146,7 @@ pub(super) fn restore(
     )?;
     history
         .restore_branch_cells(
+            lane,
             &checkpoint.branch_cells,
             &checkpoint.branch_lifecycle,
             &checkpoint.retired_branch_names,

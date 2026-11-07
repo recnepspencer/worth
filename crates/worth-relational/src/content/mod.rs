@@ -13,6 +13,7 @@ mod publication;
 mod read_closure;
 mod reconstruction;
 mod registry;
+mod schema_transition;
 pub use read_closure::RelationalContentReadClosure;
 mod resolution;
 mod schema;

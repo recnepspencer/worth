@@ -109,7 +109,13 @@ pub(super) fn region_with_history() -> RegionFixture {
         .expect("fixture root has admitted Full custody")
         .unwrap();
     let symbols = Arc::new(runtime.services.symbols.interner_snapshot());
-    let (commitment, _) = PartitionContentCommitment::capture(partition, &symbols, None).unwrap();
+    let (commitment, _) = PartitionContentCommitment::capture(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &worth_execution::ExecutionRequest::serial(&crate::test_execution_policy::serial_request()),
+        partition,
+        &symbols,
+    )
+    .unwrap();
     let schema = Arc::new(root.schema_authority().clone());
     let schema_digest = crate::durability::data::DurableBranchRootSchemaImage::capture(&schema)
         .unwrap()
@@ -143,7 +149,15 @@ pub(super) fn region_with_history() -> RegionFixture {
     let symbol_authority = crate::runtime::RuntimeSymbolTable::default();
     symbol_authority.replace((*symbols).clone());
     let cold = RelationalColdRegion {
-        directory: members.directory.portable(),
+        directory: members
+            .directory
+            .portable(
+                &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+                &worth_execution::ExecutionRequest::serial(
+                    &crate::test_execution_policy::serial_request(),
+                ),
+            )
+            .unwrap(),
         history_members: members.history_members,
         kind_authority: members.kind_authority,
         source: source.clone(),

@@ -38,7 +38,7 @@ pub(crate) fn single_record_copy_cost(
         .unwrap();
     let copied = world
         .runtime
-        .observe_mvcc_cost(&scope)
+        .observe_mvcc_cost(execution, &scope)
         .unwrap()
         .sharing_cost_delta()
         .copied_truth_bytes;
@@ -103,7 +103,7 @@ pub(crate) fn assert_flat_history_samples(
         assert!(retained.roots_still_retained() >= history_len as u64);
         let delta = world
             .runtime
-            .observe_mvcc_cost(&scope)
+            .observe_mvcc_cost(execution, &scope)
             .unwrap()
             .sharing_cost_delta();
         samples.push((

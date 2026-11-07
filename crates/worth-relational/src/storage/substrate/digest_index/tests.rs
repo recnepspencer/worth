@@ -22,7 +22,7 @@ proptest! {
         for (&key, &value) in expected.iter().rev() { reversed.set(key, Some(value)).unwrap(); }
         prop_assert_eq!(reversed.digest(), index.digest());
         let ordered = expected.iter().map(|(&key, &value)| (key, value)).collect::<Vec<_>>();
-        let bulk = DigestIndex::from_sorted_entries(&ordered);
+        let bulk = DigestIndex::from_sorted_entries(&crate::storage::substrate::maintenance::ReconstructionLane::oracle(), &ordered);
         prop_assert_eq!(bulk.digest(), reference(&ordered));
         prop_assert_eq!(bulk.digest(), index.digest());
         prop_assert_eq!(bulk.allocation_bytes(), index.allocation_bytes());

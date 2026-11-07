@@ -173,7 +173,7 @@ fn owned_head_base_damage_is_sticky_and_never_invalidates_an_accepted_view() {
     assert_eq!(full_demand(head.cell(), 1 << 24).unwrap_err(), failure);
     assert_eq!(head_demand(head.cell(), 1 << 24).unwrap_err(), failure);
     assert!(
-        matches!(head.cell().capture_resident_content(&fixture.cold.symbols.interner_snapshot()),
+        matches!(head.cell().capture_resident_content(&crate::storage::substrate::maintenance::ReconstructionLane::oracle(), execution, &fixture.cold.symbols.interner_snapshot()),
         Err(RegionContentFailure::Storage(refused)) if refused == failure)
     );
     assert_eq!(fixture.source.reads.load(Ordering::SeqCst), reads);
@@ -209,7 +209,11 @@ fn head_content_inspection_hashes_its_suffix_without_loading_the_base_or_trustin
     let reads = fixture.source.reads.load(Ordering::SeqCst);
     let digest = owned
         .cell()
-        .capture_resident_content(&crate::symbols::data::StringInterner::default())
+        .capture_resident_content(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            execution,
+            &crate::symbols::data::StringInterner::default(),
+        )
         .unwrap()
         .unwrap();
     assert_eq!(fixture.source.reads.load(Ordering::SeqCst), reads);
