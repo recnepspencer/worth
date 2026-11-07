@@ -34,6 +34,13 @@ fn live_nested_decode_requires_original_funding_before_receipt_and_cause_handoff
     let mut live = native::open(&narrow);
     publish(&narrow, 78_002);
     reset();
+    let (primed, _) = native::next(&narrow, &mut live, super::FUNDED_WORK);
+    assert!(matches!(
+        primed,
+        WorthQueryApplicationLiveOutcome::Delivered(_)
+    ));
+    publish(&narrow, 78_005);
+    reset();
     let (baseline, funded) = native::next(&narrow, &mut live, super::FUNDED_WORK);
     let WorthQueryApplicationLiveOutcome::Delivered(update) = baseline else {
         panic!("the same native delivery helper must genuinely deliver before narrowing");

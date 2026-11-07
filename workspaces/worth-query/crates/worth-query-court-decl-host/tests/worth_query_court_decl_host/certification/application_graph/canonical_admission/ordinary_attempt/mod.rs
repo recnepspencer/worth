@@ -12,6 +12,8 @@ fn ordinary_attempt_refusal_cannot_be_swallowed_before_fact_completion() {
     drop(funded);
 
     let bounded = host::install(super::ONE_VALUE_WORK);
+    // Verify this immutable source once before measuring cumulative warm reads.
+    assert_eq!(host::read(&bounded, "root").value, super::value());
     let refused = observe_twice(&bounded);
     assert!(
         refused.second_refused,

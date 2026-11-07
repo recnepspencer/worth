@@ -6,6 +6,7 @@ fn changed_codec_continuation_swallowed_refusal_and_original_cancellation_never_
     let original = host::install(journey::heavy()).unwrap();
     let _settled = host::produce(&original);
     // All tokens are issued before adoption by real first pages, never copied.
+    let prime_token = journey::page(&original).into_parts().1.unwrap();
     let token = journey::page(&original).into_parts().1.unwrap();
     let narrow_token = journey::page(&original).into_parts().1.unwrap();
     let retry_token = journey::page(&original).into_parts().1.unwrap();
@@ -18,6 +19,10 @@ fn changed_codec_continuation_swallowed_refusal_and_original_cancellation_never_
     let target = journey::successor(checkpoint);
     assert_eq!(successor::output::decodes(), 0);
     let _target_settled = successor::host::produce(&target);
+    projection::reset();
+    output::reset_decodes();
+    let (primed, _) = native::resume(&original, prime_token, &request_scope(), 8_000_000);
+    assert!(primed.unwrap().continuation().is_none());
     projection::reset();
     output::reset_decodes();
     let (funded, report) = native::resume(&original, token, &request_scope(), 8_000_000);

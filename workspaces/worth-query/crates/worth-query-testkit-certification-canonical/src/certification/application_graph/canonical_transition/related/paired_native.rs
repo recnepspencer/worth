@@ -189,6 +189,9 @@ pub fn reconstruct(host: &host::Host, expected: i64, exercise_stops: bool) -> Re
                     .unwrap();
                 (result, projected, report)
             };
+            // Certify source codecs before measuring a fresh reconstruction.
+            assert!(run(8_000_000, false).0.is_ok());
+            view.discard();
             let (keys, projected, funded) = run(8_000_000, false);
             let keys = keys.unwrap();
             assert_eq!(projected, 3);

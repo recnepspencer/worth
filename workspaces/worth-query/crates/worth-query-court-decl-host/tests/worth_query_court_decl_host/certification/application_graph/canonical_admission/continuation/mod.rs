@@ -7,6 +7,9 @@ fn continuation_nested_decode_refusal_never_returns_a_page_or_successor() {
     drop(host);
 
     let host = host::install_page(super::ONE_VALUE_WORK);
+    for name in ["root", "child"] {
+        assert_eq!(host::read(&host, name).value, super::value());
+    }
     query::reset(None, false);
     opaque::reset();
     let denial = match first_page(&host, &request_scope()) {

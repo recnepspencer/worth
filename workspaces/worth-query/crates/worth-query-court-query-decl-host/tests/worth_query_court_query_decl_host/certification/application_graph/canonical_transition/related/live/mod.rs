@@ -64,6 +64,15 @@ fn changed_codec_live_swallowed_refusal_and_cancelled_domain_error_cannot_ack() 
     publish_target(&target, 180311);
     successor::projection::reset();
     successor::output::reset_decodes();
+    let (primed, _) =
+        successor::live_native::next(&target, &mut funded, &request_scope(), 8_000_000);
+    assert!(matches!(
+        primed,
+        WorthQueryApplicationLiveOutcome::Delivered(_)
+    ));
+    publish_target(&target, 180315);
+    successor::projection::reset();
+    successor::output::reset_decodes();
     let (outcome, report) =
         successor::live_native::next(&target, &mut funded, &request_scope(), 8_000_000);
     assert!(matches!(

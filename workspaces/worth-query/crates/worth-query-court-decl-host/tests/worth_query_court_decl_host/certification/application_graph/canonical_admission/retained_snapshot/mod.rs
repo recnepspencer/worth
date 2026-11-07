@@ -87,6 +87,9 @@ fn retained_snapshot_multi_read_vetoes_swallowed_refusal_and_retries_at_original
                 (result, first_read.get(), callback_returned.get(), report)
             };
 
+            // The first real read certifies the stored bytes. Measure the warm
+            // path used by the following narrowed request, on the same pin.
+            assert!(run(super::FUNDED_WORK, false).0.is_ok());
             let (funded, first, returned, report) = run(super::FUNDED_WORK, false);
             let (root, child) = funded.expect("funded cumulative retained reads complete");
             assert!(first && returned);

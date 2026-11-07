@@ -171,6 +171,10 @@ fn late_swallowed_pair_decode_refusal_keeps_the_view_cold_and_fresh_retry_recons
                     .expect("the native scope ran the actual pair owner");
                 (result, projected, report)
             };
+            // Certify source codecs, then discard the actual derived image so
+            // the measured reconstruction still performs every member read.
+            assert!(run(super::FUNDED_WORK, false).0.is_ok());
+            view.discard();
             let (keys, projected, funded) = run(super::FUNDED_WORK, false);
             let keys = keys.expect("funded real pair reconstructs both members");
             assert_eq!(projected, 2);
