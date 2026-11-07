@@ -42,6 +42,3 @@ impl RecordIdentitySubsystem {
         )?
     }
 }
-
-#[cfg(test)]
-mod tests;

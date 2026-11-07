@@ -1,17 +1,42 @@
 //! Real validation meaning is independent of its preparation placement.
-use super::*;
-use crate::transactions::data::RelationalCommitSemanticResult;
+use super::{
+    create_entity_outcome, durable_runtime, release_test_commit_snapshot, TestDurableMedium,
+};
+use std::num::NonZeroUsize;
+use worth_execution::{
+    CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig, ExecutionRequest, LeaseRequest,
+};
+use worth_foundational::{
+    DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
+};
+use worth_relational::facade::transactions::RelationalCommitSemanticResult;
 
 #[test]
 fn original_validation_meaning_excludes_live_preparation_posture_and_refuses_its_retired_fields() {
-    let host = crate::test_execution_policy::serial_request();
-    let lease = test_execution_lease();
+    let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
+    let authority = ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
+        max_workers: NonZeroUsize::new(8).unwrap(),
+        charged_memory_bytes: Some(512 * 1024 * 1024),
+    })
+    .unwrap();
+    let lease = authority
+        .request_lease(LeaseRequest {
+            policy: ExecutionRequestPolicy::new(
+                ExecutionPosture::Automatic,
+                DeterminismContract::CanonicalBitwise,
+                ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), None, Some(1_000_000)),
+            ),
+            deadline: None,
+            cancellation: CancellationToken::new(),
+        })
+        .unwrap();
     let mut serial_validation = None;
     for execution in [
         ExecutionRequest::serial(&host),
         ExecutionRequest::leased(&lease),
     ] {
-        let runtime = durable_runtime_with_test_schema();
+        let medium = TestDurableMedium::new();
+        let runtime = durable_runtime(&medium);
         let committed =
             create_entity_outcome(&execution, &runtime, "posture-independent-validation");
         assert!(committed

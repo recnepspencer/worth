@@ -41,3 +41,7 @@ use worth_testkit_relational::{
         original_with_retained_successor, perform, recover, source_journey,
     },
 };
+
+mod encoded_checkpoint_backing;
+mod partition_frontier;
+mod validation_posture;
