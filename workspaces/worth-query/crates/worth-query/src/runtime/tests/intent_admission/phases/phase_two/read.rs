@@ -68,7 +68,7 @@ fn read_execution_basis_context_mismatch_stops_as_violation() {
         request.clone(),
     )
     .expect("fixture digest must fit");
-    let decision = admit_runtime_intent_request(request);
+    let decision = admit_runtime_intent_request(request).expect("fixture digest must fit");
 
     assert_eq!(
         eligibility.capability_posture(),

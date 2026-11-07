@@ -172,7 +172,7 @@ fn contract() -> crate::projection_consumption::MaterializedProjectionContract {
     )
     .unwrap();
     let ProjectionConsumptionEligibility::Admitted(admitted) =
-        evaluate_projection_consumption_eligibility(&declaration)
+        evaluate_projection_consumption_eligibility(&declaration).expect("fixture digest must fit")
     else {
         panic!("native identity fixture must admit")
     };

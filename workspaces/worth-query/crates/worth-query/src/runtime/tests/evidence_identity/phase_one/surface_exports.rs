@@ -139,6 +139,7 @@ fn state_snapshot_with_optional_postures_recomposes_exactly() {
     .with_ordinary_runtime_posture(ordinary_runtime_posture)
     .expect("fixture digest must fit")
     .with_async_result_state(async_result_state)
+    .expect("fixture digest must fit")
     .with_remask_posture(remask_posture);
 
     assert_canonical_evidence_identity_token(

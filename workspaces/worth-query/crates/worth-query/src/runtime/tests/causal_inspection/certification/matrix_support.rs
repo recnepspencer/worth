@@ -160,7 +160,7 @@ fn missing_evidence_digest(family: CausalEvidenceFamily) -> String {
     )
     .expect("missing-evidence fixture should anchor");
     let CausalEvidenceReferenceResolution::MissingRequiredEvidence { denial, .. } =
-        resolve_causal_evidence_references(anchor, &[family])
+        resolve_causal_evidence_references(anchor, &[family]).expect("fixture digest must fit")
     else {
         panic!("fixture should miss requested evidence family");
     };

@@ -223,7 +223,7 @@ fn canonical_admission_decision_round_trips_to_public_handoff_type() {
         declaration,
     )
     .expect("authoritative request should build");
-    let decision = admit_runtime_intent_request(request);
+    let decision = admit_runtime_intent_request(request).expect("fixture digest must fit");
 
     match decision {
         WorthQueryIntentAdmissionDecision::Admitted(plan) => {

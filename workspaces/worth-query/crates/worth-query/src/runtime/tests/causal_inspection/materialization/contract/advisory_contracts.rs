@@ -16,7 +16,8 @@ fn advisory_materialization_rejects_mismatched_query_observation_binding() {
     let flow = admit_causal_inspection(request_for(
         reference_set,
         CausalInspectionRichness::MaterializedDetail,
-    ));
+    ))
+    .expect("fixture digest must fit");
     let CausalInspectionProofFlow::Advisory(advisory) = flow else {
         panic!("materialized detail should narrow to advisory");
     };

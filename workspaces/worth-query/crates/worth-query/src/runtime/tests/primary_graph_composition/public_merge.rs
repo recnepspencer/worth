@@ -262,10 +262,11 @@ fn lowered_merge(
         },
     )
     .expect("merge normalizes");
-    let eligibility = match evaluate_effect_eligibility(normalized) {
-        EffectEligibilityOutcome::Admitted(eligibility) => eligibility,
-        other => panic!("merge admits, got {other:?}"),
-    };
+    let eligibility =
+        match evaluate_effect_eligibility(normalized).expect("fixture digest must fit") {
+            EffectEligibilityOutcome::Admitted(eligibility) => eligibility,
+            other => panic!("merge admits, got {other:?}"),
+        };
     scope_admitted_effect_plan(admit_effect_intent(eligibility))
         .lower()
         .expect("merge lowers")
