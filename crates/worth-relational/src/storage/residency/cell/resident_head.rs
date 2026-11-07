@@ -44,6 +44,7 @@ impl RelationalRegionResidency {
         readmission: super::super::resident_history::ResidentHistoryReadmission,
     ) -> RelationalResidencyLease<Head> {
         let region = Arc::new(ResidentRegion {
+            symbol_requirements: OnceLock::new(),
             history_presence,
             partition,
             commitment,
@@ -61,6 +62,9 @@ impl RelationalRegionResidency {
                 region: region.clone(),
             }),
             damage: OnceLock::new(),
+            symbol_inheritance: OnceLock::new(),
+            symbol_aliases: OnceLock::new(),
+            symbol_identity: Arc::new(()),
             leases: AtomicUsize::new(1),
         });
         RelationalResidencyLease::accepted(cell, region)

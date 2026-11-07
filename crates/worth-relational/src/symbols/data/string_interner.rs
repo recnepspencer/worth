@@ -153,6 +153,22 @@ impl StringInterner {
         }
         Ok(())
     }
+    /// Compare persistent roots, visiting only nonshared map paths.
+    pub(crate) fn checked_additions_since(
+        &self,
+        previous: &Self,
+    ) -> Result<SymbolTableSnapshot, &'static str> {
+        let mut entries = Vec::new();
+        for changed in previous.by_symbol.diff(&self.by_symbol) {
+            match changed {
+                im::ordmap::DiffItem::Add(id, text) => entries.push((*id, text.clone())),
+                im::ordmap::DiffItem::Update { .. } | im::ordmap::DiffItem::Remove(_, _) => {
+                    return Err("candidate binding erased or replaced a frozen meaning")
+                }
+            }
+        }
+        Ok(SymbolTableSnapshot { entries })
+    }
     pub fn normalize(
         &mut self,
         value: InternedString,

@@ -16,3 +16,5 @@ mod pinned_projection;
 mod cold_checkpoint;
 mod lazy_pin;
 mod snapshot_counts;
+
+mod symbol_admission;

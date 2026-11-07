@@ -16,12 +16,13 @@ use crate::storage::overlay::PartitionContentCommitment;
 use crate::storage::partition::AdjacencyKindBasis;
 use crate::storage::substrate::maintenance::ReconstructionLane;
 use crate::storage::substrate::{EntityRecordKind, RecordArena, RecordKind, RelationRecordKind};
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 #[derive(Debug, Clone)]
 pub(crate) struct ResidentHistoryReadmission {
     schema: Arc<RelationalBranchRootSchemaAuthority>,
     symbols: RuntimeSymbolTable,
+    pub(super) publication: Option<super::RegionSymbolPublication>,
 }
 
 impl ResidentHistoryReadmission {
@@ -34,10 +35,18 @@ impl ResidentHistoryReadmission {
     ) -> Self {
         Self {
             schema,
+            publication: None,
             symbols: symbols.detached_owner_snapshot(),
         }
     }
 
+    pub(crate) fn with_symbol_publication(
+        mut self,
+        publication: super::RegionSymbolPublication,
+    ) -> Self {
+        self.publication = Some(publication);
+        self
+    }
     pub(super) fn load_full(
         &self,
         head: &ResidentRegion,
@@ -61,7 +70,7 @@ impl ResidentHistoryReadmission {
             // before reading any historical member, independently of folding.
             self.symbols.demand_symbol_ids(
                 execution,
-                super::required_symbols::collect_head(&head.partition),
+                super::required_symbols::collect_head(lane, &head.partition),
             )?;
             let expected = match &head.commitment {
                 Some(commitment) => commitment.clone(),
@@ -108,8 +117,13 @@ impl ResidentHistoryReadmission {
                 AdjacencyKindBasis::Historical,
             )
             .map_err(refuse)?;
-            self.symbols
-                .demand_symbol_ids(execution, super::required_symbols::collect(&partition))?;
+            let requirements = super::required_symbols::CapturedSymbolRequirements::capture(
+                lane, &partition, true,
+            );
+            self.symbols.demand_symbol_ids(
+                execution,
+                requirements.get(true).unwrap().ids.iter().copied(),
+            )?;
             let (commitment, _) = PartitionContentCommitment::capture(
                 &partition,
                 &self.symbols.interner_snapshot(),
@@ -121,6 +135,7 @@ impl ResidentHistoryReadmission {
             }
             crate::execution::check_request(execution).map_err(Failure::Request)?;
             Ok(Arc::new(ResidentRegion {
+                symbol_requirements: OnceLock::from(Arc::new(requirements)),
                 history_presence: super::history_presence::HistoryPresence::complete(),
                 kind_indexes: Some(super::kind_admission::reconstruct(
                     lane, execution, &partition,

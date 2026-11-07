@@ -32,10 +32,18 @@ impl PreparedResidentRegion {
             let entity_slots = partition.entity_arena.slot_count();
             let relation_slots = partition.relation_arena.slot_count();
             let content_digest = commitment.digest(partition.partition_id);
+            let requirements = super::required_symbols::CapturedSymbolRequirements::capture(
+                lane, &partition, true,
+            );
             Ok(Self {
                 partition_id: partition.partition_id,
                 retention: RelationalRegionRetention::from_lease(
-                    RelationalRegionResidency::resident(partition, commitment, kind_indexes),
+                    RelationalRegionResidency::resident(
+                        partition,
+                        commitment,
+                        kind_indexes,
+                        Some(requirements),
+                    ),
                 ),
                 inventory,
                 content_digest,

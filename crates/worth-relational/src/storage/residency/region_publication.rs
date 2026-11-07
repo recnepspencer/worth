@@ -61,6 +61,23 @@ impl PreparedResidentRegion {
             .capture_region()
             .map_err(RegionContentFailure::Storage)?
             .ok_or_else(absent)?;
+        // Head custody can borrow a physically complete image already loaded
+        // by another observer. Acquire its real Full witness before carrying
+        // Full dictionary coverage; this branch never requests omitted history.
+        if previous.history_presence.is_complete()
+            && basis.retention.admitted_full_lease().is_none()
+        {
+            let full = basis
+                .retention
+                .demand_full(execution, 1 << 30)
+                .map_err(RegionContentFailure::from)?;
+            full.admit_symbols(execution, symbols)
+                .map_err(RegionContentFailure::from)?;
+        }
+        basis
+            .retention
+            .admit_own_symbols(execution, symbols)
+            .map_err(RegionContentFailure::from)?;
         let prior_commitment = previous.commitment.as_ref().ok_or_else(absent)?;
         let mut partition = previous.partition.clone();
         let copied_truth_bytes = partition.merge_overlay_from_owned(&mut overlay.clone(), journal);
@@ -86,6 +103,11 @@ impl PreparedResidentRegion {
             change,
         )
         .map_err(|error| error.into_content_failure(partition.partition_id))?;
+        let symbol_changes =
+            super::RegionSymbolChanges::derive(execution, &previous.partition, &partition)?;
+        symbols
+            .demand_symbol_ids(execution, symbol_changes.owned.ids.iter().copied())
+            .map_err(RegionContentFailure::from)?;
         partition.clear_runtime_pin_counters();
         let (commitment, content_values_hashed) = PartitionContentCommitment::capture(
             &partition,
@@ -135,8 +157,13 @@ impl PreparedResidentRegion {
                 partition,
                 commitment,
                 kind_indexes,
+                None,
             ))
         };
+        retention.inherit_symbols(basis.retention, symbol_changes);
+        retention
+            .admit_own_symbols(execution, symbols)
+            .map_err(RegionContentFailure::from)?;
         Ok(Self {
             partition_id,
             retention,

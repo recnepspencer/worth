@@ -31,3 +31,17 @@ impl RelationalRegionResidency {
         Ok(Some(commitment.digest(partition.partition_id)))
     }
 }
+
+impl From<super::RelationalResidencyDemandFailure> for RegionContentFailure {
+    fn from(failure: super::RelationalResidencyDemandFailure) -> Self {
+        match failure {
+            super::RelationalResidencyDemandFailure::Request(cause) => Self::Execution(cause),
+            super::RelationalResidencyDemandFailure::StorageUnavailable(cause) => {
+                Self::Storage(cause)
+            }
+            super::RelationalResidencyDemandFailure::Content(cause) => {
+                Self::Execution(cause.into_execution_cause())
+            }
+        }
+    }
+}

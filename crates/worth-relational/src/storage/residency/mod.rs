@@ -75,4 +75,11 @@ mod required_symbols;
 pub(crate) use probe::probe_full_sources;
 pub(crate) use probe::{probe_full, PartitionProbe};
 mod symbol_admission_identity;
+mod symbol_changes;
+pub(crate) use symbol_changes::RegionSymbolChanges;
+mod symbol_inheritance;
 pub(crate) use symbol_admission_identity::RelationalRegionSymbolAdmissionIdentity;
+mod symbol_publication;
+pub(crate) use symbol_publication::{
+    RegionSymbolPublication, SymbolPublicationAdmission, SymbolPublicationKey,
+};

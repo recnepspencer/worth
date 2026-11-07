@@ -1,3 +1,4 @@
+mod admission_transfer;
 mod cold_pages;
 mod state;
 pub(crate) use cold_pages::ColdSymbolDirectoryDenial;
@@ -189,6 +190,7 @@ impl RuntimeSymbolTable {
                 .into_iter()
                 .map(|(symbol, text)| (text, symbol))
                 .collect();
+            state.admissions.clear();
             state.interner = interner;
         });
     }

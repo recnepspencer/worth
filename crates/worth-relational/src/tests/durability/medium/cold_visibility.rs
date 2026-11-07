@@ -114,6 +114,8 @@ fn cold_and_warm_visibility_preserve_an_observation_across_a_later_commit() {
     assert_eq!(warm, expected);
     assert_eq!(counter.reads.load(Ordering::Relaxed), reads);
     update_entity_and_release_snapshot(execution, &runtime, entity, "member-after");
+    assert_eq!(counter.reads.load(Ordering::Relaxed), reads,
+        "an already materialized Full image needs no history/member reread to publish its next edit");
     let retained = runtime
         .read_truth()
         .read_observation(execution, &observation)

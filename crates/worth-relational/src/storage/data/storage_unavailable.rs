@@ -29,6 +29,9 @@ pub enum RelationalStorageUnavailableCause {
     MissingMember,
     /// The source refused or failed without proving durable damage. Retryable.
     SourceUnavailable,
+    /// Owned successor admission lost its dictionary-specific predecessor proof.
+    /// This is retryable maintenance state loss, never proven region damage.
+    MissingSymbolMaintenancePredecessor,
     CorruptCurrentOwnership {
         publication: crate::history::data::CommitId,
         source: crate::identity::data::EntityId,

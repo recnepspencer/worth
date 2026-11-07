@@ -1,6 +1,6 @@
 use crate::storage::substrate::maintenance::ReconstructionLane;
 use std::collections::BTreeMap;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 use super::region_image::*;
 use super::{RelationalColdRegion, RelationalResidencyDemandFailure as Failure, ResidentRegion};
@@ -82,8 +82,12 @@ pub(super) fn load_head(
             Ok((partition, head.history_frontiers, historical))
         })()
         .map_err(|cause| unavailable(cold, cause))?;
-        cold.symbols
-            .demand_symbol_ids(execution, super::required_symbols::collect(&partition))?;
+        let requirements =
+            super::required_symbols::CapturedSymbolRequirements::capture(lane, &partition, false);
+        cold.symbols.demand_symbol_ids(
+            execution,
+            requirements.get(false).unwrap().ids.iter().copied(),
+        )?;
         let symbols = cold.symbols.interner_snapshot();
         let commitment = PartitionContentCommitment::capture_head(&partition, &symbols, &frontiers)
             .ok_or_else(|| unavailable(cold, Cause::Damaged))?;
@@ -121,6 +125,7 @@ pub(super) fn load_head(
         )?;
         crate::execution::check_request(execution).map_err(Failure::Request)?;
         Ok(Arc::new(ResidentRegion {
+            symbol_requirements: OnceLock::from(Arc::new(requirements)),
             history_presence: super::history_presence::HistoryPresence::from_cold(lane, &partition),
             kind_indexes: Some(super::kind_admission::reconstruct(
                 lane, execution, &partition,
@@ -210,8 +215,12 @@ pub(super) fn load_full(
             Ok(partition)
         })()
         .map_err(|cause| unavailable(cold, cause))?;
-        cold.symbols
-            .demand_symbol_ids(execution, super::required_symbols::collect(&partition))?;
+        let requirements =
+            super::required_symbols::CapturedSymbolRequirements::capture(lane, &partition, true);
+        cold.symbols.demand_symbol_ids(
+            execution,
+            requirements.get(true).unwrap().ids.iter().copied(),
+        )?;
         let symbols = cold.symbols.interner_snapshot();
         let (commitment, _) = PartitionContentCommitment::capture(&partition, &symbols, None)
             .map_err(|_| unavailable(cold, Cause::Damaged))?;
@@ -219,6 +228,7 @@ pub(super) fn load_full(
         super::RegionRecordDirectory::verify_member(lane, execution, &cold.directory, &partition)?;
         crate::execution::check_request(execution).map_err(Failure::Request)?;
         Ok(Arc::new(ResidentRegion {
+            symbol_requirements: OnceLock::from(Arc::new(requirements)),
             history_presence: super::history_presence::HistoryPresence::complete(),
             kind_indexes: Some(super::kind_admission::reconstruct(
                 lane, execution, &partition,

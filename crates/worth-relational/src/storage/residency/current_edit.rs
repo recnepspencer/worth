@@ -47,22 +47,36 @@ impl ResidentRegionLease {
             Self::Head { lease, .. } => std::sync::Arc::strong_count(lease.cell()) > 1,
             Self::Full(lease) => lease.has_other_observers(),
         };
+        let attach = |symbols: super::symbol_inheritance::SymbolAdmissionBasis| match &readmission
+            .publication
+        {
+            Some(scope) => symbols.prepared(scope.changes.clone(), Some(scope.publication.clone())),
+            None => symbols,
+        };
         let state = match self {
             Self::Full(lease) => {
+                let symbols = attach(super::symbol_inheritance::SymbolAdmissionBasis::full(
+                    &lease,
+                ));
                 let region = lease.resident_region();
                 let history = region.history_presence.basis(&region.partition);
                 EditState::Current {
                     partition: lease.into_owned_partition(),
                     history,
+                    symbols,
                     readmission,
                 }
             }
             Self::Head { lease, .. } => {
+                let symbols = attach(super::symbol_inheritance::SymbolAdmissionBasis::head(
+                    &lease,
+                ));
                 let region = lease.resident_region();
                 let history = region.history_presence.basis(&region.partition);
                 EditState::Current {
                     partition: lease.into_owned_contents(),
                     history,
+                    symbols,
                     readmission,
                 }
             }
@@ -92,6 +106,7 @@ enum EditState {
     Current {
         partition: PartitionState,
         history: super::history_presence::HistoryPresenceBasis,
+        symbols: super::symbol_inheritance::SymbolAdmissionBasis,
         readmission: ResidentHistoryReadmission,
     },
 }
@@ -124,13 +139,21 @@ impl ResidentRegionEdit {
         readmission: ResidentHistoryReadmission,
         transform: impl FnOnce(PartitionState) -> PartitionState,
     ) -> Self {
+        let attach = |symbols: super::symbol_inheritance::SymbolAdmissionBasis| match &readmission
+            .publication
+        {
+            Some(scope) => symbols.prepared(scope.changes.clone(), Some(scope.publication.clone())),
+            None => symbols,
+        };
         let state = match self.state {
             EditState::Full(edit) => {
                 // A publication may follow an earlier metadata edit in this
                 // writer and import prefixes from another Head region.
                 let history =
                     super::history_presence::HistoryPresence::complete().basis(edit.partition());
+                let symbols = attach(edit.symbols.clone());
                 EditState::Current {
+                    symbols,
                     partition: transform(edit.into_partition()),
                     history,
                     readmission,
@@ -139,10 +162,12 @@ impl ResidentRegionEdit {
             EditState::Current {
                 partition,
                 history,
+                symbols,
                 readmission: _,
             } => EditState::Current {
                 partition: transform(partition),
                 history,
+                symbols: attach(symbols),
                 readmission,
             },
         };
@@ -154,22 +179,22 @@ impl ResidentRegionEdit {
             EditState::Current {
                 partition,
                 history,
+                symbols,
                 readmission,
             } => {
                 let history_presence = history.updated(&partition);
                 if history_presence.is_complete() {
-                    ResidentRegionLease::Full(RelationalRegionResidency::resident_uncommitted(
-                        partition,
-                    ))
+                    let lease = RelationalRegionResidency::resident_uncommitted(partition);
+                    symbols.install_full(&lease);
+                    ResidentRegionLease::Full(lease)
                 } else {
-                    ResidentRegionLease::Head {
-                        lease: RelationalRegionResidency::resident_current(
-                            partition,
-                            history_presence,
-                            readmission.clone(),
-                        ),
-                        readmission,
-                    }
+                    let lease = RelationalRegionResidency::resident_current(
+                        partition,
+                        history_presence,
+                        readmission.clone(),
+                    );
+                    symbols.install_head(&lease);
+                    ResidentRegionLease::Head { lease, readmission }
                 }
             }
         }

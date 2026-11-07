@@ -131,6 +131,12 @@ pub(super) fn build_incremental_regions(
             )
         }
         .map_err(|failure| super::super::root_region::capture_failure(partition_id, failure))?;
+        prepared
+            .retention
+            .admit_own_symbols(execution, symbols)
+            .map_err(|failure| {
+                super::super::root_region::capture_failure(partition_id, failure.into())
+            })?;
         let new_payload_bytes = prepared.new_payload_bytes;
         copied_truth_bytes = copied_truth_bytes.saturating_add(prepared.copied_truth_bytes);
         let region = Arc::new(RelationalRootRegion::from_prepared(
