@@ -22,6 +22,46 @@ pub(super) struct CountedSource {
 }
 
 impl RelationalDurableColdSource for CountedSource {
+    fn retain_members_for_request(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        _members: &[RelationalDurableMemberLocator],
+        issuer: std::sync::Weak<dyn RelationalDurableColdSource>,
+    ) -> Result<
+        crate::durability::medium::RelationalDurableMemberCustody,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        // This immutable archive has no separate placement registration.
+        crate::durability::medium::RelationalDurableMemberCustody::try_new_from_source_for_request(
+            issuer,
+            request,
+            || Ok(()),
+        )
+    }
+
+    fn validate_member_custody_retirement(
+        &self,
+        original: &(dyn std::any::Any + Send + Sync),
+    ) -> Result<(), crate::durability::medium::RelationalDurableMemberRetirementRefusal> {
+        if original.is::<()>() {
+            Ok(())
+        } else {
+            Err(crate::durability::medium::RelationalDurableMemberRetirementRefusal::ForeignCustody)
+        }
+    }
+
+    fn advance_member_custody_retirement(
+        &self,
+        _request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &mut (dyn std::any::Any + Send + Sync),
+    ) -> crate::durability::medium::RelationalDurableMemberRetirementObservation {
+        use crate::durability::medium::RelationalDurableMemberRetirementObservation as Observation;
+        match self.validate_member_custody_retirement(original) {
+            Ok(()) => Observation::Complete,
+            Err(cause) => Observation::Refused(cause),
+        }
+    }
+
     fn retain_members(
         &self,
         _members: &[RelationalDurableMemberLocator],

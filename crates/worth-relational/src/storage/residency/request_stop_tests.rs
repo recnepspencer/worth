@@ -6,6 +6,35 @@ struct RetryAfterFailure {
     failure: std::sync::Mutex<Option<Cause>>,
 }
 impl RelationalDurableColdSource for RetryAfterFailure {
+    fn retain_members_for_request(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        members: &[RelationalDurableMemberLocator],
+        issuer: std::sync::Weak<dyn RelationalDurableColdSource>,
+    ) -> Result<
+        crate::durability::medium::RelationalDurableMemberCustody,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        self.source
+            .retain_members_for_request(request, members, issuer)
+    }
+
+    fn validate_member_custody_retirement(
+        &self,
+        original: &(dyn std::any::Any + Send + Sync),
+    ) -> Result<(), crate::durability::medium::RelationalDurableMemberRetirementRefusal> {
+        self.source.validate_member_custody_retirement(original)
+    }
+
+    fn advance_member_custody_retirement(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &mut (dyn std::any::Any + Send + Sync),
+    ) -> crate::durability::medium::RelationalDurableMemberRetirementObservation {
+        self.source
+            .advance_member_custody_retirement(request, original)
+    }
+
     fn retain_members(
         &self,
         members: &[RelationalDurableMemberLocator],
