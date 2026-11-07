@@ -48,6 +48,11 @@ pub enum SignalDurableMediumDenial {
     Backing(worth_execution::ExecutionRequestArrayDenial),
     Frame(super::SignalDurableFrameDenial),
     ForeignOwner,
+    HomeIncarnation(worth_proof::HomeIncarnationDenial),
+    OwnerAlreadyReadmitted(super::SignalLiveOwnerIdentity),
+    OwnerAdmissionBusy,
+    OwnerAdmissionPoisoned,
+    OwnerAdmissionCapacity,
     Unavailable,
     PublicationBusy,
     PublicationUnresolved,
@@ -85,6 +90,8 @@ pub trait SignalDurableReadSource: std::fmt::Debug + Send + Sync {
 /// original publication; an unresolved task survives the invoking request.
 pub trait SignalDurableMedium: std::fmt::Debug + Send + Sync {
     fn binding(&self) -> &SignalDurableHomeBinding;
+    /// The same actual registry must be returned for this medium's lifetime.
+    fn owner_admission_registry(&self) -> &super::SignalDurableOwnerAdmissionRegistry;
     fn publication_task_posture(&self) -> SignalPublicationTaskPosture;
     fn capture_recovery_source(
         &self,

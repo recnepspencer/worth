@@ -39,5 +39,6 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
         owner.field::<BTreeMap<SignalBranchId, crate::durability::SignalDurableBranchDescriptor>>(
             "readmitted_coordinates",
         );
+        owner.field::<Option<crate::durability::SignalDurableOwnerAdmission>>("durable_admission");
     }
 }

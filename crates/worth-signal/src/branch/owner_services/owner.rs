@@ -70,6 +70,8 @@ where
     selected_branch_id: SignalBranchId,
     pub(super) metadata: SignalOwnerMetadata<D, I, T>,
     counters: Arc<SignalOwnerServiceCounters>,
+    // Release admission after the actual canonical owner fields are destroyed.
+    _durable_admission: Option<crate::durability::SignalDurableOwnerAdmission>,
 }
 
 pub(crate) use root::SignalOwnerRoot;
@@ -91,6 +93,7 @@ where
     ) -> Arc<Self> {
         let initial_empty_branch = partition.initial_empty_branch();
         let mut readmitted_coordinates = partition.take_readmitted_coordinates();
+        let durable_admission = partition.take_durable_owner_admission();
         let (metadata, next_branch_id, retention, selected_branch_id, cells) =
             partition.into_parts();
         assert!(
@@ -129,6 +132,7 @@ where
             selected_branch_id,
             metadata: SignalOwnerMetadata::new(metadata, runtime_instance_id, lifecycle_identity),
             counters,
+            _durable_admission: durable_admission,
         });
         let admission = owner
             .admit()

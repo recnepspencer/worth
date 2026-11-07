@@ -37,6 +37,7 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
         owner.field::<SignalBranchId>("selected_branch_id");
         owner.field::<SignalOwnerMetadata<(), (), ()>>("metadata");
         owner.field::<Arc<SignalOwnerServiceCounters>>("counters");
+        owner.field::<Option<crate::durability::SignalDurableOwnerAdmission>>("_durable_admission");
     }
     super::output_retention::inline_type_budget::collect(census);
 }

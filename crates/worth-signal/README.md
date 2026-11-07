@@ -277,6 +277,16 @@ Foreign owners, unknown frame versions and stale live handles have typed refusal
 `take_installation_contracts` transfers freshly installed conditional contracts
 paired with their durable occurrences for Bridge installation.
 
+Each medium exposes one stable, funded `SignalDurableOwnerAdmissionRegistry`.
+Readmission acquires its exclusive claim before journal replay and transfers the
+non-cloneable custody into the actual canonical owner allocation. A competing
+readmission or retirement reports `OwnerAlreadyReadmitted` with the holding
+runtime's identity. Failed readmission releases its claim; retirement permanently
+stops new admission. Store attachment consumes the original boxed, unshared
+physical runtime, preventing a second adapter from inventing another registry
+while that serving share is retained. Attachment refusal retains the same input
+for `try_attach`.
+
 The standalone mutation port stages an ordinary advance with the canonical
 transaction engine exactly once. Its original task retains the candidate and
 result across pending media work without retaining the invoking request. Exact

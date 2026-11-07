@@ -79,6 +79,7 @@ where
     cells: Vec<SignalOwnerCellSeed<D, I, T>>,
     readmitted_coordinates:
         BTreeMap<SignalBranchId, crate::durability::SignalDurableBranchDescriptor>,
+    durable_admission: Option<crate::durability::SignalDurableOwnerAdmission>,
 }
 
 impl<D, I, T> SignalOwnerMetadataState<D, I, T>
@@ -217,6 +218,7 @@ where
             selected_branch_id,
             cells,
             readmitted_coordinates: BTreeMap::new(),
+            durable_admission: None,
         }
     }
 

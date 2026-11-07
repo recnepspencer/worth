@@ -34,6 +34,13 @@ where
         }
         self.owner_service_issuance_capability()
             .map_err(D::OwnerServices)?;
+        execution.consult().map_err(|cause| {
+            D::Medium(crate::durability::SignalDurableMediumDenial::Request(cause))
+        })?;
+        let durable_admission = medium
+            .owner_admission_registry()
+            .admit(medium.binding(), self.branches.owner_runtime_instance_id())
+            .map_err(D::Medium)?;
         let mut source =
             SignalOwnerSourceReadmission::capture(medium.as_ref(), contribution, execution)?;
         let conditional = self
@@ -170,6 +177,7 @@ where
             snapshots,
             source.frontiers.next_branch()?,
             source.frontiers.next_snapshot()?,
+            durable_admission,
         )?;
         self.discard_consumed_program_projection();
         self.branches = BranchManager::with_live_catalog(Default::default(), runtime_id);

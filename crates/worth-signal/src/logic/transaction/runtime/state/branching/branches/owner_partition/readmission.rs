@@ -25,6 +25,7 @@ where
         snapshots: BTreeMap<(SignalBranchId, SignalSnapshotId), SnapshotBranchState<D, I, T>>,
         next_branch_id: u64,
         next_snapshot_id: u64,
+        durable_admission: crate::durability::SignalDurableOwnerAdmission,
     ) -> Result<Self, Denial> {
         if seeds.len() > crate::branch::owner_services::DEFAULT_MAXIMUM_LIVE_SIGNAL_BRANCHES
             || snapshots.len()
@@ -74,7 +75,13 @@ where
             cells,
         );
         partition.readmitted_coordinates = coordinates;
+        partition.durable_admission = Some(durable_admission);
         Ok(partition)
+    }
+    pub(crate) fn take_durable_owner_admission(
+        &mut self,
+    ) -> Option<crate::durability::SignalDurableOwnerAdmission> {
+        self.durable_admission.take()
     }
     pub(crate) fn take_readmitted_coordinates(
         &mut self,

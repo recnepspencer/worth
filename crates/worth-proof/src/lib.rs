@@ -12,6 +12,8 @@ pub mod contracts;
 mod durable_publication;
 mod signal_branch_readmission;
 pub use signal_branch_readmission::SignalBranchReadmitted;
+mod signal_owner_readmission;
+pub use signal_owner_readmission::SignalOwnerReadmitted;
 mod dx;
 mod effect;
 mod home_binding;

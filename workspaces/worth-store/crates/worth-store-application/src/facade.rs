@@ -1,5 +1,5 @@
 //! Store composition audience; applications enter through Query Host.
-pub use crate::signal_medium::StoreSignalMedium;
+pub use crate::signal_medium::{StoreSignalMedium, StoreSignalMediumAttachmentRefused};
 
 pub use crate::checkpoint::{
     ApplicationHomeCheckpoint, ApplicationHomeCheckpointDenial,
