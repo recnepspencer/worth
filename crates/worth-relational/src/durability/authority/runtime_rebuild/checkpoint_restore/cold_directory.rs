@@ -168,7 +168,7 @@ pub(super) fn restore(
                 )
             })
             .collect(),
-        None if directory.manifest.mirror.is_empty() => BTreeMap::new(),
+        None if directory.manifest.mirror.is_empty() => Default::default(),
         None => return Err(corrupt("mirror has no schema carrier").into()),
     };
     let record_identity = super::record_identity::prepare_record_identity(checkpoint)?;
