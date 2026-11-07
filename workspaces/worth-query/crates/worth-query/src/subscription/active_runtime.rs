@@ -272,7 +272,7 @@ pub(crate) fn prepare_subscription_lifecycle_close(
 pub(crate) fn commit_prepared_subscription_lifecycle_close(
     runtime: &mut ActiveSubscriptionRuntime,
     prepared: PreparedSubscriptionLifecycleClose,
-) -> Result<SubscriptionLifecycleCloseout, IdentityDerivationDenial> {
+) -> SubscriptionLifecycleCloseout {
     let lane_terminal = runtime.registry.commit_prepared_attachment_close(
         &prepared.lane_digest,
         prepared.lane_index,
@@ -280,7 +280,7 @@ pub(crate) fn commit_prepared_subscription_lifecycle_close(
     );
     let closeout = SubscriptionLifecycleCloseout::new(prepared.request, lane_terminal);
     runtime.counters = closeout.counters().clone();
-    Ok(closeout)
+    closeout
 }
 
 pub(crate) fn validate_subscription_lifecycle_close(

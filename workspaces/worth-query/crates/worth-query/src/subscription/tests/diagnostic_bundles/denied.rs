@@ -11,11 +11,8 @@ fn selection_denied_diagnostic_bundle_localizes_family_selection_failure_and_omi
         QuerySubscriptionConstructionSource::Direct,
     )
     .expect("fixture digest must fit");
-    let selection_error = select_query_subscription_family(
-        live.clone().expect("fixture digest must fit"),
-        roomy_budget(),
-    )
-    .unwrap_err();
+    let selection_error =
+        select_query_subscription_family(live.clone(), roomy_budget()).unwrap_err();
     let failure = QuerySubscriptionDiagnosticFailure::from_family_selection_error(&selection_error)
         .expect("fixture digest must fit");
     let selection_context =
@@ -26,7 +23,7 @@ fn selection_denied_diagnostic_bundle_localizes_family_selection_failure_and_omi
         None,
         None,
         None,
-        failure.clone().expect("fixture digest must fit"),
+        failure.clone(),
     )
     .unwrap();
 
@@ -99,7 +96,7 @@ fn denied_bundle_rejects_trace_that_claims_runtime_admission_without_admission_a
         Some(&artifacts.lowering),
         Some(&artifacts.admission),
         None,
-        failure.clone().expect("fixture digest must fit"),
+        failure.clone(),
     )
     .unwrap();
 
@@ -136,11 +133,8 @@ fn selection_denied_trace_rejects_mismatched_failure_source() {
         Some(LiveViewShapeFamily::InspectorDetailFocused),
         QuerySubscriptionConstructionSource::Direct,
     );
-    let first_error = select_query_subscription_family(
-        first_live.clone().expect("fixture digest must fit"),
-        roomy_budget(),
-    )
-    .unwrap_err();
+    let first_error =
+        select_query_subscription_family(first_live.clone(), roomy_budget()).unwrap_err();
     let second_error = select_query_subscription_family(
         second_live.clone().expect("fixture digest must fit"),
         roomy_budget(),

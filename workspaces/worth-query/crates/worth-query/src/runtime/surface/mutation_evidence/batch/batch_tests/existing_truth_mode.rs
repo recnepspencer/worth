@@ -47,18 +47,17 @@ fn summary_digest_changes_with_assertion_mode() -> Result<(), IdentityDerivation
 
 #[test]
 #[should_panic(expected = "invalid existing-truth assertion mode")]
-fn summary_panics_on_invalid_family_mode_pair() -> Result<(), IdentityDerivationDenial> {
+fn summary_panics_on_invalid_family_mode_pair() {
     let retained = WorthQueryExistingTruthAssertionEvidence::retained_assertion(
         1,
-        retained_assertion_identity("retained-assertion")?,
+        retained_assertion_identity("retained-assertion").expect("fixture digest must fit"),
     );
 
     let _ = super::super::summarize_existing_truth_modes(
         &[WorthQueryMutationFamily::Update],
         &[Some(retained)],
-    )?;
-
-    Ok(())
+    )
+    .expect("fixture digest must fit");
 }
 
 fn backend_verified_assertion(

@@ -241,7 +241,8 @@ fn explicit_merge(
         &scope,
         branch_snapshot_identity(&runtime, "main"),
         BranchId("main".to_string()),
-    );
+    )
+    .expect("fixture digest must fit");
     let basis = basis_lifecycle()
         .branch_head("main", true)
         .prepare_mutation()

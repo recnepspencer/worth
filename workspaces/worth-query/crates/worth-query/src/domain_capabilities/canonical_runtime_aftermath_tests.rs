@@ -271,9 +271,11 @@ fn ready_aftermath(
     >,
     IdentityDerivationDenial,
 > {
-    Ok(ready(authoring.bind_to_admitted_plan_target(
-        admitted_plan_target("plan-aftermath")?,
-    ))?)
+    Ok(ready(
+        authoring
+            .bind_to_admitted_plan_target(admitted_plan_target("plan-aftermath")?)
+            .expect("fixture digest must fit"),
+    )?)
 }
 
 fn admitted_projection_source() -> ProjectionConsumptionSource {

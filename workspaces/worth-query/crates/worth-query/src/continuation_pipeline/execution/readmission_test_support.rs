@@ -23,7 +23,8 @@ pub(crate) fn drifted_observation_from_retained(
             .unwrap_or_else(|| lower_runtime_authority_from_witness(retained.authority_witness())),
         basis_identity_digest
             .map(|identity| continuation_readmission_basis_identity(witness.kind(), identity))
-            .unwrap_or_else(|| witness.basis_identity().clone()),
+            .unwrap_or_else(|| witness.basis_identity().clone())
+            .expect("fixture digest must fit"),
         lower_runtime_binding_identity_digest
             .map(continuation_readmission_lower_runtime_binding_identity)
             .or_else(|| witness.expected_lower_runtime_binding_identity().cloned()),

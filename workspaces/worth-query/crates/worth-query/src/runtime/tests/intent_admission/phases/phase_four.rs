@@ -238,9 +238,7 @@ fn post_execution_routing_failure_preserves_proof_chain() {
     let error = runtime.intent_execution_routing_error(
         &declaration,
         &execution,
-        execution_provenance
-            .clone()
-            .expect("fixture digest must fit"),
+        execution_provenance.clone(),
         decision_trace_envelope.clone(),
         WorthQueryRuntimeError::LiveSubscriptionInstallation {
             view_name: "tasks.phase-four-routing".to_string(),

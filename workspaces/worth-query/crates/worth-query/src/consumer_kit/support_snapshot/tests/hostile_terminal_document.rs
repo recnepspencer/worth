@@ -12,7 +12,7 @@ pub(super) struct HostileSupportSnapshotTerminalDocument {
 impl HostileSupportSnapshotTerminalDocument {
     pub(super) fn from_live_support_matrix() -> Self {
         let matrix = live_support_matrix();
-        let snapshot = project_support_snapshot(&matrix);
+        let snapshot = project_support_snapshot(&matrix).expect("fixture digest must fit");
         Self::from_snapshot(&snapshot)
     }
 

@@ -14,10 +14,7 @@ where
         self,
         execution: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         workspace: &mut crate::runtime::WorthQueryWorkspace,
-    ) -> Result<
-        super::super::super::WorthQueryBoundExecutionOutcome<D, O, F, L, O::Output>,
-        IdentityDerivationDenial,
-    > {
+    ) -> super::super::super::WorthQueryBoundExecutionOutcome<D, O, F, L, O::Output> {
         let Self {
             prepared,
             graph_receipts,
@@ -41,7 +38,7 @@ where
                 denial = denial
                     .with_graph_receipts(graph_receipts)
                     .with_managed_cleanup(running.abandon().cleanup());
-                return Ok(TransitionOutcome::Denied(denial));
+                return TransitionOutcome::Denied(denial);
             }
         };
         let context = WorthQueryOperationExecutionContext::new(
@@ -63,16 +60,16 @@ where
                     let kind = classify_executor_failure(&bound, failure.class().clone());
                     let detail = failure.detail().to_owned();
                     let cleanup = running.abandon().cleanup();
-                    return Ok(TransitionOutcome::Failed(
+                    return TransitionOutcome::Failed(
                         WorthQueryBoundExecutionDenial::new(kind, detail, counters)
                             .with_graph_receipts(graph_receipts)
                             .with_managed_cleanup(cleanup),
-                    ));
+                    );
                 }
             };
         counters.primary_read_contacts += primary_read_contacts;
         let (output, result_state, warnings, material) = material.into_parts();
-        Ok(WorthQueryExecutorCompletedDirectExecution {
+        WorthQueryExecutorCompletedDirectExecution {
             bound,
             phase_proof,
             running,
@@ -87,7 +84,7 @@ where
             resource_evidence,
             counters,
         }
-        .validate_terminal()?)
+        .validate_terminal()
     }
 }
 
@@ -99,10 +96,7 @@ where
 {
     pub(super) fn validate_terminal(
         mut self,
-    ) -> Result<
-        super::super::super::WorthQueryBoundExecutionOutcome<D, O, F, L, Output>,
-        IdentityDerivationDenial,
-    > {
+    ) -> super::super::super::WorthQueryBoundExecutionOutcome<D, O, F, L, Output> {
         self.counters.terminal_posture_checks += 1;
         if !self
             .bound
@@ -113,7 +107,7 @@ where
             .contains(&self.result_state)
         {
             let cleanup = self.running.abandon().cleanup();
-            return Ok(TransitionOutcome::Denied(
+            return TransitionOutcome::Denied(
                 WorthQueryBoundExecutionDenial::new(
                     WorthQueryBoundExecutionDenialKind::UndeclaredResultState,
                     "executor returned a result state absent from the installed terminal contract",
@@ -121,9 +115,9 @@ where
                 )
                 .with_graph_receipts(self.graph_receipts)
                 .with_managed_cleanup(cleanup),
-            ));
+            );
         }
-        Ok(WorthQueryValidatedDirectEvidenceCompletion {
+        WorthQueryValidatedDirectEvidenceCompletion {
             bound: self.bound,
             phase_proof: self.phase_proof,
             running: Some(self.running),
@@ -138,6 +132,6 @@ where
             resource_evidence: self.resource_evidence,
             counters: self.counters,
         }
-        .finish()?)
+        .finish()
     }
 }

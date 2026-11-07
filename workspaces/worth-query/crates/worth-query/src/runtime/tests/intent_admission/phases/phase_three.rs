@@ -104,6 +104,7 @@ fn violation_decision_materializes_explicit_stop_artifact() {
     .expect("request should build");
 
     let stop = admit_runtime_intent_request(request.clone())
+        .expect("fixture digest must fit")
         .into_non_admitted_stop()
         .expect("violation decision should stop");
     assert!(matches!(

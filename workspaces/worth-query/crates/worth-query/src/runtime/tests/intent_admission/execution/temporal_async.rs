@@ -132,7 +132,7 @@ fn consumed_pending_write_intent_cannot_admit_a_second_authority_path() {
     let binding = runtime
         .prepare_effect_intent_execution_binding(handoff, &pending_delivery)
         .expect("fixture digest must fit");
-    let duplicate_binding = binding.clone().expect("fixture digest must fit");
+    let duplicate_binding = binding.clone();
 
     runtime
         .execute_effect_intent_execution_binding(request_execution, binding)

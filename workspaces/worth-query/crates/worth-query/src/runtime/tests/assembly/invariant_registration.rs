@@ -231,7 +231,8 @@ fn query_builder_canonicalizes_and_deduplicates_merged_invariant_catalog_sources
         "merged invariant sources should preserve one canonical catalog identity",
     )
     .expect("fixture digest must fit")
-    .for_intent_declaration(&declaration);
+    .for_intent_declaration(&declaration)
+    .expect("fixture digest must fit");
     let eligible = success(evaluate_requested_domain_capability_contribution(requested));
     let admitted = success(admit_eligible_domain_capability_contribution(eligible));
     let ready = success(prepare_admitted_domain_capability_contribution_for_materialization(

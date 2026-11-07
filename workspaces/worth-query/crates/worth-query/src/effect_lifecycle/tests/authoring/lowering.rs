@@ -186,5 +186,8 @@ fn lowering_denials_stay_typed_for_admitted_but_invalid_merge_pairs() {
     );
     assert_eq!(denial.counters().lowering_denied_count(), 1);
     assert_eq!(denial.counters().effect_lowering_width(), 1);
-    assert!(!denial.denial_for_reporting().is_empty());
+    assert!(!denial
+        .denial_for_reporting()
+        .expect("fixture digest must fit")
+        .is_empty());
 }

@@ -185,7 +185,8 @@ fn redaction_and_materialization_policy_matrix_preserves_causal_identity() {
                     CausalObservationEvidenceIdentity::new(
                         CausalEvidenceFamily::BridgeRoute,
                         route_identity.clone(),
-                    ),
+                    )
+                    .expect("fixture digest must fit"),
                 ],
             )
             .expect("fixture digest must fit");

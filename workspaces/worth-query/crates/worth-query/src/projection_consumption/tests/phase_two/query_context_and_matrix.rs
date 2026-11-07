@@ -251,7 +251,8 @@ fn support_discovery_and_eligibility_stay_in_sync_for_first_slice_source_instanc
     ];
 
     for source in sources {
-        let report = discover_projection_consumption_support(&source);
+        let report =
+            discover_projection_consumption_support(&source).expect("fixture digest must fit");
         for fact_kind in ProjectionFactKind::all().iter().copied() {
             let row = report
                 .rows()

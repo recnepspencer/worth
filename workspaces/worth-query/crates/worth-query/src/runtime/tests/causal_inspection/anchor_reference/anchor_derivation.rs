@@ -39,7 +39,8 @@ fn anchors_cover_changed_suppressed_denied_preview_and_replay_observations() {
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         format!("bridge-route-{}", outcome.as_str()),
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::SignalInvalidation,
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
@@ -79,7 +80,8 @@ fn anchor_counters_are_exact_and_width_bound_to_carried_reference_families() {
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "query-inspection-b",
                 ),
-            ),
+            )
+            .expect("fixture digest must fit"),
             CausalObservationEvidenceIdentity::new(
                 CausalEvidenceFamily::RelationalAuthority,
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(

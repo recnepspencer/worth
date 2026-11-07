@@ -193,7 +193,8 @@ fn reference_set_for(
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::BridgeRoute,
                     route_identity.bridge_admission_evidence(),
-                ),
+                )
+                .expect("fixture digest must fit"),
             ],
         ),
         reason,

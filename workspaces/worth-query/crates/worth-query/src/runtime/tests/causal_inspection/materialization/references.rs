@@ -49,7 +49,8 @@ pub(in crate::runtime::tests::causal_inspection) fn changed_reference_set(
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::BridgeRoute,
                     route_identity.bridge_admission_evidence(),
-                ),
+                )
+                .expect("fixture digest must fit"),
             ],
         ),
         CausalInspectionReason::ChangedResult,
@@ -87,7 +88,8 @@ pub(in crate::runtime::tests::causal_inspection) fn replay_reference_set_with_si
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::BridgeRoute,
                     route_identity.bridge_admission_evidence(),
-                ),
+                )
+                .expect("fixture digest must fit"),
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::SignalReplayCursor,
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(

@@ -21,7 +21,7 @@ fn decode(value: InternedString) -> Option<String> {
         return None;
     };
     assert_ne!(value, "decoder-must-not-run");
-    (value != "malformed").then_some(value)
+    (value != "malformed").then(|| value.to_owned())
 }
 
 #[test]

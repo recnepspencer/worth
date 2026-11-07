@@ -335,7 +335,8 @@ fn lineage_outcome() -> Result<InstalledIdentityEvolutionOutcome, IdentityDeriva
             establishing_entity_targets: Vec::new(),
         },
     )
-    .expect("matching engine and mutation continuity evidence"))
+    .expect("matching engine and mutation continuity evidence")
+    .expect("fixture digest must fit"))
 }
 
 fn trace(stages: Vec<WorthQueryWorkflowStageTraceSemantics>) -> WorthQueryWorkflowTraceSemantics {

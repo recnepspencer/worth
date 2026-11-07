@@ -379,4 +379,4 @@ pub(in crate::runtime::tests) fn hostile_consume_title_attempt(
 
 #[path = "hostile_certification/hostile_projection_artifacts.rs"]
 mod hostile_projection_artifacts;
-pub use hostile_projection_artifacts::hostile_projection_artifacts;
+use hostile_projection_artifacts::hostile_projection_artifacts;

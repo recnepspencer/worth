@@ -32,7 +32,8 @@ fn requested_contribution_denies_empty_semantic_code() {
     let declaration = sample_declaration("rotate");
     let requested = WorthQueryAdmissionContributionAuthoring::advisory("", "needs clarification")
         .expect("fixture digest must fit")
-        .for_intent_declaration(&declaration);
+        .for_intent_declaration(&declaration)
+        .expect("fixture digest must fit");
 
     match evaluate_requested_domain_capability_contribution(requested) {
         TransitionOutcome::Denied(denial) => {
@@ -58,7 +59,8 @@ fn request_digest_survives_successful_progression() {
         "multiple candidates remain admissible",
     )
     .expect("fixture digest must fit")
-    .for_intent_declaration(&declaration);
+    .for_intent_declaration(&declaration)
+    .expect("fixture digest must fit");
     let request_digest = requested.payload().request_digest().to_string();
     let eligible = success(evaluate_requested_domain_capability_contribution(requested));
     let admitted = success(admit_eligible_domain_capability_contribution(eligible));
@@ -81,7 +83,8 @@ fn declaration_drift_requires_rebind() {
         "the original intent declaration no longer matches the contribution binding",
     )
     .expect("fixture digest must fit")
-    .for_intent_declaration(&declaration);
+    .for_intent_declaration(&declaration)
+    .expect("fixture digest must fit");
     let eligible = success(evaluate_requested_domain_capability_contribution(requested));
     let admitted = success(admit_eligible_domain_capability_contribution(eligible));
     let rebound_target = declaration_target("different-intent-digest");
@@ -139,7 +142,8 @@ fn lower_runtime_boundary_drift_is_stale_not_rebind() {
 fn every_category_reaches_admitted_form_through_the_same_lifecycle() {
     let declaration_target = declaration_target("intent-declaration-a");
     let admitted_plan_target = admitted_plan_target("admitted-plan-a");
-    let envelope_target = lower_runtime_target("boundary-envelope-a");
+    let envelope_target =
+        lower_runtime_target("boundary-envelope-a").expect("fixture digest must fit");
 
     assert_admitted(
         WorthQueryAdmissionContributionAuthoring::advisory(
@@ -147,7 +151,8 @@ fn every_category_reaches_admitted_form_through_the_same_lifecycle() {
             "admission detail",
         )
         .expect("fixture digest must fit")
-        .bind_to_declaration_target(declaration_target.clone()),
+        .bind_to_declaration_target(declaration_target.clone())
+        .expect("fixture digest must fit"),
     );
     assert_admitted(
         WorthQuerySupportContributionAuthoring::declaration_support(
@@ -155,7 +160,8 @@ fn every_category_reaches_admitted_form_through_the_same_lifecycle() {
             "support detail",
         )
         .expect("fixture digest must fit")
-        .bind_to_declaration_target(declaration_target.clone()),
+        .bind_to_declaration_target(declaration_target.clone())
+        .expect("fixture digest must fit"),
     );
     assert_admitted(
         WorthQueryInvariantCapabilityContributionAuthoring::capability_gap(
@@ -163,7 +169,10 @@ fn every_category_reaches_admitted_form_through_the_same_lifecycle() {
             "invariant detail",
         )
         .expect("fixture digest must fit")
-        .bind_to_lower_runtime_boundary_target(envelope_target.clone()),
+        .bind_to_lower_runtime_boundary_target(
+            envelope_target.clone().expect("fixture digest must fit"),
+        )
+        .expect("fixture digest must fit"),
     );
     assert_admitted(
         WorthQueryWorkflowContributionAuthoring::promotion_eligible(
@@ -171,7 +180,12 @@ fn every_category_reaches_admitted_form_through_the_same_lifecycle() {
             "workflow detail",
         )
         .expect("fixture digest must fit")
-        .bind_to_admitted_plan_target(admitted_plan_target.clone()),
+        .bind_to_admitted_plan_target(
+            admitted_plan_target
+                .clone()
+                .expect("fixture digest must fit"),
+        )
+        .expect("fixture digest must fit"),
     );
     assert_admitted(
         WorthQueryContinuityContributionAuthoring::preserved(
@@ -179,7 +193,12 @@ fn every_category_reaches_admitted_form_through_the_same_lifecycle() {
             "continuity detail",
         )
         .expect("fixture digest must fit")
-        .bind_to_admitted_plan_target(admitted_plan_target.clone()),
+        .bind_to_admitted_plan_target(
+            admitted_plan_target
+                .clone()
+                .expect("fixture digest must fit"),
+        )
+        .expect("fixture digest must fit"),
     );
     assert_admitted(
         WorthQueryAftermathContributionAuthoring::declares_residue(
@@ -187,7 +206,8 @@ fn every_category_reaches_admitted_form_through_the_same_lifecycle() {
             "aftermath detail",
         )
         .expect("fixture digest must fit")
-        .bind_to_lower_runtime_boundary_target(envelope_target),
+        .bind_to_lower_runtime_boundary_target(envelope_target)
+        .expect("fixture digest must fit"),
     );
     assert_admitted(
         WorthQueryExplanationContributionAuthoring::requires_context(
@@ -195,7 +215,8 @@ fn every_category_reaches_admitted_form_through_the_same_lifecycle() {
             "explanation detail",
         )
         .expect("fixture digest must fit")
-        .bind_to_declaration_target(declaration_target),
+        .bind_to_declaration_target(declaration_target)
+        .expect("fixture digest must fit"),
     );
 }
 

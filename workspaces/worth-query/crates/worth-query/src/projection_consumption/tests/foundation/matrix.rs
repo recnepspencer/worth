@@ -12,7 +12,8 @@ use super::support::{
 fn support_discovery_and_eligibility_stay_in_sync_for_all_lanes() {
     for family in all_source_families() {
         let source = test_source(family);
-        let report = discover_projection_consumption_support(&source);
+        let report =
+            discover_projection_consumption_support(&source).expect("fixture digest must fit");
         for fact_kind in ProjectionFactKind::all().iter().copied() {
             let row = report
                 .rows()

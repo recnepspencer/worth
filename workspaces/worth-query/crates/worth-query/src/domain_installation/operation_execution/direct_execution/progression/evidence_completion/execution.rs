@@ -73,20 +73,15 @@ where
     pub fn execute(
         self,
         workspace: &mut crate::runtime::WorthQueryWorkspace,
-    ) -> Result<
-        super::super::WorthQueryBoundExecutionOutcome<D, O, F, L, O::Output>,
-        IdentityDerivationDenial,
-    > {
+    ) -> super::super::WorthQueryBoundExecutionOutcome<D, O, F, L, O::Output> {
         let owner = workspace.advancement_owner();
-        Ok(owner
+        owner
             .with_advancement(|phase| self.execute_in_advancement(&phase, workspace))
             .unwrap_or_else(|cause| {
-                Ok({
-                    TransitionOutcome::Denied(
-                        WorthQueryBoundExecutionDenial::from_advancement_denial(cause),
-                    )
-                })
-            })?)
+                TransitionOutcome::Denied(WorthQueryBoundExecutionDenial::from_advancement_denial(
+                    cause,
+                ))
+            })
     }
 
     /// Executes inside the caller's installed phase, opening no host request.
@@ -97,18 +92,15 @@ where
             '_,
         >,
         workspace: &mut crate::runtime::WorthQueryWorkspace,
-    ) -> Result<
-        super::super::WorthQueryBoundExecutionOutcome<D, O, F, L, O::Output>,
-        IdentityDerivationDenial,
-    > {
+    ) -> super::super::WorthQueryBoundExecutionOutcome<D, O, F, L, O::Output> {
         let prepared = match WorthQueryPreparedDirectExecution::prepare(phase, self, workspace) {
             Ok(prepared) => prepared,
-            Err(outcome) => return Ok(outcome),
+            Err(outcome) => return outcome,
         };
-        Ok(match prepared.invoke_graphs(phase) {
-            Ok(completed) => completed.invoke_executor(phase, workspace)?,
+        match prepared.invoke_graphs(phase) {
+            Ok(completed) => completed.invoke_executor(phase, workspace),
             Err(outcome) => outcome,
-        })
+        }
     }
 }
 

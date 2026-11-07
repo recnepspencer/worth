@@ -62,7 +62,8 @@ fn offline_temporal_async_diagnostics_preserve_remask_replay_resume_and_stale_co
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "bridge-preview:offline-remask",
                 ),
-            ),
+            )
+            .expect("fixture digest must fit"),
         ],
         &[CausalEvidenceFamily::BridgePreview],
     );
@@ -82,7 +83,8 @@ fn offline_temporal_async_diagnostics_preserve_remask_replay_resume_and_stale_co
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "bridge-replay:offline-replay-drift",
                 ),
-            ),
+            )
+            .expect("fixture digest must fit"),
         ],
         &[CausalEvidenceFamily::BridgeReplay],
     );
@@ -102,7 +104,8 @@ fn offline_temporal_async_diagnostics_preserve_remask_replay_resume_and_stale_co
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "bridge-replay:offline-resume-mismatch",
                 ),
-            ),
+            )
+            .expect("fixture digest must fit"),
             CausalObservationEvidenceIdentity::new(
                 CausalEvidenceFamily::SignalReplayCursor,
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
@@ -138,7 +141,8 @@ fn offline_temporal_async_diagnostics_preserve_remask_replay_resume_and_stale_co
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "signal-evaluation:offline-stale-completion",
                 ),
-            ),
+            )
+            .expect("fixture digest must fit"),
             CausalObservationEvidenceIdentity::new(
                 CausalEvidenceFamily::BridgeSourceFailure,
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(

@@ -258,7 +258,8 @@ fn explicit_writeback(
         "ordinary-declarative-writeback",
         &scope,
         snapshot,
-    );
+    )
+    .expect("fixture digest must fit");
     let basis = basis_lifecycle()
         .branch_head("main", true)
         .prepare_mutation()

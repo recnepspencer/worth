@@ -80,7 +80,8 @@ fn evidence_reference_resolution_consumes_anchor_and_emits_sealed_reference_set(
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         "relational-authority-reference",
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::BridgeRoute,
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
@@ -215,7 +216,8 @@ fn evidence_reference_resolution_defaults_to_anchor_carried_families() {
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         "bridge-replay-reference",
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
             ],
         ),
         CausalInspectionReason::HistoricalReplayResult,

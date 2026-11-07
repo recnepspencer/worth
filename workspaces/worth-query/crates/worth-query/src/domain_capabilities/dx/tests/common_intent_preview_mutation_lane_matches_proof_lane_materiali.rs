@@ -35,7 +35,8 @@ fn common_intent_preview_mutation_lane_matches_proof_lane_materialization() {
             ),
         )
         .expect("fixture digest must fit")
-        .bind_to_installed_target(target);
+        .bind_to_installed_target(target)
+        .expect("fixture digest must fit");
     let proof_admitted = success(admit_eligible_domain_capability_contribution(success(
         evaluate_requested_domain_capability_contribution(proof_requested),
     )));

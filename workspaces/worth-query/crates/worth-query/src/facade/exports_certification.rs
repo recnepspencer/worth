@@ -225,13 +225,8 @@ pub fn consume_projection_contract_for_certification(
 pub fn write_authority_execution_receipt_for_certification(
     command: &crate::runtime::WorthQueryWriteCommand,
     receipt: crate::memory_workspace::WorthQueryMutationReceipt,
-) -> Result<crate::lower_runtime_routing::WriteAuthorityExecutionReceipt, IdentityDerivationDenial>
-{
-    Ok(
-        crate::lower_runtime_routing::WriteAuthorityExecutionReceipt::from_command(
-            command, receipt,
-        ),
-    )
+) -> crate::lower_runtime_routing::WriteAuthorityExecutionReceipt {
+    crate::lower_runtime_routing::WriteAuthorityExecutionReceipt::from_command(command, receipt)
 }
 
 /// Runs the pre-primary-graph conditional classifier used by the installed

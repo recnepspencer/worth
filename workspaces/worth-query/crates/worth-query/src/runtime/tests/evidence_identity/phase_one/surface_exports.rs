@@ -84,7 +84,8 @@ fn state_snapshot_with_optional_postures_recomposes_exactly() {
             crate::ordinary_outcome::WorthQueryOrdinaryRuntimeRemaskPostureKind::SchemaContextDrift,
         ),
         "support|evidence|digest",
-    );
+    )
+    .expect("fixture digest must fit");
     let async_result_state = WorthQueryRuntimeAsyncResultState::new(
         WorthQueryRuntimeAsyncResultStateKind::Revalidating,
         &crate::runtime::async_result_state::runtime_async_causality_from_label("causality|digest"),
@@ -136,6 +137,7 @@ fn state_snapshot_with_optional_postures_recomposes_exactly() {
     )
     .expect("fixture digest must fit")
     .with_ordinary_runtime_posture(ordinary_runtime_posture)
+    .expect("fixture digest must fit")
     .with_async_result_state(async_result_state)
     .with_remask_posture(remask_posture);
 

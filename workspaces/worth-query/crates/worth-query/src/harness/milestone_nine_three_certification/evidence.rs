@@ -201,7 +201,12 @@ pub(super) fn denied_bridge_parity_failure(
     MilestoneNineThreeRejectionBundle {
         failure_class: MilestoneNineThreeFailureClass::BridgeParityDenied,
         failure_kind: error.failure().failure_kind().as_str().to_string(),
-        failure_digest: error.failure().failure_projection().label().to_string(),
+        failure_digest: error
+            .failure()
+            .failure_projection()
+            .expect("fixture digest must fit")
+            .label()
+            .to_string(),
         denied_bundle_digest: "none".to_string(),
         counter_snapshot: error.counters().counter_projection().label().to_string(),
         compile_fail_boundary_digest: compile_fail_boundary_digest(&[

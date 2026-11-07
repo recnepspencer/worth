@@ -328,8 +328,10 @@ fn bridge_oracle_rejects_independent_receipt_mismatch() {
             .with_execution_receipt_subject_identity(
                 bridge_observation_execution_receipt_subject_identity(
                     "bridge-execution-receipt-mismatch",
-                ),
-            ),
+                )
+                .expect("fixture digest must fit"),
+            )
+            .expect("fixture digest must fit"),
         )
         .expect_err("mismatched bridge execution receipt should deny");
 

@@ -141,7 +141,7 @@ fn write_receipt_target_identity_is_deferred_for_now() {
 #[test]
 fn query_context_support_and_admission_share_warning_posture() {
     let source = test_source(ProjectionSourceFamily::QueryContextExecution);
-    let report = discover_projection_consumption_support(&source);
+    let report = discover_projection_consumption_support(&source).expect("fixture digest must fit");
     let row = report
         .rows()
         .iter()

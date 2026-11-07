@@ -39,7 +39,7 @@ fn write_receipt_admits_target_source_reference_and_effect_aftermath_when_eviden
             capabilities: ProjectionWriteReceiptCapabilities::test_only(true, true, true, true),
         },
     );
-    let report = discover_projection_consumption_support(&source);
+    let report = discover_projection_consumption_support(&source).expect("fixture digest must fit");
 
     for fact_kind in [
         super::super::super::ProjectionFactKind::TargetIdentity,

@@ -19,7 +19,7 @@ fn intent_admission_topology_audit_freezes_real_subdomains_and_binding_ownership
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let bundle = certify_intent_admission(request_execution);
+    let bundle = certify_intent_admission(request_execution).expect("fixture digest must fit");
     let rows = bundle.topology_audit().rows();
 
     let expected_rows = [

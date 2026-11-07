@@ -20,7 +20,8 @@ fn changed_anchor_with_route_signal_and_inspection() -> CausalObservationAnchor 
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         "indexed-bridge-route-reference",
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::SignalInvalidation,
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(

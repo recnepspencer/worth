@@ -26,7 +26,7 @@ fn consumed_fact_set_issues_receipt_with_stable_operational_fields() {
     .expect("fixture digest must fit");
     let consumed = contract.extract_from_relational_row_set(&row_set).unwrap();
 
-    let receipt = consumed.issue_receipt();
+    let receipt = consumed.issue_receipt().expect("fixture digest must fit");
 
     assert_eq!(receipt.contract_digest(), contract.contract_digest());
     assert_eq!(receipt.fact_set_digest(), consumed.fact_set_digest());
@@ -51,7 +51,7 @@ fn projection_consumption_transition_rules_name_implemented_and_deferred_neighbo
     .bind_contract()
     .expect("fixture digest must fit");
     let consumed = contract.extract_from_relational_row_set(&row_set).unwrap();
-    let receipt = consumed.issue_receipt();
+    let receipt = consumed.issue_receipt().expect("fixture digest must fit");
     let rules = receipt.transition_rules();
 
     assert!(rules.rules().iter().any(
@@ -90,7 +90,7 @@ fn receipt_derives_self_describing_projection_consumption_envelope() {
     .bind_contract()
     .expect("fixture digest must fit");
     let consumed = contract.extract_from_relational_row_set(&row_set).unwrap();
-    let receipt = consumed.issue_receipt();
+    let receipt = consumed.issue_receipt().expect("fixture digest must fit");
 
     let envelope = receipt.projection_consumption_envelope();
 

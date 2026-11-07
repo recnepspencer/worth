@@ -25,7 +25,7 @@ fn denied_diagnostic_bundle_localizes_declaration_failure_and_omits_later_stages
         None,
         None,
         None,
-        failure.clone().expect("fixture digest must fit"),
+        failure.clone(),
     )
     .unwrap();
 

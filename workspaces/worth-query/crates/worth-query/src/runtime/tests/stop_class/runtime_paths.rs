@@ -51,9 +51,7 @@ fn intent_execution_routing_stop_class_preserves_stage_evidence_and_source() {
     let error = runtime.intent_execution_routing_error(
         &declaration,
         &execution,
-        execution_provenance
-            .clone()
-            .expect("fixture digest must fit"),
+        execution_provenance.clone(),
         decision_trace_envelope.clone(),
         WorthQueryRuntimeError::LiveSubscriptionInstallation {
             view_name: "tasks.phase-three-routing-stop-class".to_string(),

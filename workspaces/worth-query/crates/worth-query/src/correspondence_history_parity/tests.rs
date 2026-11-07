@@ -112,11 +112,8 @@ fn historical_denial_bundle_reports_failure_digest() {
         HistoricalPathReuseDescriptor::no_reuse(),
     )
     .expect("fixture digest must fit");
-    let error = admit_historical_evaluation_path(
-        denied_request.clone().expect("fixture digest must fit"),
-        capability,
-    )
-    .expect_err("admission should fail");
+    let error = admit_historical_evaluation_path(denied_request.clone(), capability)
+        .expect_err("admission should fail");
     let envelope =
         compose_historical_admission_denied_envelope(correspondence, denied_request, error.clone());
     let preflight = detail_preflight_bundle();

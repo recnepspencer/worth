@@ -116,28 +116,24 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "failure stage must appear in the stage list")]
-    fn admission_trace_rejects_failure_stage_outside_stage_list(
-    ) -> Result<(), IdentityDerivationDenial> {
+    fn admission_trace_rejects_failure_stage_outside_stage_list() {
         let _ = WorthQueryGraphCompositionAdmissionTrace::new(
             vec![
                 WorthQueryGraphCompositionAdmissionTraceStage::ProgramParsed,
                 WorthQueryGraphCompositionAdmissionTraceStage::DeniedBeforeExecution,
             ],
             WorthQueryGraphCompositionAdmissionTraceStage::SymbolsValidated,
-        )?;
-
-        Ok(())
+        )
+        .expect("fixture digest must fit");
     }
 
     #[test]
     #[should_panic(expected = "must end at denied-before-execution")]
-    fn admission_trace_rejects_non_terminal_denied_marker() -> Result<(), IdentityDerivationDenial>
-    {
+    fn admission_trace_rejects_non_terminal_denied_marker() {
         let _ = WorthQueryGraphCompositionAdmissionTrace::new(
             vec![WorthQueryGraphCompositionAdmissionTraceStage::ProgramParsed],
             WorthQueryGraphCompositionAdmissionTraceStage::ProgramParsed,
-        )?;
-
-        Ok(())
+        )
+        .expect("fixture digest must fit");
     }
 }

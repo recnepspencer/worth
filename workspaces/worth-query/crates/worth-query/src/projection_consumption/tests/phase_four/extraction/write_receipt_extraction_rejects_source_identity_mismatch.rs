@@ -18,7 +18,8 @@ fn write_receipt_extraction_rejects_source_identity_mismatch() {
         None,
         None,
         None,
-    );
+    )
+    .expect("fixture digest must fit");
 
     let error = contract
         .extract_from_write_receipt(&mismatched_receipt)

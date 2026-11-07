@@ -345,7 +345,9 @@ fn execute_transcript(
         WorthQueryInspection::IntentReceipt(inspection) => inspection,
         other => panic!("expected intent receipt inspection, got {other:?}"),
     };
-    let support_contract = workspace.public_api_contract();
+    let support_contract = workspace
+        .public_api_contract()
+        .expect("fixture digest must fit");
     let denial_digests = support_gated_neighbor_denials(&support_contract, spec.neighbor_families);
     let state = workspace
         .state(request_execution, &second)

@@ -24,7 +24,8 @@ fn receipt_with_route(
             CausalObservationEvidenceIdentity::new(
                 CausalEvidenceFamily::BridgeRoute,
                 route_identity,
-            ),
+            )
+            .expect("fixture digest must fit"),
         ],
     )
     .expect("fixture digest must fit")

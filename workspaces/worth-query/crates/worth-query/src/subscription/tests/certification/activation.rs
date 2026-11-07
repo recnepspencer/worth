@@ -218,7 +218,8 @@ fn scale_slope_certification_denies_structural_counter_drift() {
         &activation,
     )
     .expect("fixture digest must fit")
-    .with_bridge_slice_count_for_test(&activation, activation.counters().bridge_slice_count() + 1);
+    .with_bridge_slice_count_for_test(&activation, activation.counters().bridge_slice_count() + 1)
+    .expect("fixture digest must fit");
     let large = QuerySubscriptionScaleCounterSnapshot::from_activation(
         QuerySubscriptionScaleFixtureSize::Large,
         100,

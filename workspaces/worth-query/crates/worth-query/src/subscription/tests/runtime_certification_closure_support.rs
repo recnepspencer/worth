@@ -21,7 +21,7 @@ pub(crate) fn runtime_backed_subscription_certification_summary(
     )
     .expect("fixture digest must fit");
     let selection = select_query_subscription_family(
-        live.clone().expect("fixture digest must fit"),
+        live.clone(),
         QuerySubscriptionWorkBudget::scratch_buffer_only(8, 8, 8, 32, 1),
     )
     .expect("runtime-backed detail family should select");
@@ -226,7 +226,7 @@ pub(crate) fn runtime_backed_subscription_certification_summary(
         Some(&lowering),
         Some(&admission),
         None,
-        support_failure.clone().expect("fixture digest must fit"),
+        support_failure.clone(),
     )
     .expect("runtime-backed detail family should trace denied diagnostics");
     let denied_bundle = bundle_denied_query_subscription_diagnostics(
@@ -236,7 +236,7 @@ pub(crate) fn runtime_backed_subscription_certification_summary(
         Some(&lowering),
         Some(&admission),
         None,
-        support_failure.clone().expect("fixture digest must fit"),
+        support_failure.clone(),
     )
     .expect("runtime-backed detail family should bundle denied diagnostics")
     .0;

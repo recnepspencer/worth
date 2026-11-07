@@ -23,9 +23,7 @@ impl<D: 'static, O, F: 'static, L: BasisOperationLane, Output: WorthQueryOperati
 where
     O: WorthQueryExecutableDomainOperation<D, F>,
 {
-    pub(super) fn finish(
-        mut self,
-    ) -> Result<WorthQueryBoundExecutionOutcome<D, O, F, L, Output>, IdentityDerivationDenial> {
+    pub(super) fn finish(mut self) -> WorthQueryBoundExecutionOutcome<D, O, F, L, Output> {
         let output_identity = self.output.operation_output_identity();
         let attachment =
             WorthQueryDirectDomainEvidenceAttachment::new(&self, output_identity.clone());
@@ -33,7 +31,7 @@ where
         let domain_evidence =
             match super::super::super::admit_direct_completion_content(attachment, material) {
                 Ok(evidence) => evidence,
-                Err(denial) => return Ok(self.denied(denial)),
+                Err(denial) => return self.denied(denial),
             };
         let identity = direct_execution_receipt_identity(DirectExecutionIdentityInput {
             binding_identity: self.bound.binding_identity(),
@@ -69,13 +67,13 @@ where
             Ok(terminal) => terminal,
             Err(rejection) => {
                 let detail = rejection.denial().detail().to_owned();
-                return Ok(self.managed_run_denied(detail, rejection.into_running()));
+                return self.managed_run_denied(detail, rejection.into_running());
             }
         };
         let managed_cleanup = match terminal.cleanup() {
             Ok(receipt) => receipt,
             Err(failure) => {
-                return Ok(TransitionOutcome::Denied(
+                return TransitionOutcome::Denied(
                     WorthQueryBoundExecutionDenial::new(
                         WorthQueryBoundExecutionDenialKind::GraphProvider,
                         "managed direct cleanup requires owner retry",
@@ -83,24 +81,22 @@ where
                     )
                     .with_graph_receipts(self.graph_receipts)
                     .with_managed_cleanup(Err(failure)),
-                ));
+                );
             }
         };
-        Ok(TransitionOutcome::Success(
-            WorthQueryExecutedDomainOperation {
-                bound: self.bound,
-                output: self.output,
-                receipt,
-                warnings: self.warnings,
-                counters: self.counters,
-                graph_receipts: self.graph_receipts,
-                execution_snapshot: self.snapshot,
-                phase_proof,
-                conditional: self.conditional,
-                resources: self.resources,
-                managed_cleanup,
-            },
-        ))
+        TransitionOutcome::Success(WorthQueryExecutedDomainOperation {
+            bound: self.bound,
+            output: self.output,
+            receipt,
+            warnings: self.warnings,
+            counters: self.counters,
+            graph_receipts: self.graph_receipts,
+            execution_snapshot: self.snapshot,
+            phase_proof,
+            conditional: self.conditional,
+            resources: self.resources,
+            managed_cleanup,
+        })
     }
 
     fn denied(

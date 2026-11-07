@@ -40,11 +40,7 @@ pub(super) fn runtime_artifacts_for_with_basis(
         basis_posture,
     )
     .expect("fixture digest must fit");
-    let selection = select_query_subscription_family(
-        live.clone().expect("fixture digest must fit"),
-        roomy_budget(),
-    )
-    .unwrap();
+    let selection = select_query_subscription_family(live.clone(), roomy_budget()).unwrap();
     let context = SubscriptionLifecycleCertificationContext::from_live_selection(&live, &selection)
         .expect("fixture digest must fit");
     let declaration = declare_query_subscription(selection.clone(), roomy_slice_budget()).unwrap();

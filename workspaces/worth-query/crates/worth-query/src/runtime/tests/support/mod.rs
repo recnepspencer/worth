@@ -392,4 +392,4 @@ pub(in crate::runtime::tests) fn test_update_string_aspect_command(
 
 #[path = "test_intent_input.rs"]
 mod test_intent_input;
-pub use test_intent_input::test_intent_input;
+pub(in crate::runtime::tests) use test_intent_input::test_intent_input;

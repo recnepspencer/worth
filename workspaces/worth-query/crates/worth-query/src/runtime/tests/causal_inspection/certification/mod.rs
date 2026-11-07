@@ -171,7 +171,8 @@ fn causal_inspection_certification_rejects_bridge_envelope_slope_drift() {
         &changed,
     )
     .expect("fixture digest must fit")
-    .with_bridge_envelope_slope_for_tests(2);
+    .with_bridge_envelope_slope_for_tests(2)
+    .expect("fixture digest must fit");
     let medium = CausalInspectionScaleCounterSnapshot::from_artifact(
         CausalInspectionScaleFixtureSize::Medium,
         &changed,

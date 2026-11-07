@@ -25,6 +25,7 @@ fn time_only_pending_write_intent_retains_write_adjacent_trigger_through_deliver
                 WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title.value"])),
                 "strategy.intent.reconcile",
             )
+            .expect("fixture digest must fit")
             .with_write_adjacent_trigger(
                 WorthQueryEffectWriteAdjacentTriggerClass::TimeOnlyWake,
                 origin_identity.clone(),

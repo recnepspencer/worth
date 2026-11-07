@@ -13,7 +13,8 @@ fn query_builder_accepts_proof_lane_invariant_registration_artifact() {
             "proof-lane registration should lower through the ordinary builder",
         )
         .expect("fixture digest must fit")
-        .for_intent_declaration(&declaration);
+        .for_intent_declaration(&declaration)
+        .expect("fixture digest must fit");
     let eligible = success(evaluate_requested_domain_capability_contribution(requested));
     let admitted = success(admit_eligible_domain_capability_contribution(eligible));
     let ready = success(prepare_admitted_domain_capability_contribution_for_materialization(

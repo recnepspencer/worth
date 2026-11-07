@@ -90,7 +90,8 @@ fn readmission_envelope_keeps_handoff_failure_topology_distinct() {
     let detail_identity =
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_value(WorthQueryEvidenceTag::new("test_detail"), "detail-2")
-            .seal();
+            .seal()
+            .expect("fixture digest must fit");
     let eligibility = WorthQueryLowerRuntimeCapabilityEligibility::admitted_with_evidence_identity(
         request,
         &detail_identity,
@@ -105,7 +106,8 @@ fn readmission_envelope_keeps_handoff_failure_topology_distinct() {
             .field_value(WorthQueryEvidenceTag::new("test_retained"), "evidence-2")
             .seal()
             .expect("fixture digest must fit"),
-        );
+        )
+        .expect("fixture digest must fit");
     let readmission =
         WorthQueryLowerRuntimeReadmissionReceipt::new(eligibility, &retained_evidence);
     let boundary =

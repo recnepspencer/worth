@@ -17,7 +17,8 @@ fn changed_reference_set() -> CausalEvidenceReferenceSet {
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         "admission-bridge-route-reference",
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::SignalInvalidation,
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(

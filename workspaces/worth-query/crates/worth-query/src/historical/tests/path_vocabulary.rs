@@ -65,7 +65,8 @@ fn vocabulary_report_preserves_requested_family_and_posture() {
         5,
         9,
         HistoricalPathReuseDescriptor::no_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let report = HistoricalPathVocabularyReport::from_request(
         &request,
         HistoricalPathComplexityContract::reconstruction_path(),

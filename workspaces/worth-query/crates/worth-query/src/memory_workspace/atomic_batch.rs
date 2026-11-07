@@ -179,7 +179,7 @@ impl WorthQueryMemoryWorkspace {
             .map(|mutation| {
                 self.receipt_from_prepared(mutation, &changed, &commit_identity, &snapshot_identity)
             })
-            .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?)
+            .collect::<Vec<_>>())
     }
 
     fn attach_inserted_entities(
@@ -217,10 +217,7 @@ impl WorthQueryMemoryWorkspace {
         changed: &BTreeSet<worth_relational::facade::identity::EntityId>,
         commit_identity: &WorthQueryCommitIdentity,
         snapshot_identity: &super::WorthQuerySnapshotIdentity,
-    ) -> Result<
-        WorthQueryMutationReceipt,
-        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
-    > {
+    ) -> WorthQueryMutationReceipt {
         let entity = mutation
             .entity
             .expect("insert identities were admitted above");
@@ -237,12 +234,12 @@ impl WorthQueryMemoryWorkspace {
             } else {
                 Vec::new()
             };
-        Ok(WorthQueryMutationReceipt {
+        WorthQueryMutationReceipt {
             commit_identity: commit_identity.clone(),
             snapshot_identity: snapshot_identity.clone(),
             deltas,
             bridge_authority: None,
-        })
+        }
     }
 }
 

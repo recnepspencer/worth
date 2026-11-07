@@ -217,7 +217,10 @@ fn open_live(
     {
         WorthQueryInstalledDomainLiveOpenOutcome::Opened(handle) => handle,
         WorthQueryInstalledDomainLiveOpenOutcome::Stopped(stop) => {
-            panic!("installed live open stopped: {:?}", stop.stop().source())
+            panic!(
+                "installed live open stopped: {:?}",
+                stop.stop().expect("fixture digest must fit").source()
+            )
         }
     }
 }

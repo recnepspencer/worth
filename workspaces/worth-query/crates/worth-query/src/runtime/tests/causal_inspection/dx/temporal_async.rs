@@ -26,7 +26,8 @@ fn temporal_async_reason_helpers_materialize_bridge_backed_explanations() {
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::BridgeRoute,
                     routed.route_identity().bridge_admission_evidence(),
-                ),
+                )
+                .expect("fixture digest must fit"),
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::SignalInvalidation,
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
@@ -57,7 +58,8 @@ fn temporal_async_reason_helpers_materialize_bridge_backed_explanations() {
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::BridgeRoute,
                     routed.route_identity().bridge_admission_evidence(),
-                ),
+                )
+                .expect("fixture digest must fit"),
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::SignalEvaluation,
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(

@@ -152,11 +152,8 @@ fn path_denied_envelope_carries_typed_denial_without_payload() {
         HistoricalPathReuseDescriptor::no_reuse(),
     )
     .expect("fixture digest must fit");
-    let error = admit_historical_evaluation_path(
-        denied_request.clone().expect("fixture digest must fit"),
-        capability,
-    )
-    .expect_err("admission should fail for denied replay");
+    let error = admit_historical_evaluation_path(denied_request.clone(), capability)
+        .expect_err("admission should fail for denied replay");
     let envelope =
         compose_historical_admission_denied_envelope(correspondence, denied_request, error);
     assert!(envelope.result_view().is_none());

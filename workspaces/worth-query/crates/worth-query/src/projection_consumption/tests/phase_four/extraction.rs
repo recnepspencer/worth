@@ -211,7 +211,8 @@ fn effect_continuity_fact_digest_changes_with_typed_authority_identity() {
             )
             .expect("fixture digest must fit"),
         ),
-    );
+    )
+    .expect("fixture digest must fit");
     let contract = admitted(
         ProjectionConsumptionSource::from_write_receipt(&left),
         binding(&[]),
@@ -361,7 +362,8 @@ fn write_receipt_extraction_rejects_missing_admitted_evidence() {
         None,
         None,
         None,
-    );
+    )
+    .expect("fixture digest must fit");
 
     let error = contract
         .extract_from_write_receipt(&stripped_receipt)

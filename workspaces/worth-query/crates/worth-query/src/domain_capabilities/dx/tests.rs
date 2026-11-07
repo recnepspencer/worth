@@ -42,7 +42,8 @@ fn common_intent_support_lane_matches_proof_lane_materialization() {
         "topology substrate is available",
     )
     .expect("fixture digest must fit")
-    .bind_to_installed_target(target);
+    .bind_to_installed_target(target)
+    .expect("fixture digest must fit");
     let proof_admitted = success(admit_eligible_domain_capability_contribution(success(
         evaluate_requested_domain_capability_contribution(proof_requested),
     )));
@@ -83,7 +84,8 @@ fn common_intent_advisory_lane_matches_proof_lane_materialization() {
         "multiple spatial candidates remain admissible",
     )
     .expect("fixture digest must fit")
-    .bind_to_installed_target(target);
+    .bind_to_installed_target(target)
+    .expect("fixture digest must fit");
     let proof_admitted = success(admit_eligible_domain_capability_contribution(success(
         evaluate_requested_domain_capability_contribution(proof_requested),
     )));
@@ -132,7 +134,8 @@ fn common_admission_lane_matches_proof_lane_materialization() {
         "multiple spatial candidates remain admissible",
     )
     .expect("fixture digest must fit")
-    .bind_to_installed_target(target);
+    .bind_to_installed_target(target)
+    .expect("fixture digest must fit");
     let proof_admitted = success(admit_eligible_domain_capability_contribution(success(
         evaluate_requested_domain_capability_contribution(proof_requested),
     )));
@@ -180,7 +183,8 @@ fn common_intent_preview_inspection_lane_matches_proof_lane_materialization() {
         ),
     )
     .expect("fixture digest must fit")
-    .bind_to_installed_target(target);
+    .bind_to_installed_target(target)
+    .expect("fixture digest must fit");
     let proof_admitted = success(admit_eligible_domain_capability_contribution(success(
         evaluate_requested_domain_capability_contribution(proof_requested),
     )));
@@ -225,7 +229,8 @@ fn common_continuity_lane_matches_proof_lane_materialization() {
         "edge split replaces one edge with one canonical successor",
     )
     .expect("fixture digest must fit")
-    .bind_to_installed_target(target);
+    .bind_to_installed_target(target)
+    .expect("fixture digest must fit");
     let proof_admitted = success(admit_eligible_domain_capability_contribution(success(
         evaluate_requested_domain_capability_contribution(proof_requested),
     )));
@@ -269,7 +274,8 @@ fn common_invariant_registration_lane_matches_proof_lane_materialization() {
             "geometry kernel must reject non-manifold edge splits",
         )
         .expect("fixture digest must fit")
-        .bind_to_installed_target(target);
+        .bind_to_installed_target(target)
+        .expect("fixture digest must fit");
     let proof_admitted = success(admit_eligible_domain_capability_contribution(success(
         evaluate_requested_domain_capability_contribution(proof_requested),
     )));

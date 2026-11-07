@@ -127,7 +127,7 @@ fn distinct_branch_basis_proofs_never_collapse_to_one_subscription_meaning() {
         QuerySubscriptionRelationshipProofPosture::Admitted,
     )
     .expect("fixture digest must fit");
-    let mut branch_beta = branch_alpha.clone().expect("fixture digest must fit");
+    let mut branch_beta = branch_alpha.clone();
     branch_alpha.scoped_declaration_basis = Some(
         basis_lifecycle()
             .branch_head("alpha", true)

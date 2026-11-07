@@ -51,7 +51,8 @@ fn admitted_temporal_wake_materialization_projects_query_owned_temporal_explanat
             CausalObservationEvidenceIdentity::new(
                 CausalEvidenceFamily::BridgeRoute,
                 routed.route_identity().bridge_admission_evidence(),
-            ),
+            )
+            .expect("fixture digest must fit"),
             CausalObservationEvidenceIdentity::new(
                 CausalEvidenceFamily::SignalInvalidation,
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
@@ -155,7 +156,8 @@ fn advisory_async_completion_materialization_projects_query_owned_async_explanat
             CausalObservationEvidenceIdentity::new(
                 CausalEvidenceFamily::BridgeRoute,
                 routed.route_identity().bridge_admission_evidence(),
-            ),
+            )
+            .expect("fixture digest must fit"),
             CausalObservationEvidenceIdentity::new(
                 CausalEvidenceFamily::SignalEvaluation,
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
@@ -257,7 +259,8 @@ fn admitted_mixed_cause_suppression_materialization_retains_suppression_identity
             CausalObservationEvidenceIdentity::new(
                 CausalEvidenceFamily::BridgeRoute,
                 routed.route_identity().bridge_admission_evidence(),
-            ),
+            )
+            .expect("fixture digest must fit"),
             CausalObservationEvidenceIdentity::new(
                 CausalEvidenceFamily::SignalInvalidation,
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(

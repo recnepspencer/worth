@@ -17,11 +17,7 @@ pub(super) fn active_lifecycle_certification_for(
         QuerySubscriptionConstructionSource::FacadeLive,
     )
     .expect("fixture digest must fit");
-    let selection = select_query_subscription_family(
-        live.clone().expect("fixture digest must fit"),
-        roomy_budget(),
-    )
-    .unwrap();
+    let selection = select_query_subscription_family(live.clone(), roomy_budget()).unwrap();
     let context = SubscriptionLifecycleCertificationContext::from_live_selection(&live, &selection)
         .expect("fixture digest must fit");
     let declaration = declare_query_subscription(selection, roomy_slice_budget()).unwrap();
