@@ -1,6 +1,6 @@
 //! Immutable successor execution meaning, prepared on the actual Native owner.
 use crate::branch::{AdmittedRelationalBranchBasis, RelationalBranchRootSchemaAuthority};
-use crate::runtime::{RelationalRuntime, RelationalRuntimeConfig, SchemaContractRuntimeSubsystem};
+use crate::runtime::{RelationalRuntime, SchemaContractRuntimeSubsystem};
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::validation::candidate_source::ManagedIndexSourceProgram;
 use crate::validation::{data::CustomInvariantRegistration, FrozenCustomInvariantRegistry};
@@ -57,6 +57,7 @@ pub enum RelationalHomeProgramContractDenial {
 #[derive(Debug)]
 pub struct PreparedRelationalHomeProgramContracts {
     pub(crate) meaning: Arc<RelationalRootExecutionContracts>,
+    pub(crate) receiver_epoch: crate::runtime::RelationalRuntimeConfigurationSnapshot,
 }
 impl PreparedRelationalHomeProgramContracts {
     pub fn catalog_digest(&self) -> HomeProgramTransitionCatalogDigest {
@@ -101,8 +102,6 @@ impl PreparedRelationalHomeProgramContracts {
 pub(crate) struct RelationalRootExecutionContracts {
     identity: Arc<catalog_receipt::RelationalHomeProgramCatalogIdentity>,
     pub(crate) runtime: u64,
-    pub(crate) configuration: Arc<RelationalRuntimeConfig>,
-    pub(crate) configuration_contracts: Arc<SchemaContractRuntimeSubsystem>,
     pub(crate) schema: Arc<RelationalBranchRootSchemaAuthority>,
     pub(crate) contracts: Arc<SchemaContractRuntimeSubsystem>,
     pub(crate) digest: HomeProgramTransitionCatalogDigest,
@@ -190,6 +189,6 @@ impl RelationalRuntime {
             crate::schema::SchemaCompilationControl::Request(*request),
         )
         .map_err(Denial::Execution)?;
-        self.retain_home_program_contracts(request, schema, Arc::new(contracts), digest)
+        self.retain_home_program_contracts(request, schema, Arc::new(contracts), digest, snapshot)
     }
 }

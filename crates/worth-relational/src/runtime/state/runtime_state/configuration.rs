@@ -13,6 +13,17 @@ pub(crate) struct RelationalRuntimeConfigurationSnapshot {
     pub(crate) schema_contract_runtime: Arc<SchemaContractRuntimeSubsystem>,
 }
 
+impl RelationalRuntimeConfigurationSnapshot {
+    /// A semantic generation is not an identity for a replaced receiver pair.
+    pub(crate) fn same_epoch(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.config, &other.config)
+            && Arc::ptr_eq(
+                &self.schema_contract_runtime,
+                &other.schema_contract_runtime,
+            )
+    }
+}
+
 /// The one authority for a relational runtime's configuration.
 ///
 /// The owner reconfigures through this cell rather than through exclusive

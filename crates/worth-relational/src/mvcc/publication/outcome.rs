@@ -203,6 +203,8 @@ pub enum RelationalPublicationDenial {
     CutoverDeadlineElapsed,
     CurrentReadDependency(super::RelationalPublicationReadDependencyDenial),
     RecoveredCodecTransitionRequired,
+    /// The coherent receiver pair changed, including same-generation replay replacement.
+    StaleConfigurationEpoch,
     StaleInvariantGeneration {
         expected_generation: u64,
         actual_generation: u64,

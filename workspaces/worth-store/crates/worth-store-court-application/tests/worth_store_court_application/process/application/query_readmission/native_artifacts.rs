@@ -19,8 +19,11 @@ use worth_query_testkit_host::facade::host::{
 };
 use worth_store_application::*;
 mod administration;
+mod epoch;
 mod home_close;
 mod idempotency;
+mod native_preparation;
+use native_preparation::{transition_unshared, unshared};
 mod observation_policy;
 mod operations;
 use observation_policy::{no_operation_admission, ObservationMaintenanceMustRemainUnentered};
@@ -70,50 +73,6 @@ fn finalize_native(
     query.finish_existing_home_native_readmission(phase, native, authority, outcome)
 }
 
-fn unshared(
-    path: &std::path::Path,
-    phase: &WorthQueryBootstrapAdvancementPhase<'_>,
-) -> (
-    PreparedHomeNativeMeaning<HomeIdentitySchema, HomeProgram>,
-    UnsharedReadmittedApplicationHome,
-) {
-    let query = meaning();
-    let execution = phase.execution_request();
-    let request = ApplicationHomeRequest::new(
-        path.to_path_buf(),
-        query.home_relational_definition(),
-        query.admitted_home_binding().unwrap(),
-        build(),
-    );
-    let home = admit_home(recover_home(request, &execution).unwrap(), &execution).unwrap();
-    let mut home =
-        attach_relational(home, &execution).unwrap_or_else(|_| panic!("actual Native attaches"));
-    let preparation = home.prepare_native_schema_for_home(&execution).unwrap();
-    let query = match preparation {
-        ApplicationHomeNativeSchemaPreparation::Existing {
-            native,
-            source,
-            maximum_kind,
-            maximum_aspect,
-        } => query.prepare_home_native_receiver_schema(
-            phase,
-            native,
-            source,
-            maximum_kind,
-            maximum_aspect,
-        ),
-        ApplicationHomeNativeSchemaPreparation::Fresh { .. } => {
-            panic!("existing Directory fixture selected fresh initialization")
-        }
-    }
-    .unwrap_or_else(|refused| panic!("actual existing schema: {:?}", refused.reason()));
-    let home = home
-        .readmit(query.home_initial_schema_receipt(), &execution)
-        .unwrap_or_else(|refused| panic!("actual Native recovery: {refused:?}"))
-        .consume(|home| home);
-    (query, home)
-}
-
 fn existing(
     path: &std::path::Path,
     phase: &WorthQueryBootstrapAdvancementPhase<'_>,
@@ -122,7 +81,19 @@ fn existing(
     DirectoryHome,
     worth_runtime_bridge::facade::RuntimeBridgeRelationalSource,
 ) {
-    let (query, mut home) = unshared(path, phase);
+    let (query, home) = unshared(path, phase);
+    existing_from_preparation(query, home, phase)
+}
+
+fn existing_from_preparation(
+    query: NativePreparation,
+    mut home: UnsharedReadmittedApplicationHome,
+    phase: &WorthQueryBootstrapAdvancementPhase<'_>,
+) -> (
+    Existing,
+    DirectoryHome,
+    worth_runtime_bridge::facade::RuntimeBridgeRelationalSource,
+) {
     let execution = phase.execution_request();
     let query = finalize_native(query, &mut home, phase).unwrap_or_else(|refused| {
         panic!(

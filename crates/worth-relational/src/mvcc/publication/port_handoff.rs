@@ -189,6 +189,11 @@ impl RelationalPublicationPort {
                 },
             ));
         }
+        if !candidate.belongs_to_receiver_epoch(&epoch) {
+            return Err(RelationalPublicationOutcome::denied(
+                RelationalPublicationDenial::StaleConfigurationEpoch,
+            ));
+        }
         if candidate.lifetime_expired() {
             return Err(RelationalPublicationOutcome::deferred(
                 RelationalPublicationDeferred::CandidateLifetimeExpired {

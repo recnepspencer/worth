@@ -205,3 +205,8 @@ native-fresh-home-readmission workspaces/worth-store/crates/worth-store-applicat
 
 # Actual same-directory Home preparation observes the original schema union after a granted target publication.
 native-home-query-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_identity_space.rs
+
+native-home-query-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts/native_preparation.rs
+query-home-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts/native_preparation.rs
+application-home-recovered-finalization workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts/epoch.rs
+application-home-recovered-finalization workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts/epoch/target_inventory.rs

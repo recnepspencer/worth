@@ -4,6 +4,7 @@ mod branch_authority;
 mod close_authority;
 mod codec_recovery_destination;
 mod configuration;
+mod configuration_epoch_control;
 mod core_access;
 mod memory_close;
 mod source_close;

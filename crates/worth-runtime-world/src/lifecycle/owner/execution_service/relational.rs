@@ -102,6 +102,7 @@ where
                     | worth_relational::facade::mvcc::RelationalPublicationDenial::HomeProgramContractsRequired
                     | worth_relational::facade::mvcc::RelationalPublicationDenial::HomeProgramTransition(_)
                     | worth_relational::facade::mvcc::RelationalPublicationDenial::StaleInvariantGeneration { .. }
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::StaleConfigurationEpoch
                     | worth_relational::facade::mvcc::RelationalPublicationDenial::ForeignRuntime { .. }
                     | worth_relational::facade::mvcc::RelationalPublicationDenial::OwnerMismatch
                     | worth_relational::facade::mvcc::RelationalPublicationDenial::Archived

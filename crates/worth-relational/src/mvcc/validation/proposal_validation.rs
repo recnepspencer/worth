@@ -243,6 +243,8 @@ impl RelationalPreparationRuntime {
                 validated_against_commit,
                 validated_against_version,
                 validated_against_branch_version: basis.descriptor().truth_version(),
+                receiver_epoch: self.configuration_epoch.clone(),
+                execution_contracts: self.execution_contracts.clone(),
                 custom_invariant_generation: self
                     .schema_contract_runtime
                     .custom_invariant_generation,

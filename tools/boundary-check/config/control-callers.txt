@@ -1793,3 +1793,7 @@ workspaces/worth-store/crates/worth-store/ workspaces/worth-store/crates/worth-s
 workspaces/worth-store/crates/worth-store/ workspaces/worth-store/crates/worth-store-court-store-replication-physical-record-journeys-physical-work/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/process/store/physical_record_journeys/physical_work/close_plan/task.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/world_durable_release/graceful_source.rs
 crates/worth-execution/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/recovery/released_source.rs
+
+# Equivalent receiver-pair replacement on the actual unshared Native owner only.
+crates/worth-relational/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts/epoch.rs
+crates/worth-relational/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts/epoch/target_inventory.rs
