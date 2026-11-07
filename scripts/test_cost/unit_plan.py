@@ -145,7 +145,19 @@ def checked_test_roots(command, graph):
             key = digest({key: value for key, value in row.items() if key != 'dependencies'})
             groups.setdefault(key, []).append(index)
     harnesses = []
+    cargo_arguments = command[:command.index('--')] if '--' in command else command
+    only_test_binaries = '--tests' in cargo_arguments and not any(
+        argument in ('--all-targets', '--bins', '--bin') or argument.startswith('--bin=')
+        for argument in cargo_arguments)
     for indices in groups.values():
+        if len(indices) == 1 and only_test_binaries:
+            index = indices[0]
+            row = graph['units'][index]
+            # Mixed --lib --tests selects binary harnesses without requesting
+            # ordinary binaries. Cargo still labels their graph mode "check".
+            if (row['target']['kind'] == ['bin'] and row['target'].get('test', False)
+                    and index in graph['roots'] and index not in incoming):
+                harnesses.append(index)
         if len(indices) != 2:
             continue
         leaves = [index for index in indices if index in graph['roots'] and index not in incoming]
