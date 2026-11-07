@@ -12,17 +12,19 @@ fn original_index_decode_refuses_cancelled_and_exhausted_invoking_requests_witho
 {
     let policy = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let setup = ExecutionRequest::serial(&policy);
-    let (runtime, source, member) = recovered_indexes(&setup);
-    drop(capture(&runtime, &setup));
+    let (runtime, source, member, members) = recovered_indexes(&setup);
+    drop(capture_indexes(&runtime, &source, &members, &setup).unwrap());
 
     let cancellation = CancellationSource::new();
     let budget = SerialMemoryBudget::new(None);
     let host = SerialRequest::from_memory(budget.clone(), cancellation.token(), None);
     source.arm(member, MemberStop::Cancel(cancellation));
     assert!(matches!(
-        runtime.complete_checkpoint_service().prepare(
-            &ExecutionRequest::serial(&host),
-            RelationalCheckpointArtifactPolicy::Embedded
+        capture_indexes(
+            &runtime,
+            &source,
+            &members,
+            &ExecutionRequest::serial(&host)
         ),
         Err(RelationalNativeCheckpointCaptureDenial::Request(
             RelationalExecutionDenialCause::Cancelled
@@ -40,9 +42,11 @@ fn original_index_decode_refuses_cancelled_and_exhausted_invoking_requests_witho
     let held = Arc::new(Mutex::new(None));
     source.arm(member, MemberStop::Exhaust { held: held.clone() });
     assert!(matches!(
-        runtime.complete_checkpoint_service().prepare(
-            &ExecutionRequest::serial(&host),
-            RelationalCheckpointArtifactPolicy::Embedded
+        capture_indexes(
+            &runtime,
+            &source,
+            &members,
+            &ExecutionRequest::serial(&host)
         ),
         Err(RelationalNativeCheckpointCaptureDenial::Request(
             RelationalExecutionDenialCause::PolicyMemoryExhausted { .. }
@@ -60,8 +64,23 @@ fn original_index_decode_refuses_cancelled_and_exhausted_invoking_requests_witho
             .expect("the invoking original request funded the blocker"),
     );
     assert_eq!(budget.charged_memory_bytes(), 0);
-    let success = capture(&runtime, &setup);
+    let success = capture_indexes(&runtime, &source, &members, &setup).unwrap();
     assert_eq!(success.source_artifact().covered().0, 1);
+}
+
+fn capture_indexes(
+    runtime: &RelationalRuntime,
+    source: &Arc<SelectedSource>,
+    members: &[RelationalDurableMemberLocator],
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<CompleteRelationalNativeCheckpoint, RelationalNativeCheckpointCaptureDenial> {
+    runtime.complete_checkpoint_service().prepare(
+        request,
+        RelationalCheckpointArtifactPolicy::ExternalMembers {
+            current_members: members,
+            source: Some(source.medium.clone()),
+        },
+    )
 }
 
 fn recovered_indexes(
@@ -70,6 +89,7 @@ fn recovered_indexes(
     RelationalRuntime,
     Arc<SelectedSource>,
     RelationalDurableMemberLocator,
+    worth_execution::ExecutionArray<RelationalDurableMemberLocator>,
 ) {
     let (runtime, medium) = initialized(request);
     let definition = runtime
@@ -104,6 +124,7 @@ fn recovered_indexes(
     drop(basis);
     release_test_commit_snapshot(&runtime, &commit);
     let image = capture_external(&runtime, &medium, request);
+    let members = selected_members(&image, request);
     medium.file_checkpoint(image.checkpoint().clone());
     let payload = image
         .checkpoint()
@@ -150,5 +171,5 @@ fn recovered_indexes(
         .durability_recovery()
         .recover_with_authority(request, plan)
         .unwrap();
-    (recovered, observed, member)
+    (recovered, observed, member, members)
 }
