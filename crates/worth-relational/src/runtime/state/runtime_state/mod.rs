@@ -249,3 +249,22 @@ impl RelationalRuntime {
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+#[cfg(test)]
+fn collect_owned_inline_type_sizes(census: &mut crate::inline_type_sizes::Census) {
+    {
+        let mut owner = census.owner::<RelationalRuntime>(
+            "crates/worth-relational/src/runtime/state/runtime_state/mod.rs",
+            "RelationalRuntime",
+            128 * 1024,
+        );
+        owner.field::<std::sync::Arc<crate::runtime::RelationalRuntimeConfig>>("config");
+        owner.field::<std::sync::Arc<super::SchemaContractRuntimeSubsystem>>(
+            "schema_contract_runtime",
+        );
+        owner.field::<std::sync::Arc<RelationalRuntimeState>>("state");
+        owner.field::<RelationalRuntimeTenure>("tenure");
+        owner.field::<Option<worth_execution::ExecutionMemoryReservation>>("_outer_memory");
+    }
+    preparation_runtime::inline_type_budget::collect(census);
+}

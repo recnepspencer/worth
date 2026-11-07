@@ -129,3 +129,15 @@ impl super::BridgeOwnedSignalRuntime {
 #[cfg(test)]
 #[path = "home_retirement_slots_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+#[cfg(test)]
+fn collect_owned_inline_type_sizes(census: &mut crate::inline_type_sizes::Census) {
+    {
+        let mut owner = census.owner::<OrdinaryBridgeCustody>("crates/worth-runtime-bridge/src/conditional_execution/contract/home_retirement_slots.rs", "OrdinaryBridgeCustody", 128 * 1024);
+        owner.field::<Option<RuntimeBridge>>("runtime");
+    }
+    {
+        let mut owner = census.owner::<SignalRuntimeGuard<'static>>("crates/worth-runtime-bridge/src/conditional_execution/contract/home_retirement_slots.rs", "SignalRuntimeGuard", 128 * 1024);
+        owner.field::<MutexGuard<'static, Option<Signal>>>("guard");
+    }
+}

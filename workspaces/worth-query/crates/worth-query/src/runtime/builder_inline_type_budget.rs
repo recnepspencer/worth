@@ -34,10 +34,7 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
             "consumer_support_postures",
         );
         owner.field::<crate::runtime::native_aspect_contracts::WorthQueryNativeAspectContractRegistry>("native_aspect_contracts");
-        owner.field::<Option<worth_runtime_bridge::facade::RuntimeBridge>>(
-            "conditional_runtime_bridge",
-        );
-        owner.field::<Option<Box<worth_signal::facade::SignalGraph>>>("conditional_signal_graph");
+        super::record_owned_runtime_field_sizes(&mut owner);
         owner.field::<Option<super::super::WorthQueryConditionalExecutionResources>>(
             "conditional_execution_resources",
         );

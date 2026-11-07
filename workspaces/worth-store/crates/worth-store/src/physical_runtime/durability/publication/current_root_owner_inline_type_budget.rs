@@ -14,9 +14,7 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
         owner.field::<Mutex<Option<std::sync::Arc<capture_pause::ReadRootCapturePause>>>>(
             "capture_pause",
         );
-        owner.field::<std::sync::Arc<crate::physical_runtime::stability::RootProtectionRegistry>>(
-            "read_protection",
-        );
+        super::record_read_protection_inline_size(&mut owner);
         owner.field::<std::sync::Arc<blob_claim::BlobClaimRegistry>>("blob_claims");
         owner.field::<std::sync::Arc<Mutex<Option<reclaim::ReclaimFenceState>>>>("reclaim");
         owner.field::<std::sync::Arc<Mutex<PhysicalCurrentRootState>>>("state");

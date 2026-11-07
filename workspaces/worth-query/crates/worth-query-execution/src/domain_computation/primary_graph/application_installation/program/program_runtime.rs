@@ -359,3 +359,11 @@ impl<Schema, Program> Clone for WorthQueryProgramApplicationRuntime<Schema, Prog
 #[cfg(test)]
 #[path = "program_runtime_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+#[cfg(test)]
+fn collect_owned_inline_type_sizes(census: &mut crate::inline_type_sizes::Census) {
+    {
+        let mut owner = census.owner::<WorthQueryProgramApplicationRuntime<(), ()>>("workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/program/program_runtime.rs", "WorthQueryProgramApplicationRuntime", 128 * 1024);
+        owner.field::<std::sync::Arc<WorthQueryProgramRuntimeBacking<(), ()>>>("backing");
+    }
+}

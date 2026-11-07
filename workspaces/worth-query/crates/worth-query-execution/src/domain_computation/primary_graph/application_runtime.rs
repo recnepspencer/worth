@@ -346,3 +346,32 @@ mod court_doors_for_test;
 #[cfg(test)]
 #[path = "application_runtime_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+#[cfg(test)]
+fn collect_owned_inline_type_sizes(census: &mut crate::inline_type_sizes::Census) {
+    {
+        let mut owner = census.owner::<WorthQueryPrimaryGraphApplicationRuntime<()>>("workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime.rs", "WorthQueryPrimaryGraphApplicationRuntime", 128 * 1024);
+        owner.field::<conditional_cleanup::ConditionalRuntimeCleanup<()>>("conditional_cleanup");
+        owner.field::<WorthQueryInstalledApplicationSchema<()>>("installed_schema");
+        owner.field::<WorthQueryApplicationRuntimeCore>("runtime");
+        owner.field::<teardown::ApplicationPostConditionalTeardown>("post_conditional_teardown");
+        owner.field::<super::handler::InstalledMutationHandlerRegistry<()>>("mutation_handlers");
+        owner.field::<super::WorthQueryApplicationInvariantProjectionAuthority<()>>(
+            "mutation_projection",
+        );
+        owner.field::<super::application_contribution::WorthQueryInstalledApplicationProducerRegistry<()>>("installed_producers");
+        owner.field::<teardown::ApplicationOutputTeardown>("output_teardown");
+        owner.field::<std::collections::HashSet<TypeId>>("program_required_bindings");
+        owner.field::<std::collections::HashSet<TypeId>>("program_required_operations");
+        owner.field::<std::collections::HashSet<TypeId>>("workflow_guarded_operations");
+        owner.field::<Option<super::program_occurrence::WorthQueryInstalledProgramSupport<()>>>(
+            "program_support",
+        );
+        owner.field::<std::sync::Mutex<std::collections::BTreeMap<worth_query_declaration::facade::application_program::ApplicationProgramRevision, worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventSigningOwner<()>>>>("signing_owners");
+        owner.field::<super::application_contribution::WorthQueryInstalledApplicationConditionalRegistry<()>>("installed_conditionals");
+        owner.field::<super::application_query::managed_index::ManagedIndexProviderCatalog<()>>(
+            "managed_indexes",
+        );
+        owner.field::<teardown::ApplicationWorkflowTeardown>("workflow_teardown");
+    }
+}

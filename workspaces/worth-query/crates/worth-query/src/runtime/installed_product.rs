@@ -116,3 +116,20 @@ impl WorthQueryInstalledProduct {
 #[cfg(test)]
 #[path = "installed_product_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+#[cfg(test)]
+fn collect_owned_inline_type_sizes(census: &mut crate::inline_type_sizes::Census) {
+    {
+        let mut owner = census.owner::<WorthQueryInstalledProduct>(
+            "workspaces/worth-query/crates/worth-query/src/runtime/installed_product.rs",
+            "WorthQueryInstalledProduct",
+            128 * 1024,
+        );
+        owner.field::<WorthQueryProductRuntime>("world");
+        owner.field::<BridgeSealedRuntimeAssembly>("conditional");
+        owner.field::<worth_runtime_bridge::facade::RuntimeBridge>("managed_execution_bridge");
+        owner.field::<conditional_evaluation::WorthQueryConditionalEvaluationRegistry>(
+            "conditional_evaluations",
+        );
+    }
+}
