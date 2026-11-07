@@ -22,7 +22,9 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
                 Arc<crate::physical_runtime::durability::retention::PhysicalPublicationAdmission>,
             >,
         >>("publication");
+        #[cfg(feature = "certification-test-authority")]
         owner.field::<Arc<AtomicBool>>("fail_next_member_before_effect");
+        #[cfg(feature = "certification-test-authority")]
         owner.field::<Arc<AtomicBool>>("owe_before_maintenance_barrier");
     }
     super::group::inline_type_budget::collect(census);

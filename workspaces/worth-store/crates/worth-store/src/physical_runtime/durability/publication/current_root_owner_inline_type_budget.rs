@@ -11,6 +11,7 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
         owner.field::<release_capacity::backing::ReleasePublicationAllocationOwner>(
             "release_allocation",
         );
+        #[cfg(feature = "certification-test-authority")]
         owner.field::<Mutex<Option<std::sync::Arc<capture_pause::ReadRootCapturePause>>>>(
             "capture_pause",
         );

@@ -9,10 +9,11 @@ mod integrity_denial;
 pub(super) mod open;
 mod recovered_custody;
 pub use recovered_custody::RecoveredPhysicalCheckpointCustody;
+pub(in crate::physical_runtime) use recovered_custody::RecoveredReleaseCustody;
 pub(in crate::physical_runtime) use recovered_custody::VerifiedRecoveredCheckpointCustody;
+#[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use recovered_custody::{
     GenerationZeroNoReleaseCustody, PreparedRecoveredCustodyBacking, RecoveredNoReleaseCustody,
-    RecoveredReleaseCustody,
 };
 mod publication_charge;
 pub(in crate::physical_runtime) use publication_charge::ReconstructedPublicationMetadata;
