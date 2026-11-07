@@ -57,44 +57,26 @@ impl DurabilityRecoveryAuthority<'_> {
                 Denial::CodecTransition(detail)
             }
         })?;
-        let admitted_ids = execution.in_scope(|lease| {
-            worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling()).run_with_checkpoint(lease,None, |context| {
-                self.runtime.indexes.with_definitions(|definitions| {
-                    let bytes = definitions.len().checked_mul(std::mem::size_of::<crate::indexes::data::DerivedIndexId>())
-                        .and_then(|n| u64::try_from(n).ok()).ok_or(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)?;
-                    context.checkpoint(u64::try_from(definitions.len()).map_err(|_| crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow)?).map_err(crate::execution::RelationalExecutionDenialCause::from)?;
-                    let memory = worth_execution::ExecutionMemoryReservation::reserve_in_scope(lease,bytes)
-                        .map_err(crate::execution::denial::lease_denial)?;
-                    let mut ids = Vec::with_capacity(definitions.len());
-                    ids.extend(definitions.keys().copied());
-                    Ok::<_,crate::execution::RelationalExecutionDenialCause>((ids,memory))
-                })
-            })
-        }).map_err(|stop| Denial::CodecRequest(stop.into()))
-            .and_then(|result| result.map_err(|stop| Denial::CodecRequest(stop.into())))
-            .and_then(|result| result.0.map_err(Denial::CodecRequest));
-        crate::execution::check_request(execution).map_err(Denial::CodecRequest)?;
-        let (index_ids, _index_id_memory) = admitted_ids?;
-        if !index_ids.is_empty() {
-            // Codec changes invalidate representation-sensitive postings. Build
-            // from the already fenced target root, never old index equality.
-            let maximum = execution
-                .work_ceiling()
-                .map(|maximum| usize::try_from(maximum).unwrap_or(usize::MAX));
-            self.runtime
-                .index_authority()
-                .prepare_for_candidate(
-                    candidate,
-                    &index_ids,
-                    None,
-                    crate::indexes::data::DerivedIndexMaintenanceBudget {
-                        maximum_work_units: maximum,
-                        maximum_cold_record_slots: maximum,
-                        maximum_derived_rows: maximum,
-                    },
-                    execution,
-                )
-                .map_err(Denial::CodecIndexPreparation)?;
+        if !candidate.indexes_already_prepared() {
+            // The codec trust boundary uses the same rooted native owner as
+            // ordinary publication, after validating its exact retirement closure.
+            let change = after.commit_change().ok_or(Denial::CandidateUnavailable)?;
+            if let Some(prepared) = self
+                .runtime
+                .indexes
+                .definition_read_binding()
+                .prepare_publication(execution, &before, &after, change)
+                .map_err(Denial::CodecIndexPreparation)?
+            {
+                let work = prepared.work();
+                candidate
+                    .attach_prepared_indexes(prepared)
+                    .map_err(|kind| {
+                        Denial::CodecIndexPreparation(
+                            crate::indexes::data::DerivedIndexMaintenanceDenial { kind, work },
+                        )
+                    })?;
+            }
         }
         crate::execution::check_request(execution).map_err(Denial::CodecRequest)?;
         Ok(Some(super::AdmittedRecoveredCodecPublication::new(

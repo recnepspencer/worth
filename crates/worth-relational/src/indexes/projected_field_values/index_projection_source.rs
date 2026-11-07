@@ -36,6 +36,11 @@ impl<'view> IndexProjectionSource<'view> {
             .map(RelationalBranchRootSchemaAuthority::schema_version)
     }
 
+    pub(in crate::indexes) fn schema_authority_digest(&self) -> Option<[u8; 32]> {
+        self.schema_authority()
+            .map(RelationalBranchRootSchemaAuthority::authority_digest)
+    }
+
     pub(in crate::indexes) fn aspect_plans(&self) -> Option<&AspectContractPlanCatalog> {
         self.schema_authority()
             .map(RelationalBranchRootSchemaAuthority::aspect_plans)

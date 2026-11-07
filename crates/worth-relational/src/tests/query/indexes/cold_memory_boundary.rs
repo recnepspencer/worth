@@ -35,6 +35,11 @@ fn reconstruct(n: usize, memory: u64, succeeds: bool) -> u64 {
         committed = Some(next);
     }
     let committed = committed.unwrap();
+    // A newer head makes the source an actual retained target, still held by
+    // its exact snapshot. Reconstruction never treats the active head as retained.
+    let advanced = test_owner_begin_transaction_for_main(&runtime)
+        .commit(&execution, &runtime)
+        .unwrap();
     let index = runtime
         .index_authority()
         .register(DerivedIndexDefinition {
@@ -47,11 +52,6 @@ fn reconstruct(n: usize, memory: u64, succeeds: bool) -> u64 {
         })
         .expect("index fixture has identity capacity")
         .index_id;
-    // A newer head makes the source an actual retained target, still held by
-    // its exact snapshot. Reconstruction never treats the active head as retained.
-    let advanced = test_owner_begin_transaction_for_main(&runtime)
-        .commit(&execution, &runtime)
-        .unwrap();
     let reconstruction_host = worth_execution::SerialRequest::from_memory(
         worth_execution::SerialMemoryBudget::new(Some(memory)),
         worth_execution::CancellationToken::new(),

@@ -42,16 +42,15 @@ pub(in crate::domain_computation::primary_graph::application_discovery::workflow
 
     runtime
         .index_authority()
-        .refresh_for_basis(
+        .reconstruct_for_basis(
+            execution,
             DerivedIndexBuildRequest {
                 source_commit_id: commit,
                 branch_id: branch.clone(),
                 index_ids: vec![index],
             },
             basis,
-            None,
             budget,
-            execution,
         )
         .map_err(Denial::Reconstruction)?;
     if !selected_index_is_current(execution, runtime, basis, index).map_err(Denial::Relational)? {

@@ -11,6 +11,7 @@ pub(crate) struct InstalledIndexRouting {
     entities: BTreeMap<KindId, Vec<DerivedIndexId>>,
     relations: BTreeMap<KindId, Vec<DerivedIndexId>>,
     entity_fields: BTreeMap<KindId, Vec<AspectFieldLocator>>,
+    entity_aspect_fields: BTreeMap<KindId, BTreeMap<AspectKey, Vec<AspectFieldLocator>>>,
     entity_topology: BTreeMap<KindId, Vec<DerivedIndexId>>,
     relation_topology: BTreeMap<KindId, Vec<DerivedIndexId>>,
     fields: BTreeMap<(bool, KindId, AspectKey, FieldKey), Vec<DerivedIndexId>>,
@@ -165,6 +166,15 @@ impl InstalledIndexRouting {
             .into_iter()
             .map(|(kind, fields)| (kind, fields.into_iter().collect()))
             .collect();
+        for (kind, fields) in &routing.entity_fields {
+            let aspects = routing.entity_aspect_fields.entry(*kind).or_default();
+            for field in fields {
+                aspects
+                    .entry(field.aspect().aspect_key().clone())
+                    .or_default()
+                    .push(field.clone());
+            }
+        }
         routing
     }
 
@@ -181,6 +191,16 @@ impl InstalledIndexRouting {
     }
     pub(crate) fn entity_fields(&self, kind: KindId) -> &[AspectFieldLocator] {
         self.entity_fields.get(&kind).map_or(&[], Vec::as_slice)
+    }
+    pub(crate) fn entity_fields_in_aspect(
+        &self,
+        kind: KindId,
+        aspect: &AspectKey,
+    ) -> &[AspectFieldLocator] {
+        self.entity_aspect_fields
+            .get(&kind)
+            .and_then(|fields| fields.get(aspect))
+            .map_or(&[], Vec::as_slice)
     }
     pub(crate) fn topology(&self, kind: KindId, entity: bool) -> &[DerivedIndexId] {
         let routes = if entity {

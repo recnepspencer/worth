@@ -138,9 +138,33 @@ fn exercise(records: usize, history: usize, unrelated_indexes: usize) -> fixture
         &basis,
     );
     assert!(cold.failed_indexes.is_empty());
-    for (maintained, cold) in maintained.iter().zip(cold.generations) {
-        assert_eq!(maintained.entries, cold.entries);
-    }
+    let mut court = worth_testkit_relational::maintenance::MaintainedCourt::new(
+        "native_fields",
+        Arc::new(
+            built
+                .generations
+                .into_iter()
+                .map(|generation| generation.entries)
+                .collect::<Vec<_>>(),
+        ),
+    );
+    court
+        .check_against_cold::<()>(
+            Arc::new(
+                maintained
+                    .iter()
+                    .map(|generation| generation.entries.clone())
+                    .collect::<Vec<_>>(),
+            ),
+            Arc::new(
+                cold.generations
+                    .into_iter()
+                    .map(|generation| generation.entries)
+                    .collect::<Vec<_>>(),
+            ),
+            |left, right| left == right,
+        )
+        .unwrap();
     fixture::release_test_commit_snapshot(&runtime, &committed);
     work
 }

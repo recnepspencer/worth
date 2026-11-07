@@ -242,7 +242,7 @@ impl super::owner::IndexMaintenanceOwner<'_> {
                 .indexes
                 .definition_read_binding()
                 .snapshot()
-                .routing(schema_version)
+                .routing(after.root().schema_authority().authority_digest())
                 .ok_or(DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired)?;
             field::refresh(
                 execution,

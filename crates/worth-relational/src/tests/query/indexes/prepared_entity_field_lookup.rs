@@ -82,6 +82,7 @@ fn prepared_field_selection_keeps_its_root_without_reselecting_the_generation() 
         .visibility_authority()
         .release_snapshot(&created.snapshot)
         .unwrap();
+    reconstruct_installed_at_head(execution, &runtime);
     update_entity(execution, &runtime, entity, "new-name");
     let before = runtime.index_access().generation_selection_counters();
     let handles = runtime.visibility.snapshot_handle_registry_cost_counters();

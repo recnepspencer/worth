@@ -1,35 +1,41 @@
 //! Full derived-selection validation at checkpoint import, never ordinary maintenance.
 use super::super::projected_field_values::*;
 use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
-use crate::history::data::BranchId;
 use crate::identity::data::VersionId;
 use crate::indexes::data::IndexBasisCheckpoint;
 use crate::runtime::{IndexingState, RelationalRuntime, VisibilityProjectionView};
 use std::collections::BTreeMap;
-use std::sync::Arc;
 
-pub(crate) type CheckpointIndexProjections =
-    BTreeMap<(BranchId, VersionId), VisibilityProjectionView>;
+pub(crate) type CheckpointIndexProjections = BTreeMap<VersionId, VisibilityProjectionView>;
 
 pub(crate) fn checkpoint_index_projections(
     runtime: &RelationalRuntime,
 ) -> CheckpointIndexProjections {
     use crate::visibility::snapshot_states::{SnapshotStateBasis, VisibilitySnapshotBasis};
+    // Cold import captures actual retained roots, including selected historical
+    // bases. This is a root inventory, never a timeline/envelope scan.
     runtime
         .history
-        .branch_ids_snapshot()
+        .current_root_storage_inventory()
         .into_iter()
-        .filter_map(|branch| {
-            let root = runtime.history.branch_cell(&branch)?.root()?;
-            let version = root.canonical_envelope()?.commit.version_id;
+        .chain(
+            runtime
+                .history
+                .retired_root_storage_inventory()
+                .into_iter()
+                .map(|entry| entry.root),
+        )
+        .filter_map(|root| {
+            let envelope = root.canonical_envelope()?;
+            let branch = envelope.branch_context.clone();
+            let version = envelope.commit.version_id;
             let view = VisibilityProjectionView::new(
                 runtime,
                 SnapshotStateBasis::Exact(VisibilitySnapshotBasis::from_prepared_root(
-                    branch.clone(),
-                    Arc::clone(&root),
+                    branch, root,
                 )),
             );
-            Some(((branch, version), view))
+            Some((version, view))
         })
         .collect()
 }
@@ -58,7 +64,7 @@ fn verify_in_reconstruction(
     let work = crate::execution::RequestWorkBudget::new();
     for basis in bases {
         let projection = projections
-            .get(&(basis.branch.clone(), basis.version))
+            .get(&basis.version)
             .ok_or_else(|| corrupt("index basis has no selected checkpoint root"))?;
         let root = projection
             .selected_root()

@@ -76,6 +76,7 @@ fn reused_slot_cold_and_retained_generations_match_rebuild_then_accept_local_edi
     };
     assert_eq!(entries.values().next().unwrap().get(0), Some(&new_id));
 
+    reconstruct_installed_at_head(execution, &runtime);
     let changed = update_entity(execution, &runtime, new_id, "later");
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())

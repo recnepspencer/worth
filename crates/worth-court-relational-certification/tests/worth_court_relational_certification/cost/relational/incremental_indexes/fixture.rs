@@ -2,7 +2,7 @@ pub(super) use crate::index_retirement::{release_test_commit_snapshot, runtime_w
 use crate::leased_preparation::ordinary_context::support::{
     aspect_key, field_key, main_basis, string_field_patch,
 };
-use worth_execution::{ExecutionAllocationPolicy, ExecutionRequest, ExecutionWorkCeiling};
+use worth_execution::{ExecutionAllocationPolicy, ExecutionRequest};
 use worth_relational::facade::{
     identity::{EntityId, KindId, PartitionId, RelationId},
     indexes::DerivedIndexMaintenanceBudget,
@@ -135,23 +135,38 @@ pub(super) fn prepare(
     runtime: &RelationalRuntime,
     transaction: BranchBoundRelationalTransaction,
 ) -> (PreparedRelationalCommitCandidate, Work) {
-    let mut candidate = runtime
-        .prepare_branch_transaction(execution, transaction)
-        .unwrap();
     let before = runtime.index_access().generation_selection_counters();
-    let (prepared, report) = execution
-        .run(ExecutionWorkCeiling::new(None), |_| {
+    let (candidate, observation) =
+        worth_relational::facade::inspection::observe_maintenance_work(32, || {
             runtime
-                .index_authority()
-                .prepare_routed_indexes_for_candidate(&mut candidate, budget(), execution)
+                .prepare_branch_transaction(execution, transaction)
+                .unwrap()
+        });
+    let maintained = candidate
+        .prepared_index_maintenance_work()
+        .expect("native preparation carries its actual receipt");
+    assert_eq!(observation.omitted_phases, 0);
+    let phases: Vec<_> = observation
+        .phases
+        .iter()
+        .filter(|row| row.phase == "index_maintenance")
+        .collect();
+    assert!(
+        !phases.is_empty(),
+        "the actual pipeline enters the native index phase"
+    );
+    let units = phases
+        .into_iter()
+        .map(|row| {
+            assert!(row.accounted, "phase work uses the original request's bill");
+            row.charged_work
         })
-        .unwrap();
-    let maintained = prepared.unwrap();
+        .sum();
     let after = runtime.index_access().generation_selection_counters();
     (
         candidate,
         Work {
-            units: report.charged_work(),
+            units,
             payloads: (after.generation_payload_reads - before.generation_payload_reads) as u64,
             inventory: (after.history_inventory_entries - before.history_inventory_entries) as u64,
             records: maintained.record_reads as u64,
@@ -185,9 +200,11 @@ pub(super) fn flat(axis: &str, small: Work, large: Work) {
         ("record reads", small.records, large.records),
         ("adjacency work", small.adjacency, large.adjacency),
     ] {
-        assert!(
-            u128::from(large.max(1)) * 2 < u128::from(small.max(1)) * 3,
-            "{axis}/{component}: index work grew {small} -> {large}"
+        worth_testkit_relational::maintenance::assert_change_bounded(
+            &format!("index_maintenance/{component}"),
+            axis,
+            small.max(1),
+            large.max(1),
         );
     }
 }

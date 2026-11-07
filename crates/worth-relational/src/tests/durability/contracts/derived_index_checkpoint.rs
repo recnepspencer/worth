@@ -66,6 +66,7 @@ fn reclamation_and_checkpoint_keep_sibling_head_generation() {
     let first = create_entity_outcome(execution, &runtime, "sibling-index-first");
     let sibling = create_branch_from_main(&runtime, "index-sibling");
     let index = name_index(&runtime);
+    build(execution, &runtime, index.index_id, &first);
     let sibling_commit = create_entity_outcome_on_branch(
         execution,
         &runtime,

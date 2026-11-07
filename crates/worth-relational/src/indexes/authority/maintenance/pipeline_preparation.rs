@@ -92,7 +92,7 @@ impl IndexDefinitionReadBinding {
                 if reconstruction.is_some() {
                     // A sealed schema transition is the explicit cold trust boundary.
                     indexes.install_routing(
-                        successor.schema_authority().schema_version(),
+                        successor.schema_authority().authority_digest(),
                         successor.schema_authority().aspect_plans(),
                     );
                     indexes.with_definitions(|definitions| -> Result<(), Denial> {
@@ -111,7 +111,7 @@ impl IndexDefinitionReadBinding {
                 let routes = indexes
                     .definition_read_binding()
                     .snapshot()
-                    .routing(successor.schema_authority().schema_version())
+                    .routing(successor.schema_authority().authority_digest())
                     .ok_or(Denial::ColdReconstructionRequired)?;
                 let inputs = if reconstruction.is_some() {
                     None

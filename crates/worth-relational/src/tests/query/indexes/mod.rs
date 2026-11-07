@@ -73,3 +73,5 @@ mod bulk_commit_allocation;
 mod cold_memory_boundary;
 
 mod read_charge_pins;
+
+use candidate_index_publication::reconstruct_installed_at_head;

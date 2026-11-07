@@ -5,7 +5,6 @@ use std::ops::Bound::{Excluded, Included, Unbounded};
 use std::sync::Arc;
 
 use crate::history::data::CanonicalCommitEnvelope;
-use crate::identity::data::VersionId;
 use crate::indexes::data::{DerivedIndexGeneration, DerivedIndexGenerationId};
 
 use super::GenerationCatalog;
@@ -14,16 +13,10 @@ impl GenerationCatalog {
     pub(in crate::runtime::state::subsystems::indexing) fn retire_after_publication(
         &mut self,
         publication: &CanonicalCommitEnvelope,
-        previous_versions: &BTreeSet<VersionId>,
         maximum_older_visits: usize,
         mut custody: impl FnMut(&DerivedIndexGeneration) -> (bool, bool, bool),
     ) -> Vec<Arc<DerivedIndexGeneration>> {
         let mut candidates = BTreeSet::new();
-        for version in previous_versions {
-            if let Some(ids) = self.versions.get(version) {
-                candidates.extend(ids.iter().copied());
-            }
-        }
         for id in self
             .commits
             .get(&publication.commit.commit_id)
@@ -43,8 +36,8 @@ impl GenerationCatalog {
             }
         }
         let older = self.next_retirement_visits(maximum_older_visits);
-        self.work.enumerate_inventory(older.len());
         candidates.extend(older);
+        self.work.enumerate_inventory(candidates.len());
         let mut retired = Vec::new();
         for id in candidates {
             let Some(generation) = self.entries.get(&id) else {
@@ -97,6 +90,7 @@ impl GenerationCatalog {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::identity::data::VersionId;
 
     #[test]
     fn appending_generations_cannot_starve_a_previously_visited_held_prefix() {
