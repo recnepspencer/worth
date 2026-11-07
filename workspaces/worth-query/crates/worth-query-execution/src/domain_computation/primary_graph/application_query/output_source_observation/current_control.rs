@@ -7,6 +7,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandDenialKind,
 };
 
+pub(super) mod ordinary;
 pub(super) struct HistorySourceQueryControl<'a, S> {
     pub(super) current: &'a SharedSelectedProductOperation<'a, S>,
     pub(super) invocation: HistoryProducerInvocation<'a>,
@@ -91,14 +92,18 @@ impl<'a, S: ApplicationSchema> SourceQueryReaderAccess<'a, S> {
             principal,
             request,
             history: None,
+            current: None,
+            predecessor: None,
+            predecessor_refused: Default::default(),
+            read_authorization: None,
             refused: Default::default(),
         }
     }
-    pub(super) fn record_history_refusal(
+    pub(super) fn record_control_refusal(
         &self,
         stop: SourceQueryObservationStop,
     ) -> SourceQueryObservationStop {
-        if self.history.is_some() && stop.is_control_refusal() {
+        if (self.history.is_some() || self.current.is_some()) && stop.is_control_refusal() {
             return self
                 .refused
                 .borrow_mut()
@@ -148,9 +153,22 @@ impl<'a, S: ApplicationSchema> SourceQueryReaderAccess<'a, S> {
     }
 
     /// A handler cannot swallow a control refusal or turn it into domain denial.
-    pub(in crate::domain_computation::primary_graph) fn take_history_failure(
+    pub(in crate::domain_computation::primary_graph) fn take_control_failure(
         &self,
     ) -> Option<WorthQueryOutputDemandDenial> {
+        if let Some(cause) = self.predecessor_refused.borrow_mut().take() {
+            if let super::predecessor::Denial::Control(stop) = cause {
+                return Some(crate::domain_computation::primary_graph::invariant_projection::WorthQueryOutputAvailabilityDenial::source_query_stop(*stop).demand_stop());
+            }
+            let subject = format!("producer predecessor read: {cause}");
+            let kind = match &cause {
+                super::predecessor::Denial::Authorization(cause) => {
+                    WorthQueryOutputDemandDenialKind::of_request_authorization(cause.kind())
+                }
+                _ => WorthQueryOutputDemandDenialKind::PredecessorRead(Box::new(cause)),
+            };
+            return Some(WorthQueryOutputDemandDenial::new(kind, subject));
+        }
         self.refused.borrow_mut().take().map(|stop| {
             crate::domain_computation::primary_graph::invariant_projection::WorthQueryOutputAvailabilityDenial::source_query_stop(stop).demand_stop()
         })
@@ -163,7 +181,7 @@ impl<'a, S: ApplicationSchema> SourceQueryReaderAccess<'a, S> {
         value: T,
     ) -> Result<T, SourceQueryObservationStop> {
         let Some(history) = &self.history else {
-            return Ok(value);
+            return self.confirm_current_control(execution, native, value);
         };
         let result = match native {
             ApplicationQueryNativeAccess::Acquire => history

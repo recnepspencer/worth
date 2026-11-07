@@ -12,6 +12,7 @@ use super::DecisionContextUse;
 mod interruption;
 mod managed_index;
 mod operation_body;
+mod predecessor;
 mod predecode_admission;
 
 /// Why a mutation handler stopped before finishing.

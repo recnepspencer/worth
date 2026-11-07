@@ -19,6 +19,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
     fn contracts(
         contracts: &mut WorthQueryApplicationContributionContracts<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        family::predecessor_family::contracts(contracts)?;
         from_first::contracts(contracts)?;
         restricted_from_first::contracts(contracts)?;
         first::contracts(contracts)?;
@@ -38,6 +39,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup.handler::<edit::Binding, _>(edit::Handler)?;
         setup.handler::<member_edit::Binding, _>(member_edit::Handler)?;
         setup.handler::<member_delete::Binding, _>(member_delete::Handler)?;
+        family::predecessor_family::install(setup)?;
         from_first::install(setup)?;
         restricted_from_first::install(setup)?;
         first::install(setup)?;
@@ -125,48 +127,7 @@ where
         (Configuration::default(),),
         ApplicationBuildIdentity::parse("91830000-0000-0000-0000-000000005356").unwrap(),
         limits,
-        |_, graph, installed| {
-            graph.bind_principal(
-                &installed.principal_binding(Actor::reference()).unwrap(),
-                WorthQueryApplicationPrincipalKey::new("operator").unwrap(),
-                1,
-                operator_identity(),
-                WorthQueryPrincipalMappingStatus::Enabled,
-            )?;
-            graph.bind_entity(
-                WorthQueryApplicationEntitySeed::new(
-                    Model::reference(),
-                    WorthQueryApplicationEntityKey::new("a").unwrap(),
-                )
-                .field(ModelKey::at("ModelKey"), "a".to_owned())
-                .field(ModelValue::at("ModelValue"), initial_value),
-            )?;
-            graph.bind_entity(
-                WorthQueryApplicationEntitySeed::new(
-                    Member::reference(),
-                    WorthQueryApplicationEntityKey::new("m").unwrap(),
-                )
-                .field(MemberKey::at("MemberKey"), "m".to_owned())
-                .field(MemberValue::at("MemberValue"), 5),
-            )?;
-            graph.bind_relation(WorthQueryApplicationRelationSeed::new(
-                ModelMember::reference(),
-                "owns:a",
-                WorthQueryApplicationEntityKey::new("a").unwrap(),
-                WorthQueryApplicationEntityKey::new("m").unwrap(),
-            ))?;
-            if let Some(value) = other_value {
-                graph.bind_entity(
-                    WorthQueryApplicationEntitySeed::new(
-                        Model::reference(),
-                        WorthQueryApplicationEntityKey::new("b").unwrap(),
-                    )
-                    .field(ModelKey::at("ModelKey"), "b".to_owned())
-                    .field(ModelValue::at("ModelValue"), value),
-                )?;
-            }
-            navigation::seed(graph)
-        },
+        |_, graph, installed| seed(graph, installed, initial_value, other_value),
     )
     .unwrap()
 }
@@ -175,7 +136,13 @@ pub fn attach<P: ApplicationProgramDefinition<Schema>>(
     host: &WorthQueryProgramApplicationRuntime<Schema, P>,
 ) -> Document<'_> {
     let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
+    attach_with_scope(host, &scope)
+}
+pub(super) fn attach_with_scope<'a, P: ApplicationProgramDefinition<Schema>>(
+    host: &'a WorthQueryProgramApplicationRuntime<Schema, P>,
+    scope: &WorthQueryRequestScope,
+) -> Document<'a> {
+    let principal = authenticate_operator(host.installed_schema(), scope);
     host.with_host_advancement(|phase| {
         let selected = host.on_branch(host.current_world()).select(&phase).unwrap();
         let head = host
@@ -269,4 +236,52 @@ where
         checkpoint,
     )
     .unwrap()
+}
+
+pub(super) fn seed(
+    graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
+    installed: &WorthQueryInstalledApplicationSchema<Schema>,
+    initial_value: u64,
+    other_value: Option<u64>,
+) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    graph.bind_principal(
+        &installed.principal_binding(Actor::reference()).unwrap(),
+        WorthQueryApplicationPrincipalKey::new("operator").unwrap(),
+        1,
+        operator_identity(),
+        WorthQueryPrincipalMappingStatus::Enabled,
+    )?;
+    graph.bind_entity(
+        WorthQueryApplicationEntitySeed::new(
+            Model::reference(),
+            WorthQueryApplicationEntityKey::new("a").unwrap(),
+        )
+        .field(ModelKey::at("ModelKey"), "a".to_owned())
+        .field(ModelValue::at("ModelValue"), initial_value),
+    )?;
+    graph.bind_entity(
+        WorthQueryApplicationEntitySeed::new(
+            Member::reference(),
+            WorthQueryApplicationEntityKey::new("m").unwrap(),
+        )
+        .field(MemberKey::at("MemberKey"), "m".to_owned())
+        .field(MemberValue::at("MemberValue"), 5),
+    )?;
+    graph.bind_relation(WorthQueryApplicationRelationSeed::new(
+        ModelMember::reference(),
+        "owns:a",
+        WorthQueryApplicationEntityKey::new("a").unwrap(),
+        WorthQueryApplicationEntityKey::new("m").unwrap(),
+    ))?;
+    if let Some(value) = other_value {
+        graph.bind_entity(
+            WorthQueryApplicationEntitySeed::new(
+                Model::reference(),
+                WorthQueryApplicationEntityKey::new("b").unwrap(),
+            )
+            .field(ModelKey::at("ModelKey"), "b".to_owned())
+            .field(ModelValue::at("ModelValue"), value),
+        )?;
+    }
+    navigation::seed(graph)
 }

@@ -94,6 +94,25 @@ fn worker_only_selection_restores_two_publication_families_at_their_original_ids
         .collect::<std::collections::BTreeSet<_>>();
     assert_eq!(restored, [world.output, other].into_iter().collect());
     let after = transfer_fixture::basis(&world.runtime);
+    for publication in &publications {
+        assert_eq!(
+            world.runtime.predecessor_publication_basis(
+                execution,
+                &after,
+                Some(publication),
+                Some(worth_relational::facade::history::CommitId(
+                    publication.authority().publication_coordinate().0
+                ))
+            ),
+            Err(
+                RelationalPredecessorBasisDenial::PredecessorBasisUnavailableForOrigin(
+                    RelationalPredecessorBasisOrigin::HistoricalSelection
+                )
+            ),
+            "navigation precommit basis is not the producer's consumed input"
+        );
+    }
+
     let evidence = world
         .runtime
         .read_truth()

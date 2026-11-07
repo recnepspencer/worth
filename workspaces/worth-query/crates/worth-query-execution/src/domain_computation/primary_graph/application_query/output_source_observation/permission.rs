@@ -67,7 +67,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
             .unwrap_or(NonZeroUsize::MAX);
         let (product, basis) = application
             .retain_selected_query_basis_admitted(self.shared)
-            .map_err(|stop| self.record_history_refusal(Stop::Basis(stop)))?;
+            .map_err(|stop| self.record_control_refusal(Stop::Basis(stop)))?;
         let controls = if let Some(history) = &self.history {
             WorthQueryApplicationQueryControls::selected_read_one_shot_with_control(
                 history.invocation.current().retained_clone(),
@@ -84,7 +84,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                 self.request,
             )
             .map_err(|stop| {
-                self.record_history_refusal(Stop::Read(WorthQueryAdmittedOneShotStop::Admission(
+                self.record_control_refusal(Stop::Read(WorthQueryAdmittedOneShotStop::Admission(
                     stop,
                 )))
             })?
@@ -106,7 +106,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                 ),
         };
         let (parameters, controls) = prepared.map_err(|cause| {
-            self.record_history_refusal(Stop::Preparation {
+            self.record_control_refusal(Stop::Preparation {
                 phase: SourceQueryPreparationPhase::Parameters,
                 cause,
             })
@@ -155,7 +155,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                     cause.kind(),
                     WorthQueryApplicationQueryAdmissionDenialKind::Authorization(_)
                 ) {
-                    return self.record_history_refusal(match absent {
+                    return self.record_control_refusal(match absent {
                         CurrentSourceRefusal::Absent(absent) => Stop::Scope(absent.clone()),
                         CurrentSourceRefusal::DifferentGeneration => Stop::Preparation {
                             phase: SourceQueryPreparationPhase::Permission,
@@ -186,16 +186,16 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                     | WorthQueryApplicationQueryAdmissionDenialKind::HistoricalSourceOwnershipUnavailable { .. }) {
                 cause.without_historical_source()
             } else { cause };
-            self.record_history_refusal(Stop::Preparation {
+            self.record_control_refusal(Stop::Preparation {
                 phase: SourceQueryPreparationPhase::Permission,
                 cause,
             })
         })?;
-        if let Some(history) = &self.history {
+        if let Some(control) = self.read_control() {
             permission
-                .require_current_principal(history.invocation.read_control())
+                .require_current_principal(control)
                 .map_err(|cause| {
-                    self.record_history_refusal(Stop::Preparation {
+                    self.record_control_refusal(Stop::Preparation {
                         phase: SourceQueryPreparationPhase::Permission,
                         cause,
                     })
@@ -206,7 +206,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                 execution, permission, native,
             )
             .map_err(|cause| {
-                self.record_history_refusal(Stop::Preparation {
+                self.record_control_refusal(Stop::Preparation {
                     phase: SourceQueryPreparationPhase::Session,
                     cause,
                 })

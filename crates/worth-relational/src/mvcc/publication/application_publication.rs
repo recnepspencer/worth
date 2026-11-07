@@ -24,7 +24,7 @@ pub use coupled_assembly::{
 pub use coupled_owners::{RelationalAuthoredCoupledOwners, RelationalDeclaredCoupledOwner};
 mod predecessor_basis;
 mod predecessor_observation;
-pub use predecessor_basis::RelationalPredecessorBasisDenial;
+pub use predecessor_basis::{RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin};
 mod producing_implementation;
 mod route_absence;
 mod scope_ownership;

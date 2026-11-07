@@ -10,7 +10,7 @@ pub use application_publication::{
     RelationalAuthoredRestoration, RelationalAuthoredRetirement, RelationalCoupledAssemblyFailure,
     RelationalCoupledAuthoredPublication, RelationalDeclaredCoupledOwner,
     RelationalHistoricalOutputSelection, RelationalPerformedOutputPublications,
-    RelationalPredecessorBasisDenial,
+    RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin,
     RelationalPreparedOutputPublications, RelationalRequiredOutputPublication,
     RelationalRequiredOutputRouteAbsence, RelationalRestoredProducerPrior,
     RequiredOutputProducingImplementation, RequiredOutputPublication,

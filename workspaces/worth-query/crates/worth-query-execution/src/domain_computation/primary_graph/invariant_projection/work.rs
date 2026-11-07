@@ -126,6 +126,10 @@ impl WorthQueryInvariantProjectionWorkBudget {
         self.exceeded = true;
     }
 
+    pub(super) const fn consumed(&self) -> usize {
+        self.consumed
+    }
+
     pub(super) const fn remaining(&self) -> Option<usize> {
         self.remaining
     }

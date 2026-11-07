@@ -26,6 +26,12 @@ pub(super) fn execute_authorized<Schema, Binding>(
         <Operation<Schema, Binding> as ApplicationMutationBinding<Schema>>::Principal,
         <Operation<Schema, Binding> as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
     >,
+    original_scope: Option<
+        &crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity<
+            Schema,
+            MutationScope<Schema, Binding>,
+        >,
+    >,
     admission: crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<
         Schema,
         <Operation<Schema, Binding> as ApplicationMutationBinding<Schema>>::Operation,
@@ -70,6 +76,7 @@ where
         external_principal,
         request_scope,
         principal,
+        original_scope,
         admission,
         required_output,
         std::sync::Arc::clone(provider),

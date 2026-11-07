@@ -108,7 +108,10 @@ pub(super) fn bind(
             )
         })
         .map_err(transaction_commit_stop)?;
-    let warm = retired.or_else(|| head.as_ref().and_then(|head| head.warm_publication()));
+    let warm = required
+        .selected_read_predecessor()
+        .or(retired)
+        .or_else(|| head.as_ref().and_then(|head| head.warm_publication()));
     // A cold Query memo may predate a later Native-owned publication. Native's
     // current roster owns succession; old checkpoint correspondence does not.
     let warm = match warm {

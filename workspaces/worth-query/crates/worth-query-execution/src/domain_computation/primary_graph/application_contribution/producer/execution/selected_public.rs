@@ -60,6 +60,12 @@ where
         MutationPrincipal<Schema, Binding>,
         MutationPrincipalIdentity<Schema, Binding>,
     >,
+    pub(super) scope: Option<
+        crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity<
+            Schema,
+            MutationScope<Schema, Binding>,
+        >,
+    >,
     pub(super) operation:
         crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<
             Schema,
@@ -208,7 +214,7 @@ where
                     execution, runtime, shared, control.ok_or(Stop::ForeignSelectedRuntime)?, &current, &installed.prepared_graph,
                     &principal, &truth_scope, history.expect("historical source"), request,
                 ).map_err(Stop::CurrentOperation)?;
-                return Ok(PreparedSelectedPublicMutation { principal, operation });
+                return Ok(PreparedSelectedPublicMutation { principal, operation, scope: Binding::PREDECESSOR_READS.map(|_| truth_scope.scope().retain_description().into_application_identity()) });
             }
             scope
         }
@@ -228,7 +234,7 @@ where
                 execution, runtime, shared, control, &current, &installed.prepared_graph,
                 &principal, &mutation_scope, history, request,
             ).map_err(Stop::CurrentOperation)?;
-            return Ok(PreparedSelectedPublicMutation { principal, operation });
+            return Ok(PreparedSelectedPublicMutation { principal, operation, scope: Binding::PREDECESSOR_READS.map(|_| mutation_scope.scope().retain_description().into_application_identity()) });
         }
         Err(cause) => return Err(if control.is_some() { Stop::CurrentScope(cause) } else { Stop::Scope(cause) }),
     };
@@ -284,6 +290,12 @@ where
     Ok(PreparedSelectedPublicMutation {
         principal,
         operation,
+        scope: Binding::PREDECESSOR_READS.map(|_| {
+            scope
+                .scope()
+                .retain_description()
+                .into_application_identity()
+        }),
     })
 }
 

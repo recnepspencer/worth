@@ -1,4 +1,34 @@
-//! Producer lifecycle bindings and handler shape shared by the fixture families.
+//! Shared optional predecessor fixture program is declared at its real owner.
+macro_rules! predecessor_program {
+    (PredecessorInitial) => {
+        use super::super::predecessor::{fixture_world as world, program};
+    };
+    ($other:ident) => {};
+}
+// Shared fixture hooks default to no predecessor observation.
+macro_rules! predecessor_contract {
+    (PredecessorInitial) => {
+        Some(super::super::super::predecessor::CONTRACT)
+    };
+    (PredecessorPreserve) => {
+        Some(super::super::super::predecessor::CONTRACT)
+    };
+    ($other:ident) => {
+        None
+    };
+}
+macro_rules! predecessor_hook {
+    (PredecessorInitial, $reader:ident, $source:ident) => {
+        super::super::super::predecessor::observe($reader, &$source)
+    };
+    (PredecessorPreserve, $reader:ident, $source:ident) => {
+        super::super::super::predecessor::observe($reader, &$source)
+    };
+    ($other:ident, $reader:ident, $source:ident) => {
+        ()
+    };
+}
+// Producer lifecycle bindings and handler shape shared by the fixture families.
 macro_rules! publication_link {
     (none, $writer:ident, $relation:expr, $key:expr, $source:expr, $output:expr) => {
         Ok::<(), WorthQueryApplicationAttemptDenial>(())
@@ -60,6 +90,7 @@ macro_rules! phase {
                 const APPLICABILITY: &'static [WorthQueryProducerApplicability] = &[WorthQueryProducerApplicability::new(PROFILE, WorthQueryProducerLifecyclePosture::$posture)];
                 const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
                 const OWNERSHIP: ProducerPublicationOwnership = ProducerPublicationOwnership::$ownership;
+                const PREDECESSOR_READS: Option<WorthQueryPredecessorReadContract<Schema>> = predecessor_contract!($operation);
                 const REUSE_POLICY: &'static str = "exact-source";
             }
             impl WorthQueryApplicationProducerProvider<Schema, Producer> for Provider {
@@ -113,6 +144,7 @@ macro_rules! phase {
                     let result = (|| {
                         let source = reader.resolve_entity(source_key(), input.0.key.clone())?;
                         reader.field(&source, source_value())?;
+                        predecessor_hook!($operation, reader, source);
                         let prior = if $preserve { Some(reader.prior_output_preserved_or_created::<preserve::Binding, preserve::Output, initial::Binding, initial::Output>()?) }
                             else { reader.resolve_optional_entity($key::at(stringify!($key)), output_key(&input.0))? };
                         if !$preserve && prior.is_some() { return Ok(Err(Denial::InitialHasPriorOutput)); }

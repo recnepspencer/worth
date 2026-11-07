@@ -90,6 +90,7 @@ impl ApplicationProgramDefinition<Schema> for Program {
                 .conditional_operation::<restricted_owned::initial::Operation>()
                 .conditional_operation::<restricted_owned::preserve::Operation>()
                 .finish(),
+            super::super::super::predecessor::program::feature(),
         ]
     }
 }

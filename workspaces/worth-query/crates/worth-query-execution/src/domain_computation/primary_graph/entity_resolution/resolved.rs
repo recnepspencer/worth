@@ -163,7 +163,9 @@ impl WorthQueryResolvedEntity {
 impl<Schema, Entity> WorthQueryApplicationEntityIdentity<Schema, Entity> {
     /// Retain the actual resolver's description, including its full generation.
     /// This copies no permission and makes no claim about a later basis.
-    pub(super) fn retain_description(&self) -> WorthQueryResolvedEntity {
+    pub(in crate::domain_computation::primary_graph) fn retain_description(
+        &self,
+    ) -> WorthQueryResolvedEntity {
         WorthQueryResolvedEntity {
             entity_id: self.entity_id,
             entity_kind: self.entity_kind,

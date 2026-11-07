@@ -25,6 +25,7 @@ pub(in crate::domain_computation::primary_graph) enum SourceQueryRequest<I> {
 mod admitted;
 mod current_control;
 mod permission;
+mod predecessor;
 mod request_scope;
 use permission::{CurrentSourceRefusal, SourceScopePosture};
 use request_scope::SourceScopeSelector;
@@ -53,6 +54,10 @@ pub(in crate::domain_computation::primary_graph) struct SourceQueryReaderAccess<
     pub(in crate::domain_computation::primary_graph) principal:
         &'a WorthQueryAuthenticatedExternalPrincipal<Schema>,
     pub(in crate::domain_computation::primary_graph) request: &'a WorthQueryRequestScope,
+    predecessor_refused: std::cell::RefCell<Option<crate::domain_computation::primary_graph::application_contribution::producer::predecessor_reads::WorthQueryPredecessorReadDenial>>,
+    read_authorization: Option<crate::domain_computation::authorization::BorrowedReadOperationAdmission<'a>>,
+    predecessor: Option<crate::domain_computation::primary_graph::application_contribution::producer::predecessor_reads::ProducerPredecessorReadAccess>,
+    current: Option<current_control::ordinary::CurrentSourceQueryControl<'a>>,
     history: Option<current_control::HistorySourceQueryControl<'a, Schema>>,
     refused: std::cell::RefCell<Option<SourceQueryObservationStop>>,
 }
@@ -151,7 +156,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
         // Confirm even a consumer error: current control loss cannot become an
         // authored data outcome merely because the consumer returned a denial.
         self.confirm_control(execution, native, result)
-            .map_err(|stop| E::from(self.record_history_refusal(stop)))?
+            .map_err(|stop| E::from(self.record_control_refusal(stop)))?
     }
 
     fn with_plan_in_control<Binding, R, E>(
@@ -178,7 +183,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
         context_use.set(context_use.get().source_query_permission());
         let application = self.application;
         self.confirm_control(execution, native, ())
-            .map_err(|stop| self.record_history_refusal(stop))?;
+            .map_err(|stop| self.record_control_refusal(stop))?;
         let selected = self
             .history
             .as_ref()
@@ -201,7 +206,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                 None,
                 native,
             )
-            .map_err(|stop| self.record_history_refusal(Stop::Principal(stop)))?;
+            .map_err(|stop| self.record_control_refusal(Stop::Principal(stop)))?;
         use permission::SourceQueryParameters;
         let (parameters, selector) = match intent {
             SourceQueryRequest::Live(intent) => {
@@ -252,10 +257,10 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                     crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind::UnknownEntity)) => {
                 // Resolution is private. Until C authorizes, neither a D lookup
                 // failure nor a C denial reveals more than the old C refusal.
-                let scope = selector.resolve(self.shared.selected(), execution, self.request, native).map_err(|_| self.record_history_refusal(Stop::Scope(absent.clone())))?;
+                let scope = selector.resolve(self.shared.selected(), execution, self.request, native).map_err(|_| self.record_control_refusal(Stop::Scope(absent.clone())))?;
                 (scope, SourceScopePosture::Historical(CurrentSourceRefusal::Absent(absent)))
             }
-            Err(stop) => return Err(self.record_history_refusal(Stop::Scope(stop)).into()),
+            Err(stop) => return Err(self.record_control_refusal(Stop::Scope(stop)).into()),
         };
         self.with_resolved_plan::<Binding, _, _>(
             execution, &installed, parameters, &principal, &scope, posture, native, consume,

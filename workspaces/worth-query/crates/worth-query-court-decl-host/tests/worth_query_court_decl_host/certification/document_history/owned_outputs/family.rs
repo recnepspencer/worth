@@ -17,6 +17,7 @@ macro_rules! family {
     ($module:ident, $ownership:ident, $direction:ident, $source_entity:ident, $source_facts:ident, $source_key:ident, $source_value:ident, $source_query:ident, $profile:literal, $initial:literal, $preserve:literal, $initial_op:ident, $preserve_op:ident,
      $entity:ident, $facts:ident, $key:ident, $value:ident, $of:ident, $tree:ident, $derive:expr) => {
         pub mod $module {
+            predecessor_program!($initial_op);
             use super::super::schema::{
                 $source_entity as SourceEntity, $source_facts as SourceFacts,
                 $source_key as SourceKey, $source_value as SourceValue,
@@ -358,4 +359,27 @@ family!(
     ChildOfFirst,
     RestrictedFromFirstTree,
     |value: u64| value * 100
+);
+
+family!(
+    predecessor_family,
+    SourceScopeCascade,
+    output,
+    Model,
+    ModelFacts,
+    ModelKey,
+    ModelValue,
+    producer_model,
+    "predecessor",
+    "owned-outputs.predecessor.initial",
+    "owned-outputs.predecessor.preserve",
+    PredecessorInitial,
+    PredecessorPreserve,
+    FirstOutput,
+    FirstFacts,
+    FirstKey,
+    FirstValue,
+    FirstOf,
+    PredecessorTree,
+    |value| value + 9000
 );

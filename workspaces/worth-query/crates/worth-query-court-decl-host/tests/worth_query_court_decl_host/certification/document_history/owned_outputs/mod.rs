@@ -70,3 +70,5 @@ mod forest_recording_dependency;
 mod recording_intent;
 
 mod group_recording;
+
+mod predecessor;

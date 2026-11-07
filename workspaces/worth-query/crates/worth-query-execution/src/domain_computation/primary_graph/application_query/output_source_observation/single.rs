@@ -94,6 +94,6 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                 })
             },
         )
-        .map_err(|stop| self.record_history_refusal(stop))
+        .map_err(|stop| self.record_control_refusal(stop))
     }
 }

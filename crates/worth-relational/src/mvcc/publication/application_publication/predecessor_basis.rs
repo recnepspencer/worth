@@ -7,9 +7,16 @@ use crate::{
     runtime::RelationalRuntime,
 };
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RelationalPredecessorBasisOrigin {
+    HistoricalSelection,
+    AuthoredRestoration,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum RelationalPredecessorBasisDenial {
     PredecessorBasisUnavailable,
+    PredecessorBasisUnavailableForOrigin(RelationalPredecessorBasisOrigin),
     PredecessorMismatch,
     BasisAdmission(RelationalBranchBasisDenial),
     Selection(crate::transactions::data::TransactionCommitError),
@@ -45,6 +52,20 @@ impl RelationalRuntime {
         }
         if !prior.origin.source_scope_owned {
             return Err(Denial::PredecessorBasisUnavailable);
+        }
+        // Restoration records the navigation candidate's precommit basis, not
+        // the selected producer's consumed inputs. #94 reserves that contract.
+        let restored = match prior.origin.publication {
+            crate::history::data::CanonicalOutputPublication::HistoricalSelection { .. } => {
+                Some(RelationalPredecessorBasisOrigin::HistoricalSelection)
+            }
+            crate::history::data::CanonicalOutputPublication::AuthoredRestoration { .. } => {
+                Some(RelationalPredecessorBasisOrigin::AuthoredRestoration)
+            }
+            _ => None,
+        };
+        if let Some(origin) = restored {
+            return Err(Denial::PredecessorBasisUnavailableForOrigin(origin));
         }
         // Unrelated publication changes may replace the image wrapper while
         // sharing this still-live route's hold. The live head is only a pin

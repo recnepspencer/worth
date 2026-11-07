@@ -8,13 +8,30 @@ use worth_query_declaration::facade::application_schema::{
 };
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
 
+mod access;
+mod evidence;
+pub(in crate::domain_computation::primary_graph) use evidence::HistoricalProducerRead;
 mod installation;
+pub(in crate::domain_computation::primary_graph) use access::{
+    ProducerPredecessorReadAccess, ProducerPredecessorReadState,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum WorthQueryPredecessorReadDenial {
     PredecessorBasisUnavailable,
     UndeclaredPredecessorRead,
     PredecessorMismatch,
+    Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial),
+    Control(
+        Box<
+            crate::domain_computation::primary_graph::application_query::SourceQueryObservationStop,
+        >,
+    ),
+    Installation(
+        worth_query_installation::facade::WorthQueryApplicationOperationInstallationDenial,
+    ),
+    Projection(crate::domain_computation::primary_graph::WorthQueryInvariantProjectionDenial),
+    Decision(String),
     Native(worth_relational::facade::mvcc::RelationalPredecessorBasisDenial),
 }
 impl From<worth_relational::facade::mvcc::RelationalPredecessorBasisDenial>
@@ -80,10 +97,20 @@ impl<S: ApplicationSchema> WorthQueryPredecessorReadContract<S> {
     pub fn require<O: ApplicationOperationMarkerIdentity<S> + 'static>(
         &self,
     ) -> Result<(), WorthQueryPredecessorReadDenial> {
+        self.require_identity(
+            O::IDENTIFIER,
+            O::InputBinding::IDENTITY_NAME,
+            EqualityTypeId::of::<O>(),
+        )
+    }
+    fn require_identity(
+        &self,
+        name: &str,
+        input: &str,
+        operation: EqualityTypeId,
+    ) -> Result<(), WorthQueryPredecessorReadDenial> {
         if self.operations.iter().any(|read| {
-            read.name == O::IDENTIFIER
-                && read.input == O::InputBinding::IDENTITY_NAME
-                && (read.operation_type)() == EqualityTypeId::of::<O>()
+            read.name == name && read.input == input && (read.operation_type)() == operation
         }) {
             Ok(())
         } else {

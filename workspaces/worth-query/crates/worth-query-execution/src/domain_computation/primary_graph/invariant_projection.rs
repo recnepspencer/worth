@@ -95,6 +95,7 @@ pub(in crate::domain_computation::primary_graph) use operation_reader::{
     ObservedComputationInputs, PreparedCurrentInputs,
 };
 pub use operation_reader::{
+    PredecessorDecisionReader, PredecessorEntity, PredecessorRelation,
     WorthQueryApplicationOperationInvariantProjectionReader,
     WorthQueryApplicationOperationInvariantProjectionSnapshot,
     WorthQueryCompletedOperationInvariantProjection, WorthQueryCurrentOutputDenial,

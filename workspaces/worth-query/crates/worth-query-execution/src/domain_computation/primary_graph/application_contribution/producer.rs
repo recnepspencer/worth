@@ -39,7 +39,7 @@ pub use output_evaluation::WorthQueryProducerEvaluationIneligibility;
 pub(in crate::domain_computation::primary_graph) use output_evaluation::{
     ComparedProducerOutput, ProducerOutputEvaluation, ProducerOutputEvaluationState,
 };
-mod predecessor_reads;
+pub(in crate::domain_computation::primary_graph) mod predecessor_reads;
 pub use predecessor_reads::{
     WorthQueryPredecessorReadContract, WorthQueryPredecessorReadDenial,
     WorthQueryPredecessorReadOperation,

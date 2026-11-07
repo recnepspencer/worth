@@ -21,6 +21,7 @@ mod borrowed_snapshot;
 mod content;
 #[path = "locked_reader/operation_body.rs"]
 mod operation_body;
+mod predecessor;
 #[path = "locked_reader/predecode_admission.rs"]
 mod predecode_admission;
 mod reader_execution;

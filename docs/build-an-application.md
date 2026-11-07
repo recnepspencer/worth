@@ -4310,11 +4310,10 @@ producers may read the same source without entering its cascade. Opting in does
 not make an external endpoint of a producer-owned relation an owned entity.
 See the [custody contract](../plans/WORTH-query/authored-retirement-custody.md).
 
-#### Declared predecessor reads (substrate checkpoint)
+#### Declared predecessor reads
 
-An owned producer may declare the read-only operations it will need at its
-predecessor publication's original decision basis. The declaration uses the
-operation's typed schema reference, alongside `OWNERSHIP`:
+An owned producer can read its inputs as its exact predecessor publication
+consumed them. Declare its installed read-only operations beside `OWNERSHIP`:
 
 ```rust,ignore
 const PREDECESSOR_READS: Option<WorthQueryPredecessorReadContract<Schema>> =
@@ -4323,27 +4322,50 @@ const PREDECESSOR_READS: Option<WorthQueryPredecessorReadContract<Schema>> =
     ]));
 ```
 
-These types live in `host::application_contribution`. Installation requires
-`SourceScopeCascade`, actual installed operations with no mutation touches,
-application emissions, external effects or executable body, and no duplicate
-operation. The contract participates in producer equality and edition identity.
-Contract membership refuses `UndeclaredPredecessorRead`; declaration alone
-provides no read, mutation or publication authority.
+These declaration types live in `host::application_contribution`. Installation
+requires `SourceScopeCascade`, no duplicate operation, and actual installed
+operations with no mutation touches, emissions, external effects or executable
+body. The contract participates in producer equality and edition identity.
+A declaration grants nothing. Each read independently authorizes that read
+operation's installed authorization and abilities **at the current control basis
+C**, using the producer's current principal and original source scope. It never
+borrows a historical grant or substitutes the producer operation's permission.
 
-Relational retains the decision root of each live owned publication by reference
-under its existing MVCC head/candidate lifecycle. Succession replaces the hold;
-authored, producer and codec retirement release it. Historical root and origin
-records carry no strong retention chain. The selected commit must match the
-same predecessor that ordinary succession passes to the owned-record custody
-fence; substitution refuses `PredecessorMismatch`.
+Inside the producer handler, use the sealed decision-reader door:
 
-This checkpoint does **not** expose `DecisionReader::predecessor_observation()`.
-Its current-authorization read-control integration remains pending. Do not use
-an invocation lease or copied inputs to replace that missing observation.
-Cold checkpoints preserve the canonical `origin.basis` coordinate but do not
-persist these live holds or promise their old roots. The cold path and a first
-publication refuse `PredecessorBasisUnavailable`. No new durable format is
-introduced. End-to-end historical-read/dependency behavior is not yet available.
+```rust,ignore
+let source = reader.scope().clone();
+let previous = reader.predecessor_observation(ReadInputs::reference(), |old| {
+    let source = old.entity(Source::reference(), &source)
+        .map_err(HandlerExecutionDenial::new)?;
+    old.field(&source, InputValue::at("InputValue"))
+        .map_err(HandlerExecutionDenial::new)
+});
+```
+
+The outer result describes observation admission; the closure's result describes
+its read. The restricted reader exposes tracked entity, field and relation
+reads. Its `PredecessorEntity` and `PredecessorRelation` handles are distinct from
+current projection identities and cannot mint mutation targets. There is no raw
+reader, nested query, computation or publication access. Reads use the existing
+Native loan, request checks and projection limits. Current control contention
+returns `CurrentControlBusy` without waiting on an earlier lock from that loan.
+Admission and control loss veto publication even when a handler catches them.
+
+Native chooses exactly the predecessor checked by the ordinary succession fence.
+Its decision root is retained by reference under the live head/candidate lifecycle;
+succession replaces the hold and retirement releases it. Historical keys and
+publication/basis provenance remain separate from current dependencies. Current
+READ authorization support remains a current dependency. No old value is
+substituted with a current value, and no old root is retained by Query evidence.
+
+A first publication or cold reopen refuses `PredecessorBasisUnavailable`; a
+producer can then choose full computation. Undeclared reads refuse
+`UndeclaredPredecessorRead`, and conflicting predecessor coordinates refuse
+`PredecessorMismatch`. HistoricalSelection and authored-restoration publications
+refuse `PredecessorBasisUnavailableForOrigin`, naming the origin kind. Their
+navigation precommit basis is not the producer's consumed input basis; follow-up
+#94 owns that restoration contract. No durable format change is introduced.
 
 #### Typed producer domain denial
 

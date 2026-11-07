@@ -109,6 +109,7 @@ where
         principal,
         request_scope,
         prepared.principal.principal(),
+        prepared.scope.as_ref(),
         prepared.operation,
         required_output,
         std::sync::Arc::clone(&this.provider),

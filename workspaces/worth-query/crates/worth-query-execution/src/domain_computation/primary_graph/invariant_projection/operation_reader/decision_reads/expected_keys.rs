@@ -107,6 +107,13 @@ impl ExpectedFactKeys {
     pub(in crate::domain_computation::primary_graph) fn source_publication(&self,key:&crate::domain_computation::primary_graph::application_attempt::SourcePublicationRead)->Option<&Arc<crate::domain_computation::primary_graph::output_lineage::invalidation::ObservedSourcePublication>>{
         self.source_publications.as_deref()?.get(key)
     }
+    /// Read-only predecessor projection has no computations or query witnesses.
+    /// Only its already recorded keys leave the read; no snapshot/root is retained.
+    pub(in crate::domain_computation::primary_graph::invariant_projection) fn into_historical_keys(
+        self,
+    ) -> Arc<BTreeSet<Key>> {
+        self.handler
+    }
     pub(in crate::domain_computation::primary_graph) fn iter(&self) -> impl Iterator<Item = &Key> {
         union(self.refresh_keys(), self.computation.carried_keys())
     }

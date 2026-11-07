@@ -126,6 +126,7 @@ pub(super) fn intrinsic_to_row(kind: WorthQueryOutputDemandDenialKind) -> bool {
         | Kind::CurrentPublication(_)
         | Kind::RetainedBasisUnavailable
         | Kind::Closed
+        | Kind::PredecessorRead(_)
         | Kind::DuplicatePerformedSource => true,
     }
 }

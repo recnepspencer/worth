@@ -58,7 +58,7 @@ pub(in crate::domain_computation::authorization) fn validate_static_authority<
 where
     Schema: ApplicationSchema,
 {
-    validate_static_authority_prefix(runtime, principal, scope, operation)?;
+    validate_static_authority_prefix(runtime, principal, scope, operation.installed_view())?;
     runtime
         .runtime
         .installed_packages()
@@ -73,11 +73,11 @@ where
         })
 }
 
-fn validate_static_authority_prefix<Schema, Principal, PrincipalIdentity, Operation, Input, Scope>(
+pub(super) fn validate_static_authority_prefix<Schema, Principal, PrincipalIdentity, Scope>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     scope: &WorthQueryApplicationEntityIdentity<Schema, Scope>,
-    operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+    operation: worth_query_installation::facade::InstalledOperationView<'_>,
 ) -> Result<(), WorthQueryOperationAuthorizationDenial>
 where
     Schema: ApplicationSchema,

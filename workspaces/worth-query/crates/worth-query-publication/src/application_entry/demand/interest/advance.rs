@@ -154,6 +154,7 @@ where
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::CorrespondenceDelivery(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::WorldRecovery(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::RecoveryPublication(_)
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::PredecessorRead(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::PublicationReceipt(_) => WorthQueryApplicationOutputDemandDenial::Demand(denial),
         })?;
         match progress {
