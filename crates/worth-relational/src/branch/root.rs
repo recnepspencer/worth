@@ -1,5 +1,7 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
+type OncePublicationBases =
+    std::sync::OnceLock<std::sync::Weak<dyn crate::history::retention::PublicationBasisAccess>>;
 
 use super::target::RelationalBranchRootDescriptor;
 use super::RelationalPersistentRegionSet;
@@ -135,6 +137,7 @@ struct RelationalCommittedBranchRoot {
 /// reuse.
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalBranchRoot {
+    pub(crate) publication_bases: OncePublicationBases,
     content: crate::content::ContentDirectory,
     id: u64,
     regions: Arc<RelationalPersistentRegionSet>,
@@ -188,6 +191,7 @@ impl RelationalBranchRoot {
             id: 0,
             regions: RelationalPersistentRegionSet::initial(0, BTreeMap::new(), &issuer)
                 .expect("empty test root has reachability capacity"),
+            publication_bases: Default::default(),
             content: Default::default(),
             entity_slot_count: 0,
             relation_slot_count: 0,
@@ -214,6 +218,7 @@ impl RelationalBranchRoot {
                 .expect(/* Proof: Each empty root creates a fresh issuer at its initial frontier; these first schema and empty-reachability allocations cannot exhaust it. */ "empty root has reachability capacity"),
             entity_slot_count: 0,
             relation_slot_count: 0,
+            publication_bases: Default::default(),
             content: Default::default(),
             content_accumulator: [0; 32],
             output_publication_positions: Default::default(),

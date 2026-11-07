@@ -22,7 +22,9 @@ pub use coupled_assembly::{
     RelationalCoupledAuthoredPublication,
 };
 pub use coupled_owners::{RelationalAuthoredCoupledOwners, RelationalDeclaredCoupledOwner};
+mod predecessor_basis;
 mod predecessor_observation;
+pub use predecessor_basis::RelationalPredecessorBasisDenial;
 mod producing_implementation;
 mod route_absence;
 mod scope_ownership;

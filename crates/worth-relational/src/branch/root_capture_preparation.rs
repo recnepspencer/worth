@@ -69,6 +69,7 @@ pub(super) fn prepare(
         ),
     };
     let root = Arc::new(RelationalBranchRoot {
+        publication_bases: Default::default(),
         content: envelope.content.directory()?.clone(),
         managed_source_image: std::sync::OnceLock::new(),
         id: root_id,

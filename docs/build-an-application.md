@@ -4310,6 +4310,41 @@ producers may read the same source without entering its cascade. Opting in does
 not make an external endpoint of a producer-owned relation an owned entity.
 See the [custody contract](../plans/WORTH-query/authored-retirement-custody.md).
 
+#### Declared predecessor reads (substrate checkpoint)
+
+An owned producer may declare the read-only operations it will need at its
+predecessor publication's original decision basis. The declaration uses the
+operation's typed schema reference, alongside `OWNERSHIP`:
+
+```rust,ignore
+const PREDECESSOR_READS: Option<WorthQueryPredecessorReadContract<Schema>> =
+    Some(WorthQueryPredecessorReadContract::new(&[
+        WorthQueryPredecessorReadOperation::new(ReadInputs::reference()),
+    ]));
+```
+
+These types live in `host::application_contribution`. Installation requires
+`SourceScopeCascade`, actual installed operations with no mutation touches,
+application emissions, external effects or executable body, and no duplicate
+operation. The contract participates in producer equality and edition identity.
+Contract membership refuses `UndeclaredPredecessorRead`; declaration alone
+provides no read, mutation or publication authority.
+
+Relational retains the decision root of each live owned publication by reference
+under its existing MVCC head/candidate lifecycle. Succession replaces the hold;
+authored, producer and codec retirement release it. Historical root and origin
+records carry no strong retention chain. The selected commit must match the
+same predecessor that ordinary succession passes to the owned-record custody
+fence; substitution refuses `PredecessorMismatch`.
+
+This checkpoint does **not** expose `DecisionReader::predecessor_observation()`.
+Its current-authorization read-control integration remains pending. Do not use
+an invocation lease or copied inputs to replace that missing observation.
+Cold checkpoints preserve the canonical `origin.basis` coordinate but do not
+persist these live holds or promise their old roots. The cold path and a first
+publication refuse `PredecessorBasisUnavailable`. No new durable format is
+introduced. End-to-end historical-read/dependency behavior is not yet available.
+
 #### Typed producer domain denial
 
 Every provider declares `type DenialValue` in one of three forms:

@@ -39,6 +39,11 @@ pub use output_evaluation::WorthQueryProducerEvaluationIneligibility;
 pub(in crate::domain_computation::primary_graph) use output_evaluation::{
     ComparedProducerOutput, ProducerOutputEvaluation, ProducerOutputEvaluationState,
 };
+mod predecessor_reads;
+pub use predecessor_reads::{
+    WorthQueryPredecessorReadContract, WorthQueryPredecessorReadDenial,
+    WorthQueryPredecessorReadOperation,
+};
 mod input_reuse_contract;
 pub use input_reuse_contract::{
     WorthQueryDecisionContextDependencies, WorthQueryProducerInputReuseContract,
@@ -213,6 +218,7 @@ where
     /// SourceScopeCascade opts complete publications into authored cascade
     /// retirement. Installation requires an entity-specific source query scope.
     const OWNERSHIP: ProducerPublicationOwnership = ProducerPublicationOwnership::Independent;
+    const PREDECESSOR_READS: Option<WorthQueryPredecessorReadContract<Schema>> = None;
     const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = None;
 
     /// Opt in to a bounded actual output-field evaluation. The field must belong

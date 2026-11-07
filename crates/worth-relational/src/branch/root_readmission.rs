@@ -148,6 +148,7 @@ impl RelationalBranchRoot {
 
     fn with_committed(&self, committed: RelationalCommittedBranchRoot) -> Arc<Self> {
         Arc::new(Self {
+            publication_bases: Default::default(),
             content: self.content.clone(),
             // The callers preserve this exact root, schema and content binding.
             managed_source_image: self.managed_source_image.clone(),
