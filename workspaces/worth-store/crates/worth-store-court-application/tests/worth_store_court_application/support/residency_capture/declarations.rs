@@ -14,7 +14,19 @@ pub(crate) use {
 pub(crate) use {crate::batches, crate::durable_run, crate::workload};
 
 pub(crate) fn members(home: &ReadmittedApplicationHome) -> Vec<AnchoredRecordMemberLocator> {
-    home.physical_serving_for_test()
+    read_members(home.physical_serving_for_test())
+}
+
+pub(crate) fn members_of_world(
+    fixture: &worth_store_testkit_application_oracle::facade::world_home::WorldHomeFixture,
+) -> Vec<AnchoredRecordMemberLocator> {
+    read_members(fixture.home.physical_serving_for_test())
+}
+
+fn read_members(
+    serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
+) -> Vec<AnchoredRecordMemberLocator> {
+    serving
         .anchored_records()
         .unwrap()
         .read(

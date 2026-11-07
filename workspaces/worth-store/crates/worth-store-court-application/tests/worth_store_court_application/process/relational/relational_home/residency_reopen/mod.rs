@@ -1,5 +1,5 @@
 //! The production home must serve an untouched cold directory after reopen.
-use crate::residency_capture::members;
+use crate::residency_capture::members_of_world;
 use {
     worth_relational::facade::history::BranchId, worth_relational::facade::identity::PartitionId,
 };
@@ -10,7 +10,14 @@ fn reopen_keeps_regions_cold_and_a_point_read_and_commit_demand_only_their_parti
     let location = directory.path().join("home");
     let host = crate::workload::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
-    let home = crate::durable_run::open(&location, &execution).unwrap();
+    let fixture = crate::durable_run::world::open(
+        &location,
+        crate::schema_transition::SOURCE,
+        true,
+        &execution,
+    )
+    .unwrap();
+    let home = &fixture.home;
     let branch = BranchId("main".into());
     let mut observed = None;
     for round in 0..3 {
@@ -29,15 +36,27 @@ fn reopen_keeps_regions_cold_and_a_point_read_and_commit_demand_only_their_parti
             if observed.is_none() {
                 observed = commit.changed_records.first().cloned();
             }
+            home.relational()
+                .runtime()
+                .snapshots()
+                .release_snapshot(&commit.snapshot)
+                .unwrap();
         }
     }
     let record = observed.unwrap();
     let expected =
         crate::workload::states_of(home.relational().runtime(), std::slice::from_ref(&record));
     home.checkpoint(&execution).unwrap();
-    home.close(&execution);
+    crate::durable_run::world::close(fixture, &execution);
 
-    let home = crate::durable_run::open(&location, &execution).unwrap();
+    let fixture = crate::durable_run::world::open(
+        &location,
+        crate::schema_transition::SOURCE,
+        false,
+        &execution,
+    )
+    .unwrap();
+    let home = &fixture.home;
     let reopened = home.relational().cold_storage_reads();
     assert_eq!(
         reopened.member_reads, 0,
@@ -69,7 +88,7 @@ fn reopen_keeps_regions_cold_and_a_point_read_and_commit_demand_only_their_parti
         "the warmed point read performs no I/O"
     );
 
-    let before = members(&home);
+    let before = members_of_world(&fixture);
     let mut batch = crate::batches::create(1000);
     let worth_relational::facade::transactions::MutationIntent::Create(
         worth_relational::facade::transactions::CreateIntent::Entity(spec),
@@ -78,15 +97,28 @@ fn reopen_keeps_regions_cold_and_a_point_read_and_commit_demand_only_their_parti
         panic!("entity create")
     };
     spec.partition_id = PartitionId(1);
-    crate::workload::commit(home.relational().runtime(), &execution, &branch, batch).unwrap();
+    let committed =
+        crate::workload::commit(home.relational().runtime(), &execution, &branch, batch).unwrap();
+    home.relational()
+        .runtime()
+        .snapshots()
+        .release_snapshot(&committed.snapshot)
+        .unwrap();
     let committed = home.relational().cold_storage_reads();
     assert!(
         committed.member_reads - first_read.member_reads < 12,
         "one partition commit warmed {} additional members",
         committed.member_reads - first_read.member_reads
     );
-    home.close(&execution);
-    let home = crate::durable_run::open(&location, &execution).unwrap();
+    crate::durable_run::world::close(fixture, &execution);
+    let fixture = crate::durable_run::world::open(
+        &location,
+        crate::schema_transition::SOURCE,
+        false,
+        &execution,
+    )
+    .unwrap();
+    let home = &fixture.home;
     let replayed = home.relational().cold_storage_reads();
     assert!(
         replayed.member_reads < 12,
@@ -99,7 +131,7 @@ fn reopen_keeps_regions_cold_and_a_point_read_and_commit_demand_only_their_parti
         replayed,
         "capture must walk leaves without demanding payloads"
     );
-    let added = members(&home)
+    let added = members_of_world(&fixture)
         .into_iter()
         .filter(|member| !before.contains(member))
         .count();
@@ -131,7 +163,8 @@ fn reopen_keeps_regions_cold_and_a_point_read_and_commit_demand_only_their_parti
         crate::workload::states_of(&receiving, std::slice::from_ref(&record)),
         expected
     );
-    home.close(&execution);
+    drop((receiving, embedded));
+    crate::durable_run::world::close(fixture, &execution);
 }
 
 #[test]
@@ -140,7 +173,14 @@ fn a_cold_schema_transition_replays_and_reframes_all_carriers_before_load_free_c
     let location = directory.path().join("home");
     let host = crate::workload::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
-    let home = crate::durable_run::open(&location, &execution).unwrap();
+    let fixture = crate::durable_run::world::open(
+        &location,
+        crate::schema_transition::SOURCE,
+        true,
+        &execution,
+    )
+    .unwrap();
+    let home = &fixture.home;
     let reference = crate::workload::runtime_builder(crate::schema_transition::SOURCE)
         .build()
         .expect("valid native reference runtime configuration");
@@ -155,35 +195,68 @@ fn a_cold_schema_transition_replays_and_reframes_all_carriers_before_load_free_c
             panic!("entity create")
         };
         spec.partition_id = PartitionId(partition);
-        crate::workload::commit(&reference, &execution, &branch, batch.clone()).unwrap();
+        let expected =
+            crate::workload::commit(&reference, &execution, &branch, batch.clone()).unwrap();
         let committed =
             crate::workload::commit(home.relational().runtime(), &execution, &branch, batch)
                 .unwrap();
         records.extend(committed.changed_records.iter().cloned());
+        reference
+            .snapshots()
+            .release_snapshot(&expected.snapshot)
+            .unwrap();
+        home.relational()
+            .runtime()
+            .snapshots()
+            .release_snapshot(&committed.snapshot)
+            .unwrap();
     }
-    crate::schema_transition::commit(
+    let transitioned = crate::schema_transition::commit(
         &reference,
         &execution,
         &branch,
         crate::batches::create(2000),
     )
     .unwrap();
+    reference
+        .snapshots()
+        .release_snapshot(&transitioned.snapshot)
+        .unwrap();
     let expected = crate::workload::states_of(&reference, &records);
     home.checkpoint(&execution).unwrap();
-    home.close(&execution);
+    crate::durable_run::world::close(fixture, &execution);
 
-    let home = crate::durable_run::open(&location, &execution).unwrap();
+    let fixture = crate::durable_run::world::open(
+        &location,
+        crate::schema_transition::SOURCE,
+        false,
+        &execution,
+    )
+    .unwrap();
+    let home = &fixture.home;
     assert_eq!(home.relational().cold_storage_reads().member_reads, 0);
-    crate::schema_transition::commit(
+    let transitioned = crate::schema_transition::commit(
         home.relational().runtime(),
         &execution,
         &branch,
         crate::batches::create(2000),
     )
     .unwrap();
-    home.close(&execution);
+    home.relational()
+        .runtime()
+        .snapshots()
+        .release_snapshot(&transitioned.snapshot)
+        .unwrap();
+    crate::durable_run::world::close(fixture, &execution);
     // The schema transition is in the tail above the original cold manifest.
-    let home = crate::durable_run::open(&location, &execution).unwrap();
+    let fixture = crate::durable_run::world::open(
+        &location,
+        crate::schema_transition::TARGET,
+        false,
+        &execution,
+    )
+    .unwrap();
+    let home = &fixture.home;
     let before = home.relational().cold_storage_reads();
     home.checkpoint(&execution).unwrap();
     assert_eq!(
@@ -191,15 +264,22 @@ fn a_cold_schema_transition_replays_and_reframes_all_carriers_before_load_free_c
         before,
         "carrier reframing must use preparation's admitted contents"
     );
-    home.close(&execution);
+    crate::durable_run::world::close(fixture, &execution);
 
-    let home = crate::durable_run::open(&location, &execution).unwrap();
+    let fixture = crate::durable_run::world::open(
+        &location,
+        crate::schema_transition::TARGET,
+        false,
+        &execution,
+    )
+    .unwrap();
+    let home = &fixture.home;
     assert_eq!(home.relational().cold_storage_reads().member_reads, 0);
     assert_eq!(
         crate::workload::states_of(home.relational().runtime(), &records),
         expected
     );
-    home.close(&execution);
+    crate::durable_run::world::close(fixture, &execution);
 }
 
 #[test]
