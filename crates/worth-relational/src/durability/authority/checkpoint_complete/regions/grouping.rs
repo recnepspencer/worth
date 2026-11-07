@@ -2,19 +2,21 @@
 use super::*;
 use crate::branch::RelationalBranchRootSchemaAuthority;
 use crate::history::data::CommitId;
+use worth_foundational::CanonicalDigestId;
 #[derive(Clone)]
 pub(super) struct RootGroup {
     pub(super) count: usize,
     pub(super) first_ordinal: usize,
     pub(super) schema: Arc<RelationalBranchRootSchemaAuthority>,
-    pub(super) carrier: [u8; 32],
+    pub(super) carrier: CanonicalDigestId,
     pub(super) current_main: bool,
 }
 pub(super) struct Grouped<'a> {
     pub(super) groups: ExecutionOrderedMap<CommitId, RootGroup>,
     pub(super) descriptors:
         ExecutionOrderedMap<(CommitId, usize), &'a RelationalBranchBasisDescriptor>,
-    pub(super) empty: ExecutionOrderedMap<usize, (&'a RelationalBranchBasisDescriptor, [u8; 32])>,
+    pub(super) empty:
+        ExecutionOrderedMap<usize, (&'a RelationalBranchBasisDescriptor, CanonicalDigestId)>,
     pub(super) mirror: Option<CommitId>,
 }
 impl<'a> Grouped<'a> {
@@ -147,7 +149,7 @@ impl<'a> Grouped<'a> {
             crate::execution::check_request(request).map_err(request_stop)?;
             empty.push(RelationalCheckpointEmptyComponent {
                 descriptor: (**descriptor).clone(),
-                schema_carrier_digest: *carrier,
+                schema_carrier_digest: *carrier.bytes(),
             });
         }
         Ok((empty, memory))

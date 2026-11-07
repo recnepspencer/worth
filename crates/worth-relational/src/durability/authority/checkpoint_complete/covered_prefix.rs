@@ -1,6 +1,7 @@
 //! Join current catalog metadata to the exact selected original-input prefix.
 use super::{schemas::CompleteSchemas, source::FrozenOriginalInputs, Denial};
 use worth_execution::ExecutionRequest;
+use worth_foundational::CanonicalDigestId;
 
 pub(super) fn require(
     original: &FrozenOriginalInputs,
@@ -37,8 +38,10 @@ pub(super) fn require(
             || record.commit != index.commit.commit_id
             || record.payload_digest != index.payload_digest
             || record.mutation != input.mutation
-            || schemas.carrier_for(&input.prestate_schema) != Some(record.prestate_schema)
-            || schemas.carrier_for(&input.result_schema) != Some(record.result_schema)
+            || schemas.carrier_for(&input.prestate_schema)
+                != Some(CanonicalDigestId::new(record.prestate_schema))
+            || schemas.carrier_for(&input.result_schema)
+                != Some(CanonicalDigestId::new(record.result_schema))
         {
             return Err(Denial::OriginalAuthorityUnavailable);
         }

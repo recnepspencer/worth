@@ -9,6 +9,7 @@ use crate::durability::{
 use worth_execution::{
     ExecutionArray, ExecutionMemoryReservation, ExecutionOrderedMap, ExecutionRequest,
 };
+use worth_foundational::CanonicalDigestId;
 use worth_proof::{AuthorityMarker, NativeCheckpointOriginalsVerified};
 
 pub(super) struct VerifiedOriginalCustody {
@@ -20,7 +21,7 @@ pub(super) struct VerifiedOriginalCustody {
     pub(super) original: FrozenOriginalInputs,
     // The same actual input owners above prevent address reuse for this local
     // schema-identity lookup. No address is written into the wire image.
-    pub(super) carriers: ExecutionOrderedMap<usize, [u8; 32]>,
+    pub(super) carriers: ExecutionOrderedMap<usize, CanonicalDigestId>,
 }
 
 /// Private concrete payload. Descriptive bytes cannot construct this phase.

@@ -7,11 +7,12 @@ use crate::publication::patch::data::PatchStreamPosition;
 use sha2::{Digest as _, Sha256};
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
+use worth_foundational::CanonicalDigestId;
 
 pub(crate) struct PreparedOriginalCanonicalPayload {
     envelope: Arc<CanonicalCommitEnvelope>,
-    canonical_leaf: [u8; 32],
-    inputs_leaf: [u8; 32],
+    canonical_leaf: CanonicalDigestId,
+    inputs_leaf: CanonicalDigestId,
 }
 impl PreparedOriginalCanonicalPayload {
     pub(crate) fn capture(
@@ -22,10 +23,13 @@ impl PreparedOriginalCanonicalPayload {
             envelope.seal_recorded_original_inputs();
             let mut canonical = CommitmentWriter::new(Sha256::new(), context);
             canonical.value(&AuthoritativeArtifactEnvelopeRef::new(&envelope))?;
-            let canonical_leaf = canonical.hash.finalize().into();
+            let canonical_leaf = CanonicalDigestId::new(canonical.hash.finalize().into());
             let mut inputs = CommitmentWriter::new(Sha256::new(), context);
             inputs.value(&envelope.recorded_original_inputs())?;
-            Ok((canonical_leaf, inputs.hash.finalize().into()))
+            Ok((
+                canonical_leaf,
+                CanonicalDigestId::new(inputs.hash.finalize().into()),
+            ))
         })?;
         Ok(Self {
             envelope,
@@ -48,8 +52,8 @@ impl PreparedOriginalCanonicalPayload {
             position.0,
             self.envelope.commit.commit_id.0,
             Sha256::digest(&bytes[..length]).into(),
-            self.canonical_leaf,
-            self.inputs_leaf,
+            *self.canonical_leaf.bytes(),
+            *self.inputs_leaf.bytes(),
         )
     }
 }

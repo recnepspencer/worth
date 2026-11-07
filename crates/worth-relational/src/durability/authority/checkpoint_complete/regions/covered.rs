@@ -2,9 +2,13 @@
 use super::*;
 use crate::history::data::CommitId;
 use crate::identity::data::PartitionId;
+use worth_foundational::CanonicalDigestId;
 
 pub(super) struct CoveredRegions<'a> {
-    rows: ExecutionOrderedMap<(CommitId, PartitionId, [u8; 32]), &'a RelationalCheckpointRegion>,
+    rows: ExecutionOrderedMap<
+        (CommitId, PartitionId, CanonicalDigestId),
+        &'a RelationalCheckpointRegion,
+    >,
 }
 impl<'a> CoveredRegions<'a> {
     pub(super) fn capture(
@@ -31,7 +35,7 @@ impl<'a> CoveredRegions<'a> {
                         &(
                             root.commit_id,
                             leaf.partition_id,
-                            root.schema_carrier_digest,
+                            CanonicalDigestId::new(root.schema_carrier_digest),
                         ),
                         &leaf,
                         *request,
@@ -46,7 +50,7 @@ impl<'a> CoveredRegions<'a> {
         &self,
         commit: CommitId,
         partition: PartitionId,
-        schema: [u8; 32],
+        schema: CanonicalDigestId,
     ) -> Option<&RelationalCheckpointRegion> {
         self.rows.get(&(commit, partition, schema)).copied()
     }

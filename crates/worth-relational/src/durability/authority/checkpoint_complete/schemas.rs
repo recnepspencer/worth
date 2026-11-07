@@ -7,9 +7,10 @@ use crate::durability::data::{
 };
 use std::{marker::PhantomData, sync::Arc};
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
+use worth_foundational::CanonicalDigestId;
 
 pub(super) struct CompleteSchemas<'a> {
-    original: ExecutionOrderedMap<usize, [u8; 32]>,
+    original: ExecutionOrderedMap<usize, CanonicalDigestId>,
     images: CheckpointSchemaImages,
     // Pointer lookup is valid only while the actual immutable input owners
     // remain borrowed. An unrelated later allocation cannot reuse an address.
@@ -110,21 +111,24 @@ impl<'a> CompleteSchemas<'a> {
     pub(super) fn carrier_for(
         &self,
         authority: &RelationalBranchRootSchemaAuthority,
-    ) -> Option<[u8; 32]> {
+    ) -> Option<CanonicalDigestId> {
         self.original
             .get(&(authority as *const RelationalBranchRootSchemaAuthority as usize))
             .copied()
     }
     pub(super) fn into_parts(
         self,
-    ) -> (CheckpointSchemaImages, ExecutionOrderedMap<usize, [u8; 32]>) {
+    ) -> (
+        CheckpointSchemaImages,
+        ExecutionOrderedMap<usize, CanonicalDigestId>,
+    ) {
         (self.images, self.original)
     }
 }
 fn record(
     authority: &Arc<RelationalBranchRootSchemaAuthority>,
-    identities: &mut ExecutionOrderedMap<usize, [u8; 32]>,
-    images: &mut ExecutionOrderedMap<[u8; 32], DurableBranchRootSchemaImage>,
+    identities: &mut ExecutionOrderedMap<usize, CanonicalDigestId>,
+    images: &mut ExecutionOrderedMap<CanonicalDigestId, DurableBranchRootSchemaImage>,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<(), Denial> {
     crate::execution::check_request(request).map_err(Denial::Request)?;
@@ -139,7 +143,7 @@ fn record(
     let image = authority
         .descriptive_image_for_request(request)
         .map_err(crate::durability::checkpoint_history::capture::capture_stop)?;
-    let carrier = image.carrier_digest();
+    let carrier = CanonicalDigestId::new(image.carrier_digest());
     if let Some(previous) = images.get(&carrier) {
         if previous != &image {
             return Err(Denial::OriginalAuthorityUnavailable);

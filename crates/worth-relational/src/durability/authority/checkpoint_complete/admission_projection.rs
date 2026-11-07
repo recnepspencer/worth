@@ -1,6 +1,7 @@
 //! Project original roles only after the protected original fold has verified.
 use super::{verified_originals::VerifiedCheckpointOriginals, Denial};
 use crate::durability::checkpoint_admission::EncodedAdmissionRow;
+use worth_foundational::CanonicalDigestId;
 mod outputs;
 pub(in crate::durability) mod reference;
 pub(in crate::durability) mod root_directory;
@@ -24,9 +25,9 @@ pub struct CapturedRelationalCheckpointAdmissionImage {
         std::sync::Arc<crate::durability::checkpoint_admission::PreparedCheckpointCaptureBase>,
     >,
     roots: ExecutionImmutableBytes,
-    checkpoint_digest: [u8; 32],
-    source_digest: [u8; 32],
-    initial_digest: [u8; 32],
+    checkpoint_digest: CanonicalDigestId,
+    source_digest: CanonicalDigestId,
+    initial_digest: CanonicalDigestId,
     covered: u64,
     transitions: u64,
 }
@@ -82,14 +83,14 @@ impl CapturedRelationalCheckpointAdmissionImage {
             &CheckpointAdmissionCut::new(
                 CheckpointAdmissionScope::Home {
                     home,
-                    native_origin: self.initial_digest,
-                    complete_source_digest: self.source_digest,
+                    native_origin: *self.initial_digest.bytes(),
+                    complete_source_digest: *self.source_digest.bytes(),
                     world_through,
                     world_image_digest,
                 },
                 self.covered,
                 self.transitions,
-                self.checkpoint_digest,
+                *self.checkpoint_digest.bytes(),
             ),
             request,
         )
@@ -119,17 +120,17 @@ impl CapturedRelationalCheckpointAdmissionImage {
                 return Err(Refusal::BindingMismatch(Mismatch::Scope))
             }
         };
-        if native_origin != &self.initial_digest {
+        if native_origin != self.initial_digest.bytes() {
             return Err(Refusal::BindingMismatch(Mismatch::NativeOrigin));
         }
-        if complete_source_digest != &self.source_digest {
+        if complete_source_digest != self.source_digest.bytes() {
             return Err(Refusal::BindingMismatch(Mismatch::Source));
         }
         if cut.canonical_through() != self.covered || cut.transitions_through() != self.transitions
         {
             return Err(Refusal::BindingMismatch(Mismatch::Cut));
         }
-        if cut.checkpoint_digest() != &self.checkpoint_digest {
+        if cut.checkpoint_digest() != self.checkpoint_digest.bytes() {
             return Err(Refusal::BindingMismatch(Mismatch::Checkpoint));
         }
         let image =
@@ -186,7 +187,7 @@ pub(super) fn capture(
         rows.push(row::encode_original(
             &original.envelope,
             original.position,
-            original.original_payload_digest,
+            CanonicalDigestId::new(original.original_payload_digest),
             original.artifact.roots(),
             *carrier,
             request,
@@ -214,7 +215,7 @@ pub(super) fn capture(
         roots,
         checkpoint_digest: digest(originals.checkpoint.bytes(), request)?,
         source_digest: digest(originals.source_artifact.as_bytes(), request)?,
-        initial_digest: originals.source_artifact.initial_coordinate().1,
+        initial_digest: CanonicalDigestId::new(originals.source_artifact.initial_coordinate().1),
         covered: originals.source_artifact.covered().0,
         transitions: originals.source_artifact.covered_transitions().0,
     })
@@ -231,8 +232,9 @@ fn encode(
     )
     .map_err(crate::durability::checkpoint_history::capture::capture_stop)
 }
-fn digest(bytes: &[u8], request: &ExecutionRequest<'_, '_>) -> Result<[u8; 32], Denial> {
+fn digest(bytes: &[u8], request: &ExecutionRequest<'_, '_>) -> Result<CanonicalDigestId, Denial> {
     crate::durability::checkpoint_admission::capture_digest(bytes, request)
+        .map(CanonicalDigestId::new)
 }
 
 fn admission_stop(

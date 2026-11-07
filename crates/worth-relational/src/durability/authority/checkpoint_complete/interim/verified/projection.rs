@@ -5,6 +5,7 @@ use crate::durability::{
     data::RelationalCheckpointManifest,
 };
 use worth_execution::ExecutionRequestArrayBuilder;
+use worth_foundational::CanonicalDigestId;
 use worth_proof::NativeCheckpointOriginalsVerified;
 
 impl FrozenMemoryOriginals {
@@ -51,9 +52,9 @@ impl FrozenMemoryOriginals {
             rows.push(admission_projection::row::encode_original(
                 &frame.envelope,
                 entry.position,
-                entry.payload_digest,
+                CanonicalDigestId::new(entry.payload_digest),
                 &entry.root,
-                carrier,
+                CanonicalDigestId::new(carrier),
                 request,
             )?)
             .map_err(array_stop)?;

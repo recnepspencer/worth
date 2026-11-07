@@ -9,6 +9,7 @@ use serde::{
     Serialize, Serializer,
 };
 use worth_execution::{ExecutionImmutableBytes, ExecutionRequest};
+use worth_foundational::CanonicalDigestId;
 
 pub(in crate::durability::authority::checkpoint_complete) fn encode(
     manifest: &RelationalCheckpointManifest,
@@ -51,7 +52,7 @@ impl Serialize for RootRows<'_> {
                 Header {
                     commit: header.commit_id,
                     components: Components(&header.recorded_components),
-                    schema: header.schema_carrier_digest,
+                    schema: CanonicalDigestId::new(header.schema_carrier_digest),
                     regions: &header.regions,
                 },
                 original.output_publication_positions.checkpoint_view(),
@@ -64,7 +65,7 @@ impl Serialize for RootRows<'_> {
 struct Header<'a> {
     commit: crate::history::data::CommitId,
     components: Components<'a>,
-    schema: [u8; 32],
+    schema: CanonicalDigestId,
     regions: &'a [RelationalCheckpointRegion],
 }
 struct Components<'a>(&'a [crate::branch::RelationalBranchBasisDescriptor]);
@@ -85,7 +86,7 @@ impl Serialize for EmptyRows<'_> {
         for header in &self.0.retained_empty_components {
             sequence.serialize_element(&Empty {
                 descriptor: reference::component(&header.descriptor),
-                schema: header.schema_carrier_digest,
+                schema: CanonicalDigestId::new(header.schema_carrier_digest),
             })?;
         }
         sequence.end()
@@ -94,7 +95,7 @@ impl Serialize for EmptyRows<'_> {
 #[derive(Serialize)]
 struct Empty<'a> {
     descriptor: reference::Component<'a>,
-    schema: [u8; 32],
+    schema: CanonicalDigestId,
 }
 
 /// Join authenticated projections to the SAME CHK18 directory. The manifest's
@@ -128,7 +129,7 @@ pub(in crate::durability) fn validate_manifest(
                 .map_err(crate::durability::checkpoint_admission::projected_stop)?;
             require_projection(&Header {
                 commit: header.commit_id, components: Components(&header.recorded_components),
-                schema: header.schema_carrier_digest, regions: &header.regions,
+                schema: CanonicalDigestId::new(header.schema_carrier_digest), regions: &header.regions,
             }, first.ok_or(Refusal::InvalidProjectedMeaning)?.0, request)?;
             ordinal += 1;
             Ok(())

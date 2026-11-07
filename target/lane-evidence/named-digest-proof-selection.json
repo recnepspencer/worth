@@ -1,0 +1,17 @@
+[
+  "fixed_digest_encoding_has_value_independent_width_and_round_trips",
+  "fixed_byte_encoding_preserves_nonbyte_tuples_and_variable_byte_sequences",
+  "fixed_byte_probe_obeys_the_underlying_serializer_mode",
+  "fixed_byte_probe_does_not_format_nonbyte_tuple_values",
+  "named_admission_digests_preserve_existing_binary_bytes_and_reject_integer_arrays",
+  "original_checkpoint_capture_seals_each_projected_role_independently",
+  "checkpoint_image_sealing_refuses_a_different_original_source_or_cut",
+  "checkpoint_image_refuses_unresolved_routes_outside_its_canonical_roster",
+  "checkpoint_image_seal_work_is_independent_of_digest_octet_values",
+  "checkpoint_image_records_logical_reference_coordinates_across_runtime_instances",
+  "selected_checkpoint_without_admission_image_refuses_before_canonical_body_reads",
+  "empty_interim_image_requires_its_actual_recovered_native_receiver",
+  "checkpoint_image_restores_publication_bases_and_creations_without_canonical_body_reads",
+  "complete_source_recovery_restores_original_inputs_for_another_complete_capture",
+  "cold_complete_recapture_preserves_original_index_generations_and_live_tail"
+]

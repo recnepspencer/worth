@@ -1,4 +1,5 @@
 //! Emit required original component roots from independently reconstructed Full DATA.
+use worth_foundational::CanonicalDigestId;
 mod covered;
 mod emission;
 mod grouping;
@@ -7,7 +8,7 @@ pub(super) enum CheckpointMirror<'a> {
     Substrate {
         edition: &'a crate::runtime::PartitionEdition,
         schema: &'a crate::branch::RelationalBranchRootSchemaAuthority,
-        carrier: [u8; 32],
+        carrier: CanonicalDigestId,
     },
 }
 use super::{branches::BranchImages, roots::CapturedRoots, schemas::CompleteSchemas};
@@ -27,7 +28,7 @@ pub(super) struct RegionOutput {
     roots: CheckpointRoots,
     empty: Vec<RelationalCheckpointEmptyComponent>,
     mirror: Vec<RelationalCheckpointRegion>,
-    mirror_schema: Option<[u8; 32]>,
+    mirror_schema: Option<CanonicalDigestId>,
     publications: ExecutionArray<RelationalCheckpointRegionPublication>,
     cells: ExecutionArray<Arc<RelationalRegionResidency>>,
     _empty_memory: Option<ExecutionMemoryReservation>,
@@ -47,7 +48,7 @@ impl RegionOutput {
         draft.roots = self.roots;
         draft.retained_empty_components = self.empty;
         draft.mirror = self.mirror;
-        draft.mirror_schema = self.mirror_schema;
+        draft.mirror_schema = self.mirror_schema.map(|digest| *digest.bytes());
         draft.allocations.empty_components = self._empty_memory;
         draft.allocations.mirror = self._mirror_memory;
         RegionCaptureCustody {

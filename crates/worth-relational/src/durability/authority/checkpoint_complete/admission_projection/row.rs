@@ -3,13 +3,14 @@ use super::{encode, outputs, reference, Denial};
 use crate::durability::checkpoint_admission::{AdmissionRowKey, EncodedAdmissionRow};
 use serde::{ser::SerializeSeq, Serialize, Serializer};
 use worth_execution::{ExecutionArray, ExecutionRequest, ExecutionRequestArrayBuilder};
+use worth_foundational::CanonicalDigestId;
 
 pub(in crate::durability::authority::checkpoint_complete) fn encode_original(
     envelope: &crate::history::data::CanonicalCommitEnvelope,
     position: crate::publication::patch::data::PatchStreamPosition,
-    payload_digest: [u8; 32],
+    payload_digest: CanonicalDigestId,
     descriptor: &crate::branch::RelationalBranchRootDescriptor,
-    carrier: [u8; 32],
+    carrier: CanonicalDigestId,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<EncodedAdmissionRow, Denial> {
     let visibility = crate::branch::checkpoint_visibility::from_original_commit_data(
@@ -65,10 +66,10 @@ pub(in crate::durability::authority::checkpoint_complete) fn encode_original(
         )?,
         encode(
             &Visibility {
-                storage: *descriptor.truth_root(),
-                schema: *descriptor.schema_root(),
+                storage: CanonicalDigestId::new(*descriptor.truth_root()),
+                schema: CanonicalDigestId::new(*descriptor.schema_root()),
                 correctness,
-                commitment: visibility.digest(),
+                commitment: CanonicalDigestId::new(visibility.digest()),
             },
             request,
         )?,
@@ -96,21 +97,21 @@ struct Axes<'a> {
 struct Coordinates<'a> {
     receipt: &'a crate::history::data::RelationalCommitReceipt,
     position: crate::publication::patch::data::PatchStreamPosition,
-    digest: [u8; 32],
+    digest: CanonicalDigestId,
     roots: &'a crate::branch::RelationalBranchRootDescriptor,
 }
 #[derive(Serialize)]
 struct Schema {
     version: crate::schema::data::SchemaVersionId,
     semantics: crate::schema::data::DescriptorSemanticsVersion,
-    carrier: [u8; 32],
+    carrier: CanonicalDigestId,
 }
 #[derive(Serialize)]
 struct Visibility {
-    storage: [u8; 32],
-    schema: [u8; 32],
+    storage: CanonicalDigestId,
+    schema: CanonicalDigestId,
     correctness: u8,
-    commitment: [u8; 32],
+    commitment: CanonicalDigestId,
 }
 struct Created<'a>(&'a [&'a crate::publication::patch::data::PublishedAuthoritativeRecordPatch]);
 impl Serialize for Created<'_> {

@@ -1,6 +1,7 @@
 //! Each actual Cell/schema pair emits once; all ACK sources stay strongly held.
 use super::*;
 use worth_execution::ExecutionRequestArrayBuilder;
+use worth_foundational::CanonicalDigestId;
 #[derive(Clone)]
 struct Cached {
     leaf: RelationalCheckpointRegion,
@@ -32,7 +33,7 @@ pub(super) fn capture(
     )?;
     let mut mirror = Vec::with_capacity(mirror_count);
     let mut mirror_schema = None;
-    let mut cache = ExecutionOrderedMap::<(usize, [u8; 32]), Cached>::default();
+    let mut cache = ExecutionOrderedMap::<(usize, CanonicalDigestId), Cached>::default();
     let mut cells = ExecutionOrderedMap::<usize, Arc<RelationalRegionResidency>>::default();
     for (commit, group) in grouped.groups.iter() {
         crate::execution::check_request(request).map_err(request_stop)?;
@@ -83,7 +84,7 @@ pub(super) fn capture(
                     }
                     None => {
                         let captured = region.cell.capture_complete_for_request(
-                            request, &group.schema, group.carrier, dictionary,
+                            request, &group.schema, *group.carrier.bytes(), dictionary,
                         ).map_err(crate::durability::checkpoint_history::capture::capture_stop)?;
                         for member in captured.members {
                             let locator = member.locator();
@@ -132,7 +133,7 @@ pub(super) fn capture(
         output
             .push(
                 root.finish(
-                    group.carrier,
+                    *group.carrier.bytes(),
                     crate::durability::checkpoints::content::root_capture::capture(
                         request,
                         source.retained_content(),
@@ -163,7 +164,12 @@ pub(super) fn capture(
                     crate::durability::checkpoint_history::capture::capture_stop(cause.into())
                 })?;
                 let captured = lease
-                    .capture_checkpoint_data_for_request(request, schema, carrier, dictionary)
+                    .capture_checkpoint_data_for_request(
+                        request,
+                        schema,
+                        *carrier.bytes(),
+                        dictionary,
+                    )
                     .map_err(crate::durability::checkpoint_history::capture::capture_stop)?;
                 for member in captured.members {
                     let locator = member.locator();
