@@ -14,39 +14,8 @@ use worth_relational::facade::{
 };
 use worth_testkit_relational::maintenance::assert_change_bounded;
 mod queries;
-mod source;
-use source::Source;
+use super::cold_checkpoint::{reopen, ColdCheckpointSource as Source};
 
-fn reopen(
-    request: &ExecutionRequest<'_, '_>,
-    checkpoint: &RelationalNativeCheckpoint,
-    source: Arc<Source>,
-) -> RelationalRuntime {
-    let mut runtime = World::new().runtime;
-    let recovery = RelationalDurableRecoverySource::new(
-        Some(RelationalDurableCheckpointSource::new(
-            checkpoint.covered_position().unwrap(),
-            checkpoint.covered_branch_transitions().unwrap(),
-            RelationalNativeCheckpoint::from_untrusted_bytes(checkpoint.bytes().to_vec()),
-        )),
-        vec![],
-        vec![],
-        source,
-    );
-    let plan = runtime
-        .durability()
-        .recovery_plan_from_source(
-            request,
-            recovery,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
-    runtime
-        .durability_recovery()
-        .recover(request, plan)
-        .unwrap();
-    runtime
-}
 fn pin(
     runtime: &RelationalRuntime,
     request: &ExecutionRequest<'_, '_>,

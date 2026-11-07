@@ -173,6 +173,10 @@ admits its reached regions under the original request. `RelationalPinnedRead::sy
 returns an owned persistent snapshot of the meanings admitted so far. For a cold
 symbol, use `with_symbol_text(request, symbol, inspect)` to borrow its native
 text after admitting only the required page; preserve typed storage refusals.
+`inspect_snapshot(request, handle)` reads live counts from that exact root's
+carried region facts without materializing record regions. Checkpoint restore
+checks the facts against the selected root commitment, and member admission
+independently checks them against actual record data.
 
 Native conditional observation owners borrow the genuine computed effect through
 `BridgeConditionalCausalObservation::computed_evaluation()` and its observed

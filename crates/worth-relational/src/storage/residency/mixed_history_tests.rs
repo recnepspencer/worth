@@ -255,6 +255,7 @@ pub(super) fn recapture(
             head: members.head.0,
             history: members.history.0,
             kind_authority: members.kind_authority,
+            live_counts: super::LiveRecordCounts::from_partition(partition),
             content_digest: commitment.digest(partition.partition_id),
             source: source.clone(),
             ..cold.clone()

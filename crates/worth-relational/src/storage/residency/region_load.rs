@@ -291,6 +291,7 @@ fn verify_leaf(
     commitment: &PartitionContentCommitment,
 ) -> Result<(), Cause> {
     if commitment.digest(cold.partition_id) != cold.content_digest
+        || super::LiveRecordCounts::from_partition(partition) != cold.live_counts
         || partition.entity_arena.slot_count() != cold.entity_slots
         || partition.relation_arena.slot_count() != cold.relation_slots
         || partition.entity_arena.lifecycle_counts().unavailable

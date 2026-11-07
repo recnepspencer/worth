@@ -25,7 +25,7 @@ fn cold_visibility_doors_preserve_storage_failure_and_never_advance_publication(
             .unwrap();
         door.prepare(&runtime);
         let before = runtime.history().latest_patch_stream_position();
-        if door.is_lazy_capability_pin() {
+        if door.is_metadata_only_read() {
             door.run(execution, &runtime, entity).unwrap();
             assert_eq!(counter.reads.load(Ordering::Relaxed), 0);
             assert_eq!(runtime.history().latest_patch_stream_position(), before);

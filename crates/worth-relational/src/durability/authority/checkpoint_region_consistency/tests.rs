@@ -10,9 +10,11 @@ use crate::storage::substrate::{EntityArena, RelationArena};
 fn every_leaf_disagreement_refuses_with_the_selected_region_and_capture_posture() {
     let (selected, matching) = leaf_values();
     validate(&selected, &matching).unwrap();
-    let disagreements: [fn(&mut RelationalCheckpointRegion); 7] = [
+    let disagreements: [fn(&mut RelationalCheckpointRegion); 9] = [
         |leaf| leaf.partition_id = PartitionId(11),
         |leaf| leaf.content_digest[0] ^= 1,
+        |leaf| leaf.live_counts.entities += 1,
+        |leaf| leaf.live_counts.relations += 1,
         |leaf| leaf.entity_slots += 1,
         |leaf| leaf.relation_slots += 1,
         |leaf| leaf.unavailable_records += 1,
@@ -66,6 +68,7 @@ fn leaf_values() -> (RelationalRootRegionCheckpoint, RelationalCheckpointRegion)
             head: [2; 32],
             history: [3; 32],
         },
+        live_counts: Default::default(),
         entity_slots: 0,
         relation_slots: 0,
         unavailable_records: 0,
@@ -80,6 +83,7 @@ fn leaf_values() -> (RelationalRootRegionCheckpoint, RelationalCheckpointRegion)
         partition_id,
         content_digest: selected.content_digest,
         kind_authority: selected.kind_commitment,
+        live_counts: Default::default(),
         entity_slots: 0,
         relation_slots: 0,
         unavailable_records: 0,

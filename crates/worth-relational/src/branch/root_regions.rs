@@ -8,6 +8,8 @@ use super::root::{
 };
 
 mod allocation_visitation;
+mod commitment;
+use commitment::{empty_commitment, node_commitment};
 mod partition_visitation;
 pub(crate) use partition_visitation::RelationalPartitionVisit;
 
@@ -20,6 +22,7 @@ pub(crate) struct RelationalPersistentRegionSet {
     set_id: u64,
     index_root: Option<Arc<RelationalPersistentRegionNode>>,
     count: usize,
+    live_counts: crate::storage::residency::LiveRecordCounts,
     materialization_unavailable_records: usize,
 }
 #[derive(Debug)]
@@ -47,6 +50,13 @@ impl RelationalPersistentRegionSet {
         issuer: &RelationalBranchRootIdentityIssuer,
     ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
         let count = regions.len();
+        let live_counts = regions
+            .values()
+            .try_fold(
+                crate::storage::residency::LiveRecordCounts::default(),
+                |sum, region| sum.checked_add(region.live_counts),
+            )
+            .ok_or(RelationalBranchRootCaptureDenial::SlotCountOverflow)?;
         let materialization_unavailable_records = regions
             .values()
             .map(|region| region.materialization_unavailable_records())
@@ -67,6 +77,7 @@ impl RelationalPersistentRegionSet {
             set_id,
             index_root,
             count,
+            live_counts,
             materialization_unavailable_records,
         }))
     }
@@ -80,14 +91,21 @@ impl RelationalPersistentRegionSet {
     ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
         let mut index_root = parent.index_root.clone();
         let mut count = parent.count;
+        let mut live_counts = parent.live_counts;
         let mut materialization_unavailable_records = parent.materialization_unavailable_records;
         for (partition_id, region) in replacements {
             if let Some(previous) = get_region(index_root.as_ref(), partition_id) {
+                live_counts = live_counts
+                    .checked_sub(previous.live_counts)
+                    .ok_or(RelationalBranchRootCaptureDenial::SlotCountOverflow)?;
                 materialization_unavailable_records = materialization_unavailable_records
                     .saturating_sub(previous.materialization_unavailable_records());
             } else {
                 count = count.saturating_add(1);
             }
+            live_counts = live_counts
+                .checked_add(region.live_counts)
+                .ok_or(RelationalBranchRootCaptureDenial::SlotCountOverflow)?;
             materialization_unavailable_records = materialization_unavailable_records
                 .saturating_add(region.materialization_unavailable_records());
             index_root = Some(insert_leaf(
@@ -102,6 +120,9 @@ impl RelationalPersistentRegionSet {
         }
         for partition_id in removed {
             if let Some(previous) = get_region(index_root.as_ref(), partition_id) {
+                live_counts = live_counts
+                    .checked_sub(previous.live_counts)
+                    .ok_or(RelationalBranchRootCaptureDenial::SlotCountOverflow)?;
                 count = count.saturating_sub(1);
                 materialization_unavailable_records = materialization_unavailable_records
                     .saturating_sub(previous.materialization_unavailable_records());
@@ -120,6 +141,7 @@ impl RelationalPersistentRegionSet {
             set_id,
             index_root,
             count,
+            live_counts,
             materialization_unavailable_records,
         }))
     }
@@ -137,6 +159,9 @@ impl RelationalPersistentRegionSet {
         get_region(self.index_root.as_ref(), partition_id)
     }
 
+    pub(crate) fn live_counts(&self) -> crate::storage::residency::LiveRecordCounts {
+        self.live_counts
+    }
     pub(crate) fn len(&self) -> usize {
         self.count
     }
@@ -246,40 +271,6 @@ fn insert_leaf(
         leaf: current_leaf,
         commitment,
     }))
-}
-
-fn empty_commitment() -> [u8; 32] {
-    use sha2::{Digest, Sha256};
-    Sha256::digest(b"worth.relational.branch-region.empty.v3\0").into()
-}
-
-fn node_commitment(
-    depth: u32,
-    zero: Option<&Arc<RelationalPersistentRegionNode>>,
-    one: Option<&Arc<RelationalPersistentRegionNode>>,
-    leaf: Option<&RelationalPersistentRegionLeaf>,
-) -> [u8; 32] {
-    use sha2::{Digest, Sha256};
-    let mut digest = Sha256::new();
-    digest.update(b"worth.relational.branch-region.node.v3\0");
-    digest.update(depth.to_be_bytes());
-    digest.update(zero.map_or_else(empty_commitment, |node| node.commitment));
-    digest.update(one.map_or_else(empty_commitment, |node| node.commitment));
-    match leaf {
-        Some(RelationalPersistentRegionLeaf::Present(region)) => {
-            digest.update([1]);
-            digest.update(region.0.partition_id.0.to_be_bytes());
-            digest.update(region.0.content_digest);
-            digest.update(region.0.kind_commitment.head);
-            digest.update(region.0.kind_commitment.history);
-        }
-        Some(RelationalPersistentRegionLeaf::Removed(partition_id)) => {
-            digest.update([2]);
-            digest.update(partition_id.0 .0.to_be_bytes());
-        }
-        None => digest.update([0]),
-    }
-    digest.finalize().into()
 }
 
 fn clone_leaf(

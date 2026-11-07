@@ -239,6 +239,28 @@ pub(super) fn check(
             )
             .unwrap();
     }
+    // Compare carried counts only after the cold/warm restoration and its
+    // original record/route assertions, so this oracle cannot warm that path.
+    let (_, selected) = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    let handle = runtime
+        .snapshots()
+        .snapshot_for_observation(&selected.observation())
+        .unwrap();
+    let counts = runtime
+        .read_truth()
+        .inspect_snapshot(execution, &handle)
+        .unwrap()
+        .unwrap();
+    let rows = runtime
+        .read_truth()
+        .read_snapshot(&handle, execution)
+        .unwrap()
+        .unwrap();
+    assert_eq!(counts.entity_count, rows.entities().len());
+    assert_eq!(counts.relation_count, rows.relations().len());
+    runtime.snapshots().release_snapshot(&handle).unwrap();
 }
 
 pub(super) fn text(

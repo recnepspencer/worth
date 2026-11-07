@@ -1,6 +1,9 @@
 use super::*;
 
 impl RelationalBranchRoot {
+    pub(crate) fn live_counts(&self) -> crate::storage::residency::LiveRecordCounts {
+        self.regions.live_counts()
+    }
     pub(crate) fn commit_change(
         &self,
     ) -> Option<&Arc<crate::storage::substrate::maintenance::CommitChange>> {
@@ -283,6 +286,7 @@ impl RelationalBranchRoot {
                     partition_id: region.partition_id,
                     content_digest: region.content_digest,
                     kind_commitment: region.kind_commitment,
+                    live_counts: region.live_counts,
                     entity_slots: region.entity_slots,
                     relation_slots: region.relation_slots,
                     unavailable_records: region.materialization_unavailable_records(),

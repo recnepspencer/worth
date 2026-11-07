@@ -18,7 +18,7 @@ fn every_full_read_door_admits_its_runtime_dictionary_or_preserves_page_damage()
             let fixture = reopened(execution);
             door.prepare(&fixture.runtime);
             let frontier = fixture.runtime.history().latest_patch_stream_position();
-            if door.is_lazy_capability_pin() {
+            if door.is_metadata_only_read() {
                 let reads = fixture.source.reads.load(Ordering::Relaxed);
                 *fixture.source.failed_member.lock().unwrap() = Some(fixture.historical_page);
                 door.run(execution, &fixture.runtime, fixture.entity)

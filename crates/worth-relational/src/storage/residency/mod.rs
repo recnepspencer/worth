@@ -1,4 +1,6 @@
 //! Shared region residency. Only an accepted, counted lease lends read views.
+mod live_counts;
+pub(crate) use live_counts::LiveRecordCounts;
 mod cell;
 mod content_capture;
 pub(crate) use content_capture::RegionContentFailure;

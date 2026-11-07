@@ -10,6 +10,7 @@ pub(crate) struct RelationalRootRegionCheckpoint {
     pub(crate) partition_id: PartitionId,
     pub(crate) content_digest: [u8; 32],
     pub(crate) kind_commitment: crate::storage::residency::RelationalRegionKindCommitment,
+    pub(crate) live_counts: crate::storage::residency::LiveRecordCounts,
     pub(crate) entity_slots: usize,
     pub(crate) relation_slots: usize,
     pub(crate) unavailable_records: usize,

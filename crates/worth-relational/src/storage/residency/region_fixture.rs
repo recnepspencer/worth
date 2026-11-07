@@ -145,6 +145,7 @@ pub(super) fn region_with_history() -> RegionFixture {
         schema_carrier_digest: schema_digest,
         symbols: symbol_authority,
         content_digest: expected_digest,
+        live_counts: super::LiveRecordCounts::from_partition(&partition),
         entity_slots: partition.entity_arena.slot_count(),
         relation_slots: partition.relation_arena.slot_count(),
         unavailable_records: partition.entity_arena.lifecycle_counts().unavailable

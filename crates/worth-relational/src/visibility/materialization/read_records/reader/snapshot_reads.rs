@@ -9,13 +9,6 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     ) -> Result<Option<SnapshotInspectionSummary>, crate::execution::RelationalExecutionDenialCause>
     {
         crate::execution::check_request(execution)?;
-        let Some(basis) = resolve_snapshot_basis(self.runtime, handle) else {
-            return Ok(None);
-        };
-        basis
-            .root()
-            .demand_all_full(execution, &self.runtime.services.symbols)
-            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         let summary = resolve_snapshot_inspection(self.runtime, handle);
         crate::execution::check_request(execution)?;
         Ok(summary)

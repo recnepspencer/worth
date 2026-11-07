@@ -25,6 +25,7 @@ impl PreparedResidentRegion {
                     .map_err(|_| RegionContentFailure::Adjacency)?,
             );
             let kind_commitment = kind_indexes.commitment();
+            let live_counts = super::LiveRecordCounts::from_partition(&partition);
             let entity_slots = partition.entity_arena.slot_count();
             let relation_slots = partition.relation_arena.slot_count();
             let content_digest = commitment.digest(partition.partition_id);
@@ -36,6 +37,7 @@ impl PreparedResidentRegion {
                 inventory,
                 content_digest,
                 kind_commitment,
+                live_counts,
                 entity_slots,
                 relation_slots,
                 content_values_hashed: hashed,

@@ -1,8 +1,9 @@
 //! Immutable checkpoint placement with observable real member reads.
+use crate::content::historical_kind::fixture::World;
 use std::{
     collections::BTreeMap,
     sync::{
-        atomic::{AtomicBool, Ordering},
+        atomic::{AtomicBool, AtomicU64, Ordering},
         Arc, Mutex,
     },
 };
@@ -13,14 +14,15 @@ use worth_relational::facade::{
 };
 
 #[derive(Debug)]
-pub(super) struct Source {
+pub(super) struct ColdCheckpointSource {
     members: BTreeMap<RelationalDurableMemberLocator, Vec<u8>>,
     commits: BTreeMap<PatchStreamPosition, Vec<u8>>,
+    pub(super) bytes: AtomicU64,
     pub(super) reads: Mutex<Vec<RelationalDurableMemberLocator>>,
     pub(super) unavailable: AtomicBool,
     pub(super) damaged: AtomicBool,
 }
-impl Source {
+impl ColdCheckpointSource {
     pub(super) fn capture(
         runtime: &RelationalRuntime,
         request: &ExecutionRequest<'_, '_>,
@@ -47,13 +49,14 @@ impl Source {
                     (a.position(), a.as_bytes().to_vec())
                 })
                 .collect(),
+            bytes: AtomicU64::new(0),
             reads: Mutex::new(Vec::new()),
             unavailable: AtomicBool::new(false),
             damaged: AtomicBool::new(false),
         })
     }
 }
-impl RelationalDurableColdSource for Source {
+impl RelationalDurableColdSource for ColdCheckpointSource {
     fn retain_members(
         &self,
         members: &[RelationalDurableMemberLocator],
@@ -78,10 +81,12 @@ impl RelationalDurableColdSource for Source {
         if self.unavailable.load(Ordering::SeqCst) {
             return Err(Cause::SourceUnavailable);
         }
-        bounded(
+        let bytes = bounded(
             self.members.get(&locator).ok_or(Cause::MissingMember)?,
             limit,
-        )
+        )?;
+        self.bytes.fetch_add(bytes.len() as u64, Ordering::SeqCst);
+        Ok(bytes)
     }
     fn read_commit(&self, position: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, Cause> {
         bounded(
@@ -100,4 +105,35 @@ fn bounded(bytes: &[u8], limit: u64) -> Result<Vec<u8>, Cause> {
         });
     }
     Ok(bytes.to_vec())
+}
+
+pub(super) fn reopen(
+    request: &ExecutionRequest<'_, '_>,
+    checkpoint: &RelationalNativeCheckpoint,
+    source: Arc<ColdCheckpointSource>,
+) -> RelationalRuntime {
+    let mut runtime = World::new().runtime;
+    let recovery = RelationalDurableRecoverySource::new(
+        Some(RelationalDurableCheckpointSource::new(
+            checkpoint.covered_position().unwrap(),
+            checkpoint.covered_branch_transitions().unwrap(),
+            RelationalNativeCheckpoint::from_untrusted_bytes(checkpoint.bytes().to_vec()),
+        )),
+        vec![],
+        vec![],
+        source,
+    );
+    let plan = runtime
+        .durability()
+        .recovery_plan_from_source(
+            request,
+            recovery,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    runtime
+        .durability_recovery()
+        .recover(request, plan)
+        .unwrap();
+    runtime
 }

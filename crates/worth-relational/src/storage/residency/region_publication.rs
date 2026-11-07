@@ -29,6 +29,7 @@ pub(crate) struct PreparedResidentRegion {
     pub(crate) inventory: RelationalPartitionAllocationInventory,
     pub(crate) content_digest: [u8; 32],
     pub(crate) kind_commitment: RelationalRegionKindCommitment,
+    pub(crate) live_counts: crate::storage::residency::LiveRecordCounts,
     pub(crate) entity_slots: usize,
     pub(crate) relation_slots: usize,
     pub(crate) content_values_hashed: u64,
@@ -107,6 +108,7 @@ impl PreparedResidentRegion {
         let history_presence = previous
             .history_presence
             .updated(&previous.partition, &partition);
+        let live_counts = super::LiveRecordCounts::from_partition(&partition);
         let partition_id = partition.partition_id;
         let retention = if !history_presence.is_complete() {
             RelationalRegionRetention::from_head_lease(RelationalRegionResidency::resident_head(
@@ -130,6 +132,7 @@ impl PreparedResidentRegion {
             inventory,
             content_digest,
             kind_commitment,
+            live_counts,
             entity_slots,
             relation_slots,
             content_values_hashed,

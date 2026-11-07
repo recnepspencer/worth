@@ -142,3 +142,19 @@ fn tampered_carried_kind_commitment_is_refused_during_cold_restore() {
     let failure = head_demand(&cell, 1 << 24).unwrap_err();
     assert_eq!(failure.cause, Cause::IntegrityMismatch);
 }
+
+#[test]
+fn carried_live_counts_are_checked_against_admitted_member_rows() {
+    for full in [false, true] {
+        let fixture = region_with_history();
+        let mut cold = fixture.cold.clone();
+        cold.live_counts.entities += 1;
+        let cell = RelationalRegionResidency::cold(cold).unwrap();
+        let failure = if full {
+            full_demand(&cell, 1 << 24).unwrap_err()
+        } else {
+            head_demand(&cell, 1 << 24).unwrap_err()
+        };
+        assert_integrity_refusal(failure);
+    }
+}

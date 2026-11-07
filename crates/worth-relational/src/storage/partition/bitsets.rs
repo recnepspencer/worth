@@ -3,6 +3,7 @@ use crate::storage::substrate::SharedMap;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct DenseSlotBitSet {
     words: SharedMap<usize, u64>,
+    population: usize,
 }
 
 impl DenseSlotBitSet {
@@ -30,6 +31,7 @@ impl DenseSlotBitSet {
     pub(crate) fn with_capacity(_capacity: usize) -> Self {
         Self {
             words: SharedMap::new(),
+            population: 0,
         }
     }
 
@@ -66,6 +68,8 @@ impl DenseSlotBitSet {
         } else {
             previous & !(1 << bit)
         };
+        self.population =
+            self.population - previous.count_ones() as usize + next.count_ones() as usize;
         if next == previous {
             0
         } else if next == 0 {
@@ -76,10 +80,7 @@ impl DenseSlotBitSet {
     }
 
     pub(crate) fn count_ones(&self) -> usize {
-        self.words
-            .values()
-            .map(|word| word.count_ones() as usize)
-            .sum()
+        self.population
     }
 
     pub(crate) fn count_ones_in_range(&self, start: usize, end: usize) -> usize {
@@ -150,7 +151,9 @@ impl DenseSlotBitSet {
     }
 
     pub(crate) fn from_words(words: Vec<u64>) -> Self {
+        let population = words.iter().map(|word| word.count_ones() as usize).sum();
         Self {
+            population,
             words: words
                 .into_iter()
                 .enumerate()
@@ -160,13 +163,14 @@ impl DenseSlotBitSet {
     }
 
     pub(crate) fn from_sparse_words(words: Vec<(u64, u64)>) -> Self {
-        Self {
-            words: words
-                .into_iter()
-                .filter(|(_, word)| *word != 0)
-                .map(|(index, word)| (index as usize, word))
-                .collect(),
-        }
+        let words: SharedMap<usize, u64> = words
+            .into_iter()
+            .filter(|(_, word)| *word != 0)
+            .map(|(index, word)| (index as usize, word))
+            .collect();
+        // Sparse reconstruction preserves the last nonzero value at each key.
+        let population = words.values().map(|word| word.count_ones() as usize).sum();
+        Self { words, population }
     }
 
     pub(crate) fn sparse_words(&self) -> Vec<(u64, u64)> {
@@ -216,5 +220,42 @@ impl Iterator for DenseSlotIterator<'_> {
         let bit = self.remaining.trailing_zeros() as usize;
         self.remaining &= self.remaining - 1;
         Some(self.word_index * 64 + bit)
+    }
+}
+
+#[cfg(test)]
+mod population_tests {
+    use super::*;
+    use std::collections::BTreeSet;
+    #[test]
+    fn carried_population_matches_independent_slot_set_across_edits_and_clones() {
+        let mut bits = DenseSlotBitSet::with_capacity(0);
+        let mut selected = BTreeSet::new();
+        let mut seed = 17_u64;
+        for step in 0..4096 {
+            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1);
+            let slot = ((seed >> 32) % 4096) as usize;
+            let value = seed & 16 != 0;
+            let previous = bits.clone();
+            let old = selected.clone();
+            bits.set(slot, value);
+            if value {
+                selected.insert(slot);
+            } else {
+                selected.remove(&slot);
+            }
+            assert_eq!(bits.count_ones(), selected.len(), "step {step}");
+            assert_eq!(previous.count_ones(), old.len());
+            assert_eq!(bits.set_slots().collect::<BTreeSet<_>>(), selected);
+        }
+        for rebuilt in [
+            DenseSlotBitSet::from_words(vec![u64::MAX, 0, 5]),
+            DenseSlotBitSet::from_sparse_words(vec![(4096, 7), (4096, 1), (99, 0)]),
+        ] {
+            assert_eq!(
+                rebuilt.count_ones(),
+                rebuilt.set_slots().collect::<BTreeSet<_>>().len()
+            );
+        }
     }
 }

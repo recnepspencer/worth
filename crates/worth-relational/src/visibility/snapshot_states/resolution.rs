@@ -8,7 +8,6 @@ use super::{build_visibility_state, SnapshotState, VisibilitySnapshotBasis};
 pub(crate) struct ResolvedVisibilitySnapshot {
     pub(crate) handle: SnapshotHandle,
     pub(crate) state: SnapshotState,
-    pub(crate) keeps_storage_pins: bool,
 }
 
 pub(crate) fn resolve_snapshot_handle(
@@ -81,7 +80,6 @@ pub(crate) fn resolve_snapshot_state(
         return Some(ResolvedVisibilitySnapshot {
             handle: resolved_handle,
             state,
-            keeps_storage_pins: false,
         });
     }
 
@@ -114,7 +112,6 @@ fn resolve_published_snapshot_state(
     Some(ResolvedVisibilitySnapshot {
         handle: resolved_handle,
         state,
-        keeps_storage_pins: false,
     })
 }
 
@@ -122,24 +119,15 @@ pub(crate) fn resolve_snapshot_inspection(
     runtime: &RelationalRuntime,
     handle: &SnapshotHandle,
 ) -> Option<SnapshotInspectionSummary> {
-    let resolved = resolve_snapshot_state(runtime, handle)?;
-    if resolved.keeps_storage_pins {
-        return Some(SnapshotInspectionSummary {
-            branch_id: resolved.handle.branch_id,
-            version_id: resolved.handle.version_id,
-            root_id: resolved.state.basis.root_id(),
-            entity_count: resolved.state.pinned_entity_count,
-            relation_count: resolved.state.pinned_relation_count,
-            pinned_entity_count: resolved.state.pinned_entity_count,
-            pinned_relation_count: resolved.state.pinned_relation_count,
-        });
-    }
+    let handle = resolve_snapshot_handle(runtime, handle)?;
+    let basis = resolve_snapshot_basis(runtime, &handle)?;
+    let counts = basis.root().live_counts();
     Some(SnapshotInspectionSummary {
-        branch_id: resolved.handle.branch_id,
-        version_id: resolved.handle.version_id,
-        root_id: resolved.state.basis.root_id(),
-        entity_count: resolved.state.pinned_entity_count,
-        relation_count: resolved.state.pinned_relation_count,
+        branch_id: handle.branch_id,
+        version_id: handle.version_id,
+        root_id: Some(basis.root().id()),
+        entity_count: counts.entities,
+        relation_count: counts.relations,
         pinned_entity_count: 0,
         pinned_relation_count: 0,
     })
