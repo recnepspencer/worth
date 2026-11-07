@@ -75,7 +75,7 @@ fn compat_http_blob_truth_separation_stays_explicit_under_shared_product_flow() 
     let mutation_bundle = crate::shared_support_compat_http_phase_thirteen_bundle::WorthServerPhaseThirteenBundle::new()
         .with_digest(
             MUTATION_RESULT_DIGEST,
-            compat_mutation.mutation_result().result_digest(),
+            compat_mutation.mutation_result().result_digest().expect("admitted mutation result identity"),
         )
         .with_digest(
             RESPONSE_DIGEST,
