@@ -81,6 +81,7 @@ pub(in crate::publication::ownership) fn validate(
         if p.meaning != o.meaning
             || p.publication != o.commit.commit_id
             || p.generation != o.commit.version_id
+            || p.custody() != row.value.custody()
             || p.row_digest != row.digest
         {
             return Err(explain(

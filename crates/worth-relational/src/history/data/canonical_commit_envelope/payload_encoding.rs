@@ -1,4 +1,4 @@
-//! Canonical authoritative payload encoding retains legacy bytes for ordinary commits.
+//! Canonical payload v3 references admitted schema by digest. Transitions carry material.
 use super::CanonicalCommitEnvelope;
 impl CanonicalCommitEnvelope {
     pub(super) fn write_authoritative_payload<W: std::io::Write>(
@@ -21,7 +21,12 @@ impl CanonicalCommitEnvelope {
             &self.authored_cascade_restoration,
             &self.required_output_materialization,
             &self.schema_version,
-            &self.schema_authority,
+            &(
+                self.schema_authority.digest(),
+                self.schema_transition
+                    .as_ref()
+                    .map(|_| &self.schema_authority),
+            ),
             &self.merged_plan,
             &self.record_allocations,
             &self.patch,
@@ -79,3 +84,7 @@ impl CanonicalCommitEnvelope {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "payload_encoding_tests.rs"]
+mod tests;

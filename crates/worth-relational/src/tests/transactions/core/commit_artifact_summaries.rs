@@ -71,14 +71,7 @@ fn commit_log_records_structural_summary_and_phase_progress() {
     assert!(outcome.commit_log().events().iter().any(|event| matches!(
         event,
         CommitTraceEvent::InvariantEvaluated {
-            execution_point: InvariantExecutionPoint::CommitBoundary,
-            ..
-        }
-    )));
-    assert!(outcome.commit_log().events().iter().any(|event| matches!(
-        event,
-        CommitTraceEvent::InvariantEvaluated {
-            execution_point: InvariantExecutionPoint::MutationSensitive,
+            execution_point: InvariantExecutionPoint::ProposedState,
             ..
         }
     )));
@@ -132,10 +125,7 @@ fn commit_returns_envelope_with_patch_diagnostics_invariants_and_complexity() {
     assert!(!structural_summary.touched_partitions.is_empty());
     assert!(!result.invariant_executions().is_empty());
     assert!(result.invariant_executions().iter().any(|execution| {
-        execution.metadata().execution_point() == InvariantExecutionPoint::CommitBoundary
-    }));
-    assert!(result.invariant_executions().iter().any(|execution| {
-        execution.metadata().execution_point() == InvariantExecutionPoint::MutationSensitive
+        execution.metadata().execution_point() == InvariantExecutionPoint::ProposedState
     }));
     assert!(result
         .invariant_executions()
@@ -150,7 +140,7 @@ fn commit_returns_envelope_with_patch_diagnostics_invariants_and_complexity() {
     assert!(validation_summary.commit_boundary_seen);
     assert!(validation_summary.mutation_sensitive_seen);
     assert!(validation_summary.committed_observation_count >= 1);
-    assert!(validation_summary.speculative_observation_count >= 1);
+    assert!(validation_summary.snapshot_publication_seen);
     assert!(!validation_summary.consumed_groups.is_empty());
     assert!(!validation_summary.applicable_groups.is_empty());
     assert_eq!(

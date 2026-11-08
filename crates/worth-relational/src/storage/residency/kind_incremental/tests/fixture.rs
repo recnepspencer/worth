@@ -134,6 +134,7 @@ pub(super) fn edit(
         relation_slots: [slot].into(),
         adjacency_slots: [old.source.slot_index(), new.source.slot_index()].into(),
         reverse_adjacency_slots: [old.target.slot_index(), new.target.slot_index()].into(),
+        ..Default::default()
     }
 }
 

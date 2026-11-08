@@ -181,7 +181,7 @@ impl World {
         transaction
             .push_batch(edits, execution.allocation_policy())
             .unwrap();
-        let ((result, observation), report) = execution.run(ExecutionWorkCeiling::new(None), |_| observe_maintenance_work(64, || {
+        let (((result, observation), report), schema_work) = worth_relational::facade::schema::RelationalSchemaRegistry::observe_authority_projection_work(|| execution.run(ExecutionWorkCeiling::new(None), |_| observe_maintenance_work(64, || {
             let (candidate, prepare) = execution.run(ExecutionWorkCeiling::new(None), |_| self.runtime.prepare_branch_transaction(execution, transaction).unwrap()).unwrap();
             sample.record(Phase::CommitPreparation, "charged_work", prepare.charged_work());
             let work = candidate.prepared_index_maintenance_work().expect("native receipt");
@@ -193,9 +193,25 @@ impl World {
             }).unwrap();
             sample.record(Phase::Publication, "charged_work", publication.charged_work());
             result
-        })).unwrap();
+        })).unwrap());
+        sample.record(Phase::Invariants, "schema_projection_rows", schema_work);
         sample.record(Phase::WholeCommit, "charged_work", report.charged_work());
         sample.observe_phase_work(&observation);
+        sample.record(
+            Phase::RootAdmission,
+            "content_index_hash_bytes",
+            observation.content_index_hash_bytes,
+        );
+        sample.record(
+            Phase::RootAdmission,
+            "partition_value_hash_bytes",
+            observation.partition_value_hash_bytes,
+        );
+        sample.record(
+            Phase::Publication,
+            "commit_payload_hash_bytes",
+            observation.commit_payload_hash_bytes,
+        );
         sample.commits = 1;
         sample.touched.push(result.changed_records.len());
         let counters = &result.execution().complexity_delta;

@@ -1,3 +1,5 @@
+#[cfg(test)]
+mod consequence_courts;
 mod consequence_materialization;
 mod construction;
 mod mutation_tracking;

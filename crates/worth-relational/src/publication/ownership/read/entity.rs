@@ -30,7 +30,7 @@ pub(super) fn load(
     } else if kind == storage.publication_kind {
         let value: record::Publication =
             payload::decode(bytes, publication, &subject, &mut roster._funding, context)?;
-        if value.origin.commit.commit_id != publication {
+        if value.custody() != publication {
             return Err(corrupt(publication, subject));
         }
         use sha2::Digest;

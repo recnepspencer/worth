@@ -7,6 +7,7 @@ pub enum DigestIndexError {
 }
 use crate::storage::substrate::{StorageAllocation as Arc, StorageAllocationVisitor};
 use sha2::{Digest, Sha256};
+use std::sync::OnceLock;
 
 mod append_frontier;
 #[cfg(test)]
@@ -28,7 +29,7 @@ struct HistoryLastValue {
 struct Node {
     key: u128,
     bit: u32,
-    digest: [u8; 32],
+    digest: OnceLock<[u8; 32]>,
     children: Option<[Arc<Node>; 2]>,
     nodes: usize,
 }
@@ -116,7 +117,7 @@ impl DigestIndex {
     pub fn digest(&self) -> [u8; 32] {
         self.root
             .as_ref()
-            .map_or_else(|| hash(0, &[]), |root| root.digest)
+            .map_or_else(empty_digest, |root| root.digest())
     }
 
     pub fn set(&mut self, key: u128, value: Option<[u8; 32]>) -> Result<(), DigestIndexError> {
@@ -178,20 +179,24 @@ fn build_sorted(
         return Arc::new(Node {
             key: *key,
             bit: 128,
-            digest: hash(1, &[&key.to_be_bytes(), digest]),
+            digest: OnceLock::from(hash(1, &[&key.to_be_bytes(), digest])),
             children: None,
             nodes: 1,
         });
     }
     let bit = (entries[0].0 ^ entries[entries.len() - 1].0).leading_zeros();
     let split = entries.partition_point(|(key, _)| direction(*key, bit) == 0);
-    Arc::new(Node::branch(
+    let node = Node::branch(
         bit,
         [
             build_sorted(lane, &entries[..split]),
             build_sorted(lane, &entries[split..]),
         ],
-    ))
+    );
+    // Cold construction pays its whole tree here, under the admitted lane.
+    // Carry a settled cache so the first ordinary edit hashes only dirty paths.
+    node.digest();
+    Arc::new(node)
 }
 
 // An Err retains the original root. Opaque checkpoint siblings may be carried,
@@ -201,7 +206,7 @@ fn insert(root: Option<Arc<Node>>, key: u128, digest: [u8; 32]) -> Result<Arc<No
         Arc::new(Node {
             key,
             bit: 128,
-            digest: hash(1, &[&key.to_be_bytes(), &digest]),
+            digest: OnceLock::from(hash(1, &[&key.to_be_bytes(), &digest])),
             children: None,
             nodes: 1,
         })
@@ -237,7 +242,7 @@ fn insert(root: Option<Arc<Node>>, key: u128, digest: [u8; 32]) -> Result<Arc<No
     children[side] = changed;
     node.key = children[0].key;
     node.nodes = 1 + children[0].nodes + children[1].nodes;
-    node.digest = branch_digest(node.bit, children);
+    node.digest = OnceLock::new();
     Ok(root)
 }
 
@@ -267,7 +272,7 @@ fn remove(root: Option<Arc<Node>>, key: u128) -> Result<Option<Arc<Node>>, Arc<N
         children[side] = changed;
         node.key = children[0].key;
         node.nodes = 1 + children[0].nodes + children[1].nodes;
-        node.digest = branch_digest(node.bit, children);
+        node.digest = OnceLock::new();
         Ok(Some(root))
     } else {
         Ok(Some(children[1 - side].clone()))
@@ -275,11 +280,22 @@ fn remove(root: Option<Arc<Node>>, key: u128) -> Result<Option<Arc<Node>>, Arc<N
 }
 
 impl Node {
+    /// Immutable children are the equivalence basis. Edits invalidate only the
+    /// copied path; publishing a batch hashes its dirty closure once, even
+    /// when many changed keys share ancestors. Opaque siblings carry a digest.
+    fn digest(&self) -> [u8; 32] {
+        *self.digest.get_or_init(|| {
+            branch_digest(
+                self.bit,
+                self.children.as_ref().expect("only branches defer hashing"),
+            )
+        })
+    }
     fn branch(bit: u32, children: [Arc<Node>; 2]) -> Self {
         Self {
             key: children[0].key,
             bit,
-            digest: branch_digest(bit, &children),
+            digest: OnceLock::new(),
             nodes: 1 + children[0].nodes + children[1].nodes,
             children: Some(children),
         }
@@ -288,7 +304,11 @@ impl Node {
 fn branch_digest(bit: u32, children: &[Arc<Node>; 2]) -> [u8; 32] {
     hash(
         2,
-        &[&bit.to_be_bytes(), &children[0].digest, &children[1].digest],
+        &[
+            &bit.to_be_bytes(),
+            &children[0].digest(),
+            &children[1].digest(),
+        ],
     )
 }
 
@@ -297,6 +317,12 @@ fn direction(key: u128, bit: u32) -> usize {
 }
 
 fn hash(tag: u8, chunks: &[&[u8]]) -> [u8; 32] {
+    crate::execution::phase_observation::hash_bytes(
+        crate::execution::phase_observation::HashPurpose::ContentIndex,
+        b"worth.relational.content-index.v1\0".len()
+            + 1
+            + chunks.iter().map(|chunk| chunk.len()).sum::<usize>(),
+    );
     let mut hash = Sha256::new();
     hash.update(b"worth.relational.content-index.v1\0");
     hash.update([tag]);
@@ -304,4 +330,9 @@ fn hash(tag: u8, chunks: &[&[u8]]) -> [u8; 32] {
         hash.update(chunk);
     }
     hash.finalize().into()
+}
+
+fn empty_digest() -> [u8; 32] {
+    static EMPTY: OnceLock<[u8; 32]> = OnceLock::new();
+    *EMPTY.get_or_init(|| hash(0, &[]))
 }

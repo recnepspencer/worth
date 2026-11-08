@@ -11,6 +11,13 @@ impl WorkingState {
         self.content = next.content;
         for (id, mut overlay) in next.partitions {
             let mut journal = next.mutation_journal.get(&id).cloned().unwrap_or_default();
+            let adjacency_omitted = if self.partitions.contains_key(&id) {
+                self.mutation_journal
+                    .get(&id)
+                    .is_some_and(|j| j.adjacency_omitted)
+            } else {
+                journal.adjacency_omitted
+            };
             if let Some(prior) = self.partitions.get_mut(&id) {
                 // An entity-only suffix contributes no relation image. Keep
                 // the prefix's actual materialization posture so the current-
@@ -23,6 +30,7 @@ impl WorkingState {
                 self.partitions.insert(id, overlay);
             }
             let combined = self.mutation_journal.entry(id).or_default();
+            combined.adjacency_omitted = adjacency_omitted;
             combined.entity_slots.append(&mut journal.entity_slots);
             combined.relation_slots.append(&mut journal.relation_slots);
             combined

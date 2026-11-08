@@ -282,6 +282,16 @@ pub(in crate::publication::ownership) fn claims(
     reach.incidence(id, storage.publication_link, Direction::Outgoing)?;
     reach.incidence(id, storage.member_link, Direction::Incoming)?;
     reach.incidence(id, storage.edge_link, Direction::Incoming)?;
+    let witnesses = reach
+        .roster
+        .links
+        .iter()
+        .filter(|link| link.kind == storage.edge_link)
+        .map(|link| link.source)
+        .collect::<Vec<_>>();
+    for witness in witnesses {
+        reach.entity(witness)?;
+    }
     for link in &reach.roster.links {
         checkpoint(reach.context, 1)?;
         if link.publication != publication {

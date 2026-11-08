@@ -1,9 +1,10 @@
-//! The publication writer replaces its current custody in the unpublished commit.
+//! Advance current custody while preserving every unchanged claim row.
+mod claims_delta;
 use super::{record, CurrentPublicationRoster};
 use crate::authority::mutation::current_records::{
     CompletedCurrentRecords as CompletedOwnership, Writer,
 };
-use crate::schema::current_publication_ownership::{CATALOG, EDGE, PUBLICATION};
+use crate::schema::current_publication_ownership::{CATALOG, PUBLICATION};
 use crate::{
     branch::{AdmittedRelationalBranchBasis, SelectedRelationalBranchState},
     history::data::{CanonicalCommitEnvelope, CommitId},
@@ -164,33 +165,23 @@ pub(crate) fn complete(
                     + 1,
             )?;
             if changed(&row.value.origin.meaning) {
-                let mut witnesses = Vec::new();
-                let claims = super::read::publication_claims(
-                    execution,
-                    basis,
-                    row.entity,
-                    row.value.origin.commit.commit_id,
-                    writer.context(),
-                )?;
-                for link in &claims.links {
-                    writer.checkpoint(1)?;
-                    if (replaced(&row.value.origin.meaning)
-                        && link.kind == storage.publication_link
-                        && link.source == row.entity)
-                        || ([storage.member_link, storage.edge_link].contains(&link.kind)
-                            && link.target == row.entity)
-                    {
-                        if link.kind == storage.edge_link {
-                            witnesses.push(link.source);
-                        }
-                        writer.delete_relation(link.id)?;
-                    }
-                }
-                for witness in witnesses {
-                    writer.delete_entity(witness)?;
-                }
-                if replaced(&row.value.origin.meaning) {
-                    writer.delete_entity(row.entity)?;
+                let successor = candidate.output_origins().find(|origin| {
+                    !scope_deleted
+                        && origin.source_scope_owned
+                        && origin.meaning.same_route(&row.value.origin.meaning)
+                        && origin.members.iter().any(|member| {
+                            member.posture != crate::mvcc::RequiredOutputRolePosture::Retire
+                        })
+                });
+                if successor.is_none() {
+                    claims_delta::retire(
+                        execution,
+                        basis,
+                        &mut writer,
+                        storage,
+                        row,
+                        replaced(&row.value.origin.meaning),
+                    )?;
                 }
             }
         }
@@ -238,43 +229,45 @@ pub(crate) fn complete(
                 ));
             };
             let publication = origin.commit.commit_id;
+            let previous = roster
+                .publications
+                .iter()
+                .chain(&roster.codec_retired)
+                .find(|row| row.value.origin.meaning.same_route(&origin.meaning));
+            let custody = previous.map(|row| row.value.custody());
             let payload = record::Publication {
                 origin: std::sync::Arc::clone(origin),
                 ordinal,
+                custody,
             };
             let bytes = writer.encode(&payload)?;
             use sha2::Digest;
             let digest = sha2::Sha256::digest(&bytes).into();
-            let row = writer.create_encoded_entity(
-                storage.publication_kind,
-                PUBLICATION,
-                publication,
-                bytes,
-                Some((storage.publication_link, catalog, publication)),
-            )?;
+            let row = if let Some(previous) = previous {
+                writer.update_encoded_entity(
+                    previous.entity,
+                    PUBLICATION,
+                    payload.custody(),
+                    bytes,
+                )?;
+                claims_delta::advance(execution, basis, &mut writer, storage, previous, origin)?;
+                previous.entity
+            } else {
+                writer.create_encoded_entity(
+                    storage.publication_kind,
+                    PUBLICATION,
+                    publication,
+                    bytes,
+                    Some((storage.publication_link, catalog, publication)),
+                )?
+            };
             routes.push(record::Route {
                 meaning: origin.meaning.clone(),
                 publication,
                 digest,
             });
-            for member in origin
-                .members
-                .iter()
-                .filter(|member| member.posture != crate::mvcc::RequiredOutputRolePosture::Retire)
-            {
-                writer.create_link(storage.member_link, publication, member.id, row)?;
-            }
-            for edge in &origin.relations {
-                writer.create_entity(
-                    storage.edge_kind,
-                    EDGE,
-                    publication,
-                    &record::Edge {
-                        publication,
-                        edge: edge.clone(),
-                    },
-                    Some((storage.edge_link, row, publication)),
-                )?;
+            if previous.is_none() {
+                claims_delta::insert(&mut writer, storage, row, publication, origin)?;
             }
         }
         if let Some(catalog) = catalog {
@@ -304,5 +297,9 @@ pub(crate) fn complete(
             }
         }
     }
-    Ok(writer.finish())
+    let completed = writer.finish();
+    crate::execution::phase_observation::ownership_rows(
+        completed.effect.publication.changed_records.len(),
+    );
+    Ok(completed)
 }

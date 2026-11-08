@@ -167,7 +167,6 @@ fn invariant_work_packets<'state>(
     budget: Option<&crate::validation::custom_rule::CustomPreparationBudget>,
     packet_offset: usize,
 ) -> Vec<crate::authority::commit::preparation::InvariantWorkPacket<'state>> {
-    let observation = request.observation();
     let relation_integrity_scopes = request.relation_integrity_scopes().cloned();
     let current_version_minimum_index = Arc::new(std::sync::OnceLock::new());
 
@@ -188,6 +187,9 @@ fn invariant_work_packets<'state>(
             }) {
                 return None;
             }
+            let observation = request.observation_for(registration.execution_point());
+            let version_id = request.version_for(registration.execution_point());
+            let context = Arc::new(context.for_registration(registration.execution_point()).expect("request selected the declared family"));
             let invariant_group_scope = registration.groups();
             let record_domain = if request.semantic_plan().is_some() {
                 PreparationRecordDomain::Mixed
@@ -195,7 +197,7 @@ fn invariant_work_packets<'state>(
                 PreparationRecordDomain::None
             };
             let locality = PreparationLocalityProof {
-                observation_scope: request.observation().kind(),
+                observation_scope: observation.kind(),
                 record_domain,
                 partition_scope: if partition_scope.is_empty() {
                     PreparationPartitionScope::AllObserved
@@ -216,7 +218,7 @@ fn invariant_work_packets<'state>(
                 registration,
                 reduction_key: ValidationReductionKey::new(
                     request.execution_point(),
-                    observation.kind(),
+                    request.observation().kind(),
                     partition_scope.clone(),
                     invariant_group_scope,
                     packet_index,
@@ -228,7 +230,7 @@ fn invariant_work_packets<'state>(
                 },
                 planning_context: context.clone(),
                 observation,
-                version_id: request.version_id(),
+                version_id,
                 current_version_id: request.current_version_id(),
                 semantic_plan: request.semantic_plan(),
                 relation_integrity_scopes: relation_integrity_scopes.clone(),

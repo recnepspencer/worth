@@ -20,6 +20,20 @@ pub(crate) struct SchemaContinuityAuthorityInput {
 }
 
 impl SchemaContinuityAuthorityInput {
+    pub(crate) fn from_root(
+        root: &crate::branch::RelationalBranchRootSchemaAuthority,
+        descriptor_canonical_basis_version: DescriptorCanonicalBasisVersion,
+    ) -> Self {
+        let mut input = Self::new(
+            root.schema_version(),
+            root.snapshot().clone(),
+            root.descriptor_semantics_version(),
+            descriptor_canonical_basis_version,
+        );
+        input.target_schema_registry = Some(root.registry_arc());
+        input
+    }
+
     pub(crate) fn from_registry(
         target_schema_registry: crate::schema::data::RelationalSchemaRegistry,
         descriptor_semantics_version: DescriptorSemanticsVersion,

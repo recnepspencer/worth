@@ -23,6 +23,8 @@ proptest! {
         prop_assert_eq!(reversed.digest(), index.digest());
         let ordered = expected.iter().map(|(&key, &value)| (key, value)).collect::<Vec<_>>();
         let bulk = DigestIndex::from_sorted_entries(&crate::storage::substrate::maintenance::ReconstructionLane::oracle(), &ordered);
+        prop_assert!(bulk.root.as_ref().is_none_or(|root| root.digest.get().is_some()),
+            "cold reconstruction carries a settled digest before ordinary use");
         prop_assert_eq!(bulk.digest(), reference(&ordered));
         prop_assert_eq!(bulk.digest(), index.digest());
         prop_assert_eq!(bulk.allocation_bytes(), index.allocation_bytes());
@@ -76,3 +78,5 @@ fn explicit_cold_reconstruction_refuses_noncanonical_keys() {
     }
     assert_eq!(cold.digest(), updated.digest());
 }
+
+mod cost;

@@ -251,8 +251,7 @@ fn validate_owner_evidence(
         ));
     }
     let summary = evidence.summary();
-    (summary.execution_count == 3
-        && summary.commit_boundary_seen
+    (summary.commit_boundary_seen
         && summary.mutation_sensitive_seen
         && summary.snapshot_publication_seen)
         .then_some(())

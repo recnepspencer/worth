@@ -235,7 +235,7 @@ fn a_native_pass_retains_the_custom_vacuous_receipt_through_staged_reduction() {
         .validate(&request, &runtime)
         .expect("candidate validates");
     let native = validated
-        .commit_boundary
+        .invariants
         .results()
         .iter()
         .filter(|check| {

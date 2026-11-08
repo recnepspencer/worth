@@ -101,6 +101,10 @@ impl DetachedRelationalTransactionOverlay {
                 *footprint = new_footprint;
                 self.normalized_client_keys = normalized;
                 self.normalization_generation = generation;
+                self.effective_records = Default::default();
+                for batch in &self.batches {
+                    self.effective_records.stage(batch);
+                }
                 (entries, Ok(()))
             }
         }

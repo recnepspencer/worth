@@ -87,17 +87,23 @@ pub fn declare<S: Scenario>(
     let initial =
         ApplicationOperationRef::<S, producer::Operation, query::Input>::from_declaration();
     let preserve = PreserveOp::reference();
-    s.operation_create(initial, Occurrence::<S::Boundary>::reference())
+    let schema = s
+        .operation_create(initial, Occurrence::<S::Boundary>::reference())
         .operation_write(initial, Number::<S::Boundary>::at("Number"))
-        .operation_link(initial, Successor::reference())
         .operation_read_entity(preserve, Occurrence::<S::Boundary>::reference())
         .operation_read_field(preserve, Number::<S::Boundary>::at("Number"))
-        .operation_read_relation(preserve, Successor::reference())
         .operation_create(preserve, Occurrence::<S::Boundary>::reference())
         .operation_delete(preserve, Occurrence::<S::Boundary>::reference())
-        .operation_write(preserve, Number::<S::Boundary>::at("Number"))
-        .operation_link(preserve, Successor::reference())
-        .operation_unlink(preserve, Successor::reference())
+        .operation_write(preserve, Number::<S::Boundary>::at("Number"));
+    if S::Boundary::LINK_BOUNDARY {
+        schema
+            .operation_link(initial, Successor::reference())
+            .operation_read_relation(preserve, Successor::reference())
+            .operation_link(preserve, Successor::reference())
+            .operation_unlink(preserve, Successor::reference())
+    } else {
+        schema
+    }
 }
 pub fn initial<S: Scenario>(
     w: &mut CandidateWriter<'_, S, producer::Binding<S>>,
@@ -230,6 +236,7 @@ pub struct Owned;
 pub trait Profile: Sized + 'static {
     type Relations: 'static;
     const UNIQUE: bool = false;
+    const LINK_BOUNDARY: bool = true;
     fn declaration<S: Scenario<Boundary = Self>>(
     ) -> Result<ApplicationSchemaDeclaration<S>, ApplicationSchemaDeclarationDenial>;
     type Decision<S: Scenario>;

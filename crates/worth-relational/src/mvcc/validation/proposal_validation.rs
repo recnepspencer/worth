@@ -156,9 +156,7 @@ impl RelationalPreparationRuntime {
             identity: proposal_identity,
             validation_input,
             coupled_publication,
-            commit_boundary,
-            mutation_sensitive,
-            publication,
+            invariants,
         } = self.prepare_proposal_round(execution, &mut transaction, &source, context)?;
         require_not_interrupted(
             &transaction.control,
@@ -167,14 +165,10 @@ impl RelationalPreparationRuntime {
         )?;
         let transaction_id = transaction.transaction_id;
         let proposed_version = proposal_identity.proposed_version_id();
-        let summary = CommitValidation::summarize(&[
-            commit_boundary.clone(),
-            mutation_sensitive.clone(),
-            publication.clone(),
-        ]);
+        let summary = CommitValidation::summarize(std::slice::from_ref(&invariants));
         let custom_invariant_execution_receipts =
             super::custom_invariant_execution_receipt::collect_custom_invariant_execution_receipts(
-                [&commit_boundary, &mutation_sensitive, &publication],
+                [&invariants],
                 &self.schema_contract_runtime.custom_invariant_registries,
             );
         let strategy = source.into_strategy();
@@ -186,7 +180,7 @@ impl RelationalPreparationRuntime {
                     prepared.structural_summary.touched_partitions.len(),
                     prepared.structural_summary.bulk_entity_slots_reserved,
                     prepared.structural_summary.bulk_relation_slots_reserved,
-                    2,
+                    1,
                 );
             strategy.artifacts.clone().with_preview_validation(
                 summary,
@@ -217,9 +211,7 @@ impl RelationalPreparationRuntime {
             validation_input,
             prepared,
             proposed_mutation,
-            commit_boundary,
-            mutation_sensitive,
-            snapshot_publication: publication,
+            invariants,
             evidence: RelationalMutationInvariantEvidence {
                 branch,
                 proposed_version,

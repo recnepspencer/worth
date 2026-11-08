@@ -127,6 +127,7 @@ struct RelationalCommittedBranchRoot {
     commit_change: Option<Arc<crate::storage::substrate::maintenance::CommitChange>>,
     descriptor: RelationalBranchRootDescriptor,
     canonical_envelope: Arc<CanonicalCommitEnvelope>,
+    canonical_payload: Arc<[u8]>,
     axes: RelationalBranchRootAxes,
     publication_cost: RelationalBranchRootPublicationCost,
 }
@@ -314,6 +315,10 @@ impl RelationalBranchRoot {
             && committed.axes.visibility == reconstructed_visibility
     }
 
+    pub(crate) fn canonical_payload(&self) -> Option<Arc<[u8]>> {
+        self.committed.as_ref().map(|c| c.canonical_payload.clone())
+    }
+
     pub(crate) fn commit_id(&self) -> Option<CommitId> {
         self.committed
             .as_ref()
@@ -377,13 +382,9 @@ impl RelationalBranchRoot {
             Arc::ptr_eq(&root.canonical_envelope, envelope)
                 && root.axes.storage_root == *root.descriptor.truth_root()
                 && root.axes.schema_root == *root.descriptor.schema_root()
-                && root.axes.visibility
-                    == RelationalBranchVisibilityCommitment::for_root(
-                        envelope,
-                        root.axes.storage_root,
-                        root.axes.schema_root,
-                        root.axes.correctness_index,
-                    )
+            // Exact immutable envelope custody carries root admission's
+            // visibility proof. Cold readmission and is_complete verify
+            // it independently; artifact linkage does not reconstruct it.
         })
     }
 

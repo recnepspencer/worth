@@ -64,6 +64,22 @@ fn measure(d: Dimensions) -> Sample {
         .unwrap();
     let mut sample = Sample::new(d);
     sample.observe_phase_work(&phases);
+    sample.record(Phase::Publication, "ownership_rows", phases.ownership_rows);
+    sample.record(
+        Phase::RootAdmission,
+        "content_index_hash_bytes",
+        phases.content_index_hash_bytes,
+    );
+    sample.record(
+        Phase::RootAdmission,
+        "partition_value_hash_bytes",
+        phases.partition_value_hash_bytes,
+    );
+    sample.record(
+        Phase::Publication,
+        "commit_payload_hash_bytes",
+        phases.commit_payload_hash_bytes,
+    );
     sample.record(Phase::HistoryRecord, "charged_work", report.charged_work());
     record(&mut sample, after.application_work());
     sample.commits = (after.world_history_after().installed_commits()

@@ -31,7 +31,7 @@ impl DigestIndex {
                 siblings.push(HistoryFrontierSibling {
                     key: children[0].key,
                     bit: children[0].bit,
-                    digest: children[0].digest,
+                    digest: children[0].digest(),
                     parent_bit: node.bit,
                 });
                 current = Some(&children[1]);
@@ -45,7 +45,7 @@ impl DigestIndex {
                         .filter(|last| last.key == node.key)
                         .map(|last| last.value)
                 })?;
-                if hash(1, &[&node.key.to_be_bytes(), &value]) != node.digest {
+                if hash(1, &[&node.key.to_be_bytes(), &value]) != node.digest() {
                     return None;
                 }
                 return Some(HistoryAppendFrontier {
@@ -69,7 +69,7 @@ impl DigestIndex {
         let mut node = Arc::new(Node {
             key,
             bit: 128,
-            digest: hash(1, &[&key.to_be_bytes(), &value]),
+            digest: OnceLock::from(hash(1, &[&key.to_be_bytes(), &value])),
             children: None,
             nodes: 1,
         });
@@ -86,7 +86,7 @@ impl DigestIndex {
             let left = Arc::new(Node {
                 key: sibling.key,
                 bit: sibling.bit,
-                digest: sibling.digest,
+                digest: OnceLock::from(sibling.digest),
                 children: None,
                 nodes: 1,
             });

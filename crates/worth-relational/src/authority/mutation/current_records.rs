@@ -182,6 +182,15 @@ impl<'a, 'request, 'scope, 'kernel, 'authority> Writer<'a, 'request, 'scope, 'ke
         value: &T,
     ) -> Result<(), TransactionCommitError> {
         let bytes = self.encode(value)?;
+        self.update_encoded_entity(entity, aspect, publication, bytes)
+    }
+    pub(crate) fn update_encoded_entity(
+        &mut self,
+        entity: EntityId,
+        aspect: &str,
+        publication: CommitId,
+        bytes: Vec<u8>,
+    ) -> Result<(), TransactionCommitError> {
         self.apply(vec![MutationIntent::Entity(
             EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
                 entity_id: entity,

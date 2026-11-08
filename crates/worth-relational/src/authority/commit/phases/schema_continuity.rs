@@ -73,9 +73,8 @@ pub(crate) fn resolve_schema_continuity(
                 .descriptor_canonical_basis_policy
                 .current_write_version(),
         ),
-        (None, None) => crate::schema::SchemaContinuityAuthorityInput::from_shared_registry(
-            options.schema_authority().registry_arc(),
-            options.schema_authority().descriptor_semantics_version(),
+        (None, None) => crate::schema::SchemaContinuityAuthorityInput::from_root(
+            options.schema_authority(),
             runtime
                 .config
                 .schema

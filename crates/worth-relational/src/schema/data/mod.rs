@@ -28,7 +28,7 @@ pub use aspect_traces::{
 };
 pub use authority_snapshot::{
     schema_authority_snapshot_digest_bytes, SchemaAuthorityKindSnapshot,
-    SchemaAuthorityRelationSnapshot, SchemaAuthoritySnapshot,
+    SchemaAuthorityRelationSnapshot, SchemaAuthoritySnapshot, SchemaAuthoritySnapshotParts,
 };
 pub use continuity::{
     runtime_descriptor_canonical_basis_policy, runtime_descriptor_semantics_policy,

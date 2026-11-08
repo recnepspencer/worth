@@ -15,6 +15,7 @@ pub(crate) struct PendingMutationIdentities {
     pub(crate) symbols: PendingSymbolMeanings,
 }
 
+mod aggregate_consequences;
 pub(crate) mod content;
 pub(crate) mod ordinary_apply;
 pub(crate) mod owned_graph_selection;

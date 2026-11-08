@@ -89,7 +89,7 @@ checkpoint just to discover ids.
 
 ## Counts
 
-327 named entries: D=175, C=12, V=1, B=26, T=4, R=109.
+329 named entries: D=175, C=12, V=1, B=26, T=4, R=111.
 
 D/C/V cover the full-construction engines and typed propagation listed below. B entries identify fixed trust boundaries, T entries identify the source oracle exceptions, and R entries make the non-reconstruction scan/primitive boundary explicit. Counts are inventory totals, never performance assertions.
 
@@ -171,7 +171,7 @@ D/C/V cover the full-construction engines and typed propagation listed below. B 
 | `storage/residency/kind_projection.rs:rebuild_region_history_kind_buckets` | D: required lane argument; caller family traced above |
 | `storage/substrate/digest_index.rs:cold` | D: required lane argument; caller family traced above |
 | `storage/substrate/digest_index.rs:from_sorted_entries` | D: required lane argument; caller family traced above |
-| `storage/substrate/digest_index.rs:build_sorted` | D: required lane argument; caller family traced above |
+| `storage/substrate/digest_index.rs:build_sorted` | D: required lane argument; settles every constructed node digest inside this cold engine, before returning |
 | `storage/partition/bitsets.rs:from_words` | D: required lane argument; caller family traced above |
 | `storage/partition/bitsets.rs:from_sparse_words` | D: required lane argument; caller family traced above |
 | `storage/partition/adjacency.rs:compressed_from_checkpoint` | D: required lane argument; caller family traced above |
@@ -404,6 +404,8 @@ D/C/V cover the full-construction engines and typed propagation listed below. B 
 | `storage/overlay/partition_content/records.rs:update` | R: delta entrance with mandatory predecessor and journal/changed keys; a new record or changed authenticated history basis may seed its changed intrinsic granule, but no unchanged partition/history fallback exists |
 | `storage/overlay/partition_content/adjacency.rs:visit_allocations` | R: explicit bulk read/inspection/compaction or generic supplied-input construction; not a semantic cold engine |
 | `storage/overlay/partition_content/adjacency.rs:update` | R: delta entrance with mandatory predecessor and journal/changed keys; a new record or changed authenticated history basis may seed its changed intrinsic granule, but no unchanged partition/history fallback exists |
+| `storage/substrate/digest_index.rs:DigestIndex::digest` | R: reads the private node memo; predecessor/cold roots carry settled caches and ordinary updates invalidate only changed paths |
+| `storage/substrate/digest_index.rs:Node::digest` | R: private dirty-closure derivation over changed nodes and fixed-size settled predecessor roots; full cold trees are settled inside lane-taking build_sorted; no arena/record/history traversal |
 | `storage/substrate/digest_index.rs:visit_allocations` | R: explicit bulk read/inspection/compaction or generic supplied-input construction; not a semantic cold engine |
 | `storage/residency/kind_index.rs:visit_allocations` | R: explicit bulk read/inspection/compaction or generic supplied-input construction; not a semantic cold engine |
 | `storage/residency/kind_incremental.rs:visit_allocations` | R: explicit bulk read/inspection/compaction or generic supplied-input construction; not a semantic cold engine |
@@ -453,8 +455,13 @@ D/C/V cover the full-construction engines and typed propagation listed below. B 
 ## Deliberate non-matches
 
 Empty `Default`/empty-root creation is constant work; full nonempty root construction
-is a separate lane-taking function. Digest/commitment getters hash fixed-size
-carried child roots, not all records. `DigestIndex::from_append_frontier` and
+is a separate lane-taking function. Slice 3 memoizes immutable Patricia node
+digests: ordinary getters visit the dirty closure above settled predecessor
+nodes, consuming fixed-size child digests rather than record/history contents.
+The lane-taking cold engine settles every new node before returning; a cold
+tree cannot defer whole-tree hashing to its first ordinary edit. The independent
+reconstruction property court checks that carried cache posture before reading
+the digest, and removing cold settlement fails it. `DigestIndex::from_append_frontier` and
 frontier quoting walk only a bounded right spine (at most native key width),
 not history length. Journal loops, changed-key/changed-word iterators and
 `KindRegionDirectory::replaced` visit the supplied change or newly imported

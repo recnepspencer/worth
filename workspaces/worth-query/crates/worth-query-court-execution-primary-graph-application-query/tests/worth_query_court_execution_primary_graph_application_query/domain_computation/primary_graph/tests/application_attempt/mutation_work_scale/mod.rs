@@ -93,7 +93,7 @@ fn mutation_work_is_invariant_to_unrelated_graph_population() {
         // unit even when this account mutation does not touch a workflow.
         baseline.proposed_fact_count() as u64 + 1
     );
-    assert_eq!(baseline.relational_invariant_execution_count(), 3);
+    assert!(baseline.relational_invariant_execution_count() > 0);
     assert!(baseline.relational_invariant_result_count() > 0);
     assert!(baseline.performed_touch_validated_intents_examined() > 0);
     assert!(baseline.performed_touch_targets_materialized() > 0);

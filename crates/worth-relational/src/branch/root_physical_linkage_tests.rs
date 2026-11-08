@@ -38,6 +38,7 @@ fn equal_envelope_bytes_cannot_replace_exact_physical_catalog_custody() {
     root.committed = Some(RelationalCommittedBranchRoot {
         commit_change: None,
         descriptor,
+        canonical_payload: envelope.encode_authoritative_payload().unwrap().into(),
         canonical_envelope: Arc::clone(&envelope),
         axes,
         publication_cost: Default::default(),
