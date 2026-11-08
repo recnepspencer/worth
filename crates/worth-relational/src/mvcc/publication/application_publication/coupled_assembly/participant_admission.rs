@@ -22,46 +22,62 @@ pub(super) fn admit(
     let ordinary = matches!(binding.owners.source, super::super::CoupledSource::Edit(_));
     let prior = match publication {
         RequiredOutputPublication::Preserve { predecessor, .. } => {
-            if !predecessor.origin.source_scope_owned
-                || !meaning.same_route(&predecessor.origin.meaning)
+            if !meaning.same_route(&predecessor.origin.meaning)
+                || (!ordinary && !predecessor.origin.source_scope_owned)
             {
                 return Err(foreign());
             }
-            let expected = if ordinary {
+            // Independent ordinary predecessors carry their real canonical seal.
+            // The canonical installer's predecessor owner checks current position,
+            // runtime, complete origin and relations before any publication.
+            if ordinary && !predecessor.origin.source_scope_owned {
                 let (producer, _) = publication.lineage_attribution().expect("admitted writer");
-                custody::readmit_successor(
-                    candidate.runtime.services.runtime_instance_id(),
-                    execution,
-                    &binding.installed,
-                    &binding.owners.before,
-                    producer,
-                    meaning,
-                )?
+                if binding
+                    .installed
+                    .source_scope_ownership
+                    .scope_kind(producer)
+                    .is_some()
+                {
+                    return Err(foreign());
+                }
+                Some(Arc::clone(&predecessor.origin))
             } else {
-                execution
-                    .run_native_with_checkpoint(|context| {
-                        let mut expected = None;
-                        for owner in &binding.owners.owners {
-                            checkpoint(
-                                context,
-                                (meaning.family.len() + owner.origin.meaning.family.len() + 65)
-                                    as u64,
-                            )
-                            .map_err(custody::execution_stop)?;
-                            if owner.origin.meaning.same_route(meaning) {
-                                expected = Some(owner.clone());
+                let expected = if ordinary {
+                    let (producer, _) = publication.lineage_attribution().expect("admitted writer");
+                    custody::readmit_successor(
+                        candidate.runtime.services.runtime_instance_id(),
+                        execution,
+                        &binding.installed,
+                        &binding.owners.before,
+                        producer,
+                        meaning,
+                    )?
+                } else {
+                    execution
+                        .run_native_with_checkpoint(|context| {
+                            let mut expected = None;
+                            for owner in &binding.owners.owners {
+                                checkpoint(
+                                    context,
+                                    (meaning.family.len() + owner.origin.meaning.family.len() + 65)
+                                        as u64,
+                                )
+                                .map_err(custody::execution_stop)?;
+                                if owner.origin.meaning.same_route(meaning) {
+                                    expected = Some(owner.clone());
+                                }
                             }
-                        }
-                        Ok::<_, TransactionCommitError>(expected)
-                    })
-                    .map_err(custody::execution_stop)?
-                    .0?
+                            Ok::<_, TransactionCommitError>(expected)
+                        })
+                        .map_err(custody::execution_stop)?
+                        .0?
+                }
+                .ok_or_else(|| part::reject(Cause::ExtraCoupledOwner, subject))?;
+                if !expected.same_origin(predecessor) {
+                    return Err(foreign());
+                }
+                Some(Arc::clone(&predecessor.origin))
             }
-            .ok_or_else(|| part::reject(Cause::ExtraCoupledOwner, subject))?;
-            if !expected.same_origin(predecessor) {
-                return Err(foreign());
-            }
-            Some(Arc::clone(&predecessor.origin))
         }
         RequiredOutputPublication::Birth { absence, .. } => {
             if !ordinary {

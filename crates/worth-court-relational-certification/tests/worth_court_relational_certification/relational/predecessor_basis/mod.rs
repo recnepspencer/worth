@@ -168,3 +168,5 @@ mod coupled_unlisted;
 mod edit_admission;
 
 mod recorded_selector;
+
+mod independent_successor;

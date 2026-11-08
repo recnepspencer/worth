@@ -8,6 +8,7 @@ mod decision_dependency;
 mod diamond;
 mod failure;
 mod healthy;
+mod independent;
 mod late_parent;
 mod partition;
 mod permission;

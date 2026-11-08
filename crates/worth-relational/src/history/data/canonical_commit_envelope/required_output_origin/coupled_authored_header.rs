@@ -41,7 +41,10 @@ impl CanonicalCommitEnvelope {
                         CanonicalOutputPublication::Birth
                             | CanonicalOutputPublication::BirthAfterCodecRetirement { .. }
                     ));
-            if !part.origin.source_scope_owned || !producing {
+            if (!part.origin.source_scope_owned
+                && !matches!(event.sources, CanonicalCoupledAuthoredSources::Edit(_)))
+                || !producing
+            {
                 return Err("coupled participant is not an opted-in producing origin".into());
             }
             self.validate_producer_retirement_components(

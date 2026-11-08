@@ -219,14 +219,23 @@ where
             source_partition: partition,
             source_epoch: source.checkpoint_identity(),
         };
-        graph.with_runtime(execution, |native| {
-            native.readmit_current_owned_output_successor(
-                execution,
-                &publisher.native,
-                before.relational_basis(),
-                Binding::IDENTITY,
-                &meaning,
-            )
+        graph.with_runtime(execution, |native| match Binding::OWNERSHIP {
+            worth_foundational::facade::ProducerPublicationOwnership::SourceScopeCascade => native
+                .readmit_current_owned_output_successor(
+                    execution,
+                    &publisher.native,
+                    before.relational_basis(),
+                    Binding::IDENTITY,
+                    &meaning,
+                ),
+            worth_foundational::facade::ProducerPublicationOwnership::Independent => native
+                .readmit_current_independent_output_successor(
+                    execution,
+                    &publisher.native,
+                    before.relational_basis(),
+                    Binding::IDENTITY,
+                    &meaning,
+                ),
         })?
     };
     if demand.reuse_prepared && assembly.permits_unchanged_output_selection() {

@@ -33,7 +33,7 @@ pub(super) fn runtime() -> RelationalRuntime {
         .build()
         .unwrap()
 }
-fn target(key: &str) -> CreatedEntityRef {
+pub(super) fn target(key: &str) -> CreatedEntityRef {
     CreatedEntityRef {
         partition_id: PartitionId::main(),
         kind_id: KindId(1),
@@ -43,7 +43,7 @@ fn target(key: &str) -> CreatedEntityRef {
 fn fields(value: &str) -> AspectFieldPatch {
     string_aspect_field_patch([(aspect_key("name"), field_key("name"), value)])
 }
-fn create(key: &str) -> WorkerIntentBatch {
+pub(super) fn create(key: &str) -> WorkerIntentBatch {
     WorkerIntentBatch::new("authored-create").push(MutationIntent::Create(CreateIntent::Entity(
         EntitySpec {
             partition_id: PartitionId::main(),
@@ -73,6 +73,11 @@ pub(super) fn commit(prior: &RelationalRequiredOutputPublication) -> CommitId {
 }
 impl World {
     pub fn new(execution: &ExecutionRequest<'_, '_>) -> Self {
+        Self::with_other_publication_owner(execution).0
+    }
+    pub fn with_other_publication_owner(
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> (Self, RelationalInstalledApplicationPublicationAuthority) {
         let mut runtime = runtime();
         let receipt = runtime
             .prepare_initial_schema_installation()
@@ -80,6 +85,7 @@ impl World {
             .install(RelationalSchemaRegistry::new())
             .unwrap();
         let (owner, installed) = receipt.issue_application_publication_owner();
+        let (_, other) = receipt.issue_application_publication_owner();
         let installed =
             installed.with_source_scope_owned_producers([("source-owned".into(), KindId(1))]);
         let mut tx = begin_main_transaction(&runtime);
@@ -89,13 +95,16 @@ impl World {
         let source = born.created_entity(&target("old-input")).unwrap();
         let source_commit = born.commit.commit_id;
         release_test_commit_snapshot(&runtime, &born);
-        Self {
-            runtime,
-            owner,
-            installed,
-            source,
-            source_commit,
-        }
+        (
+            Self {
+                runtime,
+                owner,
+                installed,
+                source,
+                source_commit,
+            },
+            other,
+        )
     }
     pub fn basis(&self) -> AdmittedRelationalBranchBasis {
         self.runtime

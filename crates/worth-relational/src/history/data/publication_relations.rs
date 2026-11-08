@@ -143,8 +143,7 @@ pub(super) fn charge(context: &mut MapKernelContext<'_, '_>, work: usize) -> Res
     let work = u64::try_from(work).map_err(|_| {
         Stop::Request(crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow)
     })?;
-    context
-        .checkpoint(work)
+    crate::execution::request_stage::checkpoint(context, work)
         .map_err(|cause| Stop::Request(cause.into()))
 }
 

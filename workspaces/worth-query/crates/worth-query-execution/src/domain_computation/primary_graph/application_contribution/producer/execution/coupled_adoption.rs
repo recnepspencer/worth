@@ -24,11 +24,8 @@ impl CoupledAdoption {
         Schema: ApplicationSchema + 'static,
         Binding: WorthQueryApplicationProducerBinding<Schema>,
     {
-        if Binding::OWNERSHIP
-            != worth_foundational::facade::ProducerPublicationOwnership::SourceScopeCascade
-        {
-            return Ok(None);
-        }
+        // Completion comes from this actual performed coupled writer, not
+        // source ownership. Independent routes carry the same sealed receipt.
         let handle = &runtime.runtime.primary_provider.graph;
         let candidate = handle
             .output_lineage

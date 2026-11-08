@@ -4328,9 +4328,14 @@ Changed inputs take the real producer path. Final qualification also checks this
 verified parent support, so a later child changing one of its inputs refuses the
 whole edit before publication.
 
+Independent publication families also join an ordinary coupled edit. Native
+selects their current canonical route and original publication coordinate;
+they do not use the source-owned roster. Initial and Preserve producers share
+the family route, and output readiness rejoins their actual performed receipt.
+The retirement and restoration paths keep their source-owned custody rules.
+
 [P5/S6 synchronous edit publication](../plans/WORTH-query/synchronous-edit-publication.md)
-is still in progress: discovered roots,
-independent routes and the explicit
+is still in progress: discovered roots and the explicit
 document-seal envelope remain in that plan. Demand-only output graphs retain
 their explicit lazy delivery meaning. Declared predecessor observations also
 work inside coupled handlers, with independently admitted current-C read

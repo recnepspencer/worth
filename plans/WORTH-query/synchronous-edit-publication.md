@@ -744,3 +744,55 @@ intent drift and read-only readiness. Two worker mutants (skip the installed
 source fence,discard recorded replay before the fresh gate) are killed and
 SHA-restored. No existing assertion was loosened. The new typed cause preserves
 the terminal classifications of the old general program-entry refusal.
+
+## Independent route custody boundary
+
+Atad3099a13b the coupled reader uses only the owned-roster successor owner. That
+owner correctly returns no custody for an independent producer. Add real
+hot/cold and worker public create/preserve/healthy-reuse courts before changing
+it. Native's existing route-position and canonical-publication owner must issue
+the independent successor; the owned path keeps mandatory storage and its
+currentness owner,with no history fallback for missing owned facts. Share
+selection at that Native owner,retain the old transition entrance's supported
+postures,and reject an owned origin on the independent entrance. Query only
+dispatches installed ownership meaning; it invents no origin,scope,settlement
+or predecessor input. Qualify worker,foreign-origin and mutation evidence.
+
+Independent-route red evidence: initial Birth is refused by the coupled header's
+blanket opt-in requirement, in addition to the owned-only predecessor reader.
+Ordinary Edit permits independent producing origins; retirement/restoration
+retain the existing owned-only contract. Independent readmission uses the actual
+current position and canonical coordinate, candidate payload verification stays
+at currentness, and final predecessor correspondence stays at canonical install.
+
+### Independent publication routes
+
+Ordinary Edit now accepts independent Birth/Preserve origins in the existing
+coupled header. The retirement/restoration opt-in rule is unchanged. Query
+uses exhaustive installed ownership meaning to dispatch to either the durable
+owned roster or the existing Native position/canonical owner. Independent
+readmission selects the actual current canonical origin and ordinal; it grants
+no payload currentness exemption. Its installed ownership class and issuer
+must agree. Initial and Preserve identities may differ within the same family
+route. No ownership storage or history version is added.
+
+An ordinary independent participant retains that genuine canonical holder for
+the existing installation predecessor validator, which still checks runtime,
+current position, complete original meaning and relation correspondence before
+publication. The currentness owner verifies source/output facts against the
+candidate, and final support qualification still runs. Readiness may adopt an
+independent writer's actual completed coupled receipt through the same exact
+source/build/receipt checks as an owned writer. No completion is fabricated.
+
+Four public accounted/worker, hot/cold courts cover Initial, Preserve with the
+same identity, healthy zero-contact reuse, one physical commit per edit, and
+readiness with no contacts or commits. Two Native courts check canonical
+coordinates, a second genuine owner on the same runtime, owned-origin and
+installed-ownership refusal naming the source, stale basis, and no state effects.
+The full public carrier passes 610 tests (2 ignored); the Native predecessor
+carrier passes 17. Nine runtime mutants are killed and restored by SHA-256,
+including lost predecessor/completion, regeneration, owned-origin/issuer/class
+admission, stale basis and accounting-only worker work. New checks add evidence;
+no existing assertion is loosened or removed. Restored focused and legacy
+regressions close this checkpoint. Discovered roots, the authored-stage/seal
+envelope and full P5/S6 qualification remain open.
