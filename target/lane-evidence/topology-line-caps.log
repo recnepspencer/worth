@@ -1,0 +1,12 @@
+COMMAND: ["C:/Program Files/Git/bin/bash.exe", "scripts/ci/check_workspace_rust_line_caps.sh", "dirty"]
+HEAD: bb3e73655b80af464f5dfdbbd73a93b8e616d9d8
+CLEAN: false
+START: 2026-11-08T18:27:04.579714+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+[workspace-rust-line-caps] enforcing 400-line cap for dirty Rust files
+warning: in the working copy of 'workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/absence.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'workspaces/worth-query/crates/worth-query-testkit-host/src/host/support/checkpoint_capture.rs', LF will be replaced by CRLF the next time Git touches it
+[workspace-rust-line-caps] PASS: checked 4 Rust files
+
+END: 2026-11-08T18:27:21.121005+00:00
+EXIT: 0

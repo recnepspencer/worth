@@ -1,0 +1,69 @@
+COMMAND: ["python", "target/lane-evidence/shared_checkpoint_verify.py"]
+HEAD: 0df3280458de6db962dd6c2adc90e5c0b0191976
+CLEAN: false
+START: 2026-11-08T17:29:02.369889+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+C_FREE_BYTES 1048397668352
+shared-root-check-driver: exit=0 log=C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\shared-root-check-driver.log
+C_FREE_BYTES 1047361880064
+shared-query-check-driver: exit=0 log=C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\shared-query-check-driver.log
+C_FREE_BYTES 1045968654336
+prebuild: cargo build --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-certification\fixtures\consumer_entry\Cargo.toml" -p worth-query-topology-entry --example shared_execution --message-format=json --unit-graph -Z unstable-options
+prebuild: cargo build --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-certification\fixtures\consumer_entry\Cargo.toml" -p worth-query-topology-entry --example shared_execution --message-format=json
+\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-physical-backend)
+   Compiling rmp v0.8.15
+   Compiling windows-numerics v0.3.1
+   Compiling windows-collections v0.3.2
+   Compiling windows-future v0.3.2
+   Compiling worth-store-contracts v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-contracts)
+   Compiling smallvec v1.16.3
+   Compiling toml_datetime v0.6.11
+   Compiling serde_spanned v0.6.9
+   Compiling rmp-serde v1.3.1
+   Compiling serde_stacker v0.1.14
+   Compiling windows v0.62.2
+   Compiling worth-store-budgets v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-budgets)
+   Compiling toml_edit v0.22.27
+   Compiling sysinfo v0.38.4
+   Compiling dashmap v6.2.1
+   Compiling toml v0.8.23
+   Compiling worth-store-aspect-native v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-aspect-native)
+   Compiling worth-query-declaration v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-declaration)
+   Compiling worth-store-authority v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-authority)
+   Compiling worth-store-physical-format v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-physical-format)
+   Compiling worth-store-security v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-security)
+   Compiling worth-store-modes v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-modes)
+   Compiling worth-signal v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-signal)
+   Compiling worth-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-relational)
+   Compiling worth-query-consumer-values v0.0.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-certification\fixtures\consumer_values)
+   Compiling worth-query-installation v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-installation)
+   Compiling worth-query-decl v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-decl)
+   Compiling worth-store-wal v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-wal)
+   Compiling worth-store-physical-integrity v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-physical-integrity)
+   Compiling worth-store-buffer-pool v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-buffer-pool)
+   Compiling worth-store-recovery-physics v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-recovery-physics)
+   Compiling worth-query-admission v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-admission)
+   Compiling worth-store-physical-isolation v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-physical-isolation)
+   Compiling worth-store-io-scheduler v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-io-scheduler)
+   Compiling worth-store-reclaim-policy v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-reclaim-policy)
+   Compiling worth-store-retention v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-retention)
+   Compiling worth-store-lsm-authority v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-lsm-authority)
+   Compiling worth-store-tiering v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-tiering)
+   Compiling worth-store-blob-chunks v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-blob-chunks)
+   Compiling worth-store-layout-indexes v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-layout-indexes)
+   Compiling worth-store v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store)
+   Compiling worth-store-recovery-runtime v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-recovery-runtime)
+   Compiling worth-runtime-bridge v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-runtime-bridge)
+   Compiling worth-store-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-relational)
+   Compiling worth-runtime-world v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-runtime-world)
+   Compiling worth-query-execution v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-execution)
+   Compiling worth-store-application v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-application)
+   Compiling worth-query-publication v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-publication)
+   Compiling worth-query-host v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-host)
+   Compiling worth-query-topology-entry v0.0.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-certification\fixtures\consumer_entry\topology_entry)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 12m 43s
+prebuild: "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-certification\fixtures\consumer_entry\target\debug\examples\shared_execution.exe"
+RESULT 0
+
+END: 2026-11-08T17:55:08.956967+00:00
+EXIT: 0

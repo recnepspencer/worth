@@ -1,0 +1,19 @@
+Command: ["C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\principal_charge_debug.py", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\topology-funding\\build\\binaries.json", "worth_query_topology_entry", "checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh"]
+Working directory: C:\programming\worth worktees\worktrees\m3-host-home
+HEAD: bb3e73655b80af464f5dfdbbd73a93b8e616d9d8
+Git status --short empty: False
+Start: 2026-11-08T18:14:33.175037+00:00
+
+{"type": "cargo-invocation", "command": ["C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\principal_charge_debug.py", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\topology-funding\\build\\binaries.json", "worth_query_topology_entry", "checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh"], "cwd": "C:\\programming\\worth worktees\\worktrees\\m3-host-home", "capture": "separate", "mode": "build", "target_dir": null, "cargo_profile": null}
+DEBUG_COMMAND "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-certification\fixtures\consumer_entry\target\debug\deps\worth_query_topology_entry-66cad83484de97d5.exe" --exact checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh --nocapture
+
+Traceback (most recent call last):
+  File "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\principal_charge_debug.py", line 42, in <module>
+    else:raise RuntimeError('PDB has no checkpoint branch line '+str(wanted))
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: PDB has no checkpoint branch line 58
+
+{"type": "cargo-result", "exit_code": 1}
+
+End: 2026-11-08T18:14:34.471809+00:00
+Exit code: 1

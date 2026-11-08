@@ -1,0 +1,6 @@
+{
+  "exit": 0,
+  "pe_main_stack_reserve": 1048576,
+  "rust_min_stack_present": false,
+  "example_source_unchanged": true
+}

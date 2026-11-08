@@ -1,0 +1,16 @@
+{
+  "scope": "selected-packages",
+  "selection": {
+    "packages": [
+      "worth-query-topology-entry"
+    ],
+    "targets": {
+      "lib": true
+    }
+  },
+  "cargo_arguments": [
+    "--package",
+    "worth-query-topology-entry",
+    "--lib"
+  ]
+}
