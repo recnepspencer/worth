@@ -169,7 +169,13 @@ impl CapturedWorldInterimOrigin {
 pub(crate) fn charge(request: &ExecutionRequest<'_, '_>, work: usize) -> Result<(), Stop> {
     let work = u64::try_from(work).map_err(|_| Stop::SizeOverflow)?;
     request
-        .run_native_with_checkpoint(|context| context.checkpoint(work))
+        .run_native_with_checkpoint(|context| {
+            if context.has_accounting() {
+                context.checkpoint(work)
+            } else {
+                context.poll()
+            }
+        })
         .map_err(Stop::Request)?
         .0
         .map_err(|cause| Stop::Request(worth_execution::WorkCeilingDenial::Stopped(cause)))
