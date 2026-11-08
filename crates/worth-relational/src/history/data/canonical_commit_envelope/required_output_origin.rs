@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 mod authored_cascade;
 mod coupled_authored;
 mod coupled_authored_header;
+mod coupled_source;
 pub(crate) use coupled_authored::{
     CanonicalCoupledAuthoredPublication, CanonicalCoupledAuthoredSources,
 };

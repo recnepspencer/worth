@@ -34,4 +34,5 @@ pub enum AuthoredRetirementRefusal {
     HistoricalSelectionNotOwned {
         publication: crate::history::data::CommitId,
     },
+    CoupledSourceNotLive,
 }

@@ -99,7 +99,7 @@ fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
     let schema = predecessor::declare(family::predecessor_family::declare(schema));
-    let schema = authored_member::declare(schema);
+    let schema = synchronous_edit::declare(authored_member::declare(schema));
     let schema = query::declare(member_delete::declare(member_edit::declare(edit::declare(
         navigation::declare(schema),
     ))));

@@ -1,4 +1,5 @@
 pub(crate) use application_publication::BoundAuthoredCoupling;
+pub(crate) use application_publication::CoupledSource;
 mod application_publication;
 mod authority;
 mod preparation_denial;

@@ -21,6 +21,7 @@ impl CanonicalCommitEnvelope {
             return Err("mixed or empty coupled authored publication".into());
         }
         match &event.sources {
+            CanonicalCoupledAuthoredSources::Edit(_) => {}
             CanonicalCoupledAuthoredSources::Retirement(source) => {
                 self.validate_authored_retirement_components(source, true, context)?;
             }

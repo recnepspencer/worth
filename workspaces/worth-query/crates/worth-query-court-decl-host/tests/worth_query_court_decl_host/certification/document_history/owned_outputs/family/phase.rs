@@ -99,7 +99,7 @@ macro_rules! phase {
                 fn operation_input(&self, row: &query::Row) -> Input { Input(row.clone()) }
                 fn idempotency_key(&self, _: &query::Row, identity: &[u8; 32]) -> u64 { u64::from_le_bytes(identity[..8].try_into().unwrap()) }
                 fn domain_denial_reason(&self, denial: &Denial) -> Option<&'static str> { Some(match denial {
-                    Denial::InitialHasPriorOutput => "InitialHasPriorOutput", Denial::PreserveMissingOutput => "PreserveMissingOutput",
+                    Denial::InitialHasPriorOutput => "InitialHasPriorOutput", Denial::PreserveMissingOutput => "PreserveMissingOutput", Denial::DerivedValueOutOfRange => "DerivedValueOutOfRange",
                 }) }
             }
             use worth_query_host::facade::domain;
@@ -158,9 +158,10 @@ macro_rules! phase {
                     match result { Ok(Ok(decision)) => HandlerResult::Completed(decision), Ok(Err(denial)) => HandlerResult::DomainDenied(denial), Err(error) => HandlerResult::ExecutionDenied(error) }
                 }
                 fn build_candidate(&self, input: &Input, decision: Decision, writer: &mut CandidateWriter<'_, Schema, Binding>) -> HandlerResult<(), Denial> {
+                    let value = (self.derive)(input.0.value);
+                    if value == u64::MAX { return HandlerResult::DomainDenied(Denial::DerivedValueOutOfRange); }
                     let result = (|| {
                         let source = writer.projected_entity(&decision.source)?;
-                        let value = (self.derive)(input.0.value);
                         let output = match &decision.output {
                             Some(prior) => { let output = writer.projected_entity(prior)?; writer.write_field(&output, $value::at(stringify!($value)), value)?; output }
                             None => {

@@ -1,4 +1,5 @@
 pub(crate) use publication::BoundAuthoredCoupling;
+pub(crate) use publication::CoupledSource;
 mod observation;
 pub(crate) mod publication;
 pub use publication::RelationalPublicationReadDependencyDenial;

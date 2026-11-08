@@ -21,6 +21,7 @@ pub use coupled_assembly::{
     RelationalAuthoredCoupledTransaction, RelationalCoupledAssemblyFailure,
     RelationalCoupledAuthoredPublication,
 };
+pub(crate) use coupled_owners::CoupledSource;
 pub use coupled_owners::{RelationalAuthoredCoupledOwners, RelationalDeclaredCoupledOwner};
 mod predecessor_basis;
 mod predecessor_observation;

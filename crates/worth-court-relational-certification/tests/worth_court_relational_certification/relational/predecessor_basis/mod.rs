@@ -161,3 +161,6 @@ mod cost {
         assert_eq!(world.active_holds(), baseline);
     }
 }
+
+mod coupled_inputs;
+mod edit_admission;

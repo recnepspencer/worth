@@ -16,7 +16,9 @@ impl BoundAuthoredCoupling {
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .take()
-            .ok_or_else(|| part::reject(Cause::ForeignCoupledOwner, self.owners.anchor))?;
+            .ok_or_else(|| {
+                part::reject(Cause::ForeignCoupledOwner, self.owners.source.subject())
+            })?;
         execution
             .run_native_with_checkpoint(|context| {
                 for intent in commands
@@ -35,7 +37,9 @@ impl BoundAuthoredCoupling {
             .map_err(custody::execution_stop)?
             .0?;
         if !candidate.identity.same_proposal_sequence(identity) || candidate.commands != *commands {
-            return Err(part::reject(Cause::ForeignCoupledOwner, self.owners.anchor).into());
+            return Err(
+                part::reject(Cause::ForeignCoupledOwner, self.owners.source.subject()).into(),
+            );
         }
         std::mem::swap(symbols, &mut candidate.mutation.identities.symbols);
         *self.completed.lock().unwrap_or_else(|e| e.into_inner()) =

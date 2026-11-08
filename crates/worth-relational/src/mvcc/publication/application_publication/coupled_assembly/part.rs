@@ -56,7 +56,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         else {
             let subject = match &publication {
                 RequiredOutputPublication::Birth { meaning, .. } => meaning.source_scope,
-                _ => self.binding.owners.anchor,
+                _ => self.binding.owners.source.subject(),
             };
             return Err(reject(Cause::ForeignCoupledOwner, subject).into());
         };

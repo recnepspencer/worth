@@ -111,7 +111,7 @@ pub(crate) fn prepare_coupled_candidate(
     }
     let RelationalAuthoredCoupledCandidate { parts, .. } = candidate;
     execution.run_native_with_checkpoint(|context| {
-        for expected in &binding.owners.owners {
+        for expected in binding.owners.required_owners() {
             for part in &parts {
                 let RequiredOutputPublication::Preserve { meaning, .. } = &part.publication else { unreachable!("admitted Preserve") };
                 checkpoint(context, (meaning.family.len() + expected.origin.meaning.family.len() + 65) as u64)

@@ -9,6 +9,7 @@ use readiness::readiness_query;
 pub enum Denial {
     InitialHasPriorOutput,
     PreserveMissingOutput,
+    DerivedValueOutOfRange,
 }
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "owned-outputs.producer-denial.v1" });
 worth_query_structured_value_binding!(pub ResultBinding for () { identity: "owned-outputs.producer-result.v1" });

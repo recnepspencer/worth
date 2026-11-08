@@ -77,7 +77,12 @@ impl RequiredOutputPublication {
     pub(crate) fn authored_restoration(&self) -> Option<&super::RelationalAuthoredRestoration> {
         match self {
             Self::AuthoredCascadeRestoration { restoration, .. } => Some(restoration),
-            Self::CoupledAuthored { group } => group.binding.owners.restoration.as_deref(),
+            Self::CoupledAuthored { group } => group
+                .binding
+                .owners
+                .source
+                .restoration()
+                .map(|plan| plan.as_ref()),
             _ => None,
         }
     }

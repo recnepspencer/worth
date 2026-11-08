@@ -111,7 +111,12 @@ impl PublicationBasisImage {
                         .map_err(request)?;
                         let route = PublicationBasisRoute::of(&origin.meaning);
                         routes.remove(&route, execution, context)?;
-                        if !origin.source_scope_owned
+                        // Coupled writers consumed their pre-writer applied
+                        // images, not this transaction's committed C basis.
+                        // Until that exact image is carried by this owner, the
+                        // existing predecessor API must report unavailable.
+                        if envelope.coupled_authored_publication.is_some()
+                            || !origin.source_scope_owned
                             || matches!(
                                 origin.publication,
                                 CanonicalOutputPublication::ProducerRetirement { .. }

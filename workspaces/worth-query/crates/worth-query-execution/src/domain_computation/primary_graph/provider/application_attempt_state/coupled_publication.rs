@@ -121,3 +121,14 @@ pub(in crate::domain_computation::primary_graph::provider) fn authored_retiremen
     })?;
     Ok(Some((anchor, co_anchors, roles)))
 }
+
+pub(in crate::domain_computation::primary_graph::provider) fn authored_source(
+    staged: &WorthQueryStagedApplicationAttempt<'_>,
+) -> worth_relational::facade::identity::EntityId {
+    let scope = staged.attempt.affinity().operation_scope().scope();
+    worth_relational::facade::identity::EntityId::new(
+        worth_relational::facade::identity::PartitionId::new(scope.partition_id()),
+        scope.local_slot(),
+        scope.generation(),
+    )
+}

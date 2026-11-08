@@ -30,7 +30,7 @@ impl RequiredOutputPublication {
             Self::HistoricalSelection { selections, .. } => {
                 selections.first()?.publication.origin.meaning.source_scope
             }
-            Self::CoupledAuthored { group } => group.binding.owners.anchor,
+            Self::CoupledAuthored { group } => group.binding.owners.source.subject(),
         })
     }
 
@@ -65,7 +65,7 @@ impl RequiredOutputPublication {
                 );
             }
             Self::CoupledAuthored { group } => {
-                into.push(RecordRef::Entity(group.binding.owners.anchor));
+                into.push(RecordRef::Entity(group.binding.owners.source.subject()));
                 for part in &group.parts {
                     part.publication.ownership_seeds(into);
                 }

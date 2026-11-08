@@ -37,6 +37,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup.handler::<authored_member::retire::Binding, _>(authored_member::retire::Handler)?;
         setup.handler::<authored_member::restore::Binding, _>(authored_member::restore::Handler)?;
         setup.handler::<edit::Binding, _>(edit::Handler)?;
+        setup.handler::<synchronous_edit::Binding, _>(synchronous_edit::Handler)?;
         setup.handler::<member_edit::Binding, _>(member_edit::Handler)?;
         setup.handler::<member_delete::Binding, _>(member_delete::Handler)?;
         family::predecessor_family::install(setup)?;
@@ -117,6 +118,18 @@ where
     P: ApplicationProgramDefinition<Schema, Contributions = (Contribution,)>,
     P::Outputs: WorthQueryApplicationProgramRoots<Schema>,
 {
+    install_configured::<P>(limits, initial_value, other_value, Configuration::default())
+}
+pub(super) fn install_configured<P>(
+    limits: WorthQueryInMemoryApplicationLimits,
+    initial_value: u64,
+    other_value: Option<u64>,
+    configuration: Configuration,
+) -> WorthQueryProgramApplicationRuntime<Schema, P>
+where
+    P: ApplicationProgramDefinition<Schema, Contributions = (Contribution,)>,
+    P::Outputs: WorthQueryApplicationProgramRoots<Schema>,
+{
     let schema = Schema::declaration().unwrap();
     in_memory_program(
         ApplicationProgramAuthoring::<Schema, P>::begin()
@@ -124,7 +137,7 @@ where
             .validated_program()
             .unwrap(),
         schema,
-        (Configuration::default(),),
+        (configuration,),
         ApplicationBuildIdentity::parse("91830000-0000-0000-0000-000000005356").unwrap(),
         limits,
         |_, graph, installed| seed(graph, installed, initial_value, other_value),

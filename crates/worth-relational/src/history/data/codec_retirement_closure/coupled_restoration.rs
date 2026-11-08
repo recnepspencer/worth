@@ -33,6 +33,7 @@ impl RelationalRuntime {
                     .map(|(id, _)| *id)
                     .unwrap_or_else(|| match &group.sources {
                         CanonicalCoupledAuthoredSources::Retirement(source) => source.anchor,
+                        CanonicalCoupledAuthoredSources::Edit(source) => *source,
                         CanonicalCoupledAuthoredSources::Restoration(source) => {
                             source.original_anchor
                         }
@@ -101,15 +102,14 @@ impl RelationalRuntime {
             .collect();
         Ok(Some(RelationalAuthoredCoupledOwners {
             before: restoration.before.clone(),
-            anchor: source.anchor,
-            birth: source.birth,
-            co_anchors: source.co_anchors.clone(),
-            roles: Vec::new(),
+            source: crate::mvcc::CoupledSource::Restoration {
+                anchor: source.anchor,
+                plan: Arc::new(restoration.clone()),
+            },
             retirements: restoration.publications.clone(),
             owners,
             current,
             deferred_edges,
-            restoration: Some(Arc::new(restoration)),
         }))
     }
 }

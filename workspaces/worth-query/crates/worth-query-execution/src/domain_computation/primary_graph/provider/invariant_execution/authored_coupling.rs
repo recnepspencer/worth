@@ -46,33 +46,46 @@ impl WorthQueryPrimaryGraphProvider {
                 if assembly.is_none() {
                     return Ok(None);
                 }
-                let selected = {
+                let (selected, source) = {
                     let attempts = self.attempts.lock().unwrap_or_else(|p| p.into_inner());
                     let staged = attempts
                         .staged_attempt(session)
                         .ok_or_else(missing_candidate_failure)?;
-                    super::super::application_attempt_state::coupled_publication::authored_retirement_input(&self.graph.layout, &staged)?
-                };
-                let Some((anchor, co_anchors, roles)) = selected else {
-                    return Ok(None);
+                    let selected = super::super::application_attempt_state::coupled_publication::authored_retirement_input(&self.graph.layout, &staged)?;
+                    (
+                        selected,
+                        super::super::application_attempt_state::coupled_publication::authored_source(&staged),
+                    )
                 };
                 Some(
                     self.graph
                         .with_runtime(execution, |runtime| {
-                            runtime.readmit_authored_coupled_owners(
-                                execution,
-                                &publisher.native,
-                                material.product.observation().basis().relational_basis(),
-                                anchor,
-                                &co_anchors,
-                                &roles,
-                            )
+                            let basis = material.product.observation().basis().relational_basis();
+                            match selected {
+                                Some((anchor, co_anchors, roles)) => runtime
+                                    .readmit_authored_coupled_owners(
+                                        execution,
+                                        &publisher.native,
+                                        basis,
+                                        anchor,
+                                        &co_anchors,
+                                        &roles,
+                                    ),
+                                None => runtime.readmit_edit_coupled_owners(
+                                    execution,
+                                    &publisher.native,
+                                    basis,
+                                    source,
+                                ),
+                            }
                         })
                         .map_err(map_validation_failure)?,
                 )
             }
         };
-        let Some(owners) = owners.filter(|owners| owners.required_owner_count() != 0) else {
+        let Some(owners) =
+            owners.filter(RelationalAuthoredCoupledOwners::requires_coupled_assembly)
+        else {
             // A declaration does not run a producer when Native found no live
             // surviving writer. The established single/cascade path owns this edit.
             return Ok(None);

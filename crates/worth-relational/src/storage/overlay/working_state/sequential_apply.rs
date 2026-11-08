@@ -12,10 +12,14 @@ impl WorkingState {
         for (id, mut overlay) in next.partitions {
             let mut journal = next.mutation_journal.get(&id).cloned().unwrap_or_default();
             if let Some(prior) = self.partitions.get_mut(&id) {
+                // An entity-only suffix contributes no relation image. Keep
+                // the prefix's actual materialization posture so the current-
+                // fact writer can still promote an entity-only shell later.
+                let relations_are_sparse =
+                    prior.relation_overlay_is_sparse || !journal.relation_slots.is_empty();
                 prior.merge_overlay_from_owned(&mut overlay, &journal);
-                prior.relation_overlay_is_sparse = true;
+                prior.relation_overlay_is_sparse = relations_are_sparse;
             } else {
-                overlay.relation_overlay_is_sparse = true;
                 self.partitions.insert(id, overlay);
             }
             let combined = self.mutation_journal.entry(id).or_default();

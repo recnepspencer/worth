@@ -16,6 +16,7 @@ pub(super) fn validate_ancestry(
     for envelope in ancestry.iter().rev() {
         if let Some(group) = &envelope.coupled_authored_publication {
             match &group.sources {
+                CanonicalCoupledAuthoredSources::Edit(_) => {}
                 CanonicalCoupledAuthoredSources::Retirement(source) => {
                     let anchors = source.anchors().collect::<Vec<_>>();
                     for (anchor, birth) in std::iter::once((source.anchor, source.birth))

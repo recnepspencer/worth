@@ -72,3 +72,5 @@ mod recording_intent;
 mod group_recording;
 
 mod predecessor;
+
+mod synchronous_edit;

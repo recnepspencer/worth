@@ -4255,6 +4255,30 @@ rules using the actual producer antecedent, including after repeated Native-only
 restore/retire cycles. Restoration grants no producer readiness or replayable
 producer-input contract.
 
+### Ordinary coupled source edits
+
+An ordinary authored edit can declare the same finite set of existing
+source-owned roots through `coupled_outputs`. Each root's Preserve reads the
+edited source in the unpublished candidate. The source and every declared
+writer publish together, retaining the outputs' native identities and each
+writer's own custody. A producer refusal refuses the entire edit; the commit
+denial's `coupled_producer_denial()` retains that producer's typed cause and
+domain reason. A foreign prepared publication also refuses before any effect.
+
+The edit's receipt describes the source and producer changes in one Native
+commit. Repeating its idempotency key returns the original receipt. Subsequent
+demands reuse the coupled outputs without another producer contact or readiness
+commit, including after reopening a checkpoint with the same build. The
+source must be live at the exact current full-generation basis; Native refuses
+an unavailable source as `CoupledSourceNotLive`.
+
+This finite Preserve capability is the first part of
+[P5/S6 synchronous edit publication](../plans/WORTH-query/synchronous-edit-publication.md).
+Initial output creation, transitive dependent discovery, producer predecessor
+observations and the explicit document-seal envelope remain in that
+implementation plan. Native never labels the transaction-before basis as a
+coupled producer's consumed applied input image.
+
 For an authored splice that changes relations, add typed relation loci to the
 recorded inverse's pre-image demand:
 
