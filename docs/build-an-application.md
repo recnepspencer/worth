@@ -2595,7 +2595,7 @@ Its own methods:
 | `installed_program()` | The installed program meaning: `identity`, `revision`, `features`, `actions`, `connections`, `rules` |
 | `contains_action::<Binding>()`, `contains_output_root::<Root>()` | Whether the installed program owns an action or output root |
 | `supported_program::<P>()` | `Option<WorthQuerySupportedProgramHandle>` for a rostered program. The handle implements the `WorthQueryProgramOwner` trait; import the trait to call `owned_revision()`, which is the adoption target |
-| `retire_program_support(&revision)` | Retires support for a revision no branch still needs |
+| `retire_program_support(&execution, &revision)` | Retires support for a revision no branch still needs |
 | `retain_workflow_spec(..)` | Binds a workflow vocabulary ([Â§6.2](#62-install-the-workflow-vocabulary-once)) |
 | `close_conditional_runtime()` | Closes conditional resources at shutdown |
 
@@ -6309,9 +6309,14 @@ but did not publish is recovered with
   enforcing the old program's rules.
 - **Retained reads pin their program.** A retained selection or read keeps
   the old program's support and occurrence alive for as long as it is held.
-- **Retirement.** `retire_program_support(&revision)` succeeds only when no
+- **Retirement.** `retire_program_support(&execution, &revision)` succeeds only when no
   current branch, retained interpretation, or mandatory custody still uses
-  that revision.
+  that revision. In a Directory Home, the status is recorded in
+  `query.obligations`. Keep the revision rostered across graceful close/reopen:
+  retired support stays unavailable through `supported_program::<P>()`, and
+  another retirement returns `AlreadyRetired`. An unused revision can retire
+  while the main program remains available. See [Directory support retirement](../workspaces/worth-query/crates/worth-query/docs/foundations/programs-and-adoption.md#directory-support-retirement)
+  for durable failures and the close sequence.
 
 ---
 

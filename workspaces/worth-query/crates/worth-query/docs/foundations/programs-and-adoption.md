@@ -657,7 +657,7 @@ After a `NoEffect` or `ProductUnpublished` step, `advance(runtime, &principal, &
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-let receipt = host.retire_program_support(&revision_1)?;
+let receipt = host.retire_program_support(&execution, &revision_1)?;
 // WorthQueryProgramSupportRetirementReceipt, with inventory()
 ```
 
@@ -679,6 +679,30 @@ and released.
 While a retirement runs, adoption to that revision is refused with
 `ProgramSupportRetirementInProgress`, and commits under it get
 `ProgramSupportRetired`.
+
+### Directory support retirement
+
+Borrow the program runtime from the open Home and pass an `ExecutionRequest`
+to `retire_program_support`. Directory retirement records Active, Retiring and
+Retired status in `query.obligations`; the returned receipt acknowledges the
+Retired state. Keep the program on the supplied roster when reopening: its
+recorded retirement still prevents `supported_program::<P>()` from returning a
+handle. Repeating retirement returns `AlreadyRetired { revision }`.
+
+A current branch, retained interpretation or mandatory custody prevents
+retirement. A refused inventory does not retire support. After the refusal's
+Active abort is acknowledged, graceful close and reopen preserve that Active
+status. Durable publication failures are reported separately as
+`WorthQueryProgramSupportRetirementFailure::Durability`; a stopped request is
+not a retirement receipt.
+
+Use the Home's ordinary `close(&execution)` and retain any close refusal for
+retry; after successful close call `reclaim()`. Reopen the same location with
+fresh authority. The initializer is not rerun, and retiring an unused revision
+does not retire the main program. This status journey is qualified across
+graceful reopen and in a fresh process. Durable adoption recovery and its
+branch-set resume remain separate work; this retirement journey does not
+claim they are installed.
 
 ## Denials
 
@@ -868,7 +892,7 @@ migration, across branches that hold no workflow facts.
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-let receipt = host.retire_program_support(&revision_1)?;
+let receipt = host.retire_program_support(&execution, &revision_1)?;
 ```
 
 If any branch still runs revision 1, this is refused with
