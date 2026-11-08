@@ -49,3 +49,62 @@ class NativePlacementTests(unittest.TestCase):
             self.assertIn('TLS', result.stderr)
             self.assertFalse(output.exists())
             self.assertFalse(output.with_name('tls.layout-pending').exists())
+
+    def test_historical_1964_and_1966_images_refuse_but_driver_outputs_are_high(self):
+        from .diagnostic import diagnose
+        for mib in [1964, 1966]:
+            with self.subTest(mib=mib), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                source, original, fixed = root/'body.c', root/'old', root/'fixed'
+                source.write_text(f'static volatile char body[{mib}UL*1024*1024];\n'
+                                  'int main(void){body[0]=7;return body[0]!=7;}\n')
+                subprocess.run(['/usr/bin/cc', str(source), '-o', str(original)],
+                               check=True, capture_output=True)
+                result = subprocess.run([str(ROOT/'scripts/check_macos_layout.py'), str(original)],
+                                        capture_output=True, text=True)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn('dyld placement', result.stderr)
+                self.assertIn('dyld placement', diagnose(original))
+                subprocess.run([str(ROOT/'scripts/macos_linker'), str(source), '-o', str(fixed)],
+                               check=True, capture_output=True)
+                validate(read(fixed))
+                self.assertGreaterEqual(max(s.end for s in read(fixed).mapped), HIGH_BASE)
+                subprocess.run([str(fixed)], check=True, capture_output=True)
+
+    def test_declared_interpreter_safe_path_and_cc_path_override(self):
+        import os
+        import shlex
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            marker = root/'selected'
+            python = root/'python3'
+            python.write_text('#!/bin/sh\nexit 93\n')
+            cc = root/'cc'
+            cc.write_text('#!/bin/sh\necho selected >> '+shlex.quote(str(marker))+
+                          '\nexec /usr/bin/cc "$@"\n')
+            python.chmod(0o755)
+            cc.chmod(0o755)
+            source = root/'one.c'
+            source.write_text('int main(void){return 0;}\n')
+            environment = dict(os.environ, PATH=str(root)+os.pathsep+os.environ['PATH'],
+                               PYTHONSAFEPATH='1')
+            output = root/'one'
+            subprocess.run([str(ROOT/'scripts/macos_linker'), str(source), '-o', str(output)],
+                           env=environment, check=True, capture_output=True)
+            self.assertIn('selected', marker.read_text())
+            subprocess.run([str(ROOT/'scripts/check_macos_layout.py'), str(output)],
+                           env=environment, check=True, capture_output=True)
+
+    def test_real_response_file_with_spaces_quotes_and_backslashes_is_forwarded(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root/"an object's\\name.c"
+            source.write_text('int main(void){return 0;}\n')
+            output = root/'final output'
+            quote = lambda value: '"'+str(value).replace('\\', '\\\\').replace('"', '\\"')+'"'
+            response = root/'link.rsp'
+            response.write_text(' '.join(map(quote, [source, '-o', output])))
+            subprocess.run([str(ROOT/'scripts/macos_linker'), '@'+str(response)],
+                           check=True, capture_output=True)
+            validate(read(output))
+            subprocess.run([str(output)], check=True, capture_output=True)

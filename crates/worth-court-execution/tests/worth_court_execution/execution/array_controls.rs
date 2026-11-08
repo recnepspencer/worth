@@ -30,9 +30,14 @@ fn stopped_array_writes_refuse_within_the_control_chunk_and_cannot_seal() {
                 time.advance(Duration::from_secs(2)).unwrap();
             }
             let mut refusal = None;
-            // This is the declared control latency bound, not a cost golden:
-            // at most 32 scalar moves can occur between control observations.
-            for value in 1..=32 {
+            // Cancellation is a per-write refusal with no changed prefix.
+            // Deadlines retain the separately declared bounded chunk contract.
+            let attempts = if expected == MapKernelStop::Cancelled {
+                1
+            } else {
+                32
+            };
+            for value in 1..=attempts {
                 let result = if replacement {
                     builder.replace_initialized(0, value)
                 } else {
@@ -42,6 +47,13 @@ fn stopped_array_writes_refuse_within_the_control_chunk_and_cannot_seal() {
                     refusal = Some(cause);
                     break;
                 }
+            }
+            if expected == MapKernelStop::Cancelled {
+                assert_eq!(
+                    builder.elements(),
+                    &[0],
+                    "a cancelled write cannot change the prefix"
+                );
             }
             assert_eq!(
                 refusal,

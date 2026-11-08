@@ -1,23 +1,14 @@
 """Link, validate, then publish an arm64 Darwin artifact; never launch or retry it."""
 import os
 from pathlib import Path
-import shlex
+import errno
 import subprocess
 import sys
 
 from .macho import InvalidImage, read
+from .response import expanded, ResponseFileError
 from .placement import (UnsafeLayout, linkedit_arguments, relocated_arguments,
                         unsafe_segments, validate)
-
-
-def expanded(arguments):
-    result = []
-    for argument in arguments:
-        if argument.startswith('@'):
-            result.extend(expanded(shlex.split(Path(argument[1:]).read_text())))
-        else:
-            result.append(argument)
-    return result
 
 
 def executable_link(arguments):
@@ -25,7 +16,7 @@ def executable_link(arguments):
     return not any(flag in tokens for flag in ('-dynamiclib', '-shared', '-bundle', '-r'))
 
 
-def link(arguments, compiler='/usr/bin/cc'):
+def link(arguments, compiler='cc'):
     args = expanded(arguments)
     if not executable_link(args):
         return subprocess.call([compiler, *arguments])
@@ -34,8 +25,9 @@ def link(arguments, compiler='/usr/bin/cc'):
     output_index = args.index('-o') + 1
     destination = Path(args[output_index])
     stage = destination.with_name(destination.name + '.layout-pending')
-    staged = args.copy()
-    staged[output_index] = str(stage)
+    # Keep every original @file intact. cc's last -o wins, including when
+    # the original destination was inside a response file.
+    staged = [*arguments, '-o', str(stage)]
     try:
         code = subprocess.call([compiler, *staged, *linkedit_arguments()])
         if code:
@@ -65,7 +57,12 @@ def link(arguments, compiler='/usr/bin/cc'):
 def main():
     try:
         return link(sys.argv[1:])
-    except (OSError, InvalidImage, UnsafeLayout, ValueError) as error:
+    except (OSError, ResponseFileError) as error:
+        detail = 'OS argument limit exceeded; original response files were forwarded' \
+            if isinstance(error, OSError) and error.errno == errno.E2BIG else str(error)
+        sys.stderr.write(f'MACOS_LINK_COMMAND: {detail}\n')
+        return 1
+    except (InvalidImage, UnsafeLayout, ValueError) as error:
         sys.stderr.write(f'MACOS_EXEC_LAYOUT: {error}\n'
                          'arm64 Darwin executable refused before launch; see '
                          'scripts/macos_link/README.md (#67). No retry was attempted.\n')

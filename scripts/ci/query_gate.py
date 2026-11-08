@@ -87,6 +87,10 @@ def consumer_doctest_commands():
 
 # suite -> [(label, command)], one command at a time
 COMMAND_SUITES = {
+    "tooling": [
+        ("macos-link", [sys.executable, "-m", "unittest", "discover", "-s", "scripts/macos_link", "-t", "."]),
+        ("exact-child-accounting", [sys.executable, "-m", "unittest", "discover", "-s", "scripts/test_cost", "-p", "test_account.py"]),
+    ],
     "fmt": [
         ("fmt-root", ["cargo", "fmt", "--all", "--", "--check"]),
         ("fmt-query", ["cargo", "fmt", "--manifest-path", QUERY, "--all", "--", "--check"]),
@@ -140,7 +144,7 @@ COMMAND_ENV = {
     "check-ui-workspace": {"RUSTC_WRAPPER": ""},
 }
 
-ORDER = ["fmt", "lint-lower", "lint-query", "lint-fixture", "lint-bank",
+ORDER = ["tooling", "fmt", "lint-lower", "lint-query", "lint-fixture", "lint-bank",
          "relational", "signal", "execution", "root-rest", "query-execution", "query-rest",
          "query-process", "query-exhaustive", "fixture", "bank", "bank-process",
          "root-doc", "query-doc", "bank-doc", "wasm", "boundary", "boundary-tests", "extra"]

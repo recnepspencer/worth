@@ -1,4 +1,9 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3 -I
 """Cargo's target-scoped arm64 Darwin linker."""
+import sys
+from pathlib import Path
+if sys.version_info < (3, 9):
+    raise SystemExit("MACOS_LINK_RUNTIME: Apple Command Line Tools Python 3.9+ is required")
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from macos_link.driver import main
 raise SystemExit(main())

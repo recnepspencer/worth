@@ -1,7 +1,7 @@
 """Best-effort diagnosis after a real launch refusal; preserves its outcome."""
 import sys
 from .macho import InvalidImage, read
-from .placement import UnsafeLayout, validate
+from .placement import UnsafeLayout, LoaderBoundsUnavailable, validate_historical
 
 
 def diagnose(path):
@@ -9,7 +9,9 @@ def diagnose(path):
         return None
     try:
         image = read(path)
-        validate(image)
+        validate_historical(image)
+    except LoaderBoundsUnavailable as error:
+        return f'MACOS_EXEC_LAYOUT: {path}: {error}; layout cannot be classified. No retry was attempted.'
     except UnsafeLayout as error:
         return (f'MACOS_EXEC_LAYOUT: {path}: {error}. This layout can be refused with '
                 'OS_REASON_EXEC/MAP_EXEC_FAILURE (#67). Rebuild with the declared '

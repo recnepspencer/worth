@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from .macho import Image, InvalidImage, Segment, read
 from .placement import (CACHE_BASE, HIGH_BASE, MAX_SLIDE, USER_END, UnsafeLayout,
-                        relocated_arguments, validate)
+                        relocated_arguments, validate_historical, validate)
 from .driver import expanded, executable_link, link
 
 
@@ -20,17 +20,24 @@ def segment(name, start, size):
 
 
 class GeometryTests(unittest.TestCase):
+    def setUp(self):
+        from .loader import LoaderBounds
+        bounds = patch('scripts.macos_link.placement.host_loader',
+                       return_value=LoaderBounds(4 * 1024**2, 0x16c000))
+        bounds.start()
+        self.addCleanup(bounds.stop)
+
     def test_safe_low_code_and_high_metadata_have_no_image_size_ceiling(self):
         for extent in (1024, 2**31, 2**37):
-            validate(image(segment('__TEXT', 2**32, 1024),
+            validate_historical(image(segment('__TEXT', 2**32, 1024),
                            segment('__LINKEDIT', HIGH_BASE, extent)))
 
     def test_slide_range_is_reserved_even_before_the_unslid_cache(self):
         with self.assertRaisesRegex(UnsafeLayout, 'ASLR mappings'):
-            validate(image(segment('__TEXT', 2**32, CACHE_BASE - 2**32 - 1)))
-        validate(image(segment('__TEXT', 2**32, CACHE_BASE - 2**32 - MAX_SLIDE)))
+            validate_historical(image(segment('__TEXT', 2**32, CACHE_BASE - 2**32 - 1)))
+        validate_historical(image(segment('__TEXT', 2**32, CACHE_BASE - 2**32 - MAX_SLIDE - 4 * 1024**2 - 0x16c000)))
         with self.assertRaises(UnsafeLayout):
-            validate(image(segment('__TEXT', 64 * 1024**3, 1024)))
+            validate_historical(image(segment('__TEXT', 64 * 1024**3, 1024)))
 
     def test_non_tls_translation_preserves_relative_addresses(self):
         placement = relocated_arguments(image(segment('__TEXT', 2**32, 0x4000),
@@ -41,20 +48,31 @@ class GeometryTests(unittest.TestCase):
             relocated_arguments(image(segment('__TEXT', 2**32, 2**31), tls=True))
 
     def test_only_the_real_unmapped_pagezero_is_exempt(self):
-        validate(image(Segment('__PAGEZERO', 0, 2**32, 0),
+        validate_historical(image(Segment('__PAGEZERO', 0, 2**32, 0),
                        segment('__TEXT', 2**32, 1024)))
         with self.assertRaises(UnsafeLayout):
-            validate(image(Segment('__GUARD', CACHE_BASE, 1024, 0)))
+            validate_historical(image(Segment('__GUARD', CACHE_BASE, 1024, 0)))
         with self.assertRaises(UnsafeLayout):
-            validate(image(Segment('__PAGEZERO', CACHE_BASE, 1024, 0)))
+            validate_historical(image(Segment('__PAGEZERO', CACHE_BASE, 1024, 0)))
 
     def test_high_placement_still_requires_the_os_user_address_range(self):
         with self.assertRaises(UnsafeLayout):
-            validate(image(segment('__LINKEDIT', USER_END, 1024)))
+            validate_historical(image(segment('__LINKEDIT', USER_END, 1024)))
+
+    def test_main_slide_still_applies_to_low_segments_when_loader_is_high(self):
+        with self.assertRaises(UnsafeLayout):
+            validate(image(segment('__TEXT', 2**32, CACHE_BASE - 2**32 - 40 * 1024**2),
+                           segment('__LINKEDIT', HIGH_BASE, 0x4000)))
+
+    def test_driver_cannot_publish_an_otherwise_safe_low_top(self):
+        low = image(segment('__TEXT', 2**32, 0x4000))
+        validate_historical(low)
+        with self.assertRaisesRegex(UnsafeLayout, 'top mapped segment'):
+            validate(low)
 
     def test_missing_pie_is_a_refusal(self):
         with self.assertRaisesRegex(UnsafeLayout, 'PIE'):
-            validate(Image(2, 0, (segment('__TEXT', 2**32, 1024),), False))
+            validate_historical(Image(2, 0, (segment('__TEXT', 2**32, 1024),), False))
 
     def test_malformed_format_is_not_admitted(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -87,7 +105,7 @@ class DriverTests(unittest.TestCase):
             self.assertFalse(executable_link(expanded(arguments)))
             with patch('scripts.macos_link.driver.subprocess.call', return_value=0) as call:
                 self.assertEqual(link(arguments), 0)
-            call.assert_called_once_with(['/usr/bin/cc', *arguments])
+            call.assert_called_once_with(['cc', *arguments])
         for flag in ('-shared', '-bundle', '-r', '-Wl,-r'):
             self.assertFalse(executable_link([flag]))
 
