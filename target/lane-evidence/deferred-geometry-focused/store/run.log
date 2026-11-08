@@ -1,0 +1,144 @@
+Command: ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\deferred-geometry-focused\\store\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\deferred-geometry-focused\\store\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-store\\.config\\nextest.toml", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "--success-output", "immediate", "-E", "test(=process::application::world_durable_release::unclean::unclean_native_tail_refuses_before_world_service_and_names_the_original_effect) + test(=process::application::world_durable_release::unclean::quiescent_kill_reopens_the_acknowledged_native_and_world_heads) + test(=process::application::world_durable_release::unclean::graceful_close_reopens_the_checkpointed_native_and_world_heads) + test(=process::application::host_oracle::graceful::graceful_home_oracle_seed_zero_preserves_relational_and_world_prefixes) + test(=process::application::host_oracle::graceful::graceful_home_oracle_seed_one_preserves_relational_and_world_prefixes) + test(=process::application::no_pending_owners::transition_indexes::home_target_indexes_publish_the_prepared_catalog_and_exact_generations) + test(=process::application::no_pending_owners::transition_indexes::abandoned_home_target_preserves_the_installed_index_catalog_and_history) + test(=process::application::no_pending_owners::transition_indexes::home_target_refuses_a_changed_index_catalog_before_native_effect) + test(=process::application::no_pending_owners::transition_indexes::home_target_refuses_an_incomplete_generation_batch_before_native_effect) + test(=process::application::no_pending_owners::transition_indexes::a_retained_target_index_definition_holds_its_original_backing_after_home_abandonment)"]
+Working directory: C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store
+HEAD: 307539feba2f331a8b7406f3a69868bc3ee3b45d
+Git status --short empty: False
+Start: 2026-11-08T21:54:32.075172+00:00
+
+{"type": "cargo-invocation", "command": ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\deferred-geometry-focused\\store\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\deferred-geometry-focused\\store\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-store\\.config\\nextest.toml", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "--success-output", "immediate", "-E", "test(=process::application::world_durable_release::unclean::unclean_native_tail_refuses_before_world_service_and_names_the_original_effect) + test(=process::application::world_durable_release::unclean::quiescent_kill_reopens_the_acknowledged_native_and_world_heads) + test(=process::application::world_durable_release::unclean::graceful_close_reopens_the_checkpointed_native_and_world_heads) + test(=process::application::host_oracle::graceful::graceful_home_oracle_seed_zero_preserves_relational_and_world_prefixes) + test(=process::application::host_oracle::graceful::graceful_home_oracle_seed_one_preserves_relational_and_world_prefixes) + test(=process::application::no_pending_owners::transition_indexes::home_target_indexes_publish_the_prepared_catalog_and_exact_generations) + test(=process::application::no_pending_owners::transition_indexes::abandoned_home_target_preserves_the_installed_index_catalog_and_history) + test(=process::application::no_pending_owners::transition_indexes::home_target_refuses_a_changed_index_catalog_before_native_effect) + test(=process::application::no_pending_owners::transition_indexes::home_target_refuses_an_incomplete_generation_batch_before_native_effect) + test(=process::application::no_pending_owners::transition_indexes::a_retained_target_index_definition_holds_its_original_backing_after_home_abandonment)"], "cwd": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-store", "capture": "ordered", "mode": "build", "target_dir": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-store\\target", "cargo_profile": "test"}
+────────────
+ Nextest run ID 04b49330-d5f0-498b-8928-8864a82faced with nextest profile: ci
+    Starting 10 tests across 1 binary (189 tests skipped)
+  output ───
+
+    running 1 test
+    test process::application::no_pending_owners::transition_indexes::abandoned_home_target_preserves_the_installed_index_catalog_and_history ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 198 filtered out; finished in 1.86s
+
+
+  output ───
+
+    running 1 test
+    test process::application::no_pending_owners::transition_indexes::home_target_refuses_a_changed_index_catalog_before_native_effect ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 198 filtered out; finished in 1.86s
+
+
+  output ───
+
+    running 1 test
+    test process::application::no_pending_owners::transition_indexes::home_target_refuses_an_incomplete_generation_batch_before_native_effect ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 198 filtered out; finished in 1.85s
+
+
+  output ───
+
+    running 1 test
+    test process::application::no_pending_owners::transition_indexes::home_target_indexes_publish_the_prepared_catalog_and_exact_generations ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 198 filtered out; finished in 2.12s
+
+
+  output ───
+
+    running 1 test
+    test process::application::no_pending_owners::transition_indexes::a_retained_target_index_definition_holds_its_original_backing_after_home_abandonment ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 198 filtered out; finished in 2.14s
+
+
+  output ───
+
+    running 1 test
+    test process::application::world_durable_release::unclean::graceful_close_reopens_the_checkpointed_native_and_world_heads ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 198 filtered out; finished in 2.31s
+
+
+  output ───
+
+    running 1 test
+    test process::application::world_durable_release::unclean::unclean_native_tail_refuses_before_world_service_and_names_the_original_effect ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 198 filtered out; finished in 0.71s
+
+
+  output ───
+
+    running 1 test
+    test process::application::world_durable_release::unclean::quiescent_kill_reopens_the_acknowledged_native_and_world_heads ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 198 filtered out; finished in 1.01s
+
+
+  output ───
+
+    running 1 test
+    GRACEFUL_ORACLE seed=0 prefix=0 operation=Step { key: 16294208416658607535, value: 55700, outcome: Committed, restart: Close, handler_calls: 1 }
+    GRACEFUL_ORACLE seed=0 prefix=1 operation=Step { key: 16294208416658607535, value: 55700, outcome: Committed, restart: QuiescentKill, handler_calls: 0 }
+    GRACEFUL_ORACLE seed=0 prefix=2 operation=Step { key: 16294208416658607535, value: 55701, outcome: IntentDrift, restart: Close, handler_calls: 0 }
+    GRACEFUL_ORACLE seed=0 prefix=3 operation=Step { key: 16294208416658607536, value: 45679, outcome: Committed, restart: QuiescentKill, handler_calls: 1 }
+    GRACEFUL_ORACLE seed=0 prefix=4 operation=Step { key: 16294208416658607536, value: 45679, outcome: Committed, restart: Close, handler_calls: 0 }
+    GRACEFUL_ORACLE seed=0 prefix=5 operation=Step { key: 16294208416658607536, value: 45680, outcome: IntentDrift, restart: QuiescentKill, handler_calls: 0 }
+    GRACEFUL_ORACLE seed=0 prefix=6 operation=Step { key: 16294208416658607537, value: 42444, outcome: Committed, restart: Close, handler_calls: 1 }
+    GRACEFUL_ORACLE seed=0 prefix=7 operation=Step { key: 16294208416658607537, value: 42444, outcome: Committed, restart: QuiescentKill, handler_calls: 0 }
+    GRACEFUL_ORACLE seed=0 prefix=8 operation=Step { key: 16294208416658607537, value: 42445, outcome: IntentDrift, restart: Close, handler_calls: 0 }
+    GRACEFUL_ORACLE seed=0 prefix=9 operation=Step { key: 16294208416658607538, value: 94747, outcome: Committed, restart: QuiescentKill, handler_calls: 1 }
+    GRACEFUL_ORACLE seed=0 prefix=10 operation=Step { key: 16294208416658607538, value: 94747, outcome: Committed, restart: Close, handler_calls: 0 }
+    GRACEFUL_ORACLE seed=0 prefix=11 operation=Step { key: 16294208416658607538, value: 94748, outcome: IntentDrift, restart: QuiescentKill, handler_calls: 0 }
+    test process::application::host_oracle::graceful::graceful_home_oracle_seed_zero_preserves_relational_and_world_prefixes ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 198 filtered out; finished in 20.47s
+
+
+  output ───
+
+    running 1 test
+    GRACEFUL_ORACLE seed=1 prefix=0 operation=Step { key: 10451216379200822465, value: 28519, outcome: Committed, restart: QuiescentKill, handler_calls: 1 }
+    GRACEFUL_ORACLE seed=1 prefix=1 operation=Step { key: 10451216379200822465, value: 28519, outcome: Committed, restart: Close, handler_calls: 0 }
+    GRACEFUL_ORACLE seed=1 prefix=2 operation=Step { key: 10451216379200822465, value: 28520, outcome: IntentDrift, restart: QuiescentKill, handler_calls: 0 }
+    GRACEFUL_ORACLE seed=1 prefix=3 operation=Step { key: 10451216379200822466, value: 90590, outcome: Committed, restart: Close, handler_calls: 1 }
+    GRACEFUL_ORACLE seed=1 prefix=4 operation=Step { key: 10451216379200822466, value: 90590, outcome: Committed, restart: QuiescentKill, handler_calls: 0 }
+    GRACEFUL_ORACLE seed=1 prefix=5 operation=Step { key: 10451216379200822466, value: 90591, outcome: IntentDrift, restart: Close, handler_calls: 0 }
+    GRACEFUL_ORACLE seed=1 prefix=6 operation=Step { key: 10451216379200822467, value: 80235, outcome: Committed, restart: QuiescentKill, handler_calls: 1 }
+    GRACEFUL_ORACLE seed=1 prefix=7 operation=Step { key: 10451216379200822467, value: 80235, outcome: Committed, restart: Close, handler_calls: 0 }
+    GRACEFUL_ORACLE seed=1 prefix=8 operation=Step { key: 10451216379200822467, value: 80236, outcome: IntentDrift, restart: QuiescentKill, handler_calls: 0 }
+    GRACEFUL_ORACLE seed=1 prefix=9 operation=Step { key: 10451216379200822468, value: 68761, outcome: Committed, restart: Close, handler_calls: 1 }
+    GRACEFUL_ORACLE seed=1 prefix=10 operation=Step { key: 10451216379200822468, value: 68761, outcome: Committed, restart: QuiescentKill, handler_calls: 0 }
+    GRACEFUL_ORACLE seed=1 prefix=11 operation=Step { key: 10451216379200822468, value: 68762, outcome: IntentDrift, restart: Close, handler_calls: 0 }
+    test process::application::host_oracle::graceful::graceful_home_oracle_seed_one_preserves_relational_and_world_prefixes ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 198 filtered out; finished in 20.64s
+
+
+{"type":"suite","event":"started","test_count":10}
+{"type":"test","event":"started","name":"worth-store-court-application::worth_store_court_application$process::application::no_pending_owners::transition_indexes::abandoned_home_target_preserves_the_installed_index_catalog_and_history"}
+{"type":"test","event":"started","name":"worth-store-court-application::worth_store_court_application$process::application::no_pending_owners::transition_indexes::a_retained_target_index_definition_holds_its_original_backing_after_home_abandonment"}
+{"type":"test","event":"started","name":"worth-store-court-application::worth_store_court_application$process::application::host_oracle::graceful::graceful_home_oracle_seed_zero_preserves_relational_and_world_prefixes"}
+{"type":"test","event":"started","name":"worth-store-court-application::worth_store_court_application$process::application::no_pending_owners::transition_indexes::home_target_refuses_a_changed_index_catalog_before_native_effect"}
+{"type":"test","event":"started","name":"worth-store-court-application::worth_store_court_application$process::application::no_pending_owners::transition_indexes::home_target_indexes_publish_the_prepared_catalog_and_exact_generations"}
+{"type":"test","event":"started","name":"worth-store-court-application::worth_store_court_application$process::application::host_oracle::graceful::graceful_home_oracle_seed_one_preserves_relational_and_world_prefixes"}
+{"type":"test","event":"started","name":"worth-store-court-application::worth_store_court_application$process::application::world_durable_release::unclean::graceful_close_reopens_the_checkpointed_native_and_world_heads"}
+{"type":"test","event":"started","name":"worth-store-court-application::worth_store_court_application$process::application::no_pending_owners::transition_indexes::home_target_refuses_an_incomplete_generation_batch_before_native_effect"}
+{"type":"test","event":"ok","name":"worth-store-court-application::worth_store_court_application$process::application::no_pending_owners::transition_indexes::abandoned_home_target_preserves_the_installed_index_catalog_and_history","exec_time":1.8970536}
+{"type":"test","event":"ok","name":"worth-store-court-application::worth_store_court_application$process::application::no_pending_owners::transition_indexes::home_target_refuses_a_changed_index_catalog_before_native_effect","exec_time":1.8964218000000002}
+{"type":"test","event":"ok","name":"worth-store-court-application::worth_store_court_application$process::application::no_pending_owners::transition_indexes::home_target_refuses_an_incomplete_generation_batch_before_native_effect","exec_time":1.8857509000000001}
+{"type":"test","event":"started","name":"worth-store-court-application::worth_store_court_application$process::application::world_durable_release::unclean::unclean_native_tail_refuses_before_world_service_and_names_the_original_effect"}
+{"type":"test","event":"started","name":"worth-store-court-application::worth_store_court_application$process::application::world_durable_release::unclean::quiescent_kill_reopens_the_acknowledged_native_and_world_heads"}
+{"type":"test","event":"ok","name":"worth-store-court-application::worth_store_court_application$process::application::no_pending_owners::transition_indexes::home_target_indexes_publish_the_prepared_catalog_and_exact_generations","exec_time":2.1599037}
+{"type":"test","event":"ok","name":"worth-store-court-application::worth_store_court_application$process::application::no_pending_owners::transition_indexes::a_retained_target_index_definition_holds_its_original_backing_after_home_abandonment","exec_time":2.1712106}
+{"type":"test","event":"ok","name":"worth-store-court-application::worth_store_court_application$process::application::world_durable_release::unclean::graceful_close_reopens_the_checkpointed_native_and_world_heads","exec_time":2.3520645}
+{"type":"test","event":"ok","name":"worth-store-court-application::worth_store_court_application$process::application::world_durable_release::unclean::unclean_native_tail_refuses_before_world_service_and_names_the_original_effect","exec_time":0.7610594}
+{"type":"test","event":"ok","name":"worth-store-court-application::worth_store_court_application$process::application::world_durable_release::unclean::quiescent_kill_reopens_the_acknowledged_native_and_world_heads","exec_time":1.0458628}
+{"type":"test","event":"ok","name":"worth-store-court-application::worth_store_court_application$process::application::host_oracle::graceful::graceful_home_oracle_seed_zero_preserves_relational_and_world_prefixes","exec_time":20.4945039}
+{"type":"test","event":"ok","name":"worth-store-court-application::worth_store_court_application$process::application::host_oracle::graceful::graceful_home_oracle_seed_one_preserves_relational_and_world_prefixes","exec_time":20.6772787}
+{"type":"suite","event":"ok","passed":10,"failed":0,"ignored":0,"measured":0,"filtered_out":189,"exec_time":55.3411099}
+────────────
+     Summary [  20.690s] 10 tests run: 10 passed, 189 skipped
+
+
+{"type": "cargo-result", "exit_code": 0}
+
+End: 2026-11-08T21:54:52.968694+00:00
+Exit code: 0

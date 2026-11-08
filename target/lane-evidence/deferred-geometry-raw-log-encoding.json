@@ -1,0 +1,11 @@
+[
+  {
+    "path": "target/lane-evidence/deferred-geometry-finish-driver.log",
+    "raw_sha256": "075ac951f46a1f7604ffee39237bbd2506357a5cda69ab8cb6fe259e26f69048",
+    "raw_bytes_base64": "Q09NTUFORDogWyJweXRob24iLCAidGFyZ2V0L2xhbmUtZXZpZGVuY2UvZGVmZXJyZWRfZ2VvbWV0cnlfZmluaXNoLnB5Il0NCkhFQUQ6IDMwNzUzOWZlYmEyZjMzMWE4Yjc0MDZmM2E2OTg2OGJjM2VlM2I0NWQNCkNMRUFOOiBmYWxzZQ0KU1RBUlQ6IDIwMjYtMTEtMDhUMjI6MDI6NTIuNTg3NjQ3KzAwOjAwDQpFTlY6IHJlbW92ZWQgc3RhbGUgZXh0ZXJuYWwgbGlua2VyIG92ZXJyaWRlOyBSVVNUX01JTl9TVEFDSyB1bnNldCBpbiBwYXJlbnQNCiAgRmlsZSAiQzpccHJvZ3JhbW1pbmdcd29ydGggd29ya3RlZXNcd29ya3RyZWVzXG0zLWhvc3QtaG9tZVx0YXJnZXRcbGFuZS1ldmlkZW5jZVxkZWZlcnJlZF9nZW9tZXRyeV9maW5pc2gucHkiLCBsaW5lIDENCiAgICDDr8K7wr9mcm9tIHBhdGhsaWIgaW1wb3J0IFBhdGgNCiAgICAgXg0KU3ludGF4RXJyb3I6IGludmFsaWQgY2hhcmFjdGVyICevJyAoVSswMEFGKQ0KDQpFTkQ6IDIwMjYtMTEtMDhUMjI6MDI6NTQuMTMwNTExKzAwOjAwDQpFWElUOiAxDQo=",
+    "cp1252_lines_transcoded_to_utf8": [
+      9
+    ],
+    "readable_log_newline_normalization": "CRLF (removed doubled CR from text-mode transcoding; original bytes retained above)"
+  }
+]
