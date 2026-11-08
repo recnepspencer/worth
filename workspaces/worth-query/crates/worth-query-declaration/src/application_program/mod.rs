@@ -122,8 +122,9 @@ pub use output_graph::{
 };
 pub use output_posture::{ApplicationNoOutputGraph, ApplicationProgramOutputShape};
 pub use program::{
-    ApplicationProgramAuthoring, ApplicationProgramDefinition, ApplicationProgramValidationDenial,
-    ApplicationProgramValidationDenialKind, ValidatedApplicationProgram,
+    ApplicationProgramAuthoring, ApplicationProgramConnectionOrder, ApplicationProgramDefinition,
+    ApplicationProgramValidationDenial, ApplicationProgramValidationDenialKind,
+    ValidatedApplicationProgram,
 };
 pub use program_outputs::{
     ApplicationActionOutput, ApplicationFeatureOutputMembers, ApplicationFeatureOutputs,

@@ -43,7 +43,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
         })?;
         let registry = &self.application.installed_producers;
         let source_entry = registry.declared_coupled_source(demand)?;
-        let Some(source) = source_entry.executor.read_coupled_source(
+        let source = source_entry.executor.read_coupled_source(
             execution,
             self.application,
             principal,
@@ -52,9 +52,34 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
             before_pin,
             demand,
             candidate,
-        )?
-        else {
-            return Ok(None);
+        )?;
+        let source = match source {
+            super::super::execution::CoupledSourceRead::Retiring => return Ok(None),
+            super::super::execution::CoupledSourceRead::Prepared(index) => {
+                let writers = self.writers.borrow();
+                let writer = writers.get(index).ok_or_else(|| {
+                    WorthQueryOutputDemandDenial::new(
+                        WorthQueryOutputDemandDenialKind::ForeignSettlement,
+                        demand.family,
+                    )
+                })?;
+                if writer.producer.declaration.output_family_type != demand.family_type
+                    || writer.producer.declaration.source_type != demand.source_binding_type
+                {
+                    return Err(WorthQueryOutputDemandDenial::new(
+                        WorthQueryOutputDemandDenialKind::ForeignSettlement,
+                        demand.family,
+                    )
+                    .into());
+                }
+                return Ok(Some(
+                    super::super::synchronous_outputs::AppliedOutputParent::new(
+                        candidate.pin_source(execution)?,
+                        index,
+                    ),
+                ));
+            }
+            super::super::execution::CoupledSourceRead::Source(source) => source,
         };
         let lifecycle = if source.predecessor.is_some() {
             WorthQueryProducerLifecyclePosture::Preserve

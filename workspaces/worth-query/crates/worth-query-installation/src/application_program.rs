@@ -44,8 +44,8 @@ pub use workflow::*;
 
 use worth_query_declaration::facade::application_program::{
     ApplicationActionDeclaration, ApplicationConnectionDeclaration, ApplicationFeatureDeclaration,
-    ApplicationProgramDefinition, ApplicationProgramIdentity, ApplicationProgramRevision,
-    ApplicationProgramRuleDeclaration, ValidatedApplicationProgram,
+    ApplicationProgramConnectionOrder, ApplicationProgramDefinition, ApplicationProgramIdentity,
+    ApplicationProgramRevision, ApplicationProgramRuleDeclaration, ValidatedApplicationProgram,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, ApplicationSchemaBindingIdentity,
@@ -142,6 +142,7 @@ pub struct WorthQueryInstalledApplicationProgram<Schema, Program> {
     features: Box<[ApplicationFeatureDeclaration]>,
     actions: Box<[ApplicationActionDeclaration]>,
     connections: Box<[ApplicationConnectionDeclaration]>,
+    connection_order: ApplicationProgramConnectionOrder,
     rules: Box<[ApplicationProgramRuleDeclaration]>,
     marker: PhantomData<fn() -> (Schema, Program)>,
 }
@@ -162,6 +163,10 @@ impl<Schema, Program> WorthQueryInstalledApplicationProgram<Schema, Program> {
     }
     pub fn actions(&self) -> &[ApplicationActionDeclaration] {
         &self.actions
+    }
+    /// Read-only scheduling metadata derived by the existing acyclicity validator.
+    pub fn connection_order(&self) -> &ApplicationProgramConnectionOrder {
+        &self.connection_order
     }
 
     #[expect(
@@ -336,6 +341,7 @@ where
         features: program.features().to_vec().into_boxed_slice(),
         actions: program.actions().to_vec().into_boxed_slice(),
         connections: program.connections().to_vec().into_boxed_slice(),
+        connection_order: program.connection_order().clone(),
         rules: program.rules().to_vec().into_boxed_slice(),
         marker: PhantomData,
     })

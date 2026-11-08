@@ -17,7 +17,7 @@ pub(super) fn read<S, B>(
     current_absence: crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial,
     assembly: &worth_relational::facade::mvcc::RelationalAuthoredCoupledCandidate<'_>,
     demand: &DeclaredCoupledOutputDemand,
-) -> Result<Option<ErasedAppliedProducerSource>, CoupledSourceReadStop>
+) -> Result<CoupledSourceRead, CoupledSourceReadStop>
 where
     S: ApplicationSchema,
     B: WorthQueryApplicationProducerBinding<S>,
@@ -82,20 +82,6 @@ where
         };
         scope_rejected(B::IDENTITY, disclosed)
     })?;
-    match assembly.declared_owner(
-        execution,
-        demand.family,
-        scope.entity_id(),
-        parameters.parameters().identity().bytes(),
-    )? {
-        Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Retiring) => {
-            return Ok(None)
-        }
-        Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Surviving(_)) => {
-            return Err(foreign().into())
-        }
-        None => {}
-    }
     let (product, basis) = runtime
         .retain_selected_query_basis_admitted(&shared)
         .map_err(|stop| failed(B::IDENTITY, stop))?;
@@ -133,6 +119,30 @@ where
                 scope_rejected(B::IDENTITY, current_absence)
             } else { query_admission_denied(B::IDENTITY, cause) }
         })?;
+    if demand.reuse_prepared {
+        if let Some(index) = assembly.prepared_route_index(
+            execution,
+            demand.family,
+            scope.entity_id(),
+            parameters.parameters().identity().bytes(),
+        )? {
+            return Ok(CoupledSourceRead::Prepared(index));
+        }
+    }
+    match assembly.declared_owner(
+        execution,
+        demand.family,
+        scope.entity_id(),
+        parameters.parameters().identity().bytes(),
+    )? {
+        Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Retiring) => {
+            return Ok(CoupledSourceRead::Retiring)
+        }
+        Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Surviving(_)) => {
+            return Err(foreign().into())
+        }
+        None => {}
+    }
     let source = runtime
         .project_applied_source_plan(execution, plan, candidate)
         .map_err(|cause| failed(B::IDENTITY, cause))?;
@@ -140,7 +150,7 @@ where
         <B::OutputFamily as super::super::super::WorthQueryProducerOutputFamily<S>>::profile_kind(
             &source.value,
         );
-    Ok(Some(ErasedAppliedProducerSource {
+    Ok(CoupledSourceRead::Source(ErasedAppliedProducerSource {
         predecessor: None,
         profile,
         source: Box::new(source),

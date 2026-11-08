@@ -60,6 +60,13 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         Box<dyn std::any::Any>,
 }
 
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) enum CoupledSourceRead
+{
+    Retiring,
+    Prepared(usize),
+    Source(ErasedAppliedProducerSource),
+}
+
 pub(super) fn read<Schema, Binding>(
     installed: &TypedInstalledProducer<Schema, Binding>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -70,7 +77,7 @@ pub(super) fn read<Schema, Binding>(
     before_pin: &RelationalPinnedRead,
     demand: &DeclaredCoupledOutputDemand,
     assembly: &worth_relational::facade::mvcc::RelationalAuthoredCoupledCandidate<'_>,
-) -> Result<Option<ErasedAppliedProducerSource>, CoupledSourceReadStop>
+) -> Result<CoupledSourceRead, CoupledSourceReadStop>
 where
     Schema: ApplicationSchema,
     Binding: WorthQueryApplicationProducerBinding<Schema>,
@@ -164,9 +171,16 @@ where
         .map_err(|cause| query_admission_denied(Binding::IDENTITY, cause))?;
     let partition = *plan.parameter_binding_identity().bytes();
     let root = scope.entity_id();
+    if demand.reuse_prepared {
+        if let Some(index) =
+            assembly.prepared_route_index(execution, demand.family, root, &partition)?
+        {
+            return Ok(CoupledSourceRead::Prepared(index));
+        }
+    }
     let predecessor = match assembly.declared_owner(execution, demand.family, root, &partition)? {
         Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Retiring) => {
-            return Ok(None)
+            return Ok(CoupledSourceRead::Retiring)
         }
         Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Surviving(owner)) => {
             Some(owner.clone())
@@ -215,7 +229,7 @@ where
         })?
     };
     let profile = <Binding::OutputFamily as super::super::WorthQueryProducerOutputFamily<Schema>>::profile_kind(&source.value);
-    Ok(Some(ErasedAppliedProducerSource {
+    Ok(CoupledSourceRead::Source(ErasedAppliedProducerSource {
         predecessor,
         profile,
         source: Box::new(source),

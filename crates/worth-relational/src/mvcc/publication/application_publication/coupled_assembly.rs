@@ -21,6 +21,7 @@ mod local_keys;
 mod part;
 mod part_corruption;
 mod participant_admission;
+mod prepared_route;
 mod scoped_preparation;
 mod writer_custody;
 pub(crate) use completion::CoupledAppliedCandidate;

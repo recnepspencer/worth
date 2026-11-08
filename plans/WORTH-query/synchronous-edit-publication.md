@@ -562,3 +562,47 @@ pass. Existing single-owner courts now require exact cardinality before their
 unchanged identity/kind/release assertions (27 observation migrations, external
 changed-assertion evidence). Caller owner discovery includes Query Publication;
 the exact caller was registered by script, with12 tooling tests passing.
+
+
+## Wave scheduling join
+
+Replace recursive producer preparation with a request-local wave: prepare every
+actual source in the wave before running its discovery against the wave's final
+applied image. Discovery still comes from the installed connection; it only
+queues the next actual typed demands. Charge queue storage and checkpoints to
+the original request. Keep after-own producer observations separate from the
+later discovery pin. Native may observe the exact already-appended route (full
+source generation, family and canonical partition); this read-only lookup grants
+no append right. Only automatic graph demands may coalesce that observation.
+Explicit coupled declarations still hit the existing repeated-writer refusal,
+and append-time duplicate admission remains unchanged. A repeated graph route
+reuses the actual registered writer, never a manufactured settlement. Check the
+selected installed producer/profile and the final read-support guard. Prove both
+parents prepared before a shared child, one child run, exact final values, one
+commit and worker-only behavior; retain the existing duplicate-writer court.
+Unequal-depth convergence and healthy-parent scheduling must be assessed against
+the existing consumed-output frontier before claiming general graph completion.
+
+
+Wave review correction: connection ordering is now derived by the existing
+acyclicity validator and retained with validated/installed program meaning. The
+request carries its immutable index and pays point-lookup comparisons. Keys
+include source instance, target instance and connection identity, so repeated
+bindings in distinct composition instances do not alias. No per-edit graph
+reconstruction or new dependent-set authority. Queue growth reserves actual
+replacement capacity while old capacity remains charged, then transfers storage.
+The diamond court now includes an exclusive discovery over both parents and two
+same-family, same-partition sources; it distinguishes the final-wave pin and full
+source identity checks. Unequal-depth convergence and a foreign parameter
+partition have dedicated serial/worker legs. Metadata and slot accounting remain
+separate from actual source/query/output admission at their existing owners.
+
+
+Wave checkpoint qualification: public584/2ignored, graph26, legacy coupled35,
+declaration focused3 and Query all-target check pass. Twelve runtime mutations
+are killed and SHA-restored, including exact source/partition/family selection,
+unequal ordering, final-wave discovery, explicit duplicate behavior and both
+composition keys. No existing assertion changed in this checkpoint. Final scoped
+guards pass; the complete declaration owner suite passes497 tests. The
+whole-edit support and healthy-parent boundary is next, not a fake writer or a
+historical/current settlement fabricated for this applied candidate.

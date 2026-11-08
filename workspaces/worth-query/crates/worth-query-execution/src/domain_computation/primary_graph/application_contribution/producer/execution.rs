@@ -39,7 +39,9 @@ mod coupled;
 mod coupled_source;
 use coupled::InstalledCoupledProducerExecutor;
 pub(super) use coupled::PreparedCoupledWriter;
-pub(super) use coupled_source::{CoupledSourceReadStop, ErasedAppliedProducerSource};
+pub(super) use coupled_source::{
+    CoupledSourceRead, CoupledSourceReadStop, ErasedAppliedProducerSource,
+};
 pub(crate) mod denial;
 mod input_cutoff;
 mod input_reuse;

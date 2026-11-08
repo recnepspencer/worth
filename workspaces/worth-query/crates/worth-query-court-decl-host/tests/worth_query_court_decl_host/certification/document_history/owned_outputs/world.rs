@@ -20,6 +20,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
     fn contracts(
         contracts: &mut WorthQueryApplicationContributionContracts<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        family::diamond::contracts(contracts)?;
         family::predecessor_family::contracts(contracts)?;
         from_first::contracts(contracts)?;
         restricted_from_first::contracts(contracts)?;
@@ -48,6 +49,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup.handler::<predecessor::synchronous::Binding, _>(predecessor::synchronous::Handler)?;
         setup.handler::<member_edit::Binding, _>(member_edit::Handler)?;
         setup.handler::<member_delete::Binding, _>(member_delete::Handler)?;
+        family::diamond::install(setup)?;
         family::predecessor_family::install(setup)?;
         from_first::install(setup)?;
         restricted_from_first::install(setup)?;

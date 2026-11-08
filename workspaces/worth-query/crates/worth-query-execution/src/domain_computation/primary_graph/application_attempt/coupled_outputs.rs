@@ -20,6 +20,7 @@ pub(super) use preimage::CoupledPreImage;
 pub(in crate::domain_computation::primary_graph) use source_arguments::CoupledSourceArguments;
 
 pub(in crate::domain_computation::primary_graph) struct DeclaredCoupledOutputDemand {
+    pub(in crate::domain_computation::primary_graph) reuse_prepared: bool,
     pub(in crate::domain_computation::primary_graph) connection: &'static str,
     pub(in crate::domain_computation::primary_graph) family: &'static str,
     pub(in crate::domain_computation::primary_graph) family_type: EqualityTypeId,
@@ -124,6 +125,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             let demand = Binding::demand_from_preimage(self.input, self.preimage)
                 .map_err(|cause| Denial::new(Kind::CorrectionCaptureDenied, cause.subject()))?;
             demands.values.push(DeclaredCoupledOutputDemand {
+                reuse_prepared: false,
                 connection: Connection::IDENTITY,
                 family: Family::<Schema, Connection>::IDENTITY,
                 family_type: EqualityTypeId::of::<Family<Schema, Connection>>(),

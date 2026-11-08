@@ -64,7 +64,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         before_pin: &RelationalPinnedRead,
         demand: &crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemand,
         candidate: &RelationalAuthoredCoupledCandidate<'_>,
-    ) -> Result<Option<ErasedAppliedProducerSource>, CoupledSourceReadStop>;
+    ) -> Result<CoupledSourceRead, CoupledSourceReadStop>;
 
     fn prepare_coupled_writer<'run>(
         &self,
@@ -135,7 +135,7 @@ where
         before_pin: &RelationalPinnedRead,
         demand: &crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemand,
         candidate: &RelationalAuthoredCoupledCandidate<'_>,
-    ) -> Result<Option<ErasedAppliedProducerSource>, CoupledSourceReadStop> {
+    ) -> Result<CoupledSourceRead, CoupledSourceReadStop> {
         coupled_source::read::<Schema, Binding>(
             self, execution, runtime, principal, request, before, before_pin, demand, candidate,
         )

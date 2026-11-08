@@ -384,3 +384,5 @@ family!(
     PredecessorTree,
     |value| value + 9000
 );
+
+pub mod diamond;

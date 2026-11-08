@@ -15,6 +15,8 @@ pub(in crate::domain_computation::primary_graph) use capture::CapturedSynchronou
 mod discovery;
 mod edges;
 mod source;
+mod wave;
+pub use wave::SynchronousOutputWave;
 
 pub struct AppliedOutputParent {
     writer: usize,
@@ -42,6 +44,8 @@ pub struct SynchronousOutputAssembly<'a, 'owner, 'run, 'phase, S: ApplicationSch
     owner: &'a DeclaredProducerAssembly<'owner, 'run, 'phase, S>,
     execution: &'a worth_execution::ExecutionRequest<'a, 'a>,
     before: &'a RelationalPinnedRead,
+    order:
+        &'a worth_query_declaration::facade::application_program::ApplicationProgramConnectionOrder,
 }
 mod sealed {
     pub trait Edges {}
@@ -55,7 +59,7 @@ where
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         parent: &AppliedOutputParent,
         demand: &D,
-        candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
+        next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure>;
 }
 impl sealed::Edges for ApplicationOutputLeaf {}
@@ -66,7 +70,7 @@ impl<S: ApplicationSchema, D: WorthQueryApplicationOutputDemand<S>> SynchronousO
         _: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         _: &AppliedOutputParent,
         _: &D,
-        _: &mut RelationalAuthoredCoupledCandidate<'_>,
+        _: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure> {
         Ok(())
     }
@@ -74,18 +78,25 @@ impl<S: ApplicationSchema, D: WorthQueryApplicationOutputDemand<S>> SynchronousO
 
 impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
     fn checkpoint(&self, subject: &str) -> Result<(), SynchronousOutputFailure> {
-        use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial;
-        let denied = |cause: worth_execution::WorkCeilingDenial| {
-            SynchronousOutputFailure(CoupledSourceReadStop::capture(
-                Denial::relational_read_stopped(cause.into(), subject),
-            ))
-        };
-        self.execution
-            .run_native_with_checkpoint(|context| {
-                crate::domain_computation::primary_graph::admitted_capture::checkpoint(context, 1)
-            })
-            .map_err(denied)?
-            .0
-            .map_err(|cause| denied(worth_execution::WorkCeilingDenial::Stopped(cause)))
+        checkpoint(self.execution, subject, 1)
     }
+}
+fn checkpoint(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    subject: &str,
+    work: u64,
+) -> Result<(), SynchronousOutputFailure> {
+    use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial;
+    let denied = |cause: worth_execution::WorkCeilingDenial| {
+        SynchronousOutputFailure(CoupledSourceReadStop::capture(
+            Denial::relational_read_stopped(cause.into(), subject),
+        ))
+    };
+    execution
+        .run_native_with_checkpoint(|context| {
+            crate::domain_computation::primary_graph::admitted_capture::checkpoint(context, work)
+        })
+        .map_err(denied)?
+        .0
+        .map_err(|cause| denied(worth_execution::WorkCeilingDenial::Stopped(cause)))
 }

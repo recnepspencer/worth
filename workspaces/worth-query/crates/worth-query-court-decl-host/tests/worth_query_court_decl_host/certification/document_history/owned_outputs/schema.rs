@@ -3,6 +3,8 @@ use super::*;
 use worth_query_decl::facade::application_schema::fragment::*;
 mod records;
 pub use records::*;
+mod joined;
+pub use joined::JoinedOf;
 #[derive(Clone, Copy, Debug)]
 pub struct Schema;
 impl Fragment for Schema {
@@ -98,7 +100,9 @@ impl Registration<Schema> for Actor {
 fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    let schema = predecessor::declare(family::predecessor_family::declare(schema));
+    let schema = family::diamond::declare(predecessor::declare(
+        family::predecessor_family::declare(schema),
+    ));
     let schema = synchronous_edit::new_source::declare(synchronous_edit::declare(
         authored_member::declare(schema),
     ));

@@ -24,6 +24,7 @@ where
     >,
 {
     DeclaredCoupledOutputDemand {
+        reuse_prepared: true,
         connection,
         family: Family::<S, D>::IDENTITY,
         family_type: EqualityTypeId::of::<Family<S, D>>(),

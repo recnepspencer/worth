@@ -4302,11 +4302,16 @@ control checked at C. The installed connection computes the dependent demands;
 publication rosters never supply that set. The complete discovery read support
 is checked against the final candidate, so a later producer cannot invalidate
 the discovery that selected it. A late discovery or producer refusal leaves the
-whole edit unchanged. Required-output readiness consumes the actual group
-receipts without another producer contact or Native commit.
+whole edit unchanged. Declared occurrence dependencies prepare all parents before
+a converging child, including unequal-depth paths. Discovery observes the wave's
+complete applied image. Automatic demands for the same full-generation source,
+family and canonical parameter partition share one actual writer; distinct
+sources or partitions never alias. Explicit duplicate `coupled_outputs`
+declarations retain their typed refusal. Required-output readiness consumes the
+actual group receipts without another producer contact or Native commit.
 
 [P5/S6 synchronous edit publication](../plans/WORTH-query/synchronous-edit-publication.md)
-is still in progress: shared-route and wave scheduling, discovered roots,
+is still in progress: discovered roots,
 independent routes, healthy-root reuse within an edit and the explicit
 document-seal envelope remain in that plan. Demand-only output graphs retain
 their explicit lazy delivery meaning. Declared predecessor observations also

@@ -203,6 +203,7 @@ impl ApplicationProgramDefinition<Schema> for Program {
                 .conditional_operation::<restricted_owned::preserve::Operation>()
                 .finish(),
             predecessor::program::feature(),
+            family::diamond::feature(),
         ]
     }
 }

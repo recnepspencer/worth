@@ -24,7 +24,7 @@ where
     C: ApplicationConnectionShape<S>,
     Binding<S, C>: WorthQueryApplicationDependentOutputConnection<S, RootDemand = D>,
     Child<S, C>: Clone + Send,
-    E: SynchronousOutputEdges<S, Child<S, C>>,
+    E: SynchronousOutputEdges<S, Child<S, C>> + 'static,
     <QueryBinding<S, C> as ApplicationQueryBinding<S>>::ScopeBinding:
         ApplicationQueryScopeResolution<
             S,
@@ -46,7 +46,7 @@ where
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         parent: &AppliedOutputParent,
         demand: &D,
-        candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
+        next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure> {
         let connection =
             <Binding<S, C> as WorthQueryApplicationDependentOutputConnection<S>>::IDENTITY;
@@ -65,15 +65,13 @@ where
             .map_err(|cause| refused(format!("{cause:?}")))?;
         for child in children {
             context.checkpoint(connection)?;
-            let captured = source::capture::<S, Child<S, C>>(connection, child.clone());
-            if let Some(parent) = context.owner.prepare_one(
-                context.execution,
-                context.before,
-                &captured,
-                candidate,
-            )? {
-                E::assemble(context, &parent, &child, candidate)?;
-            }
+            capture::schedule::<S, Child<S, C>, E>(
+                context,
+                next,
+                connection,
+                C::declaration(),
+                child,
+            )?;
         }
         Ok(())
     }
@@ -90,9 +88,9 @@ where
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         parent: &AppliedOutputParent,
         demand: &D,
-        candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
+        next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure> {
-        L::assemble(context, parent, demand, candidate)?;
-        R::assemble(context, parent, demand, candidate)
+        L::assemble(context, parent, demand, next)?;
+        R::assemble(context, parent, demand, next)
     }
 }

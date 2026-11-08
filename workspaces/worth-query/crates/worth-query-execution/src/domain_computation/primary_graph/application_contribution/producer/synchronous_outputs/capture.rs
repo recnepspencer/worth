@@ -11,15 +11,25 @@ use worth_query_declaration::facade::{
 type Scope<S, D> = <Source<S, D> as ApplicationQueryBinding<S>>::ScopeBinding;
 type Principal<S, D> = <Source<S, D> as ApplicationQueryBinding<S>>::PrincipalIdentity;
 
-trait RequiredTree<S: ApplicationSchema>: Send + 'static {
-    fn assemble(
+pub(super) trait RequiredTree<S: ApplicationSchema>: Send + 'static {
+    fn order(
+        &self,
+    ) -> &worth_query_declaration::facade::application_program::ApplicationProgramConnectionOrder;
+    fn prepare(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
+    ) -> Result<Option<AppliedOutputParent>, SynchronousOutputFailure>;
+    fn discover(
+        &self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        parent: &AppliedOutputParent,
+        next: &mut SynchronousOutputWave<S>,
     ) -> Result<(), SynchronousOutputFailure>;
 }
 struct Tree<D, E> {
     connection: &'static str,
+    order: worth_query_declaration::facade::application_program::ApplicationProgramConnectionOrder,
     demand: D,
     marker: PhantomData<fn() -> E>,
 }
@@ -31,22 +41,60 @@ where
     SourceInput<S, D>: ApplicationQueryIntent<S, Binding = Source<S, D>>,
     Scope<S, D>: ApplicationQueryScopeResolution<S, Principal<S, D>>,
 {
-    fn assemble(
+    fn order(
+        &self,
+    ) -> &worth_query_declaration::facade::application_program::ApplicationProgramConnectionOrder
+    {
+        &self.order
+    }
+    fn prepare(
         &self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
-    ) -> Result<(), SynchronousOutputFailure> {
+    ) -> Result<Option<AppliedOutputParent>, SynchronousOutputFailure> {
         context.checkpoint(self.connection)?;
         let demand = source::capture::<S, D>(self.connection, self.demand.clone());
-        let parent =
-            context
-                .owner
-                .prepare_one(context.execution, context.before, &demand, candidate)?;
-        if let Some(parent) = parent {
-            E::assemble(context, &parent, &self.demand, candidate)?;
-        }
-        Ok(())
+        Ok(context
+            .owner
+            .prepare_one(context.execution, context.before, &demand, candidate)?)
     }
+    fn discover(
+        &self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        parent: &AppliedOutputParent,
+        next: &mut SynchronousOutputWave<S>,
+    ) -> Result<(), SynchronousOutputFailure> {
+        E::assemble(context, parent, &self.demand, next)
+    }
+}
+pub(super) fn schedule<S, D, E>(
+    context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+    wave: &mut SynchronousOutputWave<S>,
+    connection: &'static str,
+    position: worth_query_declaration::facade::application_program::ApplicationConnectionDeclaration,
+    demand: D,
+) -> Result<(), SynchronousOutputFailure>
+where
+    S: ApplicationSchema,
+    D: WorthQueryApplicationOutputDemand<S> + Clone + Send,
+    E: SynchronousOutputEdges<S, D> + 'static,
+    SourceInput<S, D>: ApplicationQueryIntent<S, Binding = Source<S, D>>,
+    Scope<S, D>: ApplicationQueryScopeResolution<S, Principal<S, D>>,
+{
+    wave.push(
+        context,
+        connection,
+        &position,
+        std::mem::size_of::<Tree<D, E>>(),
+        || {
+            Box::new(Tree::<D, E> {
+                connection,
+                order: context.order.clone(),
+                demand,
+                marker: PhantomData,
+            })
+        },
+    )
 }
 /// Private erasure follows the effect; only its schema-typed owner opens it.
 pub(in crate::domain_computation::primary_graph) struct CapturedSynchronousOutputs(
@@ -71,15 +119,19 @@ impl CapturedSynchronousOutputs {
                     "required graph schema",
                 )
             })?;
-        tree.assemble(
-            &SynchronousOutputAssembly {
-                owner,
-                execution,
-                before,
-            },
-            candidate,
-        )
-        .map_err(|cause| cause.0)
+        let order = tree.order();
+        let context = SynchronousOutputAssembly {
+            owner,
+            execution,
+            before,
+            order,
+        };
+        let mut wave = SynchronousOutputWave::new();
+        if let Some(parent) = tree.prepare(&context, candidate).map_err(|cause| cause.0)? {
+            tree.discover(&context, &parent, &mut wave)
+                .map_err(|cause| cause.0)?;
+        }
+        wave.drive(&context, candidate).map_err(|cause| cause.0)
     }
 }
 impl<S: ApplicationSchema, O, I, Scope>
@@ -89,6 +141,7 @@ impl<S: ApplicationSchema, O, I, Scope>
         mut self,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         demand: C::Demand,
+        order: &worth_query_declaration::facade::application_program::ApplicationProgramConnectionOrder,
     ) -> Self
     where
         C: WorthQueryApplicationRequiredOutputConnection<S>,
@@ -103,6 +156,7 @@ impl<S: ApplicationSchema, O, I, Scope>
     {
         let tree: Box<dyn RequiredTree<S>> = Box::new(Tree::<C::Demand, E> {
             connection: C::IDENTITY,
+            order: order.clone(),
             demand,
             marker: PhantomData,
         });

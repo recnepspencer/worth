@@ -52,6 +52,11 @@ impl WorthQueryApplicationRequiredOutputConnection<Schema> for Start {
         Ok(first::Demand(input.0.key.clone()))
     }
 }
+pub struct ChildOutput;
+impl ApplicationOutputPort<Schema, Child> for ChildOutput {
+    type Value = query::RowBinding;
+    const IDENTITY: &'static str = "hierarchy-child-output";
+}
 pub struct Child;
 pub struct ChildInput;
 pub struct SeedInput;
@@ -148,6 +153,7 @@ impl ApplicationProgramDefinition<Schema> for Program {
                 .conditional_operation::<first::preserve::Operation>()
                 .finish(),
             ApplicationFeatureSpec::root::<Schema, Child>()
+                .provides::<ChildOutput>()
                 .conditional_operation::<from_first::initial::Operation>()
                 .conditional_operation::<from_first::preserve::Operation>()
                 .conditional_operation::<restricted_from_first::initial::Operation>()
@@ -166,6 +172,7 @@ impl ApplicationProgramDefinition<Schema> for Program {
                 .conditional_operation::<restricted_owned::preserve::Operation>()
                 .finish(),
             super::super::predecessor::program::feature(),
+            family::diamond::feature(),
         ]
     }
 }
