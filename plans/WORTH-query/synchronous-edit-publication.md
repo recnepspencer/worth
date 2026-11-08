@@ -856,3 +856,31 @@ admission, stale basis and accounting-only worker work. New checks add evidence;
 no existing assertion is loosened or removed. Restored focused and legacy
 regressions close this checkpoint. Discovered roots, the authored-stage/seal
 envelope and full P5/S6 qualification remain open.
+
+
+## D1397 CP2 trace and publication-count checkpoint
+
+The unchanged scratch cabinet journey, against CP1, confirms the repeat trigger
+at `SealedNativeOutputWitness::prepare_fact_projection`. The first root retires
+placement instructions; the next retires its temporary retirement facts; both
+require Fresh because retired roles cannot become ordinary live observed facts.
+The third root and each moved body's last continuation only republish. The
+selected source rebase reports no superseded facts. Removing the retired-role
+guard alone would leave the81 temporary rows that the old final state removed.
+CP2 must keep that cleanup inside D and adopt the final unchanged continuation.
+No defect of the old final live state has been established.
+
+The existing Native completed-publication recorder now strengthens the public
+two-family edit court: one publication across all branches for the edit, zero
+for readiness, measure reads and replay. A separate real two-branch edit court
+proves that the bounded observer counts an off-head publication even when its
+retained sample is full. Accounted and worker paths pass. Existing head/receipt,
+identity, value and contact assertions remain. No assertion was loosened.
+
+This is a diagnostic/evidence checkpoint, not completion of CP2. The cabinet
+fixture, final-row oracle, candidate self-continuation, no-op demand adoption,
+required R1/R2/C1/G1/G2 mutants and growth courts remain open. The current
+proprietary path has no claimed commit reduction. Evidence is in
+`build-cache/history53-d1347/p5-cabinet-continuation-trace.md` and
+`p5-cp2-counter-public.log` (100 focused public courts pass). Temporary trace
+probes were restored byte-exactly by SHA-256; no proprietary change is committed.

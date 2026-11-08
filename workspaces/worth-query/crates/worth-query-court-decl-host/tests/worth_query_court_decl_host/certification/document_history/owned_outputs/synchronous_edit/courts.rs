@@ -4,6 +4,7 @@ use worth_query_host::facade::{
     application_entry::WorthQueryApplicationReadObservation as ReadObservation,
     runtime::ExecutionAllocationPolicy,
 };
+use worth_relational::facade::inspection::observe_maintenance_work;
 
 pub(super) fn commit_ordinal(host: &world::Host) -> u64 {
     host.with_host_advancement(|phase| {
@@ -48,16 +49,23 @@ pub(super) fn edit_two_families(host: &world::Host) {
     let contacts = host.producer_contacts_on_this_thread_for_test();
     let before = commit_ordinal(host);
     let native_before = native_head(host);
-    let outcome = request
-        .advanced()
-        .mutate(Intent {
-            key: "a".into(),
-            value: 2,
-        })
-        .without_source()
-        .idempotency(&"synchronous-edit".to_owned())
-        .execute_in_program(host, ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap();
+    let (outcome, publications) = observe_maintenance_work(8, || {
+        request
+            .advanced()
+            .mutate(Intent {
+                key: "a".into(),
+                value: 2,
+            })
+            .without_source()
+            .idempotency(&"synchronous-edit".to_owned())
+            .execute_in_program(host, ExecutionAllocationPolicy::SystemAllocation)
+            .unwrap()
+    });
+    assert_eq!(
+        publications.published_rows.len() + publications.omitted_publications,
+        1,
+        "the edit publishes exactly once across all branches"
+    );
     assert!(
         matches!(
             outcome,
@@ -116,8 +124,17 @@ pub(super) fn edit_two_families(host: &world::Host) {
         before + 1,
         "one composite publication for the complete edit"
     );
-    first::settle(host, &request, "a");
-    second::settle(host, &request, "a");
+    let (_, readiness) = observe_maintenance_work(8, || {
+        first::settle(host, &request, "a");
+        second::settle(host, &request, "a");
+        assert_eq!(world::model(host, host.current_world()).value, 2);
+        assert_eq!(world::outputs(host, host.current_world()), outputs);
+    });
+    assert_eq!(
+        readiness.published_rows.len() + readiness.omitted_publications,
+        0,
+        "readiness and public measure reads publish on no branch"
+    );
     assert_eq!(
         host.producer_contacts_on_this_thread_for_test(),
         contacts + 2,
@@ -133,16 +150,23 @@ pub(super) fn edit_two_families(host: &world::Host) {
         native_after,
         "readiness publishes no Native metadata commit either"
     );
-    let replay = request
-        .advanced()
-        .mutate(Intent {
-            key: "a".into(),
-            value: 2,
-        })
-        .without_source()
-        .idempotency(&"synchronous-edit".to_owned())
-        .execute_in_program(host, ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap();
+    let (replay, publications) = observe_maintenance_work(8, || {
+        request
+            .advanced()
+            .mutate(Intent {
+                key: "a".into(),
+                value: 2,
+            })
+            .without_source()
+            .idempotency(&"synchronous-edit".to_owned())
+            .execute_in_program(host, ExecutionAllocationPolicy::SystemAllocation)
+            .unwrap()
+    });
+    assert_eq!(
+        publications.published_rows.len() + publications.omitted_publications,
+        0,
+        "idempotent replay publishes on no branch"
+    );
     let WorthQueryApplicationMutationOutcome::AlreadyCommitted(replayed) = replay else {
         panic!("{replay:?}")
     };
