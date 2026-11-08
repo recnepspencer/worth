@@ -112,12 +112,27 @@ impl WorthQueryInvariantProjectionDenial {
         &self,
     ) -> Option<worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption>
     {
-        match self.retention_denial.as_deref() { Some(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::RequestInterruption(stop)) => Some(*stop), _ => None }
+        use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial;
+        use worth_execution::{MapKernelStop as KernelStop, WorkCeilingDenial};
+        use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Interruption;
+        match self.retention_denial.as_deref() {
+            Some(StoreDenial::RequestInterruption(stop)) => Some(*stop),
+            Some(StoreDenial::ExecutionRequest(WorkCeilingDenial::Stopped(stop))) => match stop {
+                KernelStop::Cancelled => Some(Interruption::Cancelled),
+                KernelStop::DeadlineElapsed => Some(Interruption::DeadlineExceeded),
+                _ => None,
+            },
+            _ => None,
+        }
     }
     pub(super) fn source_retention_denied(
         denial: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial,
         work: super::WorthQueryInvariantProjectionWork,
     ) -> Self {
+        if let crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::ExecutionRequest(worth_execution::WorkCeilingDenial::Stopped(stop)) = &denial {
+            return Self::execution_request_stopped((*stop).into(), Some(work))
+                .with_retention_denial(denial);
+        }
         Self {
             kind: Box::new(WorthQueryInvariantProjectionDenialKind::SourceRetentionDenied),
             projection_work: Some(work),
@@ -212,3 +227,64 @@ pub(super) fn from_snapshot_admission_denial(
 }
 
 mod court_doors_for_test;
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        WorthQueryInvariantProjectionDenial as Denial, WorthQueryInvariantProjectionDenialKind,
+    };
+    use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial;
+    use worth_execution::{MapKernelStop as Stop, WorkCeilingDenial};
+    use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Interruption;
+    use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
+
+    #[test]
+    fn retained_execution_stops_preserve_their_exact_caller_class_and_evidence() {
+        for (stop, cause, interruption) in [
+            (
+                Stop::Cancelled,
+                Cause::Cancelled,
+                Some(Interruption::Cancelled),
+            ),
+            (
+                Stop::DeadlineElapsed,
+                Cause::DeadlineElapsed,
+                Some(Interruption::DeadlineExceeded),
+            ),
+            (Stop::WorkCeiling, Cause::WorkExhausted, None),
+            (Stop::WorkCounterOverflow, Cause::WorkCounterOverflow, None),
+            (Stop::NestedStopped, Cause::NestedStopped, None),
+            (
+                Stop::AccountingUnavailable,
+                Cause::AccountingUnavailable,
+                None,
+            ),
+        ] {
+            let retained = StoreDenial::ExecutionRequest(WorkCeilingDenial::Stopped(stop));
+            let work = super::super::WorthQueryInvariantProjectionWork::default();
+            let denial = Denial::source_retention_denied(retained.clone(), work);
+            assert_eq!(
+                denial.kind(),
+                WorthQueryInvariantProjectionDenialKind::ExecutionRequest(cause),
+                "{stop:?}"
+            );
+            assert_eq!(denial.projection_work(), Some(work));
+            assert_eq!(denial.retention_denial.as_deref(), Some(&retained));
+            assert_eq!(
+                denial.source_retention_interruption(),
+                interruption,
+                "{stop:?}"
+            );
+        }
+
+        let work = super::super::WorthQueryInvariantProjectionWork::default();
+        let retained = StoreDenial::ConflictingBody;
+        let denial = Denial::source_retention_denied(retained.clone(), work);
+        assert_eq!(
+            denial.kind(),
+            WorthQueryInvariantProjectionDenialKind::SourceRetentionDenied
+        );
+        assert_eq!(denial.retention_denial.as_deref(), Some(&retained));
+        assert_eq!(denial.source_retention_interruption(), None);
+    }
+}
