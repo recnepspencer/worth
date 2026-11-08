@@ -142,6 +142,7 @@ fn relation_scope_preparation_preserves_supplied_allocation_stop() {
     let view = InvariantRuntimeView::from_runtime(&runtime);
     let plan = entity_plan(1);
     let error = match InvariantExecutionRequest::from_profile_with_contract_at_current_version(
+        &worth_execution::ExecutionRequest::leased(&lease),
         InvariantRequestProfile::CertificationBoundary,
         &view,
         InvariantObservation::committed(runtime.storage_access().current_edition()),

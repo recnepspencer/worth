@@ -22,7 +22,10 @@ impl<'state> InvariantExecutionRequest<'state> {
         'runtime: 'state,
     {
         let view = crate::validation::engine::InvariantRuntimeView::from_runtime(runtime);
+        let backing = crate::test_execution_policy::serial_request();
+        let execution = worth_execution::ExecutionRequest::serial(&backing);
         Self::from_profile_with_contract_at_current_version(
+            &execution,
             profile,
             &view,
             observation,
@@ -40,6 +43,7 @@ impl<'state> InvariantExecutionRequest<'state> {
     }
 
     pub(crate) fn from_profile_with_contract_at_current_version<'runtime>(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         profile: InvariantRequestProfile,
         runtime: &crate::validation::engine::InvariantRuntimeView<'runtime>,
         observation: InvariantObservation<'state>,
@@ -50,6 +54,7 @@ impl<'state> InvariantExecutionRequest<'state> {
         control: &InvariantPreparationControl<'_, '_>,
     ) -> Result<Self, crate::transactions::data::TransactionCommitError> {
         Self::from_semantic_plan(
+            execution,
             profile,
             runtime,
             observation,
@@ -62,6 +67,7 @@ impl<'state> InvariantExecutionRequest<'state> {
     }
 
     pub(crate) fn from_semantic_plan<'runtime>(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         profile: InvariantRequestProfile,
         runtime: &crate::validation::engine::InvariantRuntimeView<'runtime>,
         observation: InvariantObservation<'state>,
@@ -97,14 +103,28 @@ impl<'state> InvariantExecutionRequest<'state> {
         } else {
             observation.committed_partition_access()
         };
-        let relation_integrity_scopes = prepare_relation_integrity_scopes(
-            semantic_plan,
-            scope_state,
-            version_id,
-            relation_scope_requirements,
-            &runtime.performance_access(),
-            control,
-        )?;
+        let relation_integrity_scopes = super::scope_admission::prepare(execution, |admit| {
+            prepare_relation_integrity_scopes(
+                semantic_plan,
+                super::relation_integrity_scopes::RelationScopeState {
+                    current: super::super::state_view::InvariantStateView::new(
+                        scope_state,
+                        version_id,
+                    ),
+                    predecessor: super::super::state_view::InvariantStateView::new(
+                        observation
+                            .before_image_partition_access()
+                            .unwrap_or(scope_state),
+                        observation.before_image_version_id(current_version_id),
+                    ),
+                    candidate_is_applied: observation.applied_created_entities().is_some(),
+                },
+                relation_scope_requirements,
+                &runtime.performance_access(),
+                control,
+                admit,
+            )
+        })?;
         let proposal_identity = observation.proposal_identity().cloned();
         let applied_declaration_view = if profile == InvariantRequestProfile::ProposedState {
             observation.applied_declaration_view(current_version_id)

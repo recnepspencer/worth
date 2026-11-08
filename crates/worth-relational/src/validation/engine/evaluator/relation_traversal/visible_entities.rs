@@ -6,9 +6,31 @@ use super::super::common::contract_candidate_kind_matches;
 pub(super) fn visible_entities_of_kinds(
     context: &InvariantExecutionContext<'_, '_>,
     kind_ids: &[crate::identity::data::KindId],
+    relation_kind: crate::identity::data::KindId,
 ) -> Vec<EntityReference> {
     let mut entities = Vec::new();
-    collect_state_view_entities(context, kind_ids, &mut entities);
+    let Some(scope) = context.relation_integrity_scope(relation_kind) else {
+        return entities;
+    };
+    if scope.complete_source_set {
+        collect_state_view_entities(context, kind_ids, &mut entities);
+    } else {
+        for source in &scope.connectivity_sources {
+            if !context.checkpoint(1) {
+                return Vec::new();
+            }
+            context.metrics().count_entity_slot_scans(1);
+            if let EntityReference::Existing(id) = source
+                && let Some(metadata) = context.state_view().entity_metadata(*id)
+                && contract_candidate_kind_matches(metadata.kind_id, kind_ids)
+            {
+                if !context.claim_scratch(std::mem::size_of::<EntityReference>() as u64) {
+                    return Vec::new();
+                }
+                entities.push(source.clone());
+            }
+        }
+    }
     if !context.checkpoint(0) {
         return Vec::new();
     }

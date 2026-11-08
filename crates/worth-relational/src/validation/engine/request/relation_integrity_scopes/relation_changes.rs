@@ -14,8 +14,20 @@ impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
         target: &EntityReference,
     ) -> Result<(), TransactionCommitError> {
         self.check_live()?;
-        let scope = self.scopes.entry(kind_id).or_default();
+        let Some(scope) = self.scopes.get_mut(&kind_id) else {
+            return Ok(());
+        };
         scope.record_affected_pair(source, target);
+        if scope.requires_visible_successors {
+            (self.admit)(
+                1,
+                super::successor_scope::reference_quote(source)
+                    .saturating_add(super::successor_scope::reference_quote(target)),
+            )?;
+            scope
+                .connectivity_sources
+                .extend([source.clone(), target.clone()]);
+        }
         scope.planned_edges.push(PlannedRelationEdge {
             source: source.clone(),
             target: target.clone(),
@@ -28,14 +40,14 @@ impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
         let both_existing = matches!(source, EntityReference::Existing(_))
             && matches!(target, EntityReference::Existing(_));
         if scan_source || (scan_pair && both_existing) {
-            include_existing_entity_reference(&mut self.touched_relation_sources, source);
+            include_existing_entity_reference(&mut self.touched_relation_sources, kind_id, source);
         }
         if scan_target {
-            include_existing_entity_reference(&mut self.touched_relation_targets, target);
+            include_existing_entity_reference(&mut self.touched_relation_targets, kind_id, target);
         }
         if scan_full && both_existing {
-            include_existing_entity_reference(&mut self.touched_relation_targets, source);
-            include_existing_entity_reference(&mut self.touched_relation_sources, target);
+            include_existing_entity_reference(&mut self.touched_relation_targets, kind_id, source);
+            include_existing_entity_reference(&mut self.touched_relation_sources, kind_id, target);
         }
         self.check_live()
     }
@@ -48,14 +60,18 @@ impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
         if let Some((kind, source, target)) =
             relation_scope_details_for_id(&self.state_view, relation_id)
         {
-            let scope = self.scopes.entry(kind).or_default();
+            let Some(scope) = self.scopes.get_mut(&kind) else {
+                return Ok(());
+            };
             scope.record_affected_pair(
                 &EntityReference::Existing(source),
                 &EntityReference::Existing(target),
             );
             scope.minimum_touched_entities.extend([source, target]);
-            self.touched_relation_sources.extend([source, target]);
-            self.touched_relation_targets.extend([source, target]);
+            self.touched_relation_sources
+                .extend([(kind, source), (kind, target)]);
+            self.touched_relation_targets
+                .extend([(kind, source), (kind, target)]);
         }
         self.check_live()
     }
@@ -67,17 +83,22 @@ impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
         self.check_live()?;
         self.deleted_relations.insert(relation_id);
         if let Some((kind_id, source, target)) =
-            relation_scope_details_for_id(&self.state_view, relation_id)
+            relation_scope_details_for_id(&self.predecessor, relation_id)
+                .or_else(|| relation_scope_details_for_id(&self.state_view, relation_id))
         {
-            let scope = self.scopes.entry(kind_id).or_default();
+            let Some(scope) = self.scopes.get_mut(&kind_id) else {
+                return Ok(());
+            };
             scope.record_affected_pair(
                 &EntityReference::Existing(source),
                 &EntityReference::Existing(target),
             );
             scope.deleted_relation_count += 1;
             scope.minimum_touched_entities.extend([source, target]);
-            self.touched_relation_sources.extend([source, target]);
-            self.touched_relation_targets.extend([source, target]);
+            self.touched_relation_sources
+                .extend([(kind_id, source), (kind_id, target)]);
+            self.touched_relation_targets
+                .extend([(kind_id, source), (kind_id, target)]);
         }
         self.check_live()
     }

@@ -14,9 +14,7 @@ pub(crate) fn inspect<'a>(
     execution
         .check_live()
         .map_err(|stop| RelationalRecoveryStop::Request(stop.into()))?;
-    let payload = bytes
-        .strip_prefix(super::CHECKPOINT_MAGIC)
-        .ok_or_else(|| invalid("unknown native checkpoint frame"))?;
+    let payload = super::checkpoint_payload(bytes)?;
     let wire: CheckpointWire<'_> = rmp_serde::from_slice(payload)
         .map_err(|e| invalid(format!("native checkpoint inspection: {e}")))?;
     let CheckpointWire {

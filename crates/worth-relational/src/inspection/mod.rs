@@ -15,3 +15,5 @@ mod tests;
 pub use access::InspectionAccess;
 #[cfg(test)]
 pub(crate) use merge_support::support_inspection_witness;
+
+pub(crate) mod relation_law_sources;

@@ -49,3 +49,7 @@ pub use crate::runtime::{
 pub use crate::storage::substrate::observe_history_prefix_traversal;
 
 pub use crate::symbols::data::observe_symbol_snapshot_materialization;
+
+pub use crate::inspection::relation_law_sources::{
+    observe_relation_law_sources, RelationLawSourceObservation, RelationLawSourceWitness,
+};

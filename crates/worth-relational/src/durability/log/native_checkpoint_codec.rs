@@ -3,7 +3,26 @@
 
 use crate::durability::data::{DurabilityError, DurableCheckpoint, RecoveryFailureClass};
 
-pub(crate) const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK20\n";
+// Minor capability revision: current custody rows and v2 route-presence
+// digests require a reader that understands successor custody. CHK21 is the
+// separate paged-directory format, not this unchanged CHK20 body grammar.
+pub(crate) const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK20.1\n";
+const LEGACY_CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK20\n";
+
+fn checkpoint_payload(bytes: &[u8]) -> Result<&[u8], DurabilityError> {
+    bytes
+        .strip_prefix(CHECKPOINT_MAGIC)
+        .or_else(|| bytes.strip_prefix(LEGACY_CHECKPOINT_MAGIC))
+        .ok_or_else(|| {
+            DurabilityError::new(
+                RecoveryFailureClass::UnsupportedLegacySemantics,
+                format!(
+                    "unsupported native checkpoint frame; {} required",
+                    String::from_utf8_lossy(CHECKPOINT_MAGIC).trim_end()
+                ),
+            )
+        })
+}
 
 mod checkpoint_decoding;
 mod checkpoint_encoding;

@@ -20,3 +20,5 @@ mod snapshot_counts;
 mod symbol_admission;
 
 mod shared_aspect_reads;
+
+mod global_laws;
