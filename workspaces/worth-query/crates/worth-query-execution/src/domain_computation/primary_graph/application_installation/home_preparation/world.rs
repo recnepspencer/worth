@@ -13,12 +13,16 @@ mod tests;
 
 pub struct ReadmittedHomeQueryService<Schema, Program> {
     runtime: WorthQueryProgramApplicationRuntime<Schema, Program>,
+    program_support_admission: std::sync::OnceLock<worth_proof::AdmittedHomeQueryObligations>,
 }
 impl<Schema: 'static, Program: 'static> worth_proof::AuthorityMarker
     for ReadmittedHomeQueryService<Schema, Program>
 {
 }
 impl<Schema, Program> ReadmittedHomeQueryService<Schema, Program> {
+    pub fn program_support_admission(&self) -> Option<worth_proof::AdmittedHomeQueryObligations> {
+        self.program_support_admission.get().cloned()
+    }
     pub fn into_home_program_runtime(self) -> WorthQueryProgramApplicationRuntime<Schema, Program> {
         self.runtime
     }
@@ -237,7 +241,10 @@ where
             Some((state.program, state.supported)),
         )
         .map(|runtime| {
-            worth_proof::QueryReadmitted::from_owner(ReadmittedHomeQueryService { runtime })
+            worth_proof::QueryReadmitted::from_owner(ReadmittedHomeQueryService {
+                runtime,
+                program_support_admission: std::sync::OnceLock::new(),
+            })
         })
         .map_err(|refused| QueryHomeWorldAttachmentRefused {
             custody: HomeWorldAttachmentCustody::Program(refused),

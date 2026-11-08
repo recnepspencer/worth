@@ -63,10 +63,27 @@ pub(super) const FACTORIES: &[&str] = &[
     "complete_query_native_preparation",
     "readmit_no_pending_owners",
     "into_no_pending_home",
+    "query_obligations_medium",
+    "admit_query_obligations",
+    "admit_query_obligation_prefix",
+    "acknowledge_query_obligation_commit",
+    "acknowledge_query_obligation_no_effect",
 ];
 
 pub(super) fn ownership(name: &str) -> (&'static str, &'static str) {
-    if name == "install_home_checkpoint_maintenance" {
+    if matches!(
+        name,
+        "acknowledge_query_obligation_commit" | "acknowledge_query_obligation_no_effect"
+    ) {
+        ("query-obligation-publication", "crates/worth-proof/")
+    } else if name == "admit_query_obligation_prefix" {
+        ("query-obligation-prefix", "crates/worth-proof/")
+    } else if matches!(name, "query_obligations_medium" | "admit_query_obligations") {
+        (
+            "query-home-obligations",
+            "workspaces/worth-store/crates/worth-store-application/",
+        )
+    } else if name == "install_home_checkpoint_maintenance" {
         (
             "application-home-checkpoint-maintenance",
             "workspaces/worth-store/crates/worth-store-application/",

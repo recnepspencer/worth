@@ -4,6 +4,7 @@ use worth_proof::CustodyReadmitted;
 
 #[derive(Debug)]
 pub enum QueryHomeCustodyReadmissionDenial {
+    ProgramSupport(crate::facade::program_support::QueryProgramSupportDenial),
     Execution(worth_execution::WorkCeilingDenial),
     World(RuntimeWorldServiceDenial<RuntimeWorldRecoveryDenial>),
     Recovery(RuntimeWorldRecoveryDenial),
@@ -33,7 +34,77 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
     pub fn readmit_custody(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        obligations: std::sync::Arc<dyn crate::facade::program_support::QueryObligationsMedium>,
     ) -> Result<CustodyReadmitted<Self>, QueryHomeCustodyReadmissionRefused<Schema, Program>> {
+        let owner = self
+            .runtime
+            .runtime()
+            .runtime
+            .product_runtime
+            .owner
+            .owner_identity();
+        if owner.durable().map(|owner| owner.home()) != Some(obligations.home()) {
+            return Err(QueryHomeCustodyReadmissionRefused {
+                query: self,
+                cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(
+                    crate::facade::program_support::QueryProgramSupportDenial::ForeignHome,
+                ),
+            });
+        }
+        let Some(fence) = owner.home_incarnation_fence() else {
+            return Err(QueryHomeCustodyReadmissionRefused {
+                query: self,
+                cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(
+                    crate::facade::program_support::QueryProgramSupportDenial::ForeignHome,
+                ),
+            });
+        };
+        if fence.admit(obligations.incarnation().fence()).is_err() {
+            return Err(QueryHomeCustodyReadmissionRefused {
+                query: self,
+                cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(
+                    crate::facade::program_support::QueryProgramSupportDenial::StaleIncarnation,
+                ),
+            });
+        }
+        let support = self.runtime.runtime().installed_program_support();
+        let Some(support) = support else {
+            return Err(QueryHomeCustodyReadmissionRefused {
+                query: self,
+                cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(
+                    crate::facade::program_support::QueryProgramSupportDenial::SupportUnavailable,
+                ),
+            });
+        };
+        let admission = match support.lifecycle().readmit_journal(obligations, execution) {
+            Ok(admission) => admission,
+            Err(cause) => {
+                return Err(QueryHomeCustodyReadmissionRefused {
+                    query: self,
+                    cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(cause),
+                })
+            }
+        };
+        if let Some(existing) = self.program_support_admission.get() {
+            if existing.position() != admission.position()
+                || existing.digest() != admission.digest()
+                || existing.payload_digest() != admission.payload_digest()
+            {
+                return Err(QueryHomeCustodyReadmissionRefused {
+                    query: self,
+                    cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(
+                        crate::facade::program_support::QueryProgramSupportDenial::PrefixMismatch,
+                    ),
+                });
+            }
+        } else if self.program_support_admission.set(admission).is_err() {
+            return Err(QueryHomeCustodyReadmissionRefused {
+                query: self,
+                cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(
+                    crate::facade::program_support::QueryProgramSupportDenial::SupportUnavailable,
+                ),
+            });
+        }
         if let Err(cause) = self.admit_original_custody(execution) {
             return Err(QueryHomeCustodyReadmissionRefused { query: self, cause });
         }

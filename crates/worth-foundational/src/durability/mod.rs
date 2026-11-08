@@ -6,6 +6,10 @@ pub use native_checkpoint_reference::{
     NativeCheckpointBranchObservation, NativeCheckpointBranchReference,
     NativeCheckpointBranchTarget,
 };
+mod program_support;
+pub use program_support::{
+    ProgramSupportObligationIdentity, ProgramSupportObligationKind, ProgramSupportStatus,
+};
 mod home_binding;
 mod home_installation_transition;
 pub use home_installation_transition::HomeProgramTransitionInstallationBinding;

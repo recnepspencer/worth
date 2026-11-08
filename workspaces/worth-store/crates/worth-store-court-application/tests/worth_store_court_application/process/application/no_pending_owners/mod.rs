@@ -4,6 +4,7 @@ mod transition_catalog_readmission;
 use worth_store_testkit_application_oracle::facade::home_opening::HomeOpeningRefused as OpenRefusal;
 mod admission_retirement;
 mod journal_absence;
+mod query_publication;
 mod transition_attestation;
 mod transition_executor;
 mod transition_history;

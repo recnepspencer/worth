@@ -13,6 +13,11 @@ mod durable_publication;
 mod dx;
 mod effect;
 mod home_binding;
+mod home_query_obligations;
+pub use home_query_obligations::{
+    AdmittedHomeQueryObligations, CommittedHomeQueryObligation, HomeQueryObligationSubject,
+    HomeQueryObligationsAuthority, HomeQueryObligationsOwner, NoEffectHomeQueryObligation,
+};
 mod home_incarnation;
 pub use home_incarnation::{HomeIncarnationDenial, HomeIncarnationFence};
 mod home_program_transition;

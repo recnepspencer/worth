@@ -186,90 +186,93 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
                 revision: *revision,
             })?;
         let retained_program_bytes = entry.retained_bytes();
-        let retirement = support.lifecycle().begin_retirement(revision)?;
-        let barrier = match self
-            .backing
-            .runtime()
-            .runtime
-            .product_runtime
-            .activations
-            .begin_program_retirement(revision)
-        {
-            Ok(barrier) => barrier,
-            Err(_) => {
-                return Err(retirement
-                    .inventory_unavailable(retained_program_bytes)
-                    .into())
-            }
-        };
-        let occurrences = match self
-            .backing
-            .runtime()
-            .runtime
-            .product_runtime
-            .activations
-            .live_occurrences()
-        {
-            Ok(occurrences) => occurrences,
-            Err(_) => {
-                return Err(retirement
-                    .inventory_unavailable(retained_program_bytes)
-                    .into())
-            }
-        };
-        let mut current_branches = 0usize;
-        for occurrence in occurrences.iter().copied() {
-            let selected = match self
+        let retirement = support
+            .lifecycle()
+            .begin_retirement_in_request(execution, revision)?;
+        let outcome = (|| {
+            let barrier = match self
                 .backing
                 .runtime()
                 .runtime
                 .product_runtime
-                .admit_product_occurrence(occurrence)
+                .activations
+                .begin_program_retirement(revision)
             {
-                Ok(selected) => selected,
-                Err(
-                    BranchDenial::Refused(AdmissionRefusal::RetiredBranch)
-                    | BranchDenial::Refused(AdmissionRefusal::IncarnationChanged),
-                ) => continue,
-                Err(BranchDenial::Stopped(stop)) => {
-                    let policy = retirement.inventory_unavailable(retained_program_bytes);
-                    return Err(WorthQueryProgramSupportRetirementFailure::ReadExecution {
-                        stop,
-                        inventory: policy
-                            .partial_inventory()
-                            .expect("partial inventory was recorded")
-                            .clone(),
-                    });
-                }
-                Err(BranchDenial::Refused(
-                    AdmissionRefusal::ExpectedDescriptionVersionUnsupported { .. }
-                    | AdmissionRefusal::ExpectedDescriptionNameInvalid
-                    | AdmissionRefusal::ForeignPhase
-                    | AdmissionRefusal::ObservationStatePoisoned
-                    | AdmissionRefusal::OwnerUnavailable
-                    | AdmissionRefusal::ForeignOwner
-                    | AdmissionRefusal::StaleIncarnation
-                    | AdmissionRefusal::ObservationRejected
-                    | AdmissionRefusal::DurableBranchPublicationRequired
-                    | AdmissionRefusal::ObservationStaleSourceHead
-                    | AdmissionRefusal::ObservationCapacityExhausted
-                    | AdmissionRefusal::CustodyCapacityExhausted
-                    | AdmissionRefusal::ObservationIdentityExhausted
-                    | AdmissionRefusal::ProductActivationUnavailable
-                    | AdmissionRefusal::RelationalBasisUnavailable
-                    | AdmissionRefusal::RelationalSnapshotUnavailable
-                    | AdmissionRefusal::ActiveSnapshotCapacityExhausted { .. }
-                    | AdmissionRefusal::RetentionCapacityExhausted
-                    | AdmissionRefusal::RetentionIdentityExhausted
-                    | AdmissionRefusal::SnapshotIdentityExhausted
-                    | AdmissionRefusal::BridgeSourceUnavailable,
-                )) => {
+                Ok(barrier) => barrier,
+                Err(_) => {
                     return Err(retirement
                         .inventory_unavailable(retained_program_bytes)
                         .into())
                 }
             };
-            let inspection = match crate::domain_computation::primary_graph::product_activation::inspect_selected_program(execution,
+            let occurrences = match self
+                .backing
+                .runtime()
+                .runtime
+                .product_runtime
+                .activations
+                .live_occurrences()
+            {
+                Ok(occurrences) => occurrences,
+                Err(_) => {
+                    return Err(retirement
+                        .inventory_unavailable(retained_program_bytes)
+                        .into())
+                }
+            };
+            let mut current_branches = 0usize;
+            for occurrence in occurrences.iter().copied() {
+                let selected = match self
+                    .backing
+                    .runtime()
+                    .runtime
+                    .product_runtime
+                    .admit_product_occurrence(occurrence)
+                {
+                    Ok(selected) => selected,
+                    Err(
+                        BranchDenial::Refused(AdmissionRefusal::RetiredBranch)
+                        | BranchDenial::Refused(AdmissionRefusal::IncarnationChanged),
+                    ) => continue,
+                    Err(BranchDenial::Stopped(stop)) => {
+                        let policy = retirement.inventory_unavailable(retained_program_bytes);
+                        return Err(WorthQueryProgramSupportRetirementFailure::ReadExecution {
+                            stop,
+                            inventory: policy
+                                .partial_inventory()
+                                .expect("partial inventory was recorded")
+                                .clone(),
+                        });
+                    }
+                    Err(BranchDenial::Refused(
+                        AdmissionRefusal::ExpectedDescriptionVersionUnsupported { .. }
+                        | AdmissionRefusal::ExpectedDescriptionNameInvalid
+                        | AdmissionRefusal::ForeignPhase
+                        | AdmissionRefusal::ObservationStatePoisoned
+                        | AdmissionRefusal::OwnerUnavailable
+                        | AdmissionRefusal::ForeignOwner
+                        | AdmissionRefusal::StaleIncarnation
+                        | AdmissionRefusal::ObservationRejected
+                        | AdmissionRefusal::DurableBranchPublicationRequired
+                        | AdmissionRefusal::ObservationStaleSourceHead
+                        | AdmissionRefusal::ObservationCapacityExhausted
+                        | AdmissionRefusal::CustodyCapacityExhausted
+                        | AdmissionRefusal::ObservationIdentityExhausted
+                        | AdmissionRefusal::ProductActivationUnavailable
+                        | AdmissionRefusal::RelationalBasisUnavailable
+                        | AdmissionRefusal::RelationalSnapshotUnavailable
+                        | AdmissionRefusal::ActiveSnapshotCapacityExhausted { .. }
+                        | AdmissionRefusal::RetentionCapacityExhausted
+                        | AdmissionRefusal::RetentionIdentityExhausted
+                        | AdmissionRefusal::SnapshotIdentityExhausted
+                        | AdmissionRefusal::BridgeSourceUnavailable,
+                    )) => {
+                        return Err(retirement
+                            .inventory_unavailable(retained_program_bytes)
+                            .into())
+                    }
+                };
+                let inspection = match crate::domain_computation::primary_graph::product_activation::inspect_selected_program(execution,
                     self.backing.runtime(),
                     selected.relational_basis(),
                 ) {
@@ -280,20 +283,27 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
                     }
                     Err(crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramSupportUnavailable | crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnavailable | crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnreadable | crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnrostered) => return Err(retirement.inventory_unavailable(retained_program_bytes).into()),
                 };
-            if inspection.revision() == revision {
-                current_branches = match current_branches.checked_add(1) {
-                    Some(current_branches) => current_branches,
-                    None => {
-                        return Err(retirement
-                            .inventory_unavailable(retained_program_bytes)
-                            .into());
-                    }
-                };
+                if inspection.revision() == revision {
+                    current_branches = match current_branches.checked_add(1) {
+                        Some(current_branches) => current_branches,
+                        None => {
+                            return Err(retirement
+                                .inventory_unavailable(retained_program_bytes)
+                                .into());
+                        }
+                    };
+                }
             }
-        }
-        let receipt = retirement.finish(current_branches, retained_program_bytes)?;
-        barrier.commit();
-        Ok(receipt)
+            let receipt = retirement.finish(current_branches, retained_program_bytes)?;
+            Ok((receipt, barrier))
+        })();
+        support
+            .lifecycle()
+            .acknowledge_retirement(execution, revision, outcome.is_ok())?;
+        outcome.map(|(receipt, barrier)| {
+            barrier.commit();
+            receipt
+        })
     }
 }
 
@@ -329,6 +339,7 @@ where
 /// A retirement's inventory denial or the exact request that stopped reading it.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryProgramSupportRetirementFailure {
+    Durability(super::super::super::program_occurrence::support_lifecycle::journal::QueryProgramSupportDenial),
     Policy(worth_query_installation::facade::WorthQueryProgramSupportRetirementDenial),
     ReadExecution {
         stop: Result<

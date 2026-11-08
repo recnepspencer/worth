@@ -61,13 +61,15 @@ pub(super) fn retry(location: &Path, originals: &[ReleasedOriginalProjection], s
     while bytes <= ceiling {
         let trial = checkpoint_capture::lease(bytes);
         let before = trial.charged_memory_bytes();
-        let refused =
-            match query.readmit_custody(&worth_execution::ExecutionRequest::leased(&trial)) {
-                Ok(_) => panic!(
-                    "no nonempty proper prefix was observed; bytes={bytes}, source-scale={scale}"
-                ),
-                Err(refused) => refused,
-            };
+        let refused = match query.readmit_custody(
+            &worth_execution::ExecutionRequest::leased(&trial),
+            home.query_obligations_medium(),
+        ) {
+            Ok(_) => panic!(
+                "no nonempty proper prefix was observed; bytes={bytes}, source-scale={scale}"
+            ),
+            Err(refused) => refused,
+        };
         let (same, denial) = refused.into_parts();
         query = same;
         let after = trial.charged_memory_bytes();
@@ -84,7 +86,7 @@ pub(super) fn retry(location: &Path, originals: &[ReleasedOriginalProjection], s
     let cleanup_lease = checkpoint_capture::lease(128 * 1024 * 1024);
     let cleanup = worth_execution::ExecutionRequest::leased(&cleanup_lease);
     query = query
-        .readmit_custody(&cleanup)
+        .readmit_custody(&cleanup, home.query_obligations_medium())
         .unwrap_or_else(|refused| {
             panic!(
                 "same-source prefix must retry: {:?}",
@@ -94,7 +96,7 @@ pub(super) fn retry(location: &Path, originals: &[ReleasedOriginalProjection], s
         .consume(|query| query);
     let before = cleanup_lease.charged_memory_bytes();
     query = query
-        .readmit_custody(&cleanup)
+        .readmit_custody(&cleanup, home.query_obligations_medium())
         .unwrap_or_else(|refused| {
             panic!(
                 "same-source duplicate must retry: {:?}",

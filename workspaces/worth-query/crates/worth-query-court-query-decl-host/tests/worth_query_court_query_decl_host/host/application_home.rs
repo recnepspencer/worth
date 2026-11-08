@@ -1,4 +1,5 @@
 //! Real directory startup/read/owning close, extended by the ordinary commit seam.
+mod program_support;
 use std::{
     sync::{
         atomic::{AtomicUsize, Ordering},
