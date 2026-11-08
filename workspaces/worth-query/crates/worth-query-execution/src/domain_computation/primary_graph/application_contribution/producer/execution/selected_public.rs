@@ -9,6 +9,7 @@ use worth_query_declaration::facade::application_schema::ApplicationEntityMarker
 
 use super::*;
 use crate::domain_computation::authorization::authorize_current_control_mutation_on_selected;
+mod applied;
 use crate::domain_computation::authorization::SelectedConventionalAdmissionStop;
 use crate::domain_computation::authorization::{
     authorize_historical_control_mutation_on_selected, authorize_public_mutation_on_selected,
@@ -18,6 +19,7 @@ use crate::domain_computation::primary_graph::SharedSelectedProductOperation;
 use crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial;
 use crate::domain_computation::primary_graph::WorthQueryIssuedSelectedPrincipal;
 use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial;
+pub(super) use applied::prepare_applied_public_mutation;
 
 type Mutation<Schema, Binding> =
     <Binding as WorthQueryApplicationProducerBinding<Schema>>::Operation;
@@ -97,6 +99,7 @@ where
 {
     prepare_public_mutation::<Schema, Binding>(
         execution, installed, runtime, shared, control, history, external, request, input, None,
+        None,
     )
 }
 
@@ -131,6 +134,7 @@ where
         request,
         input,
         Some(recovery),
+        None,
     )
 }
 
@@ -145,6 +149,12 @@ fn prepare_public_mutation<'selected, 'runtime, Schema, Binding>(
     request: &WorthQueryRequestScope,
     input: &MutationInput<Schema, Binding>,
     recovery: Option<&super::unpublished::ContinuationState>,
+    applied: Option<(
+        &worth_relational::facade::runtime::RelationalPinnedRead,
+        &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+    )>,
 ) -> Result<
     PreparedSelectedPublicMutation<'selected, 'runtime, Schema, Binding>,
     SelectedPublicPreparationStop,
@@ -219,6 +229,20 @@ where
             scope
         }
         Ok(scope) => scope,
+        Err(cause) if applied.is_some() && cause.kind() == crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(
+            crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind::UnknownEntity,
+        ) => {
+            require_selected_heads::<Schema, Binding>(runtime, shared, control, recovery)?;
+            let (before, candidate) = applied.expect("applied source posture");
+            let (field, value) = <_ as ApplicationMutationInputScope<Schema, Mutation<Schema, Binding>>>::scope_for_binding(input)
+                .into_field_parts(principal.principal().principal_identity());
+            let scope = runtime.runtime.primary_graph().ok_or(Stop::ForeignSelectedRuntime)?.retain_entity_resolution_context()
+                .resolve_applied_field(execution, before, candidate, field, value).map_err(Stop::Scope)?;
+            let operation = crate::domain_computation::authorization::authorize_applied_control_mutation_on_selected::<Schema, Mutation<Schema, Binding>, MutationScope<Schema, Binding>>(
+                execution, runtime, shared, &current, &installed.prepared_graph, &principal, &scope, before, candidate, request,
+            ).map_err(Stop::Operation)?;
+            return Ok(PreparedSelectedPublicMutation { principal, operation, scope: Binding::PREDECESSOR_READS.map(|_| scope) });
+        }
         Err(cause) if history.is_some_and(|history| history.admits_historical_truth(shared.selected()))
             && cause.kind() == crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(
                 crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind::UnknownEntity,

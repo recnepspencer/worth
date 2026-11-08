@@ -13,6 +13,7 @@ pub(super) fn select(
     runtime: &RelationalPreparationRuntime,
     basis: &AdmittedRelationalBranchBasis,
     candidate: &crate::history::data::CanonicalCommitEnvelope,
+    created: &crate::transactions::data::CommitCreatedEntityBindings,
     adjacency: &[crate::authority::mutation::AdjacencyDelta],
     working: &crate::storage::overlay::WorkingState,
     admission: Option<&crate::mvcc::RequiredOutputPublicationAdmission>,
@@ -79,14 +80,13 @@ pub(super) fn select(
             event.meaning.source_scope,
         ));
     }
-    records.extend(scopes.iter().cloned());
     let after_image =
         crate::storage::overlay::OverlayStateView::new(basis.inner.root.as_ref(), working);
     let after = crate::validation::engine::state_view::InvariantStateView::new(
         &after_image,
         candidate.commit.version_id,
     );
-    let run = || {
+    let mut run = || {
         let destroyed = candidate
             .patch
             .authoritative_record_patches
@@ -102,6 +102,18 @@ pub(super) fn select(
         execution
             .run_native_with_checkpoint(|context| {
                 ownership::checkpoint(context, (targets + adjacency.len()) as u64)?;
+                // Only a coupled group admits sources allocated in its D.
+                // Preserve the existing C-only path and work for other origins.
+                if admission.is_some_and(|admission| {
+                    matches!(
+                        admission.publication,
+                        crate::mvcc::RequiredOutputPublication::CoupledAuthored { .. }
+                    )
+                }) {
+                    // A historical Created patch alone is insufficient proof.
+                    retain_existing_scopes(&mut scopes, created, context)?;
+                }
+                records.extend(scopes.iter().cloned());
                 let mut linked =
                     ownership::linked_selectors(execution, basis, &destroyed, context)?;
                 let mut scoped = linked.clone();
@@ -133,4 +145,25 @@ pub(super) fn select(
         _ => run(),
     }?;
     Ok(Some(result))
+}
+
+fn retain_existing_scopes(
+    scopes: &mut Vec<crate::transactions::data::RecordRef>,
+    created: &crate::transactions::data::CommitCreatedEntityBindings,
+    context: &mut worth_execution::MapKernelContext<'_, '_>,
+) -> Result<(), TransactionCommitError> {
+    let mut kept = 0;
+    for next in 0..scopes.len() {
+        if let crate::transactions::data::RecordRef::Entity(id) = scopes[next]
+            && created
+                .created_here(id, context)
+                .map_err(ownership::request)?
+        {
+            continue;
+        }
+        scopes.swap(kept, next);
+        kept += 1;
+    }
+    scopes.truncate(kept);
+    Ok(())
 }

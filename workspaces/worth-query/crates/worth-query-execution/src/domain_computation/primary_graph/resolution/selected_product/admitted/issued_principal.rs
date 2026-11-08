@@ -39,6 +39,15 @@ impl<Schema, Principal, PrincipalIdentity>
         self.selected.application_basis().snapshot_handle()
     }
 
+    pub(in crate::domain_computation) fn request_lapse(
+        &self,
+    ) -> Option<crate::domain_computation::authorization::WorthQueryAdmissionLapse> {
+        crate::domain_computation::authorization::admitted_request::request_lapse(
+            &self.request,
+            self.principal.valid_until(),
+        )
+    }
+
     pub(in crate::domain_computation) fn request(&self) -> &WorthQueryRequestScope {
         &self.request
     }

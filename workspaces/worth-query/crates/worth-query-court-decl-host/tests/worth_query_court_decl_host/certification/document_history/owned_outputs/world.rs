@@ -37,7 +37,13 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup.handler::<authored_member::retire::Binding, _>(authored_member::retire::Handler)?;
         setup.handler::<authored_member::restore::Binding, _>(authored_member::restore::Handler)?;
         setup.handler::<edit::Binding, _>(edit::Handler)?;
+        setup.handler::<synchronous_edit::new_source::restricted::Binding, _>(
+            synchronous_edit::new_source::restricted::Handler,
+        )?;
         setup.handler::<synchronous_edit::Binding, _>(synchronous_edit::Handler)?;
+        setup.handler::<synchronous_edit::new_source::Binding, _>(
+            synchronous_edit::new_source::Handler,
+        )?;
         setup.handler::<predecessor::synchronous::Binding, _>(predecessor::synchronous::Handler)?;
         setup.handler::<member_edit::Binding, _>(member_edit::Handler)?;
         setup.handler::<member_delete::Binding, _>(member_delete::Handler)?;
@@ -66,9 +72,14 @@ pub fn install_worker_only() -> Host {
     install_with(worker_limits())
 }
 pub(super) fn worker_limits() -> WorthQueryInMemoryApplicationLimits {
+    worker_limits_with_clock(
+        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
+    )
+}
+pub(super) fn worker_limits_with_clock(
+    clock: worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock,
+) -> WorthQueryInMemoryApplicationLimits {
     use worth_query_host::facade::runtime::*;
-    let clock =
-        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system();
     let world =
         worth_query_testkit_document_retention::facade::document_world_resources::world_resources(
             256,

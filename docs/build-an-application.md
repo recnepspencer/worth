@@ -4270,8 +4270,20 @@ The edit's receipt describes the source and producer changes in one Native
 commit. Repeating its idempotency key returns the original receipt. Subsequent
 demands reuse the coupled outputs without another producer contact or readiness
 commit, including after reopening a checkpoint with the same build. The
-source must be live at the exact current full-generation basis; Native refuses
-an unavailable source as `CoupledSourceNotLive`.
+source may be newly created by this edit or by an earlier coupled producer.
+Its full-generation identity must be live at that producer's exact unpublished
+input candidate. Native's own allocation correspondence proves a new source;
+a missing current record alone never proves route absence. Principal, READ,
+operation permissions and request control remain at the current committed basis.
+A candidate's new membership or grant cannot authorize its own producer read.
+Unauthorized reads retain the original current-scope refusal whether the private
+candidate contains the source or not. Request control is checked from the actual
+C-issued principal after the private lookup; cancellation, deadlines and expired
+authentication retain their typed causes. Applied entity descriptions expose no
+committed index generation (`identity_index_generation()` returns `None`) and
+cannot be used as ordinary current scopes. Current descriptions retain `Some`
+with their exact committed index generation. Native refuses an unavailable
+source as `CoupledSourceNotLive`.
 
 These finite Initial/Preserve roots are the first part of
 [P5/S6 synchronous edit publication](../plans/WORTH-query/synchronous-edit-publication.md).

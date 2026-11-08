@@ -40,6 +40,18 @@ impl CoupledOutputCompletion {
             .filter(|identity| Arc::ptr_eq(identity, settlement))?;
         Some(receipt.clone())
     }
+    fn receipt_for_source(
+        &self,
+        identity: Option<RecordedSourceIdentity>,
+        runtime: application_query::WorthQueryRuntimeSourceIdentity,
+        checkpoint: application_query::WorthQueryCheckpointSourceIdentity,
+        settlement: &Arc<RecordedSettlementIdentity>,
+    ) -> Option<WorthQueryApplicationCommitReceipt> {
+        if !identity?.matches_current(runtime, checkpoint) {
+            return None;
+        }
+        self.completed_receipt(settlement)
+    }
     pub(in crate::domain_computation::primary_graph) fn source(&self) -> &AppliedSourcePublication {
         &self.source
     }
@@ -61,15 +73,26 @@ impl input_cutoff::RetainedInputCutoffCandidate {
     ) -> Option<WorthQueryApplicationCommitReceipt> {
         let recorded = self.recorded();
 
-        if !recorded
-            .source_identity?
-            .matches_current(runtime, checkpoint)
-        {
-            return None;
-        }
-        recorded
-            .coupled_completion
-            .as_ref()?
-            .completed_receipt(&recorded.settlement_identity)
+        recorded.coupled_completion.as_ref()?.receipt_for_source(
+            recorded.source_identity,
+            runtime,
+            checkpoint,
+            &recorded.settlement_identity,
+        )
+    }
+}
+
+impl current_output::retained_candidates::WorthQueryRetainedOutputCandidate {
+    pub(in crate::domain_computation::primary_graph) fn completed_coupled_receipt(
+        &self,
+        runtime: application_query::WorthQueryRuntimeSourceIdentity,
+        checkpoint: application_query::WorthQueryCheckpointSourceIdentity,
+    ) -> Option<WorthQueryApplicationCommitReceipt> {
+        self.coupled_completion.as_ref()?.receipt_for_source(
+            self.source_identity,
+            runtime,
+            checkpoint,
+            &self.settlement_identity,
+        )
     }
 }

@@ -7,6 +7,7 @@ use worth_query_declaration::facade::application_query::{
     ApplicationQueryBinding, ApplicationQueryParameterSet,
 };
 use worth_relational::facade::runtime::RelationalPinnedRead;
+mod created;
 
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) enum CoupledSourceReadStop
 {
@@ -139,19 +140,12 @@ where
         Err(cause) if cause.kind() == crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(
             crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind::UnknownEntity,
         ) => {
-            let graph = runtime.runtime.primary_graph().ok_or_else(foreign)?;
-            let (resolved, _) = graph.retain_entity_resolution_context().resolve_applied_with_work(
-                execution, before_pin, &candidate, field.entity(), field.aspect(), field.field(), &arguments.value,
-            );
-            let resolved = resolved.map_err(|cause| scope_rejected(Binding::IDENTITY, cause))?;
             let captured = crate::domain_computation::primary_graph::application_query::capture_parameters::<Schema, SourceBinding<Schema, Binding>>(
                 execution, runtime, 0, || Ok(parameters),
             ).map_err(CoupledSourceReadStop::capture)?;
-            match assembly.declared_owner(execution, demand.family, resolved.entity, captured.parameters().identity().bytes())? {
-                Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Retiring) => return Ok(None),
-                Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Surviving(_)) => return Err(foreign().into()),
-                None => return Err(scope_rejected(Binding::IDENTITY, cause).into()),
-            }
+            return created::read(installed, execution, runtime, external, request, selected, before_pin,
+                &candidate, &arguments.value, &captured, cause, assembly, demand);
+
         }
         Err(cause) => return Err(scope_rejected(Binding::IDENTITY, cause).into()),
     };

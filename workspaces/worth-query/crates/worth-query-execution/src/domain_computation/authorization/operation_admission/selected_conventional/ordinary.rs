@@ -38,7 +38,7 @@ where
         current,
         prepared,
         principal,
-        scope,
+        SelectedMutationScope::Issued(scope),
         request,
     )
 }

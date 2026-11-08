@@ -84,6 +84,7 @@ pub(super) fn prepare_publication_phase(
         runtime,
         &branch_basis,
         &canonical_commit_envelope,
+        &created_entities,
         &adjacency_deltas,
         &working_state,
         required_output_publication.as_ref(),

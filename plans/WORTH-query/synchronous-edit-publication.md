@@ -186,3 +186,195 @@ source, partition and generation before encoding. This is evidence transport,
 not a Ready issuance. Locator-only and incomplete records remain non-reusable.
 The cold Initial court must retain its zero-contact assertion. A dropped-receipt
 transport mutant must fail that assertion.
+
+## Applied source admission boundary review
+
+A source created by an earlier part is absent at C and live at actual D. Both
+`coupled_source` and `selected_public` currently demand a C-issued scope, so
+this ordinary synchronous case refuses before producing. The existing applied
+resolver already proves full-generation identity at an exact qualification,
+but deliberately provides no committed index generation. Inventing such a
+generation or an issued C scope would be false evidence.
+
+The entity-resolution owner will represent its descriptive identity with an
+explicit committed-index or applied-candidate origin. The committed index
+getter becomes optional; existing current resolution still supplies the exact
+Some generation. Ordinary current freshness refuses an applied description.
+Only the applied source admission path may validate that description at its
+exact D. Retained selectors carry the same origin rather than converting D to C.
+No caller can mint either origin outside the resolution owner.
+
+Query source permission will use the existing prepared-permission owner: the
+actual issued C principal and installed query meaning, C request and security
+root, and D scope presence checked after C READ authorization. It carries the
+real before pin and applied pin and verifies their exact proposal basis and
+qualification. Existing C-live source queries keep their old path. A distinct
+applied source posture reaches the existing operation-authorization owner too;
+it shares that owner's static/principal/grant logic and never fabricates an
+issued scope. Actual candidate projection and source interning stay at their
+existing owner. D supplies no permission.
+
+Implementation order: add an ordinary create-source public court that is red
+on the existing refusal; add the resolution origin and exact applied validation;
+join prepared Query permission; join producer operation admission; prove serial,
+worker, no C permission, wrong candidate/retired D, failure atomicity and cold
+readiness. Kill identity-at-C, skipped-D-validation and skipped-permission mutants,
+restoring each by SHA-256. Document the optional index-generation getter and list
+its changed exact-generation assertion. Keep every code/test file under400 lines.
+This admits proposed sources only; graph discovery, independent route succession,
+S6 and complete P5/S6 qualification follow, with no READY claim yet.
+
+### Candidate-created custody admission
+
+The new-source court now reaches Native Birth admission. A SHA-restored probe
+verifies that `custody::current::readmit_successor` asks the C roster reader to
+read the new source's future slot; the existing storage owner correctly reports
+that unsupported physical read as damaged. A source allocated in this candidate
+has stronger evidence: Native's own create-reference correspondence proves its
+full-generation identity is new here. Birth admission will consume that proof
+before asking about a C record, while still requiring registered ownership
+storage and the existing exact route-absence check. Existing sources continue
+through the unchanged current-custody owner. No ownership reader is replaced or
+modified.
+
+The existing private create correspondence will keep a derived entity-ID set,
+updated only by the same native creation and consequence owners. Its logarithmic
+membership check is checkpointed through request_stage, avoiding a scan of all
+created references for every producer. It cannot acquire IDs from caller claims.
+The new-source serial/worker court proves the positive case; the existing live
+route Birth refusal must remain typed and kills admitting an unallocated ID as
+created here. Missing-storage and mandatory route checks remain in force.
+
+The next gold run passes the later-producer failure and C-permission courts, but
+successful publication still reaches a C roster seed for the new source at commit
+preparation. `preparation/current_ownership` must omit exactly Native-allocated
+identities from its C-only scope seeds, using the same creation correspondence.
+Historical restoration's Created patch marker alone is insufficient evidence.
+No private ownership reader changes. The canonical scope validator also needs
+the participant's actual pre-writer input pin: existing source validation stays
+at C; a coupled participant validates its source's full generation/kind/liveness
+at that exact D, plus final liveness. Thread the existing part pin through the
+private installer and RouteCompletion. It is runtime truth, not a new origin
+variant, stored history material or C-issued basis. Storage remains enforced by
+the canonical scope owner; do not duplicate that check at the new allocation
+predicate. These changes are within P5's owner path, outside ownership/**.
+
+### Warm completion delivery
+
+The source-created and cold courts now pass their one-commit assertions; warm
+readiness alone makes two unnecessary Preserve contacts. Selection can only
+rejoin an already posted Ready, while the genuine coupled Initial receipt is
+retained in lineage but has not posted a demand yet. The completed-coupled owner
+already supports read-only adoption before handler execution. Expose that same
+owner's source/settlement-matched receipt on retained candidates and let verified
+OutputDelivery select the original completed binding, with its existing
+live-output-only execution guard. The existing adoption path must consume its
+real receipt and recheck implementation, input and current output receipts.
+Lifecycle selection and non-coupled rows stay on their old path. No restored
+posture, checkpoint identity, fabricated settlement or new Ready authority.
+The warm no-contact assertion and a dropped-completion mutant qualify this join.
+
+### Exact applied-description negative evidence
+
+The public create-source courts now pass for three actual coupled participants,
+including a later participant whose source was created by an earlier one. They
+also prove cold/warm no-contact delivery and identical unauthorized refusal
+whether the proposed source exists or not. The remaining resolution boundary is
+that a descriptive applied identity must stay tied to its exact immutable D and
+must never become committed C truth, even after its entity has been committed.
+
+Use a receiver-armed read-only recorder at the existing entity-resolution owner,
+following AGENTS' permitted thread-local recorder posture. It captures only real
+before/applied pins used by production resolution, filtered to that installed
+runtime, and clears on Drop/unwind. It grants no mutation or cutover. Narrow owner
+doors invoke the existing resolver/validator; the corruption door changes only a
+real descriptive identity's full generation. Courts use the actual first and
+second producer input pins from the public create-source edit: the same new
+Model exists in both, but their qualifications differ. Assert exact-D acceptance,
+wrong-D refusal, corrupted-generation refusal, no committed index epoch, and
+ordinary current freshness refusal after the edit commits. Mutation-test each
+check independently with exact SHA restoration. No fabricated candidate, scope,
+publication or settlement enters this evidence path.
+
+### Verified next graph handoff facts (review in progress)
+
+Publication's execute_performed_with_work already holds the concrete Root and
+its actual source-derived demand before committing. selected::commit_selected_
+required_source currently preserves only Root's TypeId in a recovery payload;
+the actual typed descendants are erased before Native assembly. This is the
+insertion boundary for the next slice. Generic completion-only calls must not
+invent a graph; demand-only trees retain their explicit lazy meaning.
+
+The existing declaration's sealed OutputEdge/Leaf/tuple topology supplies
+adjacency. The continuation factory already expresses each installed dependent
+Discovery binding and its Source projection, but lives in Publication and
+requires a genuine settled parent. Native's real post-writer pin can instead
+support a distinct applied parent minted inside assembly, carrying actual
+qualification/producer route and installed connection meaning. Discovery still
+runs its real query on that candidate, authorized at C; the roster never supplies
+children. The applied-source projection/admission owner qualified here is the
+shared read boundary. No fake WorthQuerySettledProgramOutput may be introduced.
+
+Before editing that slice, settle the exact captured-demand/descendant handoff,
+wave ordering, and genuine correspondence needs against the existing owners.
+Retain all original attempts through final candidate validation and expose no
+committed source before discovery has succeeded. Independent publications must
+join through their existing route-position/custody owners, not an owned-roster
+approximation. The present finite declarations remain the explicit pre-image
+handoff for retirement; their completeness guards must stay intact.
+
+### Preserve the ordinary C-only selection path
+
+Final review found that new-scope omission was being invoked for every current
+publication. Only a genuine Native CoupledAuthored group can legitimately admit
+a source allocated in its D; the existing non-coupled canonical scope contract
+requires source liveness at C. Restrict the omission to that actual installed
+publication variant. This preserves ordinary current-only selection and work
+charges, rather than adding a created-ID lookup for each old scope. The existing
+new-source court must still pass and the omission mutant must be rerun against
+this final owner. Full Native diagnostics must still match clean master.
+
+### Current authentication before private D identity
+
+Resolution/authorization classify authentication expiry as Refused, not Stopped.
+The broad diagnostic masking in created-source preparation could therefore hide
+that control failure. Move current principal issuance ahead of the private D
+lookup inside the same selected shared basis, so every C-absent source takes the
+same principal check whether D contains it or not. Return the actual principal
+refusal, never masking it. Preserve query-authorization ExpiredAuthentication as
+its typed request lapse too. Mask source/permission diagnostics only to retain
+the original C UnknownEntity posture before READ succeeds; this changes no policy.
+Existing serial/worker nondisclosure and genuine-D courts qualify the reordered
+flow; rerun the nondisclosure mutant against the final owner. Add current expiry
+coverage through a genuine configured clock if the existing fixture supplies it.
+
+The existing entity-resolution interruption owner already owns controlled time
+progress. Add a receiver-armed applied-lookup control at that same owner, filtered
+to the actual runtime and cleared on Drop/unwind. Reuse its existing Action
+execution; no callback or policy authority is added to the read-only recorder.
+Serial/worker courts use the actual configured authorization clock and expire it
+at the genuine D lookup after principal issuance. They require the typed expiry
+and unchanged model/roster/head with zero producer entries. A broad-mask mutant
+must fail this court; no wall-clock sleeps or fabricated authorization denials.
+
+The actual expiry court reached the ordinary query validator's deliberately broad
+StalePrincipal result. Keep that existing path unchanged. Expose the admission
+owner's existing request_lapse computation through the genuine C-issued principal
+and inspect it immediately after the D lookup, before consuming either its success
+or failure. This preserves typed cancellation/deadline/authentication expiry with
+no copied lifetime logic and gives the same control failure for D presence or
+absence. The worker fixture must use the identical World/admission clock. Kill a
+mutant omitting this carried-control check; retain the original strict assertion.
+
+### Applied-source checkpoint qualification
+
+The final source passes12 serial/worker new-source courts, full public carrier558
+(2 ignored), legacy coupled35, committed-generation1, construction fence1, Native
+unit2294 (31 ignored), and Native carrier360 (2 ignored) plus only the two #64
+failures whose full diagnostics/locations equal clean master. Thirteen mutants
+are assertion-killed and SHA-restored exactly to final source. Boundary/context,
+scoped formatting, caps56 and primary structural review pass. Evidence and the
+one strengthened committed-generation assertion are recorded in the external
+report. Current C-only Debug/selection behavior is preserved. P5/S6 remains in
+progress; installed graph/waves, independent routes, seal and final semantics
+qualification are not claimed by these finite-source courts.

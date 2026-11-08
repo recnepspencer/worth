@@ -149,6 +149,7 @@ pub(super) fn install(
                     publication: part.publication,
                 },
                 Some(&part.records),
+                Some(&part.input),
                 lease,
                 validated_history,
                 context,

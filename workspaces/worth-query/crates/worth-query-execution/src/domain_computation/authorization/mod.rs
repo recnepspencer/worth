@@ -97,7 +97,7 @@ pub use operation_progression::WorthQueryAdmittedApplicationCapabilityAccess;
 pub use operation_progression::WorthQueryAdmittedApplicationOperation;
 pub(in crate::domain_computation) use operation_progression::WorthQueryOperationAdmissionIdentity;
 pub(in crate::domain_computation) use operation_progression::{
-    authorize_current_control_mutation_on_selected,
+    authorize_applied_control_mutation_on_selected, authorize_current_control_mutation_on_selected,
     authorize_historical_control_mutation_on_selected,
 };
 pub use operation_scope_binding::WorthQueryOperationScopeBinding;

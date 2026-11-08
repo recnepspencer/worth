@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::identity::data::EntityId;
 use crate::identity::data::{KindId, PartitionId};
@@ -19,6 +19,8 @@ struct StableCreatedEntityRef {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct CommitCreatedEntityBindings {
     by_exact_reference: BTreeMap<CreatedEntityRef, EntityId>,
+    // Derived solely from the owner-minted correspondence, never caller IDs.
+    by_entity_identity: BTreeSet<EntityId>,
     by_stable_reference: BTreeMap<StableCreatedEntityRef, EntityId>,
 }
 
@@ -45,6 +47,8 @@ impl CommitCreatedEntityBindings {
                 },
             ));
         }
+        self.by_entity_identity
+            .append(&mut generated.by_entity_identity);
         self.by_exact_reference
             .append(&mut generated.by_exact_reference);
         self.by_stable_reference
@@ -73,10 +77,24 @@ impl CommitCreatedEntityBindings {
                 ))
             })
             .collect();
+        let by_entity_identity = by_create_reference.values().copied().collect();
         Self {
+            by_entity_identity,
             by_exact_reference: by_create_reference,
             by_stable_reference,
         }
+    }
+
+    /// Exact identities allocated by this apply, including private consequences.
+    /// The derived set carries the same authority as the creation correspondence.
+    pub(crate) fn created_here(
+        &self,
+        entity: EntityId,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<bool, worth_execution::MapKernelStop> {
+        let levels = usize::BITS - self.by_entity_identity.len().max(1).leading_zeros();
+        crate::execution::request_stage::checkpoint(context, u64::from(levels) * 11 * 3 + 1)?;
+        Ok(self.by_entity_identity.contains(&entity))
     }
 
     /// Bound both possible tree searches and the stable fallback's key copy.

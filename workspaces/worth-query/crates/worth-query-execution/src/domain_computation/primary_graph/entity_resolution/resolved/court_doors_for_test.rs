@@ -37,3 +37,10 @@ impl<Schema, Entity> WorthQueryApplicationEntityIdentity<Schema, Entity> {
         Self::identity_index_id(self)
     }
 }
+
+impl<Schema, Entity> WorthQueryApplicationEntityIdentity<Schema, Entity> {
+    #[doc(hidden)]
+    pub fn entity_id_mut_for_test(&mut self) -> &mut EntityId {
+        &mut self.entity_id
+    }
+}

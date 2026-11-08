@@ -30,8 +30,14 @@ impl<'subject> WorthQueryEntityResolutionSubject<'subject> {
     }
 }
 
-/// Opaque, typed identity of one application entity resolved through an exact
-/// equality-index generation.
+#[derive(Clone, Copy, Debug)]
+enum EntityResolutionOrigin {
+    Committed(DerivedIndexGenerationId),
+    Applied(worth_relational::facade::runtime::RelationalAppliedCandidateReadQualification),
+}
+
+/// Opaque descriptive identity resolved at an exact committed index generation
+/// or an exact applied candidate. Neither origin grants current scope authority.
 ///
 /// This is descriptive scope identity only. Its fields and resolution result
 /// are owner-sealed; callers cannot rebuild it from record/index axes.
@@ -48,7 +54,7 @@ impl<'subject> WorthQueryEntityResolutionSubject<'subject> {
 ///         binding_identity: todo!(),
 ///         runtime_authority: todo!(),
 ///         identity_index_id: todo!(),
-///         identity_index_generation: todo!(),
+///         origin: todo!(),
 ///         identity_locator: todo!(),
 ///         identity_value: todo!(),
 ///         examined_candidate_count: 0,
@@ -64,7 +70,7 @@ pub struct WorthQueryApplicationEntityIdentity<Schema, Entity> {
     binding_identity: ApplicationSchemaBindingIdentity,
     runtime_authority: WorthQueryRuntimeAuthorityIdentity,
     identity_index_id: DerivedIndexId,
-    identity_index_generation: DerivedIndexGenerationId,
+    origin: EntityResolutionOrigin,
     identity_locator: AspectFieldLocator,
     identity_value: AspectValue,
     examined_candidate_count: usize,
@@ -80,7 +86,7 @@ pub struct WorthQueryResolvedEntity {
     binding_identity: ApplicationSchemaBindingIdentity,
     runtime_authority: WorthQueryRuntimeAuthorityIdentity,
     identity_index_id: DerivedIndexId,
-    identity_index_generation: DerivedIndexGenerationId,
+    origin: EntityResolutionOrigin,
     identity_locator: AspectFieldLocator,
     identity_value: AspectValue,
     examined_candidate_count: usize,
@@ -88,6 +94,31 @@ pub struct WorthQueryResolvedEntity {
 }
 
 impl WorthQueryResolvedEntity {
+    pub(super) fn from_applied(
+        installed: &super::WorthQueryInstalledEntityResolutionContext,
+        layout: &super::super::schema_layout::WorthQueryPrimaryFieldLayout,
+        entity: &str,
+        expected: AspectValue,
+        resolved: super::applied::ResolvedAppliedEntity,
+        examined: usize,
+    ) -> Self {
+        Self {
+            entity_id: resolved.entity,
+            entity_kind: resolved.kind,
+            entity_name: entity.to_owned(),
+            binding_identity: installed.binding_identity.clone(),
+            runtime_authority: installed.runtime_authority,
+            identity_index_id: layout
+                .equality_index_id
+                .expect("applied equality resolution"),
+            origin: EntityResolutionOrigin::Applied(resolved.candidate),
+            identity_locator: layout.locator.clone(),
+            identity_value: expected,
+            examined_candidate_count: examined,
+            resolution_mode: WorthQueryPrincipalResolutionMode::Ordinary,
+        }
+    }
+
     pub(super) fn matches_source<Q>(
         &self,
         source: &super::super::WorthQueryObservedSource<Q>,
@@ -124,7 +155,7 @@ impl WorthQueryResolvedEntity {
             identity_index_id: layout
                 .equality_index_id
                 .expect("resolution accepts only an installed equality index"),
-            identity_index_generation: lookup.generation_id(),
+            origin: EntityResolutionOrigin::Committed(lookup.generation_id()),
             identity_locator: layout.locator.clone(),
             identity_value: subject.expected,
             examined_candidate_count: lookup.examined_entry_count(),
@@ -150,7 +181,7 @@ impl WorthQueryResolvedEntity {
             binding_identity: self.binding_identity,
             runtime_authority: self.runtime_authority,
             identity_index_id: self.identity_index_id,
-            identity_index_generation: self.identity_index_generation,
+            origin: self.origin,
             identity_locator: self.identity_locator,
             identity_value: self.identity_value,
             examined_candidate_count: self.examined_candidate_count,
@@ -173,7 +204,7 @@ impl<Schema, Entity> WorthQueryApplicationEntityIdentity<Schema, Entity> {
             binding_identity: self.binding_identity.clone(),
             runtime_authority: self.runtime_authority,
             identity_index_id: self.identity_index_id,
-            identity_index_generation: self.identity_index_generation,
+            origin: self.origin,
             identity_locator: self.identity_locator.clone(),
             identity_value: self.identity_value.clone(),
             examined_candidate_count: self.examined_candidate_count,
@@ -229,8 +260,22 @@ impl<Schema, Entity> WorthQueryApplicationEntityIdentity<Schema, Entity> {
         self.identity_index_id
     }
 
-    pub const fn identity_index_generation(&self) -> DerivedIndexGenerationId {
-        self.identity_index_generation
+    /// Applied resolution has no committed index generation.
+    pub const fn identity_index_generation(&self) -> Option<DerivedIndexGenerationId> {
+        match self.origin {
+            EntityResolutionOrigin::Committed(generation) => Some(generation),
+            EntityResolutionOrigin::Applied(_) => None,
+        }
+    }
+
+    pub(in crate::domain_computation) const fn applied_qualification(
+        &self,
+    ) -> Option<worth_relational::facade::runtime::RelationalAppliedCandidateReadQualification>
+    {
+        match self.origin {
+            EntityResolutionOrigin::Applied(qualification) => Some(qualification),
+            EntityResolutionOrigin::Committed(_) => None,
+        }
     }
 
     pub(crate) fn identity_locator(&self) -> &AspectFieldLocator {
@@ -248,11 +293,19 @@ impl<Schema, Entity> WorthQueryApplicationEntityIdentity<Schema, Entity> {
 
 impl<Schema, Entity> std::fmt::Debug for WorthQueryApplicationEntityIdentity<Schema, Entity> {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        formatter
-            .debug_struct("WorthQueryApplicationEntityIdentity")
+        let mut identity = formatter.debug_struct("WorthQueryApplicationEntityIdentity");
+        identity
             .field("binding_identity", &self.binding_identity)
-            .field("identity_index_id", &self.identity_index_id)
-            .field("identity_index_generation", &self.identity_index_generation)
+            .field("identity_index_id", &self.identity_index_id);
+        match &self.origin {
+            EntityResolutionOrigin::Committed(generation) => {
+                identity.field("identity_index_generation", generation);
+            }
+            EntityResolutionOrigin::Applied(candidate) => {
+                identity.field("applied_candidate", candidate);
+            }
+        }
+        identity
             .field("examined_candidate_count", &self.examined_candidate_count)
             .finish_non_exhaustive()
     }

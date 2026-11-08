@@ -17,11 +17,18 @@ pub(super) fn validate(
     publication: crate::history::data::CommitId,
     state: &WorkingState,
     retiring: bool,
+    source_input: Option<
+        &crate::runtime::RelationalPinnedRead<
+            crate::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+    >,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), TransactionCommitError> {
-    context
-        .checkpoint(installed.source_scope_ownership.lookup_work(producer) as u64)
-        .map_err(origin_request)?;
+    crate::execution::request_stage::checkpoint(
+        context,
+        installed.source_scope_ownership.lookup_work(producer) as u64,
+    )
+    .map_err(origin_request)?;
     let kind = installed.source_scope_ownership.scope_kind(producer);
     let owned = kind.is_some();
     let invalid = || {
@@ -37,9 +44,15 @@ pub(super) fn validate(
     }
     let Some(kind) = kind else { return Ok(()) };
     installed.require_current_ownership_storage(basis, meaning.source_scope)?;
-    let row = basis
-        .inner
-        .root
+    if source_input.is_some_and(|input| {
+        input.candidate_identity().proposal().branch_observation() != basis.reference()
+    }) {
+        return Err(invalid());
+    }
+    let source_root = source_input.map_or(basis.inner.root.as_ref(), |input| {
+        input.resident_basis().root().as_ref()
+    });
+    let row = source_root
         .get_current_partition(meaning.source_scope.partition_id)
         .and_then(|partition| {
             partition

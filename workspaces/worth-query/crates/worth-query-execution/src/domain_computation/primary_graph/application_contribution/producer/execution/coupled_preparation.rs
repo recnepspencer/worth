@@ -109,13 +109,13 @@ where
         WorthQueryProducerCommitAuthority::ProgramOutput,
     )?;
     let identities = identities.borrow();
-    let prepared = selected_public::prepare_selected_public_mutation::<Schema, Binding>(
+    let prepared = selected_public::prepare_applied_public_mutation::<Schema, Binding>(
         &execution,
         installed,
         runtime,
         &shared,
-        None,
-        None,
+        before_pin,
+        candidate,
         external,
         request,
         identities.mutation_input(),

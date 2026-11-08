@@ -3,6 +3,11 @@ use super::*;
 use crate::mvcc::{RequiredOutputPublicationMeaning, RequiredOutputRoleTarget};
 pub(super) struct RouteCompletion<'a> {
     pub(super) contribution_records: Option<&'a [crate::transactions::data::RecordRef]>,
+    pub(super) source_input: Option<
+        &'a crate::runtime::RelationalPinnedRead<
+            crate::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+    >,
     pub(super) producer: &'a str,
     pub(super) dependency_identity: [u8; 32],
     pub(super) meaning: &'a RequiredOutputPublicationMeaning,
@@ -28,6 +33,7 @@ impl CanonicalCommitEnvelope {
     {
         let RouteCompletion {
             contribution_records,
+            source_input,
             producer,
             dependency_identity,
             meaning,
@@ -49,6 +55,7 @@ impl CanonicalCommitEnvelope {
             self.commit.commit_id,
             state,
             retiring,
+            source_input,
             context,
         )?;
         if roles.is_empty() {

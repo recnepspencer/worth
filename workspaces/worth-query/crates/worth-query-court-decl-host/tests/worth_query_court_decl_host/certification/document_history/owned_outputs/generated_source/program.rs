@@ -58,7 +58,9 @@ macro_rules! program {
             fn feature_specs() -> Vec<ApplicationFeatureSpec> {
                 let mut specs = HierarchyProgram::feature_specs();
                 specs[0] = ApplicationFeatureSpec::root::<Schema, Entry>().provides::<EntryOutput>()
-                    .action::<synchronous_edit::Binding, Completion>().finish_action()
+                    .action::<synchronous_edit::new_source::Binding, Completion>().finish_action()
+                .action::<synchronous_edit::new_source::restricted::Binding, Completion>().finish_action()
+                .action::<synchronous_edit::Binding, Completion>().finish_action()
                     .action::<predecessor::synchronous::Binding, Completion>().finish_action()
                     .action::<edit::Binding, Delivery>().finish_action()
                     .action::<member_edit::Binding, Completion>().finish_action()

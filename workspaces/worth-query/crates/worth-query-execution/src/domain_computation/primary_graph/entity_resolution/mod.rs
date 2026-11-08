@@ -4,6 +4,8 @@ use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalK
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 mod admitted_scope;
 mod applied;
+mod applied_lookup_control;
+mod applied_read_observation;
 mod freshness;
 pub mod interruption_control {
     use std::{
@@ -18,6 +20,19 @@ pub mod interruption_control {
             time: worth_execution::MonotonicTimeController,
             deadline: std::time::Instant,
         },
+    }
+    impl Action {
+        pub(super) fn apply(self) {
+            match self {
+                Self::Cancel(source) => source.cancel(),
+                Self::Deadline { time, deadline } => {
+                    let elapsed = deadline
+                        .checked_duration_since(time.clock().now())
+                        .expect("the held request is fresh before lookup");
+                    time.advance(elapsed).unwrap();
+                }
+            }
+        }
     }
     pub struct Pending {
         pub action: Action,
@@ -36,15 +51,7 @@ pub mod interruption_control {
         });
         if let Some(pending) = pending {
             pending.triggered.set(true);
-            match pending.action {
-                Action::Cancel(source) => source.cancel(),
-                Action::Deadline { time, deadline } => {
-                    let elapsed = deadline
-                        .checked_duration_since(time.clock().now())
-                        .expect("the held request is fresh before lookup");
-                    time.advance(elapsed).unwrap();
-                }
-            }
+            pending.action.apply();
         }
     }
 }

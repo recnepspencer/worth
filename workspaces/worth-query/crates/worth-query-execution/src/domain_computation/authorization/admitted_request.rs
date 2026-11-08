@@ -33,7 +33,7 @@ impl AdmittedRequestCurrentness {
     }
 }
 
-pub(super) fn request_lapse(
+pub(in crate::domain_computation) fn request_lapse(
     request: &WorthQueryRequestScope,
     authentication_valid_until: Instant,
 ) -> Option<WorthQueryAdmissionLapse> {

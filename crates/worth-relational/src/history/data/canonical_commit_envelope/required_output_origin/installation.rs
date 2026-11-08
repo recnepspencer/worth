@@ -46,6 +46,7 @@ impl CanonicalCommitEnvelope {
                             state,
                             admission,
                             None,
+                            None,
                             lease,
                             validated_history,
                             context,
@@ -70,6 +71,11 @@ impl CanonicalCommitEnvelope {
         state: &WorkingState,
         admission: crate::mvcc::RequiredOutputPublicationAdmission,
         contribution_records: Option<&[crate::transactions::data::RecordRef]>,
+        source_input: Option<
+            &crate::runtime::RelationalPinnedRead<
+                crate::runtime::RelationalAppliedCandidateReadIdentity,
+            >,
+        >,
         lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
         validated_history: &mut OutputOriginHistory,
         context: &mut MapKernelContext<'_, '_>,
@@ -261,6 +267,7 @@ impl CanonicalCommitEnvelope {
                 &installed,
                 route_completion::RouteCompletion {
                     contribution_records,
+                    source_input,
                     producer,
                     dependency_identity,
                     meaning,
@@ -310,6 +317,7 @@ impl CanonicalCommitEnvelope {
             &installed,
             route_completion::RouteCompletion {
                 contribution_records,
+                source_input,
                 producer,
                 dependency_identity,
                 meaning,

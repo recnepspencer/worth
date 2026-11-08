@@ -1,5 +1,6 @@
 //! Sole producer source/lifecycle selection on the original native borrow.
 use super::*;
+mod current_verification;
 
 impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) fn select_output_producer_with_remaining_core<Family>(
@@ -223,80 +224,26 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                     Family::IDENTITY,
                 )
             })?;
-            let current = native.with_runtime_mut(graph, execution,
-                || WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::ForeignSource, Family::IDENTITY), |runtime| {
-                let truth = runtime.read_truth();
-                let view = truth
-                    .project_snapshot(selected.application_basis().snapshot_handle())
-                    .ok_or_else(|| {
-                        WorthQueryOutputDemandDenial::new(
-                            WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-                            Family::IDENTITY,
-                        )
-                    })?;
-                let mut current = Vec::with_capacity(live_candidates.len());
-use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity;
-                for (candidate, entity) in &live_candidates {
-                    let live=retained_liveness::read(execution,&view,*entity)?;
-                    if candidate.historical_selection.is_some() {
-                        let exact = live && self.restored_output_is_current::<Family>(execution, runtime, selected, candidate)?;
-                        current.push((live, exact));
-                        continue;
-                    }
-                    let identity_current = candidate.source_identity.is_some_and(|identity| {
-                        match identity {
-                            RecordedSourceIdentity::Runtime(runtime) => runtime == source.idempotency_identity(),
-                            RecordedSourceIdentity::Checkpoint(checkpoint) => checkpoint == source.checkpoint_identity(),
-                        }
-                    });
-                    // The source facts and the performed output witness are
-                    // one fact set: either half moving ends exact reuse, and a
-                    // live output selects Preserve. Checkpoints state the output half among their
-                    // facts. A row of this runtime proves it by a sealed
-                    // witness and a settlement the cutoff verifies: one the
-                    // cutoff declines is not exact. A settlement it verifies
-                    // in full is compared below like any other.
-                    let witness = candidate
-                        .native_output_witness
-                        .as_ref()
-                        .and_then(|witness| witness.get());
-                    let owner = &self.runtime.primary_provider.graph.source_owner.invalidation_owner;
-                    let proven = live
-                        && match candidate.source_identity {
-                            Some(RecordedSourceIdentity::Checkpoint(_)) => true,
-                            _ => {
-                                witness.is_some()
-                                    && retained_output_settlement_is_verified(runtime, selected.application_basis().snapshot_handle(), candidate.verification_requirement, &candidate.settlement_identity, owner)?
-                            }
-                        };
-                    // Existing live output determines Preserve even when its producing
-                    // build cannot reuse. Identity never substitutes for native liveness.
-                    let (_, installed) = self.installed_producers.select_exact::<Family>(candidate.binding)?;
-                    let implementation_current = candidate.producing_implementation.is_some_and(|original| {
-                        original == worth_relational::facade::mvcc::RequiredOutputProducingImplementation::new(installed.edition.build_identity(), installed.edition.digest())
-                    });
-                    let facts_current = implementation_current && proven
-                        && matches!(
-                            compare_retained_output_dependencies(execution,
-                                runtime,
-                                selected.application_basis().snapshot_handle(),
-                                identity_current,
-                                candidate.observed_source_facts.as_deref(),
-                            )?,
-                            OutputDependencySelection::Reuse
-                        )
-                        && matches!(
-                            compare_retained_output_witness(execution,
-                                runtime,
-                                selected.application_basis().snapshot_handle(),
-                                witness,
-                            )?,
-                            OutputDependencySelection::Reuse
-                        );
-                    current.push((live, facts_current));
-                }
-                Ok::<_, WorthQueryOutputDemandDenial>(current)
-            })?;
+            let current = native.with_runtime_mut(
+                graph,
+                execution,
+                || {
+                    WorthQueryOutputDemandDenial::new(
+                        WorthQueryOutputDemandDenialKind::ForeignSource,
+                        Family::IDENTITY,
+                    )
+                },
+                |runtime| {
+                    current_verification::verify::<Schema, Family>(
+                        self,
+                        execution,
+                        runtime,
+                        selected,
+                        source,
+                        &live_candidates,
+                    )
+                },
+            )?;
             let mut retained_output = false;
             for ((candidate, _), (live, facts_current)) in live_candidates.into_iter().zip(current)
             {
@@ -330,6 +277,19 @@ use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIden
                         SelectionPurpose::Lifecycle => false,
                         SelectionPurpose::OutputDelivery => true,
                     };
+                    if may_rejoin_ready
+                        && candidate
+                            .completed_coupled_receipt(
+                                source.idempotency_identity(),
+                                source.checkpoint_identity(),
+                            )
+                            .is_some()
+                    {
+                        // The completed owner will recheck the actual input,
+                        // implementation and receipt before read-only adoption.
+                        selected.exact_retained_output = false;
+                        return Ok((selected, entry));
+                    }
                     if may_rejoin_ready
                         && let Some(epoch) = source.output_source_epoch()
                         && let Ok((delivery, delivery_entry)) = self

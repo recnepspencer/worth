@@ -68,15 +68,29 @@ pub(super) fn admit(
                 return Err(foreign());
             }
             let (producer, _) = publication.lineage_attribution().expect("admitted writer");
-            if custody::readmit_successor(
-                candidate.runtime.services.runtime_instance_id(),
-                execution,
-                &binding.installed,
-                &binding.owners.before,
-                producer,
-                meaning,
-            )?
-            .is_some()
+            let created = execution
+                .run_native_with_checkpoint(|context| {
+                    candidate
+                        .mutation
+                        .outcome
+                        .created_entities
+                        .created_here(subject, context)
+                })
+                .map_err(custody::execution_stop)?
+                .0
+                .map_err(custody::execution_stop)?;
+            // The allocation owner proves this full-generation source is new
+            // in D. It has no C record to ask the current roster reader about.
+            if !created
+                && custody::readmit_successor(
+                    candidate.runtime.services.runtime_instance_id(),
+                    execution,
+                    &binding.installed,
+                    &binding.owners.before,
+                    producer,
+                    meaning,
+                )?
+                .is_some()
             {
                 return Err(foreign());
             }

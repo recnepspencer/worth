@@ -22,6 +22,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 use crate::domain_computation::provider_session::WorthQueryPreparedProductReadSessionIdentity;
 
+mod applied_source;
 mod current_ready;
 pub(crate) mod fresh;
 mod principal_dependency;
