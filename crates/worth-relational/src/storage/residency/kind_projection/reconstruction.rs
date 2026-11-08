@@ -1,6 +1,17 @@
 use super::*;
 use crate::identity::data::KindId;
 
+// Numeric projection keys take one comparison unit. Include both node search
+// and rearrangement; never use the node's unused allocation slots as work.
+fn ordered_lookup_work(entries: usize) -> Result<u64, Cause> {
+    let levels = entries
+        .checked_add(1)
+        .ok_or(Cause::MemoryExhausted)?
+        .ilog2() as u64
+        + 1;
+    Ok(22 * levels)
+}
+
 /// Owned relations are reconstructed from record metadata. Peer relations use
 /// only the projection authenticated by this region's canonical root leaf.
 pub(in crate::storage::residency) fn rebuild(
@@ -37,6 +48,10 @@ fn rebuild_using(
     let mut expected = BTreeMap::<RelationId, RegionRelationProjection>::new();
     for entry in projection {
         let cloned = clone_claim(entry, checkpoint)?;
+        checkpoint(
+            ordered_lookup_work(expected.len())? + size_of::<RelationId>() as u64,
+            0,
+        )?;
         if expected.insert(entry.relation, cloned).is_some() {
             return Err(Cause::Damaged);
         }
@@ -47,13 +62,16 @@ fn rebuild_using(
         // it again from the authenticated arena, including retired generations.
         let mut owned = Vec::new();
         for id in expected.keys() {
-            checkpoint(1, 2 * size_of::<RelationId>() as u64)?;
+            checkpoint(
+                1 + 2 * size_of::<RelationId>() as u64,
+                2 * size_of::<RelationId>() as u64,
+            )?;
             if id.partition_id == partition.partition_id {
                 owned.push(*id);
             }
         }
         for id in owned {
-            checkpoint(1, 0)?;
+            checkpoint(ordered_lookup_work(expected.len())?, 0)?;
             expected.remove(&id);
         }
         project_owned_history(partition, &mut expected, checkpoint)?;
@@ -67,6 +85,10 @@ fn rebuild_using(
             .values()
             .filter(|entry| entry.relation.partition_id == partition.partition_id)
         {
+            checkpoint(
+                ordered_lookup_work(partition.relation_arena.slot_count())?,
+                0,
+            )?;
             let view = partition
                 .relation_arena
                 .get_slot(entry.relation.slot_index())
@@ -84,6 +106,16 @@ fn rebuild_using(
                 entry.kind,
                 view.extra().endpoints.as_ref().ok_or(Cause::Damaged)?,
                 checkpoint,
+            )?;
+            checkpoint(
+                ordered_lookup_work(local.len())? + size_of::<RegionRelationProjection>() as u64,
+                0,
+            )?;
+            checkpoint(
+                (entry.outgoing.len() as u64)
+                    .checked_add(entry.incoming.len() as u64)
+                    .ok_or(Cause::MemoryExhausted)?,
+                0,
             )?;
             if local.get(&entry.relation) != Some(entry) {
                 return Err(Cause::IntegrityMismatch);
@@ -104,6 +136,10 @@ fn rebuild_head_using(
     let mut expected = BTreeMap::new();
     for entry in projection {
         let cloned = clone_claim(entry, checkpoint)?;
+        checkpoint(
+            ordered_lookup_work(expected.len())? + size_of::<RelationId>() as u64,
+            0,
+        )?;
         if expected.insert(entry.relation, cloned).is_some() {
             return Err(Cause::Damaged);
         }
@@ -111,7 +147,22 @@ fn rebuild_head_using(
     let mut known = BTreeMap::new();
     project_owned_history(partition, &mut known, checkpoint)?;
     for (relation, claim) in known {
+        checkpoint(ordered_lookup_work(expected.len())?, 0)?;
         let supplied = expected.get(&relation).ok_or(Cause::IntegrityMismatch)?;
+        for (left, right) in [
+            (&claim.outgoing, &supplied.outgoing),
+            (&claim.incoming, &supplied.incoming),
+        ] {
+            // BTreeSet may choose a merge or ordered searches. Fund either
+            // from actual endpoint cardinalities, not backing capacity.
+            let searches = (left.len() as u64)
+                .checked_mul(ordered_lookup_work(right.len())?)
+                .ok_or(Cause::MemoryExhausted)?;
+            let merge = (left.len() as u64)
+                .checked_add(right.len() as u64)
+                .ok_or(Cause::MemoryExhausted)?;
+            checkpoint(searches.max(merge), 0)?;
+        }
         if claim.kind != supplied.kind
             || !claim.outgoing.is_subset(&supplied.outgoing)
             || !claim.incoming.is_subset(&supplied.incoming)

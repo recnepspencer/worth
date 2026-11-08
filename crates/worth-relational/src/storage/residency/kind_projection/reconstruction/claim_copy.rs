@@ -5,7 +5,7 @@ pub(super) fn clone_claim(
     entry: &RegionRelationProjection,
     checkpoint: &mut ProjectionCheckpoint<'_>,
 ) -> Result<RegionRelationProjection, Cause> {
-    checkpoint(1, 4096)?;
+    checkpoint(size_of::<RegionRelationProjection>() as u64, 4096)?;
     let mut answer = RegionRelationProjection {
         relation: entry.relation,
         kind: entry.kind,
@@ -17,7 +17,10 @@ pub(super) fn clone_claim(
         (&entry.incoming, &mut answer.incoming),
     ] {
         for &slot in source {
-            checkpoint(1, 256)?;
+            checkpoint(
+                ordered_lookup_work(target.len())? + size_of::<usize>() as u64,
+                256,
+            )?;
             target.insert(slot);
         }
     }

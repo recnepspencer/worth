@@ -18,6 +18,7 @@ use crate::storage::partition::AdjacencyKindBasis;
 use crate::storage::substrate::{EntityRecordKind, RecordArena, RecordKind, RelationRecordKind};
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
+mod projection_capture;
 
 #[derive(Debug, Clone)]
 pub(crate) struct ResidentHistoryReadmission {
@@ -53,8 +54,13 @@ impl ResidentHistoryReadmission {
             })
         };
         let (_catalog_memory, contract_bound) = funding::contracts(&self.schema, execution)?;
-        let (_projection_memory, _) = projection_funding(&head.partition, execution)?;
-        let current_quote = funding::current(&head.partition, contract_bound, execution)?;
+        let (_projection_memory, incidences) = projection_funding(&head.partition, execution)?;
+        let current_quote = funding::current(
+            &head.partition,
+            contract_bound,
+            self.schema.retained_aspect_contracts(),
+            execution,
+        )?;
         let _current_wire = funding::Funding::reserve(current_quote.wire, execution)?;
         let contracts = CheckpointAspectContractCatalog::from_contracts(
             self.schema.retained_aspect_contracts(),
@@ -116,9 +122,7 @@ impl ResidentHistoryReadmission {
         .map_err(|cause| funding::image(cause, partition_id))?;
         partition.adjacency = head.partition.adjacency.clone();
         partition.reverse_adjacency = head.partition.reverse_adjacency.clone();
-        let projection =
-            super::kind_projection::capture(&head.partition, AdjacencyKindBasis::Historical)
-                .map_err(refuse)?;
+        let projection = projection_capture::capture(&head.partition, incidences, execution)?;
         super::kind_projection::rebuild_for_request(
             &mut partition,
             &projection,
@@ -209,6 +213,7 @@ pub(super) fn projection_funding(
         funding::region_image::projection_storage(incidences, incidences)?.wire,
         funding::vector::<[usize; 2]>(8 * usize::BITS as usize)?,
     )?;
-    funding::work(request, bytes)?;
+    // This is simultaneous backing, not work. Reconstruction meters its own
+    // operations; owned-Head capture has a separate original-request preflight.
     Ok((funding::Funding::reserve(bytes, request)?, incidences))
 }

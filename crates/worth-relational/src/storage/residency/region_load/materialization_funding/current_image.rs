@@ -9,6 +9,7 @@ use worth_foundational::facade::{
 pub(in crate::storage::residency) fn current(
     partition: &PartitionState,
     contract: u64,
+    contracts: &[worth_foundational::facade::AspectContract],
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<Quote> {
     // Column/map cursors allocate bounded traversal stacks. Admit their
@@ -116,7 +117,9 @@ pub(in crate::storage::residency) fn current(
         )?,
     )?;
     q.wire = sum(q.wire, adjacency(partition, request)?)?;
-    work(request, q.wire)?;
+    // Backing capacity is not executed work. Price the actual exported values,
+    // while keeping the conservative simultaneous backing quote unchanged.
+    super::current_work::charge(partition, contracts, request)?;
     Ok(q)
 }
 

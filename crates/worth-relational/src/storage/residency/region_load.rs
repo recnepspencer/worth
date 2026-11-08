@@ -1,10 +1,5 @@
 mod head_validation;
 pub(super) mod materialization_funding;
-use crate::identity::data::PartitionId;
-use materialization_funding as funding;
-use std::collections::BTreeMap;
-use std::sync::Arc;
-
 use super::region_image::*;
 use super::resident_history::projection_funding;
 use super::{RelationalColdRegion, RelationalResidencyDemandFailure as Failure, ResidentRegion};
@@ -12,12 +7,16 @@ use crate::durability::checkpoints::aspect_state_images::CheckpointAspectContrac
 use crate::durability::checkpoints::images::{
     partition_from_image_for_request, partition_to_image_with_contracts,
 };
+use crate::identity::data::PartitionId;
 use crate::storage::data::{
     RelationalStorageSubject, RelationalStorageUnavailable,
     RelationalStorageUnavailableCause as Cause,
 };
 use crate::storage::overlay::{PartitionContentCommitment, PartitionState};
 use crate::storage::partition::AdjacencyKindBasis;
+use materialization_funding as funding;
+use std::collections::BTreeMap;
+use std::sync::Arc;
 
 pub(super) fn load_head(
     cold: &RelationalColdRegion,
@@ -153,7 +152,8 @@ pub(super) fn load_full(
 ) -> Result<Arc<ResidentRegion>, Failure> {
     let (_contract_memory, contract_bound) = funding::contracts(&cold.schema, execution)?;
     let (_projection_memory, _) = projection_funding(&head.partition, execution)?;
-    let current_quote = funding::current(&head.partition, contract_bound, execution)?;
+    let retained = cold.schema.retained_aspect_contracts();
+    let current_quote = funding::current(&head.partition, contract_bound, retained, execution)?;
     let _current_wire = funding::Funding::reserve(current_quote.wire, execution)?;
     let reference = RegionHistoryBase {
         member: cold.history,
