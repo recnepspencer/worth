@@ -1,0 +1,12 @@
+{
+  "frozen_native_files": 101,
+  "all_hashes_match": true,
+  "boundary_matches_baseline": "target/lane-evidence/topology-boundary.log",
+  "held_boundary_findings": [
+    "BC9002_TEST_TOPOLOGY crates/worth-relational/src/tests/durability/medium/cold_source.rs::file: {\"source\":\"crates/worth-relational/src/tests/durability/medium/cold_source.rs\",\"module\":\"file\",\"roots\":[\"ExecutionRequest\"]}",
+    "BC9002_TEST_TOPOLOGY crates/worth-relational/src/tests/durability/medium/cold_source/protected_reads.rs::file: {\"source\":\"crates/worth-relational/src/tests/durability/medium/cold_source/protected_reads.rs\",\"module\":\"file\",\"roots\":[\"ExecutionRequest\"]}",
+    "BC9002_TEST_TOPOLOGY crates/worth-relational/src/tests/support/durable_medium/runtime_attachment.rs::file: {\"source\":\"crates/worth-relational/src/tests/support/durable_medium/runtime_attachment.rs\",\"module\":\"file\",\"roots\":[\"ExecutionRequest\",\"RelationalRuntime\"]}"
+  ],
+  "ui_lock_restored_exactly_to_head": true,
+  "reviewed_source_commit": "ee164dda9fce48a503bb0e7edb62ce44d55c860a"
+}

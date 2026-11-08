@@ -1,0 +1,10 @@
+COMMAND: ["python", "target/lane-evidence/principal_validate_round3.py"]
+HEAD: dbe3280daa804f95a9ec6375f85ae78d1cbcc6dd
+CLEAN: false
+START: 2026-11-08T19:25:26.297984+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+principal-native-final-check-driver: exit=0 log=C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\principal-native-final-check-driver.log
+principal-final-focused-driver: exit=1 log=C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\principal-final-focused-driver.log
+
+END: 2026-11-08T19:47:18.228216+00:00
+EXIT: 1

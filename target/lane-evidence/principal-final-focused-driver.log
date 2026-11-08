@@ -1,0 +1,129 @@
+COMMAND: ["C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\principal_verify.py"]
+HEAD: dbe3280daa804f95a9ec6375f85ae78d1cbcc6dd
+CLEAN: false
+START: 2026-11-08T19:26:17.787845+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+C_FREE_BYTES 1021566009344
+prebuild: cargo metadata --offline --format-version 1 --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-certification\fixtures\consumer_entry\Cargo.toml"
+prebuild: cargo test --message-format=json --no-run --package worth-query-topology-entry --lib --profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-certification\fixtures\consumer_entry\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo nextest list --cargo-message-format=json --package worth-query-topology-entry --lib --cargo-profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-certification\fixtures\consumer_entry\Cargo.toml" --list-type binaries-only --message-format json
+   Compiling worth-store-physical-backend v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-physical-backend)
+   Compiling worth-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-relational)
+   Compiling worth-store-physical-isolation v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-physical-isolation)
+   Compiling worth-store-io-scheduler v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-io-scheduler)
+   Compiling worth-store-reclaim-policy v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-reclaim-policy)
+   Compiling worth-store-retention v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-retention)
+   Compiling worth-store-lsm-authority v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-lsm-authority)
+   Compiling worth-store-tiering v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-tiering)
+   Compiling worth-store-blob-chunks v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-blob-chunks)
+   Compiling worth-store-layout-indexes v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-layout-indexes)
+   Compiling worth-store v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store)
+   Compiling worth-runtime-bridge v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-runtime-bridge)
+   Compiling worth-store-recovery-runtime v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-recovery-runtime)
+   Compiling worth-store-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-relational)
+   Compiling worth-runtime-world v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-runtime-world)
+   Compiling worth-query-execution v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-execution)
+   Compiling worth-store-application v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-application)
+   Compiling worth-query-publication v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-publication)
+   Compiling worth-query-host v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-host)
+   Compiling worth-query v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query)
+   Compiling worth-query-testkit-host v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-testkit-host)
+   Compiling worth-query-topology-entry v0.0.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-certification\fixtures\consumer_entry\topology_entry)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3m 38s
+prebuild: cargo nextest list --cargo-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\principal-final-focused\topology\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\principal-final-focused\topology\build\binaries.json" --message-format json --ignore-default-filter -E "test(=checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh) + test(=checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_chain_settles_through_its_last_consumer_alone) + test(=checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_consumer_never_settles_over_a_stale_upstream) + test(=checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_world_verifies_each_root_and_decides_each_consumer_once) + test(=checkpoint_recovery::required_chain::exact_invalidation::locality::lifecycle::serial::authored_ring_checkpoint_reopens_then_accepts_a_new_source_edit)"
+prebuild: cargo nextest run --cargo-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\principal-final-focused\topology\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\principal-final-focused\topology\build\binaries.json" --profile ci --config-file "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\principal-final-focused\topology\nextest.toml" --ignore-default-filter --no-fail-fast --no-tests=fail --message-format libtest-json --success-output immediate -E "test(=checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh) + test(=checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_chain_settles_through_its_last_consumer_alone) + test(=checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_consumer_never_settles_over_a_stale_upstream) + test(=checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_world_verifies_each_root_and_decides_each_consumer_once) + test(=checkpoint_recovery::required_chain::exact_invalidation::locality::lifecycle::serial::authored_ring_checkpoint_reopens_then_accepts_a_new_source_edit)"
+RESULT topology 100
+C_FREE_BYTES 1013834735616
+prebuild: cargo metadata --offline --format-version 1 --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\Cargo.toml"
+prebuild: cargo test --message-format=json --no-run --package worth-store-court-application --test worth_store_court_application --profile ci-test --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo nextest list --cargo-message-format=json --package worth-store-court-application --test worth_store_court_application --cargo-profile ci-test --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\Cargo.toml" --list-type binaries-only --message-format json
+   Compiling worth-store-physical-backend v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-physical-backend)
+   Compiling worth-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-relational)
+   Compiling worth-store-physical-isolation v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-physical-isolation)
+   Compiling worth-store-io-scheduler v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-io-scheduler)
+   Compiling worth-store-reclaim-policy v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-reclaim-policy)
+   Compiling worth-store-retention v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-retention)
+   Compiling worth-store-lsm-authority v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-lsm-authority)
+   Compiling worth-store-tiering v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-tiering)
+   Compiling worth-store-blob-chunks v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-blob-chunks)
+   Compiling worth-store-layout-indexes v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-layout-indexes)
+   Compiling worth-store v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store)
+   Compiling worth-runtime-bridge v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-runtime-bridge)
+   Compiling worth-store-recovery-runtime v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-recovery-runtime)
+   Compiling worth-store-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-relational)
+   Compiling worth-runtime-world v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-runtime-world)
+   Compiling worth-query-execution v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-execution)
+   Compiling worth-store-application v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-application)
+   Compiling worth-query-publication v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-publication)
+   Compiling worth-query v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query)
+   Compiling worth-query-host v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-host)
+   Compiling worth-query-testkit-host v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-testkit-host)
+   Compiling worth-store-testkit-application-oracle v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-testkit-application-oracle)
+   Compiling worth-store-court-application v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-court-application)
+    Finished `ci-test` profile [unoptimized + debuginfo] target(s) in 2m 43s
+prebuild: cargo nextest list --cargo-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\principal-final-focused\store\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\principal-final-focused\store\build\binaries.json" --message-format json --ignore-default-filter -E "test(=process::application::world_durable_release::unclean::unclean_native_tail_refuses_before_world_service_and_names_the_original_effect) + test(=process::application::world_durable_release::unclean::quiescent_kill_reopens_the_acknowledged_native_and_world_heads) + test(=process::application::world_durable_release::unclean::graceful_close_reopens_the_checkpointed_native_and_world_heads) + test(=process::application::host_oracle::graceful::graceful_home_oracle_seed_zero_preserves_relational_and_world_prefixes) + test(=process::application::host_oracle::graceful::graceful_home_oracle_seed_one_preserves_relational_and_world_prefixes)"
+prebuild: cargo nextest run --cargo-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\principal-final-focused\store\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\principal-final-focused\store\build\binaries.json" --profile ci --config-file "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\.config\nextest.toml" --ignore-default-filter --no-fail-fast --no-tests=fail --message-format libtest-json --success-output immediate -E "test(=process::application::world_durable_release::unclean::unclean_native_tail_refuses_before_world_service_and_names_the_original_effect) + test(=process::application::world_durable_release::unclean::quiescent_kill_reopens_the_acknowledged_native_and_world_heads) + test(=process::application::world_durable_release::unclean::graceful_close_reopens_the_checkpointed_native_and_world_heads) + test(=process::application::host_oracle::graceful::graceful_home_oracle_seed_zero_preserves_relational_and_world_prefixes) + test(=process::application::host_oracle::graceful::graceful_home_oracle_seed_one_preserves_relational_and_world_prefixes)"
+RESULT store 0
+C_FREE_BYTES 1009161973760
+prebuild: cargo metadata --offline --format-version 1 --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query-bank-world\Cargo.toml"
+prebuild: cargo test --message-format=json --no-run --package worth-query-bank-court-external-rail-server --test worth_query_bank_court_external_rail_server --profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query-bank-world\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo nextest list --cargo-message-format=json --package worth-query-bank-court-external-rail-server --test worth_query_bank_court_external_rail_server --cargo-profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query-bank-world\Cargo.toml" --list-type binaries-only --message-format json
+rth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-aspect-native)
+   Compiling worth-query-declaration v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-declaration)
+   Compiling tinystr v0.8.4
+   Compiling potential_utf v0.1.6
+   Compiling tokio-rustls v0.26.4
+   Compiling worth-store-authority v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-authority)
+   Compiling worth-signal v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-signal)
+   Compiling worth-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-relational)
+   Compiling icu_locale_core v2.3.0
+   Compiling icu_collections v2.2.0
+   Compiling worth-store-physical-format v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-physical-format)
+   Compiling worth-store-security v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-security)
+   Compiling worth-store-modes v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-modes)
+   Compiling hyper-rustls v0.27.10
+   Compiling worth-query-installation v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-installation)
+   Compiling worth-query-decl v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-decl)
+   Compiling icu_provider v2.3.1
+   Compiling worth-store-physical-integrity v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-physical-integrity)
+   Compiling worth-store-wal v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-wal)
+   Compiling icu_normalizer v2.2.0
+   Compiling icu_properties v2.2.0
+   Compiling worth-store-buffer-pool v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-buffer-pool)
+   Compiling worth-store-recovery-physics v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-recovery-physics)
+   Compiling worth-query-admission v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-admission)
+   Compiling idna_adapter v1.2.2
+   Compiling worth-store-physical-isolation v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-physical-isolation)
+   Compiling worth-store-io-scheduler v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-io-scheduler)
+   Compiling idna v1.1.0
+   Compiling url v2.5.8
+   Compiling worth-store-reclaim-policy v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-reclaim-policy)
+   Compiling worth-store-retention v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-retention)
+   Compiling worth-store-lsm-authority v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-lsm-authority)
+   Compiling tower-http v0.6.11
+   Compiling worth-store-tiering v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-tiering)
+   Compiling reqwest v0.12.28
+   Compiling worth-store-blob-chunks v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-blob-chunks)
+   Compiling bank-external-rail v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query-bank-world\crates\bank-external-rail)
+   Compiling worth-store-layout-indexes v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-layout-indexes)
+   Compiling worth-store v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store)
+   Compiling worth-store-recovery-runtime v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-recovery-runtime)
+   Compiling worth-runtime-bridge v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-runtime-bridge)
+   Compiling worth-store-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-relational)
+   Compiling worth-runtime-world v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-runtime-world)
+   Compiling worth-query-execution v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-execution)
+   Compiling worth-store-application v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-application)
+   Compiling worth-query-publication v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-publication)
+   Compiling worth-query-host v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-host)
+   Compiling bank-domain v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query-bank-world\crates\bank-domain)
+   Compiling bank-server v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query-bank-world\crates\bank-server)
+   Compiling worth-query-bank-testkit-server v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query-bank-world\crates\worth-query-bank-testkit-server)
+   Compiling worth-query-bank-court-external-rail-server v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query-bank-world\crates\worth-query-bank-court-external-rail-server)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 13m 25s
+prebuild: cargo nextest list --cargo-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\principal-final-focused\bank\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\principal-final-focused\bank\build\binaries.json" --message-format json --ignore-default-filter -E "test(=oracle::server_owned_effects::server::parallel_history::assessment_history::assessment_history_settles_at_each_request_width) + test(=oracle::server_owned_effects::server::parallel_history::transfer_history::seeded_transfers_match_at_host_policy_and_each_request_width)"
+prebuild: "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query-bank-world\target\debug\deps\worth_query_bank_court_external_rail_server-c13c2d9ded46b1fb.exe" --list --exact oracle::server_owned_effects::server::parallel_history::assessment_history::assessment_history_settles_at_each_request_width oracle::server_owned_effects::server::parallel_history::transfer_history::seeded_transfers_match_at_host_policy_and_each_request_width
+prebuild: "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query-bank-world\target\debug\deps\worth_query_bank_court_external_rail_server-c13c2d9ded46b1fb.exe" --exact oracle::server_owned_effects::server::parallel_history::assessment_history::assessment_history_settles_at_each_request_width oracle::server_owned_effects::server::parallel_history::transfer_history::seeded_transfers_match_at_host_policy_and_each_request_width --nocapture
+RESULT bank 0
+
+END: 2026-11-08T19:47:18.207509+00:00
+EXIT: 1
