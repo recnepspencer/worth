@@ -7,9 +7,11 @@ pub use native_checkpoint_reference::{
     NativeCheckpointBranchTarget,
 };
 mod program_support;
+mod workflow_ending_actor;
 pub use program_support::{
     ProgramSupportObligationIdentity, ProgramSupportObligationKind, ProgramSupportStatus,
 };
+pub use workflow_ending_actor::{WorkflowEndingActorDecodeDenial, WorkflowEndingActorProvenance};
 mod home_binding;
 mod home_installation_transition;
 pub use home_installation_transition::HomeProgramTransitionInstallationBinding;

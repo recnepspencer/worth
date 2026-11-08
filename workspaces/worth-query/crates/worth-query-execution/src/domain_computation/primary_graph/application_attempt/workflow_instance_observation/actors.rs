@@ -3,7 +3,8 @@ use super::*;
 /// Already validated recorded identities; data only, never authority.
 pub(in crate::domain_computation::primary_graph::application_attempt) struct WorkflowInstanceRoles {
     pub(in crate::domain_computation::primary_graph::application_attempt) start: EntityId,
-    pub(in crate::domain_computation::primary_graph::application_attempt) end: Option<EntityId>,
+    pub(in crate::domain_computation::primary_graph::application_attempt) end:
+        Option<worth_foundational::facade::WorkflowEndingActorProvenance>,
 }
 pub(in crate::domain_computation::primary_graph::application_attempt) fn observe(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -22,7 +23,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
     applicable(start_actor, true)?;
     let end_actor = layout
         .instance
-        .end_advancer
+        .ending_actor
         .observe(runtime, execution, snapshot, entity, kind, facts)?;
     let state = observe_field_value(
         runtime,
@@ -51,7 +52,9 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         locator: layout.instance.state.clone(),
         value: AspectValue::UInt64(tag),
     });
-    applicable(end_actor, ended)?;
+    if end_actor.is_some() != ended {
+        return Err(crate::domain_computation::primary_graph::workflow::actor::record::actor_record_corruption());
+    }
     let Some(start) = start_actor else {
         return Err(denial("current workflow instance has no starting advancer"));
     };

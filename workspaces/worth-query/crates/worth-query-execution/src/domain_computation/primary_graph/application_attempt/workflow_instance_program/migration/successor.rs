@@ -51,7 +51,10 @@ pub(super) fn successor_effects(
         layout.instance.state.clone(),
         AspectValue::UInt64(WorkflowInstanceState::Migrated.persisted_tag()),
     )]);
-    advancer.append_fields(&layout.instance.end_advancer, &mut end_fields);
+    layout
+        .instance
+        .ending_actor
+        .append(advancer.ending_provenance(), &mut end_fields);
     effects.push(WorthQueryApplicationRealizedEffect::UpdateEntity {
         entity: "workflow-instance".to_owned(),
         entity_id: source,

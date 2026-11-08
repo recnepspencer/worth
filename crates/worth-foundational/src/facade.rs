@@ -418,7 +418,8 @@ pub use crate::durability::{
     NativeCheckpointBranchReference, NativeCheckpointBranchTarget,
     ProgramSupportObligationIdentity, ProgramSupportObligationKind, ProgramSupportStatus,
     RecordedCompositePublicationAttemptIdentity, RecordedProductBranchReference, RetentionClass,
-    UnsupportedDurableOwnerTag, WorldDurableJournal, WorldOwnerCoordinate, WorldOwnerSlotIdentity,
+    UnsupportedDurableOwnerTag, WorkflowEndingActorDecodeDenial, WorkflowEndingActorProvenance,
+    WorldDurableJournal, WorldOwnerCoordinate, WorldOwnerSlotIdentity,
 };
 pub use crate::durable_publication::DurablePublicationFate;
 pub use crate::execution::{

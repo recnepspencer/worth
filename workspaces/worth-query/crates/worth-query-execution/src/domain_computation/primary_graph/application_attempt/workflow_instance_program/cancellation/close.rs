@@ -142,8 +142,10 @@ where
                 locator: layout.instance.cancellation_identity.clone(),
             });
             let mut actor_fields = BTreeMap::new();
-            crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.admission)
-                .append_fields(&layout.instance.end_advancer, &mut actor_fields);
+            layout.instance.ending_actor.append(
+                crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.admission).ending_provenance(),
+                &mut actor_fields,
+            );
             let effects = vec![
                 WorthQueryApplicationRealizedEffect::UpdateEntity {
                     entity: "workflow-instance".to_owned(),

@@ -26,6 +26,18 @@ impl WorkflowAdmittedActor {
     pub(in crate::domain_computation) const fn entity(self) -> EntityId {
         self.0
     }
+    /// Recorded coordinates come from the actual admitted/receipted principal.
+    /// They are DATA, never a grant for a later request or another runtime.
+    pub(in crate::domain_computation::primary_graph) fn ending_provenance(
+        self,
+    ) -> worth_foundational::facade::WorkflowEndingActorProvenance {
+        use worth_foundational::facade::{EntityId, PartitionId, WorkflowEndingActorProvenance};
+        WorkflowEndingActorProvenance::Principal(EntityId::new(
+            PartitionId(self.0.partition_value()),
+            self.0.local_slot_value(),
+            self.0.generation_value(),
+        ))
+    }
     pub(in crate::domain_computation::primary_graph) fn append_fields(
         self,
         locators: &WorkflowActorFields,

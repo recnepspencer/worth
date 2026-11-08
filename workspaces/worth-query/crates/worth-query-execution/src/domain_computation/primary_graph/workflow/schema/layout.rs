@@ -289,8 +289,8 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowBackActionLayout
 pub struct WorkflowInstanceLayout {
     pub(in crate::domain_computation::primary_graph) start_advancer:
         super::super::actor::record::WorkflowActorFields,
-    pub(in crate::domain_computation::primary_graph) end_advancer:
-        super::super::actor::record::WorkflowActorFields,
+    pub(in crate::domain_computation::primary_graph) ending_actor:
+        super::super::actor::ending::WorkflowEndingActorFields,
     pub(in crate::domain_computation::primary_graph) entity_kind: KindId,
     pub(in crate::domain_computation::primary_graph) identity: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) protocol_version: AspectFieldLocator,
