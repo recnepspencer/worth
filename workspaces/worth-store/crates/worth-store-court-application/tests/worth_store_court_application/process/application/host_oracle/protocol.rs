@@ -3,6 +3,11 @@ use super::*;
 use host_observation::{projection::StateProjection, receipts::MutationProjection};
 #[derive(serde::Serialize, serde::Deserialize)]
 pub(super) enum Request {
+    Mutate {
+        key: u64,
+        value: u64,
+    },
+    Close,
     Step(usize),
     Observe,
     ObserveReleased {

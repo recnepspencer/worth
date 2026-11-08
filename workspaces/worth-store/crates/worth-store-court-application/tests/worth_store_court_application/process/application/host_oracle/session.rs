@@ -70,6 +70,9 @@ impl Session {
         }
         self.child.wait().unwrap();
     }
+    pub fn finish(&mut self) {
+        assert!(self.child.wait().unwrap().success(), "graceful child exit");
+    }
 }
 impl Drop for Session {
     fn drop(&mut self) {
@@ -114,7 +117,7 @@ fn host_oracle_service_child() {
         )),
         mutation: None,
         initialized: initialized.load(std::sync::atomic::Ordering::SeqCst),
-        contacts: 0,
+        contacts: contacts.load(std::sync::atomic::Ordering::SeqCst),
         closed: false,
         disposition: None,
     });
@@ -130,6 +133,26 @@ fn host_oracle_service_child() {
         let mut disposition = None;
         let mut closed = false;
         match command {
+            Request::Mutate { key, value } => {
+                mutation = super::execution::mutation(
+                    home.as_ref().unwrap(),
+                    &HostCommand::Mutate {
+                        branch: BranchLabel::Main,
+                        key,
+                        value,
+                    },
+                    &mut originals,
+                );
+            }
+            Request::Close => {
+                let result = home
+                    .take()
+                    .unwrap()
+                    .close(&execution)
+                    .unwrap_or_else(|refused| panic!("graceful oracle close: {refused:?}"));
+                closed = result.is_closed();
+                result.reclaim();
+            }
             Request::Observe => (),
             Request::ObserveReleased { key, value } => {
                 disposition = Some(super::protocol::Disposition::ReleasedOriginal(
