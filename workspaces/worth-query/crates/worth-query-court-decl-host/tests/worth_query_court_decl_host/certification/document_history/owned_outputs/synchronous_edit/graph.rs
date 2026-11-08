@@ -9,6 +9,7 @@ mod failure;
 mod partition;
 mod permission;
 mod program;
+mod retention;
 pub(super) mod unstable;
 
 fn exercise(worker: bool, value: u64) {

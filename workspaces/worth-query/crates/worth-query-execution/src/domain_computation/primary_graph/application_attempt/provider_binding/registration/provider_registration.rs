@@ -12,6 +12,7 @@ use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphPr
 #[path = "provider_registration/consumed_capacity.rs"]
 mod consumed_capacity;
 pub(in crate::domain_computation::primary_graph) use consumed_capacity::ApplicationAttemptRegistrationStop;
+mod candidate_query_support;
 mod coupled_preparation;
 #[path = "provider_registration/output_contract.rs"]
 mod output_contract;
@@ -19,6 +20,7 @@ mod output_contract;
 mod published_causality;
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphApplicationAttempt {
+    candidate_query_support: candidate_query_support::CandidateQuerySupports,
     coupled_preparation: Option<crate::domain_computation::primary_graph::provider::CoupledProducerPreparation>,
     workflow_origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
@@ -352,6 +354,7 @@ impl WorthQueryPrimaryGraphProvider {
         Ok(WorthQueryPreparedApplicationAttempt {
             attempt: WorthQueryPrimaryGraphApplicationAttempt {
                 coupled_preparation: None,
+                candidate_query_support: Default::default(),
                 workflow_origin,
                 required_output_demand,
                 affinity,

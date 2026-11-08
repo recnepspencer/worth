@@ -38,24 +38,31 @@ pub(super) fn require(
             )
         })?;
     }
-    for support in &attempt
-        .coupled_preparation()
-        .expect("actual registered writer")
-        .query_support
-    {
+    Ok(())
+}
+pub(super) fn require_queries(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    provider: &WorthQueryPrimaryGraphProvider,
+    attempt: &WorthQueryPrimaryGraphApplicationAttempt,
+    before: &SnapshotHandle,
+    complete: &worth_relational::facade::runtime::RelationalPinnedRead<
+        worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+    >,
+) -> Result<(), Stop> {
+    for (source, support) in attempt.candidate_query_support() {
         let answer = provider.graph.with_runtime(execution, |runtime| {
             support.changed_fact(execution, runtime, before, complete)
         });
         match answer {
             Ok(None) => {}
-            Ok(Some(fact)) => require_answer(Ok(false), source, || {
+            Ok(Some(fact)) => require_answer(Ok(false), *source, || {
                 format!(
                     "{}: a later coupled contribution changed discovery support: {}",
                     support.query(),
                     fact.locator_identity()
                 )
             })?,
-            Err(cause) => require_answer(Err(cause), source, || support.query().to_owned())?,
+            Err(cause) => require_answer(Err(cause), *source, || support.query().to_owned())?,
         }
     }
     Ok(())

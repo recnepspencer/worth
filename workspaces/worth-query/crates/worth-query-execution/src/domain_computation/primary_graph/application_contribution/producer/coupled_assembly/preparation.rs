@@ -75,7 +75,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
                 return Ok(Some(
                     super::super::synchronous_outputs::AppliedOutputParent::new(
                         candidate.pin_source(execution)?,
-                        index,
+                        writer.meaning.source_scope,
                     ),
                 ));
             }
@@ -117,7 +117,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
             } => meaning,
             _ => unreachable!("installed coupled preparation issues a producing origin"),
         };
-        let writer_index = self.writers.borrow().len();
+        let source_scope = meaning.source_scope;
         self.writers.borrow_mut().push(CoupledWriter {
             producer: std::sync::Arc::clone(producer),
             stage: Some(CoupledWriterStage::Inspected(writer)),
@@ -152,7 +152,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
             .retain_coupled_after_own(writer.session(), after_own.clone());
         Ok(Some(super::synchronous_outputs::AppliedOutputParent::new(
             after_own,
-            writer_index,
+            source_scope,
         )))
     }
 }

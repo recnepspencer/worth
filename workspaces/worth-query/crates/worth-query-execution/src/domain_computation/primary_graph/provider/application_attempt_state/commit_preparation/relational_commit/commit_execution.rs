@@ -157,6 +157,7 @@ pub(super) fn commit(
     coupled::prepare_members(
         &execution,
         provider,
+        &attempt,
         &mut members,
         &mut candidate,
         before.as_snapshot(),

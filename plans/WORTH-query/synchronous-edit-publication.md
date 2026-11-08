@@ -606,3 +606,46 @@ composition keys. No existing assertion changed in this checkpoint. Final scoped
 guards pass; the complete declaration owner suite passes497 tests. The
 whole-edit support and healthy-parent boundary is next, not a fake writer or a
 historical/current settlement fabricated for this applied candidate.
+
+
+## Whole-edit discovery support
+
+Master893f1e22d4 merged cleanly as bda55d25c9; the merged public carrier passes584.
+The acyclicity index and wave checkpoint remain intact. Current instructions are
+unchanged; the architecture map and current README test-driver instructions were
+read. TESTING.md is absent from the tracked tree; use the repository's build/test
+drivers. A clean893 baseline runs root/Query all-target and doc lanes separately.
+
+The next slice changes custody of actual AppliedQuerySupport, not its authority
+or comparison. Capture the registered root's real session binding before its
+freshness transition, retain all graph discovery supports on that actual root
+attempt, and clear them when Native abandons a preparation round. A support
+keeps its true parent's Native source ID for typed refusal. Current C principal,
+query and request admission remain the existing owners; proposed D never becomes
+Current or a settlement. No new permissions or operation handoff are minted.
+
+The registered-attempt owner holds the collection and its actual capacity charge.
+Final support comparison stays in the existing pre-World coupled support owner,
+using the same fact comparator and error mapping for root and members. Capture
+the complete pin when support exists even if the writer list is empty. Preserve
+all original cleanup owners and failures on retention or comparison refusal.
+The same-query-support and partial cleanup courts must stay green; dropping root
+support and failing to reset an abandoned round must be tested by actual courts
+and SHA-restored mutations. Healthy-parent verification is the next distinct
+posture at currentness, not a fabricated writer/Current proof/history origin.
+
+Whole-edit support evidence: graph28 passes. Five runtime mutants are killed
+and restored by equal SHA-256: drop final root comparison, drop retained support,
+raw accounting-only checkpoint, misclassify resource failure, and reject the
+actual registered root. Keeping support across abandoned rounds survives the
+ordinary unequal-depth court; that fixture does not establish a cold-symbol
+retry after discovery. This is an explicit remaining evidence gap for P5, not a
+killed mutant or a completed retry claim. A real cold preparation case must
+exercise the reset before final READY. No existing assertion was changed.
+
+Support checkpoint guards pass: public586/2ignored, legacy coupled35, Query
+workspace all-target check, formatting, dirty line caps, boundary-check,
+agent-context and whitespace. Primary structural review covered19 Rust files
+and16 function advisories, with no new size exemption. This checkpoints support
+custody, not healthy-parent reuse or P5/S6 completion; the reset evidence gap
+above remains an explicit final-slice obligation.

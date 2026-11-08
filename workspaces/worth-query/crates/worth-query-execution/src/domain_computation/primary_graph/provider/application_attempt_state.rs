@@ -9,6 +9,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+mod candidate_query_support;
 mod commit_completion;
 mod coupled_extraction;
 mod coupled_preparation;

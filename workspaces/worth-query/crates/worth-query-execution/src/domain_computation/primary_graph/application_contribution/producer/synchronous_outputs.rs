@@ -19,19 +19,18 @@ mod wave;
 pub use wave::SynchronousOutputWave;
 
 pub struct AppliedOutputParent {
-    writer: usize,
+    source: worth_relational::facade::identity::EntityId,
     pin: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
 }
 impl AppliedOutputParent {
-    pub(super) fn writer(&self) -> usize {
-        self.writer
+    pub(super) fn source(&self) -> worth_relational::facade::identity::EntityId {
+        self.source
     }
-
     pub(super) fn new(
         pin: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
-        writer: usize,
+        source: worth_relational::facade::identity::EntityId,
     ) -> Self {
-        Self { pin, writer }
+        Self { pin, source }
     }
 }
 pub struct SynchronousOutputFailure(CoupledSourceReadStop);

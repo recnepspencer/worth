@@ -3,6 +3,7 @@ use super::execution::{CoupledSourceReadStop, PreparedCoupledWriter};
 use super::*;
 mod disposal;
 mod preparation;
+mod query_support_denial;
 use crate::domain_computation::primary_graph::{
     application_attempt::coupled_outputs::DeclaredCoupledOutputDemands, WorthQueryAdvancementPhase,
     WorthQueryPrimaryGraphApplicationRuntime,
@@ -30,6 +31,7 @@ pub(in crate::domain_computation::primary_graph) struct DeclaredProducerAssembly
     pub(super) before: &'a crate::basis::WorthQueryProductBranchLease,
     pub(super) request: &'a WorthQueryRequestScope,
     demands: &'a DeclaredCoupledOutputDemands,
+    root_session: crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
     writers: RefCell<Vec<CoupledWriter<'run, S>>>,
     denial: RefCell<Option<WorthQueryOutputDemandDenial>>,
     abort_failures: RefCell<Vec<crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted>>,
@@ -58,6 +60,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
         before: &'a crate::basis::WorthQueryProductBranchLease,
         request: &'a WorthQueryRequestScope,
         demands: &'a DeclaredCoupledOutputDemands,
+        root_session: crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
     ) -> Self {
         Self {
             phase,
@@ -67,6 +70,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
             before,
             request,
             demands,
+            root_session,
             writers: RefCell::new(Vec::new()),
             denial: RefCell::new(None),
             abort_failures: RefCell::new(Vec::new()),
@@ -74,25 +78,15 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
     }
     pub(super) fn retain_discovery_support(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         parent: &super::synchronous_outputs::AppliedOutputParent,
         support: crate::domain_computation::primary_graph::application_query::AppliedQuerySupport,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        let writers = self.writers.borrow();
-        let Some(CoupledWriter {
-            stage: Some(CoupledWriterStage::Inspected(writer)),
-            ..
-        }) = writers.get(parent.writer())
-        else {
-            return Err(WorthQueryOutputDemandDenial::new(
-                WorthQueryOutputDemandDenialKind::ForeignSettlement,
-                support.query().to_owned(),
-            ));
-        };
         self.application
             .runtime
             .primary_provider
-            .retain_coupled_query_support(writer.session(), support);
-        Ok(())
+            .retain_candidate_query_support(execution, &self.root_session, parent.source(), support)
+            .map_err(query_support_denial::denial)
     }
     pub(in crate::domain_computation::primary_graph) fn take_denial(
         &self,
@@ -195,7 +189,16 @@ impl<S: ApplicationSchema> RelationalAuthoredCoupledProducerAssembly
             return Ok(ControlFlow::Break(()));
         }
         self.denial.borrow_mut().take();
-        match self.prepare(execution, candidate) {
+        let prepared = self
+            .application
+            .runtime
+            .primary_provider
+            .reset_candidate_query_support(&self.root_session)
+            .map_err(|cause| {
+                CoupledSourceReadStop::Query(query_support_denial::denial(cause).into())
+            })
+            .and_then(|()| self.prepare(execution, candidate));
+        match prepared {
             Ok(()) => Ok(ControlFlow::Continue(())),
             Err(CoupledSourceReadStop::Native(cause)) => Err(cause),
             Err(CoupledSourceReadStop::Query(cause)) => {

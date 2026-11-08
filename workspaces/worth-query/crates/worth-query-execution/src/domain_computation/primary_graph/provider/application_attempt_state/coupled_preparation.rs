@@ -12,16 +12,8 @@ pub(in crate::domain_computation::primary_graph) struct CoupledProducerPreparati
         >,
     >,
     pub(in crate::domain_computation::primary_graph::provider) handler: ProducerHandlerPreparation,
-    pub(in crate::domain_computation::primary_graph::provider) query_support:
-        Vec<crate::domain_computation::primary_graph::application_query::AppliedQuerySupport>,
 }
 impl CoupledProducerPreparation {
-    pub(in crate::domain_computation::primary_graph) fn retain_query_support(
-        &mut self,
-        support: crate::domain_computation::primary_graph::application_query::AppliedQuerySupport,
-    ) {
-        self.query_support.push(support);
-    }
     pub(in crate::domain_computation::primary_graph) fn retain_after_own(
         &mut self,
         pin: worth_relational::facade::runtime::RelationalPinnedRead<
@@ -32,20 +24,6 @@ impl CoupledProducerPreparation {
     }
 }
 impl super::super::WorthQueryPrimaryGraphProvider {
-    pub(in crate::domain_computation::primary_graph) fn retain_coupled_query_support(
-        &self,
-        session: WorthQueryProviderSessionView<'_>,
-        support: crate::domain_computation::primary_graph::application_query::AppliedQuerySupport,
-    ) {
-        let mut attempts = self
-            .attempts
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let state = attempts
-            .attempt_state_mut(session)
-            .expect("actual registered discovery parent");
-        state.attempt_mut().retain_coupled_query_support(support);
-    }
     pub(in crate::domain_computation::primary_graph) fn retain_coupled_after_own(
         &self,
         session: WorthQueryProviderSessionView<'_>,
@@ -84,7 +62,6 @@ impl super::super::WorthQueryPrimaryGraphProvider {
                 completion: completion.clone(),
                 handler,
                 after_own: None,
-                query_support: Vec::new(),
             });
         Ok(completion)
     }

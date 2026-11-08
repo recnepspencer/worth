@@ -1,16 +1,6 @@
 //! Exact registered preparation transfers once into its publication owner.
 use super::*;
 impl WorthQueryPrimaryGraphApplicationAttempt {
-    pub(in crate::domain_computation::primary_graph) fn retain_coupled_query_support(
-        &mut self,
-        support: crate::domain_computation::primary_graph::application_query::AppliedQuerySupport,
-    ) {
-        self.coupled_preparation
-            .as_mut()
-            .expect("actual appended parent preparation")
-            .retain_query_support(support);
-    }
-
     pub(in crate::domain_computation::primary_graph) fn retain_coupled_after_own(
         &mut self,
         pin: worth_relational::facade::runtime::RelationalPinnedRead<

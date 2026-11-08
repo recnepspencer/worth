@@ -200,6 +200,7 @@ impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
         Schema: worth_query_installation::facade::ApplicationSchema,
         Input: Clone + Send + Sync + 'static,
     {
+        let root_session = self.staged.provider_session_terminal_binding();
         let read_set = super::fresh::compare_provider_read_set(
             execution,
             self.staged,
@@ -214,7 +215,7 @@ impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
         };
         let assembly = crate::domain_computation::primary_graph::application_contribution::DeclaredProducerAssembly::new(
             phase, authority.coordination(), authority.application(), authority.admission().graph_work().authenticating_principal(),
-            authority.product, authority.admission().publication_request(), authority.coupled_outputs,
+            authority.product, authority.admission().publication_request(), authority.coupled_outputs, root_session,
         );
         let candidate = match fresh.progress_invariant(
             execution,

@@ -68,7 +68,7 @@ impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
                         )
                         .map_err(SourceQueryObservationStop::SourceFacts)?;
                     self.owner
-                        .retain_discovery_support(parent, support)
+                        .retain_discovery_support(self.execution, parent, support)
                         .map_err(SourceQueryObservationStop::CurrentControl)?;
                     Ok(source.value)
                 },

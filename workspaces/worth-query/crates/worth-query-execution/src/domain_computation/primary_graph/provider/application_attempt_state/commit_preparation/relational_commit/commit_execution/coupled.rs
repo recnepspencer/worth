@@ -10,12 +10,13 @@ use worth_relational::facade::{
 pub(super) fn prepare_members(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
+    root: &WorthQueryPrimaryGraphApplicationAttempt,
     members: &mut [CoupledApplicationMember],
     candidate: &mut PreparedRelationalCommitCandidate,
     before: &SnapshotHandle,
     policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<(), crate::domain_computation::WorthQueryProviderSessionCommitStop> {
-    let complete = if members.is_empty() {
+    let complete = if members.is_empty() && root.candidate_query_support().is_empty() {
         None
     } else {
         Some(
@@ -25,6 +26,15 @@ pub(super) fn prepare_members(
                 .expect("Native retained genuine coupled proposal read custody"),
         )
     };
+    if !root.candidate_query_support().is_empty() {
+        support::require_queries(
+            execution,
+            provider,
+            root,
+            before,
+            complete.as_ref().expect("actual edit query candidate"),
+        )?;
+    }
     for member in members {
         let owned = member.owned.as_mut().expect("atomic group extraction");
         support::require(
@@ -34,6 +44,13 @@ pub(super) fn prepare_members(
             before,
             complete.as_ref().expect("coupled complete image"),
             member.meaning.source_scope,
+        )?;
+        support::require_queries(
+            execution,
+            provider,
+            &owned.attempt,
+            before,
+            complete.as_ref().expect("actual member query candidate"),
         )?;
         let prepared = owned
             .commit
