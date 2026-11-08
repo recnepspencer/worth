@@ -20,6 +20,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
     fn contracts(
         contracts: &mut WorthQueryApplicationContributionContracts<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        synchronous_edit::reconciliation::contracts(contracts)?;
         family::decision_write::contracts(contracts)?;
         family::decision_input::contracts(contracts)?;
         family::diamond::contracts(contracts)?;
@@ -38,6 +39,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         configuration: Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        synchronous_edit::reconciliation::install(setup)?;
         setup.handler::<authored_member::retire::Binding, _>(authored_member::retire::Handler)?;
         setup.handler::<authored_member::restore::Binding, _>(authored_member::restore::Handler)?;
         setup.handler::<edit::Binding, _>(edit::Handler)?;

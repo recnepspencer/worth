@@ -4,7 +4,7 @@ use super::*;
 #[macro_use]
 mod phase;
 mod readiness;
-use readiness::readiness_query;
+pub(super) use readiness::readiness_query;
 #[derive(Clone, Debug)]
 pub enum Denial {
     InitialHasPriorOutput,

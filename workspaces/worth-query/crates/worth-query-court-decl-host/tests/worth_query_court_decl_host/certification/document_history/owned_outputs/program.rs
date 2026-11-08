@@ -206,6 +206,8 @@ impl ApplicationProgramDefinition<Schema> for Program {
             family::diamond::feature(),
             family::decision_input::feature(),
             family::decision_write::feature(),
+            synchronous_edit::reconciliation::feature(),
+            synchronous_edit::reconciliation::child_feature(),
         ]
     }
 }

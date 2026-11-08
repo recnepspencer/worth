@@ -1,5 +1,5 @@
 //! Actual canonical readiness query for a fixture output field.
-pub(super) fn readiness_query(
+pub(in super::super) fn readiness_query(
     entity: &str,
     aspect: &str,
     field: &str,
