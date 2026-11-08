@@ -105,6 +105,14 @@ Each H item's proof is its phase's graceful journeys, plus the graceful oracle.
   - Deleting `StoreCapabilityRequired`; R13.
   - An outstanding dispatch across a graceful close.
 - **H9 (Phase 9): Correction and original-owner advancement.** All of Phase 9, with every kill read as a close or a quiescent kill.
+  - Durable original-interpretation membership is published at the acknowledged
+    World-open seam and jointly readmitted in
+    `application_installation/home_preparation/world/custody.rs`. Its funded
+    terminal disposal uses the protected World checkpoint source route in
+    `durability/checkpoint/original_observation.rs`, for both released unpublished
+    originals and retired correctable occurrences. H6 keeps original-meaning
+    interpretations process-local and counts each retained meaning once; it
+    transfers none to durable membership.
 - **H10 (Phase 10): Public cutover.**
   - Callers and examples on the open call. They run on their genuine main thread under the default stack in the dev profile.
   - The guides; deleting `UnsupportedDurableFamily`.
