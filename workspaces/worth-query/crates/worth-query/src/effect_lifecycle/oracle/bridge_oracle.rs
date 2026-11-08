@@ -66,10 +66,10 @@ impl BridgeExecutionOracle {
         let record = runtime
             .diagnostics()
             .last_writeback_execution_record()
-            .ok_or_else(|| {
+            .map_err(|absence| {
                 EffectExecutionOracleError::new(
                     EffectExecutionOracleErrorKind::BridgeObservationMissingWritebackRecord,
-                    "independent bridge oracle inspection could not find a writeback execution record",
+                    format!("independent bridge oracle inspection could not find a writeback execution record: {absence:?}"),
                     &bridge_oracle_observation_subject(),
                     None,
                 )
