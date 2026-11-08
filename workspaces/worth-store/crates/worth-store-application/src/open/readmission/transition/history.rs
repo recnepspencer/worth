@@ -84,8 +84,34 @@ impl ReadmittedHomeProgramTransitions {
                     .attempt(),
             )
         });
+        let step_count = rows
+            .iter()
+            .try_fold(0usize, |sum, row| {
+                sum.checked_add(row.intent.assignments().len())
+            })
+            .ok_or(Denial::SizeLimit)?;
+        let bytes = step_count
+            .checked_mul(256)
+            .and_then(|n| u64::try_from(n).ok())
+            .ok_or(Denial::SizeLimit)?;
+        let _names = request
+            .reserve_retained_memory(bytes)
+            .map_err(Denial::Execution)?;
+        let mut steps = ExecutionRequestArrayBuilder::allocate(*request, step_count)
+            .map_err(Denial::Backing)?;
+        for row in rows {
+            for step in row.intent.program_steps() {
+                steps.push(step).map_err(Denial::Backing)?;
+            }
+        }
+        let steps = steps.seal().map_err(Denial::Backing)?;
         worth_runtime_world::facade::WorldHomeProgramLineage::from_recorded(
-            owner, initial, current, boundaries, request,
+            owner,
+            initial,
+            current,
+            boundaries,
+            steps.elements().iter().cloned(),
+            request,
         )
         .map(Some)
         .map_err(Denial::WorldLineage)

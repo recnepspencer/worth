@@ -1,5 +1,6 @@
 //! Public Host transition over the original nonempty directory and ordinary B reopen.
 use super::*;
+mod activation_siblings;
 mod successor;
 use worth_query_host::facade::{
     application_entry::WorthQueryApplicationMutationOutcome, home_program_transition::*,

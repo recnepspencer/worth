@@ -11,6 +11,28 @@ where
     Ctx: Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    fn observe_program_activation_history(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        crate::durability::WorldProgramActivationHistory,
+        crate::durability::WorldReadmissionDenial,
+    > {
+        let _operation = self
+            .reserve_recovery_operation_if_open_and_bootstrapped()
+            .map_err(|()| {
+                crate::durability::WorldReadmissionDenial::Medium(
+                    crate::durability::WorldDurableMediumDenial::Unavailable,
+                )
+            })?;
+        let binding = self
+            .state
+            .durable
+            .as_ref()
+            .ok_or(crate::durability::WorldReadmissionDenial::ForeignOwner)?;
+        crate::durability::WorldCheckpointPort::new(binding)
+            .observe_program_activation_history(request)
+    }
     fn bootstrap_is_complete(&self) -> bool {
         matches!(
             *self

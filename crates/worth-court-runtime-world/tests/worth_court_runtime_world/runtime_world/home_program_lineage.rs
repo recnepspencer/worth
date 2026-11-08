@@ -32,6 +32,7 @@ fn original_attempt_labels_change_only_after_their_recorded_transition_boundary(
         CanonicalDigestId::new([1; 32]),
         CanonicalDigestId::new([3; 32]),
         [row(1, 2, 5), row(2, 3, 9)].into_iter(),
+        std::iter::empty(),
         &request,
     )
     .unwrap();
@@ -78,6 +79,7 @@ fn recorded_revision_windows_refuse_foreign_disconnected_or_reordered_boundaries
                 CanonicalDigestId::new([1; 32]),
                 CanonicalDigestId::new([3; 32]),
                 rows.into_iter(),
+                std::iter::empty(),
                 &request
             ),
             Err(Denial::ProgramRevisionMismatch)
@@ -89,8 +91,66 @@ fn recorded_revision_windows_refuse_foreign_disconnected_or_reordered_boundaries
             CanonicalDigestId::new([1; 32]),
             CanonicalDigestId::new([2; 32]),
             [row(1, 2, 5)].into_iter(),
+            std::iter::empty(),
             &request
         ),
+        Err(Denial::ProgramRevisionMismatch)
+    ));
+}
+
+#[test]
+fn canonical_transition_membership_does_not_exempt_other_attempts_in_the_same_window() {
+    use worth_foundational::facade::{
+        CompositeAttemptAssociation, DurableProductBranchIdentity, DurableProductBranchIncarnation,
+        HomeProgramTransitionProgramStep,
+    };
+    let request = SerialRequest::from_memory(
+        SerialMemoryBudget::new(Some(1 << 20)),
+        CancellationSource::new().token(),
+        None,
+    );
+    let execution = ExecutionRequest::serial(&request);
+    let original = |attempt, name: &str| {
+        CompositeAttemptAssociation::from_recorded(
+            DurableCompositePublicationAttemptIdentity::from_recorded(owner(1), attempt),
+            DurableProductBranchIdentity::from_recorded(owner(1), name.into()).unwrap(),
+            DurableProductBranchIncarnation::from_recorded(owner(1), 1),
+        )
+        .unwrap()
+    };
+    let exact = original(4, "main");
+    let lineage = WorldHomeProgramLineage::from_recorded(
+        owner(1),
+        CanonicalDigestId::new([1; 32]),
+        CanonicalDigestId::new([2; 32]),
+        [row(1, 2, 5)].into_iter(),
+        [HomeProgramTransitionProgramStep::from_recorded(
+            exact.clone(),
+            CanonicalDigestId::new([1; 32]),
+            CanonicalDigestId::new([2; 32]),
+        )]
+        .into_iter(),
+        &execution,
+    )
+    .unwrap();
+    assert_eq!(
+        lineage
+            .recorded_activation_for_original(&exact, [1; 32], &execution)
+            .unwrap(),
+        [2; 32]
+    );
+    assert_eq!(
+        lineage
+            .recorded_activation_for_original(&original(3, "main"), [1; 32], &execution)
+            .unwrap(),
+        [1; 32]
+    );
+    assert!(matches!(
+        lineage.recorded_activation_for_original(&original(4, "sibling"), [1; 32], &execution),
+        Err(Denial::ProgramRevisionMismatch)
+    ));
+    assert!(matches!(
+        lineage.recorded_activation_for_original(&exact, [2; 32], &execution),
         Err(Denial::ProgramRevisionMismatch)
     ));
 }

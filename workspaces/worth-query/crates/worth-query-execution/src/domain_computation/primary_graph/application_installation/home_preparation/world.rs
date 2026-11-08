@@ -6,6 +6,7 @@ use super::*;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime;
 use worth_runtime_world::facade::*;
 mod custody;
+pub use crate::domain_computation::primary_graph::bootstrap::branch_activation_history::QueryHomeProgramActivationDenial;
 pub use custody::{QueryHomeCustodyReadmissionDenial, QueryHomeCustodyReadmissionRefused};
 #[cfg(test)]
 #[path = "world/tests.rs"]
@@ -128,11 +129,8 @@ where
                     &self.state.installed,
                     root.basis().relational_basis(),
                 )?;
-            self.bootstrap.readmit_home_initial_program(
-                phase,
-                &root,
-                &self.state.support.initial_revision,
-            )?;
+            self.bootstrap
+                .readmit_home_activation_record(phase, &root)?;
             let relational = self
                 .bootstrap
                 .graph
@@ -145,6 +143,7 @@ where
                     home_world_denial(format!("Home product source denied: {cause:?}"))
                 })?;
             let product = WorthQueryProductRuntime::attach_home_world_ports(
+                &phase.execution_request(),
                 relational,
                 &mut self.bridge.conditional_lifecycle(),
                 self.state.limits.world.clone(),

@@ -28,6 +28,7 @@ pub use transition::{
     WorthQueryHomeProgramTransitionOpenPhase, WorthQueryHomeProgramTransitionOpenRefused,
     WorthQueryHomeProgramTransitionPlan, WorthQueryHomeProgramTransitionStep,
 };
+pub use worth_query_execution::facade::application_home_integration::QueryHomeProgramActivationDenial;
 pub use worth_store_application::facade::ApplicationHomeQueryRootDenial;
 pub use worth_store_application::ApplicationHomeCheckpointLimits as WorthQueryApplicationHomeCheckpointLimits;
 pub use worth_store_application::ApplicationHomeCloseDenial::WorldCompositionRetained;

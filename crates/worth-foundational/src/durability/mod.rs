@@ -16,6 +16,8 @@ pub use home_installation_transition::HomeProgramTransitionInstallationBinding;
 mod home_program_revision;
 mod home_program_transition;
 pub use home_program_revision::HomeProgramRevisionBoundary;
+mod home_program_step;
+pub use home_program_step::HomeProgramTransitionProgramStep;
 mod home_transition_caller;
 mod home_transition_plan;
 mod home_transition_target;

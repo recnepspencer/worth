@@ -27,7 +27,7 @@ pub use transition::{
 mod world;
 pub use world::{
     QueryHomeCustodyReadmissionDenial, QueryHomeCustodyReadmissionRefused,
-    QueryHomeWorldAttachmentRefused, ReadmittedHomeQueryService,
+    QueryHomeProgramActivationDenial, QueryHomeWorldAttachmentRefused, ReadmittedHomeQueryService,
 };
 mod existing;
 mod native;

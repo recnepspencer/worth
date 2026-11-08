@@ -72,6 +72,21 @@ impl<'owner> PreparedWorldHomeProgramBinding<'owner> {
         })
     }
 
+    /// Install exact intent membership before publishing the descriptor acknowledgement.
+    pub fn prepare_program_history(
+        mut self,
+        steps: impl ExactSizeIterator<
+            Item = worth_foundational::facade::HomeProgramTransitionProgramStep,
+        >,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, WorldHomeProgramBindingDenial> {
+        self.successor = self
+            .successor
+            .prepare_program_history(steps, request)
+            .map_err(WorldHomeProgramBindingDenial::Readmission)?;
+        Ok(self)
+    }
+
     pub fn acknowledge(
         self,
         acknowledgement: &HomeProgramTransitionBindingCommitted,

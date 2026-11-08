@@ -5,6 +5,8 @@ mod creation;
 mod currentness_scope;
 mod custody;
 mod history;
+mod inventory;
+pub use inventory::{ObservedProductBranches, ProductBranchInventoryDenial};
 mod name;
 pub(crate) mod observation;
 mod reference_cell;

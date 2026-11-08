@@ -165,6 +165,26 @@ where
         ))
     }
 
+    fn observe_installed_product_branches(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<crate::branch::ObservedProductBranches, crate::branch::ProductBranchInventoryDenial>
+    {
+        use crate::branch::ProductBranchInventoryDenial as Denial;
+        if !self.branch_service_is_available() {
+            return Err(Denial::Branch(
+                RuntimeWorldBranchAdmissionDenial::OwnerUnavailable,
+            ));
+        }
+        let _operation = self
+            .reserve_creation_operation()
+            .map_err(|()| Denial::Branch(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable))?;
+        self.state.branches.observe_installed(execution, |cell| {
+            cell.observe(&self.state.history, &self.state.retention)
+                .map_err(super::map_observation_denial)
+        })
+    }
+
     fn observe_product_branch(
         &self,
         branch: &ProductBranchIdentity,

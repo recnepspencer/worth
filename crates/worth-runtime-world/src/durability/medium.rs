@@ -41,6 +41,21 @@ impl WorldDurableHomeBinding {
         self.program_revision
     }
 
+    pub(crate) fn prepare_program_history(
+        mut self,
+        steps: impl ExactSizeIterator<
+            Item = worth_foundational::facade::HomeProgramTransitionProgramStep,
+        >,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Self, super::WorldReadmissionDenial> {
+        let lineage = self
+            .lineage
+            .take()
+            .ok_or(super::WorldReadmissionDenial::ProgramRevisionMismatch)?;
+        self.lineage = Some(lineage.with_program_steps(steps, request)?);
+        Ok(self)
+    }
+
     pub(crate) fn successor(
         &self,
         program_revision: [u8; 32],
