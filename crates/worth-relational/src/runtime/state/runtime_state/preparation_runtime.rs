@@ -41,6 +41,7 @@ pub(crate) struct RelationalPreparationRuntime {
     pub(crate) config: Arc<RelationalRuntimeConfig>,
     pub(crate) schema_contract_runtime: Arc<SchemaContractRuntimeSubsystem>,
     pub(crate) configuration_generation: u64,
+    pub(crate) configuration_epoch: super::RelationalRuntimeConfigurationSnapshot,
     pub(crate) execution_contracts: Option<Arc<crate::runtime::RelationalRootExecutionContracts>>,
     pub(crate) execution_registry: Option<crate::branch::RetainedRelationalSchemaRegistry>,
     pub(crate) home_target: Option<Arc<crate::runtime::AdmittedRelationalHomeProgramTarget>>,
@@ -104,6 +105,7 @@ impl RelationalPreparationOwnerBinding {
             recovered_authored_index_writes: None,
             symbol_references: Arc::default(),
             commit_work_budget: None,
+            configuration_epoch: configuration.clone(),
             config: Arc::clone(&configuration.config),
             schema_contract_runtime: Arc::clone(&configuration.schema_contract_runtime),
             configuration_generation: configuration

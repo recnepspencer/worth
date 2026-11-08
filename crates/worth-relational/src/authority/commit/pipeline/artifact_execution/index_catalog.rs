@@ -21,7 +21,14 @@ pub(super) fn prepare(
             .checkpoint_selection
             .acknowledged_index_definition_frontier(),
     );
-    let mut captured = runtime.index_definitions.capture_catalog();
+    let mut captured = match runtime
+        .home_target
+        .as_ref()
+        .and_then(|target| target.index_definitions.as_ref())
+    {
+        Some(prepared) => prepared.captured.clone(),
+        None => runtime.index_definitions.capture_catalog(),
+    };
     if let Some(original) = &runtime.recovered_index_catalog {
         if original.next_index_id > captured.next_index_id {
             return Err(invalid(

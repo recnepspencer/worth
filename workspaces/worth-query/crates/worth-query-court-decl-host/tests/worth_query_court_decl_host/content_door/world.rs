@@ -73,26 +73,31 @@ pub fn install_with_calls(
         ((cancellation, calls),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         host_limits(WorthQueryAdmissionClock::system()),
-        |_, graph, installed| {
-            graph.bind_principal(
-                &installed.principal_binding(Actor::reference()).unwrap(),
-                WorthQueryApplicationPrincipalKey::new("operator").unwrap(),
-                1,
-                operator_identity(),
-                WorthQueryPrincipalMappingStatus::Enabled,
-            )?;
-            graph.bind_entity(
-                WorthQueryApplicationEntitySeed::new(
-                    Record::reference(),
-                    WorthQueryApplicationEntityKey::new("record").unwrap(),
-                )
-                .field(Key::reference(), "record".to_owned()),
-            )?;
-            Ok(())
-        },
+        |_, graph, installed| seed(graph, installed),
     )
     .unwrap()
 }
+pub fn seed(
+    graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
+    installed: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<Schema>,
+) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    graph.bind_principal(
+        &installed.principal_binding(Actor::reference()).unwrap(),
+        WorthQueryApplicationPrincipalKey::new("operator").unwrap(),
+        1,
+        operator_identity(),
+        WorthQueryPrincipalMappingStatus::Enabled,
+    )?;
+    graph.bind_entity(
+        WorthQueryApplicationEntitySeed::new(
+            Record::reference(),
+            WorthQueryApplicationEntityKey::new("record").unwrap(),
+        )
+        .field(Key::reference(), "record".to_owned()),
+    )?;
+    Ok(())
+}
+
 pub fn try_edit(
     host: &Host,
     mode: u64,

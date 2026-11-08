@@ -1,3 +1,5 @@
+mod home_program_binding;
+pub use home_program_binding::{PreparedWorldHomeProgramBinding, WorldHomeProgramBindingDenial};
 mod clock;
 pub(crate) mod interim_checkpoint;
 pub use interim_checkpoint::{

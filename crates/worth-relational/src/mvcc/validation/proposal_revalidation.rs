@@ -12,6 +12,28 @@ impl RelationalPreparationRuntime {
         #[cfg(test)]
         crate::mvcc::transaction::split_contacts::revalidation();
         self.ensure_validated_proposal_branch_is_current(&candidate)?;
+        if !candidate
+            .state
+            .receiver_epoch
+            .same_epoch(&self.configuration_epoch)
+        {
+            return Err(stale_validated_proposal(
+                "validated mutation belongs to an obsolete receiver epoch",
+            ));
+        }
+        let same_execution = match (
+            &candidate.state.execution_contracts,
+            &self.execution_contracts,
+        ) {
+            (None, None) => true,
+            (Some(before), Some(now)) => std::sync::Arc::ptr_eq(before, now),
+            (None, Some(_)) | (Some(_), None) => false,
+        };
+        if !same_execution {
+            return Err(stale_validated_proposal(
+                "validated mutation belongs to another root execution inventory",
+            ));
+        }
         if let Some(step) = candidate.state.validation_input.home_step()
             && !candidate
                 .state

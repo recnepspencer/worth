@@ -113,8 +113,13 @@ impl InterruptionViewBuilder {
         } else {
             None
         };
-        let tokens =
-            BuildingFixedBacking::allocate_reserved(count, reservation).map_err(Denial::Backing)?;
+        // Preserve the interruption observer's original admission semantics;
+        // unaccounted observation must not introduce a new live-control gate.
+        let status = reservation
+            .as_ref()
+            .and_then(|held| held.allocation_status());
+        let tokens = BuildingFixedBacking::allocate_reserved(count, reservation, status)
+            .map_err(Denial::Backing)?;
         Ok(Self { tokens, deadline })
     }
 

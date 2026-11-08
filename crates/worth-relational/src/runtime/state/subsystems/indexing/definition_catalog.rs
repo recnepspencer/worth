@@ -46,11 +46,15 @@ impl worth_execution::ChargedBytes for IndexCatalogCoverage {
 
 #[derive(Clone, Debug)]
 pub(crate) struct IndexDefinitionCatalog {
-    pub(super) definitions: BTreeMap<DerivedIndexId, Arc<DerivedIndexDefinition>>,
-    pub(super) field_definitions:
-        BTreeMap<AspectKey, BTreeMap<FieldKey, Vec<Arc<DerivedIndexDefinition>>>>,
+    pub(super) definitions:
+        BTreeMap<DerivedIndexId, crate::indexes::RetainedDerivedIndexDefinition>,
+    pub(super) field_definitions: BTreeMap<
+        AspectKey,
+        BTreeMap<FieldKey, Vec<crate::indexes::RetainedDerivedIndexDefinition>>,
+    >,
     introductions: BTreeMap<DerivedIndexId, u64>,
     coverage: IndexCatalogCoverage,
+    pub(super) backing: Option<Arc<super::definition_preparation::IndexDefinitionBacking>>,
 }
 impl Default for IndexDefinitionCatalog {
     fn default() -> Self {
@@ -58,6 +62,7 @@ impl Default for IndexDefinitionCatalog {
             definitions: BTreeMap::new(),
             field_definitions: BTreeMap::new(),
             introductions: BTreeMap::new(),
+            backing: None,
             coverage: IndexCatalogCoverage {
                 incarnation: incarnation(),
                 epoch: 0,
@@ -88,14 +93,17 @@ impl IndexDefinitionCatalog {
                 self.field_definitions.remove(&aspect);
             }
         }
-        let definition = Arc::new(definition);
+        let definition = crate::indexes::RetainedDerivedIndexDefinition::funded(
+            definition,
+            self.backing.clone(),
+        );
         if let Some((aspect, field)) = field_index_locator(&definition.kind) {
             self.field_definitions
                 .entry(aspect)
                 .or_default()
                 .entry(field)
                 .or_default()
-                .push(Arc::clone(&definition));
+                .push(definition.clone());
         }
         self.definitions.insert(definition.index_id, definition);
     }
@@ -124,7 +132,7 @@ impl IndexDefinitionCatalog {
         &self,
         aspect: &AspectKey,
         field: &FieldKey,
-        read: impl FnOnce(&[Arc<DerivedIndexDefinition>]) -> R,
+        read: impl FnOnce(&[crate::indexes::RetainedDerivedIndexDefinition]) -> R,
     ) -> R {
         read(
             self.field_definitions

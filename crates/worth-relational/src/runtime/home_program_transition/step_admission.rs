@@ -85,7 +85,11 @@ impl RelationalRuntime {
                 RelationalHomeProgramStepContracts::Target { contracts, .. },
                 HomeProgramTransitionStepRole::Target,
             ) => {
-                if contracts.catalog_digest() != envelope.catalog() {
+                if contracts.catalog_digest() != envelope.catalog()
+                    || contracts.schema_digest() != plan.target_meaning().schema()
+                    || contracts.target_meaning(request, step.step())?.carrier()
+                        != plan.target_meaning().carrier()
+                {
                     return Err(Denial::TargetCatalogMismatch);
                 }
             }
@@ -99,7 +103,15 @@ impl RelationalRuntime {
                     .execution_contracts
                     .get()
                     .ok_or(Denial::TargetCatalogMismatch)?;
-                if inherited.digest != envelope.catalog() {
+                if inherited.digest != envelope.catalog()
+                    || inherited.schema.authority_digest() != plan.target_meaning().schema().bytes()
+                    || inherited
+                        .schema
+                        .recorded_image(request)
+                        .map_err(Denial::SchemaImage)?
+                        .carrier_digest()
+                        != plan.target_meaning().carrier().bytes()
+                {
                     return Err(Denial::TargetCatalogMismatch);
                 }
             }

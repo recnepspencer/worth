@@ -22,7 +22,7 @@ pub struct PreparedEntityFieldLookup {
     runtime_identity: u64,
     instrumentation: crate::runtime::RuntimeInstrumentation,
     basis: ResidentVisibilitySnapshotBasis,
-    definition: Arc<DerivedIndexDefinition>,
+    definition: crate::indexes::RetainedDerivedIndexDefinition,
     generation: Arc<DerivedIndexGeneration>,
     kind: KindId,
 }
@@ -133,7 +133,7 @@ impl PreparedEntityFieldLookup {
             &mut read,
         )?;
         let outcome = BoundedEntityFieldLookupOutcome::new(
-            Arc::clone(&self.definition),
+            self.definition.clone(),
             self.generation.generation_id,
             candidates,
             examined,
@@ -243,7 +243,7 @@ impl PreparedEntityFieldLookup {
     pub(crate) fn pin(
         runtime_identity: u64,
         basis: ResidentVisibilitySnapshotBasis,
-        definition: Arc<DerivedIndexDefinition>,
+        definition: crate::indexes::RetainedDerivedIndexDefinition,
         kind: KindId,
         locator: &AspectFieldLocator,
         instrumentation: crate::runtime::RuntimeInstrumentation,

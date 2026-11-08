@@ -6,6 +6,31 @@ use crate::schema::data::RelationalSchemaRegistry;
 use std::sync::Arc;
 
 impl RelationalSchemaRegistry {
+    /// Validate the receiving carrier and cases before retaining an original
+    /// domain issuer. Newly declared domains use ordinary registration.
+    pub fn register_projected_member_domains_from_original(
+        self,
+        additions: Vec<Parts>,
+        original: &Self,
+    ) -> Result<Self, Denial> {
+        let identities = additions
+            .iter()
+            .map(|parts| parts.identity.clone())
+            .collect::<Vec<_>>();
+        let mut registry = self.register_projected_member_domains(additions)?;
+        for identity in identities {
+            if let Some(entry) = original.projected_member_domains.get(&identity) {
+                if registry.projected_member_domains[&identity].parts != entry.parts {
+                    return Err(Denial::ForeignDomain);
+                }
+                registry
+                    .projected_member_domains
+                    .insert(identity, entry.clone());
+            }
+        }
+        Ok(registry)
+    }
+
     pub fn register_projected_member_domains(
         mut self,
         additions: Vec<Parts>,

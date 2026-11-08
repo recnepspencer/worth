@@ -1,9 +1,7 @@
 //! Prepare one genuine intent and durable original World open, before Native.
 use super::*;
 use std::sync::{atomic::AtomicUsize, Arc};
-use worth_foundational::facade::{
-    HomeProgramTransitionPlanDigest, HomeProgramTransitionTargetMeaning,
-};
+use worth_foundational::facade::HomeProgramTransitionPlanDigest;
 use worth_relational::facade::runtime::{
     CustomInvariantRegistration, PreparedRelationalHomeProgramContracts,
 };
@@ -122,7 +120,7 @@ fn commit_intent_steps(
             source.clone(),
             HomeProgramTransitionPlanDigest::from_recorded([7; 32]),
             steps,
-            HomeProgramTransitionTargetMeaning::from_recorded(0, contracts.catalog_digest()),
+            contracts.target_meaning(execution, 0).unwrap(),
             &crate::batches::transition_body_roster(execution, steps),
             execution,
         )

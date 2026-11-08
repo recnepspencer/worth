@@ -10,11 +10,13 @@ mod journal_residency;
 mod merge_plan;
 mod original_inputs;
 mod original_schemas;
+pub(crate) use original_schemas::OriginalSchemaGraph;
 mod recovered_counter_capacity;
 mod recovered_lineage_artifacts;
 mod recovered_schema_basis;
 mod root_inventory;
 mod transition_replay;
+mod world_selection;
 
 use std::collections::BTreeSet;
 use std::sync::Arc;
@@ -65,8 +67,12 @@ pub(super) fn rebuild_runtime_from_plan(
     RelationalRecoveryStop,
 > {
     crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
-    let mut plan = admitted.into_plan();
-    let original_schemas = original_schemas::OriginalSchemaGraph::admit(&mut plan, execution)?;
+    let (mut plan, prepared_schemas) = admitted.into_parts();
+    let world_selection = world_selection::WorldSelectionReplay::prepare(&plan, execution)?;
+    let original_schemas = match prepared_schemas {
+        Some(graph) => Some(graph),
+        None => OriginalSchemaGraph::admit(&mut plan, execution)?,
+    };
     let tail_envelopes = plan.tail_envelopes_in_stream_order();
     validate_tail_lineage_allocator_capacity(tail_envelopes.iter().copied())?;
     validate_recovered_lineage_artifacts(plan.checkpoint.as_ref(), tail_envelopes.iter().copied())?;
@@ -145,6 +151,15 @@ pub(super) fn rebuild_runtime_from_plan(
             &mut pending_transitions,
             pending.position(),
         ) {
+            if let Some(selection) = &world_selection {
+                selection.before_transition(
+                    execution,
+                    &restored,
+                    &plan,
+                    &mut recovered_roots,
+                    &transition,
+                )?;
+            }
             transition_replay::replay_branch_transition(
                 execution,
                 &mut restored,
@@ -155,6 +170,9 @@ pub(super) fn rebuild_runtime_from_plan(
             if let Some(graph) = &original_schemas {
                 original_inputs::install_if_due(&restored, graph, execution)?;
             }
+        }
+        if let Some(selection) = &world_selection {
+            selection.before(execution, &restored, &plan, &mut recovered_roots, &pending)?;
         }
         if let Some(graph) = &original_schemas {
             original_inputs::require_replay_prestate(&restored, graph, pending.envelope())?;
@@ -190,6 +208,15 @@ pub(super) fn rebuild_runtime_from_plan(
         finalized_tail.push(positioned);
     }
     for transition in pending_transitions {
+        if let Some(selection) = &world_selection {
+            selection.before_transition(
+                execution,
+                &restored,
+                &plan,
+                &mut recovered_roots,
+                &transition,
+            )?;
+        }
         transition_replay::replay_branch_transition(
             execution,
             &mut restored,
@@ -200,6 +227,9 @@ pub(super) fn rebuild_runtime_from_plan(
         if let Some(graph) = &original_schemas {
             original_inputs::install_if_due(&restored, graph, execution)?;
         }
+    }
+    if let Some(selection) = &world_selection {
+        selection.finish(execution, &restored, &plan, &mut recovered_roots)?;
     }
     if original_schemas.is_some() {
         restored.restore_source_replay_configuration(

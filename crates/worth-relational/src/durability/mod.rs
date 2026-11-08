@@ -21,3 +21,10 @@ pub(crate) mod medium;
 pub(crate) mod migration;
 pub(crate) mod recovery;
 pub(crate) mod source_initial_inputs;
+
+mod home_world_catalog;
+pub use home_world_catalog::{
+    RelationalWorldCatalogDenial, RelationalWorldEffectCoordinates,
+    RelationalWorldOriginalDescription, RelationalWorldSourceCatalog,
+    RelationalWorldSourceDescription,
+};

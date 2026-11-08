@@ -164,6 +164,19 @@ impl RelationalCanonicalPublicationRoutes {
         })
     }
 
+    /// Immutable source lineage follows the same original-input capture epoch.
+    /// The seal and descriptions retain no live World port or Home lease.
+    pub(crate) fn retain_home_world_selection(
+        &self,
+        source: Arc<
+            worth_proof::VerifiedHomeWorldSelection<
+                Arc<crate::durability::RelationalWorldSourceCatalog>,
+            >,
+        >,
+    ) {
+        self.branch_transitions.state().home_world_selection = Some(source);
+    }
+
     pub(crate) fn retain_accepted_initial_inputs(
         &self,
         inputs: Arc<crate::durability::source_initial_inputs::image::InitialInputsImage>,

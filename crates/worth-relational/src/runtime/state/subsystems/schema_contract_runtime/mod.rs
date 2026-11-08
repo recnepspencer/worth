@@ -11,6 +11,11 @@ pub(crate) struct SchemaContractRuntimeSubsystem {
     pub(crate) custom_invariant_registries: FrozenCustomInvariantRegistry,
     pub(crate) custom_invariant_generation: u64,
     pub(crate) initial_custom_invariants_sealed: bool,
+    pub(in crate::runtime) home_configuration_backing: Option<
+        std::sync::Arc<
+            crate::runtime::home_program_transition::configuration::HomeConfigurationBacking,
+        >,
+    >,
 }
 
 impl RuntimeSubsystem for SchemaContractRuntimeSubsystem {
@@ -68,6 +73,7 @@ impl SchemaContractRuntimeSubsystem {
             custom_invariant_registries,
             custom_invariant_generation,
             initial_custom_invariants_sealed,
+            home_configuration_backing: None,
         })
     }
 }

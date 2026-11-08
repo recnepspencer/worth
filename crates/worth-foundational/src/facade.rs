@@ -406,10 +406,12 @@ pub use crate::durability::{
     DurableProductUnpublishedOwnerEffectsIdentity, DurableQueryOutputSettlement,
     DurableStateFamily, DurableWorldBootstrapAttemptIdentity, DurableWorldOwnerIdentity,
     HomeIdentity, HomeIdentityDenial, HomeIncarnation, HomeIncarnationExhausted,
-    HomeProgramBinding, HomeProgramTransitionBodyDigest, HomeProgramTransitionCaller,
-    HomeProgramTransitionCallerDenial, HomeProgramTransitionCatalogDigest,
-    HomeProgramTransitionDescriptionDenial, HomeProgramTransitionIdentity,
+    HomeProgramBinding, HomeProgramRevisionBoundary, HomeProgramTransitionBodyDigest,
+    HomeProgramTransitionCaller, HomeProgramTransitionCallerDenial,
+    HomeProgramTransitionCatalogDigest, HomeProgramTransitionDescriptionDenial,
+    HomeProgramTransitionIdentity, HomeProgramTransitionInstallationBinding,
     HomeProgramTransitionPlanDescription, HomeProgramTransitionPlanDigest,
+    HomeProgramTransitionSchemaCarrierDigest, HomeProgramTransitionSchemaDigest,
     HomeProgramTransitionStepAssociation, HomeProgramTransitionStepRole,
     HomeProgramTransitionTargetMeaning, MemoryProductBranchReference,
     NativeCheckpointBranchObservation, NativeCheckpointBranchReference,
@@ -741,3 +743,5 @@ pub use crate::value_shape::{
 pub use worth_value_shape_derive::{ChargedBytes, WorthValue};
 
 pub use crate::projected_candidate_content::ProjectedCandidateContentV1;
+
+pub use crate::durability::WorldOriginalFate;

@@ -92,7 +92,8 @@ impl IndexAuthority<'_> {
             {
                 return Err(DerivedIndexMaintenanceDenialKind::CommitMismatch);
             }
-            let prepared = self.prepare_refresh(execution, &request, None, &projection, work)?;
+            let prepared =
+                self.prepare_refresh(execution, &request, None, None, &projection, work)?;
             prepared.publish_admitted(self.runtime, work)
         })?;
         Ok(DerivedIndexMaintenanceOutcome {
@@ -158,7 +159,7 @@ impl IndexAuthority<'_> {
             .transpose()?;
         work.prepare(branch.0.len().min(request.branch_id.0.len()) as u64 + 1, 0)?;
         basis::validate(request, &observation, before.as_ref(), &after, execution)?;
-        self.prepare_refresh(execution, request, before.as_ref(), &after, work)
+        self.prepare_refresh(execution, request, before.as_ref(), None, &after, work)
     }
 }
 

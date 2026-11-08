@@ -8,16 +8,22 @@ use crate::history::data::BranchId;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
 
 mod axes;
-use axes::Axes;
+use axes::{Axes, ObservationKey};
+mod transitions;
+mod world_sources;
+use world_sources::WorldSources;
 
 struct Fold<'a> {
     current: ExecutionOrderedMap<&'a BranchId, Axes<'a>>,
-    observations: ExecutionOrderedMap<(&'a BranchId, u64, u8), Axes<'a>>,
+    observations: ExecutionOrderedMap<ObservationKey<'a>, Axes<'a>>,
+    canonical: ExecutionOrderedMap<crate::history::data::CommitId, Axes<'a>>,
 }
 pub(super) fn validate(
     initial: &InitialInputsImage,
     normalized: &NormalizedOriginalInputs,
     manifest: &RelationalCheckpointManifest,
+    schemas: &[crate::durability::data::DurableBranchRootSchemaImage],
+    world: Option<&crate::durability::RelationalWorldSourceCatalog>,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<(), Refusal> {
     let Some(InitialInputEntry::Birth(birth)) = initial.entries.first() else {
@@ -26,8 +32,10 @@ pub(super) fn validate(
     let mut fold = Fold {
         current: Default::default(),
         observations: Default::default(),
+        canonical: Default::default(),
     };
     fold.record(&initial.main, Axes::empty(birth), request)?;
+    let mut sources = WorldSources::prepare(world, schemas, request)?;
     let mut transition = 0usize;
     let mut installed = false;
     for position in 0..=normalized.canonical.len() {
@@ -36,6 +44,7 @@ pub(super) fn validate(
             if entry.follows.0 != position as u64 {
                 break;
             }
+            sources.before_transition(&mut fold, entry, request)?;
             fold.transition(&initial.main, entry, request)?;
             transition += 1;
             fold.install(initial, position, transition, &mut installed, request)?;
@@ -45,11 +54,8 @@ pub(super) fn validate(
         };
         let index = manifest.commits.get(position).ok_or(Refusal::Malformed)?;
         let branch = &index.commit.branch_id;
-        let mut state = fold
-            .current
-            .get(&branch)
-            .cloned()
-            .ok_or(Refusal::Malformed)?;
+        let mut state = sources.before_canonical(&mut fold, index, request)?;
+        let before = state.clone();
         if state.removed
             || state.lifecycle != Lifecycle::Live
             || state.schema != record.prestate_schema
@@ -63,11 +69,18 @@ pub(super) fn validate(
         state.truth = state.truth.checked_advance().ok_or(Refusal::Malformed)?;
         state.commit = Some(index);
         state.schema = record.result_schema;
+        sources.retain(index, before, state.clone(), request)?;
+        if world.is_some() {
+            fold.canonical
+                .insert_cloned_native_for_request(&index.commit.commit_id, &state, *request)
+                .map_err(map)?;
+        }
         fold.record(branch, state, request)?;
     }
     if transition != normalized.transitions.len() || installed != (initial.entries.len() == 2) {
         return Err(Refusal::Malformed);
     }
+    sources.finish(&mut fold, &manifest.branch_cells, request)?;
     if manifest.branch_cells.len()
         != fold
             .current
@@ -126,11 +139,7 @@ impl<'a> Fold<'a> {
     ) -> Result<(), Refusal> {
         self.observations
             .insert_cloned_native_for_request(
-                &(
-                    branch,
-                    state.generation.get(),
-                    axes::posture(state.lifecycle),
-                ),
+                &ObservationKey::of_axes(branch, &state),
                 &state,
                 *request,
             )
@@ -166,127 +175,14 @@ impl<'a> Fold<'a> {
         *installed = true;
         Ok(())
     }
-    fn transition(
-        &mut self,
-        main: &BranchId,
-        entry: &'a TransitionOriginalRecord,
-        request: &ExecutionRequest<'_, '_>,
-    ) -> Result<(), Refusal> {
-        if matches!(&entry.transition, Transition::RetainedFork { .. }) {
-            return Err(Refusal::Native(crate::durability::data::DurabilityError::new(
-                crate::durability::data::RecoveryFailureClass::UnsupportedRetainedForkReplay,
-                "retained-source forks require original live root custody; historical tail reconstruction is unsupported",
-            ).into()));
-        }
-        if let Transition::Fork {
-            target,
-            source,
-            source_generation,
-            source_truth_version,
-            source_head,
-        } = &entry.transition
-        {
-            let mut state = self
-                .current
-                .get(&source)
-                .cloned()
-                .ok_or(Refusal::Malformed)?;
-            if self.current.get(&target).is_some()
-                || state.removed
-                || state.lifecycle != Lifecycle::Live
-                || state.generation != *source_generation
-                || state.truth != *source_truth_version
-                || !state.matches_basis(source_head)
-                || state.schema != entry.schema
-            {
-                return Err(Refusal::Malformed);
-            }
-            state.generation = worth_foundational::FoundationalBranchReferenceGeneration::initial();
-            state.truth = crate::branch::RelationalBranchVersion::initial();
-            return self.record(target, state, request);
-        }
-        let branch = entry.transition.branch();
-        let mut state = self
-            .current
-            .get(&branch)
-            .cloned()
-            .ok_or(Refusal::Malformed)?;
-        let (generation, truth) = match &entry.transition {
-            Transition::Archive {
-                prior_generation,
-                prior_truth_version,
-                ..
-            }
-            | Transition::DeletionRequested {
-                prior_generation,
-                prior_truth_version,
-                ..
-            }
-            | Transition::Delete {
-                prior_generation,
-                prior_truth_version,
-                ..
-            } => (*prior_generation, *prior_truth_version),
-            Transition::Fork { .. } | Transition::RetainedFork { .. } => {
-                unreachable!("fork is handled above")
-            }
-        };
-        if state.removed
-            || state.generation != generation
-            || state.truth != truth
-            || state.schema != entry.schema
-        {
-            return Err(Refusal::Malformed);
-        }
-        match &entry.transition {
-            Transition::Archive { .. } => {
-                if state.lifecycle != Lifecycle::Live {
-                    return Err(Refusal::Malformed);
-                }
-                state.generation = state
-                    .generation
-                    .checked_advance()
-                    .map_err(|_| Refusal::Malformed)?;
-                state.lifecycle = Lifecycle::Archived;
-            }
-            Transition::DeletionRequested { .. } => {
-                if branch == main {
-                    return Err(Refusal::Malformed);
-                }
-                state.lifecycle = Lifecycle::Deleting;
-            }
-            Transition::Delete { head_commit, .. } => {
-                if branch == main
-                    || state.commit.map(|index| index.commit.commit_id) != *head_commit
-                {
-                    return Err(Refusal::Malformed);
-                }
-                state.lifecycle = Lifecycle::Deleting;
-                state.removed = true;
-            }
-            Transition::Fork { .. } | Transition::RetainedFork { .. } => {
-                unreachable!("fork is handled above")
-            }
-        }
-        self.record(branch, state, request)
-    }
     fn require_component(
         &self,
         descriptor: &crate::branch::RelationalBranchBasisDescriptor,
         schema: [u8; 32],
     ) -> Result<(), Refusal> {
-        let posture = match descriptor.posture() {
-            crate::branch::RelationalBranchBasisPosture::Live => 0,
-            crate::branch::RelationalBranchBasisPosture::Archived => 1,
-            crate::branch::RelationalBranchBasisPosture::Deleting => 2,
-        };
         let state = self
             .observations
-            .get(&(
-                descriptor.branch_id(),
-                descriptor.reference().generation().get(),
-                posture,
-            ))
+            .get(&ObservationKey::of_descriptor(descriptor))
             .ok_or(Refusal::Malformed)?;
         if state.truth != descriptor.truth_version()
             || state.schema != schema

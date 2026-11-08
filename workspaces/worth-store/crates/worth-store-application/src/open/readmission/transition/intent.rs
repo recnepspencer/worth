@@ -81,6 +81,7 @@ pub enum ApplicationHomeTransitionIntentDenial {
     StepAlreadyClaimed,
     TransitionResumeRequired,
     ForeignWorld,
+    WorldLineage(worth_runtime_world::facade::WorldReadmissionDenial),
     JournalUnresolved,
     JournalSourceChanged,
 }

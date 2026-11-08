@@ -1921,6 +1921,7 @@ dependencies = [
 name = "worth-court-runtime-world"
 version = "0.1.0"
 dependencies = [
+ "sha2",
  "worth-execution",
  "worth-foundational",
  "worth-proof",
@@ -1929,6 +1930,7 @@ dependencies = [
  "worth-runtime-world",
  "worth-signal",
  "worth-testkit-compiler",
+ "worth-testkit-relational",
 ]
 
 [[package]]
@@ -2138,6 +2140,7 @@ dependencies = [
 name = "worth-query-host"
 version = "0.1.0"
 dependencies = [
+ "sha2",
  "worth-execution",
  "worth-foundational",
  "worth-proof",
@@ -2146,6 +2149,9 @@ dependencies = [
  "worth-query-execution",
  "worth-query-installation",
  "worth-query-publication",
+ "worth-relational",
+ "worth-runtime-bridge",
+ "worth-runtime-world",
  "worth-store-application",
 ]
 

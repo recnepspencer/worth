@@ -104,6 +104,8 @@ pub(super) fn complete(
             validated_against_commit,
             validated_against_version,
             validated_against_branch_version: basis.descriptor().truth_version(),
+            receiver_epoch: owner.configuration_epoch.clone(),
+            execution_contracts: owner.execution_contracts.clone(),
             custom_invariant_generation: owner.schema_contract_runtime.custom_invariant_generation,
             batch_count,
             strategy_commit_artifacts,

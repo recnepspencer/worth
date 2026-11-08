@@ -35,7 +35,11 @@ impl<'request, 'authority, T> ExecutionRequestArrayBuilder<'request, 'authority,
                 context
                     .poll()
                     .map_err(|cause| Denial::Request(WorkCeilingDenial::Stopped(cause)))?;
-                BuildingFixedBacking::allocate_reserved(element_count, reservation)
+                let status = request
+                    .allocation_policy()
+                    .status(Some(quote))
+                    .map_err(Denial::Allocation)?;
+                BuildingFixedBacking::allocate_reserved(element_count, reservation, status)
                     .map_err(Denial::Allocation)
             })());
         });

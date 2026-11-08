@@ -18,6 +18,7 @@ impl SubmittedContinuationWork {
             source.as_ref(),
             common.binding.binding(),
             request,
+            None,
         )
         .map_err(Denial::Readmission)?;
         let WorldRecord::Occurrence {

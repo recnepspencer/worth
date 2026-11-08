@@ -78,7 +78,7 @@ impl CurrentOriginal {
                 &claim,
                 HomeProgramTransitionPlanDigest::from_recorded([7; 32]),
                 1,
-                HomeProgramTransitionTargetMeaning::from_recorded(0, contracts.catalog_digest()),
+                contracts.target_meaning(request, 0).unwrap(),
                 &crate::batches::transition_body_roster(request, 1),
                 request,
             )

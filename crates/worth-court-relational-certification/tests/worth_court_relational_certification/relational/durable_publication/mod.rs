@@ -3,6 +3,7 @@ mod associated_effects;
 mod cold_envelope_custody;
 mod index_catalog;
 mod initial_schema_recovery;
+mod prepared_home_schema;
 mod recorded_basis;
 mod recorded_component_checkpoint;
 mod recorded_component_recovery;

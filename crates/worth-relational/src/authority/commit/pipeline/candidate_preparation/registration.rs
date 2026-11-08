@@ -101,6 +101,7 @@ impl CandidateRegistration {
         let candidate = crate::mvcc::PreparedRelationalCommitCandidate::new(
             runtime_instance_id,
             runtime.configuration_generation,
+            runtime.configuration_epoch.clone(),
             publication_binding,
             transaction_id,
             branch_id,

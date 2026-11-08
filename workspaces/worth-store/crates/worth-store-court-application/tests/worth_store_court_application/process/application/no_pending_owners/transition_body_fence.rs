@@ -88,7 +88,7 @@ fn an_original_home_step_refuses_a_substituted_body_before_rules_or_publication(
 }
 
 #[test]
-fn changed_body_rosters_refuse_before_claiming_the_original_resumed_step() {
+fn changed_native_meaning_or_body_rosters_refuse_before_claiming_the_original_resumed_step() {
     let directory = tempfile::tempdir().unwrap();
     let request = crate::workload::serial_request();
     let execution = ExecutionRequest::serial(&request);
@@ -114,8 +114,27 @@ fn changed_body_rosters_refuse_before_claiming_the_original_resumed_step() {
         .observation_port()
         .observe_root_product_branch()
         .unwrap();
-    let target = HomeProgramTransitionTargetMeaning::from_recorded(0, contracts.catalog_digest());
+    let target = contracts.target_meaning(&execution, 0).unwrap();
     let digest = HomeProgramTransitionPlanDigest::from_recorded([7; 32]);
+    let changed_schema = HomeProgramTransitionTargetMeaning::from_recorded(
+        target.step(),
+        target.catalog(),
+        worth_foundational::facade::HomeProgramTransitionSchemaDigest::from_recorded([42; 32]),
+        target.carrier(),
+    );
+    let refused = fixture.home.admit_unopened_home_program_transition_step(
+        0,
+        &source,
+        digest,
+        1,
+        changed_schema,
+        &crate::batches::transition_body_roster(&execution, 1),
+        &execution,
+    );
+    assert!(matches!(
+        refused,
+        Err(ApplicationHomeTransitionIntentDenial::TransitionPlanDrift)
+    ));
     let mut edited = crate::batches::transition_body_roster(&execution, 1);
     edited[0] = crate::batches::transition_body_roster(&execution, 2)[1];
     let refused = fixture.home.admit_unopened_home_program_transition_step(

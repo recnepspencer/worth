@@ -10,6 +10,11 @@ pub(crate) use codec_transition::{
 pub(super) mod admission;
 pub(super) mod codec_transition;
 mod declared_schema;
+mod prepared_home;
+pub use prepared_home::{
+    PreparedRelationalHomeRecovery, RefusedPreparedRelationalHomeRecovery,
+    RelationalHomeRecoveryPreparationDenial,
+};
 mod home_program_transition;
 pub use home_program_transition::{
     RelationalHomeProgramTransitionSource, RelationalHomeProgramTransitionSourceRefusal,
@@ -107,6 +112,15 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
     {
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         let admitted = admit_recovery_or_emit(self.runtime, plan)?;
+        self.recover_admitted_with_authority(execution, admitted)
+    }
+
+    fn recover_admitted_with_authority(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        admitted: admission::AdmittedRecoveryPlan,
+    ) -> Result<(RuntimeRecoveryOutcome, RecoveredRelationalRuntimeAuthority), RelationalRecoveryStop>
+    {
         let initial_schema_authority = self.runtime.initial_schema_authority_snapshot();
         let mut material = rebuild_admitted_recovery_or_emit(execution, self.runtime, admitted)?;
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;

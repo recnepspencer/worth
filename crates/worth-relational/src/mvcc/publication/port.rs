@@ -19,6 +19,7 @@ pub struct RelationalPublicationPort {
     publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
     branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
     history: crate::runtime::RelationalPreparationHistory,
+    index_definitions: crate::runtime::IndexDefinitionReadBinding,
     medium: Option<Arc<crate::durability::medium::RelationalDurableMediumBinding>>,
 }
 
@@ -57,6 +58,7 @@ impl RelationalPublicationPort {
         publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
         branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
         history: crate::runtime::RelationalPreparationHistory,
+        index_definitions: crate::runtime::IndexDefinitionReadBinding,
         medium: Option<Arc<crate::durability::medium::RelationalDurableMediumBinding>>,
     ) -> Self {
         Self {
@@ -66,6 +68,7 @@ impl RelationalPublicationPort {
             publication_binding,
             branch_head_versions,
             history,
+            index_definitions,
             medium,
         }
     }
@@ -152,6 +155,7 @@ impl crate::runtime::RelationalRuntime {
             self.publication_binding(),
             self.history.branch_head_version_index(),
             self.history.preparation_binding(),
+            self.indexes.definition_read_binding(),
             self.durability.medium(),
         )
     }

@@ -15,13 +15,17 @@ impl RelationalRuntime {
         basis: &AdmittedRelationalBranchBasis,
         contracts: Arc<SchemaContractRuntimeSubsystem>,
     ) -> Result<RelationalHomeProgramPredecessorCatalog, RelationalHomeProgramContractDenial> {
+        // Exclusive recovery authenticated A; affinity is issued for this
+        // receiver independently of A's retained execution meaning.
+        let receiver_epoch = self.configuration_binding().snapshot();
         let schema = basis.inner.root.retained_schema_authority();
         let digest = catalog_digest::digest_frozen(
             schema.authority_digest(),
             &contracts.custom_invariant_registries,
             request,
         )?;
-        let contracts = self.retain_home_program_contracts(request, schema, contracts, digest)?;
+        let contracts =
+            self.retain_home_program_contracts(request, schema, contracts, digest, receiver_epoch)?;
         request
             .consult()
             .map_err(RelationalHomeProgramContractDenial::Request)?;

@@ -24,6 +24,8 @@ fn plan(home: u8, ordinal: u64, digest: u8, steps: u32) -> HomeProgramTransition
         HomeProgramTransitionTargetMeaning::from_recorded(
             0,
             HomeProgramTransitionCatalogDigest::from_recorded([9; 32]),
+            HomeProgramTransitionSchemaDigest::from_recorded([11; 32]),
+            HomeProgramTransitionSchemaCarrierDigest::from_recorded([13; 32]),
         ),
     )
     .unwrap()
@@ -88,10 +90,29 @@ fn step_commitment_binds_the_exact_position_and_original_world_attempt() {
 fn target_meaning_and_its_catalog_are_bound_before_any_step_can_be_admitted() {
     let original = plan(1, 1, 7, 3);
     for target in [
-        HomeProgramTransitionTargetMeaning::from_recorded(1, original.target_meaning().catalog()),
+        HomeProgramTransitionTargetMeaning::from_recorded(
+            0,
+            original.target_meaning().catalog(),
+            original.target_meaning().schema(),
+            HomeProgramTransitionSchemaCarrierDigest::from_recorded([14; 32]),
+        ),
+        HomeProgramTransitionTargetMeaning::from_recorded(
+            0,
+            original.target_meaning().catalog(),
+            HomeProgramTransitionSchemaDigest::from_recorded([12; 32]),
+            HomeProgramTransitionSchemaCarrierDigest::from_recorded([13; 32]),
+        ),
+        HomeProgramTransitionTargetMeaning::from_recorded(
+            1,
+            original.target_meaning().catalog(),
+            original.target_meaning().schema(),
+            original.target_meaning().carrier(),
+        ),
         HomeProgramTransitionTargetMeaning::from_recorded(
             0,
             HomeProgramTransitionCatalogDigest::from_recorded([10; 32]),
+            HomeProgramTransitionSchemaDigest::from_recorded([11; 32]),
+            HomeProgramTransitionSchemaCarrierDigest::from_recorded([13; 32]),
         ),
     ] {
         let changed = HomeProgramTransitionPlanDescription::from_recorded(
@@ -113,6 +134,8 @@ fn target_meaning_and_its_catalog_are_bound_before_any_step_can_be_admitted() {
             HomeProgramTransitionTargetMeaning::from_recorded(
                 original.steps(),
                 original.target_meaning().catalog(),
+                original.target_meaning().schema(),
+                original.target_meaning().carrier(),
             ),
         ),
         Err(HomeProgramTransitionDescriptionDenial::StepOutOfRange),

@@ -51,7 +51,8 @@ fn companion_historical_rows_survive_real_transition_production_preserve_and_reo
     successor::output::reset_decodes();
     let funding = worth_execution::ExecutionResourceLease::serial(
         super::super::capture_child::complete_capture_funding(),
-    ).unwrap();
+    )
+    .unwrap();
     let mut callbacks = 0;
     let target = transition_funded(
         checkpoint,

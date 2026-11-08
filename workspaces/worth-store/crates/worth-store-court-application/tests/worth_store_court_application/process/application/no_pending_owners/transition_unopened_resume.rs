@@ -5,9 +5,7 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
-use worth_foundational::facade::{
-    HomeProgramTransitionPlanDigest, HomeProgramTransitionTargetMeaning,
-};
+use worth_foundational::facade::HomeProgramTransitionPlanDigest;
 use worth_relational::facade::mvcc::{RelationalCallerAssociation, RelationalTransactionIntent};
 use worth_runtime_world::facade::{
     NoEffectCause, RuntimeWorldCancellationSource, WorldHomeTransitionUnopenedDenial as Denial,
@@ -46,8 +44,7 @@ fn an_intent_only_restart_starts_its_original_assignment_once_and_keeps_refused_
             .observe_root_product_branch()
             .unwrap();
         let contracts = original::contracts(&fixture, &execution, evaluated.clone());
-        let target =
-            HomeProgramTransitionTargetMeaning::from_recorded(0, contracts.catalog_digest());
+        let target = contracts.target_meaning(&execution, 0).unwrap();
         let mut grant = fixture
             .home
             .admit_unopened_home_program_transition_step(
@@ -257,7 +254,7 @@ fn an_unopened_execution_witness_cannot_restart_a_durable_original_open() {
         .observe_root_product_branch()
         .unwrap();
     let contracts = original::contracts(&fixture, &execution, evaluated.clone());
-    let target = HomeProgramTransitionTargetMeaning::from_recorded(0, contracts.catalog_digest());
+    let target = contracts.target_meaning(&execution, 0).unwrap();
     let mut grant = fixture
         .home
         .admit_unopened_home_program_transition_step(

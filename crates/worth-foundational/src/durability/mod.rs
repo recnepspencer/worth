@@ -7,7 +7,11 @@ pub use native_checkpoint_reference::{
     NativeCheckpointBranchTarget,
 };
 mod home_binding;
+mod home_installation_transition;
+pub use home_installation_transition::HomeProgramTransitionInstallationBinding;
+mod home_program_revision;
 mod home_program_transition;
+pub use home_program_revision::HomeProgramRevisionBoundary;
 mod home_transition_caller;
 mod home_transition_plan;
 mod home_transition_target;
@@ -25,7 +29,8 @@ pub use home_transition_plan::{
     HomeProgramTransitionDescriptionDenial, HomeProgramTransitionPlanDescription,
 };
 pub use home_transition_target::{
-    HomeProgramTransitionCatalogDigest, HomeProgramTransitionTargetMeaning,
+    HomeProgramTransitionCatalogDigest, HomeProgramTransitionSchemaCarrierDigest,
+    HomeProgramTransitionSchemaDigest, HomeProgramTransitionTargetMeaning,
 };
 mod world_identity;
 mod world_journal;
@@ -69,3 +74,6 @@ pub use home_identity::{HomeIdentity, HomeIdentityDenial};
 pub use home_incarnation::{HomeIncarnation, HomeIncarnationExhausted};
 pub use owner_family::{DurableOwnerFamily, UnsupportedDurableOwnerTag};
 pub use retention_class::{DurableArtifactRetention, RetentionClass};
+
+mod world_original_fate;
+pub use world_original_fate::WorldOriginalFate;

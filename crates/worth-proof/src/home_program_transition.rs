@@ -1,6 +1,10 @@
 //! Exact Home-owner admission across transition reservation and execution.
 use crate::HomeIncarnationFence;
 use std::sync::Arc;
+mod completion;
+pub use completion::CompletedHomeProgramTransitionSteps;
+mod successor;
+pub use successor::AdmittedHomeProgramTransitionSuccessor;
 mod catalog;
 pub use catalog::AdmittedHomeProgramTransitionCatalog;
 mod execution;
@@ -76,6 +80,7 @@ pub enum HomeProgramTransitionAdmissionDenial {
     ForeignOwner,
     CommitmentMismatch,
     CallerAssociationMismatch,
+    SourceMismatch,
 }
 
 impl HomeProgramTransitionOwner {

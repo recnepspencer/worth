@@ -196,6 +196,9 @@ pub enum RelationalPublicationDenial {
     HomeProgramTransition(crate::durability::medium::RelationalHomeProgramWriteDenial),
     /// The selected Home root has no matching admitted execution inventory.
     HomeProgramContractsRequired,
+    HomeProgramIndexDefinitionsRequired,
+    StaleIndexDefinitions,
+    IndexDefinitionPublicationContended,
     CanonicalArtifactEncoding(
         crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial,
     ),
@@ -203,6 +206,8 @@ pub enum RelationalPublicationDenial {
     CutoverDeadlineElapsed,
     CurrentReadDependency(super::RelationalPublicationReadDependencyDenial),
     RecoveredCodecTransitionRequired,
+    /// The coherent receiver pair changed, including same-generation replay replacement.
+    StaleConfigurationEpoch,
     StaleInvariantGeneration {
         expected_generation: u64,
         actual_generation: u64,

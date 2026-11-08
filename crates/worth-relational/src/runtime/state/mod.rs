@@ -4,6 +4,10 @@ pub(crate) use subsystems::{
     OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
     OriginalEmptySchemaObservation, RetainedBranchTransition,
 };
+pub use subsystems::{
+    PreparedRelationalIndexDefinitions, RelationalIndexDefinitionPreparation,
+    RelationalIndexDefinitionPreparationDenial,
+};
 mod runtime_state;
 mod subsystems;
 

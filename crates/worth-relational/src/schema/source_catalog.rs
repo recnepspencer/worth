@@ -50,6 +50,43 @@ impl DerivedCatalogEntry {
     }
 }
 
+impl RelationalSchemaRegistry {
+    /// Compile receiving definitions before retaining the original registered
+    /// issuers. Descriptive equality alone never issues an operational grant.
+    pub fn register_derived_relations_from_original(
+        self,
+        additions: Vec<Parts>,
+        original: &Self,
+    ) -> Result<Self, DerivedRelationDenial> {
+        let entries = additions
+            .into_iter()
+            .map(
+                |parts| match original.derived_relations.get(&parts.identity) {
+                    Some(entry) if entry.parts == parts => {
+                        Ok(DerivedCatalogEntry::Retained(entry.clone()))
+                    }
+                    Some(_) => Err(DerivedRelationDenial::ForeignDefinition),
+                    None => Ok(DerivedCatalogEntry::Meaning(parts)),
+                },
+            )
+            .collect::<Result<Vec<_>, _>>()?;
+        install(self, [], entries).map_err(|cause| match cause {
+            SourceCatalogDenial::Derived(cause) => cause,
+            SourceCatalogDenial::MissingPhysicalSource(kind) => {
+                DerivedRelationDenial::InvalidPhysicalSource(kind)
+            }
+            SourceCatalogDenial::MissingDerivedSource(identity) => {
+                DerivedRelationDenial::MissingDefinition(identity)
+            }
+            SourceCatalogDenial::DependencyCycle(_) => DerivedRelationDenial::CyclicDefinitions,
+            SourceCatalogDenial::CompiledMeaningMismatch(_) => {
+                DerivedRelationDenial::ForeignDefinition
+            }
+            SourceCatalogDenial::Schema(_) => DerivedRelationDenial::InvalidExpression,
+        })
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub(crate) enum SourceCatalogNode {
     Membership(KindId),

@@ -42,6 +42,7 @@ where
                 &self.prepared.state.support.roster,
                 &self.prepared.state.support.initial_revision,
                 &root,
+                self.prepared.state.transition_installation.as_ref(),
             ) {
                 Ok(publication) => publication,
                 Err(cause) => {

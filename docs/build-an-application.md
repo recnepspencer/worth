@@ -2034,7 +2034,7 @@ valid durable retry is separate from reusing a stale selector.
 Supply `WorthQueryApplicationProgramRoster::new().support(successor)` as the
 roster argument when a validated successor must be installed. Roster support is
 not permission to transition an existing Directory to different program/schema
-meaning. The development workflow for such changes remains pending below.
+meaning. Use the Directory development workflow in §4.4 for such changes.
 MemoryOnly retains its ordinary roster and branch-adoption contracts in §7.
 
 ### Commit, retry and close a Directory Home
@@ -2630,7 +2630,47 @@ See [native source and cleanup custody](../crates/worth-runtime-world/README.md#
 
 ### 4.4 Checkpoint program transitions
 
-#### Development workflow — pending (owner P-C, D16)
+#### Development workflow for Directory Homes
+
+Keep the predecessor's complete declaration, validated program and configuration
+available alongside the successor. Each schema type owns a closed static
+declaration: a schema edit needs a corresponding successor schema definition,
+not a different declaration passed under the old type. The latter refuses with
+`SchemaMeaningChanged`.
+
+Construct the successor Home request, then call
+`with_program_transition(predecessor, resources, author)` and open it through
+the same bootstrap advancement. The predecessor request supplies the old
+meaning; its location and initializer do not run. The successor request selects
+the physical Home and its opening options.
+
+The author receives a read-only source over the readmitted predecessor and a
+prepared target. Read declared kinds with bounded `entities` and `relations`
+calls. Use their schema observations and `planned_field` locators to construct
+relational DATA from `host::home_program_transition`. Return a complete
+`WorthQueryHomeProgramTransitionPlan` with nonempty `steps`, a `target` index,
+and the actual `ProposedSchemaTransition` and optional reconciliation policy
+when changing the Native schema. Steps before that index use the old meaning;
+the target and following steps use the prepared successor. Supply positive,
+finite work, cold-record and derived-row limits in the exported
+`DerivedIndexMaintenanceBudget`; the opening request's cancellation, deadline
+and remaining resources still apply.
+
+The Host records the intent before performing any step. It uses the same Native,
+World and registered Source owners throughout and returns the Home only after
+the final binding is acknowledged. User bodies cannot address private Query
+records or materialization maintenance. Signal node allocation, Bridge
+correspondence, producers and conditionals retain their Relational-only refusals.
+
+A fresh or already-current Home skips the author. After a successful transition,
+close normally; subsequent opens need only the successor request. Original
+entities and durable history remain, and initialization is not replayed. Keep
+an owning refusal if opening fails after recording the intent; inspect
+`refused.phase()` rather than treating it as a fresh installation.
+
+#### Interrupted Directory transitions — cleanup track (owner P-C)
+
+Resume, drift, interrupted binding and process-kill qualification remain pending.
 
 ### Checkpoint admission — pending (owner P-A, D12)
 

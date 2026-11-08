@@ -41,6 +41,7 @@ pub(super) const FACTORIES: &[&str] = &[
     "from_protected_world_journal",
     "query_runtime_handle",
     "prepare_home_program",
+    "prepare_home_program_transition_target",
     "initialize_home_native_schema",
     "prepare_home_native_receiver_schema",
     "finish_fresh_home_native_readmission",
@@ -206,6 +207,7 @@ pub(super) fn ownership(name: &str) -> (&'static str, &'static str) {
     } else if matches!(
         name,
         "prepare_home_program"
+            | "prepare_home_program_transition_target"
             | "initialize_home_native_schema"
             | "prepare_home_native_receiver_schema"
             | "finish_fresh_home_native_readmission"

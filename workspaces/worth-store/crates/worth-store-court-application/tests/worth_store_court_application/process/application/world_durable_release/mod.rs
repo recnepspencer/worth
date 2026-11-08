@@ -3,6 +3,8 @@ use worth_execution::ExecutionRequest;
 use worth_runtime_world::facade::*;
 use worth_store_application::ApplicationHomeCloseOutcome;
 mod child;
+mod graceful_source;
+mod native_transitions;
 mod published_predecessor;
 const LOCATION: &str = "WORTH_WORLD_RELEASE_HOME";
 const MARKERS: &str = "WORTH_WORLD_RELEASE_MARKERS";
@@ -204,6 +206,11 @@ fn close(
         Ok(ApplicationHomeCloseOutcome::CloseRefused { reason, .. }) => {
             panic!("Native close refused: {reason:?}")
         }
-        _ => panic!("the original coupled checkpoint must complete before physical close"),
+        Ok(ApplicationHomeCloseOutcome::Closed {
+            checkpoint: Err(cause),
+            ..
+        }) => {
+            panic!("the original coupled checkpoint must complete before physical close: {cause:?}")
+        }
     }
 }

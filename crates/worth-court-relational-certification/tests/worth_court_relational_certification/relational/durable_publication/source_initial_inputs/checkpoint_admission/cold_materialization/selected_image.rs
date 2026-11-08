@@ -56,6 +56,7 @@ pub(crate) fn recover(
         transitions.seal().unwrap(),
         cut.bounds(),
         source,
+        None,
         request,
     )
     .unwrap();

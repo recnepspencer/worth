@@ -4,6 +4,7 @@ mod branch_authority;
 mod close_authority;
 mod codec_recovery_destination;
 mod configuration;
+mod configuration_epoch_control;
 mod core_access;
 mod memory_close;
 mod source_close;
@@ -157,6 +158,19 @@ impl RelationalRuntime {
         let installed = self.state.configuration.snapshot();
         self.config = installed.config;
         self.schema_contract_runtime = installed.schema_contract_runtime;
+    }
+
+    /// The outer owner observes the current pair; an admitted operation keeps
+    /// the coherent pair it captured at entry, including historical readers.
+    pub(crate) fn operation_configuration(&self) -> RelationalRuntimeConfigurationSnapshot {
+        if self.is_owner() {
+            self.configuration_binding().snapshot()
+        } else {
+            RelationalRuntimeConfigurationSnapshot {
+                config: self.config.clone(),
+                schema_contract_runtime: self.schema_contract_runtime.clone(),
+            }
+        }
     }
 
     /// A weak binding to this runtime's exact state, for a service that must

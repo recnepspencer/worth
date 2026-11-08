@@ -18,6 +18,7 @@ use crate::transactions::data::TransactionId;
 pub struct PreparedRelationalCommitCandidate {
     runtime_instance_id: u64,
     configuration_invariant_generation: u64,
+    receiver_epoch: crate::runtime::RelationalRuntimeConfigurationSnapshot,
     publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
     transaction_id: TransactionId,
     branch_id: BranchId,
@@ -71,6 +72,7 @@ impl PreparedRelationalCommitCandidate {
     pub(crate) fn new(
         runtime_instance_id: u64,
         configuration_invariant_generation: u64,
+        receiver_epoch: crate::runtime::RelationalRuntimeConfigurationSnapshot,
         publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
         transaction_id: TransactionId,
         branch_id: BranchId,
@@ -122,6 +124,7 @@ impl PreparedRelationalCommitCandidate {
         Ok(Self {
             runtime_instance_id,
             configuration_invariant_generation,
+            receiver_epoch,
             publication_binding,
             transaction_id,
             branch_id,
@@ -145,6 +148,13 @@ impl PreparedRelationalCommitCandidate {
 
     pub(crate) fn runtime_instance_id(&self) -> u64 {
         self.runtime_instance_id
+    }
+
+    pub(crate) fn belongs_to_receiver_epoch(
+        &self,
+        epoch: &crate::runtime::RelationalRuntimeConfigurationSnapshot,
+    ) -> bool {
+        self.receiver_epoch.same_epoch(epoch)
     }
 
     pub(crate) fn configuration_invariant_generation(&self) -> u64 {
@@ -237,6 +247,34 @@ impl PreparedRelationalCommitCandidate {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .as_ref()
             .and_then(|payload| payload.execution.home_step().cloned())
+    }
+
+    pub(crate) fn home_index_definitions(
+        &self,
+    ) -> Option<std::sync::Arc<crate::runtime::PreparedRelationalIndexDefinitions>> {
+        self._payload
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .as_ref()
+            .and_then(|payload| payload.execution.home_index_definitions())
+    }
+
+    pub(crate) fn covers_home_definitions(
+        &self,
+        definitions: &crate::runtime::PreparedRelationalIndexDefinitions,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<bool, worth_execution::WorkCeilingDenial> {
+        match self
+            ._payload
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .as_ref()
+        {
+            Some(payload) => payload
+                .execution
+                .covers_home_definitions(definitions, execution),
+            None => Ok(false),
+        }
     }
 
     pub(crate) fn indexes_already_prepared(&self) -> bool {

@@ -27,6 +27,7 @@ impl IndexAuthority<'_> {
             .indexes
             .maintenance_inputs_admitted(
                 index_id,
+                None,
                 authoring,
                 request.source_commit_id,
                 version,

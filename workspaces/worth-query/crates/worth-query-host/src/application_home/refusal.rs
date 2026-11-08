@@ -25,6 +25,11 @@ pub enum WorthQueryApplicationHomeOpenRefused<Schema: ApplicationSchemaCompositi
         query: PreparedHomeApplication<Schema, Program>,
         home: RelationalAttachmentRefused,
     },
+    NativePreparation {
+        query: PreparedHomeApplication<Schema, Program>,
+        home: UnrecoveredApplicationHome,
+        cause: ApplicationHomeNativeSchemaPreparationDenial,
+    },
     NativeInstallation {
         query: QueryHomeNativeInstallationRefused<Schema, Program>,
         home: UnrecoveredApplicationHome,
@@ -158,6 +163,7 @@ impl<Schema: ApplicationSchemaComposition, Program>
             Self::Binding { cause, .. } => format!("{cause:?}"),
             Self::Physical { cause, .. } => format!("{cause:?}"),
             Self::RelationalAttachment { home, .. } => format!("{home:?}"),
+            Self::NativePreparation { cause, .. } => format!("{cause:?}"),
             Self::NativeInstallation { query, .. } => query.reason().to_string(),
             Self::NativeReadmission { home, .. } => format!("{:?}", home.reason()),
             Self::QueryPublicationReadmissionRequired { home, .. } => {

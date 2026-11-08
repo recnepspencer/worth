@@ -24,6 +24,8 @@ mod compilation_quote;
 mod compiled_plans;
 #[path = "root_schema/compiled_retention.rs"]
 mod compiled_retention;
+#[path = "root_schema/home_executables.rs"]
+mod home_executables;
 #[path = "root_schema/home_target.rs"]
 mod home_target;
 #[path = "root_schema/recorded_image.rs"]
@@ -62,6 +64,30 @@ pub(crate) struct RelationalBranchRootSchemaAuthority {
 }
 
 impl RelationalBranchRootSchemaAuthority {
+    pub(crate) fn registry_copy_bytes(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<u64, super::RelationalBranchRootCaptureDenial> {
+        registry_quote::retained(
+            self.registry(),
+            crate::schema::SchemaCompilationControl::Request(*request),
+        )
+    }
+
+    /// The descriptor and its before-copy funding have one lexical lifetime.
+    pub(crate) fn registry_digest_for_request(
+        registry: &crate::schema::data::RelationalSchemaRegistry,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<[u8; 32], crate::execution::RelationalExecutionDenialCause> {
+        let control = crate::schema::SchemaCompilationControl::Request(*request);
+        let bytes = snapshot_quote::temporary(registry, control)?;
+        let _memory = request
+            .reserve_retained_memory(bytes)
+            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+        let snapshot = registry.snapshot_for_compilation(control)?;
+        crate::schema::data::schema_authority_snapshot_digest_for_compilation(&snapshot, control)
+    }
+
     pub(crate) fn capture(
         allocation_id: u64,
         registry: &RelationalSchemaRegistry,

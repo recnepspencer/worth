@@ -77,6 +77,9 @@ pub(crate) struct ValidatedProposalState {
     pub(crate) validated_against_version: VersionId,
     pub(crate) validated_against_branch_version: RelationalBranchVersion,
     pub(crate) custom_invariant_generation: u64,
+    pub(crate) receiver_epoch: crate::runtime::RelationalRuntimeConfigurationSnapshot,
+    pub(crate) execution_contracts:
+        Option<std::sync::Arc<crate::runtime::RelationalRootExecutionContracts>>,
     pub(crate) batch_count: usize,
     pub(crate) strategy_commit_artifacts:
         Option<crate::commit_strategies::data::StrategyCommitArtifactBundle>,

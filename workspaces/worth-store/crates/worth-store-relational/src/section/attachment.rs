@@ -48,6 +48,7 @@ impl RelationalStoreSection {
             checkpoint_selection,
             None,
             None,
+            None,
         )
         .map(|attached| attached.share(None))
     }

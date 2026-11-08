@@ -1,12 +1,12 @@
 //! Admission returns its original owners before origin-specific composition.
 use super::*;
 
-pub(super) struct DirectoryOpening<'authoring, Schema: ApplicationSchemaComposition, Program> {
-    pub(super) query: PreparedHomeNativeMeaning<Schema, Program>,
-    pub(super) home: UnsharedReadmittedApplicationHome,
-    pub(super) checkpoint_limits: ApplicationHomeCheckpointLimits,
-    pub(super) observation: ApplicationHomeOpeningObservation,
-    pub(super) initial_state: Box<dyn FnOnce(
+pub(in crate::application_home) struct DirectoryOpening<'authoring, Schema: ApplicationSchemaComposition, Program> {
+    pub(in crate::application_home) query: PreparedHomeNativeMeaning<Schema, Program>,
+    pub(in crate::application_home) home: UnsharedReadmittedApplicationHome,
+    pub(in crate::application_home) checkpoint_limits: ApplicationHomeCheckpointLimits,
+    pub(in crate::application_home) observation: ApplicationHomeOpeningObservation,
+    pub(in crate::application_home) initial_state: Box<dyn FnOnce(
         &WorthQueryBootstrapAdvancementPhase<'_>,
         &mut worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphBootstrap<Schema>,
         &worth_query_installation::facade::WorthQueryInstalledApplicationSchema<Schema>,
@@ -84,7 +84,7 @@ where
 }
 
 #[inline(never)]
-fn readmit_native<Schema, Program>(
+pub(in crate::application_home) fn readmit_native<Schema, Program>(
     phase: &WorthQueryBootstrapAdvancementPhase<'_>,
     query: PreparedHomeApplication<Schema, Program>,
     home: worth_proof::HomeAdmitted<AdmittedApplicationHome>,
@@ -113,10 +113,21 @@ where
             native,
             initialization,
         }) => query.initialize_home_native_schema(phase, native, initialization),
-        Ok(ApplicationHomeNativeSchemaPreparation::Existing { native }) => {
-            query.prepare_home_native_receiver_schema(phase, native)
-        }
-        Err(cause) => Err(query.refuse_home_native_schema(cause)),
+        Ok(ApplicationHomeNativeSchemaPreparation::Existing {
+            native,
+            source,
+            maximum_kind,
+            maximum_aspect,
+            installation,
+        }) => query.prepare_home_native_receiver_schema(
+            phase,
+            native,
+            source,
+            maximum_kind,
+            maximum_aspect,
+            installation,
+        ),
+        Err(cause) => return Err(Refused::NativePreparation { query, home, cause }),
     };
     let query = match installed {
         Ok(query) => query,

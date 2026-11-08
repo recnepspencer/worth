@@ -12,23 +12,10 @@ enum WorldArtifactRecordOrigin {
 #[derive(Debug)]
 pub(crate) struct WorldArtifactFrame {
     bytes: ExecutionImmutableBytes,
-    _extra_funding: Option<ExecutionMemoryReservation>,
 }
 impl WorldArtifactFrame {
-    pub(super) fn from_encoded(bytes: ExecutionImmutableBytes) -> Self {
-        Self {
-            bytes,
-            _extra_funding: None,
-        }
-    }
-    pub(in crate::durability) fn from_streamed(
-        bytes: ExecutionImmutableBytes,
-        funding: Option<ExecutionMemoryReservation>,
-    ) -> Self {
-        Self {
-            bytes,
-            _extra_funding: funding,
-        }
+    pub(in crate::durability) fn from_encoded(bytes: ExecutionImmutableBytes) -> Self {
+        Self { bytes }
     }
 }
 #[derive(Debug)]

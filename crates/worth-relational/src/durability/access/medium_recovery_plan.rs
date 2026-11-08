@@ -60,7 +60,7 @@ pub(super) fn medium_recovery_plan(
         Some(original) => Some(original),
         None => parts.initial_inputs.map(|initial| {
         crate::durability::source_initial_inputs::source_admission::readmit(initial, complete.as_ref(),
-            checkpoint.as_ref(), execution).map(std::sync::Arc::new).map_err(|cause| match cause {
+            checkpoint.as_ref(), None, execution).map(std::sync::Arc::new).map_err(|cause| match cause {
                 crate::durability::source_initial_inputs::RelationalInitialInputsRefusal::Request(cause) => RelationalRecoveryStop::Request(cause),
                 crate::durability::source_initial_inputs::RelationalInitialInputsRefusal::Native(cause) => cause,
                 cause => DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint,

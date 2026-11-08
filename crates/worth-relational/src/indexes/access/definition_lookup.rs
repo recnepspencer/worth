@@ -1,17 +1,16 @@
 use std::collections::BTreeMap;
-use std::sync::Arc;
 
 use crate::indexes::data::DerivedIndexDefinition;
 
 /// Detached restored-definition inventory for bulk exact semantic matching.
 /// Numeric IDs come from the owner, never from the caller's expected shape.
 pub struct DerivedIndexDefinitionLookup {
-    by_name: BTreeMap<String, Vec<Arc<DerivedIndexDefinition>>>,
+    by_name: BTreeMap<String, Vec<crate::indexes::RetainedDerivedIndexDefinition>>,
     definition_count: usize,
 }
 
 impl DerivedIndexDefinitionLookup {
-    pub(super) fn new(definitions: Vec<Arc<DerivedIndexDefinition>>) -> Self {
+    pub(super) fn new(definitions: Vec<crate::indexes::RetainedDerivedIndexDefinition>) -> Self {
         let definition_count = definitions.len();
         let mut by_name = BTreeMap::new();
         for definition in definitions {
@@ -51,7 +50,6 @@ impl DerivedIndexDefinitionLookup {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
 
     use super::DerivedIndexDefinitionLookup;
     use crate::indexes::data::{DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind};
@@ -72,10 +70,26 @@ mod tests {
             branch_scoped,
         };
         let lookup = DerivedIndexDefinitionLookup::new(vec![
-            Arc::new(installed(11, wrong_kind.clone(), false)),
-            Arc::new(installed(12, kind.clone(), true)),
-            Arc::new(installed(13, kind.clone(), false)),
-            Arc::new(installed(14, kind.clone(), false)),
+            crate::indexes::RetainedDerivedIndexDefinition::from_owned(installed(
+                11,
+                wrong_kind.clone(),
+                false,
+            )),
+            crate::indexes::RetainedDerivedIndexDefinition::from_owned(installed(
+                12,
+                kind.clone(),
+                true,
+            )),
+            crate::indexes::RetainedDerivedIndexDefinition::from_owned(installed(
+                13,
+                kind.clone(),
+                false,
+            )),
+            crate::indexes::RetainedDerivedIndexDefinition::from_owned(installed(
+                14,
+                kind.clone(),
+                false,
+            )),
         ]);
         assert_eq!(lookup.definition_count(), 4);
         assert_eq!(lookup.candidate_count_for_name("same-name"), 4);
