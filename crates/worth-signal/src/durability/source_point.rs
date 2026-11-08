@@ -51,13 +51,22 @@ impl SignalRecordedSourcePoint {
         &self,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<ExecutionImmutableBytes, D> {
-        frame::encode(4, execution, &mut |out| {
-            out.owner(self.reference.identity().owner())?;
-            out.number(self.reference.identity().ordinal())?;
-            out.fixed(&self.reference.digest())?;
-            out.number(self.position.get())?;
-            self.descriptor.write(out)
-        })
+        frame::encode(4, execution, &mut |out| self.write_fields(out))
+    }
+    /// Transport this exact versioned owner format without an intermediate copy.
+    pub fn write_bytes(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        sink: &mut dyn FnMut(&[u8]) -> Result<(), D>,
+    ) -> Result<(), D> {
+        frame::write(4, execution, &mut |out| self.write_fields(out), sink)
+    }
+    fn write_fields(&self, out: &mut frame::Writer<'_>) -> Result<(), D> {
+        out.owner(self.reference.identity().owner())?;
+        out.number(self.reference.identity().ordinal())?;
+        out.fixed(&self.reference.digest())?;
+        out.number(self.position.get())?;
+        self.descriptor.write(out)
     }
     pub fn readmit_bytes(execution: &ExecutionRequest<'_, '_>, bytes: &[u8]) -> Result<Self, D> {
         frame::admit_work(execution, bytes.len())?;

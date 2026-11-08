@@ -11,9 +11,27 @@ use worth_execution::ExecutionRequest;
 impl<Dm, I, T> SignalDurableBranchSourcePort<Dm, I, T>
 where
     Dm: Copy + Ord + std::fmt::Debug + 'static,
-    I: Copy + Ord,
-    T: Copy + Ord,
+    I: Copy + Ord + 'static,
+    T: Copy + Ord + 'static,
 {
+    /// Admit the exact protected original through this owner's source index.
+    /// The weak service cannot prolong or resurrect the durable owner.
+    pub fn readmit_source_point(
+        &self,
+        point: &SignalRecordedSourcePoint,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<SignalReadmittedSourcePoint, D> {
+        self.owner().map_err(D::Source)?;
+        let publication = self
+            .publication
+            .upgrade()
+            .ok_or_else(|| D::Source(S::SourceNotInstalled))?;
+        let (original, definition) = publication
+            .read_source_point(point, execution)
+            .map_err(D::Original)?;
+        self.readmit_original_point(point, original, definition, execution)
+    }
+
     pub(crate) fn readmit_original_point(
         &self,
         point: &SignalRecordedSourcePoint,

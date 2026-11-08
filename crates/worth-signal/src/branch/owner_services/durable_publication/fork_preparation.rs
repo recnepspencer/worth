@@ -31,6 +31,7 @@ where
         let owner = Self::admit_fork_owner(&state, expected)?;
         let source_port = crate::branch::owner_services::SignalDurableBranchSourcePort::new(
             state.owner.clone(),
+            Arc::downgrade(&state),
             state.binding(),
             Arc::clone(&state.vocabulary),
         );

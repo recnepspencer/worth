@@ -66,37 +66,60 @@ pub(super) fn encode_bounded(
     emit: &mut dyn FnMut(&mut Writer<'_>) -> Result<(), SignalDurableFrameDenial>,
 ) -> Result<ExecutionImmutableBytes, SignalDurableFrameDenial> {
     use SignalDurableFrameDenial as D;
-    let mut size = 0usize;
-    emit(&mut Writer::new(&mut |bytes| {
-        size = size
-            .checked_add(bytes.len())
-            .filter(|n| *n <= maximum.saturating_sub(HEADER))
-            .ok_or(D::SizeLimit)?;
-        Ok(())
-    }))?;
-    admit_work_bounded(execution, size.saturating_mul(3), maximum)?;
-    let mut checksum = Sha256::new();
-    let version = SIGNAL_OWNER_FRAME_VERSION.get().to_le_bytes();
-    let kind = kind.to_le_bytes();
-    let length = (size as u64).to_le_bytes();
-    checksum.update(version);
-    checksum.update(kind);
-    checksum.update(length);
-    emit(&mut Writer::new(&mut |bytes| {
-        checksum.update(bytes);
-        Ok(())
-    }))?;
-    let checksum: [u8; 32] = checksum.finalize().into();
+    let header = framing(kind, maximum, execution, emit)?;
+    let size = u64::from_le_bytes(header[16..24].try_into().unwrap()) as usize;
     let mut out =
         ExecutionRequestArrayBuilder::allocate(*execution, HEADER + size).map_err(D::Backing)?;
-    for field in [MAGIC.as_slice(), &version, &kind, &length, &checksum] {
-        out.extend_from_slice(field).map_err(D::Backing)?;
-    }
+    out.extend_from_slice(&header).map_err(D::Backing)?;
     emit(&mut Writer::new(&mut |bytes| {
         out.extend_from_slice(bytes).map_err(D::Backing)
     }))?;
     Ok(out.seal().map_err(D::Backing)?.into_immutable_bytes())
 }
+
+/// Emit the same owner frame into another owner's admitted transport without
+/// allocating a second byte buffer or exposing Signal's field grammar.
+pub(super) fn write(
+    kind: u32,
+    execution: &ExecutionRequest<'_, '_>,
+    emit: &mut dyn FnMut(&mut Writer<'_>) -> Result<(), SignalDurableFrameDenial>,
+    sink: &mut dyn FnMut(&[u8]) -> Result<(), SignalDurableFrameDenial>,
+) -> Result<(), SignalDurableFrameDenial> {
+    let header = framing(kind, SIGNAL_OWNER_FRAME_MAXIMUM_BYTES, execution, emit)?;
+    sink(&header)?;
+    emit(&mut Writer::new(sink))
+}
+
+fn framing(
+    kind: u32,
+    maximum: usize,
+    execution: &ExecutionRequest<'_, '_>,
+    emit: &mut dyn FnMut(&mut Writer<'_>) -> Result<(), SignalDurableFrameDenial>,
+) -> Result<[u8; HEADER], SignalDurableFrameDenial> {
+    let mut size = 0usize;
+    emit(&mut Writer::new(&mut |bytes| {
+        size = size
+            .checked_add(bytes.len())
+            .filter(|n| *n <= maximum.saturating_sub(HEADER))
+            .ok_or(SignalDurableFrameDenial::SizeLimit)?;
+        Ok(())
+    }))?;
+    admit_work_bounded(execution, size.saturating_mul(3), maximum)?;
+    let mut header = [0u8; HEADER];
+    header[..8].copy_from_slice(MAGIC);
+    header[8..12].copy_from_slice(&SIGNAL_OWNER_FRAME_VERSION.get().to_le_bytes());
+    header[12..16].copy_from_slice(&kind.to_le_bytes());
+    header[16..24].copy_from_slice(&(size as u64).to_le_bytes());
+    let mut checksum = Sha256::new();
+    checksum.update(&header[8..24]);
+    emit(&mut Writer::new(&mut |bytes| {
+        checksum.update(bytes);
+        Ok(())
+    }))?;
+    header[24..].copy_from_slice(&checksum.finalize());
+    Ok(header)
+}
+
 pub(super) fn payload(bytes: &[u8], kind: u32) -> Result<Reader<'_>, SignalDurableFrameDenial> {
     payload_bounded(bytes, kind, SIGNAL_OWNER_FRAME_MAXIMUM_BYTES)
 }

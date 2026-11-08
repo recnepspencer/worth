@@ -67,18 +67,19 @@ where
         contracts: BTreeMap<DurableSignalBranchIdentity, Vec<SignalReadmittedConditionalContract>>,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, SignalOwnerReadmissionDenial> {
-        let port = SignalDurableBranchSourcePort::new(
-            owner.clone(),
-            medium.binding(),
-            Arc::clone(&vocabulary),
-        );
         let publication = SignalDurablePublicationState::new(
-            owner,
+            owner.clone(),
             medium,
-            vocabulary,
+            Arc::clone(&vocabulary),
             source.into_locations(execution)?,
             execution,
         )?;
+        let port = SignalDurableBranchSourcePort::new(
+            owner,
+            Arc::downgrade(&publication),
+            publication.binding(),
+            vocabulary,
+        );
         Ok(Self {
             _runtime: runtime,
             publication,
@@ -134,12 +135,7 @@ where
         point: &super::SignalRecordedSourcePoint,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<super::SignalReadmittedSourcePoint, super::SignalSourcePointReadmissionDenial> {
-        let (original, definition) = self
-            .publication
-            .read_source_point(point, execution)
-            .map_err(super::SignalSourcePointReadmissionDenial::Original)?;
-        self.port
-            .readmit_original_point(point, original, definition, execution)
+        self.port.readmit_source_point(point, execution)
     }
 
     /// Bind the actual composing issuer before exposing any composite services.

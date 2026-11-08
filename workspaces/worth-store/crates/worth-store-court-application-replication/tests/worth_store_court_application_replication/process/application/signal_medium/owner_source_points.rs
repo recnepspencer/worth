@@ -34,7 +34,7 @@ fn historical_originals_readmit_without_claiming_currentness_and_live_points_reo
         port.readmit_descriptor(historical.descriptor()),
         Err(SignalDurableSourceDenial::DescriptorMismatch)
     ));
-    let admitted = owner.readmit_source_point(&historical, &execution).unwrap();
+    let admitted = port.readmit_source_point(&historical, &execution).unwrap();
     assert_eq!(admitted.original().as_bytes(), initial.as_bytes());
     assert_eq!(admitted.source_point(), &historical);
     let branch = historical.descriptor().branch();
@@ -215,4 +215,65 @@ fn source_point_codec_refuses_unknown_versions_and_checksum_damage() {
     ));
     drop((original, bytes, owner));
     media::close(serving, medium, &execution);
+}
+
+#[test]
+fn weak_source_service_cannot_readmit_after_the_durable_owner_is_dropped() {
+    let directory = tempfile::tempdir().unwrap();
+    let funding = media::serial_request();
+    let execution = ExecutionRequest::serial(&funding);
+    let (_serving, medium) = media::open(directory.path(), true, &execution);
+    fixture::seed(medium.as_ref(), &execution);
+    let owner = fixture::readmit(medium, &execution);
+    let port = owner.source_port();
+    let original = owner
+        .read_original_advance(
+            SignalBranchAdvanceIdentity::from_recorded(media::owner(), 1),
+            &execution,
+        )
+        .unwrap();
+    let source = point(&original, 1);
+    drop(owner);
+    assert!(matches!(
+        port.readmit_source_point(&source, &execution),
+        Err(SignalSourcePointReadmissionDenial::Source(
+            SignalDurableSourceDenial::OwnerUnavailable(_)
+        ))
+    ));
+}
+
+#[test]
+fn streamed_source_point_uses_the_exact_owner_codec_and_propagates_sink_refusal() {
+    let directory = tempfile::tempdir().unwrap();
+    let funding = media::serial_request();
+    let execution = ExecutionRequest::serial(&funding);
+    let (_serving, medium) = media::open(directory.path(), true, &execution);
+    fixture::seed(medium.as_ref(), &execution);
+    let owner = fixture::readmit(medium, &execution);
+    let original = owner
+        .read_original_advance(
+            SignalBranchAdvanceIdentity::from_recorded(media::owner(), 1),
+            &execution,
+        )
+        .unwrap();
+    let source = point(&original, 1);
+    let canonical = source.encode_bytes(&execution).unwrap();
+    let mut streamed = Vec::new();
+    source
+        .write_bytes(&execution, &mut |bytes| {
+            streamed.extend_from_slice(bytes);
+            Ok(())
+        })
+        .unwrap();
+    assert_eq!(streamed.as_slice(), canonical.as_ref());
+    assert_eq!(
+        SignalRecordedSourcePoint::readmit_bytes(&execution, &streamed).unwrap(),
+        source
+    );
+    assert!(matches!(
+        source.write_bytes(&execution, &mut |_| Err(
+            SignalDurableFrameDenial::Malformed
+        )),
+        Err(SignalDurableFrameDenial::Malformed)
+    ));
 }

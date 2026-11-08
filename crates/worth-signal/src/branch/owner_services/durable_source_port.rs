@@ -35,10 +35,11 @@ pub enum SignalDurableSourceDenial {
 pub struct SignalDurableBranchSourcePort<D, I, T>
 where
     D: Copy + Ord + std::fmt::Debug + 'static,
-    I: Copy + Ord,
-    T: Copy + Ord,
+    I: Copy + Ord + 'static,
+    T: Copy + Ord + 'static,
 {
     owner: Weak<SignalOwner<D, I, T>>,
+    publication: Weak<super::durable_publication::SignalDurablePublicationState<D, I, T>>,
     identity: DurableSignalOwnerIdentity,
     fence: worth_proof::HomeIncarnationFence,
     vocabulary: Arc<SignalDurableTierVocabulary<T>>,
@@ -46,12 +47,13 @@ where
 impl<D, I, T> Clone for SignalDurableBranchSourcePort<D, I, T>
 where
     D: Copy + Ord + std::fmt::Debug + 'static,
-    I: Copy + Ord,
-    T: Copy + Ord,
+    I: Copy + Ord + 'static,
+    T: Copy + Ord + 'static,
 {
     fn clone(&self) -> Self {
         Self {
             owner: self.owner.clone(),
+            publication: self.publication.clone(),
             identity: self.identity,
             fence: self.fence,
             vocabulary: Arc::clone(&self.vocabulary),
@@ -61,16 +63,18 @@ where
 impl<D, I, T> SignalDurableBranchSourcePort<D, I, T>
 where
     D: Copy + Ord + std::fmt::Debug + 'static,
-    I: Copy + Ord,
-    T: Copy + Ord,
+    I: Copy + Ord + 'static,
+    T: Copy + Ord + 'static,
 {
     pub(crate) fn new(
         owner: Weak<SignalOwner<D, I, T>>,
+        publication: Weak<super::durable_publication::SignalDurablePublicationState<D, I, T>>,
         binding: &crate::durability::SignalDurableHomeBinding,
         vocabulary: Arc<SignalDurableTierVocabulary<T>>,
     ) -> Self {
         Self {
             owner,
+            publication,
             identity: binding.owner(),
             fence: binding.incarnation().fence(),
             vocabulary,
