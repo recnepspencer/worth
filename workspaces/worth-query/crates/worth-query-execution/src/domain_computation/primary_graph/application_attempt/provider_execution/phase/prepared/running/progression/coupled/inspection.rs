@@ -31,7 +31,7 @@ pub(in crate::domain_computation::primary_graph) fn inspect_coupled_application<
     candidate: &worth_relational::facade::runtime::RelationalPinnedRead<
         worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
     >,
-    predecessor: worth_relational::facade::mvcc::RelationalRequiredOutputPublication,
+    predecessor: Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
 ) -> Result<
     (
         InspectedCoupledWriter<'run>,
@@ -107,6 +107,8 @@ where
                 .runtime
                 .primary_provider
                 .coupled_writer_commands(
+                    execution,
+                    lease.product().relational_basis(),
                     inspection.provider_session_view(),
                     B::IDENTITY,
                     B::OutputFamily::IDENTITY,

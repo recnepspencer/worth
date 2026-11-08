@@ -18,7 +18,7 @@ pub(super) fn prepare<Schema, Binding>(
     before_pin: &RelationalPinnedRead,
     candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
     erased: ErasedAppliedProducerSource,
-    predecessor: &worth_relational::facade::mvcc::RelationalRequiredOutputPublication,
+    predecessor: Option<&worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
     edition: super::super::InstalledProducerEdition,
 ) -> Result<Box<dyn std::any::Any>, ProducerExecutionStop>
 where

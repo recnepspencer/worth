@@ -107,11 +107,14 @@ pub fn merge(
             .materialize_identity()
             .map_err(|denial| denial.into_capture_denial())?
         {
-            native.push((identity, None));
+            let facts = prior
+                .completed_coupled_receipt()
+                .map(AcceptedCheckpointFactSource::Committed);
+            native.push((identity, facts));
         }
     }
-    // Locator-only rows contain no producer facts or witness. They may choose
-    // Preserve after reopening, but cannot establish Ready.
+    // Only the selected head's real completed receipt can carry facts/witness.
+    // Other locators may choose Preserve after reopening, never establish Ready.
     drop(accepted_slots);
     accepted.extend(native);
     Ok(accepted)

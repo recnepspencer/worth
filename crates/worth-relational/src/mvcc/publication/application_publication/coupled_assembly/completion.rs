@@ -92,7 +92,12 @@ pub(crate) fn prepare_coupled_candidate(
             &transaction.content,
         )?;
     let authored_records = mutation.outcome.effect.publication.changed_records.clone();
-    writer_custody::require(execution, &binding.owners, None, &authored_commands)?;
+    writer_custody::require(
+        execution,
+        &binding.owners,
+        writer_custody::Writer::AuthoredPrefix,
+        &authored_commands,
+    )?;
     let mut candidate = RelationalAuthoredCoupledCandidate {
         runtime: &runtime,
         transaction,
@@ -113,7 +118,7 @@ pub(crate) fn prepare_coupled_candidate(
     execution.run_native_with_checkpoint(|context| {
         for expected in binding.owners.required_owners() {
             for part in &parts {
-                let RequiredOutputPublication::Preserve { meaning, .. } = &part.publication else { unreachable!("admitted Preserve") };
+                let meaning = part.publication.producing_meaning().expect("admitted producer route");
                 checkpoint(context, (meaning.family.len() + expected.origin.meaning.family.len() + 65) as u64)
                     .map_err(custody::execution_stop)?;
             }

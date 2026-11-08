@@ -213,7 +213,12 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
             else {
                 continue;
             };
-            let producer = registry.declared_coupled_preserve(demand, source.profile)?;
+            let lifecycle = if source.predecessor.is_some() {
+                WorthQueryProducerLifecyclePosture::Preserve
+            } else {
+                WorthQueryProducerLifecyclePosture::Initial
+            };
+            let producer = registry.declared_coupled_producer(demand, source.profile, lifecycle)?;
             let pin = candidate.pin_source(execution)?;
             let prepared = producer.executor.prepare_coupled_writer(
                 self.phase,
@@ -235,11 +240,16 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
             } = prepared;
             // Keep the session even when Native requests an ordinary symbol retry;
             // the next actual assembly round closes it before rerunning the handler.
-            let worth_relational::facade::mvcc::RequiredOutputPublication::Preserve {
-                meaning, ..
-            } = &publication
-            else {
-                unreachable!("installed coupled preparation issues Preserve")
+            let meaning = match &publication {
+                worth_relational::facade::mvcc::RequiredOutputPublication::Preserve {
+                    meaning,
+                    ..
+                }
+                | worth_relational::facade::mvcc::RequiredOutputPublication::Birth {
+                    meaning,
+                    ..
+                } => meaning,
+                _ => unreachable!("installed coupled preparation issues a producing origin"),
             };
             self.writers.borrow_mut().push(CoupledWriter {
                 producer: std::sync::Arc::clone(producer),
@@ -260,7 +270,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
                     vec![batch],
                     fault,
                 )?,
-                _ => candidate.append_preserve(execution, publication, &content, vec![batch])?,
+                _ => candidate.append_publication(execution, publication, &content, vec![batch])?,
             }
             let after_own = candidate.pin_source(execution)?;
             let writers = self.writers.borrow();

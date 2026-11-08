@@ -14,7 +14,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
     ) -> Result<(), RelationalCoupledAssemblyFailure> {
         if fault == 3 {
             let RequiredOutputPublication::Preserve { predecessor, .. } = &publication else {
-                return self.append_preserve(execution, publication, content, batches);
+                return self.append_publication(execution, publication, content, batches);
             };
             let registry = self
                 .binding
@@ -61,7 +61,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 ..
             } = publication
             else {
-                return self.append_preserve(execution, publication, content, batches);
+                return self.append_publication(execution, publication, content, batches);
             };
             let foreign = worth_proof::InstalledApplicationPublicationOwner::fresh();
             let admission = foreign.admit_required_output(
@@ -113,6 +113,6 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             predecessor.evidence =
                 crate::publication::ownership::PublicationEvidence::Canonical(envelope);
         }
-        self.append_preserve(execution, publication, content, batches)
+        self.append_publication(execution, publication, content, batches)
     }
 }

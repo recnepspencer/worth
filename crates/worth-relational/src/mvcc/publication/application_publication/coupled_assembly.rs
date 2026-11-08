@@ -20,6 +20,7 @@ mod fresh_references;
 mod local_keys;
 mod part;
 mod part_corruption;
+mod participant_admission;
 mod scoped_preparation;
 mod writer_custody;
 pub(crate) use completion::CoupledAppliedCandidate;
@@ -103,7 +104,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         family: &str,
         source: crate::identity::data::EntityId,
         partition: &[u8; 32],
-    ) -> Result<RelationalDeclaredCoupledOwner<'_>, TransactionCommitError> {
+    ) -> Result<Option<RelationalDeclaredCoupledOwner<'_>>, TransactionCommitError> {
         let original = execution.run_native_with_checkpoint(|context| {
             if let Some(restoration) = self.binding.owners.source.restoration() {
                 for (old, created) in &restoration.entities {
@@ -118,13 +119,18 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let owner = self
             .binding
             .owners
-            .recorded_owner(execution, family, original, partition)?
-            .ok_or_else(|| {
-                part::reject(
-                    crate::publication::data::AuthoredRetirementRefusal::ExtraCoupledOwner,
-                    source,
-                )
-            })?;
+            .recorded_owner(execution, family, original, partition)?;
+        let Some(owner) = owner else {
+            if matches!(self.binding.owners.source, super::CoupledSource::Edit(_)) {
+                // This catalog has no entry. It is not route-absence custody;
+                // callers must select the current route through its own owner.
+                return Ok(None);
+            }
+            return Err(part::reject(
+                crate::publication::data::AuthoredRetirementRefusal::ExtraCoupledOwner,
+                source,
+            ));
+        };
         if let RelationalDeclaredCoupledOwner::Surviving(previous) = &owner {
             execution
                 .run_native_with_checkpoint(|context| {
@@ -133,7 +139,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 .map_err(custody::execution_stop)?
                 .0?;
         }
-        Ok(owner)
+        Ok(Some(owner))
     }
 
     pub fn pin_source(

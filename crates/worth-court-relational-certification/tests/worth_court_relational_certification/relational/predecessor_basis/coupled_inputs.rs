@@ -55,7 +55,7 @@ impl RelationalAuthoredCoupledProducerAssembly for Echo<'_> {
             .unwrap();
         let mut meaning = self.prior.meaning().clone();
         meaning.source_epoch = [2; 32];
-        candidate.append_preserve(
+        candidate.append_publication(
             execution,
             RequiredOutputPublication::Preserve {
                 admission,

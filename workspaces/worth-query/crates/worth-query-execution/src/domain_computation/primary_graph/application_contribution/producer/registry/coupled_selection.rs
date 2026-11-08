@@ -19,19 +19,18 @@ impl<Schema: ApplicationSchema> WorthQueryInstalledApplicationProducerRegistry<S
                 )
             })
     }
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn declared_coupled_preserve(
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn declared_coupled_producer(
         &self,
         demand: &DeclaredCoupledOutputDemand,
         profile: &str,
+        lifecycle: super::super::WorthQueryProducerLifecyclePosture,
     ) -> Result<&Arc<InstalledProducerProvider<Schema>>, WorthQueryOutputDemandDenial> {
         self.select_matching_entry(
             |entry| {
                 entry.declaration.output_family_type == demand.family_type
                     && entry.declaration.source_type == demand.source_binding_type
                     && entry.declaration.applicability.iter().any(|applies| {
-                        applies.lifecycle()
-                            == super::super::WorthQueryProducerLifecyclePosture::Preserve
-                            && applies.profile_kind() == profile
+                        applies.lifecycle() == lifecycle && applies.profile_kind() == profile
                     })
             },
             WorthQueryOutputDemandDenialKind::MissingApplicableProducer,

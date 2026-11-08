@@ -8,12 +8,21 @@ use crate::{
     transactions::data::{EntityMutationIntent, MutationIntent, RecordRef, RelationMutationIntent},
 };
 
+pub(super) enum Writer<'a> {
+    AuthoredPrefix,
+    Producer(Option<&'a CanonicalRequiredOutputOrigin>),
+}
+
 pub(super) fn require(
     execution: &ExecutionRequest<'_, '_>,
     custody: &RelationalAuthoredCoupledOwners,
-    writer: Option<&CanonicalRequiredOutputOrigin>,
+    posture: Writer<'_>,
     plan: &crate::transactions::data::MergedCommitPlan,
 ) -> Result<std::collections::BTreeSet<crate::identity::data::RelationId>, TransactionCommitError> {
+    let (writer, authored) = match posture {
+        Writer::AuthoredPrefix => (None, true),
+        Writer::Producer(prior) => (prior, false),
+    };
     let result = execution.run_native_with_checkpoint(|context| {
         let mut roots = Vec::new();
         if let Some(writer) = writer {
@@ -41,7 +50,7 @@ pub(super) fn require(
             checkpoint(context, (origin.relations.len() + closure.len() + custody.retirements.len() + 1) as u64).map_err(stop)?;
             let covered = writer.is_some_and(|writer| writer.meaning.same_route(&origin.meaning))
                 || closure.iter().any(|p| p.origin.same_publication(origin))
-                || (writer.is_none() && custody.retirements.iter().any(|p| p.origin.same_publication(origin)));
+                || (authored && custody.retirements.iter().any(|p| p.origin.same_publication(origin)));
             if origin.source_scope_owned && !covered {
                 deferred_edges.extend(origin.relations.iter().map(|edge| edge.id));
             }
@@ -63,7 +72,7 @@ pub(super) fn require(
                 }
                 let covered = writer.is_some_and(|writer| writer.meaning.same_route(&origin.meaning))
                     || closure.iter().any(|p| p.origin.same_publication(origin))
-                    || (writer.is_none() && custody.retirements.iter().any(|p| p.origin.same_publication(origin)));
+                    || (authored && custody.retirements.iter().any(|p| p.origin.same_publication(origin)));
                 let owned = match target {
                     RecordRef::Entity(id) => origin.members.iter().any(|m| m.id == id && m.posture != Posture::Retire),
                     RecordRef::Relation(id) => origin.relations.iter().any(|edge| edge.id == id),

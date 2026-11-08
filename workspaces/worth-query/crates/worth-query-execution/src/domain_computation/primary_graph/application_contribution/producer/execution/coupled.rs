@@ -173,7 +173,7 @@ where
             before_pin,
             candidate,
             source,
-            &predecessor,
+            predecessor.as_ref(),
             edition,
         )?;
         let registered =

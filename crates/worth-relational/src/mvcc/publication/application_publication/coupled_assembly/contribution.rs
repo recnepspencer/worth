@@ -16,13 +16,7 @@ impl crate::mvcc::ValidatedRelationalProposal {
                 };
                 group.parts.iter().find_map(|part| {
                     let (actual, _) = part.publication.lineage_attribution()?;
-                    let RequiredOutputPublication::Preserve {
-                        meaning: actual_meaning,
-                        ..
-                    } = &part.publication
-                    else {
-                        return None;
-                    };
+                    let actual_meaning = part.publication.producing_meaning()?;
                     (actual == producer && actual_meaning == meaning)
                         .then_some(part.records.as_slice())
                 })
@@ -43,9 +37,10 @@ impl crate::mvcc::ValidatedRelationalProposal {
                     .publication
                     .lineage_attribution()
                     .expect("Native admitted a producer participant");
-                let RequiredOutputPublication::Preserve { meaning, .. } = &part.publication else {
-                    unreachable!("Native admitted Preserve")
-                };
+                let meaning = part
+                    .publication
+                    .producing_meaning()
+                    .expect("Native admitted producing origin");
                 (producer, meaning)
             })
     }

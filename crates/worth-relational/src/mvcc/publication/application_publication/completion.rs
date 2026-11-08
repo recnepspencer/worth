@@ -161,6 +161,13 @@ impl RequiredOutputPublication {
         }
     }
 
+    pub(crate) fn producing_meaning(&self) -> Option<&RequiredOutputPublicationMeaning> {
+        match self {
+            Self::Birth { meaning, .. } | Self::Preserve { meaning, .. } => Some(meaning),
+            _ => None,
+        }
+    }
+
     pub(crate) fn lineage_attribution(&self) -> Option<(&str, [u8; 32])> {
         match self {
             Self::CoupledAuthored { .. } | Self::HistoricalSelection { .. } => None,

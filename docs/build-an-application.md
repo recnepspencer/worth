@@ -4257,11 +4257,12 @@ producer-input contract.
 
 ### Ordinary coupled source edits
 
-An ordinary authored edit can declare the same finite set of existing
-source-owned roots through `coupled_outputs`. Each root's Preserve reads the
-edited source in the unpublished candidate. The source and every declared
-writer publish together, retaining the outputs' native identities and each
-writer's own custody. A producer refusal refuses the entire edit; the commit
+An ordinary authored edit can declare a finite set of source-owned roots
+through `coupled_outputs`. Each root reads the edited source in the unpublished
+candidate. Native's current route custody selects Preserve for a live output,
+or admits Initial from genuine route absence. The source and every declared
+writer publish together; Preserves retain the outputs' native identities and
+each writer keeps its own custody. A producer refusal refuses the entire edit; the commit
 denial's `coupled_producer_denial()` retains that producer's typed cause and
 domain reason. A foreign prepared publication also refuses before any effect.
 
@@ -4272,10 +4273,10 @@ commit, including after reopening a checkpoint with the same build. The
 source must be live at the exact current full-generation basis; Native refuses
 an unavailable source as `CoupledSourceNotLive`.
 
-This finite Preserve capability is the first part of
+These finite Initial/Preserve roots are the first part of
 [P5/S6 synchronous edit publication](../plans/WORTH-query/synchronous-edit-publication.md).
-Initial output creation, transitive dependent discovery and the explicit
-document-seal envelope remain in that implementation plan. Declared predecessor
+Transitive dependent discovery and the explicit document-seal envelope remain
+in that implementation plan. Declared predecessor
 observations also work inside the coupled handler, with independently admitted
 current-C read permission and the edit's genuinely held commit lane. Native never labels the transaction-before basis as a
 coupled producer's consumed applied input image.

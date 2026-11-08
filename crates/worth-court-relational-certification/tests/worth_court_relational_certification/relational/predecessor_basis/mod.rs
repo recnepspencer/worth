@@ -162,5 +162,7 @@ mod cost {
     }
 }
 
+mod coupled_initial;
 mod coupled_inputs;
+mod coupled_unlisted;
 mod edit_admission;

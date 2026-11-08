@@ -3,6 +3,7 @@ use crate::execution::request_stage::checkpoint;
 use crate::history::data::CanonicalCommitEnvelope;
 use std::sync::Arc;
 mod current;
+pub(super) use current::readmit_successor;
 mod prepared;
 pub(crate) use prepared::prepare;
 pub use prepared::{RelationalPerformedOutputPublications, RelationalPreparedOutputPublications};

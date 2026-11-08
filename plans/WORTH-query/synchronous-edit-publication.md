@@ -146,3 +146,43 @@ binding is one-time, so cloning an event cannot rebind issuance to another
 envelope. Ordinary envelope layout, artifact encoding and content commitments
 are unchanged. This checkpoint closes the input/read-control join only; Birth,
 dependent waves, the seal envelope and full P5/S6 qualification remain open.
+
+## Birth join boundary review
+
+The actual installed producer admission, normalized output roles and effect
+commands already enter Native's coupled part. A missing entry in the authored
+owner catalog is not absence evidence. Native's current custody reader and route
+absence owner must decide whether the route has a live predecessor at C; final
+canonical installation keeps the same Birth/Preserve coverage checks. Ordinary
+edits may introduce a genuine Birth, while retirement/restoration preserve their
+exact required-owner completion rule.
+
+The current `writer_custody::require` uses `None` for the authored prefix. Reusing
+that value for a Birth would incorrectly grant the new producer the prefix's
+retirement custody. It needs an explicit authored-prefix versus producer posture,
+with an optional actual predecessor only inside the producer posture. Birth
+must acquire no existing publication's records. Query selects Initial only from
+an actual absent route, and keeps independent C operation authorization. No
+synthetic prior, settlement or required-demand record is permitted.
+
+Birth join steps: prove a Native edit plus real initial publication in one
+candidate; share the existing current-custody readmission core with coupled
+admission; admit Birth through existing absence/installation owners and the
+explicit writer posture; thread actual optional predecessor/absence custody
+through Query's existing typed writer preparation and registry selection; prove
+two-family Initial followed by Preserve, cold/worker and fail-closed cases.
+General dependent discovery and applied sources absent at C follow at their
+existing owners. Do not interpret catalog absence as route absence or broaden a
+retirement's exact owner set.
+
+### Completed Birth checkpoint handoff
+
+Cold capture currently sees no demand Ready row immediately after a coupled
+Initial, so its native-head fallback records only a locator. The genuine
+completed coupled receipt and lineage facts already exist. Capture will borrow
+that receipt only from the selected native head, with the exact settlement
+identity; the existing receipt-to-facts owner validates its correspondence,
+source, partition and generation before encoding. This is evidence transport,
+not a Ready issuance. Locator-only and incomplete records remain non-reusable.
+The cold Initial court must retain its zero-contact assertion. A dropped-receipt
+transport mutant must fail that assertion.

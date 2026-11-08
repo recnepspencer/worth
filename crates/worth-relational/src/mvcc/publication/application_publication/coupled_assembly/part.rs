@@ -25,9 +25,10 @@ pub(super) fn require_unseen_route(
     meaning: &RequiredOutputPublicationMeaning,
 ) -> Result<(), TransactionCommitError> {
     for part in parts {
-        let RequiredOutputPublication::Preserve { meaning: prior, .. } = &part.publication else {
-            unreachable!("only an admitted Preserve enters a coupled participant")
-        };
+        let prior = part
+            .publication
+            .producing_meaning()
+            .expect("admitted producer route");
         checkpoint(
             context,
             (meaning.family.len() + prior.family.len() + 65) as u64,
@@ -41,59 +42,19 @@ pub(super) fn require_unseen_route(
 }
 
 impl RelationalAuthoredCoupledCandidate<'_> {
-    pub fn append_preserve(
+    pub fn append_publication(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
         mut publication: RequiredOutputPublication,
         content: &crate::content::RelationalContentAttachments,
         mut batches: Vec<WorkerIntentBatch>,
     ) -> Result<(), RelationalCoupledAssemblyFailure> {
-        let RequiredOutputPublication::Preserve {
-            predecessor,
-            meaning,
-            ..
-        } = &publication
-        else {
-            let subject = match &publication {
-                RequiredOutputPublication::Birth { meaning, .. } => meaning.source_scope,
-                _ => self.binding.owners.source.subject(),
-            };
-            return Err(reject(Cause::ForeignCoupledOwner, subject).into());
-        };
-        let subject = predecessor.origin.meaning.source_scope;
-        if !publication.admitted_by(&self.binding.installed)
-            || !predecessor.origin.source_scope_owned
-            || !meaning.same_route(&predecessor.origin.meaning)
-        {
-            return Err(reject(Cause::ForeignCoupledOwner, subject).into());
-        }
-        execution
-            .run_native_with_checkpoint(|context| {
-                let mut expected = None;
-                for owner in &self.binding.owners.owners {
-                    checkpoint(
-                        context,
-                        (meaning.family.len() + owner.origin.meaning.family.len() + 65) as u64,
-                    )
-                    .map_err(custody::execution_stop)?;
-                    if owner.origin.meaning.same_route(meaning) {
-                        expected = Some(owner);
-                    }
-                }
-                let expected = expected.ok_or_else(|| reject(Cause::ExtraCoupledOwner, subject))?;
-                if expected.origin.commit != predecessor.origin.commit
-                    || expected.runtime_instance_id != predecessor.runtime_instance_id
-                {
-                    return Err(reject(Cause::ForeignCoupledOwner, subject));
-                }
-                require_unseen_route(context, &self.parts, meaning)?;
-                Ok(())
-            })
-            .map_err(custody::execution_stop)?
-            .0?;
-        let predecessor_origin = Arc::clone(&predecessor.origin);
-        let RequiredOutputPublication::Preserve { roles, .. } = &mut publication else {
-            unreachable!("admitted Preserve")
+        let predecessor_origin =
+            super::participant_admission::admit(self, execution, &publication)?;
+        let roles = match &mut publication {
+            RequiredOutputPublication::Birth { roles, .. }
+            | RequiredOutputPublication::Preserve { roles, .. } => roles,
+            _ => unreachable!("admitted producer"),
         };
         super::local_keys::scope(
             execution,
@@ -155,7 +116,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let deferred_edges = super::writer_custody::require(
             execution,
             &self.binding.owners,
-            Some(predecessor_origin.as_ref()),
+            super::writer_custody::Writer::Producer(predecessor_origin.as_deref()),
             &plan,
         )?;
         let (_, mut state, _) = prepare_authoritative_working_state_scope_for_base(

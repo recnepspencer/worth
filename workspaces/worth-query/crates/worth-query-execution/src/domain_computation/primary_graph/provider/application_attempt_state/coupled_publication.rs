@@ -21,10 +21,12 @@ pub(in crate::domain_computation::primary_graph) struct CoupledWriterCommands {
 impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn coupled_writer_commands(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
         session: WorthQueryProviderSessionView<'_>,
         producer: &str,
         family: &str,
-        predecessor: RelationalRequiredOutputPublication,
+        predecessor: Option<RelationalRequiredOutputPublication>,
     ) -> Result<CoupledWriterCommands, Failure> {
         let unavailable = || {
             Failure::new(
@@ -43,11 +45,6 @@ impl WorthQueryPrimaryGraphProvider {
         let idempotency = attempt.idempotency();
         let dependency = idempotency
             .producer_dependency_identity()
-            .ok_or_else(unavailable)?;
-        let running = publisher.owner.admit_required_output(producer, dependency);
-        let admission = publisher
-            .owner
-            .admit_required_output_succession(running, predecessor.authority())
             .ok_or_else(unavailable)?;
         let (roles, _) = super::super::native_publication_roles::collect(
             &self.graph.layout,
@@ -75,15 +72,47 @@ impl WorthQueryPrimaryGraphProvider {
                 .source()
                 .checkpoint_identity(),
         };
-        Ok(CoupledWriterCommands {
-            publication: RequiredOutputPublication::Preserve {
-                admission,
+        let batch = staged.batch().clone();
+        let content = staged.content_attachments().clone();
+        drop(attempts);
+        let running = publisher.owner.admit_required_output(producer, dependency);
+        let publication = match predecessor {
+            Some(predecessor) => RequiredOutputPublication::Preserve {
+                admission: publisher
+                    .owner
+                    .admit_required_output_succession(running, predecessor.authority())
+                    .ok_or_else(unavailable)?,
                 predecessor,
                 meaning,
                 roles,
             },
-            batch: staged.batch().clone(),
-            content: staged.content_attachments().clone(),
+            None => {
+                // Native's own route owner admits the exact installed initial
+                // meaning. No attempts lock is held while borrowing Native.
+                let absence = self
+                    .graph
+                    .with_runtime(execution, |native| {
+                        native.readmit_required_output_route_absence(
+                            execution,
+                            &publisher.native,
+                            basis,
+                            &meaning,
+                        )
+                    })
+                    .map_err(super::super::invariant_execution_failure::map_validation_failure)?
+                    .ok_or_else(unavailable)?;
+                RequiredOutputPublication::Birth {
+                    admission: running,
+                    absence: Some(absence),
+                    meaning,
+                    roles,
+                }
+            }
+        };
+        Ok(CoupledWriterCommands {
+            publication,
+            batch,
+            content,
         })
     }
 }

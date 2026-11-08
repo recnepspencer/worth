@@ -109,14 +109,17 @@ impl World {
     ) -> RelationalRequiredOutputPublication {
         self.birth_for(execution, self.source, "output")
     }
-    pub fn add_unrelated_publication(&self, execution: &ExecutionRequest<'_, '_>) {
+    pub fn add_unrelated_publication(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> RelationalRequiredOutputPublication {
         let mut tx = begin_main_transaction(&self.runtime);
         tx.push_batch(create("other-source"), execution.allocation_policy())
             .unwrap();
         let result = tx.commit(execution, &self.runtime).unwrap();
         let source = result.created_entity(&target("other-source")).unwrap();
         release_test_commit_snapshot(&self.runtime, &result);
-        self.birth_for(execution, source, "other-output");
+        self.birth_for(execution, source, "other-output")
     }
     fn birth_for(
         &self,

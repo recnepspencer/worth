@@ -30,6 +30,16 @@ impl CoupledOutputCompletion {
             receipt: Arc::new(receipt.seal().map_err(map)?),
         })
     }
+    pub(super) fn completed_receipt(
+        &self,
+        settlement: &Arc<RecordedSettlementIdentity>,
+    ) -> Option<WorthQueryApplicationCommitReceipt> {
+        let receipt = self.receipt[0].get()?;
+        receipt
+            .exact_output_settlement()
+            .filter(|identity| Arc::ptr_eq(identity, settlement))?;
+        Some(receipt.clone())
+    }
     pub(in crate::domain_computation::primary_graph) fn source(&self) -> &AppliedSourcePublication {
         &self.source
     }
@@ -57,13 +67,9 @@ impl input_cutoff::RetainedInputCutoffCandidate {
         {
             return None;
         }
-        let receipt = recorded.coupled_completion.as_ref()?.receipt[0].get()?;
-        if !receipt
-            .exact_output_settlement()
-            .is_some_and(|identity| Arc::ptr_eq(identity, &recorded.settlement_identity))
-        {
-            return None;
-        }
-        Some(receipt.clone())
+        recorded
+            .coupled_completion
+            .as_ref()?
+            .completed_receipt(&recorded.settlement_identity)
     }
 }

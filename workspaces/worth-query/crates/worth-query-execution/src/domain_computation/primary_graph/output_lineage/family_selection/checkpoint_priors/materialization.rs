@@ -5,6 +5,18 @@ use super::Structure;
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity;
 
 impl NativePriorCheckpointOutput<'_> {
+    /// Only an actually completed writer at this selected head supplies facts.
+    /// A locator by itself never grants completion or reusable evidence.
+    pub(in crate::domain_computation::primary_graph) fn completed_coupled_receipt(
+        &self,
+    ) -> Option<crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt> {
+        let recorded = self.identity.as_ref()?.recorded;
+        recorded
+            .coupled_completion
+            .as_ref()?
+            .completed_receipt(&recorded.settlement_identity)
+    }
+
     /// Original producing meaning, independent of current-installation eligibility.
     pub(in crate::domain_computation::primary_graph) fn producing_implementation(
         &self,

@@ -214,12 +214,11 @@ impl ValidatedRelationalProposal {
                 let (producer, _) = part
                     .publication
                     .lineage_attribution()
-                    .expect("Native admitted Preserve participant");
-                let crate::mvcc::RequiredOutputPublication::Preserve { meaning, .. } =
-                    &part.publication
-                else {
-                    unreachable!("Native admitted Preserve participant")
-                };
+                    .expect("Native admitted producer participant");
+                let meaning = part
+                    .publication
+                    .producing_meaning()
+                    .expect("Native admitted producer participant");
                 (
                     producer,
                     meaning,

@@ -31,13 +31,18 @@ impl CanonicalCommitEnvelope {
         }
         for part in &event.participants {
             self.validate_output_origin_header(&part.origin)?;
-            if !part.origin.source_scope_owned
-                || !matches!(
+            let producing =
+                matches!(
                     part.origin.publication,
                     CanonicalOutputPublication::Preserve { .. }
-                )
-            {
-                return Err("coupled participant is not an opted-in successor Preserve".into());
+                ) || (matches!(event.sources, CanonicalCoupledAuthoredSources::Edit(_))
+                    && matches!(
+                        part.origin.publication,
+                        CanonicalOutputPublication::Birth
+                            | CanonicalOutputPublication::BirthAfterCodecRetirement { .. }
+                    ));
+            if !part.origin.source_scope_owned || !producing {
+                return Err("coupled participant is not an opted-in producing origin".into());
             }
             self.validate_producer_retirement_components(
                 Some(&part.origin),
