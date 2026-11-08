@@ -67,6 +67,31 @@ The foreign-schema consumer court uses its real consumer workspace check
 session, including all three successful counterparts, prepared by the outer
 runner; the court itself only reads attributed receipts.
 
+## Compiler diagnostics and recording
+
+Native builds and compiler prebuilds inherit the same committed rustflags.
+`--verbose` is declared once in `.cargo/config.toml`: full concrete types keep
+compiler diagnostics independent of random `.long-type-*` output filenames.
+The prebuilder adds no presentation flags and does not suppress dead-code
+warnings. Changing this shared configuration invalidates existing compiler
+caches once; the unit-input drift and duplicate-graph checks remain enabled.
+
+Review stale diagnostics with the owning recorder, using the actual receipt
+channel supplied by the outer prebuilder:
+
+```text
+cargo run -p worth-testkit-compiler --example record_denials -- path/to/fixture.rs
+cargo run -p worth-testkit-compiler --example record_denials -- --write path/to/fixture.rs
+```
+
+The default is a JSON comparison only. `--sources-from PATH` accepts an explicit
+JSON list. Recording uses the court's attribution, environment validation and
+existing complete-diagnostic masks; it refuses a compiled or unobserved source.
+Before writing, establish that the current denial reaches the protected action.
+A stale import or argument error is not evidence of the intended private field,
+phase or ownership boundary. Repair that fixture and demonstrate a killing
+mutation before accepting its new snapshot.
+
 ## Ownership and enforcement
 
 * `source_scan.py` and `ratchet.source_violations` refuse Cargo, cargo_metadata

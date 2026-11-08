@@ -1,9 +1,7 @@
 use worth_server::{WorthServerAdmission, WorthServerWorthNativeSession};
 
-fn main() {
-    let _session = WorthServerWorthNativeSession::new(fake_admission());
+fn construct(admission: WorthServerAdmission) {
+    let _ = WorthServerWorthNativeSession::new(admission, panic!("compile-only argument"));
 }
 
-fn fake_admission() -> WorthServerAdmission {
-    todo!()
-}
+fn main() {}

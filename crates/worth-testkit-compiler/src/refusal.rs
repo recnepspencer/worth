@@ -8,6 +8,10 @@ pub enum CompilerFixtureRefusal {
         path: PathBuf,
         reason: String,
     },
+    Write {
+        path: PathBuf,
+        reason: String,
+    },
     InvalidPrebuild(String),
     ChangedPrebuild {
         original: PathBuf,
@@ -46,6 +50,7 @@ impl std::fmt::Display for CompilerFixtureRefusal {
         match self {
             Self::MissingPrebuild => write!(formatter, "missing WORTH_PREBUILT_COMPILER_OUTCOMES; run the workspace gate prebuild"),
             Self::Read { path, reason } => write!(formatter, "read {}: {reason}", path.display()),
+            Self::Write { path, reason } => write!(formatter, "write {}: {reason}", path.display()),
             Self::InvalidPrebuild(reason) => write!(formatter, "invalid compiler prebuild: {reason}"),
             Self::ChangedPrebuild { original, observed } => write!(formatter, "compiler prebuild changed during one court process: {} -> {}", original.display(), observed.display()),
             Self::UnobservedFixture(path) => write!(formatter, "compiler did not observe {}", path.display()),

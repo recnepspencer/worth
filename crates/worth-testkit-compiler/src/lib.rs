@@ -12,6 +12,7 @@ mod diagnostic_lists;
 mod diagnostics;
 mod driver_summary;
 mod paths;
+mod recording;
 mod refusal;
 mod semantic_denial;
 mod session;
@@ -46,3 +47,5 @@ pub use semantic_denial::{
 
 #[cfg(test)]
 mod production_semantic_denial_tests;
+
+pub use recording::{record_denial_snapshot, review_denial_snapshot, CompilerSnapshotReview};

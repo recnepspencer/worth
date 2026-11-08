@@ -1,27 +1,13 @@
-error[E0560]: struct `WorthServerQueryHandoff` has no field named `admission`
- --> $WORKSPACE/crates/worth-testkit-server/assets/ui/construction/query_handoff/private_query_handoff_constructor.rs
+warning: function `reconstruct` is never used
+ --> tests/ui/construction/query_handoff/private_query_handoff_constructor.rs:3:4
   |
-  |         admission: loop {},
-  |         ^^^^^^^^^ `WorthServerQueryHandoff` does not have this field
+3 | fn reconstruct(value: WorthServerQueryHandoff) -> WorthServerQueryHandoff {
+  |    ^^^^^^^^^^^
   |
-  = note: all struct fields are already assigned
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
 
-warning: unreachable expression
- --> $WORKSPACE/crates/worth-testkit-server/assets/ui/construction/query_handoff/private_query_handoff_constructor.rs
+error[E0451]: fields `operation_admission`, `operation`, `workspace`, `downstream_delivery_contract`, `operation_support_posture`, `support_composition_receipt`, `precondition_posture`, `concurrency_class`, `support_posture` and `canonical_digest` of struct `WorthServerQueryHandoff` are private
+ --> tests/ui/construction/query_handoff/private_query_handoff_constructor.rs:4:33
   |
-  |         admission: loop {},
-  |                    ------- any code following this expression is unreachable
-  |         operation: WorthServerQueryHandoffOperation::query_read("users.profile"),
-  |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unreachable expression
-  |
-  = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
-
-warning: unreachable expression
- --> $WORKSPACE/crates/worth-testkit-server/assets/ui/construction/query_handoff/private_query_handoff_constructor.rs
-  |
-  |           support_posture: WorthServerQuerySupportPosture::QueryReadSupported {
-  |  __________________________^
-  | |             family_contract: loop {},
-  | |                              ------- any code following this expression is unreachable
-  | |         },
-  | |_________^ unreachable expression
+4 |     WorthServerQueryHandoff { ..value }
+  |                                 ^^^^^ fields `operation_admission`, `operation`, `workspace`, `downstream_delivery_contract`, `operation_support_posture`, `support_composition_receipt`, `precondition_posture`, `concurrency_class`, `support_posture` and `canonical_digest` are private

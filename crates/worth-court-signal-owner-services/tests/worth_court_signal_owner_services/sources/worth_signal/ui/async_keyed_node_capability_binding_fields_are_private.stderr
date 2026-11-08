@@ -1,10 +1,10 @@
-error[E0432]: unresolved import `worth_signal::AsyncKeyedNodeCapabilityBinding`
- --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/async_keyed_node_capability_binding_fields_are_private.rs:1:5
+error[E0616]: field `family` of struct `AsyncKeyedNodeCapabilityBinding` is private
+ --> tests/ui/async_keyed_node_capability_binding_fields_are_private.rs:4:21
   |
-1 | use worth_signal::AsyncKeyedNodeCapabilityBinding;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `AsyncKeyedNodeCapabilityBinding` in the root
+4 |     let _ = binding.family;
+  |                     ^^^^^^ private field
   |
-help: consider importing this struct instead
+help: a method `family` also exists, call it with parentheses
   |
-1 | use worth_signal::facade::AsyncKeyedNodeCapabilityBinding;
-  |                   ++++++++
+4 |     let _ = binding.family();
+  |                           ++

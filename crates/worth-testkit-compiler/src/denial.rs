@@ -48,6 +48,25 @@ pub(crate) fn check_outcome(
     expected: &str,
     required: RequiredEnvironment,
 ) -> Result<(), CompilerFixtureRefusal> {
+    let observed = rendered_denial(source, outcome, required)?;
+    let (expected, observed) = crate::snapshot::compared(expected, &observed, source)
+        .map_err(CompilerFixtureRefusal::InvalidPrebuild)?;
+    if expected != observed {
+        return Err(CompilerFixtureRefusal::WrongDiagnostics {
+            path: source.to_path_buf(),
+            expected,
+            observed,
+        });
+    }
+    Ok(())
+}
+
+/// The assertion and explicit recorder consume the same attributed full denial.
+pub(crate) fn rendered_denial(
+    source: &Path,
+    outcome: &serde_json::Value,
+    required: RequiredEnvironment,
+) -> Result<String, CompilerFixtureRefusal> {
     let messages = denied_messages(source, outcome, required)?;
     let mut observed = String::new();
     let mut attributed = false;
@@ -82,16 +101,7 @@ pub(crate) fn check_outcome(
             source.to_path_buf(),
         ));
     }
-    let (expected, observed) = crate::snapshot::compared(expected, &observed, source)
-        .map_err(CompilerFixtureRefusal::InvalidPrebuild)?;
-    if expected != observed {
-        return Err(CompilerFixtureRefusal::WrongDiagnostics {
-            path: source.to_path_buf(),
-            expected,
-            observed,
-        });
-    }
-    Ok(())
+    Ok(observed)
 }
 
 pub(crate) fn denied_messages<'a>(

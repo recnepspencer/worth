@@ -1,18 +1,18 @@
 error[E0624]: associated function `new` is private
- --> $WORKSPACE/crates/worth-testkit-server/assets/ui/construction/private_server_constructor.rs
+ --> tests/ui/construction/private_server_constructor.rs:4:32
   |
-  |     let _server = WorthServer::new(todo!());
+4 |     let _server = WorthServer::new(todo!());
   |                                ^^^ private associated function
   |
- ::: $WORKSPACE/crates/worth-server/src/facade/server.rs
+ ::: src/facade/server.rs
   |
   |     pub(crate) fn new(runtime: WorthServerRuntime) -> Self {
   |     ------------------------------------------------------ private associated function defined here
 
 warning: unreachable call
- --> $WORKSPACE/crates/worth-testkit-server/assets/ui/construction/private_server_constructor.rs
+ --> tests/ui/construction/private_server_constructor.rs:4:19
   |
-  |     let _server = WorthServer::new(todo!());
+4 |     let _server = WorthServer::new(todo!());
   |                   ^^^^^^^^^^^^^^^^ ------- any code following this expression is unreachable
   |                   |
   |                   unreachable call

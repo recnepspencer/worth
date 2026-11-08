@@ -68,4 +68,5 @@ impl std::fmt::Debug for EqualityTypeId {
     }
 }
 
+#[path = "equality_type_id/court_doors_for_test.rs"]
 mod court_doors_for_test;

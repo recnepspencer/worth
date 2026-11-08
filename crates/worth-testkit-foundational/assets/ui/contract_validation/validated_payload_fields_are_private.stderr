@@ -1,25 +1,13 @@
-error: cannot construct `ContractValidatedAspectValue` with struct literal syntax due to private fields
- --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/contract_validation/validated_payload_fields_are_private.rs:4:19
+warning: function `reconstruct` is never used
+ --> tests/ui/contract_validation/validated_payload_fields_are_private.rs:4:4
   |
-4 |     let _worthd = ContractValidatedAspectValue {
-  |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-5 |         key: AspectKey::new("count").unwrap(),
-  |         ------------------------------------- private field
-6 |         contract_revision: AspectContractRevision(1),
-  |         -------------------------------------------- private field
+4 | fn reconstruct(value: ContractValidatedAspectValue) -> ContractValidatedAspectValue {
+  |    ^^^^^^^^^^^
   |
-  = note: ...and other private fields `contract`, `contract_identity` and `kind` that were not provided
-help: you might have meant to use an associated function to build this type
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+error[E0451]: field `value` of struct `ContractValidatedAspectValue` is private
+ --> tests/ui/contract_validation/validated_payload_fields_are_private.rs:5:38
   |
-4 -     let _worthd = ContractValidatedAspectValue {
-5 -         key: AspectKey::new("count").unwrap(),
-6 -         contract_revision: AspectContractRevision(1),
-7 -     };
-4 +     let _worthd = ContractValidatedAspectValue::scalar(_, _);
-  |
-4 -     let _worthd = ContractValidatedAspectValue {
-5 -         key: AspectKey::new("count").unwrap(),
-6 -         contract_revision: AspectContractRevision(1),
-7 -     };
-4 +     let _worthd = ContractValidatedAspectValue::struct_value(_, _);
-  |
+5 |     ContractValidatedAspectValue { ..value }
+  |                                      ^^^^^ field `value` is private

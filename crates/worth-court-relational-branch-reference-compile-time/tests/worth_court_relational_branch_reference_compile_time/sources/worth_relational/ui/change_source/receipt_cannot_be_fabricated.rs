@@ -1,5 +1,7 @@
 use worth_relational::facade::change_source::RelationalChangeReceipt;
 
-fn main() {
-    let _ = RelationalChangeReceipt {};
+fn reconstruct(value: RelationalChangeReceipt) -> RelationalChangeReceipt {
+    RelationalChangeReceipt { ..value }
 }
+
+fn main() {}

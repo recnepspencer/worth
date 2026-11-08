@@ -1,10 +1,10 @@
 error[E0624]: associated function `new` is private
- --> $WORKSPACE/crates/worth-testkit-server/assets/ui/construction/worth_native/private_prepared_session_constructor.rs
+ --> tests/ui/construction/worth_native/private_prepared_session_constructor.rs:4:52
   |
-  |       let _prepared = WorthServerWorthNativePreparedSession::new(fake_admission());
-  |                                                              ^^^ private associated function
+4 |       let _ = WorthServerWorthNativePreparedSession::new(admission, panic!("compile-only argument"));
+  |                                                      ^^^ private associated function
   |
- ::: $WORKSPACE/crates/worth-server/src/worth_native/session.rs
+ ::: src/worth_native/session.rs
   |
   | /     pub(crate) fn new(
   | |         admission: WorthServerAdmission,
@@ -12,18 +12,12 @@ error[E0624]: associated function `new` is private
   | |     ) -> Self {
   | |_____________- private associated function defined here
 
-error[E0061]: this function takes 2 arguments but 1 argument was supplied
- --> $WORKSPACE/crates/worth-testkit-server/assets/ui/construction/worth_native/private_prepared_session_constructor.rs
+warning: unreachable call
+ --> tests/ui/construction/worth_native/private_prepared_session_constructor.rs:4:13
   |
-  |     let _prepared = WorthServerWorthNativePreparedSession::new(fake_admission());
-  |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^------------------ argument #2 of type `worth_server::worth_native::session::WorthServerWorthNativeSessionServices` is missing
+4 |     let _ = WorthServerWorthNativePreparedSession::new(admission, panic!("compile-only argument"));
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^            ------------------------------- any code following this expression is unreachable
+  |             |
+  |             unreachable call
   |
-note: associated function defined here
- --> $WORKSPACE/crates/worth-server/src/worth_native/session.rs
-  |
-  |     pub(crate) fn new(
-  |                   ^^^
-help: provide the argument
-  |
-4 |     let _prepared = WorthServerWorthNativePreparedSession::new(fake_admission(), /* worth_server::worth_native::session::WorthServerWorthNativeSessionServices */);
-  |                                                                                ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default

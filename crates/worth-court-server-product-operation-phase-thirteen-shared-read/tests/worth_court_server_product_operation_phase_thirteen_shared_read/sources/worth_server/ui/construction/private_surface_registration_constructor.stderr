@@ -1,9 +1,9 @@
 error: cannot construct `WorthServerSurfaceRegistration` with struct literal syntax due to private fields
- --> $WORKSPACE/crates/worth-testkit-server/assets/ui/construction/private_surface_registration_constructor.rs
+ --> tests/ui/construction/private_surface_registration_constructor.rs:4:25
   |
-  |     let _registration = WorthServerSurfaceRegistration {
+4 |     let _registration = WorthServerSurfaceRegistration {
   |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |         family: WorthServerSurfaceFamily::WorthNative,
+5 |         family: WorthServerSurfaceFamily::WorthNative,
   |         --------------------------------------------- private field
   |
   = note: ...and other private fields `implementation_state` and `details` that were not provided
