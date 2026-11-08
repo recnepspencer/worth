@@ -43,3 +43,6 @@ pub(in crate::domain_computation::managed_run) fn bridge_terminal_disposition(
         }
     }
 }
+#[cfg(test)]
+#[path = "terminal_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -27,3 +27,6 @@ pub use observation::SignalObservationCapturePlan;
 pub use parallel::ParallelAdmissionPolicy;
 pub use request::SignalRuntimePolicyRequest;
 pub use resolved::{InstalledSignalRuntimePolicy, ResolvedSignalRuntimePolicy};
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

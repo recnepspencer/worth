@@ -23,8 +23,11 @@ pub(super) fn validate(
     candidate: Option<&WorkingState>,
     origin: &CanonicalRequiredOutputOrigin,
     current: Option<&CanonicalCommitEnvelopeBody>,
-    lookup_commit: &mut impl FnMut(CommitId) -> Option<Arc<CanonicalCommitEnvelope>>,
-    lookup: &mut impl FnMut(VersionId) -> Option<Arc<CanonicalCommitEnvelope>>,
+    lookup_commit: &mut impl FnMut(CommitId) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop>,
+    lookup: &mut impl FnMut(
+        VersionId,
+        &mut MapKernelContext<'_, '_>,
+    ) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop>,
     maximum_hops: usize,
     lease: Option<&ExecutionResourceLease<'_>>,
     context: &mut MapKernelContext<'_, '_>,
@@ -133,9 +136,12 @@ pub(super) fn charge(context: &mut MapKernelContext<'_, '_>, work: usize) -> Res
     let work = u64::try_from(work).map_err(|_| {
         Stop::Request(crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow)
     })?;
-    context
-        .checkpoint(work)
-        .map_err(|cause| Stop::Request(cause.into()))
+    if context.has_accounting() {
+        context.checkpoint(work)
+    } else {
+        context.poll()
+    }
+    .map_err(|cause| Stop::Request(cause.into()))
 }
 
 pub(super) fn writes(

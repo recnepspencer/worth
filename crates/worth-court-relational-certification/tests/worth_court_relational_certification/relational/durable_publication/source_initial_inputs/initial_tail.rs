@@ -23,10 +23,8 @@ fn birth_checkpoint_reopens_with_archived_empty_installation_tail_at_zero_commit
         .durability_recovery()
         .admit_fresh_home_source(&request, plan)
         .unwrap();
-    let birth = runtime
-        .complete_checkpoint_service()
-        .prepare(&request, RelationalCheckpointArtifactPolicy::Embedded)
-        .unwrap();
+    let birth = capture_external(&runtime, &medium, &request);
+    let members = selected_members(&birth, &request);
     let birth_coordinate = birth.source_artifact().initial_coordinate();
     assert_eq!(birth_coordinate.0, 1);
     assert_eq!(birth.source_artifact().covered().0, 0);
@@ -38,10 +36,7 @@ fn birth_checkpoint_reopens_with_archived_empty_installation_tail_at_zero_commit
         .unwrap()
         .install_with_managed_sources(&request, additions(), vec![], vec![])
         .unwrap();
-    let installed = runtime
-        .complete_checkpoint_service()
-        .prepare(&request, RelationalCheckpointArtifactPolicy::Embedded)
-        .unwrap();
+    let installed = capture_selected_external(&runtime, &medium, &members, &request);
     assert_eq!(installed.source_artifact().covered().0, 0);
     assert_eq!(installed.source_artifact().initial_coordinate().0, 2);
     assert_eq!(installed.initial_predecessor(), Some(birth_coordinate.1));
@@ -60,10 +55,7 @@ fn birth_checkpoint_reopens_with_archived_empty_installation_tail_at_zero_commit
         .durability_recovery()
         .recover_with_authority(&request, plan)
         .unwrap();
-    let complete = receiver
-        .complete_checkpoint_service()
-        .prepare(&request, RelationalCheckpointArtifactPolicy::Embedded)
-        .unwrap();
+    let complete = capture_selected_external(&receiver, &medium, &members, &request);
     assert_eq!(complete.source_artifact().covered().0, 0);
     assert_eq!(complete.source_artifact().covered_transitions().0, 1);
     assert_eq!(complete.source_artifact().initial_coordinate().0, 2);

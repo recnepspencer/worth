@@ -45,3 +45,6 @@ pub use provider_session::*;
 pub(crate) mod invalidation_equivalence_control;
 
 pub(crate) mod execution_observation;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

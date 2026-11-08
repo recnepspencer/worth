@@ -65,7 +65,7 @@ fn native_wire(
 ) -> (usize, usize, Native<'_>) {
     let bytes = checkpoint.bytes();
     let start = find(bytes, NATIVE_MAGIC);
-    let length = u64::from_be_bytes(bytes[start - 16..start - 8].try_into().unwrap()) as usize;
+    let length = u64::from_be_bytes(bytes[start - 32..start - 24].try_into().unwrap()) as usize;
     let native: Native<'_> =
         rmp_serde::from_slice(&bytes[start + NATIVE_MAGIC.len()..start + length]).unwrap();
     assert!(
@@ -109,7 +109,8 @@ pub fn tamper_anchor(
         "fixture anchor uses a MessagePack positive fixint"
     );
     bytes[slot] ^= 1;
-    // Preserve Query framing/checksum so Native judges the changed closure.
+    // Preserve Query framing/checksum. Imported DATA still lacks the issuing
+    // capture origin and cannot authorize this changed Native closure.
     let checksum = Sha256::digest(&bytes[40..]);
     bytes[8..40].copy_from_slice(&checksum);
     installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes.into_boxed_slice())
@@ -213,7 +214,7 @@ fn replace_member(
     let removed = original.len() - replacement.len();
     let mut frame = bytes.to_vec();
     frame.splice(offset..offset + original.len(), replacement);
-    frame[start - 16..start - 8].copy_from_slice(&((native_len - removed) as u64).to_be_bytes());
+    frame[start - 32..start - 24].copy_from_slice(&((native_len - removed) as u64).to_be_bytes());
     let checksum = Sha256::digest(&frame[40..]);
     frame[8..40].copy_from_slice(&checksum);
     installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(frame.into_boxed_slice())

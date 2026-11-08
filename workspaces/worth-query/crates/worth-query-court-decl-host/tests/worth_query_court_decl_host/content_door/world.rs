@@ -169,7 +169,7 @@ pub fn restore(
     checkpoint: WorthQueryApplicationCheckpoint,
     calls: std::sync::Arc<source::Calls>,
 ) -> Host {
-    in_memory_program_from_checkpoint(
+    WorthQueryInterimCheckpointRestore::program(
         ApplicationProgramAuthoring::<Schema, Program>::begin()
             .validated_program()
             .unwrap(),

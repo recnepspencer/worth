@@ -46,3 +46,6 @@ pub enum PhysicalRecoveryPlanningDenial {
     SuccessorCandidate(super::super::PhysicalRecoverySuccessorCandidateDenial),
     Cost(RecoveryPlanCostDenial),
 }
+#[cfg(test)]
+#[path = "planning_denial_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

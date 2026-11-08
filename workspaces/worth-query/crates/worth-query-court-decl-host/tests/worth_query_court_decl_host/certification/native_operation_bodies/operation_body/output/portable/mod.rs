@@ -111,7 +111,7 @@ fn output_bodies_reconstruct_and_new_receipts_rebind_exact_entity_types() {
         .unwrap();
     drop(old);
     let schema = program::schema::<31>();
-    let restored = in_memory_program_from_checkpoint(
+    let restored = WorthQueryInterimCheckpointRestore::program(
         program::validated::<31>(&schema),
         schema,
         (program::Installation::Native,),
@@ -135,16 +135,22 @@ fn output_bodies_reconstruct_and_new_receipts_rebind_exact_entity_types() {
         .expect("restored Preserve output is present");
     assert!(receipt.outputs_of::<CreatedOutputs<31>>().is_err());
     assert_eq!(read_retention(&restored), 7);
-    let Outcome::AlreadyCommitted(replayed) = invoke(&restored, 313) else {
+    let Outcome::RecoveredCommitted(replayed) = invoke(&restored, 313) else {
         panic!("restored replay")
     };
+    assert!(receipt.matches_recorded_original(&replayed));
     assert_eq!(
-        replayed
+        replayed.semantic_result().semantic().receipt(),
+        receipt.commit_reference()
+    );
+    assert_eq!(read_retention(&restored), 7);
+    assert_eq!(
+        receipt
             .outputs_of::<ScopeOutputs<31>>()
             .unwrap()
             .entity::<ScopeOutput<31>>()
             .unwrap()
-            .expect("replayed Preserve output is present")
+            .unwrap()
             .entity_id(),
         preserved.entity_id()
     );

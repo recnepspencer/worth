@@ -1,7 +1,7 @@
 //! Sealed test doors over this module's private members.
 use super::*;
 
-impl WorthQueryInMemoryApplicationProfile {
+impl WorthQueryApplicationProfile {
     #[doc(hidden)]
     pub fn publication_override_for_test(
         self,
@@ -11,7 +11,7 @@ impl WorthQueryInMemoryApplicationProfile {
     }
 }
 
-impl WorthQueryInMemoryApplicationProfile {
+impl WorthQueryApplicationProfile {
     #[doc(hidden)]
     pub fn relational_profile_for_test(
         self,

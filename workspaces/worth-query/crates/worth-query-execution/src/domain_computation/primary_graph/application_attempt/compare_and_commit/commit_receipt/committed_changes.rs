@@ -25,6 +25,13 @@ pub struct WorthQueryApplicationCommittedChanges {
 }
 
 impl WorthQueryApplicationCommittedChanges {
+    pub(super) fn matches_recorded_semantic_result(
+        &self,
+        recorded: &worth_relational::facade::durability::RecoveredRelationalSemanticResult,
+    ) -> bool {
+        self.envelope.semantic_result() == recorded.semantic()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn shares_original(
         &self,
         other: &Self,

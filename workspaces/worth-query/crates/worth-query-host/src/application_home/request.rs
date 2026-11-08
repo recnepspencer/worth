@@ -7,9 +7,7 @@ use worth_query_execution::facade::{
     application_contribution::{
         WorthQueryApplicationContributionTuple, WorthQueryBootstrapAdvancementPhase,
     },
-    application_installation::{
-        WorthQueryApplicationProgramRoster, WorthQueryInMemoryApplicationLimits,
-    },
+    application_installation::{WorthQueryApplicationLimits, WorthQueryApplicationProgramRoster},
     primary_graph::{WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenial},
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
@@ -37,7 +35,7 @@ pub struct WorthQueryApplicationHomeRequest<
     pub(super) configuration:
         <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
     pub(super) build: worth_foundational::facade::ApplicationBuildIdentity,
-    pub(super) limits: WorthQueryInMemoryApplicationLimits,
+    pub(super) limits: WorthQueryApplicationLimits,
     pub(super) checkpoint_limits: worth_store_application::ApplicationHomeCheckpointLimits,
     pub(super) opening_control:
         Option<worth_store_application::ApplicationHomeOpeningControlForTest>,
@@ -65,7 +63,7 @@ where
         declaration: ApplicationSchemaDeclaration<Schema>,
         configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
         build: worth_foundational::facade::ApplicationBuildIdentity,
-        limits: WorthQueryInMemoryApplicationLimits,
+        limits: WorthQueryApplicationLimits,
         initial_state: impl FnOnce(
                 &WorthQueryBootstrapAdvancementPhase<'_>,
                 &mut WorthQueryPrimaryGraphBootstrap<Schema>,

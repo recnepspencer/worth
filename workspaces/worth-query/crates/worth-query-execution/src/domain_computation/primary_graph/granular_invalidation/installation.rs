@@ -128,3 +128,6 @@ impl WorthQueryGranularInvalidationInstallation {
         self.runtime_seal.generation.fetch_add(1, Ordering::AcqRel);
     }
 }
+#[cfg(test)]
+#[path = "installation_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

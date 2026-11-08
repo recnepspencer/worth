@@ -28,3 +28,6 @@ impl RecoveryHandoffBacking {
             .ok_or(PlanningMemoryDenial::RecoveryMemoryBytes { observed: u64::MAX })
     }
 }
+#[cfg(test)]
+#[path = "backing_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

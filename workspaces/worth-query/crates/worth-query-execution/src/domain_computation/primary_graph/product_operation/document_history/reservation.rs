@@ -195,3 +195,6 @@ impl<S> super::selection::HistorySelection<'_, S> {
         Ok(())
     }
 }
+#[cfg(test)]
+#[path = "reservation_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

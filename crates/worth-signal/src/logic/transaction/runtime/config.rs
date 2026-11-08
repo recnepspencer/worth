@@ -274,3 +274,6 @@ impl<T: Copy + Ord> SignalRuntimeConfig<T> {
         )
     }
 }
+#[cfg(test)]
+#[path = "config_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

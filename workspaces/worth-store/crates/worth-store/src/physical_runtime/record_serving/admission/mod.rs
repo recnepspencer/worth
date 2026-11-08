@@ -10,6 +10,7 @@ pub(super) mod open;
 mod recovered_custody;
 pub use recovered_custody::RecoveredPhysicalCheckpointCustody;
 pub(in crate::physical_runtime) use recovered_custody::VerifiedRecoveredCheckpointCustody;
+#[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use recovered_custody::{
     GenerationZeroNoReleaseCustody, PreparedRecoveredCustodyBacking, RecoveredNoReleaseCustody,
     RecoveredReleaseCustody,
@@ -21,3 +22,6 @@ pub(super) mod residency_policy;
 pub(super) mod transition;
 
 pub(in crate::physical_runtime) use transition::{initialize, open};
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -22,6 +22,20 @@ pub(crate) struct RelationExtra {
     _funding: Option<ExecutionMemoryReservation>,
 }
 impl EntityExtra {
+    pub(crate) fn from_funded_parts(
+        structural_fingerprint: Option<StructuralFingerprint>,
+        lineage_id: Option<LineageId>,
+        authoritative_aspect_state: Option<State>,
+        memory: Option<ExecutionMemoryReservation>,
+    ) -> Self {
+        Self {
+            structural_fingerprint,
+            lineage_id,
+            authoritative_aspect_state,
+            _funding: memory,
+        }
+    }
+
     pub(crate) fn empty_for_request(
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, crate::execution::RelationalExecutionDenialCause> {
@@ -77,6 +91,18 @@ impl EntityExtra {
     }
 }
 impl RelationExtra {
+    pub(crate) fn from_funded_parts(
+        endpoints: Option<RelationEndpoints>,
+        authoritative_aspect_state: Option<State>,
+        memory: Option<ExecutionMemoryReservation>,
+    ) -> Self {
+        Self {
+            endpoints,
+            authoritative_aspect_state,
+            _funding: memory,
+        }
+    }
+
     pub(crate) fn empty_for_request(
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, crate::execution::RelationalExecutionDenialCause> {

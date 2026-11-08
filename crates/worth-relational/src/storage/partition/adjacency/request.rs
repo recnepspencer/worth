@@ -4,6 +4,46 @@ use crate::execution::RelationalExecutionDenialCause as Cause;
 use worth_execution::ExecutionRequest;
 
 impl AdjacencySet {
+    pub(crate) fn checkpoint_for_request(
+        relations: Vec<RelationId>,
+        structural_revisions: Vec<(KindId, VersionId)>,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Self, Cause> {
+        let mut result = Self::new(&AdjacencyPolicy {
+            backend: AdjacencyBackend::CompressedFanoutAdjacency,
+            small_degree_inline_capacity: 4,
+        });
+        for relation in relations {
+            request.consult()?;
+            result
+                .entries_mut()
+                .current
+                .insert_for_request(relation, (), request)?;
+        }
+        for (kind, version) in structural_revisions {
+            revision(
+                &mut result.entries_mut().structural_revision_by_kind,
+                kind,
+                version,
+                request,
+            )?;
+        }
+        Ok(result)
+    }
+    pub(crate) fn index_current_kind_for_request(
+        &mut self,
+        kind: KindId,
+        relation: RelationId,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), Cause> {
+        insert_kind(
+            &mut self.entries_mut().current_by_kind,
+            kind,
+            relation,
+            request,
+        )
+    }
+
     pub(crate) fn insert_at_for_request(
         &mut self,
         kind: KindId,

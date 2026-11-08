@@ -1,0 +1,34 @@
+//! One actual explicit head41 capture, solely for charged-work attribution.
+use super::*;
+#[test]
+fn explicit_home_checkpoint_attributes_original_work_at_head_forty_one() {
+    let build = ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap();
+    let request = fixture::request(fixture::location(), build, Arc::new(AtomicUsize::new(0)), Arc::new(AtomicUsize::new(0)));
+    let bootstrap = checkpoint_capture::lease(256 << 20);
+    let opening = worth_execution::ExecutionRequest::leased(&bootstrap);
+    let home = with_bootstrap_advancement_from_request(opening, |phase| request.open_in_advancement(&phase)).unwrap().unwrap();
+    for offset in 0..38 {
+        let (_, live) = scope();
+        assert!(matches!(set(home.runtime(), &live, 0x46554E44 + offset, 8 + offset).unwrap(), WorthQueryApplicationMutationOutcome::Committed { .. }));
+    }
+    let before = home.inspect_checkpoint(&opening).unwrap();
+    assert_eq!(before.journals[0].head, 41);
+    assert_eq!(before.journals[0].covered, 0);
+    let lease = worth_execution::ExecutionResourceLease::serial(worth_execution::LeaseRequest {
+        policy: worth_foundational::ExecutionRequestPolicy::new(worth_foundational::ExecutionPosture::Serial,
+            worth_foundational::DeterminismContract::CanonicalBitwise,
+            worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(256 << 20), Some(512 << 20))),
+        cancellation: worth_execution::CancellationToken::new(), deadline: None,
+    }).unwrap();
+    let execution = worth_execution::ExecutionRequest::leased(&lease);
+    eprintln!("WORTH-UI-TEMPORARY-INSTRUMENTATION BEGIN head=41 covered=0");
+    execution.run_native_with_checkpoint(|context| {
+        let before = context.remaining_work().unwrap();
+        let selected = home.checkpoint(&execution).unwrap();
+        let work = before - context.remaining_work().unwrap();
+        eprintln!("WORTH-UI-TEMPORARY-INSTRUMENTATION TOTAL units={work} selected={selected:?}");
+    }).unwrap();
+    eprintln!("WORTH-UI-TEMPORARY-INSTRUMENTATION END");
+    assert_eq!(home.inspect_checkpoint(&opening).unwrap().journals[0].covered, 41);
+    drop(home);
+}

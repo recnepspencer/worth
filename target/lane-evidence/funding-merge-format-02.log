@@ -1,0 +1,11 @@
+command: python scripts/application_build.py cargo fmt -p worth-foundational -p worth-relational
+HEAD: 25619ac5d1ae6092ab5a91bc4b7123be6042475c
+git_status_short_empty: false
+start_utc: 2026-11-06T16:42:35.603469+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+
+end_utc: 2026-11-06T16:42:47.769404+00:00
+exit_code: 0
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

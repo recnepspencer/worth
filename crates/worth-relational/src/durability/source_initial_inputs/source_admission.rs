@@ -10,6 +10,7 @@ use worth_execution::{ExecutionImmutableBytes, ExecutionRequest};
 #[derive(Debug)]
 pub(crate) struct SourceOriginalInputs {
     pub(crate) world_selection: Option<Arc<crate::durability::RelationalWorldSourceCatalog>>,
+    pub(crate) selected: Option<RelationalCompleteSourceArtifact>,
     pub(crate) current: Arc<InitialInputsImage>,
     pub(crate) covered: Option<Arc<InitialInputsImage>>,
     pub(crate) normalized: Option<Arc<NormalizedOriginalInputs>>,
@@ -41,6 +42,7 @@ pub(crate) fn readmit(
         return Ok(SourceOriginalInputs {
             world_selection,
             current,
+            selected: None,
             covered: None,
             normalized: None,
             _memory: memory,
@@ -123,6 +125,7 @@ pub(crate) fn readmit(
         request,
     )?;
     Ok(SourceOriginalInputs {
+        selected: Some(selected.clone()),
         world_selection,
         current,
         covered: Some(covered),

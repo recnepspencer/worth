@@ -7,7 +7,7 @@ pub use worth_query_host::facade::{
         WorthQueryApplicationConditionalProducerAccess, WorthQueryApplicationContribution,
         WorthQueryApplicationContributionContracts, WorthQueryApplicationContributionSetup,
     },
-    application_installation::{self, WorthQueryInMemoryApplicationLimits},
+    application_installation::{self, WorthQueryApplicationLimits},
     declaration::{
         application_program::{
             ApplicationArtifactDependency, ApplicationArtifactRetention,
@@ -262,7 +262,7 @@ pub fn zero_route_installation_is_denied() {
             install_route: false,
         },),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        WorthQueryInMemoryApplicationLimits::new(
+        WorthQueryApplicationLimits::new(
             product_world_resources(1_024),
             runtime::WorthQueryApplicationQueryResourceProfile::new(
                 std::num::NonZeroUsize::new(128).expect("concurrent graph work is non-zero"),
@@ -272,7 +272,7 @@ pub fn zero_route_installation_is_denied() {
         |_, _, _| Ok(()),
     );
     match result {
-        Err(application_installation::WorthQueryInMemoryApplicationDenial::ConditionalPublication(
+        Err(application_installation::WorthQueryApplicationPreparationDenial::ConditionalPublication(
             denial,
         )) => assert_eq!(
             denial.kind(),

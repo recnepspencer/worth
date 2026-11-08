@@ -99,8 +99,7 @@ fn none_producers_reopen_same_build_and_regenerate_changed_build_with_original_e
                 .unwrap()
         })
         .unwrap();
-    let saved = checkpoint.bytes().to_vec();
-    drop(checkpoint);
+    let saved = checkpoint;
     assert!(original.close_live_delivery().owner_terminal());
     original.close_conditional_runtime().unwrap();
     drop(original);

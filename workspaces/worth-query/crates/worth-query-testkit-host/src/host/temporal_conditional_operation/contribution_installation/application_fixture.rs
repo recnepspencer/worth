@@ -22,7 +22,7 @@ pub fn installed_application() -> application_installation::WorthQueryProgramApp
         TemporalHostSchema::declaration().unwrap(),
         (configuration,),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        WorthQueryInMemoryApplicationLimits::new(
+        WorthQueryApplicationLimits::new(
             product_world_resources(1_024),
             runtime::WorthQueryApplicationQueryResourceProfile::new(
                 std::num::NonZeroUsize::new(128).expect("concurrent graph work is non-zero"),

@@ -30,7 +30,7 @@ fn inconsistent(core: &WorthQueryAdmittedOperation) -> Denial {
         WorthQueryOperationAuthorizationDenialKind::Refused(
             AuthorizationRefusal::InconsistentDecision,
         ),
-        &core.operation,
+        &core.data.operation,
     )
 }
 
@@ -44,7 +44,7 @@ impl<Schema, Operation, Input, Scope>
         tag: BrandTag,
         capability_input: Option<ApplicationSharedInput<Input>>,
     ) -> Result<Self, Denial> {
-        if core.authorization_basis.carries_capability_input() != capability_input.is_some() {
+        if core.data.authorization_basis.carries_capability_input() != capability_input.is_some() {
             return Err(inconsistent(&core));
         }
         tag.admits(&core)?;
@@ -66,7 +66,7 @@ impl<Schema, Operation, Input, Scope>
         capability_input: Option<ApplicationSharedInput<Input>>,
         original_input: Option<ApplicationSharedInput<Input>>,
     ) -> Result<Self, (Denial, WorthQueryAdmittedOperation)> {
-        if successor.admission_identity != predecessor {
+        if successor.data.admission_identity != predecessor {
             return Err((inconsistent(&successor), successor));
         }
         if let Err(denial) = tag.admits(&successor) {
@@ -153,7 +153,7 @@ impl<Schema, Operation, Input, Scope>
         Input: Send + Sync + 'static,
     {
         // The caller has checked the sealed handler's binding and input identity.
-        self.core.original_input = Some(ErasedOriginalInput {
+        self.core.data.original_input = Some(ErasedOriginalInput {
             encoded: std::sync::Arc::new(input.clone()),
             program: None,
             identity: *input.identity(),
@@ -183,7 +183,7 @@ impl<Schema, Operation, Input, Scope>
             original_input,
             ..
         } = self;
-        let predecessor = core.admission_identity;
+        let predecessor = core.data.admission_identity;
         let successor = core.bind_delegation_activation(binding)?;
         Self::rewrap(
             predecessor,
@@ -207,7 +207,7 @@ impl<Schema, Operation, Input, Scope>
             original_input,
             ..
         } = self;
-        let predecessor = core.admission_identity;
+        let predecessor = core.data.admission_identity;
         let successor = core.bind_capability_revocation(binding, work)?;
         Self::rewrap(
             predecessor,
@@ -230,7 +230,7 @@ impl<Schema, Operation, Input, Scope>
             original_input,
             ..
         } = self;
-        let predecessor = core.admission_identity;
+        let predecessor = core.data.admission_identity;
         let successor = core.bind_elevation_request(binding)?;
         Self::rewrap(
             predecessor,
@@ -254,7 +254,7 @@ impl<Schema, Operation, Input, Scope>
             original_input,
             ..
         } = self;
-        let predecessor = core.admission_identity;
+        let predecessor = core.data.admission_identity;
         let successor = core.bind_elevation_approval(execution, binding)?;
         Self::rewrap(
             predecessor,
@@ -283,7 +283,7 @@ impl<Schema, Operation, Input, Scope>
             original_input,
             ..
         } = self;
-        let predecessor = core.admission_identity;
+        let predecessor = core.data.admission_identity;
         let successor = core.bind_elevation_close(execution, binding)?;
         Self::rewrap(
             predecessor,
@@ -312,7 +312,7 @@ impl<Schema, Operation, Input, Scope>
             original_input,
             ..
         } = self;
-        let predecessor = core.admission_identity;
+        let predecessor = core.data.admission_identity;
         let successor = core.bind_mandatory_review(execution, binding)?;
         Self::rewrap(
             predecessor,

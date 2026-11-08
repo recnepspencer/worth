@@ -23,7 +23,7 @@ pub(crate) struct CanonicalAuthoredRetirement {
 #[allow(clippy::too_many_arguments)]
 pub(super) fn install(
     envelope: &mut CanonicalCommitEnvelopeBody,
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     created: &CommitCreatedEntityBindings,
     created_relations: &CommitCreatedRelationBindings,

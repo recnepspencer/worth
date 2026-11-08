@@ -2,9 +2,7 @@ use super::*;
 use identity::HostIdentitySchema;
 use worth_query_decl::facade::application_program::*;
 use worth_query_host::facade::{
-    application_installation::{
-        WorthQueryApplicationProgramRoster, WorthQueryInMemoryApplicationLimits,
-    },
+    application_installation::{WorthQueryApplicationLimits, WorthQueryApplicationProgramRoster},
     primary_graph::{SignalConditionalEvaluationBudget, WorthQueryPrincipalResolutionMode},
     runtime::WorthQueryApplicationQueryResourceProfile,
     WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
@@ -40,7 +38,7 @@ fn request(
         declaration,
         ((),),
         ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap(),
-        WorthQueryInMemoryApplicationLimits::new(
+        WorthQueryApplicationLimits::new(
             identity::world_resources(),
             WorthQueryApplicationQueryResourceProfile::default(),
             SignalConditionalEvaluationBudget::development(),

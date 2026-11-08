@@ -20,7 +20,7 @@ fn successor() -> PreparedHomeApplication<SuccessorSchema, SuccessorProgram> {
         declaration,
         ((),),
         build(),
-        WorthQueryInMemoryApplicationLimits::new(
+        WorthQueryApplicationLimits::new(
             identity::world_resources(),
             worth_query_host::facade::runtime::WorthQueryApplicationQueryResourceProfile::default(),
             SignalConditionalEvaluationBudget::development(),

@@ -70,6 +70,7 @@ pub use admission::residency_policy::{
 };
 pub use admission::RecoveredPhysicalCheckpointCustody;
 pub(in crate::physical_runtime) use admission::VerifiedRecoveredCheckpointCustody;
+#[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use admission::{
     GenerationZeroNoReleaseCustody, PreparedRecoveredCustodyBacking, RecoveredNoReleaseCustody,
     RecoveredReleaseCustody,
@@ -286,3 +287,6 @@ mod tests {
         assert_eq!(fixed_limits.current_root_entries(), 185);
     }
 }
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

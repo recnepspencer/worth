@@ -1,9 +1,10 @@
 //! Pure codec observations, with no runtime owner or authority construction.
 use super::BinaryFixedArrays;
 use serde::{Deserialize, Serialize};
+use worth_foundational::CanonicalDigestId;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
-struct Digests {
+struct FixedByteFields {
     direct: [u8; 32],
     nested: Option<([u8; 16], [u8; 32])>,
     numbers: [u64; 3],
@@ -12,13 +13,16 @@ struct Digests {
 #[test]
 fn fixed_digest_encoding_has_value_independent_width_and_round_trips() {
     let encode = |byte| {
-        let value = Digests {
+        let value = FixedByteFields {
             direct: [byte; 32],
             nested: Some(([byte; 16], [byte; 32])),
             numbers: [0, 128, 256],
         };
         let bytes = rmp_serde::to_vec_named(&BinaryFixedArrays(&value)).unwrap();
-        assert_eq!(rmp_serde::from_slice::<Digests>(&bytes).unwrap(), value);
+        assert_eq!(
+            rmp_serde::from_slice::<FixedByteFields>(&bytes).unwrap(),
+            value
+        );
         assert_eq!(
             bytes
                 .windows(2)
@@ -110,4 +114,52 @@ fn fixed_byte_probe_does_not_format_nonbyte_tuple_values() {
         1,
         "the rejected probe must not render a temporary string"
     );
+}
+
+// The production named type owns the binary representation; no local codec.
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+struct NamedFields {
+    direct: CanonicalDigestId,
+    nested: Option<(CanonicalDigestId, CanonicalDigestId)>,
+    numbers: [u64; 3],
+}
+
+#[test]
+fn named_admission_digests_preserve_existing_binary_bytes_and_reject_integer_arrays() {
+    #[derive(Serialize)]
+    struct EarlierFields {
+        direct: [u8; 32],
+        nested: Option<([u8; 32], [u8; 32])>,
+        numbers: [u64; 3],
+    }
+    let mut widths = Vec::new();
+    for byte in [0, 127, 128, 255] {
+        let original = EarlierFields {
+            direct: [byte; 32],
+            nested: Some(([byte; 32], [byte; 32])),
+            numbers: [0, 128, 256],
+        };
+        let named = NamedFields {
+            direct: CanonicalDigestId::new(original.direct),
+            nested: original
+                .nested
+                .map(|(a, b)| (CanonicalDigestId::new(a), CanonicalDigestId::new(b))),
+            numbers: original.numbers,
+        };
+        let earlier = rmp_serde::to_vec_named(&BinaryFixedArrays(&original)).unwrap();
+        let ordinary_named = rmp_serde::to_vec_named(&named).unwrap();
+        let projected_named = rmp_serde::to_vec_named(&BinaryFixedArrays(&named)).unwrap();
+        assert_eq!(ordinary_named, earlier);
+        assert_eq!(projected_named, earlier);
+        assert_eq!(
+            rmp_serde::from_slice::<NamedFields>(&earlier).unwrap(),
+            named
+        );
+        assert!(
+            rmp_serde::from_slice::<NamedFields>(&rmp_serde::to_vec_named(&original).unwrap())
+                .is_err()
+        );
+        widths.push(earlier.len());
+    }
+    assert!(widths.windows(2).all(|pair| pair[0] == pair[1]));
 }

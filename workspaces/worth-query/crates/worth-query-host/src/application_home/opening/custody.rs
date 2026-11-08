@@ -18,7 +18,7 @@ pub(super) fn readmit<Schema: ApplicationSchemaComposition, Program: 'static>(
 > {
     let request = phase.execution_request();
     let obligations = home.query_obligations_medium();
-    match query.readmit_custody(&request, obligations) {
+    match query.readmit_custody(&request, std::sync::Arc::clone(&obligations)) {
         Ok(admitted) => {
             let query = admitted.consume(|query| query);
             let admission = query
@@ -30,7 +30,7 @@ pub(super) fn readmit<Schema: ApplicationSchemaComposition, Program: 'static>(
                     home,
                 })),
                 Err(cause) => Err(WorthQueryApplicationHomeOpenRefused::CustodyReadmission {
-                    query,
+                    query: super::super::UnadmittedHomeQueryService::retain(query, obligations),
                     home,
                     cause: HomeCustodyReadmissionDenial::Query(
                         QueryHomeCustodyReadmissionDenial::ProgramSupport(cause),
@@ -41,7 +41,7 @@ pub(super) fn readmit<Schema: ApplicationSchemaComposition, Program: 'static>(
         Err(refused) => {
             let (query, cause) = refused.into_parts();
             Err(WorthQueryApplicationHomeOpenRefused::CustodyReadmission {
-                query,
+                query: super::super::UnadmittedHomeQueryService::retain(query, obligations),
                 home,
                 cause: HomeCustodyReadmissionDenial::Query(cause),
             })

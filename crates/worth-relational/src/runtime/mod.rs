@@ -2,8 +2,7 @@ pub use state::CompleteRelationalCheckpointPreparation;
 pub(crate) use state::{
     MutationRecordAllocations, MutationSymbolMeanings, OriginalBranchSchemaInputs,
     OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
-    OriginalEmptySchemaObservation, OriginalRecordAllocationCursor, OriginalSymbolMeanings,
-    RetainedBranchTransition,
+    OriginalEmptySchemaObservation, RetainedBranchTransition,
 };
 pub mod builder;
 mod construction;
@@ -149,3 +148,6 @@ pub use state::{
 
 pub use state::RelationalSymbolTableForTest;
 pub(crate) use state::TryPartitionMutationDenied;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

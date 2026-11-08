@@ -15,6 +15,7 @@ pub struct WorthQueryCheckpointTransitionRecovery {
     publication: WorthQueryPrimaryGraphPublication,
     /// The acknowledged successor authority this capsule keeps in custody.
     _authority: RecoveredRelationalRuntimeAuthority,
+    original: crate::domain_computation::primary_graph::WorthQueryInterimCheckpointOrigin,
     outputs: super::preserved_outputs::PreservedOutputs,
     detail: String,
     capture_denial: Option<WorthQueryCheckpointCaptureDenial>,
@@ -38,6 +39,7 @@ impl WorthQueryCheckpointTransitionRecovery {
         publication: WorthQueryPrimaryGraphPublication,
         authority: RecoveredRelationalRuntimeAuthority,
         outputs: super::preserved_outputs::PreservedOutputs,
+        original: crate::domain_computation::primary_graph::WorthQueryInterimCheckpointOrigin,
         denial: WorthQueryCheckpointCaptureDenial,
     ) -> Self {
         Self {
@@ -45,6 +47,7 @@ impl WorthQueryCheckpointTransitionRecovery {
             publication,
             _authority: authority,
             outputs,
+            original,
             detail: format!("acknowledged target checkpoint capture stopped: {denial:?}"),
             capture_denial: Some(denial),
             finalization_denial: None,
@@ -60,6 +63,7 @@ impl WorthQueryCheckpointTransitionRecovery {
         publication: WorthQueryPrimaryGraphPublication,
         authority: RecoveredRelationalRuntimeAuthority,
         outputs: super::preserved_outputs::PreservedOutputs,
+        original: crate::domain_computation::primary_graph::WorthQueryInterimCheckpointOrigin,
         cause: crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
     ) -> Self {
         Self {
@@ -67,6 +71,7 @@ impl WorthQueryCheckpointTransitionRecovery {
             publication,
             _authority: authority,
             outputs,
+            original,
             detail: format!("acknowledged target finalization stopped: {cause:?}"),
             capture_denial: None,
             finalization_denial: Some(Box::new(cause)),
@@ -104,28 +109,16 @@ impl WorthQueryCheckpointTransitionRecovery {
         if self.consult_request(request).is_err() {
             return Err(self);
         }
-        match policy
-            .check_live()
-            .map_err(WorthQueryCheckpointCaptureDenial::from)
-            .and_then(|()| {
-                self.graph
-                    .with_runtime(execution, |runtime| {
-                        runtime
-                            .durability_authority()
-                            .native_checkpoint(execution, policy)
-                    })
-                    .map_err(WorthQueryCheckpointCaptureDenial::from)
-            })
-            .and_then(|native| {
-                WorthQueryApplicationCheckpoint::encode(
-                    native,
-                    &self.publication,
-                    self.outputs.rows(),
-                    policy,
-                )
-                .map(|(checkpoint, _)| checkpoint)
-            }) {
-            Ok(checkpoint) => {
+        match WorthQueryApplicationCheckpoint::capture_native_transition(
+            &mut self.graph.native,
+            &mut self._authority,
+            &self.original,
+            &self.publication,
+            self.outputs.rows(),
+            execution,
+            policy,
+        ) {
+            Ok((checkpoint, _continuation)) => {
                 if self.consult_request(request).is_err() {
                     Err(self)
                 } else {

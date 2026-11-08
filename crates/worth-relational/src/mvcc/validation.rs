@@ -5,6 +5,8 @@
 mod custom_invariant_execution_receipt;
 #[path = "validation/invariant_plan.rs"]
 mod invariant_plan;
+mod proposal_candidate;
+mod proposal_completion;
 #[path = "validation/proposal_footprint/mod.rs"]
 mod proposal_footprint;
 #[path = "validation/proposal_identity.rs"]

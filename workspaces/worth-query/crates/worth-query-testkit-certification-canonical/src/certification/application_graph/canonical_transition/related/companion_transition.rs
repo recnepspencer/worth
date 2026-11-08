@@ -31,15 +31,15 @@ pub fn original(value: model::NestedValue) -> (Original, OriginalSettlement) {
 pub fn transition(
     checkpoint: installation::WorthQueryApplicationCheckpoint,
     policy: installation::WorthQueryCheckpointCapturePolicy<'_, '_>,
-) -> Result<Target, installation::WorthQueryInMemoryApplicationDenial> {
+) -> Result<Target, installation::WorthQueryApplicationPreparationDenial> {
     transition_counted(checkpoint, policy, &mut 0)
 }
 pub fn transition_counted(
     checkpoint: installation::WorthQueryApplicationCheckpoint,
     policy: installation::WorthQueryCheckpointCapturePolicy<'_, '_>,
     callbacks: &mut usize,
-) -> Result<Target, installation::WorthQueryInMemoryApplicationDenial> {
-    installation::in_memory_rostered_program_from_checkpoint_with_transition(
+) -> Result<Target, installation::WorthQueryApplicationPreparationDenial> {
+    installation::WorthQueryInterimCheckpointRestore::rostered_program_with_transition(
         new::host::program::<new::program::TargetProgram>(),
         installation::WorthQueryApplicationProgramRoster::new(),
         successor::schema::CanonicalSchema::declaration().unwrap(),
@@ -68,9 +68,9 @@ pub fn transition_funded(
     funding: &worth_execution::ExecutionResourceLease<'_>,
     capture: installation::WorthQueryCheckpointCapturePolicy<'_, '_>,
     callbacks: &mut usize,
-) -> Result<Target, installation::WorthQueryInMemoryApplicationDenial> {
+) -> Result<Target, installation::WorthQueryApplicationPreparationDenial> {
     super::super::capture_child::funded_by(funding, |phase| {
-        installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement(
+        installation::WorthQueryInterimCheckpointRestore::rostered_program_with_transition_in_advancement(
             phase,
             new::host::program::<new::program::TargetProgram>(),
             installation::WorthQueryApplicationProgramRoster::new(),

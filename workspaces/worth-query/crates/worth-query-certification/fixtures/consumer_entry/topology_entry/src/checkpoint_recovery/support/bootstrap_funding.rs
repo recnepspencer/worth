@@ -19,7 +19,7 @@ fn policy(memory: Option<u64>, work: u64) -> ExecutionRequestPolicy {
         ExecutionBudget::new(std::num::NonZeroUsize::MIN, memory, Some(work)),
     )
 }
-fn runtime_limits() -> WorthQueryInMemoryApplicationLimits {
+fn runtime_limits() -> WorthQueryApplicationLimits {
     limits_with_policy(
         DEFAULT_RETAINED_COMMITS,
         16,
@@ -91,7 +91,7 @@ fn fresh_installation_refuses_the_original_cancelled_phase_before_seed() {
     let Err(denial) = result else {
         panic!("the original cancellation must refuse installation")
     };
-    let application_installation::WorthQueryInMemoryApplicationDenial::Graph(cause) = *denial
+    let application_installation::WorthQueryApplicationPreparationDenial::Graph(cause) = *denial
     else {
         panic!("entry preserves its typed original request refusal");
     };
@@ -225,7 +225,7 @@ fn checkpoint_restore_refuses_the_original_cancelled_phase() {
     let Err(denial) = result else {
         panic!("the original cancellation refuses reconstruction");
     };
-    let application_installation::WorthQueryInMemoryApplicationDenial::Graph(cause) = *denial
+    let application_installation::WorthQueryApplicationPreparationDenial::Graph(cause) = *denial
     else {
         panic!("restore preserves the original request refusal");
     };

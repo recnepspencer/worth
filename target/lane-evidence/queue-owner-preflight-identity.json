@@ -1,0 +1,6 @@
+{
+  "head": "d0061f1327c7e27932eb80143517c8540458798e",
+  "lifecycle": "d40751936a8b9299f72a8e75fed5ae6d6bfd4828",
+  "integration_read_only_ref": "f3f7a9f9dbde0b28a0cc1403a065728d934ce97f",
+  "scope": "read-only prerequisite probes, not runtime qualification"
+}

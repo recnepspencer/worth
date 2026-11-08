@@ -1,0 +1,87 @@
+command: python target/lane-evidence/bc-root-owner-preflight.py
+HEAD: 5692704eb7bf41cc9c182c1506067b94a7836eb5
+git_status_short_empty: true
+start_utc: 2026-11-05T05:22:55.230936+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+$ git rev-parse HEAD
+exit: 0
+5692704eb7bf41cc9c182c1506067b94a7836eb5
+$ git rev-parse codex/m3-p3-lifecycle
+exit: 0
+d40751936a8b9299f72a8e75fed5ae6d6bfd4828
+$ git diff --quiet 7d0e5189bc codex/m3-p3-lifecycle -- crates/worth-relational/src/branch/root_tests.rs
+exit: 0
+$ git -C ../m3-p3-lifecycle status --porcelain -- crates/worth-relational/src/branch/root_tests.rs
+exit: 0
+$ git diff --quiet 7d0e5189bc codex/m3-p3-lifecycle -- crates/worth-relational/src/branch/root_tests/
+exit: 0
+$ git -C ../m3-p3-lifecycle status --porcelain -- crates/worth-relational/src/branch/root_tests/
+exit: 0
+$ git diff --quiet 7d0e5189bc codex/m3-p3-lifecycle -- crates/worth-relational/src/branch/root_authoritative_payload_tests.rs
+exit: 0
+$ git -C ../m3-p3-lifecycle status --porcelain -- crates/worth-relational/src/branch/root_authoritative_payload_tests.rs
+exit: 0
+$ rg -n "pub.*(root|relink|publication_cost|allocation_id)|fn (readmit_for_request|readmit_unchanged_for_request|relink_canonical_envelope)" crates/worth-relational/src/branch/root.rs crates/worth-relational/src/branch/root_readmission.rs crates/worth-relational/src/branch/root_readmission/request.rs crates/worth-relational/src/branch/root_schema.rs
+exit: 0
+crates/worth-relational/src/branch/root_schema.rs:136:    pub(crate) const fn allocation_id(&self) -> u64 {
+crates/worth-relational/src/branch/root_readmission/request.rs:8:    pub(crate) fn readmit_for_request(
+crates/worth-relational/src/branch/root_readmission/request.rs:87:    pub(crate) fn readmit_unchanged_for_request(
+crates/worth-relational/src/branch/root_readmission/request.rs:159:            publication_cost: prepared.publication_cost,
+crates/worth-relational/src/branch/root.rs:51:pub(super) use super::root_region::RelationalRootRegion;
+crates/worth-relational/src/branch/root.rs:52:pub(crate) use super::root_region::RelationalRootRegionObservation;
+crates/worth-relational/src/branch/root.rs:117:    pub(crate) storage_root: [u8; 32],
+crates/worth-relational/src/branch/root.rs:118:    pub(crate) schema_root: [u8; 32],
+crates/worth-relational/src/branch/root.rs:157:    pub(super) root: Arc<RelationalBranchRoot>,
+crates/worth-relational/src/branch/root.rs:165:    pub(crate) fn root(&self) -> &Arc<RelationalBranchRoot> {
+crates/worth-relational/src/branch/root.rs:169:    pub(crate) fn into_root(self) -> Arc<RelationalBranchRoot> {
+crates/worth-relational/src/branch/root.rs:175:    pub(crate) fn new(root: Arc<RelationalBranchRoot>) -> Self {
+crates/worth-relational/src/branch/root.rs:179:    pub(crate) fn root(&self) -> &Arc<RelationalBranchRoot> {
+crates/worth-relational/src/branch/root.rs:357:    pub(crate) fn publication_cost(&self) -> RelationalBranchRootPublicationCost {
+crates/worth-relational/src/branch/root_readmission.rs:138:        publication_cost.new_authoritative_bytes = publication_cost
+crates/worth-relational/src/branch/root_readmission.rs:179:    pub(crate) fn relink_canonical_envelope(
+$ rg -n publication_cost|allocation_id|relink_canonical_envelope|readmit_for_request|readmit_unchanged_for_request|ptr_eq|size_of|is_complete crates/worth-relational/src/branch/root_tests.rs crates/worth-relational/src/branch/root_tests crates/worth-relational/src/branch/root_authoritative_payload_tests.rs
+exit: 0
+crates/worth-relational/src/branch/root_authoritative_payload_tests.rs:166:        .relink_canonical_envelope(
+crates/worth-relational/src/branch/root_tests.rs:35:fn publication_cost_distinguishes_new_and_reused_schema_authority() {
+crates/worth-relational/src/branch/root_tests.rs:53:    assert_eq!(first.publication_cost().new_schema_authorities, 1);
+crates/worth-relational/src/branch/root_tests.rs:54:    assert_eq!(first.publication_cost().reused_schema_authorities, 0);
+crates/worth-relational/src/branch/root_tests.rs:55:    assert_eq!(second.publication_cost().new_schema_authorities, 0);
+crates/worth-relational/src/branch/root_tests.rs:56:    assert_eq!(second.publication_cost().reused_schema_authorities, 1);
+crates/worth-relational/src/branch/root_tests.rs:58:        first.schema_authority().allocation_id(),
+crates/worth-relational/src/branch/root_tests.rs:59:        second.schema_authority().allocation_id()
+crates/worth-relational/src/branch/root_tests.rs:75:        .relink_canonical_envelope(
+crates/worth-relational/src/branch/root_tests.rs:100:        .relink_canonical_envelope(
+crates/worth-relational/src/branch/root_tests.rs:118:    assert!(root.is_complete(&runtime.services.symbols.interner_snapshot()));
+crates/worth-relational/src/branch/root_tests.rs:137:        !corrupted.is_complete(&runtime.services.symbols.interner_snapshot()),
+crates/worth-relational/src/branch/root_tests.rs:248:            root.relink_canonical_envelope(
+crates/worth-relational/src/branch/root_tests\request.rs:21:    let reconstructed = super::super::RelationalBranchRoot::readmit_for_request(
+crates/worth-relational/src/branch/root_tests\request.rs:38:    let unchanged = super::super::RelationalBranchRoot::readmit_unchanged_for_request(
+crates/worth-relational/src/branch/root_tests\request.rs:49:    assert!(Arc::ptr_eq(&unchanged.regions, &reconstructed.regions));
+crates/worth-relational/src/branch/root_tests\request.rs:77:        controller + size_of::<super::super::RelationalBranchRoot>() as u64 - 1,
+crates/worth-relational/src/branch/root_tests\request.rs:83:        super::super::RelationalBranchRoot::readmit_unchanged_for_request(
+$ rg -n readmit_for_request|readmit_unchanged_for_request|relink_canonical_envelope|RelationalBranchRootPublicationCost crates/worth-relational/src/facade
+exit: 1
+$ rg -n "pub.*(root|schema|visibility)|fn roots" crates/worth-relational/src/branch/basis.rs crates/worth-relational/src/branch/recorded_basis.rs crates/worth-relational/src/branch/target.rs
+exit: 0
+crates/worth-relational/src/branch/recorded_basis.rs:105:    pub fn roots(&self) -> &RelationalBranchRootDescriptor {
+crates/worth-relational/src/branch/target.rs:33:    pub const fn new(truth_root: [u8; 32], schema_root: [u8; 32]) -> Self {
+crates/worth-relational/src/branch/target.rs:40:    pub const fn truth_root(&self) -> &[u8; 32] {
+crates/worth-relational/src/branch/target.rs:44:    pub const fn schema_root(&self) -> &[u8; 32] {
+crates/worth-relational/src/branch/target.rs:82:    pub const fn roots(&self) -> &RelationalBranchRootDescriptor {
+crates/worth-relational/src/branch/target.rs:98:    pub(crate) fn roots_for_commit(
+crates/worth-relational/src/branch/basis.rs:56:    pub(crate) root_identity: u64,
+crates/worth-relational/src/branch/basis.rs:57:    pub(crate) schema_commitment: [u8; 32],
+crates/worth-relational/src/branch/basis.rs:58:    pub(crate) visibility_commitment: [u8; 32],
+crates/worth-relational/src/branch/basis.rs:99:    pub const fn root_identity(&self) -> u64 {
+crates/worth-relational/src/branch/basis.rs:103:    pub const fn schema_commitment(&self) -> [u8; 32] {
+crates/worth-relational/src/branch/basis.rs:107:    pub const fn visibility_commitment(&self) -> [u8; 32] {
+crates/worth-relational/src/branch/basis.rs:166:    pub(crate) root: Arc<RelationalBranchRoot>,
+$ git status --short -- crates tools/boundary-check/config/src-court-baseline.json
+exit: 0
+No production or test source changed. Tests not run: source-boundary probe only.
+
+end_utc: 2026-11-05T05:22:59.745847+00:00
+exit_code: 0
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

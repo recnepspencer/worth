@@ -1,7 +1,7 @@
 //! An original effect keeps its first-send and recovery custody after failed cleanup.
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::{AuthorizationWorld, installed_authorization_world, live_scope};
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::{authenticated_principal, resolved_account, idempotency};
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::{retained_status_program, RetentionMutationBreadth};
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::{retained_narrow_status_program_with_binding};
 use worth_query_execution::facade::primary_graph::*;
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationManagedCleanupReceipt as Cleanup,
@@ -44,20 +44,20 @@ fn committed_with_failed_cleanup(
     world: &AuthorizationWorld,
 ) -> (Cleanup, WorthQueryApplicationIdempotencyBinding) {
     let request = live_scope();
-    let program = world
+    let (program, binding) = world
         .application
         .with_host_advancement(|phase| {
             let custody = phase.test_host_request_for_test();
             let principal = authenticated_principal(&custody, world, &request);
             let account = resolved_account(&custody, world, "open", &request);
-            retained_status_program(
+            retained_narrow_status_program_with_binding(
                 &custody,
                 world,
                 &principal,
                 &account,
                 &request,
                 "cleanup-first-send",
-                RetentionMutationBreadth::Narrow,
+                idempotency(207, 208),
             )
         })
         .unwrap();
@@ -65,7 +65,6 @@ fn committed_with_failed_cleanup(
         .application
         .schedule_next_managed_cleanup_on_worker_for_test()
         .unwrap();
-    let binding = idempotency(207, 208);
     let outcome = world.application.compare_and_commit_application(
         program,
         binding,

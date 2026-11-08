@@ -12,3 +12,6 @@ pub use admission::SignalObservationAdmissionDenial;
 pub use completion::SignalObservationCompletion;
 pub use request::{SignalObservationRequest, SignalObservationSurface};
 pub(crate) use state::{SignalObservationCaptureGate, SignalObservationSessionState};
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

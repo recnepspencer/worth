@@ -28,14 +28,21 @@ where
         Arc::new(AtomicUsize::new(0)),
         (),
     );
-    installation::in_memory_rostered_program_from_checkpoint(
-        program,
-        installation::WorthQueryApplicationProgramRoster::new(),
-        ConsumerSchema::declaration().unwrap(),
-        configuration,
-        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        resources::application_limits(),
-        checkpoint,
+    worth_query_host::facade::application_contribution::with_bootstrap_advancement(
+        resources::POPULATION_BOOTSTRAP_POLICY,
+        |phase| {
+            installation::WorthQueryInterimCheckpointRestore::rostered_program_in_advancement(
+                &phase,
+                program,
+                installation::WorthQueryApplicationProgramRoster::new(),
+                ConsumerSchema::declaration().unwrap(),
+                configuration,
+                ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+                resources::application_limits(),
+                checkpoint,
+            )
+        },
     )
+    .expect("the original checkpoint opening request remains live")
     .expect("the authentic checkpoint restores under the identical installed program")
 }

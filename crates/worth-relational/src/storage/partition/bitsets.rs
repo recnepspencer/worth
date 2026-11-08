@@ -195,6 +195,20 @@ impl DenseSlotBitSet {
         }
     }
 
+    pub(crate) fn from_words_for_request(
+        words: impl IntoIterator<Item = (usize, u64)>,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, crate::execution::RelationalExecutionDenialCause> {
+        let mut result = Self::with_capacity(0);
+        for (index, word) in words {
+            request.consult()?;
+            if word != 0 {
+                result.words.insert_for_request(index, word, request)?;
+            }
+        }
+        Ok(result)
+    }
+
     pub(crate) fn sparse_words(&self) -> Vec<(u64, u64)> {
         self.words
             .iter()

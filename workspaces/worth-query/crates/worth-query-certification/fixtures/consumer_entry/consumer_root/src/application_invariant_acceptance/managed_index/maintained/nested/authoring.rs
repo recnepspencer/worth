@@ -2,7 +2,6 @@
 use super::schema::*;
 use worth_query_decl::facade::{application_operation::*, application_schema::*, *};
 use worth_query_host::facade::primary_graph::*;
-#[path = "authoring/handler.rs"]
 mod handler;
 use crate::application_invariant_acceptance::managed_index::maintained::nested::edit::Edit;
 pub(super) use handler::Handler;

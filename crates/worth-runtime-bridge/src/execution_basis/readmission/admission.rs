@@ -1,6 +1,5 @@
 use worth_signal::facade::{ResourceInFlightStatus, ResourceManagedQueueBinding};
 
-use crate::execution_basis::managed_declaration::managed_execution_declaration;
 use crate::execution_basis::reservation::BridgeExecutionBasisReservationKey;
 use crate::execution_basis::{
     BridgeExecutionBasisCounters, BridgeManagedExecutionIntent, BridgeYieldedExecutionBasis,
@@ -53,10 +52,12 @@ pub(crate) fn readmit_yielded_execution_basis(
     basis_counters.checked_managed_intent();
     basis_counters.checked_truth_basis();
     basis_counters.checked_reservation();
-    let lowered = match managed_execution_declaration(
-        fresh_intent.identity().as_str(),
-        yielded.step_contract().deadline_nanos(),
-    ) {
+    let lowered = match yielded
+        .basis
+        .request
+        .lowered()
+        .instantiate_request_response(fresh_intent.identity().as_str())
+    {
         Ok(lowered) => lowered,
         Err(error) => {
             return denied(

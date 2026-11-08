@@ -1,0 +1,131 @@
+{
+  "head": "0215c2872b52719c68e759aa0045eebb96a7b045",
+  "utc": "2026-11-04T23:14:24.816622+00:00",
+  "files": [
+    {
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/region_memory.rs",
+      "sha256": "efa63e892da1cbd3e3800aa9764f376698848bee96cec2d56ce34b9dbbf973ff",
+      "physical_lines": 255
+    },
+    {
+      "path": "crates/worth-relational/src/durability/checkpoints/aspect_state_images.rs",
+      "sha256": "a8a25f2b77647523b0b8bbf76d04a3d5d0d39510af35e7341085271e48b320e8",
+      "physical_lines": 157
+    },
+    {
+      "path": "crates/worth-relational/src/durability/checkpoints/aspect_state_images/readmission_funding.rs",
+      "sha256": "6ce2aedfba814fce089a85336eaeeed5af203d8065d618afd102df5a30233ab9",
+      "physical_lines": 132
+    },
+    {
+      "path": "crates/worth-relational/src/durability/checkpoints/images.rs",
+      "sha256": "9a0507ddb8bf6547f70b3f22ca614aad759f3a13597b88629f9cad7ecd574b24",
+      "physical_lines": 151
+    },
+    {
+      "path": "crates/worth-relational/src/durability/checkpoints/images/arena_images.rs",
+      "sha256": "d6b1125c288866f70abdc97b0f580247b2f5a56a4b5e783550b4b7f11aa3a268",
+      "physical_lines": 143
+    },
+    {
+      "path": "crates/worth-relational/src/durability/checkpoints/images/arena_images/entity.rs",
+      "sha256": "63f143de1f2583fe0a7d81c305c58306e459d9d702bd8b36bfbfc808113b3df6",
+      "physical_lines": 98
+    },
+    {
+      "path": "crates/worth-relational/src/durability/checkpoints/images/arena_images/readmission.rs",
+      "sha256": "4c96988d1eb066492bb1079a2fd3c5a3a5f59b3ff85d41965cc815036edf5a85",
+      "physical_lines": 323
+    },
+    {
+      "path": "crates/worth-relational/src/durability/checkpoints/images/arena_images/relation.rs",
+      "sha256": "a4a3c3092dc7e433398e834d6571b9e5b015e13089f71204ec02948d9f187349",
+      "physical_lines": 122
+    },
+    {
+      "path": "crates/worth-relational/src/durability/checkpoints/images/bitset_image.rs",
+      "sha256": "8fb40b49a97588e09b7d1dbea1eb919ff8b6e7d56235be9cc520c32a60d2696f",
+      "physical_lines": 27
+    },
+    {
+      "path": "crates/worth-relational/src/storage/partition/adjacency/request.rs",
+      "sha256": "2bf596f480a32017c3500f62e375bf4ce855b4f1710525b4cb65b8cac33c53ee",
+      "physical_lines": 133
+    },
+    {
+      "path": "crates/worth-relational/src/storage/partition/bitsets.rs",
+      "sha256": "462e0b1c2976333fe9aad6f2f9da448fc319adce645a2b43dce5fff20dabdbee",
+      "physical_lines": 256
+    },
+    {
+      "path": "crates/worth-relational/src/storage/residency/kind_projection/reconstruction.rs",
+      "sha256": "8f85bab24ee8609514732f0eb087d926633462ee60179d3a261fecef77f9213e",
+      "physical_lines": 381
+    },
+    {
+      "path": "crates/worth-relational/src/storage/residency/region_load.rs",
+      "sha256": "82c64df7549c0d6abe70a3cebe1af3b74344ee90b331a466ca7a5498c6467816",
+      "physical_lines": 383
+    },
+    {
+      "path": "crates/worth-relational/src/storage/residency/region_load/materialization_funding.rs",
+      "sha256": "6fbdc58f7ca4f8e2f988c981d5fd319663edafc2af1119647eba7a72de4107f9",
+      "physical_lines": 382
+    },
+    {
+      "path": "crates/worth-relational/src/storage/residency/region_load/materialization_funding/aspect_state.rs",
+      "sha256": "8479ec4dfa29e88eb2fa740cc97174f9379d2aa4ca5aed0ab5edd6b8868b96d2",
+      "physical_lines": 386
+    },
+    {
+      "path": "crates/worth-relational/src/storage/residency/region_load/materialization_funding/current_image.rs",
+      "sha256": "8b09fe4046f4f4d76afe71eaa0b706a3b37d516510847178c7148bb725709a79",
+      "physical_lines": 214
+    },
+    {
+      "path": "crates/worth-relational/src/storage/residency/region_load/materialization_funding/history_custody.rs",
+      "sha256": "2b7d8113f81c21f320c40ab58e86a181dcc363189f960e06cb0269bfd4619565",
+      "physical_lines": 52
+    },
+    {
+      "path": "crates/worth-relational/src/storage/residency/region_load/materialization_funding/region_image.rs",
+      "sha256": "087d22ce4abb92751b2c4c693f6707255531724120fb40d0c0348470b5d39418",
+      "physical_lines": 390
+    },
+    {
+      "path": "crates/worth-relational/src/storage/residency/resident_history.rs",
+      "sha256": "bc6c413a971dfc1104165cdce3da46fa8992a7d5ae03e08750418f56c7d9c9a5",
+      "physical_lines": 230
+    },
+    {
+      "path": "crates/worth-relational/src/storage/substrate/record_arena/arena/pin_counts.rs",
+      "sha256": "55c763f65216ee581af2547e2756e5db0f286b4f7bf0bee8182ef1b11e550989",
+      "physical_lines": 141
+    },
+    {
+      "path": "crates/worth-relational/src/storage/substrate/record_arena/arena/slot_directory.rs",
+      "sha256": "1da7d8c9aeedeb40b560a90b344b41e2ae1657a6fbd274bc41aa68bf9d8a8c08",
+      "physical_lines": 159
+    },
+    {
+      "path": "crates/worth-relational/src/storage/substrate/record_arena/values/extra.rs",
+      "sha256": "c8092889084d35f5e7d7c69d03e272d00e583c22b9cee48824801680b5c0f213",
+      "physical_lines": 207
+    },
+    {
+      "path": "crates/worth-relational/src/storage/substrate/shared_column.rs",
+      "sha256": "540d66594b055931f71f3d85c74e17595b545c4fe81bc1e278c05a0d052e4a53",
+      "physical_lines": 334
+    },
+    {
+      "path": "crates/worth-relational/src/storage/substrate/shared_column/bulk_bootstrap.rs",
+      "sha256": "eaa34ef2bcfb44ce7e87b7d6fc9c6e47e5c12277417211f768e528bc4da3cf79",
+      "physical_lines": 114
+    },
+    {
+      "path": "crates/worth-relational/src/storage/substrate/storage_allocation.rs",
+      "sha256": "15390bacc6f83deda2c389df031d8491506aeeb572247668a60f9442b4c003ab",
+      "physical_lines": 132
+    }
+  ]
+}

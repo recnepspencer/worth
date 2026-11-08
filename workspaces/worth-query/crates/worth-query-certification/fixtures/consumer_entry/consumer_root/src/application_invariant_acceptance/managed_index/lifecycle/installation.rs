@@ -3,7 +3,7 @@ use crate::application_invariant_acceptance::managed_index::prefix_observation;
 mod incompatible_version;
 use super::super::boxes;
 use super::*;
-use worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial;
+use worth_query_host::facade::application_installation::WorthQueryApplicationPreparationDenial;
 
 #[test]
 fn registered_prefix_rejects_foreign_runtime_and_incompatible_executable_before_callbacks() {
@@ -71,7 +71,7 @@ fn installation_twins() {
     .err()
     .expect("actual prefix executable v2 disagrees with installed v1 binding");
     assert!(
-        matches!(error, WorthQueryInMemoryApplicationDenial::Contributions(ref cause)
+        matches!(error, WorthQueryApplicationPreparationDenial::Contributions(ref cause)
         if cause.kind() == WorthQueryPrimaryGraphInstallationDenialKind::ManagedIndexProviderMeaningMismatch),
         "actual typed installation mismatch: {error:?}"
     );

@@ -154,3 +154,6 @@ fn preparation_stop(
         None => Stop::from(failure),
     }
 }
+#[cfg(test)]
+#[path = "commit_preparation_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

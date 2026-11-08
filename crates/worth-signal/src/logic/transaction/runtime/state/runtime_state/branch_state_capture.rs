@@ -154,3 +154,6 @@ where
             .capture_active_state(authority, derived, ancestry, mutation_ledger))
     }
 }
+#[cfg(test)]
+#[path = "branch_state_capture_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

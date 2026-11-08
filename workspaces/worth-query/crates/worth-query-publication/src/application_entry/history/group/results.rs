@@ -55,3 +55,6 @@ impl<T> Iterator for WorthQueryHistoryGroupCompletionIter<T> {
     }
 }
 impl<T> ExactSizeIterator for WorthQueryHistoryGroupCompletionIter<T> {}
+#[cfg(test)]
+#[path = "results_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

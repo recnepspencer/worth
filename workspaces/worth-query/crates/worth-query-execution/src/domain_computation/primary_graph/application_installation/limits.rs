@@ -4,20 +4,20 @@ use crate::domain_computation::execution_runtime::{
 };
 use worth_signal::facade::runtime::SignalConditionalEvaluationBudget;
 
-use super::WorthQueryInMemoryApplicationProfile;
+use super::WorthQueryApplicationProfile;
 
 /// Explicit finite resources and clock for one in-memory application.
 #[derive(Clone)]
-pub struct WorthQueryInMemoryApplicationLimits {
+pub struct WorthQueryApplicationLimits {
     pub(super) world: WorthQueryProductWorldResources,
     pub(super) output_demands: WorthQueryOutputDemandResourceProfile,
     pub(super) queries: WorthQueryApplicationQueryResourceProfile,
     pub(super) conditionals: SignalConditionalEvaluationBudget,
-    pub(super) profile: WorthQueryInMemoryApplicationProfile,
+    pub(super) profile: WorthQueryApplicationProfile,
     pub(super) maximum_publication_records: Option<std::num::NonZeroUsize>,
 }
 
-impl WorthQueryInMemoryApplicationLimits {
+impl WorthQueryApplicationLimits {
     /// Installs the caller's process execution authority in the application's
     /// World on fresh installation or checkpoint reopen, without changing policy.
     pub fn with_execution_authority(
@@ -38,7 +38,7 @@ impl WorthQueryInMemoryApplicationLimits {
             queries,
             output_demands: WorthQueryOutputDemandResourceProfile::standard(),
             conditionals,
-            profile: WorthQueryInMemoryApplicationProfile::GeneralPurpose,
+            profile: WorthQueryApplicationProfile::GeneralPurpose,
             maximum_publication_records: None,
         }
     }
@@ -52,7 +52,7 @@ impl WorthQueryInMemoryApplicationLimits {
     }
 
     /// Selects the bounded execution policy for this application's workload.
-    pub const fn with_profile(mut self, profile: WorthQueryInMemoryApplicationProfile) -> Self {
+    pub const fn with_profile(mut self, profile: WorthQueryApplicationProfile) -> Self {
         self.profile = profile;
         self
     }

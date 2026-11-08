@@ -35,4 +35,7 @@ pub(crate) use staging::{
 };
 pub(crate) use wal_residency::NativeWalRoster;
 pub(crate) use wal_selection::ResidentSourceSelection;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
 pub(crate) mod source_copy;

@@ -112,3 +112,6 @@ pub(super) fn mutate_commit_execution(
     };
     CommitPhaseBacking::new(execution, result)
 }
+#[cfg(test)]
+#[path = "mutation_execution_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

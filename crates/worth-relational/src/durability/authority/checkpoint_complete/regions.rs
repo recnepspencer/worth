@@ -1,7 +1,17 @@
 //! Emit required original component roots from independently reconstructed Full DATA.
+use worth_foundational::CanonicalDigestId;
+mod covered;
 mod emission;
 mod grouping;
-use super::{branches::BranchImages, roots::FoldedRoots, schemas::CompleteSchemas};
+pub(super) enum CheckpointMirror<'a> {
+    CurrentMainRoot,
+    Substrate {
+        edition: &'a crate::runtime::PartitionEdition,
+        schema: &'a crate::branch::RelationalBranchRootSchemaAuthority,
+        carrier: CanonicalDigestId,
+    },
+}
+use super::{branches::BranchImages, roots::CapturedRoots, schemas::CompleteSchemas};
 use crate::branch::{RelationalBranchBasisDescriptor, RelationalBranchRoot};
 use crate::durability::{data::*, medium::RelationalDurableMemberLocator};
 use crate::history::data::BranchId;
@@ -18,7 +28,7 @@ pub(super) struct RegionOutput {
     roots: CheckpointRoots,
     empty: Vec<RelationalCheckpointEmptyComponent>,
     mirror: Vec<RelationalCheckpointRegion>,
-    mirror_schema: Option<[u8; 32]>,
+    mirror_schema: Option<CanonicalDigestId>,
     publications: ExecutionArray<RelationalCheckpointRegionPublication>,
     cells: ExecutionArray<Arc<RelationalRegionResidency>>,
     _empty_memory: Option<ExecutionMemoryReservation>,
@@ -38,7 +48,7 @@ impl RegionOutput {
         draft.roots = self.roots;
         draft.retained_empty_components = self.empty;
         draft.mirror = self.mirror;
-        draft.mirror_schema = self.mirror_schema;
+        draft.mirror_schema = self.mirror_schema.map(|digest| *digest.bytes());
         draft.allocations.empty_components = self._empty_memory;
         draft.allocations.mirror = self._mirror_memory;
         RegionCaptureCustody {
@@ -59,14 +69,45 @@ pub(super) fn capture<
     observations: impl Fn() -> I,
     main: &BranchId,
     branches: &BranchImages<'_>,
-    roots: &FoldedRoots,
+    roots: &CapturedRoots,
+    base: Option<&crate::durability::checkpoint_admission::FrozenSelectedCaptureBase>,
     schemas: &CompleteSchemas<'_>,
     dictionary: &dyn SymbolTextLookup,
     members: &mut ExecutionOrderedMap<RelationalDurableMemberLocator, RelationalCheckpointMember>,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<RegionOutput, Denial> {
     let grouped = Grouped::capture(observations, main, branches, roots, schemas, request)?;
-    emission::capture(grouped, roots, dictionary, members, request)
+    emission::capture(
+        grouped,
+        roots,
+        base,
+        CheckpointMirror::CurrentMainRoot,
+        dictionary,
+        members,
+        request,
+    )
+}
+pub(super) fn capture_interim<
+    'a,
+    I: Iterator<
+        Item = (
+            &'a RelationalBranchBasisDescriptor,
+            &'a Arc<RelationalBranchRoot>,
+        ),
+    >,
+>(
+    observations: impl Fn() -> I,
+    main: &BranchId,
+    branches: &BranchImages<'_>,
+    roots: &CapturedRoots,
+    schemas: &CompleteSchemas<'_>,
+    mirror: CheckpointMirror<'_>,
+    dictionary: &dyn SymbolTextLookup,
+    members: &mut ExecutionOrderedMap<RelationalDurableMemberLocator, RelationalCheckpointMember>,
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<RegionOutput, Denial> {
+    let grouped = Grouped::capture(observations, main, branches, roots, schemas, request)?;
+    emission::capture(grouped, roots, None, mirror, dictionary, members, request)
 }
 fn request_stop(cause: crate::execution::RelationalExecutionDenialCause) -> Denial {
     Denial::Request(cause)

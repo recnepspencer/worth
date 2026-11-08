@@ -1,0 +1,826 @@
+command: python scripts/application_build.py cargo clippy --workspace --all-targets
+HEAD: 5a49620b1d2c6efe405d7ff97870243b21d87fc0
+git_status_short_empty: false
+start_utc: 2026-11-05T04:00:48.385975+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+   Compiling worth-store-physical-backend v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-physical-backend)
+    Checking worth-foundational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-foundational)
+    Checking worth-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-relational)
+    Checking worth-store-physical-isolation v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-physical-isolation)
+    Checking worth-store-io-scheduler v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-io-scheduler)
+    Checking worth-store-reclaim-policy v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-reclaim-policy)
+    Checking worth-store-retention v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-retention)
+    Checking worth-store-lsm-authority v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-lsm-authority)
+warning: unused import: `apply_original_intents_to_working_state`
+  --> crates\worth-relational\src\authority\mutation\mod.rs:25:5
+   |
+25 |     apply_original_intents_to_working_state, apply_plan_to_working_state, MutationApplyOutcome,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `OriginalRecordAllocationCursor` and `OriginalSymbolMeanings`
+ --> crates\worth-relational\src\runtime\mod.rs:5:37
+  |
+5 |     OriginalEmptySchemaObservation, OriginalRecordAllocationCursor, OriginalSymbolMeanings,
+  |                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^
+
+    Checking worth-store-tiering v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-tiering)
+    Checking worth-store-blob-chunks v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-blob-chunks)
+    Checking worth-store-layout-indexes v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-layout-indexes)
+warning: function `write_original_aspect_version` is never used
+ --> crates\worth-relational\src\authority\mutation\aspect_versions\original.rs:2:39
+  |
+2 | pub(in crate::authority::mutation) fn write_original_aspect_version(
+  |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `write_original_revision_stamps` is never used
+  --> crates\worth-relational\src\authority\mutation\canonical_deltas\revision_input.rs:14:15
+   |
+14 | pub(crate) fn write_original_revision_stamps(
+   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `evidence` is never used
+  --> crates\worth-relational\src\authority\mutation\canonical_deltas\revision_input.rs:50:4
+   |
+50 | fn evidence<'a>(
+   |    ^^^^^^^^
+
+warning: function `context` is never used
+   --> crates\worth-relational\src\authority\mutation\canonical_deltas\revision_input.rs:103:4
+    |
+103 | fn context(
+    |    ^^^^^^^
+
+warning: function `borrowed_deletion_binding_evidence` is never used
+   --> crates\worth-relational\src\authority\mutation\canonical_deltas\patch_authority.rs:164:15
+    |
+164 | pub(super) fn borrowed_deletion_binding_evidence<'a>(
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `apply_original_intents_to_working_state` is never used
+   --> crates\worth-relational\src\authority\mutation\execution.rs:113:15
+    |
+113 | pub(crate) fn apply_original_intents_to_working_state(
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `original_adjacency` is never used
+   --> crates\worth-relational\src\authority\mutation\execution.rs:170:4
+    |
+170 | fn original_adjacency(
+    |    ^^^^^^^^^^^^^^^^^^
+
+warning: struct `OriginalAdjacency` is never constructed
+ --> crates\worth-relational\src\authority\mutation\execution\original_adjacency.rs:7:19
+  |
+7 | pub(super) struct OriginalAdjacency {
+  |                   ^^^^^^^^^^^^^^^^^
+
+warning: methods `as_slice` and `push` are never used
+  --> crates\worth-relational\src\authority\mutation\execution\original_adjacency.rs:12:19
+   |
+11 | impl OriginalAdjacency {
+   | ---------------------- methods in this implementation
+12 |     pub(super) fn as_slice(&self) -> &[AdjacencyDelta] {
+   |                   ^^^^^^^^
+...
+15 |     pub(super) fn push(
+   |                   ^^^^
+
+warning: function `write_original_field_versions_for_binding` is never used
+ --> crates\worth-relational\src\authority\mutation\field_versions\original.rs:7:39
+  |
+7 | pub(in crate::authority::mutation) fn write_original_field_versions_for_binding(
+  |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `execution` is never used
+   --> crates\worth-relational\src\authority\mutation\field_versions\original.rs:101:4
+    |
+101 | fn execution(cause: crate::execution::RelationalExecutionDenialCause) -> MutationApplyDenial {
+    |    ^^^^^^^^^
+
+warning: function `apply_original` is never used
+ --> crates\worth-relational\src\authority\mutation\intents\bulk_create_entities\original.rs:4:48
+  |
+4 | pub(in crate::authority::mutation::intents) fn apply_original<'a>(
+  |                                                ^^^^^^^^^^^^^^
+
+warning: function `apply_original` is never used
+ --> crates\worth-relational\src\authority\mutation\intents\bulk_create_relations\original.rs:3:48
+  |
+3 | pub(in crate::authority::mutation::intents) fn apply_original<'a>(
+  |                                                ^^^^^^^^^^^^^^
+
+warning: function `apply_original` is never used
+  --> crates\worth-relational\src\authority\mutation\intents\delete_entity.rs:25:15
+   |
+25 | pub(super) fn apply_original(
+   |               ^^^^^^^^^^^^^^
+
+warning: function `dispatch_original_intent` is never used
+  --> crates\worth-relational\src\authority\mutation\intents\dispatch.rs:69:15
+   |
+69 | pub(crate) fn dispatch_original_intent<'a>(
+   |               ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `apply_original` is never used
+  --> crates\worth-relational\src\authority\mutation\intents\replace_entity.rs:19:15
+   |
+19 | pub(super) fn apply_original(
+   |               ^^^^^^^^^^^^^^
+
+warning: function `delete_entity_with_cascade_original` is never used
+  --> crates\worth-relational\src\authority\mutation\record_changes\entity_deletion.rs:71:39
+   |
+71 | pub(in crate::authority::mutation) fn delete_entity_with_cascade_original(
+   |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `write_original_binding_revision_stamps` is never used
+ --> crates\worth-relational\src\authority\mutation\workspace\original_revisions.rs:3:19
+  |
+2 | impl MutationWorkspace<'_> {
+  | -------------------------- method in this implementation
+3 |     pub(crate) fn write_original_binding_revision_stamps(
+  |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: associated function `readmit_for_request` is never used
+ --> crates\worth-relational\src\branch\root_readmission\request.rs:8:19
+  |
+7 | impl RelationalBranchRoot {
+  | ------------------------- associated function in this implementation
+8 |     pub(crate) fn readmit_for_request(
+  |                   ^^^^^^^^^^^^^^^^^^^
+
+warning: associated function `new_for_request` is never used
+  --> crates\worth-relational\src\branch\root_region.rs:27:30
+   |
+26 | impl RelationalRootRegion {
+   | ------------------------- associated function in this implementation
+27 |     pub(in crate::branch) fn new_for_request(
+   |                              ^^^^^^^^^^^^^^^
+
+warning: associated function `from_original_commit` is never used
+ --> crates\worth-relational\src\history\data\required_output_positions\reconstruction.rs:8:19
+  |
+7 | impl RequiredOutputPublicationPositions {
+  | --------------------------------------- associated function in this implementation
+8 |     pub(crate) fn from_original_commit(
+  |                   ^^^^^^^^^^^^^^^^^^^^
+
+warning: method `finish_mutation` is never used
+  --> crates\worth-relational\src\runtime\state\subsystems\record_identity\allocation_batch.rs:27:8
+   |
+18 | pub(crate) trait MutationRecordAllocations: sealed::Batch {
+   |                  ------------------------- method in this trait
+...
+27 |     fn finish_mutation(&self) -> Result<(), RecordAllocationDenial>;
+   |        ^^^^^^^^^^^^^^^
+
+warning: struct `OriginalRecordAllocationCursor` is never constructed
+  --> crates\worth-relational\src\runtime\state\subsystems\record_identity\original_cursor.rs:18:19
+   |
+18 | pub(crate) struct OriginalRecordAllocationCursor<'original> {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: associated function `new` is never used
+  --> crates\worth-relational\src\runtime\state\subsystems\record_identity\original_cursor.rs:25:19
+   |
+24 | impl<'original> OriginalRecordAllocationCursor<'original> {
+   | --------------------------------------------------------- associated function in this implementation
+25 |     pub(crate) fn new(evidence: &'original [CanonicalRecordAllocation]) -> Self {
+   |                   ^^^
+
+warning: struct `OriginalSymbolMeanings` is never constructed
+  --> crates\worth-relational\src\runtime\state\subsystems\services\symbol_table\mutation_input.rs:32:19
+   |
+32 | pub(crate) struct OriginalSymbolMeanings<'a> {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: associated function `new` is never used
+  --> crates\worth-relational\src\runtime\state\subsystems\services\symbol_table\mutation_input.rs:37:19
+   |
+36 | impl<'a> OriginalSymbolMeanings<'a> {
+   | ----------------------------------- associated function in this implementation
+37 |     pub(crate) fn new(
+   |                   ^^^
+
+warning: associated items `from_original_root_partitions` and `into_original_root_partitions` are never used
+  --> crates\worth-relational\src\storage\overlay\working_state\request_mutation.rs:34:19
+   |
+10 | impl WorkingState {
+   | ----------------- associated items in this implementation
+...
+34 |     pub(crate) fn from_original_root_partitions(
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+48 |     pub(crate) fn into_original_root_partitions(
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: associated function `from_entries` is never used
+   --> crates\worth-relational\src\storage\partition\sparse_adjacency_table.rs:128:19
+    |
+ 13 | impl SparseAdjacencyTable {
+    | ------------------------- associated function in this implementation
+...
+128 |     pub(crate) fn from_entries(entries: impl IntoIterator<Item = (usize, AdjacencySet)>) -> Self {
+    |                   ^^^^^^^^^^^^
+
+warning: function `arc_bytes` is never used
+ --> crates\worth-relational\src\storage\residency\cell\resident_full.rs:6:4
+  |
+6 | fn arc_bytes<T>() -> Option<u64> {
+  |    ^^^^^^^^^
+
+warning: associated function `resident_for_request` is never used
+  --> crates\worth-relational\src\storage\residency\cell\resident_full.rs:16:42
+   |
+15 | impl RelationalRegionResidency {
+   | ------------------------------ associated function in this implementation
+16 |     pub(in crate::storage::residency) fn resident_for_request(
+   |                                          ^^^^^^^^^^^^^^^^^^^^
+
+warning: associated items `normalize`, `add_owned`, and `install` are never used
+   --> crates\worth-relational\src\storage\residency\kind_projection\full.rs:69:42
+    |
+ 16 | impl FullKindProjection {
+    | ----------------------- associated items in this implementation
+...
+ 69 |     pub(in crate::storage::residency) fn normalize(
+    |                                          ^^^^^^^^^
+...
+118 |     fn add_owned(
+    |        ^^^^^^^^^
+...
+157 |     fn install(
+    |        ^^^^^^^
+
+warning: associated function `initial_for_request` is never used
+ --> crates\worth-relational\src\storage\residency\region_publication\full.rs:7:19
+  |
+6 | impl PreparedResidentRegion {
+  | --------------------------- associated function in this implementation
+7 |     pub(crate) fn initial_for_request(
+  |                   ^^^^^^^^^^^^^^^^^^^
+
+warning: method `retained_text` is never used
+ --> crates\worth-relational\src\symbols\data\symbol_text_lookup.rs:7:8
+  |
+4 | pub(crate) trait SymbolTextLookup {
+  |                  ---------------- method in this trait
+...
+7 |     fn retained_text(&self, symbol: Symbol) -> Option<&StoredSymbolText>;
+  |        ^^^^^^^^^^^^^
+
+    Checking worth-store v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store)
+warning: `worth-relational` (lib) generated 35 warnings (run `cargo clippy --fix --lib -p worth-relational -- ` to apply 2 suggestions)
+    Checking worth-runtime-bridge v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-runtime-bridge)
+    Checking worth-testkit-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-testkit-relational)
+    Checking worth-store-recovery-runtime v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-recovery-runtime)
+    Checking worth-store-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-relational)
+    Checking worth-court-relational-branch-reference-compile-time v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-relational-branch-reference-compile-time)
+    Checking worth-court-relational-certification v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-relational-certification)
+    Checking worth-runtime-world v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-runtime-world)
+    Checking worth-court-runtime-bridge v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-runtime-bridge)
+warning: unused imports: `worth_foundational::FoundationalBranchReferenceGeneration` and `worth_foundational::FoundationalBranchTarget`
+ --> crates\worth-court-relational-branch-reference-compile-time\tests\worth_court_relational_branch_reference_compile_time\relational\branch_reference_contract\mod.rs:4:5
+  |
+4 |     worth_foundational::FoundationalBranchReferenceGeneration,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5 |     worth_foundational::FoundationalBranchTarget,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+  --> crates\worth-court-relational-branch-reference-compile-time\tests\worth_court_relational_branch_reference_compile_time\support\relational_certification\reference_context\root_cost_scale_axes\declarations.rs:55:14
+   |
+55 | ...   let (mut world, _) = certified_supply_chain_world(execution, worth_testkit_relational::relational_certification::ordinary_cont...
+   |            ----^^^^^
+   |            |
+   |            help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: `worth-court-relational-branch-reference-compile-time` (test "worth_court_relational_branch_reference_compile_time") generated 2 warnings (run `cargo clippy --fix --test "worth_court_relational_branch_reference_compile_time" -p worth-court-relational-branch-reference-compile-time -- ` to apply 2 suggestions)
+warning: unused import: `identity::*`
+ --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\support\index_retirement\mod.rs:3:24
+  |
+3 |     history::BranchId, identity::*, indexes::*, runtime::RelationalRuntime,
+  |                        ^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error: unnecessary `>= y + 1` or `x - 1 >=`
+  --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\process\serial\relational\managed_source_work_account\public_only.rs:38:17
+   |
+38 |         assert!(stopped.work <= EXTRA - 1);
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^ help: change it to: `stopped.work < EXTRA`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#int_plus_one
+   = note: `-D clippy::int-plus-one` implied by `-D clippy::all`
+   = help: to override `-D clippy::all` add `#[allow(clippy::int_plus_one)]`
+
+error: unnecessary `>= y + 1` or `x - 1 >=`
+   --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\process\serial\relational\managed_source_work_account.rs:292:21
+    |
+292 |             assert!(stopped.work <= EXTRA - 1);
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^ help: change it to: `stopped.work < EXTRA`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#int_plus_one
+
+warning: unused import: `durability::*`
+ --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\durable_publication\source_initial_inputs\publication_fates.rs:4:43
+  |
+4 | use worth_relational::facade::{branch::*, durability::*, runtime::*};
+  |                                           ^^^^^^^^^^^^^
+
+warning: unused import: `aspect_field_locator`
+  --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\relational_certification\aspect_storage\mod.rs:13:5
+   |
+13 |     aspect_field_locator, aspect_key, entity_field_aspect, entity_summary_struct_aspect, field_key,
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `super::*`
+   --> crates\worth-relational\src\runtime\state\subsystems\history_retention.rs:270:9
+    |
+270 |     use super::*;
+    |         ^^^^^^^^
+
+error: empty line after doc comment
+   --> crates\worth-runtime-world\src\recovery\product_unpublished.rs:191:5
+    |
+191 | /     /// contradict the record it describes.
+192 | |
+    | |_^
+193 |       pub fn cause(&self) -> ProductUnpublishedCause {
+    |       ------------ the comment documents this function
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#empty_line_after_doc_comments
+    = note: `-D clippy::empty-line-after-doc-comments` implied by `-D clippy::all`
+    = help: to override `-D clippy::all` add `#[allow(clippy::empty_line_after_doc_comments)]`
+    = help: if the empty line is unintentional, remove it
+
+warning: function `admitted_operations` is never used
+ --> crates\worth-court-runtime-bridge\tests\worth_court_runtime_bridge\supported_programs\..\sources\worth_runtime_bridge\pass\conditional_signal_basis.rs:6:4
+  |
+6 | fn admitted_operations(
+  |    ^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `worth-court-runtime-bridge` (test "worth_court_runtime_bridge") generated 1 warning
+warning: variable does not need to be mutable
+  --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\relational_certification\owner_service_completion\retained_storage.rs:17:9
+   |
+17 |     let mut runtime = empty_runtime();
+   |         ----^^^^^^^
+   |         |
+   |         help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\compound_publication.rs:151:9
+    |
+151 |     let mut runtime = RelationalRuntimeApi::builder()
+    |         ----^^^^^^^
+    |         |
+    |         help: remove this `mut`
+
+error: unnecessary closure used with `bool::then`
+   --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\process\serial\relational\managed_source_work_account.rs:104:27
+    |
+104 |             maximum_work: scenario.rule_limit.then(|| std::num::NonZeroU64::MIN),
+    |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#unnecessary_lazy_evaluations
+    = note: `-D clippy::unnecessary-lazy-evaluations` implied by `-D clippy::all`
+    = help: to override `-D clippy::all` add `#[allow(clippy::unnecessary_lazy_evaluations)]`
+help: use `then_some` instead
+    |
+104 -             maximum_work: scenario.rule_limit.then(|| std::num::NonZeroU64::MIN),
+104 +             maximum_work: scenario.rule_limit.then_some(std::num::NonZeroU64::MIN),
+    |
+
+error: this expression creates a reference which is immediately dereferenced by the compiler
+   --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\durable_publication\index_catalog\recovery.rs:109:41
+    |
+109 |             .canonical_commit_artifacts(&execution)
+    |                                         ^^^^^^^^^^ help: change this to: `execution`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#needless_borrow
+    = note: `-D clippy::needless-borrow` implied by `-D clippy::all`
+    = help: to override `-D clippy::all` add `#[allow(clippy::needless_borrow)]`
+
+error: this expression creates a reference which is immediately dereferenced by the compiler
+   --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\durable_publication\index_catalog\recovery.rs:340:37
+    |
+340 |         .canonical_commit_artifacts(&execution)
+    |                                     ^^^^^^^^^^ help: change this to: `execution`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#needless_borrow
+
+error: this expression creates a reference which is immediately dereferenced by the compiler
+   --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\durable_publication\index_catalog.rs:169:37
+    |
+169 |         .canonical_commit_artifacts(&execution)
+    |                                     ^^^^^^^^^^ help: change this to: `execution`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#needless_borrow
+
+error: this expression creates a reference which is immediately dereferenced by the compiler
+   --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\durable_publication\index_catalog.rs:212:37
+    |
+212 |         .canonical_commit_artifacts(&execution)
+    |                                     ^^^^^^^^^^ help: change this to: `execution`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#needless_borrow
+
+error: called `.err().expect()` on a `Result` value
+   --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\managed_source\nested.rs:110:40
+    |
+110 |                     return Err(stopped.err().expect("original nested request is cancelled"));
+    |                                        ^^^^^^^^^^^^ help: try: `expect_err`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#err_expect
+    = note: `-D clippy::err-expect` implied by `-D clippy::all`
+    = help: to override `-D clippy::all` add `#[allow(clippy::err_expect)]`
+
+error: called `.err().expect()` on a `Result` value
+  --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\managed_source\row_read.rs:48:22
+   |
+48 |                       .err()
+   |  ______________________^
+49 | |                     .expect("original ticket cannot outlive cancellation")
+   | |___________________________^ help: try: `expect_err`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#err_expect
+
+error: this `if` statement can be collapsed
+   --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\managed_source\owner.rs:267:16
+    |
+267 |           } else if previous
+    |  ________________^
+268 | |             .as_ref()
+269 | |             .is_some_and(|old| old.scope() == scope.scope())
+...   |
+284 | |         }
+    | |_________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#collapsible_if
+    = note: `-D clippy::collapsible-if` implied by `-D clippy::all`
+    = help: to override `-D clippy::all` add `#[allow(clippy::collapsible_if)]`
+help: collapse nested if block
+    |
+269 ~             .is_some_and(|old| old.scope() == scope.scope())
+270 ~             && let Some(old) = previous.as_ref() {
+271 |                 assert!(matches!(
+...
+281 |                     .fetch_add(1, Ordering::SeqCst);
+282 ~             }
+    |
+
+warning: `worth-court-relational-certification` (test "worth_court_relational_certification") generated 5 warnings
+error: could not compile `worth-court-relational-certification` (test "worth_court_relational_certification") due to 10 previous errors; 5 warnings emitted
+warning: build failed, waiting for other jobs to finish...
+error: this block may be rewritten with the `?` operator
+   --> crates\worth-runtime-world\src\branch\registry\reservation.rs:144:9
+    |
+144 | /         if let Err(denial) = self.admits_installation(&installed, true) {
+145 | |             return Err(denial);
+146 | |         }
+    | |_________^ help: replace it with: `self.admits_installation(&installed, true)?;`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#question_mark
+    = note: `-D clippy::question-mark` implied by `-D clippy::all`
+    = help: to override `-D clippy::all` add `#[allow(clippy::question_mark)]`
+
+error: this `if` statement can be collapsed
+  --> crates\worth-runtime-world\src\durability\checkpoint\acknowledgement.rs:50:9
+   |
+50 | /         if let Some((generation, digest)) = self.selected {
+51 | |             if selected.generation() < generation
+52 | |                 || (selected.generation() == generation && selected.manifest_sha256() != digest)
+...  |
+56 | |         }
+   | |_________^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#collapsible_if
+   = note: `-D clippy::collapsible-if` implied by `-D clippy::all`
+   = help: to override `-D clippy::all` add `#[allow(clippy::collapsible_if)]`
+help: collapse nested if block
+   |
+50 ~         if let Some((generation, digest)) = self.selected
+51 ~             && (selected.generation() < generation
+52 ~                 || (selected.generation() == generation && selected.manifest_sha256() != digest))
+53 |             {
+54 |                 return Err(Denial::StaleCheckpoint);
+55 ~             }
+   |
+
+error: use of a disallowed method `std::sync::Arc::as_ptr`
+  --> crates\worth-runtime-world\src\history\catalog\publication_page\close_admission.rs:17:35
+   |
+17 |                 catalog_affinity: Arc::as_ptr(&self.state) as usize,
+   |                                   ^^^^^^^^^^^
+   |
+   = note: Addresses are for allocation lookup and custody; canonical order uses declared identity
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#disallowed_methods
+note: the lint level is defined here
+  --> crates\worth-runtime-world\src\lib.rs:3:39
+   |
+ 3 |     deny(clippy::iter_over_hash_type, clippy::disallowed_methods)
+   |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: use of a disallowed method `std::sync::Arc::as_ptr`
+  --> crates\worth-runtime-world\src\history\catalog\publication_page\close_admission.rs:54:45
+   |
+54 |             || frontier.catalog_affinity != Arc::as_ptr(&self.state) as usize
+   |                                             ^^^^^^^^^^^
+   |
+   = note: Addresses are for allocation lookup and custody; canonical order uses declared identity
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#disallowed_methods
+
+error: use of a disallowed method `std::sync::Arc::as_ptr`
+  --> crates\worth-runtime-world\src\history\catalog\result_snapshot_cleanup.rs:24:31
+   |
+24 |             catalog_affinity: Arc::as_ptr(&self.state) as usize,
+   |                               ^^^^^^^^^^^
+   |
+   = note: Addresses are for allocation lookup and custody; canonical order uses declared identity
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#disallowed_methods
+
+error: use of a disallowed method `std::sync::Arc::as_ptr`
+  --> crates\worth-runtime-world\src\history\catalog\result_snapshot_cleanup.rs:39:45
+   |
+39 |             || frontier.catalog_affinity != Arc::as_ptr(&self.state) as usize
+   |                                             ^^^^^^^^^^^
+   |
+   = note: Addresses are for allocation lookup and custody; canonical order uses declared identity
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#disallowed_methods
+
+error: this `if` statement can be collapsed
+   --> crates\worth-runtime-world\src\lifecycle\close\home_owner_progress.rs:98:5
+    |
+ 98 | /     if let Some(root) = &mut progress.root {
+ 99 | |         if !root.advance(request, native).map_err(|cause| {
+100 | |             Denial::Close(match cause {
+101 | |                 NativeDenial::Busy => CloseDenial::Busy,
+...   |
+108 | |     }
+    | |_____^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#collapsible_if
+help: collapse nested if block
+    |
+ 98 ~     if let Some(root) = &mut progress.root
+ 99 ~         && !root.advance(request, native).map_err(|cause| {
+100 |             Denial::Close(match cause {
+...
+106 |             return Ok(false);
+107 ~         }
+    |
+
+error: this `if` statement can be collapsed
+   --> crates\worth-runtime-world\src\lifecycle\close\home_owner_progress.rs:126:13
+    |
+126 | /             if let Some(correspondence) = &mut progress.correspondence {
+127 | |                 if correspondence
+128 | |                     .advance(request, native)
+129 | |                     .map_err(Denial::Bridge)?
+...   |
+134 | |             }
+    | |_____________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#collapsible_if
+help: collapse nested if block
+    |
+126 ~             if let Some(correspondence) = &mut progress.correspondence
+127 ~                 && correspondence
+128 |                     .advance(request, native)
+...
+132 |                     return Ok(false);
+133 ~                 }
+    |
+
+error: this `if` statement can be collapsed
+  --> crates\worth-runtime-world\src\lifecycle\builder\home_readmission\associated_effects.rs:63:9
+   |
+63 | /         if let Some(RecoveredCustodyDisposition::Released(recorded)) = recovered
+64 | |             .dispositions
+65 | |             .get(&association.attempt())
+66 | |             .map(|row| row.disposition())
+...  |
+75 | |         }
+   | |_________^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#collapsible_if
+help: collapse nested if block
+   |
+66 ~             .map(|row| row.disposition())
+67 ~             && recorded.as_ref().is_none_or(|recorded| {
+68 |                 recorded.receipt() != subject.receipt()
+...
+72 |                 return Err(Denial::DispositionEvidenceMismatch);
+73 ~             }
+   |
+
+error: use of a disallowed method `std::sync::Arc::as_ptr`
+  --> crates\worth-runtime-world\src\lifecycle\service_ports\lifecycle.rs:67:48
+   |
+67 |         if self.owner.as_ptr() as *const () != Arc::as_ptr(&owner.root) as *const () {
+   |                                                ^^^^^^^^^^^
+   |
+   = note: Addresses are for allocation lookup and custody; canonical order uses declared identity
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#disallowed_methods
+
+error: could not compile `worth-runtime-world` (lib) due to 11 previous errors
+warning: method `publish` is never used
+  --> crates\worth-runtime-world\src\publication\product_cas\memory_original.rs:36:19
+   |
+15 | impl MemoryPublicationReady {
+   | --------------------------- method in this implementation
+...
+36 |     pub(crate) fn publish(
+   |                   ^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+error: items after a test module
+   --> crates\worth-runtime-world\src\history\catalog\reachability\close_retirement.rs:59:1
+    |
+ 59 | mod tests {
+    | ^^^^^^^^^
+...
+131 | impl crate::history::CompositeHistoryCatalog {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#items_after_test_module
+    = note: `-D clippy::items-after-test-module` implied by `-D clippy::all`
+    = help: to override `-D clippy::all` add `#[allow(clippy::items_after_test_module)]`
+    = help: move the items to before the test module was defined
+
+error: this loop could be written as a `while let` loop
+   --> crates\worth-runtime-world\src\lifecycle\close\admission\tests.rs:176:5
+    |
+176 | /     loop {
+177 | |         match cleanup
+178 | |             .advance(&request, fixture.relational_runtime())
+179 | |             .unwrap()
+...   |
+184 | |     }
+    | |_____^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#while_let_loop
+    = note: `-D clippy::while-let-loop` implied by `-D clippy::all`
+    = help: to override `-D clippy::all` add `#[allow(clippy::while_let_loop)]`
+help: try
+    |
+176 ~     while let crate::lifecycle::RuntimeWorldResultSnapshotCleanupProgress::Advanced = cleanup
+177 +             .advance(&request, fixture.relational_runtime())
+178 +             .unwrap() { .. }
+    |
+
+error: this loop could be written as a `while let` loop
+   --> crates\worth-runtime-world\src\lifecycle\close\admission\tests.rs:244:5
+    |
+244 | /     loop {
+245 | |         match original
+246 | |             .advance(&request, fixture.relational_runtime())
+247 | |             .unwrap()
+...   |
+252 | |     }
+    | |_____^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#while_let_loop
+help: try
+    |
+244 ~     while let crate::lifecycle::RuntimeWorldHomeRetirementProgress::Advanced = original
+245 +             .advance(&request, fixture.relational_runtime())
+246 +             .unwrap() { .. }
+    |
+
+warning: `worth-runtime-world` (lib test) generated 1 warning
+error: could not compile `worth-runtime-world` (lib test) due to 9 previous errors; 1 warning emitted
+warning: method `binary` is never used
+   --> crates\worth-relational\src\durability\canonical_commit_artifact\borrowed_payload.rs:121:19
+    |
+ 10 | impl<'a> BorrowedPayload<'a> {
+    | ---------------------------- method in this implementation
+...
+121 |     pub(super) fn binary(self, execution: &ExecutionRequest<'_, '_>) -> Result<&'a [u8], Refusal> {
+    |                   ^^^^^^
+
+warning: associated function `readmit_embedded_checkpoint` is never used
+  --> crates\worth-relational\src\durability\canonical_commit_artifact\checkpoint_body.rs:22:19
+   |
+21 | impl Artifact {
+   | ------------- associated function in this implementation
+22 |     pub(crate) fn readmit_embedded_checkpoint(
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `synchronize_patch_semantics_for_test` is never used
+  --> crates\worth-relational\src\durability\migration\readmitted_canonical_commit.rs:90:19
+   |
+23 | impl ReadmittedCanonicalCommit {
+   | ------------------------------ method in this implementation
+...
+90 |     pub(crate) fn synchronize_patch_semantics_for_test(
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: associated function `storage_bytes` is never used
+  --> crates\worth-relational\src\merge\data\policy\custom_name.rs:31:19
+   |
+12 | impl MergePolicyName {
+   | -------------------- associated function in this implementation
+...
+31 |     pub(crate) fn storage_bytes(length: usize) -> Option<u64> {
+   |                   ^^^^^^^^^^^^^
+
+error: usage of `bool::then` in `filter_map`
+   --> crates\worth-relational\src\derived_relation\evaluation\memo\tests.rs:133:14
+    |
+133 |               .filter_map(|(ordinal, (kind, a, b))| {
+    |  ______________^
+134 | |                 (probe.relation == KindId(kind)
+135 | |                     && probe.anchor == if probe.outgoing { id(a) } else { id(b) })
+136 | |                 .then(|| StructuralRelationRecord {
+...   |
+141 | |                 })
+142 | |             })
+    | |______________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#filter_map_bool_then
+    = note: `-D clippy::filter-map-bool-then` implied by `-D clippy::all`
+    = help: to override `-D clippy::all` add `#[allow(clippy::filter_map_bool_then)]`
+help: use `filter` then `map` instead
+    |
+133 ~             .filter(|&(ordinal, (kind, a, b))| (probe.relation == KindId(kind)
+134 +                     && probe.anchor == if probe.outgoing { id(a) } else { id(b) })).map(|(ordinal, (kind, a, b))| StructuralRelationRecord {
+135 +                     relation_id: RelationId::new(PartitionId(0), ordinal as u64, 1),
+136 +                     kind_id: KindId(kind),
+137 +                     source: id(a),
+138 +                     target: id(b),
+139 +                 })
+    |
+
+error: items after a test module
+   --> crates\worth-relational\src\transactions\data\outcomes\created_entity_bindings.rs:153:1
+    |
+153 |   mod tests {
+    |   ^^^^^^^^^
+...
+260 | / fn resolve_client_key<'a>(
+261 | |     client: &'a crate::symbols::data::ClientKey,
+262 | |     symbols: &'a dyn SymbolTextLookup,
+263 | | ) -> Option<&'a str> {
+    | |____________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#items_after_test_module
+    = note: `-D clippy::items-after-test-module` implied by `-D clippy::all`
+    = help: to override `-D clippy::all` add `#[allow(clippy::items_after_test_module)]`
+    = help: move the items to before the test module was defined
+
+error: items after a test module
+   --> crates\worth-relational\src\transactions\data\outcomes\created_relation_bindings.rs:152:1
+    |
+152 |   mod tests {
+    |   ^^^^^^^^^
+...
+185 | / fn resolve_client_key<'a>(
+186 | |     client: &'a crate::symbols::data::ClientKey,
+187 | |     symbols: &'a dyn SymbolTextLookup,
+188 | | ) -> Option<&'a str> {
+    | |____________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#items_after_test_module
+    = help: move the items to before the test module was defined
+
+error: this expression creates a reference which is immediately dereferenced by the compiler
+   --> crates\worth-relational\src\tests\durability\contracts\caller_association.rs:200:37
+    |
+200 |         .canonical_commit_artifacts(&execution)
+    |                                     ^^^^^^^^^^ help: change this to: `execution`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#needless_borrow
+    = note: `-D clippy::needless-borrow` implied by `-D clippy::all`
+    = help: to override `-D clippy::all` add `#[allow(clippy::needless_borrow)]`
+
+error: this expression creates a reference which is immediately dereferenced by the compiler
+  --> crates\worth-relational\src\tests\durability\medium\cold_envelope_matrix.rs:57:45
+   |
+57 |                 .canonical_commit_artifacts(&execution)
+   |                                             ^^^^^^^^^^ help: change this to: `execution`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#needless_borrow
+
+warning: `worth-relational` (lib test) generated 28 warnings (23 duplicates)
+error: could not compile `worth-relational` (lib test) due to 5 previous errors; 28 warnings emitted
+
+end_utc: 2026-11-05T04:03:14.834276+00:00
+exit_code: 101
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

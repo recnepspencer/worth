@@ -30,12 +30,13 @@ fn with_scope<T>(
 fn stopped_abort<'a>(app: &App, group: Group<'a>) -> Group<'a> {
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
-    let (group, cause) = with_scope(app, &scope, |request| {
+    let (group, cause) = match with_scope(app, &scope, |request| {
         cancellation.cancel();
         group.abort(request)
-    })
-    .err()
-    .expect("stopped close retains the same grouped root");
+    }) {
+        Err(refused) => refused,
+        Ok(_) => panic!("stopped close retains the same grouped root"),
+    };
     assert!(
         matches!(
             cause,

@@ -378,3 +378,19 @@ impl WorthQueryWorkspace {
         )
     }
 }
+#[cfg(test)]
+#[path = "workspace_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+
+#[cfg(test)]
+fn collect_owned_inline_type_sizes(census: &mut crate::inline_type_sizes::Census) {
+    {
+        let mut owner = census.owner::<WorthQueryWorkspace>(
+            "workspaces/worth-query/crates/worth-query/src/runtime/workspace.rs",
+            "WorthQueryWorkspace",
+            128 * 1024,
+        );
+        owner.field::<String>("name");
+        owner.field::<WorthQueryRuntime>("runtime");
+    }
+}

@@ -132,3 +132,6 @@ impl IndeterminatePhysicalMutation {
         self.root_preparation_failure.as_deref()
     }
 }
+#[cfg(test)]
+#[path = "indeterminate_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

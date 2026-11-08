@@ -163,3 +163,6 @@ fn publish(mut constructed: ConstructedHandoff) -> PhysicalRecoveryOutcome {
         Err(denial) => completion.refused(denial),
     }
 }
+#[cfg(test)]
+#[path = "handoff_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

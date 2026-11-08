@@ -122,3 +122,6 @@ where
         Vec::new()
     }
 }
+#[cfg(test)]
+#[path = "primary_graph_source_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

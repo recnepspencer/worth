@@ -36,6 +36,9 @@ pub(crate) use publication::{
     PublicationDeliveryClaim, PublicationRevision,
 };
 pub(crate) use publication::{
+    MemoryPublicationMeaning, MemoryPublicationReceiver, MemoryPublicationReceiverScope,
+};
+pub(crate) use publication::{
     PreparedReadmittedPublicationRecord, PublicationEvidence, ReadmittedPublicationRecord,
     ReadmittedPublicationRecordBacking,
 };

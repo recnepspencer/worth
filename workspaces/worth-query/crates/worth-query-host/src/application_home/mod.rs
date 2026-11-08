@@ -16,7 +16,10 @@ pub use discard::{discard_home, WorthQueryApplicationHomeDiscardDenial};
 pub use failure_close::{
     WorthQueryApplicationHomeOpeningCloseRefused, WorthQueryApplicationHomeOpeningClosed,
 };
-pub use refusal::{HomeCustodyReadmissionDenial, WorthQueryApplicationHomeOpenRefused};
+pub use refusal::{
+    HomeCustodyReadmissionDenial, UnadmittedHomeQueryCustodyRefused, UnadmittedHomeQueryService,
+    WorthQueryApplicationHomeOpenRefused,
+};
 pub use request::{WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest};
 pub use runtime::WorthQueryApplicationHome;
 pub use transition::{

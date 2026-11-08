@@ -147,3 +147,6 @@ impl std::fmt::Debug for RecoveredPhysicalRuntimeHandoff {
             .finish()
     }
 }
+#[cfg(test)]
+#[path = "recovered_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

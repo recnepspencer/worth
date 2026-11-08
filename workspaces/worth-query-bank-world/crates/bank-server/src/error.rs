@@ -3,7 +3,7 @@ use worth_query_host::facade::admission::authenticated_principal::{
 };
 use worth_query_host::facade::admission::authentication_event::WorthQueryAuthenticationEventDenial;
 use worth_query_host::facade::application_installation::{
-    WorthQueryInMemoryApplicationDenial, WorthQueryWorkflowRuntimeBindingDenial,
+    WorthQueryApplicationPreparationDenial, WorthQueryWorkflowRuntimeBindingDenial,
 };
 use worth_query_host::facade::declaration::application_program::ApplicationProgramValidationDenial;
 use worth_query_host::facade::declaration::application_schema::ApplicationSchemaDeclarationDenial;
@@ -37,7 +37,7 @@ pub enum BankIdentityRuntimeBuildError {
         worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial,
     ),
     ApplicationProgramValidation(ApplicationProgramValidationDenial),
-    ApplicationInstallation(Box<WorthQueryInMemoryApplicationDenial>),
+    ApplicationInstallation(Box<WorthQueryApplicationPreparationDenial>),
     SchemaDeclaration(Box<ApplicationSchemaDeclarationDenial>),
     PrincipalKey(WorthQueryApplicationPrincipalKeyDenial),
     PackageValidation(WorthQueryPortablePackageValidationDenial),

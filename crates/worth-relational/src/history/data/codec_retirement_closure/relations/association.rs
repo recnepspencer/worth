@@ -2,20 +2,18 @@
 use super::{charge, CodecRetirementClosureStop as Stop};
 use crate::branch::RelationalBranchRoot;
 use crate::history::data::canonical_commit_envelope::CanonicalRequiredOutputOrigin;
-use crate::runtime::RelationalRuntime;
 use std::sync::Arc;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
 
 pub(in super::super) fn validate_complete_publication(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     root: &RelationalBranchRoot,
     origin: &Arc<CanonicalRequiredOutputOrigin>,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<(), Stop> {
     let envelope = runtime
-        .history
-        .canonical_envelope(origin.commit.commit_id)
+        .commit(origin.commit.commit_id)?
         .ok_or("complete relation publication absent")?;
     // Prove every owned payload/birth/predecessor before incidence can classify rewiring.
     for relation in &origin.relations {
@@ -32,7 +30,7 @@ pub(in super::super) fn validate_complete_publication(
             root,
             relation.id,
             origin,
-            &mut |version| runtime.history.canonical_envelope_for_version(version),
+            &mut |version, context| runtime.version(version, context),
             context,
         )?;
     }
@@ -41,9 +39,9 @@ pub(in super::super) fn validate_complete_publication(
         None,
         origin,
         None,
-        &mut |commit| runtime.history.canonical_envelope(commit),
-        &mut |version| runtime.history.canonical_envelope_for_version(version),
-        runtime.history.catalog_len(),
+        &mut |commit| runtime.commit(commit),
+        &mut |version, context| runtime.version(version, context),
+        runtime.runtime.history.catalog_len(),
         lease,
         context,
     )

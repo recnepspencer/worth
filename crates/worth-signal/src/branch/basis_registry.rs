@@ -294,3 +294,6 @@ impl Drop for SignalBranchBasisRegistryLease {
         }
     }
 }
+#[cfg(test)]
+#[path = "basis_registry_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

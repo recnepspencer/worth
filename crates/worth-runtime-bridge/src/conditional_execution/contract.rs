@@ -390,3 +390,6 @@ impl Drop for BridgeOwnedSignalRuntime {
         self.revoke_managed_clock_liveness();
     }
 }
+#[cfg(test)]
+#[path = "contract_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

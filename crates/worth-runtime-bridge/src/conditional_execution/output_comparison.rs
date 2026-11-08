@@ -166,3 +166,6 @@ fn computed(evidence: &super::BridgeConditionalDecisionEvidence) -> bool {
                 | SignalConditionalDecisionClass::ComputedRevertedClean
         )
 }
+#[cfg(test)]
+#[path = "output_comparison_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

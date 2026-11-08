@@ -1,4 +1,4 @@
-//! Original Full-only REG6 member emission without owned checkpoint images.
+//! Counted Full DATA emits REG6 members after ordinary funded materialization.
 mod adjacency;
 pub(in crate::storage::residency) mod arena;
 mod aspects;
@@ -177,4 +177,27 @@ impl Serialize for Partition<'_> {
         )?;
         fields.end()
     }
+}
+
+pub(in crate::storage::residency) fn current_scalar_wire(
+    counts: [usize; 2],
+) -> Result<u64, super::super::RelationalResidencyDemandFailure> {
+    use super::super::region_load::materialization_funding::{sum, times, vector};
+    let mut bytes = 0;
+    for count in counts {
+        bytes = sum(
+            bytes,
+            vector::<(
+                u64,
+                u32,
+                crate::storage::data::RecordLifecycleState,
+                Option<crate::identity::data::KindId>,
+                crate::identity::data::VersionId,
+                Option<crate::identity::data::VersionId>,
+                [u32; 3],
+            )>(count)?,
+        )?;
+        bytes = sum(bytes, times(vector::<(u64, u64)>(count)?, 2)?)?;
+    }
+    Ok(bytes)
 }

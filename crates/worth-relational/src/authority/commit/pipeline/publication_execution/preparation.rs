@@ -356,3 +356,6 @@ pub(super) fn prepare_publication_phase(
     };
     CommitPhaseBacking::new(execution, result)
 }
+#[cfg(test)]
+#[path = "preparation_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

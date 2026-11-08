@@ -60,3 +60,6 @@ impl std::error::Error for WorthQueryWorkflowInstancePreparationDenial {
         }
     }
 }
+#[cfg(test)]
+#[path = "preparation_denial_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

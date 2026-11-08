@@ -57,12 +57,79 @@ impl DurabilityRecoveryAuthority<'_> {
             native.bytes(),
         )?
         .checkpoint;
+        self.restore_decoded_for_codec_transition(execution, checkpoint, native.bytes().len())
+    }
+
+    pub(in crate::durability::authority) fn restore_decoded_interim_for_codec_transition(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        checkpoint: crate::durability::data::DurableCheckpoint,
+        origin: &super::super::CapturedNativeInterimOrigin,
+    ) -> Result<
+        (
+            crate::runtime::RecoveryOutcome,
+            RecoveredRelationalRuntimeAuthority,
+        ),
+        RelationalRecoveryStop,
+    > {
+        let target_registry = self.runtime.config().schema.registry;
+        let source_registry = source_schema::readmit_interim_current_source_schema(
+            execution,
+            origin,
+            &checkpoint,
+            self.runtime.main_branch_identity().branch_id(),
+            &target_registry.content_formats,
+        )?;
+        self.restore_codec_source(
+            execution,
+            checkpoint,
+            origin.native_len(),
+            source_registry,
+            target_registry,
+        )
+    }
+
+    fn restore_decoded_for_codec_transition(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        checkpoint: crate::durability::data::DurableCheckpoint,
+        native_bytes_read: usize,
+    ) -> Result<
+        (
+            crate::runtime::RecoveryOutcome,
+            RecoveredRelationalRuntimeAuthority,
+        ),
+        RelationalRecoveryStop,
+    > {
         let target_registry = self.runtime.config().schema.registry;
         let source_registry = source_schema::readmit_current_source_schema(
             &checkpoint,
             self.runtime.main_branch_identity().branch_id(),
             &target_registry.content_formats,
         )?;
+        self.restore_codec_source(
+            execution,
+            checkpoint,
+            native_bytes_read,
+            source_registry,
+            target_registry,
+        )
+    }
+
+    fn restore_codec_source(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        checkpoint: crate::durability::data::DurableCheckpoint,
+        native_bytes_read: usize,
+        source_registry: RelationalSchemaRegistry,
+        target_registry: RelationalSchemaRegistry,
+    ) -> Result<
+        (
+            crate::runtime::RecoveryOutcome,
+            RecoveredRelationalRuntimeAuthority,
+        ),
+        RelationalRecoveryStop,
+    > {
         let changes =
             crate::runtime::codec_field_changes(execution, &source_registry, &target_registry)
                 .map_err(|denial| match denial.request_cause() {
@@ -75,7 +142,7 @@ impl DurabilityRecoveryAuthority<'_> {
             return self.restore_decoded_native_checkpoint_with_authority(
                 execution,
                 checkpoint,
-                native.bytes().len(),
+                native_bytes_read,
             );
         }
         source_schema::admit_single_codec_head(&checkpoint)
@@ -108,7 +175,7 @@ impl DurabilityRecoveryAuthority<'_> {
             .restore_decoded_native_checkpoint_with_authority(
                 execution,
                 checkpoint,
-                native.bytes().len(),
+                native_bytes_read,
             )?;
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         recovered.codec_transition = Some(RecoveredCodecTransitionState {

@@ -298,7 +298,7 @@ fn journey() {
     a.close();
     b.close();
     drop(original);
-    drop(request);
+
     drop(principal);
     drop(scope);
     drop(world);

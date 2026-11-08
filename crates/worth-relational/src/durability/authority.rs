@@ -10,7 +10,9 @@ pub use associated_effects::{
 mod checkpoint_capture;
 pub(in crate::durability) mod checkpoint_complete;
 pub use checkpoint_complete::{
-    CapturedRelationalCheckpointAdmissionImage, CompleteRelationalNativeCheckpoint,
+    AdmittedNativeInterimReceiver, CapturedNativeInterimAdmission, CapturedNativeInterimComponent,
+    CapturedNativeInterimOrigin, CapturedRelationalCheckpointAdmissionImage,
+    CompleteRelationalNativeCheckpoint, NativeInterimBootstrapContinuation,
 };
 pub(in crate::durability) mod checkpoint_components;
 mod checkpoint_image;
@@ -84,6 +86,7 @@ pub struct DurabilityRecoveryAuthority<'runtime> {
 /// presence or later branch movement cannot impersonate successful recovery.
 #[derive(Debug)]
 pub struct RecoveredRelationalRuntimeAuthority {
+    interim_bootstrap_phase: Option<checkpoint_complete::interim::bootstrap::BootstrapPhaseOwner>,
     home_catalog_readmission: std::sync::Mutex<()>,
     home_program_predecessor: Option<crate::runtime::RelationalHomeProgramPredecessorCatalog>,
     runtime_instance_id: u64,
@@ -185,7 +188,11 @@ impl RecoveredRelationalRuntimeAuthority {
         self,
         basis: AdmittedRelationalBranchBasis,
     ) -> Result<RecoveredRelationalBranchBasis, AdmittedRelationalBranchBasis> {
-        if self.owns_image(basis.descriptor()) {
+        let matches = self.owns_image(basis.descriptor());
+        if let Some(phase) = &self.interim_bootstrap_phase {
+            phase.finish_capture(matches);
+        }
+        if matches {
             Ok(RecoveredRelationalBranchBasis { basis })
         } else {
             Err(basis)

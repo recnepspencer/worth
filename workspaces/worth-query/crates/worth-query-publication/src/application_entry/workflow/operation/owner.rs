@@ -305,5 +305,8 @@ pub(in crate::application_entry) fn other_custody(
     }
 }
 
+#[cfg(test)]
+#[path = "owner_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
 #[path = "owner/owning.rs"]
 mod owning;

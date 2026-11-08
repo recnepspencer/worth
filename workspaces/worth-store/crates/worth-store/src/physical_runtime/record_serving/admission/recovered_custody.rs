@@ -12,15 +12,19 @@ use worth_store_physical_format::{
     decode_checkpoint_certificate, CheckpointCertificateKind, DurableFreeSpaceManifestHeader,
     DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration, ReleaseCheckpointCertificateV1,
 };
+#[cfg(feature = "recovery-runtime-owner")]
 use worth_store_recovery_physics::{
     VerifiedEffectiveReleaseHeadRosterV14, VerifiedOrderedHistoricalReleaseCustody,
-    VerifiedPendingWalReleaseCustody, VerifiedSelectedNoReleaseCustody,
-    VerifiedSelectedReleaseHeadCustodyV2, VerifiedSelectedTierEpochCustody,
+    VerifiedSelectedNoReleaseCustody, VerifiedSelectedReleaseHeadCustodyV2,
+};
+use worth_store_recovery_physics::{
+    VerifiedPendingWalReleaseCustody, VerifiedSelectedTierEpochCustody,
 };
 
 #[cfg(feature = "recovery-runtime-owner")]
 #[path = "recovered_custody/checkpoint.rs"]
 mod checkpoint;
+#[cfg(feature = "recovery-runtime-owner")]
 #[path = "recovered_custody/construction.rs"]
 mod construction;
 #[cfg(feature = "recovery-runtime-owner")]
@@ -29,8 +33,10 @@ mod head_v2;
 #[cfg(feature = "recovery-runtime-owner")]
 #[path = "recovered_custody/media_freshness.rs"]
 mod media_freshness;
+#[cfg(feature = "recovery-runtime-owner")]
 #[path = "recovered_custody/no_release.rs"]
 mod no_release;
+#[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use no_release::{
     GenerationZeroNoReleaseCustody, RecoveredNoReleaseCustody,
 };
@@ -43,12 +49,16 @@ pub(in crate::physical_runtime) use media_freshness::FundedMediaVerifiedRecovere
 #[path = "recovered_custody/resident_memory.rs"]
 mod resident_memory;
 
+#[cfg(feature = "recovery-runtime-owner")]
 #[path = "recovered_custody/release_custody.rs"]
 mod release_custody;
+#[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use release_custody::RecoveredReleaseCustody;
 
+#[cfg(feature = "recovery-runtime-owner")]
 #[path = "recovered_custody/storage.rs"]
 mod storage;
+#[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use storage::PreparedRecoveredCustodyBacking;
 
 pub struct RecoveredPhysicalCheckpointCustody {
@@ -56,10 +66,16 @@ pub struct RecoveredPhysicalCheckpointCustody {
     evidence: RecoveredCheckpointCustodyEvidence,
 }
 
-pub(in crate::physical_runtime) struct RecoveredCheckpointCustodyEvidence {
-    backing: PreparedRecoveredCustodyBacking,
+// Only the recovery owner can construct evidence. In a bare Store this is
+// uninhabited; shared serving APIs cannot invent an empty recovery proof.
+pub(in crate::physical_runtime) enum RecoveredCheckpointCustodyEvidence {
+    #[cfg(feature = "recovery-runtime-owner")]
+    Recovered {
+        backing: PreparedRecoveredCustodyBacking,
+    },
 }
 
+#[cfg(feature = "recovery-runtime-owner")]
 struct RecoveredCheckpointCustodyPayload {
     #[cfg(feature = "recovery-runtime-owner")]
     checkpoint_ownership:
@@ -117,6 +133,7 @@ impl RecoveredPhysicalCheckpointCustody {
         self.residency.ports().allocation_events()
     }
 
+    #[cfg(feature = "recovery-runtime-owner")]
     pub(in crate::physical_runtime) fn into_serving_parts(
         self,
     ) -> (
@@ -126,10 +143,16 @@ impl RecoveredPhysicalCheckpointCustody {
         (self.residency, self.evidence)
     }
 
+    // Eliminate an impossible seal rather than fabricating a no-custody result.
+    #[cfg(not(feature = "recovery-runtime-owner"))]
+    pub(in crate::physical_runtime::record_serving) fn without_recovery_owner(self) -> ! {
+        match self.evidence {}
+    }
+
     pub const fn recovery_allocation_admission(
         &self,
     ) -> crate::physical_runtime::PhysicalRecoveryAllocationAdmission {
-        self.evidence.payload().recovery_allocation
+        self.evidence.recovery_allocation_admission()
     }
 
     #[cfg(feature = "recovery-runtime-owner")]
@@ -141,8 +164,16 @@ impl RecoveredPhysicalCheckpointCustody {
 }
 
 impl RecoveredCheckpointCustodyEvidence {
+    #[cfg(feature = "recovery-runtime-owner")]
+    const fn backing(&self) -> &PreparedRecoveredCustodyBacking {
+        match self {
+            Self::Recovered { backing } => backing,
+        }
+    }
+
+    #[cfg(feature = "recovery-runtime-owner")]
     const fn payload(&self) -> &RecoveredCheckpointCustodyPayload {
-        self.backing.payload()
+        self.backing().payload()
     }
 
     #[cfg(feature = "recovery-runtime-owner")]
@@ -164,11 +195,13 @@ impl RecoveredCheckpointCustodyEvidence {
     }
 
     /// Original Store-issued recovery ceiling; this observation mints no new grant.
-    #[cfg(feature = "recovery-runtime-owner")]
     pub(in crate::physical_runtime) const fn recovery_allocation_admission(
         &self,
     ) -> crate::physical_runtime::PhysicalRecoveryAllocationAdmission {
-        self.payload().recovery_allocation
+        match *self {
+            #[cfg(feature = "recovery-runtime-owner")]
+            Self::Recovered { ref backing } => backing.payload().recovery_allocation,
+        }
     }
 
     #[cfg(feature = "recovery-runtime-owner")]
@@ -240,6 +273,7 @@ impl RecoveredCheckpointCustodyEvidence {
         Ok(())
     }
 
+    #[cfg(feature = "recovery-runtime-owner")]
     pub(in crate::physical_runtime) fn release_custody(&self) -> &RecoveredReleaseCustody {
         &self.payload().release
     }
@@ -247,17 +281,26 @@ impl RecoveredCheckpointCustodyEvidence {
     pub(in crate::physical_runtime) fn tier_custody(
         &self,
     ) -> Option<&VerifiedSelectedTierEpochCustody> {
-        self.payload().tier.as_ref()
+        match *self {
+            #[cfg(feature = "recovery-runtime-owner")]
+            Self::Recovered { ref backing } => backing.payload().tier.as_ref(),
+        }
     }
 
     pub(in crate::physical_runtime) fn pending_wal_release(
         &self,
     ) -> Option<&VerifiedPendingWalReleaseCustody> {
-        match &self.payload().release {
-            RecoveredReleaseCustody::HeadV2(_) => None,
-            RecoveredReleaseCustody::NoRelease(_) => None,
-            RecoveredReleaseCustody::PendingWal { claim, .. } => Some(claim),
-            RecoveredReleaseCustody::OrderedHistorical { .. } => None,
+        match *self {
+            #[cfg(feature = "recovery-runtime-owner")]
+            Self::Recovered { ref backing } => match &backing.payload().release {
+                RecoveredReleaseCustody::HeadV2(_) => None,
+                RecoveredReleaseCustody::NoRelease(_) => None,
+                RecoveredReleaseCustody::PendingWal { claim, .. } => Some(claim),
+                RecoveredReleaseCustody::OrderedHistorical { .. } => None,
+            },
         }
     }
 }
+#[cfg(test)]
+#[path = "recovered_custody_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

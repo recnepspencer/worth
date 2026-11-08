@@ -35,7 +35,7 @@ fn install_source(
         .with_schema(&schema)
         .validated_program()
         .unwrap();
-    let limits = installation::WorthQueryInMemoryApplicationLimits::new(
+    let limits = installation::WorthQueryApplicationLimits::new(
         worth_query_testkit_document_retention::facade::document_world_resources::world_resources(
             256,
             4 * 1024 * 1024,
@@ -48,7 +48,7 @@ fn install_source(
         SignalConditionalEvaluationBudget::development(),
     );
     if let Some(checkpoint) = checkpoint {
-        return installation::in_memory_program_from_checkpoint(
+        return installation::WorthQueryInterimCheckpointRestore::program(
             program,
             schema,
             (Configuration {

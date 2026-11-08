@@ -120,3 +120,6 @@ pub(in crate::domain_computation) use operation_progression::{
 };
 
 pub use capability_decision_fact::WorthQueryRetainedCapabilityAuthorization;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

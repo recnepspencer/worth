@@ -13,3 +13,6 @@ pub use cleanup_posture::{
 pub use operation_fates::RecoveryOperationFateSet;
 pub use recovered::RecoveredPhysicalRuntimeHandoff;
 pub(crate) use recovered_evidence::RecoveredPhysicalRuntimeHandoffEvidence;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -7,6 +7,7 @@ use worth_relational::facade::durability::{
 /// An allocation refusal never authorizes a different capture policy.
 #[derive(Debug)]
 pub enum WorthQueryCheckpointCaptureDenial {
+    WorldOriginals(Box<worth_runtime_world::facade::WorldInterimCheckpointRefusal>),
     AdmissionImage(Box<worth_relational::facade::durability::RelationalCheckpointAdmissionRefusal>),
     ForeignPhase(super::super::WorthQueryForeignAdvancementPhase),
     NativeOwnerUnavailable,
@@ -79,6 +80,9 @@ impl From<ExecutionAllocationDenial> for WorthQueryCheckpointCaptureDenial {
 impl std::fmt::Display for WorthQueryCheckpointCaptureDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::WorldOriginals(error) => {
+                write!(formatter, "checkpoint World originals: {error:?}")
+            }
             Self::AdmissionImage(error) => {
                 write!(formatter, "checkpoint Native admission image: {error:?}")
             }

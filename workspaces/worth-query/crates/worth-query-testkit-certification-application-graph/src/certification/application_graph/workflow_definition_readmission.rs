@@ -27,7 +27,7 @@ pub fn capture(
             Schema = DocumentRetentionSchema,
         >,
     >,
-) -> Vec<u8> {
+) -> WorthQueryApplicationCheckpoint {
     application
         .with_host_advancement(|phase| {
             application
@@ -37,14 +37,12 @@ pub fn capture(
                     WorthQueryCheckpointCapturePolicy::SystemAllocation,
                 )
                 .unwrap()
-                .bytes()
-                .to_vec()
         })
         .unwrap()
 }
 
 pub fn restore(
-    bytes: Vec<u8>,
+    checkpoint: WorthQueryApplicationCheckpoint,
 ) -> DocumentWorkflowRuntime<
     WorkflowOwnerProgram,
     worth_query_testkit_document_retention::facade::document_retention_model::workflow::governed_read::GovernedDocumentWorkflow,
@@ -59,7 +57,7 @@ pub fn restore(
     worth_query_testkit_document_retention::facade::document_retention_model::workflow::retain_workflow_for(
         super::document_retention_model::host::restore(
             program,
-            WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes),
+            checkpoint,
             WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
         )
         .expect("the original program and native checkpoint restore before definition readmission"),

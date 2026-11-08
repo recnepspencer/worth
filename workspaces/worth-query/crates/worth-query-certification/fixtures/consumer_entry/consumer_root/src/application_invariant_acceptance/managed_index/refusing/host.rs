@@ -129,7 +129,7 @@ pub(super) fn install(
     configuration: Configuration,
     initialize: Initialize,
     names: [&str; 3],
-) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
+) -> Result<Host, WorthQueryApplicationPreparationDenial> {
     let declaration = Catalog::declaration().unwrap();
     in_memory_program(
         ApplicationProgramAuthoring::<Catalog, Program>::begin()
@@ -181,4 +181,25 @@ pub(super) fn install(
             Ok(())
         },
     )
+}
+
+impl
+    crate::application_invariant_acceptance::managed_index::prefix_provider::PrefixSourceIndex<
+        Catalog,
+    > for SameMeaningDifferentBinding
+{
+    fn with_name<R>(
+        row: &WorthQueryManagedIndexSourceRow<'_, Catalog, Self>,
+        visitor: impl FnOnce(&str) -> R,
+    ) -> Result<R, WorthQueryManagedIndexTextReadDenial> {
+        row.with_text(super::query::name(), visitor)
+    }
+    #[cfg(test)]
+    fn inspect_text(
+        calls: &prefix_observation::Calls,
+        row: &WorthQueryManagedIndexSourceRow<'_, Catalog, Self>,
+    ) -> Result<(), crate::application_invariant_acceptance::managed_index::prefix_provider::Stop>
+    {
+        prefix::text_read::inspect(calls, row)
+    }
 }

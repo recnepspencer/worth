@@ -1,5 +1,5 @@
 //! Retire Query's ordinary Bridge and its local alias to Store's assembly.
-use super::WorthQueryInstalledApplicationBridge;
+use super::{InstalledBridgeCustody, WorthQueryInstalledApplicationBridge};
 use crate::domain_computation::primary_graph::{
     WorthQueryHomeRetirementDenial as Denial, WorthQueryOperationHomeRetirementProgress as Progress,
 };
@@ -17,13 +17,10 @@ impl WorthQueryInstalledApplicationBridge {
         request: &ExecutionRequest<'_, '_>,
         native: &RelationalRuntime,
     ) -> Result<(), Denial> {
-        self.ordinary
-            .as_ref()
-            .expect("serving Bridge preflight")
+        self.ordinary()
             .preflight_home_retirement(native, request)
             .map_err(Denial::Bridge)?;
-        self.conditional
-            .as_ref()
+        self.conditional_owner()
             .expect("same original assembly")
             .try_write()
             .map_err(|_| Denial::Bridge(BridgeDenial::Busy))?
@@ -37,47 +34,79 @@ impl WorthQueryInstalledApplicationBridge {
         native: &RelationalRuntime,
         owner: &Arc<RwLock<BridgeSealedRuntimeAssembly>>,
     ) -> Result<Progress, Denial> {
-        if self.conditional.is_none() {
+        let Some(conditional) = self.conditional_owner() else {
             return Ok(Progress::Complete);
-        }
+        };
         request.consult().map_err(Denial::Execution)?;
-        if !Arc::ptr_eq(
-            self.conditional.as_ref().expect("same original alias"),
-            owner,
-        ) {
+        if !Arc::ptr_eq(conditional, owner) {
             return Err(Denial::Bridge(BridgeDenial::ForeignOwner));
         }
-        if let Some(ordinary) = self.ordinary.take() {
-            match ordinary.into_home_retirement(native, request) {
-                Ok(task) => self.retiring_ordinary = Some(task),
-                Err((ordinary, cause)) => {
-                    self.ordinary = Some(ordinary);
-                    return Err(Denial::Bridge(cause));
+        // Advancing can unwind through the request's owned observer. Keep the
+        // actual task in its owner until it reports completion, as on refusal.
+        match self.custody.as_mut().expect("same original Bridge phase") {
+            InstalledBridgeCustody::Retiring { ordinary, .. } => {
+                match ordinary.advance(request, native).map_err(Denial::Bridge)? {
+                    BridgeProgress::Advanced => return Ok(Progress::Advanced),
+                    BridgeProgress::Complete => {}
                 }
             }
-            return Ok(Progress::Advanced);
+            InstalledBridgeCustody::Serving { .. }
+            | InstalledBridgeCustody::Retired { .. }
+            | InstalledBridgeCustody::Released { .. } => {}
         }
-        if let Some(task) = self.retiring_ordinary.as_mut() {
-            match task.advance(request, native).map_err(Denial::Bridge)? {
-                BridgeProgress::Advanced => return Ok(Progress::Advanced),
-                BridgeProgress::Complete => {}
-            }
-            self.retired_ordinary = Some(
-                self.retiring_ordinary
-                    .take()
-                    .expect("same completed Bridge")
+        let original = self.custody.take().expect("same original Bridge phase");
+        let (successor, outcome) = match original {
+            InstalledBridgeCustody::Serving {
+                ordinary,
+                conditional,
+            } => match ordinary.into_home_retirement(native, request) {
+                Ok(task) => (
+                    InstalledBridgeCustody::Retiring {
+                        conditional,
+                        ordinary: task,
+                    },
+                    Ok(Progress::Advanced),
+                ),
+                Err((ordinary, cause)) => (
+                    InstalledBridgeCustody::Serving {
+                        ordinary,
+                        conditional,
+                    },
+                    Err(Denial::Bridge(cause)),
+                ),
+            },
+            InstalledBridgeCustody::Retiring {
+                conditional,
+                ordinary,
+            } => {
+                let ordinary = ordinary
                     .into_retired()
-                    .unwrap_or_else(|_| unreachable!("owner reported Complete")),
-            );
-            return Ok(Progress::Advanced);
-        }
-        // Borrowing Store's actual matching Arc proves this local release
-        // cannot destroy its assembly, Signal owner or arbitrary supplier data.
-        drop(
-            self.conditional
-                .take()
-                .expect("same final Query assembly alias"),
-        );
-        Ok(Progress::Complete)
+                    .unwrap_or_else(|_| unreachable!("owner reported Complete"));
+                (
+                    InstalledBridgeCustody::Retired {
+                        conditional,
+                        ordinary,
+                    },
+                    Ok(Progress::Advanced),
+                )
+            }
+            InstalledBridgeCustody::Retired {
+                conditional,
+                ordinary,
+            } => {
+                // Store's matching Arc keeps the assembly alive through release.
+                drop(conditional);
+                (
+                    InstalledBridgeCustody::Released { ordinary },
+                    Ok(Progress::Complete),
+                )
+            }
+            InstalledBridgeCustody::Released { ordinary } => (
+                InstalledBridgeCustody::Released { ordinary },
+                Ok(Progress::Complete),
+            ),
+        };
+        self.custody = Some(successor);
+        outcome
     }
 }

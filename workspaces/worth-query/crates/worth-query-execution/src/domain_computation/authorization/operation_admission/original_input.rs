@@ -58,16 +58,18 @@ impl WorthQueryAdmittedOperation {
     ) -> Option<
         &std::sync::Arc<crate::domain_computation::primary_graph::WorthQueryObservedScopeSelector>,
     > {
-        self.original_scope.as_ref()
+        self.data.original_scope.as_ref()
     }
     pub(in crate::domain_computation) fn original_mutation_binding(
         &self,
     ) -> Option<std::any::TypeId> {
-        self.original_input
+        self.data
+            .original_input
             .as_ref()
             .map(|input| input.binding_type)
             .or_else(|| {
-                self.original_inspection_disclosure
+                self.data
+                    .original_inspection_disclosure
                     .as_ref()
                     .map(|captured| captured.association().source_type())
             })
@@ -77,26 +79,30 @@ impl WorthQueryAdmittedOperation {
         &mut self,
         disclosure: Option<std::sync::Arc<crate::domain_computation::primary_graph::source_disclosure::OriginalSourceInspectionDisclosure>>,
     ) {
-        self.original_inspection_disclosure = disclosure;
+        self.data.original_inspection_disclosure = disclosure;
     }
 
     pub(in crate::domain_computation) fn original_inspection_disclosure(
         &self,
     ) -> Option<&std::sync::Arc<crate::domain_computation::primary_graph::source_disclosure::OriginalSourceInspectionDisclosure>>{
-        self.original_inspection_disclosure.as_ref()
+        self.data.original_inspection_disclosure.as_ref()
     }
 
     pub(in crate::domain_computation) fn original_encoded_input(
         &self,
     ) -> Option<&std::sync::Arc<dyn std::any::Any + Send + Sync>> {
-        self.original_input.as_ref().map(|input| &input.encoded)
+        self.data
+            .original_input
+            .as_ref()
+            .map(|input| &input.encoded)
     }
 
     pub(in crate::domain_computation) fn retain_original_program(
         &mut self,
         program: std::sync::Arc<crate::domain_computation::primary_graph::OriginalProgramMeaning>,
     ) {
-        self.original_input
+        self.data
+            .original_input
             .as_mut()
             .expect("program retention follows original input capture")
             .program = Some(program);
@@ -106,7 +112,7 @@ impl WorthQueryAdmittedOperation {
         &self,
     ) -> Option<&std::sync::Arc<crate::domain_computation::primary_graph::OriginalProgramMeaning>>
     {
-        self.original_input.as_ref()?.program.as_ref()
+        self.data.original_input.as_ref()?.program.as_ref()
     }
 
     pub(in crate::domain_computation) fn original_correction_disclosure(
@@ -116,11 +122,12 @@ impl WorthQueryAdmittedOperation {
             crate::domain_computation::application_aftermath::OriginalCorrectionDisclosure,
         >,
     > {
-        self.original_input.as_ref()?.correction.as_ref()
+        self.data.original_input.as_ref()?.correction.as_ref()
     }
 
     pub(super) fn original_input_identity(&self) -> Option<[u8; 32]> {
-        self.original_input
+        self.data
+            .original_input
             .as_ref()
             .map(|original| original.identity)
     }

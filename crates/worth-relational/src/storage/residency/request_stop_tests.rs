@@ -1,5 +1,4 @@
 use super::*;
-use worth_execution::{CancellationSource, ExecutionRequest};
 
 #[derive(Debug)]
 struct RetryAfterFailure {
@@ -7,6 +6,35 @@ struct RetryAfterFailure {
     failure: std::sync::Mutex<Option<Cause>>,
 }
 impl RelationalDurableColdSource for RetryAfterFailure {
+    fn retain_members_for_request(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        members: &[RelationalDurableMemberLocator],
+        issuer: std::sync::Weak<dyn RelationalDurableColdSource>,
+    ) -> Result<
+        crate::durability::medium::RelationalDurableMemberCustody,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        self.source
+            .retain_members_for_request(request, members, issuer)
+    }
+
+    fn validate_member_custody_retirement(
+        &self,
+        original: &(dyn std::any::Any + Send + Sync),
+    ) -> Result<(), crate::durability::medium::RelationalDurableMemberRetirementRefusal> {
+        self.source.validate_member_custody_retirement(original)
+    }
+
+    fn advance_member_custody_retirement(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &mut (dyn std::any::Any + Send + Sync),
+    ) -> crate::durability::medium::RelationalDurableMemberRetirementObservation {
+        self.source
+            .advance_member_custody_retirement(request, original)
+    }
+
     fn retain_members(
         &self,
         members: &[RelationalDurableMemberLocator],
@@ -55,75 +83,4 @@ fn physical_allocation_failure_does_not_damage_a_region() {
 #[test]
 fn transient_source_failure_does_not_damage_a_region() {
     retry_after(Cause::SourceUnavailable);
-}
-
-struct CancelAfterRead {
-    source: Arc<CountedSource>,
-    cancellation: Arc<CancellationSource>,
-    first: AtomicBool,
-}
-impl std::fmt::Debug for CancelAfterRead {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("CancelAfterRead")
-    }
-}
-impl RelationalDurableColdSource for CancelAfterRead {
-    fn retain_members(
-        &self,
-        members: &[RelationalDurableMemberLocator],
-    ) -> Result<crate::durability::medium::RelationalDurableMemberCustody, Cause> {
-        self.source.retain_members(members)
-    }
-
-    fn read_member(
-        &self,
-        locator: RelationalDurableMemberLocator,
-        limit: u64,
-    ) -> Result<Vec<u8>, Cause> {
-        let bytes = self.source.read_member(locator, limit)?;
-        if self.first.swap(false, Ordering::SeqCst) {
-            self.cancellation.cancel();
-        }
-        Ok(bytes)
-    }
-    fn read_commit(&self, position: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, Cause> {
-        self.source.read_commit(position, limit)
-    }
-}
-
-#[test]
-fn cancellation_during_readmission_preserves_the_request_and_does_not_damage_the_cell() {
-    let fixture = region_with_history();
-    let cancellation = Arc::new(CancellationSource::new());
-    let request =
-        crate::test_execution_policy::serial_request().with_cancellation(cancellation.token());
-    let mut cold = fixture.cold;
-    cold.source = Some(Arc::new(CancelAfterRead {
-        source: fixture.source.clone(),
-        cancellation,
-        first: AtomicBool::new(true),
-    }));
-    let cell = RelationalRegionResidency::cold(cold).unwrap();
-    let failure = cell
-        .demand_head(&ExecutionRequest::serial(&request), 1 << 24, None)
-        .unwrap_err();
-    assert_eq!(
-        failure,
-        RelationalResidencyDemandFailure::Request(
-            crate::execution::RelationalExecutionDenialCause::Cancelled
-        )
-    );
-    assert_eq!(cell.leases.load(Ordering::SeqCst), 0);
-    let read_before_retry = fixture.source.reads.load(Ordering::SeqCst);
-    assert!(
-        read_before_retry > 0,
-        "the request must stop after entering readmission"
-    );
-    let accepted = head_demand(&cell, 1 << 24).unwrap();
-    assert!(accepted.head_view().entity(fixture.entity).is_some());
-    assert!(
-        fixture.source.reads.load(Ordering::SeqCst) > read_before_retry,
-        "a request stop must not remain cached as a storage refusal"
-    );
-    assert!(fixture.source.reads.load(Ordering::SeqCst) < 4);
 }

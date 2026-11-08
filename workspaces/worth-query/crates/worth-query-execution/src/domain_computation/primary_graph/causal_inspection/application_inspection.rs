@@ -70,3 +70,6 @@ pub use connection::ConnectionRefusal;
 pub use source_original::SourceOriginal;
 
 pub use rich::SourceMaterializationDenial;
+#[cfg(test)]
+#[path = "application_inspection_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

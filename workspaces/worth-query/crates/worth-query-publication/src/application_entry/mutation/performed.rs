@@ -316,3 +316,6 @@ pub use denied::WorthQueryRequiredOutputRetentionFailure;
 pub use preparation::WorthQueryRequiredOutputPreparation;
 pub use recovered::WorthQueryRecoveredRequiredOutputs;
 pub use unpublished::WorthQueryUnpublishedRequiredApplicationMutation;
+#[cfg(test)]
+#[path = "performed_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

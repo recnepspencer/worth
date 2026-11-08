@@ -382,5 +382,8 @@ fn admission_count(state: u64) -> usize {
 }
 
 #[cfg(test)]
+#[path = "lifecycle_state_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+#[cfg(test)]
 #[path = "lifecycle_state/poison_observation.rs"]
 mod poison_observation;

@@ -19,6 +19,7 @@ impl LocalCredential {
     pub(super) fn issued_for_model_owner() -> Self {
         Self("model-owner")
     }
+    #[cfg(test)]
     pub(super) fn issued_for_sibling_owner() -> Self {
         Self("sibling-owner")
     }

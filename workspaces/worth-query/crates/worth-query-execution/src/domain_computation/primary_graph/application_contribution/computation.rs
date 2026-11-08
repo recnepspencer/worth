@@ -208,3 +208,6 @@ where
 }
 
 mod court_doors_for_test;
+#[cfg(test)]
+#[path = "computation_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

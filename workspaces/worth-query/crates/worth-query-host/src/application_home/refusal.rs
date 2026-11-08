@@ -2,13 +2,17 @@
 use super::runtime::DirectoryHome;
 use worth_query_declaration::facade::application_schema::ApplicationSchemaComposition;
 use worth_query_execution::facade::{
-    application_home_integration::*, application_installation::WorthQueryInMemoryApplicationDenial,
+    application_home_integration::*,
+    application_installation::WorthQueryApplicationPreparationDenial,
     primary_graph::WorthQueryPrimaryGraphInstallationDenial,
 };
 use worth_store_application::*;
 
+mod query_custody;
+pub use query_custody::{UnadmittedHomeQueryCustodyRefused, UnadmittedHomeQueryService};
+
 pub enum WorthQueryApplicationHomeOpenRefused<Schema: ApplicationSchemaComposition, Program> {
-    Preparation(WorthQueryInMemoryApplicationDenial),
+    Preparation(WorthQueryApplicationPreparationDenial),
     Binding {
         query: PreparedHomeApplication<Schema, Program>,
         cause: worth_query_installation::facade::WorthQueryHomeBindingDenial,
@@ -126,12 +130,12 @@ pub enum WorthQueryApplicationHomeOpenRefused<Schema: ApplicationSchemaCompositi
         home: DirectoryHome,
     },
     CustodyReadmission {
-        query: ReadmittedHomeQueryService<Schema, Program>,
+        query: UnadmittedHomeQueryService<Schema, Program>,
         home: DirectoryHome,
         cause: HomeCustodyReadmissionDenial,
     },
     OwnerAdmission {
-        query: ReadmittedHomeQueryService<Schema, Program>,
+        query: UnadmittedHomeQueryService<Schema, Program>,
         home: ApplicationHomeOwnerAdmissionRefused,
     },
 }

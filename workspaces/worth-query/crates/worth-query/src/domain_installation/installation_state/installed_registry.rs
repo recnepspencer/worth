@@ -291,3 +291,23 @@ impl WorthQueryDomainInstallationRegistry {
             .and_then(|index| self.records.get(*index))
     }
 }
+#[cfg(test)]
+#[path = "installed_registry_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+
+#[cfg(test)]
+fn collect_owned_inline_type_sizes(census: &mut crate::inline_type_sizes::Census) {
+    {
+        let mut owner = census.owner::<WorthQueryDomainInstallationRegistry>("workspaces/worth-query/crates/worth-query/src/domain_installation/installation_state/installed_registry.rs", "WorthQueryDomainInstallationRegistry", 128 * 1024);
+        owner.field::<WorthQueryRuntimeAuthorityIdentity>("runtime_authority");
+        owner.field::<WorthQueryDomainInstallationGeneration>("generation");
+        owner.field::<WorthQueryDomainInstallationGenerationLease>("generation_lease");
+        owner.field::<Vec<WorthQueryInstalledDomainRecord>>("records");
+        owner.field::<HashMap<TypeId, usize>>("by_marker_type");
+        owner.field::<WorthQueryInstalledDomainExecutionIndex>("execution_index");
+        owner.field::<Arc<worth_query_installation::facade::WorthQueryInstalledPackageIndex>>(
+            "portable_index",
+        );
+        owner.field::<AtomicUsize>("handle_lookups");
+    }
+}

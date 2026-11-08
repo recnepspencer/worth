@@ -236,3 +236,6 @@ impl std::fmt::Display for WorthQueryRequiredOutputConnectionDenial {
 }
 
 impl std::error::Error for WorthQueryRequiredOutputConnectionDenial {}
+#[cfg(test)]
+#[path = "application_program_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

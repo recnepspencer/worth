@@ -72,3 +72,6 @@ impl PhysicalRecoveryRootBasis {
         self.namespace
     }
 }
+#[cfg(test)]
+#[path = "root_basis_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

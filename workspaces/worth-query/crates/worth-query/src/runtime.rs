@@ -366,4 +366,7 @@ use runtime_root_state::WorthQueryRoutedMutationSummary;
 pub use facade_contract::*;
 
 #[cfg(test)]
+#[path = "runtime_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+#[cfg(test)]
 pub(crate) mod tests;

@@ -60,3 +60,6 @@ type SubjectAccess<'a, Schema, History> = super::WorthQueryApplicationQueryAcces
     <SubjectRead<Schema, History> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
     SubjectScope<Schema, History>,
 >;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

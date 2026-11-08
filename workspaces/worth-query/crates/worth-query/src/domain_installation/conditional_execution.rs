@@ -34,3 +34,6 @@ pub use registry::WorthQueryConditionalExecutionIndexRebuildReport;
 pub(crate) use registry::{
     WorthQueryConditionalExecutionRegistry, WorthQueryInstalledConditionalNode,
 };
+#[cfg(test)]
+#[path = "conditional_execution_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

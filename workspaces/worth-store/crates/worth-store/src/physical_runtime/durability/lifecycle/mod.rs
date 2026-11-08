@@ -9,3 +9,6 @@ pub(in crate::physical_runtime) use managed_work::{
     ExistingPhysicalMutationObservation, PhysicalMutationRuntimeOwner, PhysicalMutationStartPort,
 };
 pub use yieldpoint::{PhysicalMutationCheckpoint, PhysicalMutationPauseGate};
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -8,6 +8,12 @@ use worth_foundational::facade::{
 };
 
 pub(super) fn collect_head(partition: &PartitionState) -> BTreeSet<Symbol> {
+    collect_head_using(partition, &mut |_| Ok(())).expect("ordinary symbol collection cannot stop")
+}
+fn collect_head_using(
+    partition: &PartitionState,
+    checkpoint: &mut dyn FnMut(usize) -> Result<(), super::RelationalResidencyDemandFailure>,
+) -> Result<BTreeSet<Symbol>, super::RelationalResidencyDemandFailure> {
     let mut symbols = BTreeSet::new();
     for versions in partition
         .entity_arena
@@ -15,9 +21,14 @@ pub(super) fn collect_head(partition: &PartitionState) -> BTreeSet<Symbol> {
         .iter()
         .chain(partition.relation_arena.aspect_versions.iter())
     {
-        symbols.extend(versions.keys().copied());
+        checkpoint(symbols.len())?;
+        for &symbol in versions.keys() {
+            checkpoint(symbols.len())?;
+            symbols.insert(symbol);
+        }
     }
     for extra in partition.entity_arena.extra.iter() {
+        checkpoint(symbols.len())?;
         if let Some(fingerprint) = extra.structural_fingerprint {
             symbols.insert(fingerprint.family);
         }
@@ -27,9 +38,13 @@ pub(super) fn collect_head(partition: &PartitionState) -> BTreeSet<Symbol> {
         .field_revisions
         .iter()
         .chain(partition.relation_arena.field_revisions.iter())
-        .flatten()
     {
+        checkpoint(symbols.len())?;
+        let Some(revisions) = revisions else {
+            continue;
+        };
         for (aspect, field) in revisions.keys() {
+            checkpoint(symbols.len())?;
             symbols.insert(*aspect);
             symbols.insert(*field);
         }
@@ -44,14 +59,34 @@ pub(super) fn collect_head(partition: &PartitionState) -> BTreeSet<Symbol> {
         .extra
         .iter()
         .map(|extra| extra.authoritative_aspect_state());
-    for state in entities.chain(relations).flatten() {
-        visit_state(state, &mut symbols);
+    for state in entities.chain(relations) {
+        checkpoint(symbols.len())?;
+        if let Some(state) = state {
+            visit_state(state, &mut symbols, checkpoint)?;
+        }
     }
-    symbols
+    Ok(symbols)
 }
 
 pub(super) fn collect(partition: &PartitionState) -> BTreeSet<Symbol> {
-    let mut symbols = collect_head(partition);
+    collect_using(partition, &mut |_| Ok(())).expect("ordinary symbol collection cannot stop")
+}
+pub(super) fn collect_for_request(
+    partition: &PartitionState,
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<BTreeSet<Symbol>, super::RelationalResidencyDemandFailure> {
+    collect_using(partition, &mut |count| {
+        super::region_load::materialization_funding::work(
+            request,
+            1 + 22 * (count + 1).ilog2() as u64,
+        )
+    })
+}
+fn collect_using(
+    partition: &PartitionState,
+    checkpoint: &mut dyn FnMut(usize) -> Result<(), super::RelationalResidencyDemandFailure>,
+) -> Result<BTreeSet<Symbol>, super::RelationalResidencyDemandFailure> {
+    let mut symbols = collect_head_using(partition, checkpoint)?;
     for state in partition
         .entity_arena
         .metadata_history
@@ -72,28 +107,45 @@ pub(super) fn collect(partition: &PartitionState) -> BTreeSet<Symbol> {
                         .map(|metadata| metadata.authoritative_aspect_state())
                 }),
         )
-        .flatten()
     {
-        visit_state(state, &mut symbols);
+        checkpoint(symbols.len())?;
+        if let Some(state) = state {
+            visit_state(state, &mut symbols, checkpoint)?;
+        }
     }
-    symbols
+    Ok(symbols)
 }
 
-fn visit_state(state: &AuthoritativeRecordAspectState, symbols: &mut BTreeSet<Symbol>) {
+fn visit_state(
+    state: &AuthoritativeRecordAspectState,
+    symbols: &mut BTreeSet<Symbol>,
+    checkpoint: &mut dyn FnMut(usize) -> Result<(), super::RelationalResidencyDemandFailure>,
+) -> Result<(), super::RelationalResidencyDemandFailure> {
+    checkpoint(symbols.len())?;
     for (_, aspect) in state.aspects().entries() {
+        checkpoint(symbols.len())?;
         match aspect.view() {
-            ContractValidatedAspectValueView::Scalar(value) => visit_value(value, symbols),
+            ContractValidatedAspectValueView::Scalar(value) => {
+                visit_value(value, symbols, checkpoint)?
+            }
             ContractValidatedAspectValueView::Struct(value) => {
                 for (_, field) in value.fields() {
-                    visit_value(field, symbols);
+                    visit_value(field, symbols, checkpoint)?;
                 }
             }
         }
     }
+    Ok(())
 }
 
-fn visit_value(value: &AspectValue, symbols: &mut BTreeSet<Symbol>) {
+fn visit_value(
+    value: &AspectValue,
+    symbols: &mut BTreeSet<Symbol>,
+    checkpoint: &mut dyn FnMut(usize) -> Result<(), super::RelationalResidencyDemandFailure>,
+) -> Result<(), super::RelationalResidencyDemandFailure> {
+    checkpoint(symbols.len())?;
     if let AspectValue::String(InternedString::Symbol(symbol)) = value {
         symbols.insert(Symbol(symbol.0));
     }
+    Ok(())
 }

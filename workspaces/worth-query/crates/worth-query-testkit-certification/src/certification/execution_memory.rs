@@ -49,7 +49,7 @@ pub fn install(
     );
     let limits = example_limits(Some(policy)).with_execution_authority(authority);
     let runtime = match checkpoint {
-        Some(checkpoint) => application_installation::in_memory_program_from_checkpoint(
+        Some(checkpoint) => application_installation::WorthQueryInterimCheckpointRestore::program(
             program::validated_program(),
             TemporalHostSchema::declaration().unwrap(),
             configuration,

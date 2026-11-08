@@ -1,4 +1,11 @@
+mod construction;
+mod storage;
+#[cfg(test)]
+mod storage_tests;
+
 use std::sync::Arc;
+pub(crate) use storage::OriginalLoweringStorage;
+use storage::{LoweredBridgeAsyncSourceDeclarationBody, LoweringBodyStorage};
 
 use sha2::{Digest, Sha256};
 
@@ -29,31 +36,33 @@ pub struct LoweredBridgeAsyncSourceDeclaration {
     canonical_basis: Arc<str>,
     digest: Arc<str>,
     counters: BridgeAsyncSourceDeclarationCounters,
-    body: LoweredBridgeAsyncSourceDeclarationBody,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-enum LoweredBridgeAsyncSourceDeclarationBody {
-    RequestResponse {
-        declaration: ResourceNodeDeclaration,
-        descriptor: LoweredResourceDescriptor,
-    },
-    SubscriptionBacked {
-        declaration: AsyncNodeCapabilityDeclaration,
-        bundle: LoweredAsyncNodeCapabilityBundle,
-    },
+    body: Arc<LoweringBodyStorage>,
 }
 
 impl LoweredBridgeAsyncSourceDeclaration {
     pub fn lower(
         validated: &ValidatedBridgeAsyncSourceDeclaration,
     ) -> Result<Self, BridgeAsyncSourceDeclarationRejection> {
+        Self::lower_with_storage(validated, None)
+    }
+
+    pub(crate) fn lower_original(
+        validated: &ValidatedBridgeAsyncSourceDeclaration,
+        storage: OriginalLoweringStorage,
+    ) -> Result<Self, BridgeAsyncSourceDeclarationRejection> {
+        Self::lower_with_storage(validated, Some(storage))
+    }
+
+    fn lower_with_storage(
+        validated: &ValidatedBridgeAsyncSourceDeclaration,
+        storage: Option<OriginalLoweringStorage>,
+    ) -> Result<Self, BridgeAsyncSourceDeclarationRejection> {
         match validated.body() {
             BridgeAsyncSourceDeclarationBody::RequestResponse { declaration } => {
-                Self::lower_request_response(validated, declaration)
+                Self::lower_request_response(validated, declaration, storage)
             }
             BridgeAsyncSourceDeclarationBody::SubscriptionBacked { declaration } => {
-                Self::lower_subscription_backed(validated, declaration)
+                Self::lower_subscription_backed(validated, declaration, storage)
             }
         }
     }
@@ -91,7 +100,7 @@ impl LoweredBridgeAsyncSourceDeclaration {
     }
 
     pub fn resource_descriptor(&self) -> Option<&LoweredResourceDescriptor> {
-        match &self.body {
+        match &self.body.body {
             LoweredBridgeAsyncSourceDeclarationBody::RequestResponse { descriptor, .. } => {
                 Some(descriptor)
             }
@@ -100,7 +109,7 @@ impl LoweredBridgeAsyncSourceDeclaration {
     }
 
     pub fn async_node_capability_bundle(&self) -> Option<&LoweredAsyncNodeCapabilityBundle> {
-        match &self.body {
+        match &self.body.body {
             LoweredBridgeAsyncSourceDeclarationBody::RequestResponse { .. } => None,
             LoweredBridgeAsyncSourceDeclarationBody::SubscriptionBacked { bundle, .. } => {
                 Some(bundle)
@@ -112,10 +121,8 @@ impl LoweredBridgeAsyncSourceDeclaration {
         &self,
         instance_identity: &str,
     ) -> Result<Self, BridgeAsyncSourceDeclarationRejection> {
-        let LoweredBridgeAsyncSourceDeclarationBody::RequestResponse {
-            declaration,
-            descriptor,
-        } = &self.body
+        let LoweredBridgeAsyncSourceDeclarationBody::RequestResponse { descriptor, .. } =
+            &self.body.body
         else {
             return Err(BridgeAsyncSourceDeclarationRejection::new(
                 BridgeAsyncSourceDeclarationRejectionKind::SignalDeclarationRejected,
@@ -124,7 +131,7 @@ impl LoweredBridgeAsyncSourceDeclaration {
         };
         let canonical_basis = Arc::<str>::from(format!(
             "bridge-async-lowering-instance|template={}|instance={instance_identity}|payload-contract={}|registry-digest={}|bundle-digest={}",
-            self.digest(),
+            self.body.template_digest,
             descriptor.payload_contract_digest().as_str(),
             descriptor.lowered_policy_bundle().registry_digest().as_str(),
             descriptor.lowered_policy_bundle().bundle_digest().as_str(),
@@ -142,16 +149,14 @@ impl LoweredBridgeAsyncSourceDeclaration {
             canonical_basis,
             digest: Arc::from(format!("bridge-async-lowering-instance:sha256:{digest:x}")),
             counters: BridgeAsyncSourceDeclarationCounters::request_response_lowered(),
-            body: LoweredBridgeAsyncSourceDeclarationBody::RequestResponse {
-                declaration: declaration.clone(),
-                descriptor: descriptor.clone(),
-            },
+            body: Arc::clone(&self.body),
         })
     }
 
     fn lower_request_response(
         validated: &ValidatedBridgeAsyncSourceDeclaration,
         declaration: &ResourceNodeDeclaration,
+        storage: Option<OriginalLoweringStorage>,
     ) -> Result<Self, BridgeAsyncSourceDeclarationRejection> {
         let mut runtime = signal_runtime();
         let remapped = remap_resource_declaration_to_live_graph(&mut runtime, declaration);
@@ -171,16 +176,18 @@ impl LoweredBridgeAsyncSourceDeclaration {
                 )
             })?;
 
-        Ok(Self::from_request_response_parts(
+        Ok(Self::request_response_parts(
             validated,
             remapped,
             descriptor.clone(),
+            storage,
         ))
     }
 
     fn lower_subscription_backed(
         validated: &ValidatedBridgeAsyncSourceDeclaration,
         declaration: &AsyncNodeCapabilityDeclaration,
+        storage: Option<OriginalLoweringStorage>,
     ) -> Result<Self, BridgeAsyncSourceDeclarationRejection> {
         let mut runtime = signal_runtime();
         let remapped = remap_async_node_declaration_to_live_graph(&mut runtime, declaration);
@@ -200,73 +207,13 @@ impl LoweredBridgeAsyncSourceDeclaration {
                 )
             })?;
 
-        Ok(Self::new_subscription_backed(validated, remapped, bundle))
-    }
-
-    pub(crate) fn from_request_response_parts(
-        validated: &ValidatedBridgeAsyncSourceDeclaration,
-        declaration: ResourceNodeDeclaration,
-        descriptor: LoweredResourceDescriptor,
-    ) -> Self {
-        let canonical_basis = Arc::<str>::from(format!(
-            "bridge-async-lowering|declaration={}|family=request-response|lowering_family=resource-descriptor|payload_contract_digest={}|registry_digest={}|bundle_digest={}",
-            validated.digest(),
-            descriptor.payload_contract_digest().as_str(),
-            descriptor.lowered_policy_bundle().registry_digest().as_str(),
-            descriptor.lowered_policy_bundle().bundle_digest().as_str(),
-        ));
-        let digest = Sha256::digest(canonical_basis.as_bytes());
-
-        Self {
-            declaration_identity: validated.declaration_identity().clone(),
-            family_kind: validated.family_kind(),
-            lowering_family_kind: BridgeAsyncSignalLoweringFamilyKind::ResourceDescriptor,
-            lowering_identity: BridgeAsyncSourceLoweringIdentity::admit_bridge_owned(format!(
-                "bridge-async-lowering:sha256:{digest:x}"
-            )),
-            canonical_basis,
-            digest: Arc::from(format!("bridge-async-lowering:sha256:{digest:x}")),
-            counters: BridgeAsyncSourceDeclarationCounters::request_response_lowered(),
-            body: LoweredBridgeAsyncSourceDeclarationBody::RequestResponse {
-                declaration,
-                descriptor,
-            },
-        }
-    }
-
-    fn new_subscription_backed(
-        validated: &ValidatedBridgeAsyncSourceDeclaration,
-        declaration: AsyncNodeCapabilityDeclaration,
-        bundle: LoweredAsyncNodeCapabilityBundle,
-    ) -> Self {
-        let canonical_basis = Arc::<str>::from(format!(
-            "bridge-async-lowering|declaration={}|family=subscription-backed|lowering_family=async-node-capability|payload_contract_digest={}|registry_digest={}|bundle_digest={}",
-            validated.digest(),
-            bundle.payload_contract_digest().as_str(),
-            bundle.registry_digest().as_str(),
-            bundle.bundle_digest().as_str(),
-        ));
-        let digest = Sha256::digest(canonical_basis.as_bytes());
-
-        Self {
-            declaration_identity: validated.declaration_identity().clone(),
-            family_kind: validated.family_kind(),
-            lowering_family_kind: BridgeAsyncSignalLoweringFamilyKind::AsyncNodeCapability,
-            lowering_identity: BridgeAsyncSourceLoweringIdentity::admit_bridge_owned(format!(
-                "bridge-async-lowering:sha256:{digest:x}"
-            )),
-            canonical_basis,
-            digest: Arc::from(format!("bridge-async-lowering:sha256:{digest:x}")),
-            counters: BridgeAsyncSourceDeclarationCounters::subscription_backed_lowered(),
-            body: LoweredBridgeAsyncSourceDeclarationBody::SubscriptionBacked {
-                declaration,
-                bundle,
-            },
-        }
+        Ok(Self::new_subscription_backed(
+            validated, remapped, bundle, storage,
+        ))
     }
 
     pub(crate) fn request_response_declaration(&self) -> Option<&ResourceNodeDeclaration> {
-        match &self.body {
+        match &self.body.body {
             LoweredBridgeAsyncSourceDeclarationBody::RequestResponse { declaration, .. } => {
                 Some(declaration)
             }
@@ -277,7 +224,7 @@ impl LoweredBridgeAsyncSourceDeclaration {
     pub(crate) fn subscription_backed_declaration(
         &self,
     ) -> Option<&AsyncNodeCapabilityDeclaration> {
-        match &self.body {
+        match &self.body.body {
             LoweredBridgeAsyncSourceDeclarationBody::RequestResponse { .. } => None,
             LoweredBridgeAsyncSourceDeclarationBody::SubscriptionBacked { declaration, .. } => {
                 Some(declaration)

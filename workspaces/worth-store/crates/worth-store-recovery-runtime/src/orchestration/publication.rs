@@ -70,3 +70,6 @@ fn materialize_candidates(
         .collect::<Option<Vec<_>>>()
         .map(Vec::into_boxed_slice)
 }
+#[cfg(test)]
+#[path = "publication_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

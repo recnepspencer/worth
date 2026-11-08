@@ -2,7 +2,7 @@
 //! This component court does not substitute for directory Host readmission.
 use super::*;
 use worth_query_host::facade::application_installation::{
-    in_memory_rostered_program_from_checkpoint, ApplicationBuildIdentity,
+    ApplicationBuildIdentity, WorthQueryInterimCheckpointRestore,
 };
 use worth_query_testkit_document_retention::facade::document_retention_model::{
     actor_generation::validated_actor_program, host::host_limits,
@@ -58,7 +58,7 @@ fn changed_build_preserves_recorded_output_and_reproduces_stale_output_only_on_d
             .to_vec();
         (checkpoint, output, accepted, assessment_counts(6))
     };
-    let restored = in_memory_rostered_program_from_checkpoint(
+    let restored = WorthQueryInterimCheckpointRestore::rostered_program(
         validated_program(),
         WorthQueryApplicationProgramRoster::new()
             .support(validated_second_program())

@@ -65,4 +65,7 @@ impl InstalledSignalRuntimePolicy {
 }
 
 #[cfg(test)]
+#[path = "conditional_evaluation_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+#[cfg(test)]
 mod tests;

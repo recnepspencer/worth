@@ -33,3 +33,6 @@ impl WorthQueryRecoveredApplicationCommitReceipt {
             && left.exact_output_settlement() == right.exact_output_settlement()
     }
 }
+#[cfg(test)]
+#[path = "source_replay_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -1,9 +1,7 @@
 //! Normal finite installation profile for this small public application.
-use worth_query_host::facade::{
-    application_installation::WorthQueryInMemoryApplicationLimits, runtime::*,
-};
+use worth_query_host::facade::{application_installation::WorthQueryApplicationLimits, runtime::*};
 
-pub fn limits() -> WorthQueryInMemoryApplicationLimits {
+pub fn limits() -> WorthQueryApplicationLimits {
     let execution = ExecutionRequestPolicy::for_workers(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
@@ -41,7 +39,7 @@ pub fn limits() -> WorthQueryInMemoryApplicationLimits {
         execution,
     )
     .unwrap();
-    WorthQueryInMemoryApplicationLimits::new(
+    WorthQueryApplicationLimits::new(
         world,
         WorthQueryApplicationQueryResourceProfile::new(std::num::NonZeroUsize::new(32).unwrap()),
         worth_query_host::facade::primary_graph::SignalConditionalEvaluationBudget::development(),

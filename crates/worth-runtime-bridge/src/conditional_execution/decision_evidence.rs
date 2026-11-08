@@ -135,3 +135,6 @@ impl BridgeConditionalDecisionEvidence {
                 .is_ok()
     }
 }
+#[cfg(test)]
+#[path = "decision_evidence_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

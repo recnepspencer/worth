@@ -119,3 +119,8 @@ mod tests {}
 
 #[cfg(test)]
 mod host_execution;
+#[cfg(test)]
+#[path = "lib_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+#[cfg(test)]
+mod inline_type_sizes;

@@ -85,6 +85,33 @@ impl CheckpointAdmissionOwner {
     }
 }
 impl CheckpointAdmissionBinding {
+    pub(crate) fn require_image(
+        &self,
+        expected: &super::RelationalCheckpointAdmissionArtifact,
+    ) -> Result<Arc<RelationalCheckpointDirectory>, Refusal> {
+        let directory = self.capture_directory()?;
+        if !directory
+            .admission_image
+            .as_ref()
+            .is_some_and(|image| image.same_owner(expected))
+        {
+            return Err(Refusal::MissingCaptureOrigin);
+        }
+        Ok(directory)
+    }
+    pub(super) fn capture_directory(&self) -> Result<Arc<RelationalCheckpointDirectory>, Refusal> {
+        let directory = self.directory.snapshot().ok_or(Refusal::OwnerUnavailable)?;
+        if !directory
+            .admission_owner
+            .get()
+            .and_then(Weak::upgrade)
+            .is_some_and(|owner| Arc::ptr_eq(&owner, &self.owner.0))
+        {
+            return Err(Refusal::OwnerUnavailable);
+        }
+        Ok(directory)
+    }
+
     pub(crate) fn commit(
         &self,
         entry: &RelationalCommitIndexEntry,

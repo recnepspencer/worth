@@ -29,7 +29,7 @@ pub fn restore(
 }
 pub fn try_restore(
     checkpoint: installation::WorthQueryApplicationCheckpoint,
-) -> Result<App, installation::WorthQueryInMemoryApplicationDenial> {
+) -> Result<App, installation::WorthQueryApplicationPreparationDenial> {
     try_install_source(1, Arc::default(), Fault::None, 1, Some(checkpoint))
 }
 fn install_source(
@@ -47,13 +47,13 @@ fn try_install_source(
     fault: Fault,
     child_width: u64,
     checkpoint: Option<installation::WorthQueryApplicationCheckpoint>,
-) -> Result<App, installation::WorthQueryInMemoryApplicationDenial> {
+) -> Result<App, installation::WorthQueryApplicationPreparationDenial> {
     let schema = Schema::declaration().unwrap();
     let program = ApplicationProgramAuthoring::<Schema, Program>::begin()
         .with_schema(&schema)
         .validated_program()
         .unwrap();
-    let limits = installation::WorthQueryInMemoryApplicationLimits::new(
+    let limits = installation::WorthQueryApplicationLimits::new(
         worth_query_testkit_document_retention::facade::document_world_resources::world_resources(
             256,
             4 * 1024 * 1024,
@@ -66,7 +66,7 @@ fn try_install_source(
         SignalConditionalEvaluationBudget::development(),
     );
     if let Some(checkpoint) = checkpoint {
-        return installation::in_memory_program_from_checkpoint(
+        return installation::WorthQueryInterimCheckpointRestore::program(
             program,
             schema,
             (Configuration {

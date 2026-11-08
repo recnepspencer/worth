@@ -16,7 +16,10 @@ pub(super) fn validate(
     id: RelationId,
     selected: &CanonicalRequiredOutputOrigin,
     current: Option<&CanonicalCommitEnvelopeBody>,
-    lookup: &mut impl FnMut(VersionId) -> Option<Arc<CanonicalCommitEnvelope>>,
+    lookup: &mut impl FnMut(
+        VersionId,
+        &mut MapKernelContext<'_, '_>,
+    ) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), Stop> {
     if ownership_at_creation(state, id, selected, current, lookup, context)? {
@@ -30,7 +33,10 @@ pub(in super::super) fn validate_owned(
     state: &dyn CurrentPartitionAccess,
     id: RelationId,
     selected: &CanonicalRequiredOutputOrigin,
-    lookup: &mut impl FnMut(VersionId) -> Option<Arc<CanonicalCommitEnvelope>>,
+    lookup: &mut impl FnMut(
+        VersionId,
+        &mut MapKernelContext<'_, '_>,
+    ) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), Stop> {
     if !ownership_at_creation(state, id, selected, None, lookup, context)? {
@@ -44,7 +50,10 @@ fn ownership_at_creation(
     id: RelationId,
     selected: &CanonicalRequiredOutputOrigin,
     current: Option<&CanonicalCommitEnvelopeBody>,
-    lookup: &mut impl FnMut(VersionId) -> Option<Arc<CanonicalCommitEnvelope>>,
+    lookup: &mut impl FnMut(
+        VersionId,
+        &mut MapKernelContext<'_, '_>,
+    ) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<bool, Stop> {
     charge(context, 3)?;
@@ -71,7 +80,7 @@ fn ownership_at_creation(
         let write = match current.filter(|e| e.commit.version_id == latest) {
             Some(envelope) => envelope,
             None => {
-                held = lookup(latest).ok_or("relation latest canonical write absent")?;
+                held = lookup(latest, context)?.ok_or("relation latest canonical write absent")?;
                 held.as_ref()
             }
         };
@@ -93,7 +102,7 @@ fn ownership_at_creation(
     let envelope = match current.filter(|e| e.commit.version_id == version) {
         Some(envelope) => envelope,
         None => {
-            held = lookup(version).ok_or("relation exact canonical creation absent")?;
+            held = lookup(version, context)?.ok_or("relation exact canonical creation absent")?;
             held.as_ref()
         }
     };

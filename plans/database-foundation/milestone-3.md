@@ -12,59 +12,155 @@ obligations, external custody and corrections. A retry after a lost response
 returns the original occurrence. Nothing an application was told is committed
 depends on process memory, orderly close or application-owned byte transport.
 
-This milestone is delivered in ten numbered phases. Each phase states its own
-requirements, design, required tests, oracle extension, documentation and exit
-criteria. The cross-cutting decisions below bind every phase. D17 decides how
-each invariant is enforced and where each new type lives.
+This milestone is delivered in two tracks:
+- a **happy track** (H3–H10), with every application-visible capability working across a graceful close and reopen;
+- a **cleanup track** (C1–C5), with crash and fault recovery, cost bounds and certification.
 
-## Phase map
+Both tracks finish inside this milestone. The ten numbered phases below still state the requirements, design, tests, oracle, documentation and exit criteria. **Delivery tracks** decides which track each requirement and test belongs to, and when it lands. The cross-cutting decisions below bind every phase. D17 decides how each invariant is enforced and where each new type lives.
 
-| Phase | Name | Depends on | Lands |
-|---|---|---|---|
-| 1 | State survival audit | — | Landing 1 |
-| 2 | Store capacity, single writer and incarnation | — | Landing 1 |
-| 3 | Application home and host lifecycle | 2 | Landing 2 |
-| 4 | Durable occurrences and original-result retry | 3 | Landing 2 |
-| 5 | Signal and Bridge authored state; mixed publication | 4 | Landing 3 |
-| 6 | Programs, adoption and build identity | 4 | Landing 3 |
-| 7 | Workflows, conditional and long-running work | 5, 6 | Landing 3 |
-| 8 | External dispatch and custody | 4, 7 | Landing 3 |
-| 9 | Correction and original-owner advancement | 4, 6, 7 | Landing 3 |
-| 10 | Public cutover and milestone certification | 1–9 | Landing 3; closes the milestone |
+## Delivery tracks
 
-**Parallel work and landing order.**
+**Authority.** Where a decision or phase section conflicts with this section on *timing* or *track*, this section governs. It never weakens a requirement. It only says whether the requirement is proven before the happy landing or before the milestone closes.
 
-- Phases whose dependencies have landed may be built in parallel, but only
-  where their write scopes do not overlap.
-- Phases 5 to 10 integrate on one milestone integration branch. Each phase
-  merges into that branch when its own reviewer approves and its Tier-2 run
-  on the branch is green. A phase built in parallel merges the current
-  integration branch first.
+### Landings
 
-**Landing rule.** The milestone reaches master in three landings:
-
-| Landing | Contents | Why it is a separate landing |
+| Landing | Contents | State |
 |---|---|---|
-| 1 | Phases 1–2 | Store foundations and the audit. Nothing is visible to applications. |
-| 2 | Phases 3–4 | The first application-visible durability: a home through the host, with original-result retry. Phases 3 and 4 cannot land apart, because a home that recovered graph state but not World occurrences would silently lose application history. |
-| 3 | Phases 5–10 | One broad cutover. Signal, programs, workflows, dispatch and correction become durable, and the interim paths are deleted in the same landing. |
+| 1 | Phases 1–2 | Landed |
+| 2: the happy landing | H3–H10, one landing | Integration branch `codex/m3-host-home` |
+| 3: the cleanup landing | C1–C5; closes the milestone | After landing 2 |
 
-- A landing reaches master only after its exit criteria hold and the
-  coordinator certifies it at the final gate.
-- Between landings 2 and 3, a directory home refuses every family that Phases
-  5–9 support (D15), and the interim checkpoint door (D13) serves those
-  families' callers. Master is never left half-recovered.
-- Within the landing-3 integration branch, each phase lifts its own refusals
-  as it merges.
+- **Landing 2 reaches master** only when every lane in the Tier-2 set is green and the coordinator certifies it at the final gate.
+  - A CLEANUP court that is red at that moment leaves the tree, with its restore reference listed under its C item ("Moved courts").
+  - It is never `#[ignore]`d, gated or weakened.
+- **Phases 5–9 lift their own D15 refusals** as their H item merges. H10 deletes `UnsupportedDurableFamily`.
+- **Consumers may build on landing 2.** It supports graceful close and reopen, and a kill between operations. After an unclean kill, open refuses with a typed reason (D18).
 
-**Format stability.** An artifact format defined in a phase is final for the
-milestone. Later phases add new artifacts or new tagged entries in an
-extensible list the earlier phase declared; they do not change an existing
-format. A phase that must change a landed format states which development
-homes stop opening. Under clean cutover they refuse with a typed reason and
-are never migrated.
+### The happy constraint (track H)
+
+A home is closed gracefully, or killed while no operation is executing (a *quiescent kill*). It is then reopened any number of times, in a fresh process, under the same or a changed application build identity.
+
+Each reopen:
+- recovers every owner's full acknowledged state;
+- answers every retry of an admitted key with its original occurrence or its typed no-effect posture, never with a second effect;
+- never reissues a committed identity;
+- serves only after its D8 typestate steps complete.
+
+Open custody retained at close is readmitted as recovered custody (D5 and D11 below), and work continues on it.
+
+**D18 (new, track H only): an unclean open refuses.** When the journal tail holds an associated owner effect with neither an occurrence nor a disposition, open refuses before service with `UncleanRecoveryUnsupported`. The refusal names the owner and the effect, and the tail scan finds it. It never guesses a fate. C5 deletes this refusal once C1 recovers that case.
+
+### Decision splits
+
+| Decision | Track H | Track C |
+|---|---|---|
+| D4 | Owner publication order; product movement as its own step | `Indeterminate` fates |
+| D5 | Association fields; disposition before live; recovered custody across graceful reopen (integration's recovered-custody service) | `OpenAttempt`; reconciliation after an unclean kill; pending settlement |
+| D8 | All typestate steps; refused openings expose no service | — |
+| D11 | Close as written; `CloseRefused { posture }`; retained custody readmitted at reopen | — |
+| D12 | The checkpoint is taken **only at a quiesced close** (no executing attempt, no external obligation); the explicit application checkpoint is allowed under the same condition | Automatic threshold triggers; exact Native component obligations under concurrency; the cross-owner capture cut while attempts execute; proportional reopen and backing budgets |
+| D13 | One interim door (`WorthQueryInterimCheckpointRestore`), frozen callers, no `in_memory` names, the authenticated World-original section | Deleting the door (C5) |
+| D14 | — | All of it |
+| D16 | Plan, intent, step-body fence, carrier, stable identity allocation, Host transition request, final promotion and binding | Resume from the first nondurable step; `TransitionPlanDrift`/`TransitionPending`; discard tombstones; kill courts |
+| D1–D3, D6, D7, D9, D10, D15, D17 | In full | — |
+
+- **Format stability is relaxed for track C.** A cleanup item may change a format landed in track H. The old format then refuses with a typed reason and is never migrated.
+- **Track H keeps clean cutover.** No compatibility shims.
+
+### Track H items
+
+Each H item's proof is its phase's graceful journeys, plus the graceful oracle.
+
+- **H3 (Phase 3): Home and host lifecycle.**
+  - One application home through the host open call. `RelationalStoreHome` and every `in_memory*` path are deleted.
+  - Newness, `initial_state` and `discard_home`.
+  - Descriptor binding and rebuild; D16's track-H scope.
+  - The Empty Signal/Bridge seed basics.
+  - Contention, incarnation fencing and close settlement; the frozen callers.
+  - The Memory suites; D18.
+  - **Graceful oracle:** port the M2 `relational_home` oracle, plus a minimal memory-only reference host with `DurableIdentityCorrespondence`. It compares owner state after graceful close/reopen and quiescent kills, with no fault injection.
+- **H4 (Phase 4): Durable occurrences and original-result retry.**
+  - World artifacts and home-scoped identity; durable before live; rebuild from tails.
+  - Artifact v3 association and the semantic result; the D9 receipts table.
+  - Deleting the evidence authority, `CommittedReceiptNotRetained` and the Server caches.
+  - Intent drift and affinity refusals.
+  - The decisive journey, retry refusals, receipt fields and concurrent same-key retries.
+  - History with no identity collision; Server restart.
+  - Released keys keep their meaning across reopen.
+- **H5 (Phase 5): Signal and Bridge authored state; mixed publication.**
+  - The authored/derived split and codec; the wasm port; artifacts and association.
+  - Identities and foreign-owner refusal; multi-branch readmission.
+  - The evidence tag; Bridge and stale-under-build; R2–R5.
+- **H6 (Phase 6): Programs, adoption and build identity.**
+  - Support lifecycle; activation on every branch.
+  - Adoption custody across graceful reopen; build identity.
+  - Retirement; unrostered and changed builds. This restores the producer directory court.
+- **H7 (Phase 7): Workflows, conditional operations and long-running work.**
+  - Workflow records and resume across reopen; transition dispositions.
+  - The managed cleanup obligation; R9 durable and process-local.
+  - The temporal key; managed and owned-async custody; the R7 route table.
+- **H8 (Phase 8): External dispatch and custody.**
+  - Outbox rebind; the attempt recorded before the call; `PayloadRejected`.
+  - Inbound custody and dedup; recovery-handle claims; rebuilt indexes.
+  - Deleting `StoreCapabilityRequired`; R13.
+  - An outstanding dispatch across a graceful close.
+- **H9 (Phase 9): Correction and original-owner advancement.** All of Phase 9, with every kill read as a close or a quiescent kill.
+- **H10 (Phase 10): Public cutover.**
+  - Callers and examples on the open call. They run on their genuine main thread under the default stack in the dev profile.
+  - The guides; deleting `UnsupportedDurableFamily`.
+  - A graceful full journey across every family.
+  - Documentation that states plainly that crash recovery is not yet certified.
+
+### Track C items
+
+- **C1: Crash core.**
+  - `OpenAttempt`; reconciliation; recovered publication after an unclean kill.
+  - Exact Native components; lazy discovery; unresolved fates and `ProvenNoEffect`.
+  - Transition resume and drift; discard completion and tombstones.
+  - The Phase 3 refusal matrix; the damaged descriptor; M2 unresolved forks.
+  - Crashes between commit and product movement; the release-kill case.
+- **C2: Cost and bounds.**
+  - Automatic checkpoint triggers; the cross-owner capture cut.
+  - Proportional reopen and request-funded cold materialization. The funding already done on P-A's branch lands here.
+  - Backing and work budgets; growth courts.
+  - **A frame and future size budget lane.** No `worth_*` function frame over a declared debug-profile ceiling, measured from the compiled binaries' unwind metadata. Reduce the large-frame census found on 2026-11-06 to that ceiling.
+- **C3: Owner crash cases for Phases 5–9.**
+  - Crashes between owner effects; damaged frames and basis mismatch; mixed kills.
+  - Adoption killed at each stage; mid-step workflow kills; R9 `Indeterminate`.
+  - Crashes after dispatch; R14; disappearance mid-dispatch.
+  - Split completion under a true kill; discarding derived caches (D14).
+- **C4: The court oracle.** The adversarial constraint in full:
+  - the media sweep, kills at every durable I/O boundary, and recovery interruption;
+  - the build and derived dimensions;
+  - the injected-fault and interrupted-publication courts held in the cleanup ledgers.
+- **C5: Retirement and certification.**
+  - Delete the D13 door and the D18 refusal.
+  - Boundary gates at zero; re-audit; no deleted callers.
+  - Tier 3 and the cumulative oracle; milestone certification.
+
+### Moved courts
+
+Cleanup courts moved out of the tree are listed under their C item, with `restore from <sha>:<path>`. Existing entries:
+- **C1:** the three transition-source recovery courts. They are listed in D16 under "Cleanup track: moved courts".
+- **Phase 6 / H6:** the producer directory court (Phase 6, Required tests).
+
+The integration branch's cleanup ledgers (`merge-cleanup-reds.md`, `merge-families.md`) become entries here when their courts leave the tree before landing 2.
+
+### Parallel work
+
+H items whose dependencies have merged may be built in parallel where their write scopes do not overlap. Each one merges into the integration branch when its reviewer approves and its Tier-2 run there is green. A C item may start before landing 2 only where the coordinator assigns it and it does not slow an H item.
+
+### Verification tiers by track
+
+| Track | What runs |
+|---|---|
+| H | Tiers 1–2 as below, plus the graceful oracle when the diff reaches its subject |
+| C | Adds the crash oracle at Tier 2 |
+| Tier 3 (the full matrix and the exhaustive cumulative oracle) | At landing 3 |
 
 ## Adversarial constraint
+
+The cleanup track certifies this constraint. The happy track meets the graceful constraint in Delivery tracks.
 
 A home is killed at any durable I/O boundary of any supported operation. That
 includes every owner's publication, product movement, program transitions,

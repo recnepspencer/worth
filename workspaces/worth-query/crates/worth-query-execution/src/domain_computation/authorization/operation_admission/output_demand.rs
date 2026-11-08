@@ -9,7 +9,7 @@ impl WorthQueryAdmittedOperation {
         &mut self,
         use_mask: crate::domain_computation::primary_graph::DecisionContextUse,
     ) {
-        if let Some(context) = &mut self.required_output_demand {
+        if let Some(context) = &mut self.data.required_output_demand {
             context.record_decision_context_use(use_mask);
         }
     }
@@ -21,16 +21,16 @@ impl WorthQueryAdmittedOperation {
         context: RequiredOutputDemandContext,
     ) {
         assert!(
-            self.required_output_demand.is_none(),
+            self.data.required_output_demand.is_none(),
             "one operation carries one output demand"
         );
-        self.required_output_demand = Some(context);
+        self.data.required_output_demand = Some(context);
     }
 
     pub(in crate::domain_computation) fn take_required_output_demand(
         &mut self,
     ) -> Option<RequiredOutputDemandContext> {
-        self.required_output_demand.take()
+        self.data.required_output_demand.take()
     }
 
     /// Seal's facts, and the partitioned computation run they sealed. A run
@@ -40,7 +40,7 @@ impl WorthQueryAdmittedOperation {
         boundary: CompletedHandlerFactBoundary,
         computation: SealedComputationRetention,
     ) {
-        if let Some(context) = &mut self.required_output_demand {
+        if let Some(context) = &mut self.data.required_output_demand {
             context.record_completed_handler_facts(boundary, computation);
         } else {
             crate::domain_computation::primary_graph::observe_discarded(&computation);
@@ -57,6 +57,7 @@ impl WorthQueryAdmittedOperation {
     /// partitioned computation its handler runs.
     pub(in crate::domain_computation) fn computation_prior(&self) -> Option<ComputationPrior> {
         let prior = self
+            .data
             .required_output_demand
             .as_ref()
             .and_then(RequiredOutputDemandContext::computation_prior);

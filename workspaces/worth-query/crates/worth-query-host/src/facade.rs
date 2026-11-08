@@ -361,9 +361,9 @@ pub use worth_query_publication::facade::application_entry;
 
 pub use crate::application_home::{
     discard_home, ApplicationHomeQueryRootDenial, HomeCustodyReadmissionDenial,
-    NoHomeProgramTransition, WorldCompositionRetained, WorthQueryApplicationHome,
-    WorthQueryApplicationHomeCheckpoint, WorthQueryApplicationHomeCheckpointDenial,
-    WorthQueryApplicationHomeCheckpointInspection,
+    NoHomeProgramTransition, UnadmittedHomeQueryCustodyRefused, UnadmittedHomeQueryService,
+    WorldCompositionRetained, WorthQueryApplicationHome, WorthQueryApplicationHomeCheckpoint,
+    WorthQueryApplicationHomeCheckpointDenial, WorthQueryApplicationHomeCheckpointInspection,
     WorthQueryApplicationHomeCheckpointJournalObservation,
     WorthQueryApplicationHomeCheckpointLimits, WorthQueryApplicationHomeCloseOutcome,
     WorthQueryApplicationHomeCloseRefused, WorthQueryApplicationHomeClosed,

@@ -3,14 +3,14 @@
 /// The choice is explicit because application topology determines the bounded
 /// validation and storage policy needed by its governed transactions.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum WorthQueryInMemoryApplicationProfile {
+pub enum WorthQueryApplicationProfile {
     GeneralPurpose,
     GeometryKernel,
     /// 10k-node workflow workload over GeometryKernel policies.
     WorkflowScale,
 }
 
-impl WorthQueryInMemoryApplicationProfile {
+impl WorthQueryApplicationProfile {
     pub(super) fn publication_override(
         self,
         maximum_records: Option<std::num::NonZeroUsize>,

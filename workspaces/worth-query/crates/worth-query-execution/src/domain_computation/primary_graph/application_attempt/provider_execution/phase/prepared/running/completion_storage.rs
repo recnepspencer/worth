@@ -39,11 +39,11 @@ impl CompletedApplicationCommit {
 
 // Empty cells are allocated, charged and sealed while preparation may still refuse.
 // Filling a cell after publication performs no consultation, allocation or refusal.
-struct PhaseStorage<T> {
+pub(in crate::domain_computation::primary_graph) struct PhaseStorage<T> {
     values: ExecutionArray<Cell<Option<T>>>,
 }
 impl<T> PhaseStorage<T> {
-    fn prepare(
+    pub(in crate::domain_computation::primary_graph) fn prepare(
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, WorthQueryApplicationCommitOutcome> {
         let mut builder = ExecutionRequestArrayBuilder::allocate(*request, 1).map_err(denied)?;
@@ -52,14 +52,14 @@ impl<T> PhaseStorage<T> {
             values: builder.seal().map_err(denied)?,
         })
     }
-    fn fill(self, actual: T) -> Self {
+    pub(in crate::domain_computation::primary_graph) fn fill(self, actual: T) -> Self {
         assert!(
             self.values.elements()[0].replace(Some(actual)).is_none(),
             "stage storage filled once"
         );
         self
     }
-    fn consume(self) -> T {
+    pub(in crate::domain_computation::primary_graph) fn consume(self) -> T {
         self.values
             .into_iter()
             .next()

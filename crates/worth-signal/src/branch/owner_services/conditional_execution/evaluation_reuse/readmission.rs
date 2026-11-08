@@ -199,7 +199,9 @@ where
                 retained_basis: target_basis,
                 execution: std::sync::Mutex::new(SignalConditionalEvaluationState {
                     admission_custody,
-                    slot: Some(SignalConditionalExecutionSlot { partition }),
+                    slot: Some(SignalConditionalExecutionSlot {
+                        partition: Box::new(partition),
+                    }),
                 }),
             },
             counters,

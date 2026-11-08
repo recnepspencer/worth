@@ -58,7 +58,7 @@ fn actual_v2_installation_produces_and_reads_its_supported_incompatible_output()
 fn exact_v2_restore_requires_explicit_transition_before_any_derived_decode() {
     let checkpoint = predecessor_checkpoint();
     output::reset_decodes();
-    let denial = installation::in_memory_program_from_checkpoint(
+    let denial = installation::WorthQueryInterimCheckpointRestore::program(
         host::program(),
         schema::CanonicalSchema::declaration().unwrap(),
         ((),),
@@ -73,7 +73,7 @@ fn exact_v2_restore_requires_explicit_transition_before_any_derived_decode() {
         0,
         "codec fence must precede V2 payload interpretation"
     );
-    let installation::WorthQueryInMemoryApplicationDenial::Graph(denial) = denial else {
+    let installation::WorthQueryApplicationPreparationDenial::Graph(denial) = denial else {
         panic!("expected native checkpoint graph refusal: {denial:?}");
     };
     assert_eq!(denial.kind(), worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected);

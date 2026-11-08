@@ -32,6 +32,7 @@ pub use declaration::{
     BridgeAsyncSourceLegacyDeclarationIdentity, ValidatedBridgeAsyncSourceDeclaration,
 };
 pub use family::{BridgeAsyncSignalLoweringFamilyKind, BridgeAsyncSourceDeclarationFamilyKind};
+pub(crate) use lowering::OriginalLoweringStorage;
 pub use lowering::{BridgeAsyncSourceLoweringIdentity, LoweredBridgeAsyncSourceDeclaration};
 pub use rejection::{
     BridgeAsyncSourceDeclarationRejection, BridgeAsyncSourceDeclarationRejectionKind,
@@ -79,3 +80,6 @@ pub use writeback::{
     BridgeAsyncWritebackRejection, BridgeAsyncWritebackRejectionKind,
     StagedBridgeAsyncWritebackEffect,
 };
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

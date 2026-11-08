@@ -12,14 +12,14 @@ pub(crate) fn select_owned_scope_dependent(
     removed: &[EntityId],
     mut next: Option<CommitId>,
     bound: usize,
-    mut load: impl FnMut(CommitId) -> Option<Arc<CanonicalCommitEnvelope>>,
+    mut load: impl FnMut(CommitId) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Option<Arc<CanonicalRequiredOutputOrigin>>, Stop> {
     let mut seen: Vec<Arc<CanonicalRequiredOutputOrigin>> = Vec::new();
     for _ in 0..bound {
         let Some(commit) = next else { return Ok(None) };
         charge(context, bound.saturating_add(1))?;
-        let envelope = load(commit).ok_or("owned source retirement lost history")?;
+        let envelope = load(commit)?.ok_or("owned source retirement lost history")?;
         super::require_linear_history(&envelope)?;
         for origin in envelope.output_origins() {
             for old in &seen {

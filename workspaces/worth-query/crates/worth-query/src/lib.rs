@@ -114,3 +114,8 @@ mod test_execution_policy;
 #[cfg(test)]
 #[path = "test_support/bridge_host_request.rs"]
 mod bridge_host_request;
+#[cfg(test)]
+#[path = "lib_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+#[cfg(test)]
+mod inline_type_sizes;

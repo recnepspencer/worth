@@ -17,7 +17,10 @@ pub(super) fn validate(
     root: &RelationalBranchRoot,
     origin: &CanonicalRequiredOutputOrigin,
     current: Option<&CanonicalCommitEnvelopeBody>,
-    lookup: &mut impl FnMut(VersionId) -> Option<Arc<CanonicalCommitEnvelope>>,
+    lookup: &mut impl FnMut(
+        VersionId,
+        &mut MapKernelContext<'_, '_>,
+    ) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop>,
     lease: Option<&ExecutionResourceLease<'_>>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), Stop> {

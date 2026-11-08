@@ -43,12 +43,7 @@ struct Case {
 }
 
 fn main() {
-    std::thread::Builder::new()
-        .stack_size(64 * 1024 * 1024)
-        .spawn(run)
-        .unwrap()
-        .join()
-        .unwrap();
+    run();
 }
 
 fn run() {

@@ -46,13 +46,6 @@ pub(crate) struct OriginalBranchSchemaInputs {
     pub(crate) installation: Option<OriginalEmptySchemaInstallation>,
     pub(crate) accepted_initial_inputs:
         Option<Arc<crate::durability::source_initial_inputs::image::InitialInputsImage>>,
-    pub(crate) home_world_selection: Option<
-        Arc<
-            worth_proof::VerifiedHomeWorldSelection<
-                Arc<crate::durability::RelationalWorldSourceCatalog>,
-            >,
-        >,
-    >,
     transitions: Vec<RetainedBranchTransition>,
     _memory: Option<ExecutionMemoryReservation>,
 }
@@ -166,7 +159,6 @@ impl RelationalCanonicalPublicationRoutes {
             birth: state.birth.clone(),
             installation: state.installation.clone(),
             accepted_initial_inputs: state.initial_inputs.clone(),
-            home_world_selection: state.home_world_selection.clone(),
             transitions,
             _memory: memory,
         })

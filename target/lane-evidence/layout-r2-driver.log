@@ -1,0 +1,22 @@
+COMMAND: ["python", "target/lane-evidence/layout_verification_round2.py"]
+HEAD: 052437570f6f7d4f939bf704ea6b54861e13fd72
+CLEAN: true
+START: 2026-11-07T06:58:03.616936+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+C_FREE_BYTES 426180956160
+prebuild: cargo check --message-format=json --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\Cargo.toml" -p worth-query-execution -p worth-query-publication -p worth-query --tests --keep-going --unit-graph -Z unstable-options
+prebuild: cargo check --message-format=json --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\Cargo.toml" -p worth-query-execution -p worth-query-publication -p worth-query --tests --keep-going
+Traceback (most recent call last):
+  File "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\layout_verification_round2.py", line 31, in <module>
+    result=runner(command,manifest.parent,out/'check.log');remember(name+'-check',result.returncode)
+  File "C:\programming\worth worktees\worktrees\m3-host-home\scripts\test_cost\cargo_capture.py", line 192, in __call__
+    failed_unit(event, plan)
+    ~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\programming\worth worktees\worktrees\m3-host-home\scripts\test_cost\compiler_units.py", line 190, in failed_unit
+    raise CompilerUnitRefusal('failed target does not identify exactly one predeclared compiler unit: '
+                              + encoded({'package': event['package_id'], 'target': target,
+                                         'matches': sorted(candidates)}))
+compiler_units.CompilerUnitRefusal: failed target does not identify exactly one predeclared compiler unit: {"matches":["6c993b655a55817d9fdffa392b08accece8c22c2b5bb44e93faa3f6380162b74","904122ff1d31b8fd98ce5b87797e5e62ee41ba6fbdf794a9f6cd26f6ae2aca6e"],"package":"path+file:///C:/programming/worth%20worktees/worktrees/m3-host-home/workspaces/worth-query/crates/worth-query-execution#0.1.0","target":{"crate_types":["lib"],"doc":true,"doctest":true,"edition":"2024","kind":["lib"],"name":"worth_query_execution","src_path":"C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-execution\\src\\lib.rs","test":true}}
+
+END: 2026-11-07T07:03:05.155523+00:00
+EXIT: 1

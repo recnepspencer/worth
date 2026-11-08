@@ -334,3 +334,6 @@ fn admit_signal_execution(
         }
     }
 }
+#[cfg(test)]
+#[path = "execution_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -198,3 +198,6 @@ pub use application_inspection::{
     WorthQueryMaterializedSourceField, WorthQueryMaterializedSourceFieldEffect,
     WorthQueryProjectionMaterializationRefusal,
 };
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

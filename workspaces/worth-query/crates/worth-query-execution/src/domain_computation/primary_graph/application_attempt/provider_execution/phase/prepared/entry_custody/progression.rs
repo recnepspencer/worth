@@ -42,7 +42,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
                 execution,
                 phase,
                 application,
-                running,
+                running.consume(),
                 history,
                 allocation_policy,
             ),

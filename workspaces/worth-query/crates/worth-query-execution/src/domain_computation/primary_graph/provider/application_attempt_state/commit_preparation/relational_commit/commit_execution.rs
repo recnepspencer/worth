@@ -282,3 +282,6 @@ fn complete_query_candidate(
 > {
     preparation.complete_query_native_preparation(candidate, request)
 }
+#[cfg(test)]
+#[path = "commit_execution_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -9,6 +9,7 @@ fn cloned_complete_plan_retries_after_member_read_cancellation_without_directory
     let commit = create_entity_outcome(&request, &runtime, "covered-before-stop");
     release_test_commit_snapshot(&runtime, &commit);
     let image = capture_external(&runtime, &medium, &request);
+    let members = selected_members(&image, &request);
     medium.file_checkpoint(image.checkpoint().clone());
     let canonical = image
         .checkpoint()
@@ -90,7 +91,10 @@ fn cloned_complete_plan_retries_after_member_read_cancellation_without_directory
         "selected canonical bodies are observed at their actual read seam"
     );
     assert_eq!(
-        capture(&receiver, &request).source_artifact().covered().0,
+        capture_selected_external(&receiver, &medium, &members, &request)
+            .source_artifact()
+            .covered()
+            .0,
         2
     );
 }

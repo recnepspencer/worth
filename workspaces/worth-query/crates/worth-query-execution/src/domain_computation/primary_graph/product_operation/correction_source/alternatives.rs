@@ -307,3 +307,6 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             .map_err(Denial::Ancestry)
     }
 }
+#[cfg(test)]
+#[path = "alternatives_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

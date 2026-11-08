@@ -163,3 +163,6 @@ impl WorthQueryConditionalEvaluationResourceObservation {
         self.signal_retained_bytes
     }
 }
+#[cfg(test)]
+#[path = "conditional_resources_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

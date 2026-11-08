@@ -22,6 +22,7 @@ pub(crate) use basis_registry::{
 };
 mod basis_retention;
 mod canonical_runtime_frame;
+pub(crate) mod checkpoint_visibility;
 mod coordination;
 mod fork;
 mod fork_port;
@@ -175,3 +176,6 @@ mod basis_registry_scale_tests;
 
 mod symbol_read;
 pub(crate) use symbol_read::SymbolAdmittedRootRead;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

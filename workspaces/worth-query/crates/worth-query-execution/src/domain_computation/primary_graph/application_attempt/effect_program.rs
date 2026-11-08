@@ -307,3 +307,6 @@ impl<Schema, Operation, Input, Scope>
             })
     }
 }
+#[cfg(test)]
+#[path = "effect_program_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

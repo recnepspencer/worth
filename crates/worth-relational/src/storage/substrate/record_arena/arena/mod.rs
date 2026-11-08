@@ -10,6 +10,7 @@ mod payload_allocation;
 mod pin_counts;
 mod pinning;
 mod revision_maps;
+mod slot_adoption;
 pub(crate) use revision_maps::{AspectVersions, FieldRevisions};
 mod slot_directory;
 mod slot_lifecycle;

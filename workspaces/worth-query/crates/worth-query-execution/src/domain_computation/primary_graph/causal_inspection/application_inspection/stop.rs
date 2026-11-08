@@ -339,3 +339,6 @@ mod incarnation_projection_tests {
         }
     }
 }
+#[cfg(test)]
+#[path = "stop_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

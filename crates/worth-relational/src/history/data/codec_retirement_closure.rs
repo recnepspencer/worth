@@ -8,6 +8,7 @@ use crate::runtime::{CodecFieldLocus, RelationalRuntime};
 mod authored_cascade;
 mod authored_restoration;
 mod authored_retirement;
+mod history_request;
 mod scope_dependents;
 pub(crate) mod source_scope_closure;
 pub(crate) use scope_dependents::select_owned_scope_dependent;
@@ -77,7 +78,8 @@ pub(crate) fn derive_codec_retirement_closure(
     basis: &AdmittedRelationalBranchBasis,
     changed_fields: &[CodecFieldLocus],
 ) -> Result<OwnedCodecRetirementClosure, CodecRetirementClosureStop> {
-    if basis.descriptor().runtime_instance_id() != runtime.runtime_instance_id()
+    let runtime = &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest::new(runtime, execution);
+    if basis.descriptor().runtime_instance_id() != runtime.runtime.runtime_instance_id()
         || !basis.is_current()
     {
         return Err("codec provenance requires the current recovered native basis".into());
@@ -85,7 +87,7 @@ pub(crate) fn derive_codec_retirement_closure(
     basis
         .inner
         .root
-        .demand_all_full(execution, &runtime.services.symbols)
+        .demand_all_full(execution, &runtime.runtime.services.symbols)
         .map_err(|failure| CodecRetirementClosureStop::Request(failure.into()))?;
     let result = execution
         .in_scope(|lease| {
@@ -102,14 +104,14 @@ pub(crate) fn derive_codec_retirement_closure(
 }
 
 fn derive_metered(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     changed_fields: &[CodecFieldLocus],
     context: &mut worth_execution::MapKernelContext<'_, '_>,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
 ) -> Result<OwnedCodecRetirementClosure, CodecRetirementClosureStop> {
     charge(context, 1)?;
-    if basis.descriptor().runtime_instance_id() != runtime.runtime_instance_id()
+    if basis.descriptor().runtime_instance_id() != runtime.runtime.runtime_instance_id()
         || !basis.is_current()
     {
         return Err("codec provenance requires the current recovered native basis".into());
@@ -125,7 +127,7 @@ fn derive_metered(
         }
     }
     let entity_bound = root.entity_slot_count();
-    let history_bound = runtime.history.catalog_len();
+    let history_bound = runtime.runtime.history.catalog_len();
     let entity_bytes = entity_bound
         .checked_mul(std::mem::size_of::<EntityId>())
         .ok_or_else(memory_overflow)?;
@@ -286,13 +288,17 @@ pub(super) fn charge(
     context: &mut worth_execution::MapKernelContext<'_, '_>,
     work: usize,
 ) -> Result<(), CodecRetirementClosureStop> {
-    context
-        .checkpoint(u64::try_from(work).map_err(|_| {
-            CodecRetirementClosureStop::Request(
-                crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
-            )
-        })?)
-        .map_err(request)
+    let work = u64::try_from(work).map_err(|_| {
+        CodecRetirementClosureStop::Request(
+            crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
+        )
+    })?;
+    if context.has_accounting() {
+        context.checkpoint(work)
+    } else {
+        context.poll()
+    }
+    .map_err(request)
 }
 
 pub(super) fn request(

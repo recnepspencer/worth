@@ -50,12 +50,16 @@ pub(in crate::application_home) fn finish_service<
         ApplicationHomeOpeningEdge::Before,
     );
     let settled = custody.consume(|HomeServiceCustody { query, home }| {
+        let obligations = home.query_obligations_medium();
         match home.readmit_no_pending_owners(&phase.execution_request()) {
             Ok(home) => Ok(TransitionSettled::from_owner(SettledHomeService {
                 query,
                 home,
             })),
-            Err(home) => Err(WorthQueryApplicationHomeOpenRefused::OwnerAdmission { query, home }),
+            Err(home) => Err(WorthQueryApplicationHomeOpenRefused::OwnerAdmission {
+                query: super::super::UnadmittedHomeQueryService::retain(query, obligations),
+                home,
+            }),
         }
     })?;
     let home = settled.consume(

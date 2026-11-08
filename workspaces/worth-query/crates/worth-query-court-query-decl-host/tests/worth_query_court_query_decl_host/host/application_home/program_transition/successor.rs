@@ -58,7 +58,7 @@ pub(super) fn request(
         declaration,
         (contacts,),
         build,
-        WorthQueryInMemoryApplicationLimits::new(
+        WorthQueryApplicationLimits::new(
             identity::world_resources(),
             worth_query_host::facade::runtime::WorthQueryApplicationQueryResourceProfile::default(),
             worth_query_host::facade::primary_graph::SignalConditionalEvaluationBudget::development(

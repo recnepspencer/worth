@@ -6,13 +6,9 @@ fn host(budget: &SerialMemoryBudget) -> SerialRequest {
     SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None)
 }
 fn arc_bytes<T>() -> u64 {
-    std::alloc::Layout::new::<[usize; 2]>()
-        .extend(std::alloc::Layout::new::<T>())
-        .unwrap()
-        .0
-        .pad_to_align()
-        .size() as u64
+    crate::storage::substrate::StorageAllocation::<T>::layout_bytes()
 }
+
 fn page_bytes() -> u64 {
     arc_bytes::<ColumnNode<u64>>()
         + std::alloc::Layout::array::<Option<u64>>(PAGE_LEN)

@@ -102,3 +102,6 @@ impl WorthQueryPrimaryGraphBackendHandle {
         self.integration.release_query_snapshot(snapshot);
     }
 }
+#[cfg(test)]
+#[path = "primary_graph_runtime_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

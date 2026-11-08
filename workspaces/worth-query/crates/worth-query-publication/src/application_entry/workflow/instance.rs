@@ -387,4 +387,7 @@ pub use preparation_denial::{
     WorthQueryWorkflowInstancePreparationDenial, WorthQueryWorkflowInstancePreparationDenialKind,
 };
 
+#[cfg(test)]
+#[path = "instance_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
 mod ordinary;

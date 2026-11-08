@@ -143,3 +143,6 @@ pub use transaction::{
 pub use state::{
     bridge_signal_branch_basis_trust_boundary, BoundaryBridgedSignalBranchBasisArtifact,
 };
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

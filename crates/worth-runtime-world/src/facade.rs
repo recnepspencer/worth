@@ -2,6 +2,10 @@
 //!
 //! This module contains exports only. Runtime behavior remains in the private
 //! owner modules so callers cannot reach around the composition boundary.
+pub use crate::lifecycle::{
+    CapturedWorldInterimAdmission, CapturedWorldInterimOrigin, WorldInterimCheckpointPort,
+    WorldInterimCheckpointRefusal,
+};
 
 pub use crate::durability::{
     PreparedWorldCheckpoint, PreparedWorldHomeData, PreparedWorldHomeSource,

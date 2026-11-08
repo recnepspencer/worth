@@ -156,3 +156,6 @@ pub(crate) fn native_meaning_fixture(family: &str) -> RequiredOutputPublicationM
         source_epoch: worth_foundational::CanonicalDigestId::new([0; 32]),
     }
 }
+#[cfg(test)]
+#[path = "application_publication_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

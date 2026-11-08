@@ -18,3 +18,6 @@ pub(in crate::logic::transaction::runtime) use rollback::{
 pub(in crate::logic::transaction::runtime) use state::{
     StagedEventOperation, TransactionExecutionState, TransactionScratch,
 };
+#[cfg(test)]
+#[path = "transaction_types_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

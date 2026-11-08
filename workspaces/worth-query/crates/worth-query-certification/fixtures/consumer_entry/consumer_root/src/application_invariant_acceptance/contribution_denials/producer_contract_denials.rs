@@ -307,7 +307,7 @@ fn foreign_source_selector_is_denied_before_initial_state() {
         |_, _, _| panic!("foreign producer source must deny before initial state"),
     );
     match result {
-        Err(application_installation::WorthQueryInMemoryApplicationDenial::Contributions(
+        Err(application_installation::WorthQueryApplicationPreparationDenial::Contributions(
             denial,
         )) => {
             assert_eq!(

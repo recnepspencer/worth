@@ -7,7 +7,7 @@ pub(in crate::application_invariant_acceptance) fn install_selected_program<Prog
     roster: installation::WorthQueryApplicationProgramRoster<ConsumerSchema>,
     deployment_grants: &[crate::program_deployment::ConsumerDeploymentGrantSeed],
     program: worth_query_decl::facade::application_program::ValidatedApplicationProgram<ConsumerSchema, Program>,
-) -> Result<ConsumerWorld<Program>, installation::WorthQueryInMemoryApplicationDenial>
+) -> Result<ConsumerWorld<Program>, installation::WorthQueryApplicationPreparationDenial>
 where Program: worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema,
     Contributions = <ConsumerProgram as worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema>>::Contributions>,
 Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema>{
@@ -21,7 +21,7 @@ pub(in crate::application_invariant_acceptance) fn install_selected_program_with
     deployment_grants: &[crate::program_deployment::ConsumerDeploymentGrantSeed],
     isolated_cycle: bool,
     program: worth_query_decl::facade::application_program::ValidatedApplicationProgram<ConsumerSchema, Program>,
-) -> Result<ConsumerWorld<Program>, installation::WorthQueryInMemoryApplicationDenial>
+) -> Result<ConsumerWorld<Program>, installation::WorthQueryApplicationPreparationDenial>
 where Program: worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema,
     Contributions = <ConsumerProgram as worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema>>::Contributions>,
 Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema>{
@@ -40,9 +40,9 @@ pub(in crate::application_invariant_acceptance) fn install_selected_program_with
     roster: installation::WorthQueryApplicationProgramRoster<ConsumerSchema>,
     deployment_grants: &[crate::program_deployment::ConsumerDeploymentGrantSeed],
     isolated_cycle: bool,
-    limits: installation::WorthQueryInMemoryApplicationLimits,
+    limits: installation::WorthQueryApplicationLimits,
     program: worth_query_decl::facade::application_program::ValidatedApplicationProgram<ConsumerSchema, Program>,
-) -> Result<ConsumerWorld<Program>, installation::WorthQueryInMemoryApplicationDenial>
+) -> Result<ConsumerWorld<Program>, installation::WorthQueryApplicationPreparationDenial>
 where Program: worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema,
     Contributions = <ConsumerProgram as worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema>>::Contributions>,
 Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema>{
@@ -131,6 +131,7 @@ Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema
         invariant_calls,
         invariant_probe,
         producer_authorization_denials,
+        #[cfg(test)]
         producer_domain_denial,
     })
 }

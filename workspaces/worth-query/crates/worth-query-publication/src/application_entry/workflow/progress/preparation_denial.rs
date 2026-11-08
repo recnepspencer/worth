@@ -84,3 +84,6 @@ impl std::fmt::Display for WorthQueryWorkflowAdvancePreparationDenial {
 }
 
 impl std::error::Error for WorthQueryWorkflowAdvancePreparationDenial {}
+#[cfg(test)]
+#[path = "preparation_denial_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

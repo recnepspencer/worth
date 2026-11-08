@@ -148,3 +148,6 @@ where
             .map_err(WorthQueryOperationCloseDenial::Execution)?
     }
 }
+#[cfg(test)]
+#[path = "close_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

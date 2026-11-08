@@ -1,4 +1,5 @@
 //! Two installed applications and a restored root share one process service.
+#![cfg_attr(not(test), recursion_limit = "256")]
 use std::sync::{
     atomic::{AtomicBool, AtomicUsize, Ordering},
     Arc,
@@ -27,12 +28,7 @@ type Application =
 
 #[cfg(not(test))]
 fn main() {
-    std::thread::Builder::new()
-        .stack_size(64 * 1024 * 1024)
-        .spawn(run)
-        .unwrap()
-        .join()
-        .unwrap();
+    run();
 }
 
 pub(crate) fn run() {
@@ -72,7 +68,7 @@ pub(crate) fn run() {
         .with_schema(&ExampleSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
-    let mut reopened = installation::in_memory_program_from_checkpoint(
+    let mut reopened = installation::WorthQueryInterimCheckpointRestore::program(
         program,
         ExampleSchema::declaration().unwrap(),
         (setup::configuration(),),

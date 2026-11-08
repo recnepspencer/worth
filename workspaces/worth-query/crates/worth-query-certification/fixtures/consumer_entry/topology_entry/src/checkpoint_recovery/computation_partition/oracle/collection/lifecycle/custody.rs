@@ -305,7 +305,7 @@ mod serial {
 
     #[test]
     fn shared_operation_conflicting_readiness_is_refused_before_initial_effects() {
-        use worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial;
+        use worth_query_host::facade::application_installation::WorthQueryApplicationPreparationDenial;
         let _guard = checkpoint_recovery_test_guard();
         let initial_effects = std::cell::Cell::new(false);
         let result = support::try_install_program_with_limits::<
@@ -324,7 +324,7 @@ mod serial {
             .err()
             .expect("different full contracts cannot be coalesced");
         match *denial {
-            WorthQueryInMemoryApplicationDenial::Package(denial) => {
+            WorthQueryApplicationPreparationDenial::Package(denial) => {
                 assert_eq!(format!("{:?}", denial.kind()), "ConflictingDefinition");
                 assert_eq!(denial.slot(), "collection-shared-readiness:1");
             }

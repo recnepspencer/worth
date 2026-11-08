@@ -8,6 +8,7 @@ use crate::history::{RelationalCommitIndexEntry, RetainedCanonicalIndex};
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Weak};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
+use worth_foundational::CanonicalDigestId;
 mod index_predecessor;
 
 /// Only Native's selected-directory consumer can construct this owner.
@@ -26,6 +27,9 @@ struct AdmittedRow {
 }
 
 impl CheckpointAdmittedCommit {
+    pub(crate) fn scope(&self) -> &worth_foundational::facade::CheckpointAdmissionScope {
+        self.0.image.cut().scope()
+    }
     pub(crate) fn effect_data(
         &self,
         request: &ExecutionRequest<'_, '_>,
@@ -104,7 +108,7 @@ impl CheckpointAdmittedCommit {
         let coordinates = Coordinates {
             receipt: &entry.commit,
             position: entry.position,
-            digest: entry.payload_digest,
+            digest: CanonicalDigestId::new(entry.payload_digest),
             roots: &entry.root,
         };
         require_encoded(&coordinates, image.group(&row.groups[3]), request)?;
@@ -118,14 +122,14 @@ impl CheckpointAdmittedCommit {
         let authority = directory
             .source_schemas
             .get()
-            .and_then(|catalog| catalog.rows.get(&schema.carrier))
+            .and_then(|catalog| catalog.rows.get(schema.carrier.bytes()))
             .cloned()
             .ok_or(Refusal::InvalidProjectedMeaning)?;
         if schema.version != entry.schema_version
             || authority.descriptor_semantics_version() != schema.semantics
-            || authority.authority_digest() != visibility.schema
-            || entry.root.schema_root() != &visibility.schema
-            || entry.root.truth_root() != &visibility.storage
+            || authority.authority_digest() != *visibility.schema.bytes()
+            || entry.root.schema_root() != visibility.schema.bytes()
+            || entry.root.truth_root() != visibility.storage.bytes()
             || visibility.correctness != 0
         {
             return Err(Refusal::InvalidProjectedMeaning);
@@ -146,7 +150,7 @@ impl CheckpointAdmittedCommit {
             index,
             schema: authority,
             visibility: RelationalBranchVisibilityCommitment::from_checkpoint(
-                visibility.commitment,
+                *visibility.commitment.bytes(),
             ),
             _memory: memory,
         })))
@@ -194,7 +198,7 @@ impl CheckpointAdmittedCommit {
 struct Coordinates<'a> {
     receipt: &'a crate::history::data::RelationalCommitReceipt,
     position: crate::publication::patch::data::PatchStreamPosition,
-    digest: [u8; 32],
+    digest: CanonicalDigestId,
     roots: &'a crate::branch::RelationalBranchRootDescriptor,
 }
 #[derive(Deserialize)]
@@ -202,15 +206,15 @@ struct Coordinates<'a> {
 struct Schema {
     version: crate::schema::data::SchemaVersionId,
     semantics: crate::schema::data::DescriptorSemanticsVersion,
-    carrier: [u8; 32],
+    carrier: CanonicalDigestId,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Visibility {
-    storage: [u8; 32],
-    schema: [u8; 32],
+    storage: CanonicalDigestId,
+    schema: CanonicalDigestId,
     correctness: u8,
-    commitment: [u8; 32],
+    commitment: CanonicalDigestId,
 }
 
 fn require_encoded(

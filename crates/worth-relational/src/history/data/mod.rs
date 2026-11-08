@@ -231,3 +231,6 @@ pub(crate) use canonical_commit_envelope::EnvelopeProjection;
 
 pub(crate) use canonical_commit_envelope::CanonicalEnvelopeControlAllocation;
 pub(crate) use canonical_commit_envelope::LiveManagedSourceHistory;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

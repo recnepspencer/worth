@@ -2,7 +2,7 @@ pub(crate) use history::{
     OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
     OriginalEmptySchemaObservation, RetainedBranchTransition,
 };
-pub(crate) use record_identity::{MutationRecordAllocations, OriginalRecordAllocationCursor};
+pub(crate) use record_identity::MutationRecordAllocations;
 mod commit_strategies;
 mod durability;
 mod history;
@@ -70,9 +70,9 @@ pub(crate) use record_identity::{
 };
 pub(crate) use schema_contract_runtime::SchemaContractRuntimeSubsystem;
 pub(crate) use services::{
-    ColdSymbolDirectoryDenial, MutationSymbolMeanings, OriginalSymbolMeanings,
-    PendingSymbolMeanings, PreparedSymbolPublication, RuntimeInstrumentation, RuntimeServices,
-    RuntimeSymbolTable, SymbolReservationDenial,
+    ColdSymbolDirectoryDenial, MutationSymbolMeanings, PendingSymbolMeanings,
+    PreparedSymbolPublication, RuntimeInstrumentation, RuntimeServices, RuntimeSymbolTable,
+    SymbolReservationDenial,
 };
 pub(crate) use storage::{
     MirrorResidencyDemandBinding, PartitionEdition, PartitionEditionCopyLane,

@@ -75,4 +75,7 @@ pub(super) fn truth_materialization_denial(
 }
 
 #[cfg(test)]
+#[path = "denial_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+#[cfg(test)]
 mod read_stop_tests;

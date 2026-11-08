@@ -73,15 +73,20 @@ impl CompositePublicationReady {
             return Ok(());
         }
         let bytes = std::mem::size_of::<crate::history::MemoryPublicationRecord>()
-            + 2 * expected.branch_identity().name().as_str().len()
             + 2 * std::mem::size_of::<usize>();
         let funding = execution
             .reserve_retained_memory(bytes as u64)
             .map_err(|cause| Refusal::Request(cause.into()))?;
+        let meaning_bytes = std::mem::size_of::<crate::history::MemoryPublicationMeaning>()
+            + 2 * expected.branch_identity().name().as_str().len()
+            + 2 * std::mem::size_of::<usize>();
+        let meaning_funding = execution
+            .reserve_retained_memory(meaning_bytes as u64)
+            .map_err(|cause| Refusal::Request(cause.into()))?;
         let mut charged = None;
         let scope = execution.run_native_with_checkpoint(|context| {
             charged = Some(if context.has_accounting() {
-                context.checkpoint(bytes as u64)
+                context.checkpoint((bytes + meaning_bytes) as u64)
             } else {
                 context.poll()
             });
@@ -102,7 +107,7 @@ impl CompositePublicationReady {
             )
             .expect("an actual World branch has a valid name")
         };
-        let record = Arc::new(crate::history::MemoryPublicationRecord {
+        let meaning = Arc::new(crate::history::MemoryPublicationMeaning {
             before: head(
                 expected.reference_generation().get(),
                 expected.selected_commit().ordinal(),
@@ -115,7 +120,16 @@ impl CompositePublicationReady {
                     .get(),
                 self.commit.identity().ordinal(),
             ),
-            attempt: self.attempt_identity.clone(),
+            attempt:
+                worth_foundational::facade::RecordedCompositePublicationAttemptIdentity::Memory {
+                    owner: self.attempt_identity.owner_identity().get(),
+                    ordinal: self.attempt_identity.ordinal(),
+                },
+            _funding: meaning_funding,
+        });
+        let record = Arc::new(crate::history::MemoryPublicationRecord {
+            meaning,
+            receiver: crate::history::MemoryPublicationReceiver::Live,
             before_component: port
                 .observe_memory_component(execution, expected.basis().relational_basis())?,
             after_component: port

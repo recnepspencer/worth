@@ -55,3 +55,6 @@ impl WorthQueryApplicationLiveControls {
         self.delivery.replace_request(request);
     }
 }
+#[cfg(test)]
+#[path = "controls_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -44,3 +44,6 @@ fn default_execution_objective() -> ExecutionObjectiveProfile {
 fn default_observation_activation() -> ObservationActivationProfile {
     ObservationActivationProfile::Continuous
 }
+#[cfg(test)]
+#[path = "definition_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

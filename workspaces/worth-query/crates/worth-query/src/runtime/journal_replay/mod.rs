@@ -17,3 +17,6 @@ pub(in crate::runtime) use registry::{
 };
 pub use request::WorthQueryJournalReplayRequest;
 pub use segment::WorthQueryJournalSegmentIdentity;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -38,6 +38,7 @@ fn cold_complete_recapture_preserves_original_index_generations_and_live_tail() 
     drop(basis);
     release_test_commit_snapshot(&runtime, &first);
     let image = capture_external(&runtime, &medium, &request);
+    let members = selected_members(&image, &request);
     let original = generations(&image);
     assert!(!original.is_empty());
     medium.file_checkpoint(image.checkpoint().clone());
@@ -59,7 +60,7 @@ fn cold_complete_recapture_preserves_original_index_generations_and_live_tail() 
         .durability_recovery()
         .recover_with_authority(&request, plan)
         .unwrap();
-    let next = capture(&recovered, &request);
+    let next = capture_selected_external(&recovered, &medium, &members, &request);
     let observed = generations(&next);
     for original in &original {
         assert!(
@@ -96,7 +97,7 @@ fn cold_complete_recapture_preserves_original_index_generations_and_live_tail() 
         .iter()
         .all(|generation| generation.source_commit_id.0 == tail_commit));
     drop(basis);
-    let next = capture(&recovered, &request);
+    let next = capture_selected_external(&recovered, &medium, &members, &request);
     let observed = generations(&next);
     for original in original {
         assert!(

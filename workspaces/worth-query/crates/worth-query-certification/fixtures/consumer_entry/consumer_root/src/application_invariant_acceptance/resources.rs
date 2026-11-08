@@ -1,4 +1,6 @@
+#[cfg(test)]
 mod runtime_time;
+#[cfg(test)]
 pub(super) use runtime_time::RuntimeTime;
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock;
 use worth_query_host::facade::runtime::RuntimeWorldBranchBudgetInstallation;
@@ -77,13 +79,13 @@ fn world_resources_for(
 }
 
 pub(super) fn application_limits(
-) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
+) -> worth_query_host::facade::application_installation::WorthQueryApplicationLimits {
     application_limits_for_world(world_resources())
 }
 
 pub(super) fn application_limits_with_branches(
     branch_capacity: u64,
-) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
+) -> worth_query_host::facade::application_installation::WorthQueryApplicationLimits {
     application_limits_for_world(world_resources_for(
         EXECUTION_POLICY,
         ACTIVE_WORLD_OBSERVATIONS,
@@ -92,10 +94,11 @@ pub(super) fn application_limits_with_branches(
     ))
 }
 
+#[cfg(test)]
 pub(super) fn application_limits_with_clock(
     policy: worth_foundational::ExecutionRequestPolicy,
     clock: WorthQueryAdmissionClock,
-) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
+) -> worth_query_host::facade::application_installation::WorthQueryApplicationLimits {
     application_limits_for_world(world_resources_for(
         policy,
         ACTIVE_WORLD_OBSERVATIONS,
@@ -104,10 +107,11 @@ pub(super) fn application_limits_with_clock(
     ))
 }
 
+#[cfg(test)]
 pub(super) fn application_limits_with_observations(
     policy: worth_foundational::ExecutionRequestPolicy,
     active_observations: u64,
-) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
+) -> worth_query_host::facade::application_installation::WorthQueryApplicationLimits {
     application_limits_for_world(world_resources_for(
         policy,
         active_observations,
@@ -118,12 +122,39 @@ pub(super) fn application_limits_with_observations(
 
 fn application_limits_for_world(
     world: WorthQueryProductWorldResources,
-) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
-    worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits::new(
+) -> worth_query_host::facade::application_installation::WorthQueryApplicationLimits {
+    worth_query_host::facade::application_installation::WorthQueryApplicationLimits::new(
         world,
         worth_query_host::facade::runtime::WorthQueryApplicationQueryResourceProfile::new(
             std::num::NonZeroUsize::new(32).expect("concurrent graph work is non-zero"),
         ),
         worth_query_host::facade::primary_graph::SignalConditionalEvaluationBudget::development(),
     )
+}
+
+// Existing consumer population setup grant, kept exactly at20B. No public
+// pre-capture work quote exists; this is not a newly observed charge peak.
+#[cfg(test)]
+pub(super) const POPULATION_BOOTSTRAP_POLICY: worth_foundational::ExecutionRequestPolicy =
+    worth_foundational::ExecutionRequestPolicy::new(
+        worth_foundational::ExecutionPosture::Serial,
+        worth_foundational::DeterminismContract::CanonicalBitwise,
+        worth_foundational::ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            None,
+            Some(20_000_000_000),
+        ),
+    );
+
+#[cfg(test)]
+pub(super) fn checkpoint_capture_request(
+) -> worth_query_host::facade::runtime::ExecutionResourceLease<'static> {
+    worth_query_host::facade::runtime::ExecutionResourceLease::serial(
+        worth_query_host::facade::runtime::LeaseRequest {
+            policy: POPULATION_BOOTSTRAP_POLICY,
+            cancellation: worth_query_host::facade::runtime::CancellationToken::new(),
+            deadline: None,
+        },
+    )
+    .expect("the capture owns its original finite setup request")
 }

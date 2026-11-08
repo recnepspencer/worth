@@ -14,3 +14,6 @@ pub(super) use prepared::running::progression::progressed::finish_application_co
 
 pub(in crate::domain_computation::primary_graph) use prepared::ReadmittedCommitProgram;
 pub use prepared::WorthQueryManagedPhaseStorageForTest;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

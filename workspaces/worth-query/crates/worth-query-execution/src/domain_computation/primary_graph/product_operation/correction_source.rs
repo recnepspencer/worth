@@ -388,3 +388,6 @@ impl<Schema> WorthQuerySelectedCorrectionSource<'_, Schema> {
         &self.occurrence
     }
 }
+#[cfg(test)]
+#[path = "correction_source_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

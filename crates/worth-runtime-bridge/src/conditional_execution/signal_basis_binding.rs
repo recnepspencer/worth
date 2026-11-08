@@ -114,3 +114,6 @@ impl BridgeConditionalSignalBasisBinding {
         self.signal_port.issuance_basis().admission_identity()
     }
 }
+#[cfg(test)]
+#[path = "signal_basis_binding_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

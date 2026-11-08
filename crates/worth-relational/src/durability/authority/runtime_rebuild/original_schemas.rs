@@ -1,7 +1,7 @@
 //! One admitted schema graph is shared by source roles and selected roots.
 use crate::branch::RelationalBranchRootSchemaAuthority;
 use crate::durability::checkpoints::region_directory::corrupt;
-use crate::durability::data::{DurableBranchRootSchemaImage, RecoveryPlan, RelationalRecoveryStop};
+use crate::durability::data::{RecoveryPlan, RelationalRecoveryStop};
 use crate::durability::source_initial_inputs::schema_catalog::ReadmittedSourceSchemaCatalog;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
@@ -40,11 +40,21 @@ impl OriginalSchemaGraph {
             schemas: ReadmittedSourceSchemaCatalog::prepare(request, directory_copies)?,
         };
         for image in &original.current.schemas {
-            graph.insert(image, &plan.config.schema.registry, request)?;
+            ReadmittedSourceSchemaCatalog::insert_image(
+                &mut graph.schemas,
+                image,
+                &plan.config.schema.registry,
+                request,
+            )?;
         }
         if let Some(checkpoint) = &plan.checkpoint {
             for image in &checkpoint.branch_root_schema_images {
-                graph.insert(image, &plan.config.schema.registry, request)?;
+                ReadmittedSourceSchemaCatalog::insert_image(
+                    &mut graph.schemas,
+                    image,
+                    &plan.config.schema.registry,
+                    request,
+                )?;
             }
         }
         for commit in &plan.tail_log {
@@ -58,7 +68,12 @@ impl OriginalSchemaGraph {
                 {
                     return Err(corrupt("Home tail result carrier attribution disagrees").into());
                 }
-                graph.insert(image, &plan.config.schema.registry, request)?;
+                ReadmittedSourceSchemaCatalog::insert_image(
+                    &mut graph.schemas,
+                    image,
+                    &plan.config.schema.registry,
+                    request,
+                )?;
             } else if input.prestate_schema != input.result_schema {
                 return Err(corrupt(
                     "schema-changing canonical publication lacks its result carrier",
@@ -155,44 +170,5 @@ impl OriginalSchemaGraph {
             .get(&digest)
             .cloned()
             .ok_or_else(|| corrupt("original role names a missing schema carrier").into())
-    }
-
-    fn insert(
-        &mut self,
-        image: &DurableBranchRootSchemaImage,
-        configured: &crate::schema::data::RelationalSchemaRegistry,
-        request: &ExecutionRequest<'_, '_>,
-    ) -> Result<(), RelationalRecoveryStop> {
-        crate::execution::check_request(request).map_err(RelationalRecoveryStop::Request)?;
-        if let Some(prior) = self.schemas.rows.get(&image.carrier_digest()) {
-            if prior.recorded_image(request)? != *image {
-                return Err(corrupt("same source carrier has differing full schema DATA").into());
-            }
-            return Ok(());
-        }
-        let (registry, contracts) = image.readmit_registry().map_err(corrupt)?;
-        let expected = registry.authority_snapshot();
-        let registry = if configured.authority_snapshot() == expected {
-            configured.clone()
-        } else {
-            registry
-        };
-        let schema = RelationalBranchRootSchemaAuthority::readmit_exact(
-            self.schemas.rows.len() as u64 + 1,
-            registry,
-            contracts,
-            &expected,
-            image.descriptor_semantics_version(),
-        )
-        .ok_or_else(|| corrupt("original schema carrier executable admission failed"))?;
-        schema
-            .retain_readmitted_image(image.clone())
-            .map_err(corrupt)?;
-        Arc::get_mut(&mut self.schemas)
-            .ok_or_else(|| corrupt("source schema graph was shared before admission completed"))?
-            .rows
-            .insert_cloned_native_for_request(&image.carrier_digest(), &schema, *request)
-            .map_err(crate::durability::checkpoint_history::capture::map_stop)?;
-        Ok(())
     }
 }

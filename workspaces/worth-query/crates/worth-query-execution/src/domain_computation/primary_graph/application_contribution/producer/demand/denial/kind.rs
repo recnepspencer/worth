@@ -122,3 +122,6 @@ pub enum WorthQueryOutputDemandRecoveryPosture {
     /// Asking again with the same inputs will be refused again.
     Terminal,
 }
+#[cfg(test)]
+#[path = "kind_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

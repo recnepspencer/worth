@@ -128,3 +128,6 @@ pub use retention::{
     RetiredSignalBranchRetention, SignalBranchRetentionRetirement,
     SignalBranchRetentionRetirementDenial, SignalBranchRetentionRetirementProgress,
 };
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -126,15 +126,17 @@ impl WorthQueryExecutionInstallationAuthority {
         )?;
         let (recovered_relational_authority, recovered_checkpoint_restore_work) = match checkpoint {
             Some(checkpoint) => {
+                let origin = checkpoint.origin.as_ref().ok_or_else(|| primary_graph_denial(
+                    WorthQueryPrimaryGraphInstallationDenialKind::InterimCheckpointCaptureOriginMissing,
+                    "interim checkpoint capture origin is required".to_owned()))?;
                 let mut recovery = relational_runtime.durability_recovery();
                 let (outcome, authority) = if codec_transition {
-                    recovery.restore_native_checkpoint_for_codec_transition_with_authority(
+                    recovery.restore_interim_checkpoint_for_codec_transition_with_authority(
                         &execution,
-                        &checkpoint.native,
+                        &origin.native,
                     )
                 } else {
-                    recovery
-                        .restore_native_checkpoint_with_authority(&execution, &checkpoint.native)
+                    recovery.restore_interim_checkpoint_with_authority(&execution, &origin.native)
                 }
                 .map_err(map_checkpoint_recovery_stop)?;
                 if !authority.codec_transition_pending() {
@@ -212,7 +214,7 @@ impl WorthQueryExecutionInstallationAuthority {
     }
 }
 
-pub(super) fn map_checkpoint_recovery_stop(
+pub(in crate::domain_computation::primary_graph) fn map_checkpoint_recovery_stop(
     stop: worth_relational::facade::durability::RelationalRecoveryStop,
 ) -> WorthQueryPrimaryGraphInstallationDenial {
     use worth_relational::facade::durability::RelationalRecoveryStop;

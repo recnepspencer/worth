@@ -239,3 +239,6 @@ where
 
 mod court_doors_for_test;
 pub use completion_storage::WorthQueryManagedPhaseStorageForTest;
+#[cfg(test)]
+#[path = "running_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

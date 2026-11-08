@@ -11,14 +11,16 @@ use worth_relational::facade::authorization::RelationalAuthorizationObservationC
 
 use super::WorthQueryAdmittedOperation;
 use crate::domain_computation::authorization::{
-    WorthQueryAdmissionLapse, WorthQueryOperationAuthorizationDenial,
-    WorthQueryOperationAuthorizationDenialKind, WorthQueryOperationScopeBinding,
-    WorthQueryRetainedAuthorizationDecisionFacts, WorthQueryRetainedCapabilityAuthorization,
+    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
+    WorthQueryOperationScopeBinding, WorthQueryRetainedAuthorizationDecisionFacts,
+    WorthQueryRetainedCapabilityAuthorization,
 };
 use crate::domain_computation::primary_graph::WorthQueryBoundMutationPreconditions;
 
 use super::WorthQueryOperationAdmissionIdentity;
 
+#[path = "access/currentness.rs"]
+mod currentness;
 #[path = "access/workflow_approval_snapshot.rs"]
 mod workflow_approval_snapshot;
 
@@ -39,7 +41,7 @@ impl WorthQueryAdmittedOperation {
     pub(in crate::domain_computation) fn binding_identity(
         &self,
     ) -> &ApplicationSchemaBindingIdentity {
-        &self.binding_identity
+        &self.data.binding_identity
     }
 
     pub(in crate::domain_computation) fn belongs_to(
@@ -47,71 +49,46 @@ impl WorthQueryAdmittedOperation {
         runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
         binding_identity: &ApplicationSchemaBindingIdentity,
     ) -> bool {
-        self.runtime_authority == runtime_authority && &self.binding_identity == binding_identity
-    }
-
-    /// Ownership precedes lapse and every read: nothing about a foreign
-    /// admission is judged before it is known to be this runtime's.
-    pub(in crate::domain_computation) fn validate_runtime_ownership(
-        &self,
-        runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
-        binding_identity: &ApplicationSchemaBindingIdentity,
-    ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
-        if self.runtime_authority != runtime_authority {
-            return Err(WorthQueryOperationAuthorizationDenial::new(
-                WorthQueryOperationAuthorizationDenialKind::Refused(
-                    AuthorizationRefusal::ForeignRuntime,
-                ),
-                &self.operation,
-            ));
-        }
-        if &self.binding_identity != binding_identity {
-            return Err(WorthQueryOperationAuthorizationDenial::new(
-                WorthQueryOperationAuthorizationDenialKind::Refused(
-                    AuthorizationRefusal::StaleInstalledSchema,
-                ),
-                &self.operation,
-            ));
-        }
-        Ok(())
+        self.data.runtime_authority == runtime_authority
+            && &self.data.binding_identity == binding_identity
     }
 
     pub(in crate::domain_computation) const fn runtime_authority(
         &self,
     ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
-        self.runtime_authority
+        self.data.runtime_authority
     }
 
     pub(in crate::domain_computation) const fn admission_identity(
         &self,
     ) -> WorthQueryOperationAdmissionIdentity {
-        self.admission_identity
+        self.data.admission_identity
     }
 
     pub(in crate::domain_computation) const fn scope_entity_id(
         &self,
     ) -> worth_relational::facade::identity::EntityId {
-        self.scope_entity_id
+        self.data.scope_entity_id
     }
 
     pub(in crate::domain_computation) const fn scope_entity_kind(
         &self,
     ) -> worth_relational::facade::identity::KindId {
-        self.scope_entity_kind
+        self.data.scope_entity_kind
     }
 
     pub(in crate::domain_computation) fn scope_entity_name(&self) -> &str {
-        &self.scope_entity_name
+        &self.data.scope_entity_name
     }
 
     pub(in crate::domain_computation) fn operation(&self) -> &str {
-        &self.operation
+        &self.data.operation
     }
 
     pub(in crate::domain_computation) fn allowed_graph_contract(
         &self,
     ) -> &WorthQueryCompiledApplicationOperationContracts {
-        &self.contracts
+        &self.data.contracts
     }
 
     /// Retain the actual installed immutable descriptor for checked read
@@ -119,43 +96,44 @@ impl WorthQueryAdmittedOperation {
     pub(in crate::domain_computation) fn retain_graph_contract(
         &self,
     ) -> Arc<WorthQueryCompiledApplicationOperationContracts> {
-        Arc::clone(&self.contracts)
+        Arc::clone(&self.data.contracts)
     }
 
     pub(in crate::domain_computation) const fn mutation_preconditions(
         &self,
     ) -> &WorthQueryBoundMutationPreconditions {
-        &self.mutation_preconditions
+        &self.data.mutation_preconditions
     }
 
     pub(in crate::domain_computation) const fn canonical_work(
         &self,
     ) -> WorthQueryCanonicalWorkPhases {
-        self.canonical_work
+        self.data.canonical_work
     }
 
     pub(in crate::domain_computation) fn authorization_requirement_count(&self) -> usize {
-        self.authorization.as_ref().map_or(
+        self.data.authorization.as_ref().map_or(
             0,
             WorthQueryRetainedAuthorizationDecisionFacts::policy_count,
         )
     }
 
     pub(in crate::domain_computation) fn authorization_decision_fact_count(&self) -> usize {
-        self.authorization.as_ref().map_or(
+        self.data.authorization.as_ref().map_or(
             0,
             WorthQueryRetainedAuthorizationDecisionFacts::exact_fact_count,
         )
     }
 
     pub(in crate::domain_computation) const fn has_elevation_lifecycle_binding(&self) -> bool {
-        self.authorization_basis.is_elevation_lifecycle()
+        self.data.authorization_basis.is_elevation_lifecycle()
     }
 
     pub(in crate::domain_computation) fn installed_capability_authority_identity(
         &self,
     ) -> Option<&str> {
-        self.authorization
+        self.data
+            .authorization
             .as_ref()?
             .capability_authorization()
             .map(WorthQueryRetainedCapabilityAuthorization::capability_authority_identity)
@@ -165,7 +143,8 @@ impl WorthQueryAdmittedOperation {
         &self,
         selector: &worth_query_declaration::facade::application_program::ApplicationWorkflowSubjectSelector,
     ) -> Option<worth_relational::facade::identity::EntityId> {
-        self.authorization
+        self.data
+            .authorization
             .as_ref()?
             .capability_authorization()?
             .request()
@@ -173,7 +152,8 @@ impl WorthQueryAdmittedOperation {
     }
 
     pub(in crate::domain_computation) fn installed_capability_identity(&self) -> Option<[u8; 32]> {
-        self.authorization
+        self.data
+            .authorization
             .as_ref()?
             .capability_authorization()
             .map(WorthQueryRetainedCapabilityAuthorization::installed_capability_identity)
@@ -184,7 +164,8 @@ impl WorthQueryAdmittedOperation {
     ) -> Option<
         worth_query_declaration::facade::application_capability::ApplicationCapabilityValidityTimeline,
     >{
-        self.authorization
+        self.data
+            .authorization
             .as_ref()?
             .capability_authorization()
             .map(WorthQueryRetainedCapabilityAuthorization::timeline)
@@ -193,7 +174,8 @@ impl WorthQueryAdmittedOperation {
     pub(in crate::domain_computation) fn capability_time_sample(
         &self,
     ) -> Option<&worth_foundational::facade::AspectValue> {
-        self.authorization
+        self.data
+            .authorization
             .as_ref()?
             .capability_authorization()
             .map(WorthQueryRetainedCapabilityAuthorization::sampled_value)
@@ -202,7 +184,11 @@ impl WorthQueryAdmittedOperation {
     pub(in crate::domain_computation) fn workflow_approval_authority(
         &self,
     ) -> Option<WorthQueryWorkflowApprovalAuthority> {
-        let authorization = self.authorization.as_ref()?.capability_authorization()?;
+        let authorization = self
+            .data
+            .authorization
+            .as_ref()?
+            .capability_authorization()?;
         Some(WorthQueryWorkflowApprovalAuthority {
             principal: authorization.request().principal(),
             grant: authorization.grant(),
@@ -219,14 +205,16 @@ impl WorthQueryAdmittedOperation {
     pub(in crate::domain_computation) fn relational_counters(
         &self,
     ) -> RelationalAuthorizationObservationCounters {
-        self.authorization
+        self.data
+            .authorization
             .as_ref()
             .map(WorthQueryRetainedAuthorizationDecisionFacts::relational_counters)
             .unwrap_or_default()
     }
 
     pub(in crate::domain_computation) fn signal_dependency_count(&self) -> usize {
-        self.authorization
+        self.data
+            .authorization
             .as_ref()
             .map(WorthQueryRetainedAuthorizationDecisionFacts::signal_dependency_count)
             .unwrap_or(0)
@@ -235,13 +223,13 @@ impl WorthQueryAdmittedOperation {
     pub(in crate::domain_computation) fn authorization_mut(
         &mut self,
     ) -> Option<&mut WorthQueryRetainedAuthorizationDecisionFacts> {
-        self.authorization.as_mut()
+        self.data.authorization.as_mut()
     }
 
     pub(in crate::domain_computation) fn authorization(
         &self,
     ) -> Option<&WorthQueryRetainedAuthorizationDecisionFacts> {
-        self.authorization.as_ref()
+        self.data.authorization.as_ref()
     }
 
     pub(in crate::domain_computation) fn take_authorization_dependencies(
@@ -251,12 +239,12 @@ impl WorthQueryAdmittedOperation {
         crate::domain_computation::authorization::WorthQueryProviderCommitAuthorization,
         WorthQueryOperationAuthorizationDenial,
     > {
-        let authorization = self.authorization.take().ok_or_else(|| {
+        let authorization = self.data.authorization.take().ok_or_else(|| {
             WorthQueryOperationAuthorizationDenial::new(
                 WorthQueryOperationAuthorizationDenialKind::Refused(
                     AuthorizationRefusal::InconsistentDecision,
                 ),
-                &self.operation,
+                &self.data.operation,
             )
         })?;
         if !authorization.bridge_is_retained(bridge) {
@@ -264,16 +252,16 @@ impl WorthQueryAdmittedOperation {
                 WorthQueryOperationAuthorizationDenialKind::Refused(
                     AuthorizationRefusal::InconsistentDecision,
                 ),
-                &self.operation,
+                &self.data.operation,
             ));
         }
-        Ok(authorization.into_provider_commit_authorization(self.admission_identity))
+        Ok(authorization.into_provider_commit_authorization(self.data.admission_identity))
     }
 
     /// Descriptive fingerprint of the exact installed operation authority
     /// retained by this proof. The string does not itself grant authority.
     pub(in crate::domain_computation) fn installed_operation_fingerprint(&self) -> &str {
-        &self.operation_authority_identity
+        &self.data.operation_authority_identity
     }
 
     /// Exact installed-operation identity bytes retained by this admission.
@@ -283,59 +271,15 @@ impl WorthQueryAdmittedOperation {
     pub(in crate::domain_computation) const fn installed_operation_identity_bytes(
         &self,
     ) -> &[u8; 32] {
-        &self.operation_authority_identity_bytes
+        &self.data.operation_authority_identity_bytes
     }
 
     pub(in crate::domain_computation) fn retain_installed_operation_fingerprint(&self) -> Arc<str> {
-        Arc::clone(&self.operation_authority_identity)
+        Arc::clone(&self.data.operation_authority_identity)
     }
 
     pub(in crate::domain_computation) fn retain_resource_binding_identity(&self) -> Arc<str> {
-        Arc::clone(&self.resource_binding_identity)
-    }
-
-    /// Revalidates the time and cancellation authority carried from the exact
-    /// authentication request that minted this operation admission.
-    ///
-    /// Later governed phases must call this rather than accepting a detached
-    /// timestamp or caller assertion.
-    pub(in crate::domain_computation) fn validate_current_authority(
-        &self,
-    ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
-        match self.current_authority_lapse() {
-            Some(lapse) => Err(WorthQueryOperationAuthorizationDenial::new(
-                lapse.denial_kind(),
-                &self.operation,
-            )),
-            None => Ok(()),
-        }
-    }
-
-    /// The exact cause when the request authority that minted this admission
-    /// has lapsed, or `None` while it is still current.
-    pub(in crate::domain_computation) fn current_authority_lapse(
-        &self,
-    ) -> Option<WorthQueryAdmissionLapse> {
-        crate::domain_computation::authorization::admitted_request::request_lapse(
-            &self.request_scope,
-            self.authentication_valid_until,
-        )
-    }
-
-    pub(in crate::domain_computation) fn retain_admitted_request(
-        &self,
-    ) -> crate::domain_computation::authorization::admitted_request::AdmittedRequestCurrentness
-    {
-        crate::domain_computation::authorization::admitted_request::AdmittedRequestCurrentness {
-            request: self.request_scope.clone(),
-            authentication_valid_until: self.authentication_valid_until,
-        }
-    }
-
-    pub(in crate::domain_computation) fn publication_request(
-        &self,
-    ) -> &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope {
-        &self.request_scope
+        Arc::clone(&self.data.resource_binding_identity)
     }
 
     pub(in crate::domain_computation) fn bind_source_facts(
@@ -343,45 +287,45 @@ impl WorthQueryAdmittedOperation {
         facts: Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
         context: Option<crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext>,
     ) {
-        self.source_facts = facts;
-        self.query_context = context;
+        self.data.source_facts = facts;
+        self.data.query_context = context;
     }
 
     pub(in crate::domain_computation) fn query_context(&self) -> Option<&crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext>{
-        self.query_context.as_ref()
+        self.data.query_context.as_ref()
     }
 
     pub(in crate::domain_computation) fn bind_source_partition(&mut self, identity: [u8; 32]) {
-        self.source_partition_identity = Some(identity);
+        self.data.source_partition_identity = Some(identity);
     }
     pub(in crate::domain_computation) fn bind_source_expectation_kind(
         &mut self,
         kind: crate::domain_computation::primary_graph::WorthQuerySourceExpectationKind,
     ) {
-        self.source_expectation_kind = Some(kind);
+        self.data.source_expectation_kind = Some(kind);
     }
     pub(in crate::domain_computation) const fn source_expectation_kind(
         &self,
     ) -> Option<crate::domain_computation::primary_graph::WorthQuerySourceExpectationKind> {
-        self.source_expectation_kind
+        self.data.source_expectation_kind
     }
 
     pub(in crate::domain_computation) const fn source_partition_identity(
         &self,
     ) -> Option<[u8; 32]> {
-        self.source_partition_identity
+        self.data.source_partition_identity
     }
 
     pub(in crate::domain_computation) fn source_facts(
         &self,
     ) -> &[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact] {
-        &self.source_facts
+        &self.data.source_facts
     }
 
     pub(in crate::domain_computation) fn take_source_facts(
         &mut self,
     ) -> Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact> {
-        std::mem::take(&mut self.source_facts)
+        std::mem::take(&mut self.data.source_facts)
     }
 
     /// Stable identity of the authenticated runtime, installed operation,
@@ -390,6 +334,6 @@ impl WorthQueryAdmittedOperation {
     pub(in crate::domain_computation) const fn operation_scope_binding(
         &self,
     ) -> &WorthQueryOperationScopeBinding {
-        &self.operation_scope_binding
+        &self.data.operation_scope_binding
     }
 }

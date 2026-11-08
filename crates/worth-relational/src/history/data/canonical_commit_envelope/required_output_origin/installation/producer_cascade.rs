@@ -40,7 +40,7 @@ pub(super) fn reject(cause: Cause, id: EntityId) -> TransactionCommitError {
 #[allow(clippy::too_many_arguments)]
 pub(super) fn prepare(
     candidate: &CanonicalCommitEnvelopeBody,
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
     installed: &crate::mvcc::RelationalInstalledApplicationPublicationAuthority,
     prior: &CanonicalRequiredOutputOrigin,
     roles: &[RequiredOutputRoleTarget],
@@ -61,8 +61,13 @@ pub(super) fn prepare(
         Some(installed),
         &mut |commit| runtime.history.canonical_envelope(commit),
         &mut |envelope, context| {
-            source_scope_closure::validate_preparation_history(envelope, &runtime.history, context)
-                .map_err(Into::into)
+            source_scope_closure::validate_preparation_history(
+                envelope,
+                &mut |commit| runtime.history.canonical_envelope(commit),
+                runtime.history.canonical_catalog_len(),
+                context,
+            )
+            .map_err(Into::into)
         },
         context,
     )
@@ -135,7 +140,7 @@ impl CanonicalCommitEnvelopeBody {
     #[allow(clippy::too_many_arguments)]
     pub(super) fn install_producer_cascade(
         &mut self,
-        runtime: &crate::runtime::RelationalPreparationRuntime,
+        runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
         basis: &AdmittedRelationalBranchBasis,
         created: &CommitCreatedEntityBindings,
         created_relations: &CommitCreatedRelationBindings,
@@ -171,7 +176,7 @@ impl CanonicalCommitEnvelopeBody {
             let origin = &selected.origin;
             // Native constructs custody only for the exact canonical selection, never a caller roster.
             let predecessor = crate::mvcc::RelationalRequiredOutputPublication {
-                runtime_instance_id: runtime.runtime_instance_id(),
+                runtime_instance_id: runtime.runtime.runtime_instance_id(),
                 envelope: selected.envelope,
                 origin: Arc::clone(origin),
                 authority: installed.authority.seal_required_output_publication_at(

@@ -74,3 +74,6 @@ impl WorthQueryCheckedSharedOwnerRegistration {
         )
     }
 }
+#[cfg(test)]
+#[path = "registration_bundle_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

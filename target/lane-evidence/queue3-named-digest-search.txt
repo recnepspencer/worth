@@ -1,0 +1,42 @@
+crates/worth-foundational/src\aspects\structs\field_declaration.rs:42:    codec: Option<crate::CanonicalDigestId>,
+crates/worth-foundational/src\aspects\structs\field_declaration.rs:89:    pub fn with_codec(mut self, codec: crate::CanonicalDigestId) -> Self {
+crates/worth-foundational/src\aspects\structs\field_declaration.rs:94:    pub const fn codec(&self) -> Option<crate::CanonicalDigestId> {
+crates/worth-foundational/src\aspects\portable\contract_candidate.rs:180:                Some(codec) => declaration.with_codec(crate::CanonicalDigestId::new(codec)),
+crates/worth-foundational/src\canonicalization\basis\grammar\value.rs:1:use crate::identities::CanonicalDigestId;
+crates/worth-foundational/src\canonicalization\basis\grammar\value.rs:36:    BytesDigest(CanonicalDigestId),
+crates/worth-foundational/src\canonicalization\digest_entry.rs:58:        codec: crate::CanonicalDigestId,
+crates/worth-foundational/src\canonicalization\identity_preparation\mod.rs:6:    BoundaryArtifactId, BoundaryEpoch, BoundaryHandle, CanonicalDigestId, EquivalenceBasisId,
+crates/worth-foundational/src\canonicalization\identity_preparation\mod.rs:22:    CanonicalDigest(CanonicalDigestId),
+crates/worth-foundational/src\canonicalization\digest_slots\material\borrowed_tests.rs:73:        (CanonicalBasisValue::BytesDigest(CanonicalDigestId::new([0x12; 32])), "value.kind#12:bytes-digest;value.bytes-digest#32:1212121212121212121212121212121212121212121212121212121212121212;"),
+crates/worth-foundational/src\facade.rs:425:    BoundaryArtifactId, BoundaryEpoch, BoundaryHandle, CanonicalDigestId, EquivalenceBasisId,
+crates/worth-foundational/src\identities\mod.rs:17:    BoundaryArtifactId, BoundaryEpoch, BoundaryHandle, CanonicalDigestId, EquivalenceBasisId,
+crates/worth-foundational/src\identities\category_ids.rs:54:pub struct CanonicalDigestId([u8; 32]);
+crates/worth-foundational/src\identities\category_ids.rs:56:impl CanonicalDigestId {
+crates/worth-foundational/src\durability\home_binding.rs:1:use crate::CanonicalDigestId;
+crates/worth-foundational/src\durability\home_binding.rs:7:    revision: CanonicalDigestId,
+crates/worth-foundational/src\durability\home_binding.rs:11:    pub fn new(identity: String, revision: CanonicalDigestId) -> Self {
+crates/worth-foundational/src\durability\home_binding.rs:19:    pub const fn revision(&self) -> CanonicalDigestId {
+crates/worth-foundational/src\durability\home_binding.rs:28:    package: CanonicalDigestId,
+crates/worth-foundational/src\durability\home_binding.rs:29:    schema: CanonicalDigestId,
+crates/worth-foundational/src\durability\home_binding.rs:43:        package: CanonicalDigestId,
+crates/worth-foundational/src\durability\home_binding.rs:44:        schema: CanonicalDigestId,
+crates/worth-foundational/src\durability\home_binding.rs:70:    pub const fn package(&self) -> CanonicalDigestId {
+crates/worth-foundational/src\durability\home_binding.rs:74:    pub const fn schema(&self) -> CanonicalDigestId {
+crates/worth-foundational/src\durability\home_binding.rs:86:    pub fn program(&self, revision: CanonicalDigestId) -> Option<&HomeProgramBinding> {
+crates/worth-foundational/src\durability\tests.rs:2:use crate::CanonicalDigestId;
+crates/worth-foundational/src\durability\tests.rs:54:    let earlier = HomeProgramBinding::new("earlier".into(), CanonicalDigestId::new([1; 32]));
+crates/worth-foundational/src\durability\tests.rs:55:    let later = HomeProgramBinding::new("later".into(), CanonicalDigestId::new([2; 32]));
+crates/worth-foundational/src\durability\tests.rs:56:    let package = CanonicalDigestId::new([3; 32]);
+crates/worth-foundational/src\durability\tests.rs:57:    let schema = CanonicalDigestId::new([4; 32]);
+crates/worth-foundational/src\transitions\merges\scope_evidence.rs:1:use crate::identities::CanonicalDigestId;
+crates/worth-foundational/src\transitions\merges\scope_evidence.rs:59:    skipped_digest: Option<CanonicalDigestId>,
+crates/worth-foundational/src\transitions\merges\scope_evidence.rs:65:        skipped_digest: Option<CanonicalDigestId>,
+crates/worth-foundational/src\transitions\merges\scope_evidence.rs:77:    pub const fn skipped_digest(&self) -> Option<CanonicalDigestId> {
+crates/worth-foundational/src\transitions\merges\strategy.rs:1:use crate::identities::{BoundaryHandle, CanonicalDigestId, EquivalenceBasisId};
+crates/worth-foundational/src\transitions\merges\strategy.rs:106:pub struct FoundationalTransitionStrategyDescriptorDigest(CanonicalDigestId);
+crates/worth-foundational/src\transitions\merges\strategy.rs:109:    pub const fn new(digest_id: CanonicalDigestId) -> Self {
+crates/worth-foundational/src\transitions\merges\strategy.rs:113:    pub const fn digest_id(&self) -> CanonicalDigestId {
+crates/worth-foundational/src\performance\basis\support.rs:5:use crate::identities::CanonicalDigestId;
+crates/worth-foundational/src\performance\basis\support.rs:59:        CanonicalBasisValue::BytesDigest(CanonicalDigestId::new(*bytes)),
+crates/worth-foundational/src\transitions\basis\canonical_shared.rs:5:use crate::identities::CanonicalDigestId;
+crates/worth-foundational/src\transitions\basis\canonical_shared.rs:37:pub(super) fn digest_entry(locus: &str, value: CanonicalDigestId) -> CanonicalBasisEntry {

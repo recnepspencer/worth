@@ -22,10 +22,10 @@ impl Drop for Guard<'_> {
 }
 fn record(stage: Stage) {
     TRACE.with(|slot| {
-        if let Some(trace) = slot.borrow_mut().as_mut() {
-            if trace.sdk.is_current_scope_observed_for_test() {
-                trace.events.push((stage, trace.sdk.count_for_test()));
-            }
+        if let Some(trace) = slot.borrow_mut().as_mut()
+            && trace.sdk.is_current_scope_observed_for_test()
+        {
+            trace.events.push((stage, trace.sdk.count_for_test()));
         }
     });
 }

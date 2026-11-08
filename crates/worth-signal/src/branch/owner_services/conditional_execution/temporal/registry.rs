@@ -148,3 +148,6 @@ impl SignalConditionalTemporalRegistry {
         self.state.lock().unwrap().cells.len()
     }
 }
+#[cfg(test)]
+#[path = "registry_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

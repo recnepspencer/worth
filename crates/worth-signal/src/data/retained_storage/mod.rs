@@ -33,3 +33,6 @@ pub use preparation::{
     signal_request_charges_on_this_thread_for_test,
     signal_request_refusals_on_this_thread_for_test, SignalRequestWorkObservation,
 };
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -1,0 +1,7 @@
+docs: record blocked funding merge qualification
+
+Record the real merge SHA, source/ancestry identity, complete lane logs and
+counts, independent REJECT findings, exact owner/reach handoffs and remaining
+D13/digest/BC9002 work. No production source changes or extra rebuilds.
+
+Co-Authored-By: GPT-6.1 Sol <noreply@openai.com>

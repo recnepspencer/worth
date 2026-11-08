@@ -22,7 +22,7 @@ mod query;
 
 fn install<const MODE: u8>() -> Result<
     WorthQueryPrimaryGraphApplicationRuntime<Model<MODE>>,
-    WorthQueryInMemoryApplicationDenial,
+    WorthQueryApplicationPreparationDenial,
 > {
     in_memory(
         Model::<MODE>::declaration().unwrap(),
@@ -63,7 +63,7 @@ fn entity_source_scope_installs_and_shared_scopes_refuse_with_producer_subject()
     let installed = install::<0>();
     assert!(installed.is_ok(), "{:?}", installed.err());
     for failure in [install::<1>().err().unwrap(), install::<2>().err().unwrap()] {
-        let WorthQueryInMemoryApplicationDenial::Contributions(failure) = failure else {
+        let WorthQueryApplicationPreparationDenial::Contributions(failure) = failure else {
             panic!("ownership must refuse at producer installation: {failure:?}")
         };
         assert_eq!(failure.kind(), WorthQueryPrimaryGraphInstallationDenialKind::ProducerOwnershipRequiresEntitySourceScope);

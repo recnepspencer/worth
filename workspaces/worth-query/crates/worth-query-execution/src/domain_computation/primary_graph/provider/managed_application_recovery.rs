@@ -185,3 +185,6 @@ where
         .map(|(outcome, _)| outcome)
     }
 }
+#[cfg(test)]
+#[path = "managed_application_recovery_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

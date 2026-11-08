@@ -316,3 +316,6 @@ pub(in crate::application_entry) enum WorthQueryAdmittedRequiredOutputRecoveryDe
 }
 
 mod advanced;
+#[cfg(test)]
+#[path = "program_outputs_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

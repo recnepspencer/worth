@@ -34,3 +34,6 @@ pub(in crate::domain_computation) use phase::{
 pub(in crate::domain_computation) use resource_request::application_resource_request;
 
 pub(in crate::domain_computation::primary_graph) use phase::ReadmittedCommitProgram;
+#[cfg(test)]
+#[path = "provider_execution_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

@@ -42,3 +42,6 @@ pub(crate) use commit::{
     RelationalCommitEnvelopeResidency, RelationalCommitIndexEntry, RetainedCanonicalIndex,
     RetiredCanonicalPlacement,
 };
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

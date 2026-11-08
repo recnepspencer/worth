@@ -142,3 +142,6 @@ fn remove_from_index<T: Ord + Clone>(
         index.remove(&key);
     }
 }
+#[cfg(test)]
+#[path = "state_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

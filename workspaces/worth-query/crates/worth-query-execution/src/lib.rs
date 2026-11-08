@@ -25,4 +25,9 @@ pub mod publication_boundary;
 #[doc(hidden)]
 #[path = "court_doors_for_test/mod.rs"]
 pub mod court_doors_for_test;
+#[cfg(test)]
+#[path = "lib_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+#[cfg(test)]
+mod inline_type_sizes;
 pub mod test_read_stops;

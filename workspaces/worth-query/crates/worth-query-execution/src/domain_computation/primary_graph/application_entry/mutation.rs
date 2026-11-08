@@ -152,3 +152,6 @@ where
         candidate: &mut CandidateWriter<'_, Schema, Binding>,
     ) -> HandlerResult<Binding::Result, Binding::Denial>;
 }
+#[cfg(test)]
+#[path = "mutation_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

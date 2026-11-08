@@ -34,7 +34,7 @@ pub fn install<const ERASE: bool>(
     seeded: impl FnOnce(),
 ) -> Result<
     installation::WorthQueryProgramApplicationRuntime<ExampleSchema, ExampleProgram<ERASE>>,
-    installation::WorthQueryInMemoryApplicationDenial,
+    installation::WorthQueryApplicationPreparationDenial,
 > {
     install_configured(configuration, build_identity(), limits(), seeded)
 }
@@ -42,11 +42,11 @@ pub fn install<const ERASE: bool>(
 pub fn install_configured<const ERASE: bool>(
     configuration: program::ExampleConfiguration,
     build_identity: installation::ApplicationBuildIdentity,
-    limits: installation::WorthQueryInMemoryApplicationLimits,
+    limits: installation::WorthQueryApplicationLimits,
     seeded: impl FnOnce(),
 ) -> Result<
     installation::WorthQueryProgramApplicationRuntime<ExampleSchema, ExampleProgram<ERASE>>,
-    installation::WorthQueryInMemoryApplicationDenial,
+    installation::WorthQueryApplicationPreparationDenial,
 > {
     install_rings_configured(configuration, build_identity, limits, 0, seeded)
 }
@@ -59,12 +59,12 @@ pub fn build_identity() -> installation::ApplicationBuildIdentity {
 pub fn install_rings_configured<const ERASE: bool>(
     configuration: program::ExampleConfiguration,
     build_identity: installation::ApplicationBuildIdentity,
-    limits: installation::WorthQueryInMemoryApplicationLimits,
+    limits: installation::WorthQueryApplicationLimits,
     extra_rings: usize,
     seeded: impl FnOnce(),
 ) -> Result<
     installation::WorthQueryProgramApplicationRuntime<ExampleSchema, ExampleProgram<ERASE>>,
-    installation::WorthQueryInMemoryApplicationDenial,
+    installation::WorthQueryApplicationPreparationDenial,
 > {
     let program = ApplicationProgramAuthoring::<ExampleSchema, ExampleProgram<ERASE>>::begin()
         .with_schema(&ExampleSchema::declaration().expect("the completed schema is valid"))
@@ -130,7 +130,7 @@ fn entity_key(key: &str) -> primary_graph::WorthQueryApplicationEntityKey<Exampl
 pub fn length(value: u64) -> worth_query_consumer_values::PositiveLength {
     worth_query_consumer_values::PositiveLength::new(value).unwrap()
 }
-pub fn limits() -> installation::WorthQueryInMemoryApplicationLimits {
+pub fn limits() -> installation::WorthQueryApplicationLimits {
     let policy = worth_foundational::ExecutionRequestPolicy::new(
         worth_foundational::ExecutionPosture::Serial,
         worth_foundational::DeterminismContract::CanonicalBitwise,
@@ -145,7 +145,7 @@ pub fn limits() -> installation::WorthQueryInMemoryApplicationLimits {
 
 pub fn limits_for_policy(
     policy: ExecutionRequestPolicy,
-) -> installation::WorthQueryInMemoryApplicationLimits {
+) -> installation::WorthQueryApplicationLimits {
     let world = WorthQueryProductWorldResources::install(
         RuntimeWorldBudgetInstallation {
             branches: RuntimeWorldBranchBudgetInstallation {
@@ -178,7 +178,7 @@ pub fn limits_for_policy(
         policy,
     )
     .unwrap();
-    installation::WorthQueryInMemoryApplicationLimits::new(
+    installation::WorthQueryApplicationLimits::new(
         world,
         WorthQueryApplicationQueryResourceProfile::new(std::num::NonZeroUsize::new(32).unwrap()),
         primary_graph::SignalConditionalEvaluationBudget::development(),

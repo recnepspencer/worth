@@ -96,14 +96,37 @@ pub(super) fn run(request: &Request<'_>, application: &ProgramApplication) {
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    let WorthQueryApplicationMutationOutcome::AlreadyCommitted(mut recovered) = recovered else {
+    let WorthQueryApplicationMutationOutcome::RecoveredCommitted(recovered) = recovered else {
         panic!("retry must recover the original replacement publication")
     };
-    assert!(recovered.is_same_authoritative_commit(&receipt));
-    assert_eq!(recovered.committed_changes(), receipt.committed_changes());
-    assert!(recovered
-        .take_performed_relational_product_change()
-        .is_none());
+    assert!(receipt.matches_recorded_original(&recovered));
+    let semantic = recovered.semantic_result().semantic();
+    assert_eq!(semantic.receipt(), receipt.commit_reference());
+    assert_eq!(
+        semantic.changed_records().len(),
+        receipt.changed_record_count()
+    );
+    let fresh_creates = receipt
+        .committed_changes()
+        .entity_changes()
+        .filter_map(|(entity, change)| {
+            (change == RecordStructuralChange::Created).then_some(entity)
+        })
+        .collect::<std::collections::BTreeSet<_>>();
+    let recorded_creates = semantic
+        .created_entities()
+        .iter()
+        .map(|created| created.assigned)
+        .collect::<std::collections::BTreeSet<_>>();
+    assert_eq!(recorded_creates, fresh_creates);
+    assert_eq!(
+        semantic.publication().lineage_event_count,
+        receipt.committed_changes().lineage_events().len()
+    );
+    // D9 returns original semantic data, never a live result or performed witness.
+    assert_eq!(read_y(request, "replacement-b"), 1);
+    assert_eq!(read_y(request, "anchor-a"), 2);
+    require_absent(request, "anchor-b");
     let drift = request
         .advanced()
         .mutate(input)

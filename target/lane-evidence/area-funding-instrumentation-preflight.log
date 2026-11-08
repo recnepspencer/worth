@@ -1,0 +1,12 @@
+command: python target/lane-evidence/area_funding_instrument.py check
+HEAD: 367ddc069042a3b024fea129dde92aea8bceb837
+git_status_short_empty: false
+start_utc: 2026-11-05T00:33:44.836690+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+Diagnostic anchors validated; no source files changed: 4
+
+end_utc: 2026-11-05T00:33:45.656778+00:00
+exit_code: 0
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

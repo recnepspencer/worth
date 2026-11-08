@@ -235,3 +235,6 @@ pub(crate) mod source_disclosure;
 pub(in crate::domain_computation) use provider::QueryDurablePreparationGuard;
 
 pub use derived_source::DerivedSourceObservation;
+#[cfg(test)]
+#[path = "mod_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

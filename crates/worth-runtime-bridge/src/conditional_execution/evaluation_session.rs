@@ -176,3 +176,6 @@ impl BridgeConditionalEvaluationSession {
         self.readmission_counters
     }
 }
+#[cfg(test)]
+#[path = "evaluation_session_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

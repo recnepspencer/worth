@@ -1,0 +1,47 @@
+[
+  [
+    "area-funding-root-clippy",
+    "python",
+    "scripts/application_build.py",
+    "cargo",
+    "clippy",
+    "--workspace",
+    "--all-targets"
+  ],
+  [
+    "area-funding-store-clippy",
+    "python",
+    "scripts/application_build.py",
+    "cargo",
+    "clippy",
+    "--manifest-path",
+    "workspaces/worth-store/Cargo.toml",
+    "--workspace",
+    "--all-targets"
+  ],
+  [
+    "area-funding-line-caps",
+    "C:/Program Files/Git/bin/bash.exe",
+    "scripts/ci/check_workspace_rust_line_caps.sh",
+    "dirty"
+  ],
+  [
+    "area-funding-boundary",
+    "cargo",
+    "run",
+    "--manifest-path",
+    "tools/boundary-check/Cargo.toml",
+    "--",
+    "--root",
+    "."
+  ],
+  [
+    "area-funding-agent-context",
+    "cargo",
+    "run",
+    "--manifest-path",
+    "tools/agent-context/Cargo.toml",
+    "--",
+    "check"
+  ]
+]

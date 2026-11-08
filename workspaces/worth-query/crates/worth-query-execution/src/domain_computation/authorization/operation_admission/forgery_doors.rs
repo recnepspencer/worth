@@ -32,13 +32,13 @@ impl<Schema, Operation, Input, Scope>
         donor: worth_query_installation::facade::InstalledOperationView<'_>,
     ) {
         let seal = donor.authority_identity_bytes();
-        assert_ne!(seal, self.core.operation_authority_identity_bytes);
-        self.core.operation_authority_identity_bytes = seal;
+        assert_ne!(seal, self.core.data.operation_authority_identity_bytes);
+        self.core.data.operation_authority_identity_bytes = seal;
         self.tag.operation_authority_identity_bytes = seal;
     }
 
     pub fn flip_core_seal_byte_for_test(&mut self) {
-        self.core.operation_authority_identity_bytes[0] ^= 0x01;
+        self.core.data.operation_authority_identity_bytes[0] ^= 0x01;
     }
 
     pub fn forge_tag_input_type_for_test<Forged: 'static>(&mut self) {
@@ -55,7 +55,7 @@ impl<Schema, Operation, Input, Scope>
         self,
         successor: Self,
     ) -> Result<Self, WorthQueryOperationAuthorizationDenial> {
-        let predecessor = self.core.admission_identity;
+        let predecessor = self.core.data.admission_identity;
         Self::rewrap(
             predecessor,
             successor.core,

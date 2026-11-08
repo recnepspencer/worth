@@ -6,6 +6,8 @@
 pub struct WorthQueryApplicationCheckpointSectionBytes {
     framing: usize,
     native: usize,
+    native_admission: usize,
+    world_originals: usize,
     accepted_outputs: usize,
     accepted_output_count: usize,
     native_sections: Option<WorthQueryNativeCheckpointSectionBytes>,
@@ -43,6 +45,8 @@ impl WorthQueryApplicationCheckpointSectionBytes {
     pub(super) const fn new(
         framing: usize,
         native: usize,
+        native_admission: usize,
+        world_originals: usize,
         accepted_outputs: usize,
         accepted_output_count: usize,
         native_sections: Option<WorthQueryNativeCheckpointSectionBytes>,
@@ -50,6 +54,8 @@ impl WorthQueryApplicationCheckpointSectionBytes {
         Self {
             framing,
             native,
+            native_admission,
+            world_originals,
             accepted_outputs,
             accepted_output_count,
             native_sections,
@@ -62,6 +68,12 @@ impl WorthQueryApplicationCheckpointSectionBytes {
 
     pub const fn native_bytes(self) -> usize {
         self.native
+    }
+    pub const fn native_admission_bytes(self) -> usize {
+        self.native_admission
+    }
+    pub const fn world_original_bytes(self) -> usize {
+        self.world_originals
     }
 
     pub const fn accepted_output_bytes(self) -> usize {
@@ -77,6 +89,10 @@ impl WorthQueryApplicationCheckpointSectionBytes {
     }
 
     pub const fn total_bytes(self) -> usize {
-        self.framing + self.native + self.accepted_outputs
+        self.framing
+            + self.native
+            + self.native_admission
+            + self.world_originals
+            + self.accepted_outputs
     }
 }

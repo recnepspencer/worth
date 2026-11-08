@@ -12,7 +12,7 @@ fn guarded_binding_cannot_install_without_a_program_owner() {
         );
     assert!(matches!(
         result,
-        Err(WorthQueryInMemoryApplicationDenial::WorkflowAuthorityRequiresProgram)
+        Err(WorthQueryApplicationPreparationDenial::WorkflowAuthorityRequiresProgram)
     ));
 }
 
@@ -34,7 +34,7 @@ fn a_workflow_control_binding_refuses_a_handler() {
         },
     );
     match result {
-        Err(WorthQueryInMemoryApplicationDenial::InitialState(denial)) => assert_eq!(
+        Err(WorthQueryApplicationPreparationDenial::InitialState(denial)) => assert_eq!(
             denial.kind(),
             primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::WorkflowControlHandler
         ),

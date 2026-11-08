@@ -1,0 +1,8 @@
+COMMAND: ["cargo", "fmt", "--manifest-path", "Cargo.toml", "-p", "worth-court-runtime-bridge"]
+HEAD: 3f9ed1751f4a6cc8103ce375006635b171c616b9
+CLEAN: false
+START: 2026-11-07T07:44:39.627778+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+
+END: 2026-11-07T07:44:40.549214+00:00
+EXIT: 0
