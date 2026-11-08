@@ -2,8 +2,10 @@
 use crate::branch::RelationalBranchRootSchemaAuthority;
 use crate::durability::checkpoints::region_directory::corrupt;
 use crate::durability::data::RelationalRecoveryStop;
+use crate::schema::data::{RelationalSchemaRegistry, SchemaAuthoritySnapshot};
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionOrderedMap, ExecutionRequest};
+use worth_foundational::facade::AspectContract;
 
 #[derive(Debug)]
 pub(crate) struct ReadmittedSourceSchemaCatalog {
@@ -54,40 +56,88 @@ impl ReadmittedSourceSchemaCatalog {
             _memory: memory,
         }))
     }
+    /// Admit authenticated schema DATA before the receiving compiler runs.
+    /// No missing executable format is resolved or manufactured here.
+    pub(crate) fn insert_unbound_image(
+        catalog: &mut Arc<Self>,
+        image: &crate::durability::data::DurableBranchRootSchemaImage,
+        configured: &RelationalSchemaRegistry,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), RelationalRecoveryStop> {
+        let Some((registry, contracts, expected)) =
+            Self::read_unseen_image(catalog, image, configured, request)?
+        else {
+            return Ok(());
+        };
+        Self::retain_image(catalog, image, registry, contracts, &expected, request)
+    }
+
+    /// Immediate executable admission for callers with installed receiver codecs.
     pub(crate) fn insert_image(
         catalog: &mut Arc<Self>,
         image: &crate::durability::data::DurableBranchRootSchemaImage,
-        configured: &crate::schema::data::RelationalSchemaRegistry,
+        configured: &RelationalSchemaRegistry,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), RelationalRecoveryStop> {
+        let Some((mut registry, contracts, expected)) =
+            Self::read_unseen_image(catalog, image, configured, request)?
+        else {
+            return Ok(());
+        };
+        registry.content_formats = registry
+            .content_formats
+            .bind_recorded(&configured.content_formats)?;
+        Self::retain_image(catalog, image, registry, contracts, &expected, request)
+    }
+
+    fn read_unseen_image(
+        catalog: &Self,
+        image: &crate::durability::data::DurableBranchRootSchemaImage,
+        configured: &RelationalSchemaRegistry,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<
+        Option<(
+            RelationalSchemaRegistry,
+            Vec<AspectContract>,
+            SchemaAuthoritySnapshot,
+        )>,
+        RelationalRecoveryStop,
+    > {
         crate::execution::check_request(request).map_err(RelationalRecoveryStop::Request)?;
         if let Some(prior) = catalog.rows.get(&image.carrier_digest()) {
             if prior.recorded_image(request)? != *image {
                 return Err(corrupt("same source carrier has differing full schema DATA").into());
             }
-            return Ok(());
+            return Ok(None);
         }
         let (registry, contracts) = image.readmit_registry().map_err(corrupt)?;
         let expected = registry.authority_snapshot();
-        let mut registry = if configured.authority_snapshot() == expected {
+        // Reuse genuine registered recipe/domain Arcs when the exact meaning
+        // matches. This does not bind absent receiving codec implementations.
+        let registry = if configured.authority_snapshot() == expected {
             configured.clone()
         } else {
             registry
         };
-        // A recorded carrier describes readers but cannot recreate their
-        // executable handles. Bind this same source graph before root admission,
-        // including historical schemas that differ from the configured target.
-        registry.content_formats = registry
-            .content_formats
-            .bind_recorded(&configured.content_formats)?;
+        Ok(Some((registry, contracts, expected)))
+    }
+
+    fn retain_image(
+        catalog: &mut Arc<Self>,
+        image: &crate::durability::data::DurableBranchRootSchemaImage,
+        registry: RelationalSchemaRegistry,
+        contracts: Vec<AspectContract>,
+        expected: &SchemaAuthoritySnapshot,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), RelationalRecoveryStop> {
         let schema = RelationalBranchRootSchemaAuthority::readmit_exact(
             catalog.rows.len() as u64 + 1,
             registry,
             contracts,
-            &expected,
+            expected,
             image.descriptor_semantics_version(),
         )
-        .ok_or_else(|| corrupt("original schema carrier executable admission failed"))?;
+        .ok_or_else(|| corrupt("original schema carrier DATA admission failed"))?;
         schema
             .retain_readmitted_image(image.clone())
             .map_err(corrupt)?;
