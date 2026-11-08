@@ -24,10 +24,22 @@ pub enum InvariantExecutionPoint {
     CertificationBoundary,
     HarnessAudit,
     GraphComposition,
+    /// Aggregate reporting point for one exact candidate; not a rule trigger.
+    ProposedState,
 }
 
 impl InvariantExecutionPoint {
-    pub const COUNT: usize = 6;
+    pub const COUNT: usize = 7;
+    pub(crate) const fn includes(self, declared: Self) -> bool {
+        if matches!(self, Self::ProposedState) {
+            matches!(
+                declared,
+                Self::CommitBoundary | Self::MutationSensitive | Self::SnapshotPublication
+            )
+        } else {
+            self as usize == declared as usize
+        }
+    }
 
     pub const fn class(self) -> InvariantClass {
         match self {
@@ -36,7 +48,7 @@ impl InvariantExecutionPoint {
             Self::SnapshotPublication => InvariantClass::SnapshotAudit,
             Self::CertificationBoundary => InvariantClass::SnapshotAudit,
             Self::HarnessAudit => InvariantClass::HarnessHeavy,
-            Self::GraphComposition => InvariantClass::AlwaysOnStructural,
+            Self::GraphComposition | Self::ProposedState => InvariantClass::AlwaysOnStructural,
         }
     }
 
@@ -48,6 +60,7 @@ impl InvariantExecutionPoint {
             Self::CertificationBoundary => "certification_boundary",
             Self::HarnessAudit => "harness_audit",
             Self::GraphComposition => "graph_composition",
+            Self::ProposedState => "proposed_state",
         }
     }
 }
@@ -230,6 +243,20 @@ pub struct InvariantDecisionRecord {
 }
 
 impl InvariantCheckResult {
+    pub(crate) fn blocks_proposed_state(&self) -> bool {
+        matches!(
+            (self.execution_point, self.failure_effect),
+            (
+                InvariantExecutionPoint::CommitBoundary
+                    | InvariantExecutionPoint::MutationSensitive,
+                InvariantFailureEffect::BlockCommit
+            ) | (
+                InvariantExecutionPoint::SnapshotPublication,
+                InvariantFailureEffect::BlockPublication
+            )
+        ) && matches!(self.verdict, InvariantVerdict::Violation(_))
+    }
+
     pub fn class(&self) -> InvariantClass {
         self.execution_point.class()
     }

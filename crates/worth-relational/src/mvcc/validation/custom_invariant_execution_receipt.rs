@@ -54,8 +54,8 @@ impl CustomInvariantExecutionReceipt {
     }
 }
 
-pub(crate) fn collect_custom_invariant_execution_receipts(
-    executions: [&InvariantExecutionResult; 3],
+pub(crate) fn collect_custom_invariant_execution_receipts<'a>(
+    executions: impl IntoIterator<Item = &'a InvariantExecutionResult>,
     registry: &crate::validation::FrozenCustomInvariantRegistry,
 ) -> Arc<[CustomInvariantExecutionReceipt]> {
     let mut receipts = executions

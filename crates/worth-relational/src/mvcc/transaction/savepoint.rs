@@ -10,6 +10,7 @@ pub(crate) struct RelationalTransactionSavepoint {
     footprint: super::RelationalTransactionFootprint,
     index: super::staging_storage::OrderedStore<super::index_row::IndexRow>,
     normalization_generation: u64,
+    effective_records: super::effective_records::EffectiveRecords,
 }
 
 impl RelationalTransactionSavepoint {
@@ -20,6 +21,7 @@ impl RelationalTransactionSavepoint {
         footprint: super::RelationalTransactionFootprint,
         index: super::staging_storage::OrderedStore<super::index_row::IndexRow>,
         normalization_generation: u64,
+        effective_records: super::effective_records::EffectiveRecords,
     ) -> Self {
         Self {
             content,
@@ -28,6 +30,7 @@ impl RelationalTransactionSavepoint {
             footprint,
             index,
             normalization_generation,
+            effective_records,
         }
     }
 
@@ -67,6 +70,7 @@ impl super::BranchBoundRelationalTransaction {
             self.footprint.clone(),
             self.overlay.index.clone(),
             self.overlay.normalization_generation,
+            self.overlay.effective_records.clone(),
         ));
         self.next_savepoint_ordinal = next_savepoint_ordinal;
         Ok(savepoint_id)
@@ -99,7 +103,18 @@ impl super::BranchBoundRelationalTransaction {
                 .prefix_index(batch_len)
                 .map_err(super::RelationalTransactionStagingDenial::into_conflict)?
         };
+        let carried_projection = (self.savepoints[index].normalization_generation
+            == self.overlay.normalization_generation)
+            .then(|| self.savepoints[index].effective_records.clone());
         let drained = self.overlay.truncate_batches(batch_len, restored_index);
+        self.overlay.effective_records = carried_projection.unwrap_or_else(|| {
+            // Normalization re-authored retained references as well as their index.
+            let mut projection = super::effective_records::EffectiveRecords::default();
+            for batch in &self.overlay.batches {
+                projection.stage(batch);
+            }
+            projection
+        });
         self.content = self.savepoints[index].content.clone();
         self.footprint = restored_footprint;
         self.last_merged_plan = None;

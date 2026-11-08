@@ -1,11 +1,11 @@
 //! Required content authority fixes every preceding positional tail slot.
-use super::SchemaAuthoritySnapshot;
+use super::SchemaAuthoritySnapshotParts;
 use serde::ser::SerializeStruct;
 use serde::{Serialize, Serializer};
 
-impl Serialize for SchemaAuthoritySnapshot {
+impl Serialize for SchemaAuthoritySnapshotParts {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let mut output = serializer.serialize_struct("SchemaAuthoritySnapshot", 7)?;
+        let mut output = serializer.serialize_struct("SchemaAuthoritySnapshotParts", 7)?;
         output.serialize_field("primary_schema_id", &self.primary_schema_id)?;
         output.serialize_field("primary_schema_version_id", &self.primary_schema_version_id)?;
         output.serialize_field("entity_kinds", &self.entity_kinds)?;

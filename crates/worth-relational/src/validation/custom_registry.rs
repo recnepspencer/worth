@@ -15,6 +15,7 @@ pub struct DuplicateCustomInvariantRegistration {
 #[derive(Debug, Clone, Default)]
 pub(crate) struct FrozenCustomInvariantRegistry {
     registrations: Arc<[CustomInvariantRegistration]>,
+    points: Arc<[Vec<usize>; InvariantExecutionPoint::COUNT]>,
     source_groups: Arc<[SourcePreparationGroup]>,
     source_postings: crate::validation::candidate_source::routing::SourceProgramPostings,
     pub(crate) source_history:
@@ -61,6 +62,7 @@ impl FrozenCustomInvariantRegistry {
                     &source_groups,
                 ),
             source_groups: source_groups.into(),
+            points: Arc::new(std::array::from_fn(|point| registrations.iter().enumerate().filter(|(_, r)| point == r.execution_point() as usize || (point == InvariantExecutionPoint::ProposedState as usize && InvariantExecutionPoint::ProposedState.includes(r.execution_point()))).map(|(i,_)| i).collect())),
             registrations: registrations.into(),
             index_by_identity_and_execution_point: Arc::new(index_by_identity_and_execution_point),
         })
@@ -96,6 +98,14 @@ impl FrozenCustomInvariantRegistry {
             .collect()
     }
 
+    pub(crate) fn at(
+        &self,
+        point: InvariantExecutionPoint,
+    ) -> impl Iterator<Item = &CustomInvariantRegistration> {
+        self.points[point as usize]
+            .iter()
+            .map(|&i| &self.registrations[i])
+    }
     pub(crate) fn iter(&self) -> impl Iterator<Item = &CustomInvariantRegistration> {
         self.registrations.iter()
     }

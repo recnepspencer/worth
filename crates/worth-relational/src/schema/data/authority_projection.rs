@@ -5,7 +5,12 @@ mod projection_count;
 
 impl RelationalSchemaRegistry {
     pub fn authority_snapshot(&self) -> SchemaAuthoritySnapshot {
-        projection_count::record();
+        projection_count::record(
+            self.entity_kinds.len()
+                + self.relation_kinds.len()
+                + self.derived_relations.len()
+                + self.projected_member_domains.len(),
+        );
         let (primary_schema_id, primary_schema_version_id) = self
             .authoritative_schema_basis()
             .ok()
@@ -59,7 +64,7 @@ impl RelationalSchemaRegistry {
             })
             .collect();
 
-        SchemaAuthoritySnapshot {
+        crate::schema::data::SchemaAuthoritySnapshotParts {
             content_formats: self.content_formats.snapshot(),
             primary_schema_id,
             primary_schema_version_id,
@@ -68,6 +73,7 @@ impl RelationalSchemaRegistry {
             derived_relations: self.derived_parts(),
             projected_member_domains: self.projected_domain_parts(),
         }
+        .into()
     }
 
     pub fn authority_digest_bytes(&self) -> [u8; 32] {

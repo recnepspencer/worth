@@ -330,10 +330,10 @@ fn content_schema_extension_preserves_actual_format_handles_and_refuses_replacem
         .unwrap()
         .bind_content_field(CanonicalDigestId::new([0xE3; 32]), other_id)
         .unwrap();
-    let expected_first = first.authority_snapshot().content_formats;
-    let expected_second = second.authority_snapshot().content_formats;
+    let expected_first = first.authority_snapshot().content_formats.clone();
+    let expected_second = second.authority_snapshot().content_formats.clone();
     let combined = first.clone().extend(second).unwrap();
-    let actual = combined.authority_snapshot().content_formats;
+    let actual = combined.authority_snapshot().content_formats.clone();
     assert_eq!(actual.formats().len(), 2);
     assert_eq!(actual.fields().len(), 2);
     for expected in expected_first

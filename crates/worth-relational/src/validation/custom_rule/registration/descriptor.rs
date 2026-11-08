@@ -5,6 +5,7 @@ use super::{CustomInvariantDescriptor, CustomInvariantRegistration};
 pub enum CustomInvariantRegistrationError {
     EmptyRuleId,
     EmptyDisplayName,
+    AggregateExecutionPoint,
 }
 
 impl CustomInvariantRegistration {
@@ -16,6 +17,11 @@ impl CustomInvariantRegistration {
         }
         if descriptor.display_name.trim().is_empty() {
             return Err(CustomInvariantRegistrationError::EmptyDisplayName);
+        }
+        if descriptor.operational.execution_point
+            == crate::validation::data::InvariantExecutionPoint::ProposedState
+        {
+            return Err(CustomInvariantRegistrationError::AggregateExecutionPoint);
         }
         Ok(())
     }

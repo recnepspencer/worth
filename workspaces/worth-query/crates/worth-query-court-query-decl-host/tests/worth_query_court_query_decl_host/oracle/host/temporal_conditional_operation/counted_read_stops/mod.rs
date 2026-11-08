@@ -95,12 +95,20 @@ fn conditional_operation_work_stop_terminal_matches_its_typed_cause() {
         // typed cause, and use the dedicated read-ceiling proofs for exact
         // stage and cause values. This cannot prove per-charge attribution.
         let expected_terminal = match cause.expect("a denied charge has its cause") {
-            Cause::BridgeConditional(worth_runtime_bridge::facade::BridgeConditionalDenialKind::ExecutionDenied(
+            // Native packet identities now span the suspended proposed-state
+            // pass. The terminal depends on its typed stage/cause, not a fitted
+            // upper bound on the packet ordinal.
+            Cause::ApplicationExecutionDenied {
+                stage: graph::WorthQueryApplicationCommitDenialStage::InvariantExecution,
+                cause: Ok(graph::WorthQueryProviderSessionDenialKind::ExecutionResource {
+                    denial: worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial::WorkExhausted,
+                    policy_ancestor: None, ..
+                }),
+            } | Cause::BridgeConditional(worth_runtime_bridge::facade::BridgeConditionalDenialKind::ExecutionDenied(
                 worth_runtime_bridge::facade::BridgeExecutionDenial::WorkCeiling,
             )) | Cause::ApplicationExecutionDenied {
                 stage: graph::WorthQueryApplicationCommitDenialStage::Idempotency
                     | graph::WorthQueryApplicationCommitDenialStage::DecisionReadSet
-                    | graph::WorthQueryApplicationCommitDenialStage::InvariantExecution
                     // The domain write seal charges each realized effect.
                     | graph::WorthQueryApplicationCommitDenialStage::EffectLowering,
                 cause: Ok(graph::WorthQueryProviderSessionDenialKind::ExecutionResource {

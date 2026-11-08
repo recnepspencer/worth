@@ -1,3 +1,6 @@
+#[path = "root_schema/contract_directory.rs"]
+mod contract_directory;
+use contract_directory::RetainedContracts;
 #[path = "root_schema/registry_rebinding.rs"]
 mod registry_rebinding;
 use registry_rebinding::registry_for_snapshot;
@@ -23,10 +26,12 @@ use crate::schema::data::{
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalBranchRootSchemaAuthority {
     allocation_id: u64,
+    allocation_bytes: std::sync::OnceLock<u64>,
     authority_digest: [u8; 32],
+    snapshot: SchemaAuthoritySnapshot,
     registry: Arc<RelationalSchemaRegistry>,
     aspect_plans: Arc<AspectContractPlanCatalog>,
-    retained_aspect_contracts: Arc<Vec<AspectContract>>,
+    retained_aspect_contracts: Arc<RetainedContracts>,
     descriptor_semantics_version: crate::schema::data::DescriptorSemanticsVersion,
 }
 
@@ -44,12 +49,14 @@ impl RelationalBranchRootSchemaAuthority {
             debug_assert!(/* Proof: RelationalBranchRootSchemaAuthority constructors lower these plans directly from the retained immutable schema snapshot with the selected descriptor semantics; the private plan table cannot be independently supplied or changed. */ plans_match_snapshot(&aspect_plans, expected));
             Arc::new(Self {
                 allocation_id,
+                allocation_bytes: std::sync::OnceLock::new(),
+                snapshot: expected.clone(),
                 authority_digest: crate::schema::data::schema_authority_snapshot_digest_bytes(
                     expected,
                 ),
                 registry: Arc::new(registry),
                 aspect_plans: Arc::new(aspect_plans),
-                retained_aspect_contracts: Arc::new(retained_aspect_contracts),
+                retained_aspect_contracts: Arc::new(RetainedContracts::new(retained_aspect_contracts)),
                 descriptor_semantics_version,
             })
         })
@@ -67,12 +74,14 @@ impl RelationalBranchRootSchemaAuthority {
             debug_assert!(/* Proof: RelationalBranchRootSchemaAuthority constructors lower these plans directly from the retained immutable schema snapshot with the selected descriptor semantics; the private plan table cannot be independently supplied or changed. */ plans_match_snapshot(&aspect_plans, expected));
             Arc::new(Self {
                 allocation_id,
+                allocation_bytes: std::sync::OnceLock::new(),
+                snapshot: expected.clone(),
                 authority_digest: crate::schema::data::schema_authority_snapshot_digest_bytes(
                     expected,
                 ),
                 registry: Arc::new(registry),
                 aspect_plans: Arc::new(aspect_plans),
-                retained_aspect_contracts: Arc::new(retained_aspect_contracts),
+                retained_aspect_contracts: Arc::new(RetainedContracts::new(retained_aspect_contracts)),
                 descriptor_semantics_version,
             })
         })
@@ -82,10 +91,12 @@ impl RelationalBranchRootSchemaAuthority {
     pub(crate) fn empty() -> Arc<Self> {
         Arc::new(Self {
             allocation_id: 0,
+            allocation_bytes: std::sync::OnceLock::new(),
+            snapshot: RelationalSchemaRegistry::default().authority_snapshot(),
             authority_digest: RelationalSchemaRegistry::default().authority_digest_bytes(),
             registry: Arc::new(RelationalSchemaRegistry::default()),
             aspect_plans: Arc::new(AspectContractPlanCatalog::empty()),
-            retained_aspect_contracts: Arc::new(Vec::new()),
+            retained_aspect_contracts: Arc::new(RetainedContracts::new(Vec::new())),
             descriptor_semantics_version: crate::schema::data::runtime_descriptor_semantics_policy(
             )
             .current_write_version(),
@@ -93,8 +104,11 @@ impl RelationalBranchRootSchemaAuthority {
     }
 
     pub(crate) fn matches(&self, expected: &SchemaAuthoritySnapshot) -> bool {
-        self.registry.authority_snapshot() == *expected
-            && plans_match_snapshot(&self.aspect_plans, expected)
+        self.authority_digest == expected.digest()
+    }
+
+    pub(crate) fn snapshot(&self) -> &SchemaAuthoritySnapshot {
+        &self.snapshot
     }
 
     pub(crate) fn registry(&self) -> &RelationalSchemaRegistry {
@@ -121,7 +135,7 @@ impl RelationalBranchRootSchemaAuthority {
     }
 
     pub(crate) fn retained_aspect_contracts(&self) -> &[AspectContract] {
-        &self.retained_aspect_contracts
+        self.retained_aspect_contracts.all()
     }
 
     pub(crate) const fn allocation_id(&self) -> u64 {
@@ -129,25 +143,26 @@ impl RelationalBranchRootSchemaAuthority {
     }
 
     pub(crate) fn authoritative_allocation_bytes(&self) -> u64 {
-        let registry_bytes = registry_allocation_bytes(&self.registry);
-        let plan_bytes = plan_catalog_allocation_bytes(&self.aspect_plans);
-        let retained_contract_bytes = self.retained_aspect_contracts.iter().fold(
-            self.retained_aspect_contracts
-                .capacity()
-                .saturating_mul(std::mem::size_of::<AspectContract>()),
-            |bytes, contract| bytes.saturating_add(contract.owned_allocation_capacity_bytes()),
-        );
-        usize_to_u64(
-            std::mem::size_of::<Self>()
-                .saturating_add(registry_bytes)
-                .saturating_add(plan_bytes)
-                .saturating_add(retained_contract_bytes),
-        )
+        *self.allocation_bytes.get_or_init(|| {
+            let registry_bytes = registry_allocation_bytes(&self.registry);
+            let plan_bytes = plan_catalog_allocation_bytes(&self.aspect_plans);
+            let retained_contract_bytes =
+                self.retained_aspect_contracts.allocation_bytes() as usize;
+            usize_to_u64(
+                std::mem::size_of::<Self>()
+                    .saturating_add(self.snapshot.owned_allocation_capacity_bytes() as usize)
+                    .saturating_add(registry_bytes)
+                    .saturating_add(plan_bytes)
+                    .saturating_add(retained_contract_bytes),
+            )
+        })
     }
 
-    /// O(kinds): validate the schema basis without projecting any registrations.
+    /// O(1): scalar basis carried by the admitted projection.
     pub(crate) fn schema_version(&self) -> crate::schema::data::SchemaVersionId {
-        self.registry.primary_schema_version_id()
+        self.snapshot
+            .primary_schema_version_id
+            .unwrap_or(crate::schema::data::SchemaVersionId(0))
     }
 
     pub(crate) const fn descriptor_semantics_version(
@@ -181,11 +196,7 @@ impl RelationalBranchRootSchemaAuthority {
 
 impl PortableAspectContractLookup for RelationalBranchRootSchemaAuthority {
     fn contract_for(&self, key: &AspectKey) -> Option<AspectContract> {
-        self.retained_aspect_contracts
-            .iter()
-            .rev()
-            .find(|contract| contract.key() == key)
-            .cloned()
+        self.retained_aspect_contracts.get(key).cloned()
     }
 
     fn exact_contract_for(
@@ -195,12 +206,7 @@ impl PortableAspectContractLookup for RelationalBranchRootSchemaAuthority {
         revision: AspectContractRevision,
     ) -> Option<AspectContract> {
         self.retained_aspect_contracts
-            .iter()
-            .find(|contract| {
-                contract.key() == key
-                    && contract.identity() == identity
-                    && contract.revision() == revision
-            })
+            .exact(key, identity, revision)
             .cloned()
     }
 }

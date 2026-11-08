@@ -75,7 +75,9 @@ impl RelationalCommitArtifact {
         RelationalCommitParentage::from_ordered(envelope.commit.parents.clone())
             .map(|_| ())
             .map_err(|_| RelationalCommitArtifactDenial::Parentage)?;
-        encode_canonical_payload(envelope).map(|_| ())
+        // Encoding belongs to root preparation, before effects. Artifact sealing
+        // consumes that exact immutable payload instead of encoding twice.
+        Ok(())
     }
 
     pub(super) fn from_envelope(
@@ -83,6 +85,14 @@ impl RelationalCommitArtifact {
     ) -> Result<Self, RelationalCommitArtifactDenial> {
         retained_entity_selection::validate(&envelope)?;
         let canonical_payload = encode_canonical_payload(&envelope)?;
+        Self::from_preencoded(envelope, canonical_payload)
+    }
+
+    fn from_preencoded(
+        envelope: Arc<CanonicalCommitEnvelope>,
+        canonical_payload: Arc<[u8]>,
+    ) -> Result<Self, RelationalCommitArtifactDenial> {
+        retained_entity_selection::validate(&envelope)?;
         let identity = RelationalCommitIdentity::new(
             envelope.commit.commit_id,
             envelope.commit.version_id,
@@ -115,7 +125,10 @@ impl RelationalCommitArtifact {
         if !branch_root.links_envelope(&envelope) {
             return Err(RelationalCommitArtifactDenial::RootLinkage);
         }
-        let mut artifact = Self::from_envelope(envelope)?;
+        let canonical_payload = branch_root
+            .canonical_payload()
+            .ok_or(RelationalCommitArtifactDenial::RootLinkage)?;
+        let mut artifact = Self::from_preencoded(envelope, canonical_payload)?;
         artifact.roots = branch_root
             .descriptor()
             .cloned()

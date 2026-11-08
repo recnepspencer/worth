@@ -141,15 +141,6 @@ impl InvariantCatalog {
         canonical_catalog_registration_digest_hex(&self.canonicalized().registrations)
     }
 
-    pub(crate) fn registrations_for_execution_point(
-        &self,
-        execution_point: InvariantExecutionPoint,
-    ) -> impl Iterator<Item = &InvariantRegistration> {
-        self.registrations
-            .iter()
-            .filter(move |registration| registration.execution_point == execution_point)
-    }
-
     #[cfg(test)]
     pub(crate) fn contains_registration_kind(&self, rule: &InvariantRule) -> bool {
         self.registrations

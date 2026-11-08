@@ -93,7 +93,7 @@ impl RelationalPreparationRuntime {
         let source_schema = historical.inner.root.retained_schema_authority();
         let same_authority = std::sync::Arc::ptr_eq(&source_schema, &target_schema);
         if !same_authority
-            && (!source_schema.matches(&target_schema.registry().authority_snapshot())
+            && (!source_schema.matches(target_schema.snapshot())
                 || source_schema.descriptor_semantics_version()
                     != target_schema.descriptor_semantics_version())
         {

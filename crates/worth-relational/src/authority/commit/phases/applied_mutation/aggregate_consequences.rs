@@ -1,26 +1,26 @@
-//! History-bound aggregate effects share the business apply's allocation stream.
-use super::MutatedCommitExecution;
+//! Complete reversible Native aggregate writes before judging the proposed state.
+use super::AppliedMutationDraft;
 use crate::authority::mutation::{apply_plan_to_working_state, BranchLocalDeleteAllowance};
 use crate::transactions::data::{CommitConflict, ConflictClass, TransactionCommitError};
 
-impl MutatedCommitExecution {
-    pub(in crate::authority::commit::pipeline) fn bind_aggregate_consequences(
+impl AppliedMutationDraft {
+    pub(crate) fn complete_aggregate_draft(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &crate::runtime::RelationalPreparationRuntime,
-        occurrence: crate::history::data::CommitId,
-    ) -> Result<(), TransactionCommitError> {
-        let selected = self.prepared.selected_branch_state().clone();
-        let version_id = self.prepared.version_id();
-        let admitted = &mut self.prepared.admitted;
-        let working = &mut self.working_state;
-        let aggregate_source = self.aggregate.as_ref().map(|owner| {
-            owner.borrow(
-                working,
-                crate::branch::SelectedRelationalBranchRead::in_round(&selected, &selected),
-            )
-        });
-        let (_, validation, business, _, _, _) = admitted.phase_view().into_parts();
+        selected: &crate::branch::SelectedRelationalBranchRead<'_>,
+        business: crate::authority::commit::semantic_plan::RelationalSemanticPlan<'_>,
+        validation: &crate::mvcc::RelationalTransactionValidationInput,
+        identity: &crate::mvcc::RelationalMutationProposalIdentity,
+    ) -> Result<Option<crate::aggregate_identity::AggregateAdmission>, TransactionCommitError> {
+        let mut admission = None;
+        let version_id = identity.proposed_version_id();
+        let occurrence = identity.commit_id();
+        let working = &mut self.state;
+        let aggregate_source = self
+            .aggregate
+            .as_ref()
+            .map(|owner| owner.borrow(working, *selected));
         let authority = validation.schema_authority();
         let current_ownership = authority.registry().current_publication_storage.is_some();
         if validation.intent().materialization_mode().is_none() {
@@ -42,13 +42,12 @@ impl MutatedCommitExecution {
             // Consumption is single-use even when no consequence was needed.
             // The report includes the one preparation already shared with rules.
             performance.count_aggregate_maintenance_reads(reads);
-            let mut consequences_applied = false;
             if let Some(prepared) = prepared {
                 let mut prepared = prepared;
                 prepared.materialize(
                     execution,
                     runtime.commit_work_budget.as_ref(),
-                    &selected,
+                    selected.selected(),
                     working,
                     &runtime.services.symbols,
                     validation.basis(),
@@ -64,9 +63,9 @@ impl MutatedCommitExecution {
                     &config,
                     authority.registry(),
                     authority.aspect_plans(),
-                    &mut self.mutation_identities.symbols,
+                    &mut self.identities.symbols,
                     BranchLocalDeleteAllowance::default(),
-                    &mut self.mutation_identities.records,
+                    &mut self.identities.records,
                     crate::authority::commit::pipeline::request_lease(execution),
                     runtime.commit_work_budget.clone(),
                 )
@@ -93,8 +92,7 @@ impl MutatedCommitExecution {
                     .created_relations
                     .append_owned(applied.created_relations)?;
                 self.outcome.effect.accumulate(applied.effect);
-                self.aggregate_admission = Some(prepared.admission);
-                consequences_applied = true;
+                admission = Some(prepared.admission);
             }
             // Metadata-dependent recipes see actual Native membership/lineage
             // writes. They cannot be checked early against a degree-zero birth,
@@ -103,7 +101,7 @@ impl MutatedCommitExecution {
                 execution,
                 runtime.commit_work_budget.as_ref(),
                 authority,
-                &selected,
+                selected.selected(),
                 working,
                 &self.outcome.effect,
                 version_id,
@@ -111,23 +109,20 @@ impl MutatedCommitExecution {
                 validation.basis(),
             )?;
             performance.count_aggregate_maintenance_reads(final_reads);
-            if consequences_applied {
-                // Earlier publication evidence described only the business graph.
-                admitted.take_prevalidated_snapshot_publication();
-            }
         }
         if current_ownership {
             // This publication's Native current-ownership consequences share
             // the remaining replay allocation stream and finish it at completion.
-            return Ok(());
+            return Ok(admission);
         }
-        self.mutation_identities
+        self.identities
             .records
             .finish_mutation()
             .map_err(|denial| {
                 TransactionCommitError::conflict(CommitConflict::new(
                     ConflictClass::RecordAllocationDenied { denial },
                 ))
-            })
+            })?;
+        Ok(admission)
     }
 }

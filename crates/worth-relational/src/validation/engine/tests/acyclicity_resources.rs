@@ -26,15 +26,11 @@ fn repeated_dag_reachability_reuses_scratch_under_the_same_finite_policy() {
             && summary.mutation_sensitive_seen
             && summary.snapshot_publication_seen
     );
-    assert!(candidate
-        .commit_boundary
-        .results()
-        .iter()
-        .all(|result| matches!(
-            result.verdict,
-            crate::validation::data::InvariantVerdict::Pass
-                | crate::validation::data::InvariantVerdict::NotApplicable
-        )));
+    assert!(candidate.invariants.results().iter().all(|result| matches!(
+        result.verdict,
+        crate::validation::data::InvariantVerdict::Pass
+            | crate::validation::data::InvariantVerdict::NotApplicable
+    )));
     assert_eq!(fixture.head(), before, "validation grants no publication");
     drop(candidate);
     assert_eq!(lease.charged_memory_bytes(), 0);

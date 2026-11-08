@@ -19,9 +19,7 @@ pub(super) struct PreparedProposalRound {
     pub(super) identity: RelationalMutationProposalIdentity,
     pub(super) validation_input: RelationalTransactionValidationInput,
     pub(super) coupled_publication: Option<crate::mvcc::RequiredOutputPublicationAdmission>,
-    pub(super) commit_boundary: crate::validation::engine::InvariantExecutionResult,
-    pub(super) mutation_sensitive: crate::validation::engine::InvariantExecutionResult,
-    pub(super) publication: crate::validation::engine::InvariantExecutionResult,
+    pub(super) invariants: crate::validation::engine::InvariantExecutionResult,
 }
 
 impl RelationalPreparationRuntime {
@@ -164,40 +162,26 @@ impl RelationalPreparationRuntime {
                             && prepared.plan.retained().is_none())
                             .then_some(prepared.plan.view().commands()),
                     )?;
-                    let control =
-                        crate::validation::engine::InvariantPreparationControl::for_transaction(
-                            &validation_input,
-                            execution.allocation_policy(),
-                            crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
-                        );
-                    let commit_boundary = runtime
-                        .invariant_authority()
-                        .enforce_commit_boundary_for_selected_branch(
-                            &selected,
-                            mutation.state(),
-                            identity.proposed_version_id(),
-                            prepared.plan.view(),
-                            Some(&identity),
-                            mutation.aggregate_source(selected),
-                            execution,
-                            &control,
-                        )?;
-                    let (mutation_sensitive, publication) =
-                        super::proposal_invariants::validate_proposed_state(
-                            &runtime,
-                            &prepared,
-                            &selected,
-                            &mutation,
-                            identity.proposed_version_id(),
-                            Some(&identity),
-                            execution,
-                            &control,
-                        )?;
+                    let control = crate::validation::engine::InvariantPreparationControl::for_transaction(
+                        &validation_input, execution.allocation_policy(), crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
+                    );
+                    let pending = runtime.invariant_authority().begin_proposed_state(
+                        &selected, mutation.state(), identity.proposed_version_id(), prepared.plan.view(), Some(&identity),
+                        mutation.aggregate_source(selected), execution, &control,
+                    )?;
                     mutation.prepare_aggregate(
                         execution,
                         round,
                         selected,
                         prepared.plan.view().commands(),
+                    )?;
+                    let aggregate_admission = mutation.complete_aggregate_draft(execution, &runtime, &selected, prepared.plan.view(), &validation_input, &identity)?;
+                    let runtime = round.with_candidate_symbols(mutation.candidate_symbols());
+                    let invariant_plan = aggregate_admission.as_ref().map_or(prepared.plan.view(), |admission| prepared.plan.view().with_commands(&admission.plan));
+                    let invariants = runtime.invariant_authority().enforce_proposed_state(
+                        &selected, mutation.state(), pending, &mutation.outcome.created_entities,
+                        identity.proposed_version_id(), invariant_plan, Some(&identity),
+                        mutation.aggregate_source(selected), execution, &control,
                     )?;
                     Ok(PreparedProposalRound {
                         prepared,
@@ -207,9 +191,7 @@ impl RelationalPreparationRuntime {
                         coupled_publication: transaction.authored_coupling.as_ref().and_then(|binding| {
                             binding.completed.lock().unwrap_or_else(|e| e.into_inner()).take()
                         }),
-                        commit_boundary,
-                        mutation_sensitive,
-                        publication,
+                        invariants,
                     })
                 })
             },

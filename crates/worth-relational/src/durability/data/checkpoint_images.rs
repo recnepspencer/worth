@@ -161,7 +161,7 @@ pub struct DurableBranchRootImage {
 impl DurableBranchRootImage {
     // Version 4 binds native field-revision provenance into each arena image.
     // Earlier descriptors cannot be readmitted under the new commitment grammar.
-    pub(crate) const CURRENT_FORMAT_VERSION: u16 = 4;
+    pub(crate) const CURRENT_FORMAT_VERSION: u16 = 5;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

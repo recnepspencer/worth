@@ -283,8 +283,16 @@ fn run(seed: u64, steps: usize) {
 
 #[test]
 fn mixed_retirement_replacement_reuse_and_cold_roundtrips_keep_region_integrity() {
-    for seed in 0..12 {
-        run(seed, 80);
+    let seeds = std::env::var("CERT_SEEDS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(12);
+    let steps = std::env::var("CERT_STEPS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(80);
+    for seed in 0..seeds {
+        run(seed, steps);
     }
 }
 

@@ -127,7 +127,7 @@ impl SharedCandidateInputs {
         for registration in runtime
             .schema_contract_runtime
             .custom_invariant_registries
-            .iter()
+            .at(request.execution_point())
             .filter(|registration| request.includes_custom_registration(registration))
         {
             rule_count += 1;

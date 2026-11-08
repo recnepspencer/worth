@@ -8,13 +8,13 @@ fn checkpoint_rejects_previous_branch_root_format_before_readmission() {
 
     let mut plan = checkpoint_recovery_plan(execution, "previous-branch-root-format");
     let root = selected_root_image(&mut plan);
-    assert_eq!(root.format_version, 4);
-    root.format_version = 3;
+    assert_eq!(root.format_version, 5);
+    root.format_version = 4;
     recompute_partition_image_digest(root);
     assert_corrupt_recovery_leaves_no_recovered_state(
         execution,
         plan,
-        "unsupported branch-root image version `3`",
+        "unsupported branch-root image version `4`",
     );
 }
 

@@ -26,6 +26,8 @@ impl InvariantObservationKind {
 #[derive(Clone)]
 pub(crate) struct CommittedInvariantView<'runtime> {
     identity: InvariantObservationIdentity,
+    applied_created_entities:
+        Option<&'runtime crate::transactions::data::CommitCreatedEntityBindings>,
     committed: CommittedInvariantState<'runtime>,
     enforcement: Option<OverlayStateView<'runtime, WorkingState>>,
     enforcement_version_id: Option<crate::identity::data::VersionId>,
@@ -43,6 +45,7 @@ impl<'runtime> CommittedInvariantView<'runtime> {
     pub(crate) fn new(state: PartitionEdition) -> Self {
         Self {
             identity: InvariantObservationIdentity::issue(),
+            applied_created_entities: None,
             committed: CommittedInvariantState::Runtime(state),
             enforcement: None,
             enforcement_version_id: None,
@@ -59,6 +62,7 @@ impl<'runtime> CommittedInvariantView<'runtime> {
     ) -> Self {
         Self {
             identity: InvariantObservationIdentity::issue(),
+            applied_created_entities: None,
             committed: CommittedInvariantState::Branch(state),
             enforcement: Some(OverlayStateView::new(state, proposed_working_state)),
             enforcement_version_id: Some(proposed_version_id),
@@ -70,6 +74,7 @@ impl<'runtime> CommittedInvariantView<'runtime> {
     pub(crate) fn from_branch(state: &'runtime dyn CurrentPartitionAccess) -> Self {
         Self {
             identity: InvariantObservationIdentity::issue(),
+            applied_created_entities: None,
             committed: CommittedInvariantState::Branch(state),
             enforcement: None,
             enforcement_version_id: None,
@@ -161,6 +166,33 @@ pub(crate) enum InvariantObservation<'runtime> {
 }
 
 impl<'runtime> InvariantObservation<'runtime> {
+    pub(crate) fn with_applied_created_entities(
+        mut self,
+        created: &'runtime crate::transactions::data::CommitCreatedEntityBindings,
+    ) -> Self {
+        if let Self::Committed(view) = &mut self {
+            view.applied_created_entities = Some(created);
+        }
+        self
+    }
+    /// Both declaration views name the same applied proposal, retaining their
+    /// original committed/candidate read meanings and version basis.
+    pub(crate) fn applied_declaration_view(
+        &self,
+        before_version: crate::identity::data::VersionId,
+    ) -> Option<Self> {
+        let Self::Committed(view) = self else {
+            return None;
+        };
+        Some(Self::Speculative(SpeculativeInvariantView {
+            identity: view.identity.clone(),
+            state: view.enforcement.clone()?,
+            before_image_version_id: before_version,
+            proposal_identity: view.proposal_identity.clone(),
+            applied_created_entities: view.applied_created_entities,
+            aggregate: view.aggregate,
+        }))
+    }
     pub(crate) fn observation_identity(&self) -> InvariantObservationIdentity {
         match self {
             Self::Committed(view) => view.identity.clone(),
@@ -256,7 +288,7 @@ impl<'runtime> InvariantObservation<'runtime> {
         &self,
     ) -> Option<&'runtime crate::transactions::data::CommitCreatedEntityBindings> {
         match self {
-            Self::Committed(_) => None,
+            Self::Committed(view) => view.applied_created_entities,
             Self::Speculative(view) => view.applied_created_entities,
             Self::Probed { meaning, .. } => meaning.applied_created_entities(),
         }

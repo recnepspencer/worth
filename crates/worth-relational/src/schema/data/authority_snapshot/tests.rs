@@ -15,7 +15,7 @@ fn digest_distinguishes_variable_length_registry_boundaries() {
     boundary_name.extend_from_slice(&2_u32.to_le_bytes());
     boundary_name.extend_from_slice(b"b");
     let boundary_name = String::from_utf8(boundary_name).expect("test bytes are UTF-8");
-    let one_kind = SchemaAuthoritySnapshot {
+    let one_kind = crate::schema::data::SchemaAuthoritySnapshotParts {
         content_formats: Default::default(),
         primary_schema_id: Some(SchemaId("s".to_owned())),
         primary_schema_version_id: Some(SchemaVersionId(0)),
@@ -23,8 +23,9 @@ fn digest_distinguishes_variable_length_registry_boundaries() {
         relation_kinds: Vec::new(),
         derived_relations: Vec::new(),
         projected_member_domains: Vec::new(),
-    };
-    let two_kinds = SchemaAuthoritySnapshot {
+    }
+    .into();
+    let two_kinds = crate::schema::data::SchemaAuthoritySnapshotParts {
         content_formats: Default::default(),
         primary_schema_id: Some(SchemaId("s".to_owned())),
         primary_schema_version_id: Some(SchemaVersionId(0)),
@@ -32,7 +33,8 @@ fn digest_distinguishes_variable_length_registry_boundaries() {
         relation_kinds: Vec::new(),
         derived_relations: Vec::new(),
         projected_member_domains: Vec::new(),
-    };
+    }
+    .into();
 
     assert_ne!(
         schema_authority_snapshot_digest_bytes(&one_kind),
@@ -229,7 +231,7 @@ fn relation(
 }
 
 fn snapshot_with_relation(relation: SchemaAuthorityRelationSnapshot) -> SchemaAuthoritySnapshot {
-    SchemaAuthoritySnapshot {
+    crate::schema::data::SchemaAuthoritySnapshotParts {
         content_formats: Default::default(),
         primary_schema_id: Some(SchemaId("s".to_owned())),
         primary_schema_version_id: Some(SchemaVersionId(0)),
@@ -238,4 +240,26 @@ fn snapshot_with_relation(relation: SchemaAuthorityRelationSnapshot) -> SchemaAu
         derived_relations: Vec::new(),
         projected_member_domains: Vec::new(),
     }
+    .into()
+}
+
+#[test]
+fn projection_mutation_detaches_cached_digest_and_owned_storage() {
+    let mut changed = crate::schema::data::RelationalSchemaRegistry::new().authority_snapshot();
+    let original = changed.clone();
+    let digest = original.digest();
+    let bytes = original.owned_allocation_capacity_bytes();
+    changed.primary_schema_id = Some(SchemaId("transition".into()));
+    changed.entity_kinds.push(kind(17, "new-kind"));
+    assert_ne!(changed.digest(), digest);
+    assert_eq!(original.digest(), digest);
+    assert_eq!(original.owned_allocation_capacity_bytes(), bytes);
+    assert!(original.entity_kinds.is_empty());
+    let restored: SchemaAuthoritySnapshot =
+        rmp_serde::from_slice(&rmp_serde::to_vec(&changed).unwrap()).unwrap();
+    assert_eq!(
+        *restored, *changed,
+        "cold material must equal the shared projection's parts"
+    );
+    assert_eq!(restored.digest(), changed.digest());
 }

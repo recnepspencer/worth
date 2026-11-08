@@ -44,6 +44,7 @@ pub(super) fn execution_point_tag(value: InvariantExecutionPoint) -> u8 {
         InvariantExecutionPoint::CertificationBoundary => 4,
         InvariantExecutionPoint::HarnessAudit => 5,
         InvariantExecutionPoint::GraphComposition => 6,
+        InvariantExecutionPoint::ProposedState => 7,
     }
 }
 

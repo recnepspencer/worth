@@ -17,8 +17,18 @@ impl RelationalBranchVisibilityCommitment {
         schema_root: [u8; 32],
         correctness_index: RelationalRootCorrectnessIndex,
     ) -> Self {
+        let payload = envelope
+            .encode_authoritative_payload()
+            .expect("closed canonical envelope encoding");
+        Self::for_payload(&payload, storage_root, schema_root, correctness_index)
+    }
+    pub(super) fn for_payload(
+        payload: &[u8],
+        storage_root: [u8; 32],
+        schema_root: [u8; 32],
+        correctness_index: RelationalRootCorrectnessIndex,
+    ) -> Self {
         use sha2::{Digest, Sha256};
-
         let mut digest = Sha256::new();
         digest.update(b"worth.relational.branch-visibility.v1\0");
         digest.update(storage_root);
@@ -26,11 +36,7 @@ impl RelationalBranchVisibilityCommitment {
         digest.update(match correctness_index {
             RelationalRootCorrectnessIndex::AuthoritativeFallback => [0],
         });
-        digest.update(
-            envelope
-                .encode_authoritative_payload()
-                .expect(/* Proof: The serialized value contains only closed native scalar, sequence, map and derived-Serialize record fields; encoding uses an in-memory Vec/hash writer, with no user serializer or fallible I/O. */ "canonical branch envelope must encode for visibility commitment"),
-        );
+        digest.update(payload);
         Self(digest.finalize().into())
     }
 

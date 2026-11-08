@@ -12,8 +12,9 @@ use super::read_projection::{
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RelationalTransactionEntityRead {
     base: Option<EntityReadRecord>,
-    staged: Vec<EntityMutationIntent>,
+    staged: super::RelationalTransactionStagedMutations<EntityMutationIntent>,
     effective: Option<EntityReadRecord>,
+    deleted: bool,
 }
 
 impl RelationalTransactionEntityRead {
@@ -21,7 +22,9 @@ impl RelationalTransactionEntityRead {
         self.base.as_ref()
     }
 
-    pub fn staged_mutations(&self) -> &[EntityMutationIntent] {
+    pub fn staged_mutations(
+        &self,
+    ) -> &super::RelationalTransactionStagedMutations<EntityMutationIntent> {
         &self.staged
     }
 
@@ -30,17 +33,16 @@ impl RelationalTransactionEntityRead {
     }
 
     pub fn is_deleted(&self) -> bool {
-        self.staged
-            .iter()
-            .any(|intent| matches!(intent, EntityMutationIntent::Delete(_)))
+        self.deleted
     }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RelationalTransactionRelationRead {
     base: Option<RelationReadRecord>,
-    staged: Vec<RelationMutationIntent>,
+    staged: super::RelationalTransactionStagedMutations<RelationMutationIntent>,
     effective: Option<RelationalTransactionRelationValue>,
+    deleted: bool,
 }
 
 impl RelationalTransactionRelationRead {
@@ -48,7 +50,9 @@ impl RelationalTransactionRelationRead {
         self.base.as_ref()
     }
 
-    pub fn staged_mutations(&self) -> &[RelationMutationIntent] {
+    pub fn staged_mutations(
+        &self,
+    ) -> &super::RelationalTransactionStagedMutations<RelationMutationIntent> {
         &self.staged
     }
 
@@ -57,9 +61,7 @@ impl RelationalTransactionRelationRead {
     }
 
     pub fn is_deleted(&self) -> bool {
-        self.staged
-            .iter()
-            .any(|intent| matches!(intent, RelationMutationIntent::Delete(_)))
+        self.deleted
     }
 }
 
@@ -99,14 +101,35 @@ impl super::BranchBoundRelationalTransaction {
             });
         let staged = self
             .overlay
-            .entity_mutations(entity_id)
+            .effective_records
+            .entity_history
+            .get(&entity_id)
             .cloned()
-            .collect::<Vec<_>>();
-        let effective = project_entity(self.schema_authority.as_ref(), base.clone(), &staged)?;
+            .unwrap_or_default();
+        let prior = self.overlay.effective_records.entities.get(&entity_id);
+        let applied = prior.map_or(0, |p| p.applied);
+        let effective = project_entity(
+            self.schema_authority.as_ref(),
+            prior.map_or_else(|| base.clone(), |p| p.effective.clone()),
+            staged.suffix(applied),
+        )?;
+        let deleted = prior.is_some_and(|p| p.deleted)
+            || staged
+                .suffix(applied)
+                .any(|i| matches!(i, EntityMutationIntent::Delete(_)));
+        self.overlay.effective_records.entities.insert(
+            entity_id,
+            super::effective_records::EntityProjection {
+                effective: effective.clone(),
+                applied: staged.len(),
+                deleted,
+            },
+        );
         Ok(RelationalTransactionEntityRead {
             base,
             staged,
             effective,
+            deleted,
         })
     }
 
@@ -145,14 +168,38 @@ impl super::BranchBoundRelationalTransaction {
             });
         let staged = self
             .overlay
-            .relation_mutations(relation_id)
+            .effective_records
+            .relation_history
+            .get(&relation_id)
             .cloned()
-            .collect::<Vec<_>>();
-        let effective = project_relation(self.schema_authority.as_ref(), base.clone(), &staged)?;
+            .unwrap_or_default();
+        let prior = self.overlay.effective_records.relations.get(&relation_id);
+        let applied = prior.map_or(0, |p| p.applied);
+        let effective = project_relation(
+            self.schema_authority.as_ref(),
+            prior.map_or_else(
+                || base.clone().map(RelationalTransactionRelationValue::from),
+                |p| p.effective.clone(),
+            ),
+            staged.suffix(applied),
+        )?;
+        let deleted = prior.is_some_and(|p| p.deleted)
+            || staged
+                .suffix(applied)
+                .any(|i| matches!(i, RelationMutationIntent::Delete(_)));
+        self.overlay.effective_records.relations.insert(
+            relation_id,
+            super::effective_records::RelationProjection {
+                effective: effective.clone(),
+                applied: staged.len(),
+                deleted,
+            },
+        );
         Ok(RelationalTransactionRelationRead {
             base,
             staged,
             effective,
+            deleted,
         })
     }
 

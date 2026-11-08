@@ -6,10 +6,12 @@ use crate::identity::data::KindId;
 
 use super::{AspectContractPlanRevision, RelationIntegrityPlanRevision, SchemaId, SchemaVersionId};
 
+mod carried_projection;
 mod encoding;
+pub use carried_projection::SchemaAuthoritySnapshot;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-pub struct SchemaAuthoritySnapshot {
+pub struct SchemaAuthoritySnapshotParts {
     pub primary_schema_id: Option<SchemaId>,
     pub primary_schema_version_id: Option<SchemaVersionId>,
     pub entity_kinds: Vec<SchemaAuthorityKindSnapshot>,
@@ -46,7 +48,7 @@ pub struct SchemaAuthorityRelationSnapshot {
     pub cascade_delete_policy: CascadeDeletePolicy,
 }
 
-impl SchemaAuthoritySnapshot {
+impl SchemaAuthoritySnapshotParts {
     pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
         let entity_storage = (self.entity_kinds.capacity() as u64)
             .saturating_mul(std::mem::size_of::<SchemaAuthorityKindSnapshot>() as u64);
@@ -92,6 +94,10 @@ impl SchemaAuthoritySnapshot {
 }
 
 pub fn schema_authority_snapshot_digest_bytes(snapshot: &SchemaAuthoritySnapshot) -> [u8; 32] {
+    snapshot.digest()
+}
+
+fn digest_parts(snapshot: &SchemaAuthoritySnapshotParts) -> [u8; 32] {
     let mut hasher = Sha256::new();
     hasher.update(b"WORTH_SCHEMA_AUTHORITY_SNAPSHOT_V2");
     if let Some(schema_id) = &snapshot.primary_schema_id {

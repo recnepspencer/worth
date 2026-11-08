@@ -361,6 +361,30 @@ not redefine it.
    movement, so a moved head always has a recovery record. Concurrent callers
    converge on one `RelationalCommitReceipt`.
 
+Preparation holds each installed commit invariant for one exact proposed state in a
+single pass. Registrations retain their declared commit-boundary, mutation-sensitive
+or publication failure meaning. Publication carries this result when the state is
+unchanged. Native prerequisites and commit-boundary custom rules retain their
+business-state view. The pass suspends while private aggregate writes complete,
+then checks the remaining families against the complete proposed snapshot.
+Native refusal still precedes custom execution within each family.
+Certification and graph-composition observations remain separate.
+
+The root carries its schema projection and digest. Ordinary commits compare that
+digest and share the projection; declared schema transitions build a new one.
+Snapshot authors construct `SchemaAuthoritySnapshotParts` and convert it into the
+shared snapshot. Mutating an authored clone detaches and invalidates its cached digest.
+Canonical commit payloads reference schema by digest and include projection material
+on transitions. Self-contained checkpoint and artifact exports retain the vocabulary
+needed for cold readmission. Branch-root image version 5 and canonical artifact
+version 7 refuse prior encodings before admitting their different commitments.
+
+Transaction reads carry the effective record forward over appended staged mutations.
+Their immutable staged-history handle provides `iter()`, `len()` and `is_empty()`;
+cloning a read shares that history. Savepoints carry the retained intent prefix and
+its projection frontier; rollback restores both. Normalization that rekeys a prefix
+rebuilds its projection before another read.
+
 **Conflict scope.** Conflicts are detected per branch, not per record. A
 candidate is `Stale` if the branch moved at all after the observation it was
 prepared from, even if the other commit touched unrelated records. The

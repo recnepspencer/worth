@@ -70,13 +70,17 @@ pub(super) fn prepare(
             )?;
             let publication_cost = prepared_schema.apply_cost(prepared_regions.publication_cost);
             let correctness_index = RelationalRootCorrectnessIndex::AuthoritativeFallback;
+            let canonical_payload: Arc<[u8]> = envelope
+                .encode_authoritative_payload()
+                .map_err(|_| RelationalBranchRootCaptureDenial::CanonicalEnvelopeMismatch)?
+                .into();
             let axes = RelationalBranchRootAxes {
                 storage_version: envelope.commit.version_id.0,
                 storage_root: prepared_regions.storage_root,
                 schema_root: prepared_schema.schema_root,
                 correctness_index,
-                visibility: RelationalBranchVisibilityCommitment::for_root(
-                    &envelope,
+                visibility: RelationalBranchVisibilityCommitment::for_payload(
+                    &canonical_payload,
                     prepared_regions.storage_root,
                     prepared_schema.schema_root,
                     correctness_index,
@@ -109,6 +113,7 @@ pub(super) fn prepare(
                         axes.schema_root,
                     ),
                     canonical_envelope: envelope,
+                    canonical_payload,
                     axes,
                     publication_cost,
                 }),
@@ -209,9 +214,11 @@ fn prepare_schema(
 ) -> Result<PreparedRootSchema, RelationalBranchRootCaptureDenial> {
     let schema_root =
         crate::schema::data::schema_authority_snapshot_digest_bytes(&envelope.schema_authority);
-    if let Some(previous) =
-        previous.filter(|root| root.schema_authority.matches(&envelope.schema_authority))
-    {
+    if let Some(previous) = previous.filter(|root| {
+        root.schema_authority.matches(&envelope.schema_authority)
+            && root.schema_authority.descriptor_semantics_version()
+                == envelope.descriptor_semantics_version
+    }) {
         return Ok(PreparedRootSchema {
             authority: Arc::clone(&previous.schema_authority),
             schema_root,

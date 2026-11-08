@@ -51,13 +51,12 @@ fn validate_lowered_plan_preserves_strategy_provenance_and_commit_boundary_summa
     assert!(validated.validation_summary().commit_boundary_seen);
     assert!(validated.validation_summary().mutation_sensitive_seen);
     assert!(validated.validation_summary().snapshot_publication_seen);
-    assert_eq!(validated.validation_summary().execution_count, 3);
     assert!(validated.validation_summary().plan_backed_execution_count >= 1);
     let preview_cost = artifacts
         .preview_validation_cost()
         .expect("strategy proposal records preview validation cost");
     assert_eq!(preview_cost.merged_intent_count(), 1);
-    assert_eq!(preview_cost.post_mutation_preview_pass_count(), 2);
+    assert_eq!(preview_cost.post_mutation_preview_pass_count(), 1);
 }
 
 #[test]
@@ -188,7 +187,8 @@ fn execute_validated_commit_routes_prevalidated_strategy_plan_through_authoritat
     };
 
     assert_eq!(commit.commit.commit_id.0, 1);
-    assert!(commit.validation().summary.execution_count >= 3);
+    assert!(commit.validation().summary.mutation_sensitive_seen);
+    assert!(commit.validation().summary.snapshot_publication_seen);
     assert!(commit.validation().summary.commit_boundary_seen);
     let strategy_artifacts = commit
         .publication()
@@ -201,7 +201,7 @@ fn execute_validated_commit_routes_prevalidated_strategy_plan_through_authoritat
             .preview_validation_cost()
             .expect("preview validation cost")
             .post_mutation_preview_pass_count(),
-        2
+        1
     );
     assert_eq!(
         strategy_artifacts

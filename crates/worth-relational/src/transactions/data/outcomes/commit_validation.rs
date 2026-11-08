@@ -61,6 +61,11 @@ impl CommitValidation {
             }
 
             match execution.metadata().execution_point() {
+                InvariantExecutionPoint::ProposedState => {
+                    summary.commit_boundary_seen = true;
+                    summary.mutation_sensitive_seen = true;
+                    summary.snapshot_publication_seen = true;
+                }
                 InvariantExecutionPoint::CommitBoundary => {
                     summary.commit_boundary_seen = true;
                 }

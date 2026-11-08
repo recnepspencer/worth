@@ -4,6 +4,7 @@ use super::observation::InvariantObservationKind;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum InvariantRequestProfile {
+    ProposedState,
     CommitBoundary,
     MutationSensitive,
     GraphComposition,
@@ -33,6 +34,7 @@ impl HarnessAuditMode {
 impl InvariantRequestProfile {
     pub(crate) fn execution_point(self) -> InvariantExecutionPoint {
         match self {
+            Self::ProposedState => InvariantExecutionPoint::ProposedState,
             Self::CommitBoundary => InvariantExecutionPoint::CommitBoundary,
             Self::MutationSensitive => InvariantExecutionPoint::MutationSensitive,
             Self::GraphComposition => InvariantExecutionPoint::GraphComposition,
@@ -45,6 +47,10 @@ impl InvariantRequestProfile {
 
     pub(crate) fn consumed_groups(self) -> InvariantGroupSet {
         match self {
+            Self::ProposedState => Self::CommitBoundary
+                .consumed_groups()
+                .union(Self::MutationSensitive.consumed_groups())
+                .union(Self::SnapshotPublication.consumed_groups()),
             Self::CommitBoundary => InvariantGroupSet::of(InvariantGroup::StorageCoherence)
                 .union(InvariantGroupSet::of(InvariantGroup::IdentityCoherence))
                 .union(InvariantGroupSet::of(InvariantGroup::SchemaCompliance))
@@ -76,7 +82,8 @@ impl InvariantRequestProfile {
             Self::CommitBoundary => {
                 matches!(observation, InvariantObservationKind::Committed)
             }
-            Self::MutationSensitive
+            Self::ProposedState
+            | Self::MutationSensitive
             | Self::GraphComposition
             | Self::SnapshotPublication
             | Self::CertificationBoundary => true,

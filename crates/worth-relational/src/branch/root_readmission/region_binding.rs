@@ -192,6 +192,10 @@ impl RelationalBranchRoot {
             committed: Some(RelationalCommittedBranchRoot {
                 commit_change: None,
                 descriptor,
+                canonical_payload: envelope
+                    .encode_authoritative_payload()
+                    .expect("readmitted canonical encoding")
+                    .into(),
                 canonical_envelope: envelope,
                 axes,
                 publication_cost,

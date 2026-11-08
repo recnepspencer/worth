@@ -68,7 +68,8 @@ pub use transaction::{
     RelationalPreparationPort, RelationalTransactionEntityRead, RelationalTransactionFootprint,
     RelationalTransactionIntent, RelationalTransactionReadDenial, RelationalTransactionReadLocus,
     RelationalTransactionRelationRead, RelationalTransactionRelationValue,
-    RelationalTransactionStagingDenial, RelationalTransactionWriteLocus,
+    RelationalTransactionStagedMutations, RelationalTransactionStagingDenial,
+    RelationalTransactionWriteLocus,
 };
 pub(crate) use validation::RelationalTransactionValidationInput;
 pub use validation::{
