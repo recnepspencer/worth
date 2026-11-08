@@ -4015,6 +4015,16 @@ runtime remains with the caller, and no source effect has run. This uses the
 same native artifact-source guard as later required-output preparation.
 
 
+A coupled edit can retain several real managed-cleanup failures even though it
+has one business outcome. Fixed terminal, source-only, workflow and capability
+owners expose the collection with `managed_cleanup_failures()`. Keep the owner
+when `release_cleanup` or close refuses. Lawful release discharges every retained
+Native obligation; `managed_cleanup_receipts()` exposes all genuine release
+receipts, including any prefix completed before a retry. A fixed terminal's
+`close_with_evidence` preserves the original source refusal alongside this complete
+release evidence. Native cleanup receipts do not certify business settlement.
+Single-read cleanup keeps its separate read-owner contract.
+
 For a fixed required-output action, declare its exact composition occurrence,
 output root and projection. `ApplicationFixedActionDelivery<Schema, Binding>`
 names `Root` and `Projection`. For a query, choose `ApplicationQueryProjection<Read>`

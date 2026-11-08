@@ -88,7 +88,15 @@ fn managed_product_stale_retains_native_failure_until_owner_thread_close() {
             _ => panic!("real stale business outcome retains cleanup custody"),
         };
         let winner = competitor.join().unwrap();
-        assert_native_failure(terminal.managed_cleanup_failure().unwrap());
+        assert_native_failure({
+            let mut failures = terminal.managed_cleanup_failures();
+            assert_eq!(
+                failures.len(),
+                1,
+                "the original operation retains exactly one native owner"
+            );
+            failures.next().unwrap()
+        });
         assert!(
             matches!(terminal.native_outcome(), Some(WorthQueryApplicationMutationOutcome::Commit(
             WorthQueryApplicationUncommitted::ProductStale(stale)))
@@ -114,15 +122,27 @@ fn managed_product_stale_retains_native_failure_until_owner_thread_close() {
         .unwrap()
         .rows()
         .is_empty());
-    let original_run = terminal
-        .managed_cleanup_failure()
-        .unwrap()
-        .run_identity()
-        .to_owned();
-    let session = terminal
-        .managed_cleanup_failure()
-        .unwrap()
-        .session_identity();
+    let original_run = {
+        let mut failures = terminal.managed_cleanup_failures();
+        assert_eq!(
+            failures.len(),
+            1,
+            "the original operation retains exactly one native owner"
+        );
+        failures.next().unwrap()
+    }
+    .run_identity()
+    .to_owned();
+    let session = {
+        let mut failures = terminal.managed_cleanup_failures();
+        assert_eq!(
+            failures.len(),
+            1,
+            "the original operation retains exactly one native owner"
+        );
+        failures.next().unwrap()
+    }
+    .session_identity();
     let (terminal, cause) = std::thread::scope(|threads| {
         threads
             .spawn(|| {
@@ -140,10 +160,16 @@ fn managed_product_stale_retains_native_failure_until_owner_thread_close() {
         WorthQueryOperationCloseDenial::ManagedCleanup(_)
     ));
     assert_eq!(
-        terminal
-            .managed_cleanup_failure()
-            .unwrap()
-            .session_identity(),
+        {
+            let mut failures = terminal.managed_cleanup_failures();
+            assert_eq!(
+                failures.len(),
+                1,
+                "the original operation retains exactly one native owner"
+            );
+            failures.next().unwrap()
+        }
+        .session_identity(),
         session
     );
     let cancellation = worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource::new();
@@ -177,7 +203,16 @@ fn managed_product_stale_retains_native_failure_until_owner_thread_close() {
     let closed = terminal
         .close(&host.runtime().request(&fresh_principal, &fresh_scope))
         .unwrap_or_else(|(_, cause)| panic!("fresh terminal close: {cause:?}"));
-    let native = closed.managed_cleanup_receipt().unwrap().inspection();
+    let native = {
+        let receipts = closed.managed_cleanup_receipts();
+        assert_eq!(
+            receipts.len(),
+            1,
+            "the original operation has exactly one native release receipt"
+        );
+        &receipts[0]
+    }
+    .inspection();
     assert!(native.resources_released());
     assert_eq!(native.run_identity(), original_run);
 
@@ -203,7 +238,15 @@ fn managed_cleanup_discharge_does_not_settle_uncertain_business_outcome() {
         operation.posture(),
         WorthQuerySourceOnlyPosture::Indeterminate
     );
-    assert_native_failure(operation.managed_cleanup_failure().unwrap());
+    assert_native_failure({
+        let mut failures = operation.managed_cleanup_failures();
+        assert_eq!(
+            failures.len(),
+            1,
+            "the original operation retains exactly one native owner"
+        );
+        failures.next().unwrap()
+    });
     assert_eq!(read_retention(host.runtime(), host.current_world()), 19);
     let contacts = host.contacts.counts();
     assert_eq!(contacts, (1, 1));
@@ -212,14 +255,20 @@ fn managed_cleanup_discharge_does_not_settle_uncertain_business_outcome() {
         operation.release_cleanup(&host.runtime().request(&principal, &stop)),
         Err(WorthQueryOperationCloseDenial::Execution(_))
     ));
-    assert!(operation.managed_cleanup_failure().is_some());
+    assert!(operation.managed_cleanup_failures().len() == 1);
     let released = operation.release_cleanup(&request).unwrap();
-    assert!(released
-        .managed_cleanup_receipt()
-        .unwrap()
-        .inspection()
-        .resources_released());
-    assert!(operation.managed_cleanup_failure().is_none());
+    assert!({
+        let receipts = released.managed_cleanup_receipts();
+        assert_eq!(
+            receipts.len(),
+            1,
+            "the original operation has exactly one native release receipt"
+        );
+        &receipts[0]
+    }
+    .inspection()
+    .resources_released());
+    assert!(operation.managed_cleanup_failures().len() == 0);
     assert_eq!(
         operation.posture(),
         WorthQuerySourceOnlyPosture::Indeterminate
@@ -260,7 +309,15 @@ fn managed_failure_abandonment_transfers_actual_collection_and_installed_keepali
             _ => panic!("real cleanup refusal preserves the source owner"),
         };
         let (runtime, cleanup) = operation.into_runtime_for_cleanup();
-        assert_native_failure(cleanup.managed_failure().unwrap());
+        assert_native_failure({
+            let mut failures = cleanup.managed_failures();
+            assert_eq!(
+                failures.len(),
+                1,
+                "the original operation retains exactly one native owner"
+            );
+            failures.next().unwrap()
+        });
         (runtime, cleanup, _guard)
     };
     drop(principal);
@@ -277,7 +334,7 @@ fn managed_failure_abandonment_transfers_actual_collection_and_installed_keepali
         })
         .unwrap()
         .unwrap();
-    assert!(cleanup.managed_failure().is_none());
+    assert!(cleanup.managed_failures().len() == 0);
     assert_eq!(
         read_retention(runtime.runtime(), runtime.current_world()),
         19

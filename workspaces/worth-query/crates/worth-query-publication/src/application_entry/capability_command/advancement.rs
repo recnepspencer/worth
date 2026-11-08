@@ -65,10 +65,13 @@ where
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<Step, WorthQueryCapabilityCommandDenial<D>> {
         use NativePublicationState as State;
-        if let Some(failure) = self.cleanup.managed_failure() {
-            let kind = failure.kind();
-            // The collector owns one managed run. No new native progression may
-            // create another until release_cleanup discharges this original run.
+        if let Some(kind) = self
+            .cleanup
+            .managed_failures()
+            .next()
+            .map(|failure| failure.kind())
+        {
+            // Every actual managed obligation must close before new native progression.
             self.backend
                 .validate(phase, request)
                 .map_err(WorthQueryCapabilityCommandDenial::Native)?;

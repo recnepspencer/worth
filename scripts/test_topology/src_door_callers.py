@@ -46,8 +46,7 @@ def control_owners(root):
     A declaration in the caller's own crate resolves that name locally.
     """
     seen = {}
-    crates = [root / OWNER] + [d for d in sorted((root / CRATES).iterdir())
-                               if d.name.startswith('worth-query-testkit-') and 'execution' in d.name]
+    crates = [d for d in sorted((root / CRATES).iterdir()) if (d / 'src').is_dir()]
     if (root / 'crates').is_dir():
         crates += [d for d in sorted((root / 'crates').iterdir()) if (d / 'src').is_dir()]
     for directory in crates:

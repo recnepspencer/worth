@@ -1,24 +1,27 @@
 //! One funded owner of pending record release and native cleanup retries.
 use super::*;
+mod release_control;
+pub(super) use release_control::{
+    WorthQueryCleanupReleaseInterruptionForTest, WorthQueryCleanupReleaseRegistrationDenial,
+};
 use worth_query_execution::facade::domain_computation::WorthQueryProductUnpublishedRecoveryReleaseFailure as Failure;
 /// Completion of this cleanup collection alone, never whole-operation completion.
 pub struct WorthQueryOperationCleanupReceipt {
-    managed: Option<
-        worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt,
-    >,
+    managed:
+        Vec<worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt>,
     retired_component_count: usize,
 }
 impl WorthQueryOperationCleanupReceipt {
-    /// Actual native cleanup evidence, including any remaining logical recovery disposition.
-    pub fn managed_cleanup_receipt(
+    /// The actual native release evidence for every discharged managed owner.
+    pub fn managed_cleanup_receipts(
         &self,
-    ) -> Option<&worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt>
+    ) -> &[worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt]
     {
-        self.managed.as_ref()
+        &self.managed
     }
-    pub(super) fn into_managed_receipt(
+    pub(super) fn into_managed_receipts(
         self,
-    ) -> Option<worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt>
+    ) -> Vec<worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt>
     {
         self.managed
     }
@@ -32,13 +35,12 @@ impl WorthQueryOperationCleanupReceipt {
 /// only, not whole-operation completion or crash durability.
 #[derive(Default)]
 pub struct WorthQueryOperationCleanup {
+    release_control: release_control::CleanupReleaseControl,
     // The existing installed allocation remains owned after descriptor abandonment.
     keepalive: Option<Box<dyn std::any::Any + Send + Sync>>,
-    managed_receipt: Option<
-        worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt,
-    >,
-    managed:
-        Option<worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanup>,
+    managed_receipts:
+        Vec<worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt>,
+    managed: Vec<worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanup>,
     // A failed output producer may have unpublished or uncertain business custody.
     producer_outcome:
         Option<Box<worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted>>,
@@ -50,6 +52,16 @@ pub struct WorthQueryOperationCleanup {
     retired_component_count: usize,
 }
 impl WorthQueryOperationCleanup {
+    pub(super) fn cancel_after_managed_releases(
+        &mut self,
+        count: std::num::NonZeroUsize,
+        cancellation:worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource,
+    ) -> Result<
+        WorthQueryCleanupReleaseInterruptionForTest,
+        WorthQueryCleanupReleaseRegistrationDenial,
+    > {
+        self.release_control.arm(count, cancellation)
+    }
     pub(super) fn absorb_producer<S, P>(
         &mut self,
         runtime: &WorthQueryProgramApplicationRuntime<S, P>,
@@ -61,9 +73,12 @@ impl WorthQueryOperationCleanup {
         P: ApplicationProgramDefinition<S>,
         WorthQueryProgramApplicationRuntime<S, P>: Send + Sync + 'static,
     {
-        let (outcome, cleanup) = required.into_parts();
+        let mut outcome=worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::CleanupRequired(required);
+        while let worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::CleanupRequired(required)=outcome {
+            let (original,cleanup)=required.into_parts();
+            self.absorb_managed(runtime,cleanup);outcome=original;
+        }
         self.producer_outcome = Some(Box::new(outcome));
-        self.absorb_managed(runtime, cleanup);
     }
     pub(in crate::application_entry) fn absorb_managed<S, P>(
         &mut self,
@@ -74,12 +89,10 @@ impl WorthQueryOperationCleanup {
         P: ApplicationProgramDefinition<S>,
         WorthQueryProgramApplicationRuntime<S, P>: Send + Sync + 'static,
     {
-        assert!(
-            self.managed.is_none(),
-            "one fixed source owns one pending managed cleanup"
-        );
-        self.keepalive = Some(Box::new(runtime.clone()));
-        self.managed = Some(cleanup);
+        if self.keepalive.is_none() {
+            self.keepalive = Some(Box::new(runtime.clone()));
+        }
+        self.managed.push(cleanup);
     }
     pub(super) fn absorb_native_outcome<S, P, D, R>(
         &mut self,
@@ -91,15 +104,18 @@ impl WorthQueryOperationCleanup {
         P: ApplicationProgramDefinition<S>,
         WorthQueryProgramApplicationRuntime<S, P>: Send + Sync + 'static,
     {
-        match outcome {
-            WorthQueryApplicationMutationOutcome::Commit(worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::CleanupRequired(required)) if self.managed.is_none() => {
-                let (outcome, cleanup) = required.into_parts();
-                self.absorb_managed(runtime, cleanup);
-                WorthQueryApplicationMutationOutcome::Commit(outcome)
+        let mut outcome = outcome;
+        loop {
+            match outcome {
+                WorthQueryApplicationMutationOutcome::Commit(worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::CleanupRequired(required))=>{
+                    let (original,cleanup)=required.into_parts();self.absorb_managed(runtime,cleanup);
+                    outcome=WorthQueryApplicationMutationOutcome::Commit(original);
+                },
+                other=>return other,
             }
-            other => other,
         }
     }
+
     pub(in crate::application_entry) fn absorb_command_outcome<S, P>(
         &mut self,
         runtime: &WorthQueryProgramApplicationRuntime<S, P>,
@@ -111,15 +127,19 @@ impl WorthQueryOperationCleanup {
         WorthQueryProgramApplicationRuntime<S, P>: Send + Sync + 'static,
     {
         use worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitOutcome as O;
-        match outcome {
-            O::CleanupRequired(required) if self.managed.is_none() => {
-                let (outcome, cleanup) = required.into_parts();
-                self.absorb_managed(runtime, cleanup);
-                outcome.into()
+        let mut outcome = outcome;
+        loop {
+            match outcome {
+                O::CleanupRequired(required) => {
+                    let (original, cleanup) = required.into_parts();
+                    self.absorb_managed(runtime, cleanup);
+                    outcome = original.into();
+                }
+                other => return other,
             }
-            other => other,
         }
     }
+
     /// Original output-producer business evidence remains independent of cleanup release.
     pub fn producer_native_outcome(
         &self,
@@ -127,12 +147,13 @@ impl WorthQueryOperationCleanup {
     {
         self.producer_outcome.as_deref()
     }
-    /// Exact retained managed-run failure; this observation grants no cleanup or business authority.
-    pub fn managed_failure(
+    /// Every retained native failure; observation grants no cleanup or business authority.
+    pub fn managed_failures(
         &self,
-    ) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryMutationCleanupFailure>
-    {
-        self.managed.as_ref().map(|cleanup| cleanup.failure())
+    ) -> impl ExactSizeIterator<
+        Item = &worth_query_execution::facade::primary_graph::WorthQueryMutationCleanupFailure,
+    > {
+        self.managed.iter().map(|cleanup| cleanup.failure())
     }
     pub(in crate::application_entry) fn reserve_release_failure(
         &mut self,
@@ -215,9 +236,15 @@ impl WorthQueryOperationCleanup {
         self.failures
             .try_reserve(1)
             .map_err(|_| WorthQueryOperationCloseDenial::CleanupCapacity)?;
-        if let Some(cleanup) = self.managed.take() {
+        self.managed_receipts
+            .try_reserve(self.managed.len())
+            .map_err(|_| WorthQueryOperationCloseDenial::CleanupCapacity)?;
+        while let Some(cleanup) = self.managed.pop() {
             match cleanup.retry_in_advancement(phase) {
-                Ok(receipt) => self.managed_receipt = Some(receipt),
+                Ok(receipt) => {
+                    self.managed_receipts.push(receipt);
+                    self.release_control.after_release();
+                }
                 Err(cleanup) => {
                     let denial = cleanup
                         .last_retry_denial()
@@ -226,7 +253,7 @@ impl WorthQueryOperationCleanup {
                         .unwrap_or_else(|| {
                             WorthQueryOperationCloseDenial::ManagedCleanup(cleanup.failure().kind())
                         });
-                    self.managed = Some(cleanup);
+                    self.managed.push(cleanup);
                     return Err(denial);
                 }
             }
@@ -267,7 +294,7 @@ impl WorthQueryOperationCleanup {
         }
         self.keepalive = None;
         Ok(WorthQueryOperationCleanupReceipt {
-            managed: self.managed_receipt.take(),
+            managed: std::mem::take(&mut self.managed_receipts),
             retired_component_count: self.retired_component_count,
         })
     }

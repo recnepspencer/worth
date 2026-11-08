@@ -1,5 +1,6 @@
 //! Failed disposal of an abandoned real writer retains its native owner.
 use super::*;
+mod owned;
 mod preparation;
 fn exercise(worker: bool) {
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();

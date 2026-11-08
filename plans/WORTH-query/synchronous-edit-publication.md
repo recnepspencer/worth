@@ -505,3 +505,60 @@ the existing currentness owner; never create a fake writer to get a parent. Both
 that case and discovered-root preparation need discovery support retained by the
 whole edit even when no parent writer runs. Consolidate at the existing final
 candidate-support owner rather than introducing another currentness reader.
+
+
+## SDK join: multiple managed cleanup owners
+
+Boundary review: the actual Native failure and retry remain Query execution's
+managed-cleanup owner. Publication already classifies nested CleanupRequired
+wrappers in its raw performed API. The fixed-source handoff unwraps only one;
+its shared operation/cleanup.rs collector asserts one managed owner and retains
+only one receipt. That collector also serves source-only, workflow and capability
+commands. Read-tree cleanup has a separate single-read owner and is not this
+collection. Original partial publication/recovery remains one World transaction;
+do not multiply its transfer or change its policy.
+
+Plan:
+1. Extend the existing receiver-owned worker scheduling control with a NonZero
+   count. Its one-shot method continues to mean exactly one actual native cleanup.
+2. Change the operation collector to own all actual managed failures and retain
+   all genuine cleanup receipts through partial close/retry. Peel nested wrappers
+   at the existing source/producer/command entrances; fixed delivery consumes the
+   complete wrapper chain. Keep native retry and recovery policy at their owners.
+3. Make this collection's observations plural (`managed_cleanup_failures` and
+   `managed_cleanup_receipts`); update its forwarding source/workflow/capability
+   consumers. Single-read cleanup observations keep their existing meaning.
+   Generic callers use iterators/slices, with no privileged imports or new policy.
+4. Prove two real worker cleanup failures through an owned fixed graph. Check
+   original discovery refusal, both distinct native run identities, unchanged
+   model/head, lawful close, both matching genuine released receipts and0 live
+   sessions/World attempts, for serial and worker request policies.
+5. Existing single-owner courts must assert exactly one failure/receipt; zero-owner
+   courts assert zero. Record every changed assertion and why. Kill mutants that
+   consume only one wrapper or lose one owner/evidence item, restoring by SHA.
+6. Run focused cleanup and owning-command courts, public regression, Query
+   workspace check and the required scoped enforcement before checkpointing.
+
+No compatibility alias or alternative cleanup lane. Multiple cleanup receipts
+are resource-release evidence; the user edit still has one business receipt and
+one transaction. Wave/DAG, reuse, independent/discovered roots and S6 remain the
+subsequent P5 work. No READY before the complete slice and baseline qualification.
+
+
+The two-owner gold court and four restored mutants pass. Add a partial-disposal
+leg: a receiver-owned interruption cancels the actual request immediately after
+one genuine native release. The next retry must refuse typed Cancelled while
+retaining the remaining owner and the released prefix; fresh close returns both
+original run receipts. The control is lazy, owned by this cleanup receiver,
+Drop-disarmed, and uses the existing cancellation source. It creates no failure,
+receipt, currentness fact or authority, and ordinary callers supply no quote.
+A mutation clearing the released prefix on refusal must fail this court.
+
+
+SDK collection qualification: four serial/worker owning courts pass, including
+partial close after one actual release. All seven mutants fail and restore equal
+SHA-256. Public carrier578 pass/2ignored; Query all-target check and scoped guards
+pass. Existing single-owner courts now require exact cardinality before their
+unchanged identity/kind/release assertions (27 observation migrations, external
+changed-assertion evidence). Caller owner discovery includes Query Publication;
+the exact caller was registered by script, with12 tooling tests passing.

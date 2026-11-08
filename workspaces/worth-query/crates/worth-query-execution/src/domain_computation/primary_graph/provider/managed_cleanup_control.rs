@@ -6,7 +6,7 @@ use std::sync::{
 #[derive(Default)]
 pub(in crate::domain_computation::primary_graph) struct ManagedCleanupControl {
     active: AtomicBool,
-    registration: Mutex<Option<Arc<Mutex<bool>>>>,
+    registration: Mutex<Option<Arc<Mutex<usize>>>>,
 }
 /// A receiver already owns a live managed-cleanup scheduling registration.
 #[derive(Debug, Eq, PartialEq)]
@@ -17,18 +17,25 @@ pub enum WorthQueryManagedCleanupRegistrationDenial {
 #[must_use = "keep the receiver registration alive for the intended native cleanup"]
 pub struct WorthQueryManagedCleanupScheduleForTest {
     owner: Arc<ManagedCleanupControl>,
-    registration: Arc<Mutex<bool>>,
+    registration: Arc<Mutex<usize>>,
 }
 impl ManagedCleanupControl {
     pub(in crate::domain_computation::primary_graph) fn arm(
         self: &Arc<Self>,
     ) -> Result<WorthQueryManagedCleanupScheduleForTest, WorthQueryManagedCleanupRegistrationDenial>
     {
+        self.arm_count(std::num::NonZeroUsize::MIN)
+    }
+    pub(in crate::domain_computation::primary_graph) fn arm_count(
+        self: &Arc<Self>,
+        count: std::num::NonZeroUsize,
+    ) -> Result<WorthQueryManagedCleanupScheduleForTest, WorthQueryManagedCleanupRegistrationDenial>
+    {
         let mut slot = self.registration.lock().unwrap_or_else(|p| p.into_inner());
         if slot.is_some() {
             return Err(WorthQueryManagedCleanupRegistrationDenial::AlreadyRegistered);
         }
-        let registration = Arc::new(Mutex::new(false));
+        let registration = Arc::new(Mutex::new(count.get()));
         *slot = Some(Arc::clone(&registration));
         self.active.store(true, Ordering::Release);
         Ok(WorthQueryManagedCleanupScheduleForTest {
@@ -45,10 +52,10 @@ impl ManagedCleanupControl {
             return false;
         };
         let mut consumed = registration.lock().unwrap_or_else(|p| p.into_inner());
-        if *consumed {
+        if *consumed == 0 {
             false
         } else {
-            *consumed = true;
+            *consumed -= 1;
             true
         }
     }

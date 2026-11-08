@@ -125,7 +125,7 @@ impl<Outcome, Completion, AdmissionDenial>
             Resolution::Unseen
                 if matches!(self, Self::Keyed(WorthQueryApplicationUncommitted::Aborted)) =>
             {
-                if cleanup.managed_failure().is_some() {
+                if cleanup.managed_failures().len() != 0 {
                     return Err(WorthQueryOperationCloseDenial::NativeObligationRetained);
                 }
                 // Native Aborted proves no effect. Unseen by itself never permits execution.

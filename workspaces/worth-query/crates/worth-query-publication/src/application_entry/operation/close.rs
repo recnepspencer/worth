@@ -19,9 +19,8 @@ pub enum WorthQueryOperationCloseDenial {
 
 /// No source, demand, descriptor or pending cleanup remains owned by this result.
 pub struct WorthQueryClosedOperation {
-    managed: Option<
-        worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt,
-    >,
+    managed:
+        Vec<worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt>,
     retired_component_count: usize,
     output_unavailable: Option<WorthQueryApplicationProgramOutputUnavailable>,
 }
@@ -50,7 +49,7 @@ impl WorthQueryClosedOperation {
     ) -> Self {
         Self {
             retired_component_count: receipt.retired_component_count(),
-            managed: receipt.into_managed_receipt(),
+            managed: receipt.into_managed_receipts(),
             output_unavailable: None,
         }
     }
@@ -66,12 +65,12 @@ impl WorthQueryClosedOperation {
     pub fn output_unavailable(&self) -> Option<&WorthQueryApplicationProgramOutputUnavailable> {
         self.output_unavailable.as_ref()
     }
-    /// Native release evidence can retain logical recovery requirements; closure is no settlement proof.
-    pub fn managed_cleanup_receipt(
+    /// Every actual native release receipt; closure is no business settlement proof.
+    pub fn managed_cleanup_receipts(
         &self,
-    ) -> Option<&worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt>
+    ) -> &[worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt]
     {
-        self.managed.as_ref()
+        &self.managed
     }
     pub const fn retired_component_count(&self) -> usize {
         self.retired_component_count

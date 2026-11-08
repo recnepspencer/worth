@@ -63,9 +63,15 @@ fn product_stale_command_releases_each_managed_owner_before_native_progression()
             command
         })
     };
-    let failure = command
-        .managed_cleanup_failure()
-        .expect("real failed managed run");
+    let failure = {
+        let mut failures = command.managed_cleanup_failures();
+        assert_eq!(
+            failures.len(),
+            1,
+            "the original operation retains exactly one native owner"
+        );
+        failures.next().expect("real failed managed run")
+    };
     let first_run = failure.run_identity().to_owned();
     let first_session = failure.session_identity();
     let kind = failure.kind();
@@ -116,7 +122,15 @@ fn product_stale_command_releases_each_managed_owner_before_native_progression()
         ),
         "a stopped release preserves the original owner"
     );
-    let retained = command.managed_cleanup_failure().unwrap();
+    let retained = {
+        let mut failures = command.managed_cleanup_failures();
+        assert_eq!(
+            failures.len(),
+            1,
+            "the original operation retains exactly one native owner"
+        );
+        failures.next().unwrap()
+    };
     assert_eq!(retained.run_identity(), first_run);
     assert_eq!(retained.session_identity(), first_session);
     command = match command.advance(&request) {
@@ -131,10 +145,19 @@ fn product_stale_command_releases_each_managed_owner_before_native_progression()
     };
     assert_eq!(super::readback::grant_status(&host), 1);
     let released = command.release_cleanup(&request).unwrap();
-    let native = released.managed_cleanup_receipt().unwrap().inspection();
+    let native = {
+        let receipts = released.managed_cleanup_receipts();
+        assert_eq!(
+            receipts.len(),
+            1,
+            "the original operation has exactly one native release receipt"
+        );
+        &receipts[0]
+    }
+    .inspection();
     assert!(native.resources_released());
     assert_eq!(native.run_identity(), first_run);
-    assert!(command.managed_cleanup_failure().is_none());
+    assert!(command.managed_cleanup_failures().len() == 0);
 
     // A fresh admitted retry may itself need managed cleanup. Its distinct
     // owner must be accessible, rather than stranded inside terminal evidence.
@@ -152,17 +175,32 @@ fn product_stale_command_releases_each_managed_owner_before_native_progression()
         0,
         "the freshly admitted retry actually revoked the original grant"
     );
-    let second_run = command
-        .managed_cleanup_failure()
-        .unwrap()
-        .run_identity()
-        .to_owned();
+    let second_run = {
+        let mut failures = command.managed_cleanup_failures();
+        assert_eq!(
+            failures.len(),
+            1,
+            "the original operation retains exactly one native owner"
+        );
+        failures.next().unwrap()
+    }
+    .run_identity()
+    .to_owned();
     assert_ne!(second_run, first_run);
     let released = command.release_cleanup(&request).unwrap();
-    let native = released.managed_cleanup_receipt().unwrap().inspection();
+    let native = {
+        let receipts = released.managed_cleanup_receipts();
+        assert_eq!(
+            receipts.len(),
+            1,
+            "the original operation has exactly one native release receipt"
+        );
+        &receipts[0]
+    }
+    .inspection();
     assert!(native.resources_released());
     assert_eq!(native.run_identity(), second_run);
-    assert!(command.managed_cleanup_failure().is_none());
+    assert!(command.managed_cleanup_failures().len() == 0);
     let completed = match command.advance(&runtime.request(&issuer, &request_scope())) {
         Advance::Completed(completed) => completed,
         _ => panic!("original keyed receipt settles without another revocation execution"),
