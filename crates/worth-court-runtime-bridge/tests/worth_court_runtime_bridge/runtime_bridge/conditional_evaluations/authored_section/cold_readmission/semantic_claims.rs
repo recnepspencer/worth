@@ -43,104 +43,146 @@ impl BridgeAuthoredInstallationBindings for Bindings {
 #[test]
 fn cold_correspondence_rebinds_full_semantics_and_preserves_the_selected_slot_without_source_effects(
 ) {
-    let funding = request();
-    let execution = ExecutionRequest::serial(&funding);
-    let contacts = Arc::new(native_absence::Contacts::default());
-    let readers = Arc::new(AtomicUsize::new(0));
-    let (program, original) =
-        native_absence::installed_builder(Arc::clone(&contacts), Arc::clone(&readers));
-    let branch = branch();
-    let node = original.signal_node();
-    let occurrence = DurableSignalConditionalDefinitionOccurrence::from_recorded(
-        DurableSignalNodeIdentity::from_recorded(branch, node.index(), node.generation()),
-        DurableSignalConditionalOccurrence::from_recorded(branch.owner(), 1),
-    )
-    .unwrap();
-    let definition = program
-        .capture_authored_definition(
-            &execution,
-            SignalDefinitionTransitionIdentity::from_recorded(branch.owner(), 1),
-            branch,
-            &[occurrence],
+    for replace_definition in [false, true] {
+        let funding = request();
+        let execution = ExecutionRequest::serial(&funding);
+        let contacts = Arc::new(native_absence::Contacts::default());
+        let readers = Arc::new(AtomicUsize::new(0));
+        let (program, original) =
+            native_absence::installed_builder(Arc::clone(&contacts), Arc::clone(&readers));
+        let branch = branch();
+        let node = original.signal_node();
+        let occurrence = DurableSignalConditionalDefinitionOccurrence::from_recorded(
+            DurableSignalNodeIdentity::from_recorded(branch, node.index(), node.generation()),
+            DurableSignalConditionalOccurrence::from_recorded(branch.owner(), 1),
         )
         .unwrap();
-    let descriptor = SignalDurableBranchDescriptor::from_recorded(
-        DurableSignalGeneration::from_recorded(
-            DurableSignalCellIncarnation::from_recorded(branch, 1),
-            0,
-        ),
-        None,
-        DurableSignalAdmissionIdentity::from_recorded(branch.owner(), 1),
-        definition.reference(),
-    )
-    .unwrap();
-    let advance = SignalBranchAdvanceArtifact::capture(
-        &execution,
-        SignalBranchAdvanceIdentity::from_recorded(branch.owner(), 1),
-        descriptor,
-        None,
-        SignalAuthoredBranchChange::Created {
-            name: "semantic-branch".to_owned(),
-            parent: None,
-        },
-    )
-    .unwrap();
-    let medium = recorded_cut::RecordedCut::new(
-        &[definition.clone()],
-        &[advance],
-        &execution,
-        "22222222-2222-4222-8222-222222222222",
-    );
-    let (fresh, fresh_lowering) =
-        native_absence::installed_builder(Arc::clone(&contacts), Arc::clone(&readers));
-    let candidate = fresh_lowering
-        .semantic_dependencies()
-        .next()
-        .unwrap()
-        .clone();
-    assert_ne!(&candidate, original.semantic_dependencies().next().unwrap());
-    let mut bindings = Bindings {
-        candidate,
-        contacts: Arc::clone(&contacts),
-        rebound: 0,
-    };
-    let owner = fresh
-        .readmit_authored_owner(
-            medium,
-            SignalRecordedIdentityContribution::empty(branch.owner()),
-            &mut bindings,
-            &execution,
-        )
-        .unwrap();
-    assert_eq!(bindings.rebound, 1);
-    let restored = owner.conditional_definitions(branch).next().unwrap();
-    assert_eq!(restored.signal_node(), node);
-    assert_eq!(restored.correspondence_count(), 1);
-    assert_eq!(restored.contract(), original.contract());
-    assert_eq!(restored.location(), original.location());
-    assert_eq!(
-        restored.semantic_dependencies().next().unwrap(),
-        &bindings.candidate
-    );
-    assert_eq!(
-        owner
-            .authored_section(branch)
+        let definition = program
+            .capture_authored_definition(
+                &execution,
+                SignalDefinitionTransitionIdentity::from_recorded(branch.owner(), 1),
+                branch,
+                &[occurrence],
+            )
+            .unwrap();
+        let initial_definition = definition.clone();
+        let definition = if replace_definition {
+            let next = DurableSignalConditionalDefinitionOccurrence::from_recorded(
+                occurrence.node(),
+                DurableSignalConditionalOccurrence::from_recorded(branch.owner(), 2),
+            )
+            .unwrap();
+            let section = BridgeAuthoredSection::capture_definition_successor(
+                &execution,
+                &definition,
+                next,
+                original.contract(),
+                original.location(),
+            )
+            .unwrap();
+            SignalDefinitionTransitionArtifact::capture(
+                &execution,
+                SignalDefinitionTransitionIdentity::from_recorded(branch.owner(), 2),
+                branch,
+                Some(definition.reference()),
+                &definition.authored_image(),
+                &definition.authored_runtime_image(),
+                &[next],
+                section.as_signal_section(),
+            )
             .unwrap()
-            .as_signal_section()
-            .as_bytes(),
-        definition.bridge_bytes()
-    );
-    let port = owner.signal_owner().source_port();
-    let descriptor = port.observe(branch).unwrap();
-    let handle = port.readmit_descriptor(&descriptor).unwrap();
-    let (image, runtime) = port.capture_authored_images(&handle, &execution).unwrap();
-    assert_eq!(image.as_bytes(), definition.authored_image().as_bytes());
-    assert_eq!(
-        runtime.as_bytes(),
-        definition.authored_runtime_image().as_bytes()
-    );
-    assert_eq!(contacts.reads.load(Ordering::SeqCst), 0);
-    assert_eq!(contacts.predicates.load(Ordering::SeqCst), 0);
-    assert_eq!(contacts.computes.load(Ordering::SeqCst), 0);
-    assert_eq!(readers.load(Ordering::SeqCst), 0);
+        } else {
+            definition
+        };
+        let descriptor = SignalDurableBranchDescriptor::from_recorded(
+            DurableSignalGeneration::from_recorded(
+                DurableSignalCellIncarnation::from_recorded(branch, 1),
+                0,
+            ),
+            None,
+            DurableSignalAdmissionIdentity::from_recorded(branch.owner(), 1),
+            definition.reference(),
+        )
+        .unwrap();
+        let advance = SignalBranchAdvanceArtifact::capture(
+            &execution,
+            SignalBranchAdvanceIdentity::from_recorded(branch.owner(), 1),
+            descriptor,
+            None,
+            SignalAuthoredBranchChange::Created {
+                name: "semantic-branch".to_owned(),
+                parent: None,
+            },
+        )
+        .unwrap();
+        let definitions = if replace_definition {
+            vec![initial_definition, definition.clone()]
+        } else {
+            vec![definition.clone()]
+        };
+        let medium = recorded_cut::RecordedCut::new(
+            &definitions,
+            &[advance],
+            &execution,
+            "22222222-2222-4222-8222-222222222222",
+        );
+        let (fresh, fresh_lowering) =
+            native_absence::installed_builder(Arc::clone(&contacts), Arc::clone(&readers));
+        let candidate = fresh_lowering
+            .semantic_dependencies()
+            .next()
+            .unwrap()
+            .clone();
+        assert_ne!(&candidate, original.semantic_dependencies().next().unwrap());
+        let mut bindings = Bindings {
+            candidate,
+            contacts: Arc::clone(&contacts),
+            rebound: 0,
+        };
+        let owner = fresh
+            .readmit_authored_owner(
+                medium,
+                SignalRecordedIdentityContribution::empty(branch.owner()),
+                &mut bindings,
+                &execution,
+            )
+            .unwrap();
+        assert_eq!(bindings.rebound, 1);
+        let restored = owner
+            .authored_branch(branch)
+            .unwrap()
+            .conditional_definitions()
+            .next()
+            .unwrap();
+        assert_eq!(restored.signal_node(), node);
+        assert_eq!(restored.correspondence_count(), 1);
+        assert_eq!(restored.contract(), original.contract());
+        assert_eq!(restored.location(), original.location());
+        assert_eq!(
+            restored.semantic_dependencies().next().unwrap(),
+            &bindings.candidate
+        );
+        assert_eq!(
+            owner
+                .authored_branch(branch)
+                .unwrap()
+                .authored_section()
+                .as_signal_section()
+                .as_bytes(),
+            definition.bridge_bytes()
+        );
+        let port = owner.signal_owner().source_port();
+        let descriptor = port.observe(branch).unwrap();
+        let handle = port.readmit_descriptor(&descriptor).unwrap();
+        let (image, runtime) = port.capture_authored_images(&handle, &execution).unwrap();
+        assert_eq!(image.as_bytes(), definition.authored_image().as_bytes());
+        assert_eq!(
+            runtime.as_bytes(),
+            definition.authored_runtime_image().as_bytes()
+        );
+        assert_eq!(contacts.reads.load(Ordering::SeqCst), 0);
+        assert_eq!(contacts.predicates.load(Ordering::SeqCst), 0);
+        assert_eq!(contacts.computes.load(Ordering::SeqCst), 0);
+        assert_eq!(readers.load(Ordering::SeqCst), 0);
+    }
 }

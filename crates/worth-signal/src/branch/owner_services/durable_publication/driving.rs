@@ -117,6 +117,14 @@ where
             TaskPhase::Preparing => return Err(Dn::TaskExecuting { original }),
             TaskPhase::Completing => return Err(Dn::TaskCompleting { original }),
             TaskPhase::Delivered => return Err(Dn::CompletionDelivered { original }),
+            TaskPhase::Completion(_) => {
+                let TaskPhase::Completion(completion) =
+                    std::mem::replace(&mut slot.phase, TaskPhase::Completing)
+                else {
+                    unreachable!("one guard owns the retained completion")
+                };
+                return Ok(self.finish(original, &mut slot, *completion));
+            }
             TaskPhase::Definition(_) | TaskPhase::Branch(_) => {}
         }
         let owner = self.owner()?;
@@ -209,6 +217,7 @@ where
             artifact,
             retention,
             location,
+            publication,
         } = advance;
         match medium_binding::admit_advance(prepared, artifact, definition, completion) {
             Ok(proof) => {
@@ -230,26 +239,49 @@ where
                     artifact.descriptor().clone(),
                     self.medium.binding().incarnation().fence(),
                 );
-                // Graph destruction is outside the cell and owner metadata locks.
-                // Keep the named branch reservation until its cleanup finishes.
+                use worth_foundational::facade::SignalDefinitionProjectionOutcome as Projection;
+                let memory = slot._memory.take();
                 drop(slot);
-                drop(old_state);
+                let mut output = SignalDurableAdvanceOutput {
+                    projection: Projection::NotRequired,
+                    branch,
+                    artifact,
+                    transaction: SignalDurableTransactionResult {
+                        result: transaction,
+                        _memory: memory,
+                    },
+                };
+                let had_publication = publication.is_some();
+                let mut projection_done = false;
+                // No task/cell/source-index mutex spans a producer or destructor.
+                // Retain the known committed result even if either unwinds.
+                let cleanup = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    if let Some(publication) = publication {
+                        publication.committed(output.branch());
+                        projection_done = true;
+                    }
+                    drop(old_state);
+                }));
+                output.projection = match (had_publication, projection_done) {
+                    (false, false) | (false, true) => Projection::NotRequired,
+                    (true, true) => Projection::Installed,
+                    (true, false) => Projection::UnwoundAfterCommit,
+                };
+                let completion = SignalDurableAdvanceCompletion::committed(original, output);
                 let mut slot = task
                     .lock()
-                    .expect("one completed original owns its task slot");
-                let transaction = SignalDurableTransactionResult {
-                    result: transaction,
-                    _memory: slot._memory.take(),
+                    .expect("one original owns its retained completion");
+                slot.phase = TaskPhase::Completion(Box::new(completion));
+                if let Err(payload) = cleanup {
+                    drop(slot);
+                    std::panic::resume_unwind(payload);
+                }
+                let TaskPhase::Completion(completion) =
+                    std::mem::replace(&mut slot.phase, TaskPhase::Completing)
+                else {
+                    unreachable!("original completion was just installed")
                 };
-                let completion = SignalDurableAdvanceCompletion::committed(
-                    original,
-                    SignalDurableAdvanceOutput {
-                        branch,
-                        transaction,
-                        artifact,
-                    },
-                );
-                Ok(self.finish(original, &mut slot, completion))
+                Ok(self.finish(original, &mut slot, *completion))
             }
             Err((prepared, artifact, fate)) => {
                 drop((prepared, artifact, retention));

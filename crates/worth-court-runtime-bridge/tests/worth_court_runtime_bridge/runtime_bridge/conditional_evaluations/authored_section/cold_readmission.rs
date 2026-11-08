@@ -95,13 +95,21 @@ fn cold_owner_rebuilds_conditional_definitions_and_retention_on_every_branch_for
         for ((identity, handle), definition) in branches.iter().zip(&definitions) {
             assert_eq!(
                 owner
-                    .authored_section(*identity)
+                    .authored_branch(*identity)
                     .unwrap()
+                    .authored_section()
                     .as_signal_section()
                     .as_bytes(),
                 definition.bridge_bytes()
             );
-            assert_eq!(owner.conditional_definitions(*identity).count(), 2);
+            assert_eq!(
+                owner
+                    .authored_branch(*identity)
+                    .unwrap()
+                    .conditional_definitions()
+                    .count(),
+                2
+            );
             let descriptor = owner
                 .signal_owner()
                 .source_port()
@@ -112,12 +120,19 @@ fn cold_owner_rebuilds_conditional_definitions_and_retention_on_every_branch_for
                 handle.parent_branch_id.map(|id| id.0),
                 identity.ordinal().checked_sub(1).filter(|id| *id != 0)
             );
-            let usage = owner.conditional_retention(*identity).unwrap();
+            let usage = owner
+                .authored_branch(*identity)
+                .unwrap()
+                .conditional_retention();
             assert_eq!(usage.managed_clocks(), 0);
             assert_eq!(usage.reserved_temporal_intents(), 0);
             assert_eq!(usage.retained_definition_candidates(), 0);
             assert!(usage.retained_bytes() > 0);
-            for lowering in owner.conditional_definitions(*identity) {
+            for lowering in owner
+                .authored_branch(*identity)
+                .unwrap()
+                .conditional_definitions()
+            {
                 assert_eq!(lowering.location().stage_identity(), Some("authored-stage"));
                 assert!(matches!(
                     lowering.contract().condition(),

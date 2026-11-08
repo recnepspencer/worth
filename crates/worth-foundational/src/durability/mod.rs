@@ -1,6 +1,10 @@
 //! Immutable vocabulary exchanged by durable owner ports.
 mod bridge_claim;
+mod diagnostic_record;
+mod signal_definition_projection;
 pub use bridge_claim::BridgeSemanticClaimReference;
+pub use diagnostic_record::{DiagnosticRecordAbsence, DiagnosticRecordReadDenial};
+pub use signal_definition_projection::SignalDefinitionProjectionOutcome;
 
 mod checkpoint_admission;
 mod native_checkpoint_reference;

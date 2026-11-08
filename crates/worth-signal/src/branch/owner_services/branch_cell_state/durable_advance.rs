@@ -18,6 +18,10 @@ where
         runtime_ctx: &mut Ctx,
         scope: super::super::conditional_execution::SignalConditionalOperationScopeBinding,
         recorded_nodes: worth_execution::ExecutionOrderedMap<u32, u32>,
+        change: Option<(
+            &crate::durability::SignalDurableConditionalDefinitionChange,
+            super::super::conditional_execution::SignalConditionalInstallationCustody,
+        )>,
         apply: F,
     ) -> Result<Result<SignalPreparedDurableAdvance<Dm, I, T>, D>, SignalCanonicalCallerUnwind>
     where
@@ -34,6 +38,32 @@ where
         candidate
             .graph_mut()
             .install_recorded_node_issuance(recorded_nodes);
+        let prepared_contract = if let Some((change, custody)) = change {
+            if change
+                .predecessor
+                .bind_for_conditional_service(self.state.graph())
+                .is_none()
+            {
+                return Ok(Err(D::ConditionalDefinitionMismatch));
+            }
+            let worth_proof::TransitionOutcome::Success(node) = candidate
+                .graph()
+                .admit_installed_node(change.predecessor.node())
+            else {
+                return Ok(Err(D::ConditionalDefinitionMismatch));
+            };
+            match candidate.graph().prepare_conditional_contract(
+                &change.claimant,
+                node,
+                change.definition.clone(),
+            ) {
+                Ok(contract) => Some((contract, custody)),
+                Err(denial) => return Ok(Err(D::ConditionalContract(denial))),
+            }
+        } else {
+            None
+        };
+        let mut conditional = None;
         let mut generation = self.head_generation;
         let mut restore_snapshot = self.restore_snapshot_id;
         let transaction = match candidate.execute_canonical_transaction(
@@ -42,7 +72,14 @@ where
             &mut restore_snapshot,
             Some(scope),
             runtime_ctx,
-            apply,
+            |transaction| {
+                if let Some((contract, custody)) = prepared_contract {
+                    conditional = Some(Box::new(crate::branch::owner_services::durable_publication::prepared::SignalPreparedConditionalDefinition {
+                        contract: transaction.apply_prepared_conditional_contract_within_owner(contract)?, custody,
+                    }));
+                }
+                apply(transaction)
+            },
         )? {
             Ok(transaction) => transaction,
             Err(error) => {
@@ -52,7 +89,8 @@ where
             }
         };
         let source_changed = !self.state.shares_authored_storage_with(&candidate);
-        if source_changed
+        if conditional.is_none()
+            && source_changed
             && !candidate
                 .graph()
                 .preserves_conditional_definitions_of(self.state.graph())
@@ -79,6 +117,7 @@ where
             restore_snapshot,
             source_changed,
             transaction,
+            conditional,
         }))
     }
 }

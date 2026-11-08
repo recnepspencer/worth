@@ -2,10 +2,9 @@
 use super::*;
 use crate::branch::owner_services::{SignalDurableBranchHandle, SignalDurableSourceDenial};
 use crate::data::error::SignalError;
-use crate::durability::{SignalAuthoredBranchChange, SignalDurableBranchDescriptor};
 use crate::logic::transaction::SignalTransaction;
 use worth_execution::ExecutionRequest;
-use worth_foundational::facade::{DurableSignalBranchIdentity, DurableSignalGeneration};
+use worth_foundational::facade::DurableSignalBranchIdentity;
 
 /// An executing callback never leaves a nameless reservation after unwinding.
 struct PreparingAdvance<D, I, T>
@@ -60,6 +59,46 @@ where
         expected: &SignalDurableBranchHandle,
         runtime_ctx: &mut Ctx,
         apply: F,
+    ) -> Result<SignalDurableAdvanceTask, SignalDurableAdvanceDenial>
+    where
+        F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
+    {
+        self.begin_prepared(execution, expected, runtime_ctx, apply, None)
+    }
+    /// Publish one conditional successor on its actual owner; no conditional
+    /// evaluation service or mutable graph is issued to the caller.
+    pub fn begin_definition_publication(
+        &self,
+        execution: ExecutionRequest<'_, '_>,
+        expected: &SignalDurableBranchHandle,
+        runtime_ctx: &mut Ctx,
+        claimant: crate::data::aspect::SignalAspectLoweringOwner,
+        predecessor: crate::data::conditional_execution::InstalledSignalConditionalContract,
+        definition: crate::data::conditional_execution::SignalConditionalContractDefinition,
+        publication: Box<dyn crate::durability::SignalDurableDefinitionPublication>,
+    ) -> Result<SignalDurableAdvanceTask, SignalDurableAdvanceDenial> {
+        self.begin_prepared(
+            execution,
+            expected,
+            runtime_ctx,
+            |_| Ok(()),
+            Some(Box::new(
+                crate::durability::SignalDurableConditionalDefinitionChange {
+                    claimant,
+                    predecessor,
+                    definition,
+                    publication,
+                },
+            )),
+        )
+    }
+    fn begin_prepared<F>(
+        &self,
+        execution: ExecutionRequest<'_, '_>,
+        expected: &SignalDurableBranchHandle,
+        runtime_ctx: &mut Ctx,
+        apply: F,
+        change: Option<Box<crate::durability::SignalDurableConditionalDefinitionChange>>,
     ) -> Result<SignalDurableAdvanceTask, SignalDurableAdvanceDenial>
     where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
@@ -150,143 +189,22 @@ where
             expected.basis(),
             runtime_ctx,
             recorded_nodes,
+            change.as_deref(),
             apply,
         )?;
-        let phase =
-            state.prepare_frames(original, new_admission, prepared, retention, &execution)?;
+        let phase = state.prepare_frames(
+            original,
+            new_admission,
+            prepared,
+            retention,
+            change.map(|change| change.publication),
+            &execution,
+        )?;
         let slot = state.task(original)?;
         slot.lock()
             .map_err(|_| Denial::PublicationStatePoisoned)?
             .phase = phase;
         reservation.armed = false;
         Ok(state.handle(original))
-    }
-}
-impl<D, I, T> SignalDurablePublicationState<D, I, T>
-where
-    D: Copy + Ord + std::fmt::Debug + 'static,
-    I: Copy + Ord + 'static,
-    T: Copy + Ord + 'static,
-{
-    fn prepare_frames(
-        &self,
-        original: SignalBranchAdvanceIdentity,
-        admission: DurableSignalAdmissionIdentity,
-        prepared: SignalPreparedDurableAdvance<D, I, T>,
-        retention: SignalBranchAdmissionReservation,
-        execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<TaskPhase<D, I, T>, SignalDurableAdvanceDenial> {
-        use SignalDurableAdvanceDenial as Dn;
-        let branch = prepared.predecessor.branch();
-        let location =
-            SignalAdvanceLocationReservation::reserve(execution).map_err(Dn::Readmission)?;
-        if prepared.source_changed {
-            let (identity, previous_source) = {
-                let mut source = self
-                    .source
-                    .lock()
-                    .map_err(|_| Dn::PublicationStatePoisoned)?;
-                let identity = source
-                    .frontiers
-                    .issue_definition()
-                    .map_err(Dn::Readmission)?;
-                source
-                    .frontiers
-                    .observe_graph(branch, prepared.state.graph(), execution)
-                    .map_err(Dn::Readmission)?;
-                let previous = source
-                    .definition_record(&prepared.predecessor)
-                    .map_err(Dn::Readmission)?;
-                (identity, previous)
-            };
-            let previous = previous_source
-                .read(self.medium.as_ref(), execution)
-                .map_err(Dn::Readmission)?;
-            let image = prepared
-                .state
-                .graph()
-                .capture_authored_image(execution, branch)
-                .map_err(Dn::Image)?;
-            let runtime = prepared
-                .state
-                .config()
-                .capture_authored_image(prepared.state.graph(), &self.vocabulary, branch, execution)
-                .map_err(Dn::Image)?;
-            let occurrences = previous.conditional_occurrences().collect::<Vec<_>>();
-            let definition = SignalDefinitionTransitionArtifact::capture(
-                execution,
-                identity,
-                branch,
-                Some(prepared.predecessor.definition()),
-                &image,
-                &runtime,
-                &occurrences,
-                &previous.bridge_section(),
-            )
-            .map_err(Dn::Frame)?;
-            let descriptor = SignalDurableBranchDescriptor::from_recorded(
-                DurableSignalGeneration::from_recorded(
-                    prepared.predecessor.cell(),
-                    prepared.generation,
-                ),
-                prepared.predecessor.snapshot(),
-                admission,
-                definition.reference(),
-            )
-            .map_err(Dn::Frame)?;
-            let artifact = SignalBranchAdvanceArtifact::capture(
-                execution,
-                original,
-                descriptor,
-                None,
-                SignalAuthoredBranchChange::Advanced,
-            )
-            .map_err(Dn::Frame)?;
-            Ok(TaskPhase::Definition(Box::new(DefinitionPending {
-                advance: ReadyAdvance {
-                    prepared,
-                    artifact,
-                    retention,
-                    location,
-                },
-                definition,
-                location: SignalDefinitionLocationReservation::reserve(execution)
-                    .map_err(Dn::Readmission)?,
-            })))
-        } else {
-            let definition = self
-                .source
-                .lock()
-                .map_err(|_| Dn::PublicationStatePoisoned)?
-                .definition_record(&prepared.predecessor)
-                .map_err(Dn::Readmission)?;
-            let descriptor = SignalDurableBranchDescriptor::from_recorded(
-                DurableSignalGeneration::from_recorded(
-                    prepared.predecessor.cell(),
-                    prepared.generation,
-                ),
-                prepared.predecessor.snapshot(),
-                admission,
-                definition.reference(),
-            )
-            .map_err(Dn::Frame)?;
-            let artifact = SignalBranchAdvanceArtifact::capture(
-                execution,
-                original,
-                descriptor,
-                None,
-                SignalAuthoredBranchChange::Advanced,
-            )
-            .map_err(Dn::Frame)?;
-            Ok(TaskPhase::Branch(Box::new(BranchPending {
-                advance: ReadyAdvance {
-                    prepared,
-                    artifact,
-                    retention,
-                    location,
-                },
-                definition,
-            })))
-        }
     }
 }

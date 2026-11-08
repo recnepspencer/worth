@@ -3,6 +3,7 @@ mod bridge_owner;
 mod medium_fixture;
 mod owner_admission;
 mod owner_candidate_refusal;
+mod owner_definition_projection;
 mod owner_definition_publication;
 mod owner_fixture;
 mod owner_installation;

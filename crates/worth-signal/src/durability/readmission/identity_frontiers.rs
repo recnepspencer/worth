@@ -145,6 +145,16 @@ impl SignalRecordedIdentityContribution {
             self.definition,
         ))
     }
+    pub(crate) fn issue_conditional(&mut self) -> Result<DurableSignalConditionalOccurrence, D> {
+        self.conditional = self
+            .conditional
+            .checked_add(1)
+            .ok_or(D::IdentityExhausted)?;
+        Ok(DurableSignalConditionalOccurrence::from_recorded(
+            self.owner,
+            self.conditional,
+        ))
+    }
     pub(crate) fn node_issuance_root(
         &self,
         branch: worth_foundational::facade::DurableSignalBranchIdentity,

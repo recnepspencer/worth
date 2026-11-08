@@ -72,6 +72,20 @@ impl Kind {
         }
     }
 }
+impl BridgeReadmittedDefinitionSource {
+    pub(in crate::conditional_execution) fn published(
+        contract: Arc<BridgeConditionalContract>,
+        location: Arc<BridgeConditionalLocation>,
+        backing: Arc<super::readmission::backing::Backing>,
+    ) -> Arc<Self> {
+        Arc::new(Self {
+            contract,
+            location,
+            _memory: None,
+            _projection_backing: backing,
+        })
+    }
+}
 pub(super) fn write(
     out: &mut Writer<'_>,
     occurrence: DurableSignalConditionalDefinitionOccurrence,
@@ -85,19 +99,34 @@ pub(super) fn write(
     {
         return Err(D::SignalDefinitionMismatch);
     }
+    write_parts(
+        out,
+        occurrence,
+        lowering.contract(),
+        lowering.location(),
+        claims,
+    )
+}
+pub(super) fn write_parts(
+    out: &mut Writer<'_>,
+    occurrence: DurableSignalConditionalDefinitionOccurrence,
+    contract: &BridgeConditionalContract,
+    location: &BridgeConditionalLocation,
+    claims: &[u8],
+) -> Result<(), D> {
     out.occurrence(occurrence)?;
-    out.text(lowering.contract().identity())?;
-    out.byte(u8::from(lowering.location().stage_identity().is_some()))?;
-    if let Some(stage) = lowering.location().stage_identity() {
+    out.text(contract.identity())?;
+    out.byte(u8::from(location.stage_identity().is_some()))?;
+    if let Some(stage) = location.stage_identity() {
         out.text(stage)?;
     }
-    out.number(lowering.contract().dependency_count() as u64)?;
-    let ordinals = lowering.contract().condition_dependency_ordinals();
+    out.number(contract.dependency_count() as u64)?;
+    let ordinals = contract.condition_dependency_ordinals();
     out.number((ordinals.len() as u64).checked_mul(8).ok_or(D::SizeLimit)?)?;
     for ordinal in ordinals {
         out.number(*ordinal as u64)?;
     }
-    out.byte(Kind::bridge(lowering.contract().condition()).code())?;
+    out.byte(Kind::bridge(contract.condition()).code())?;
     out.blob(claims)
 }
 pub(super) struct DefinitionView<'a> {
@@ -110,6 +139,17 @@ pub(super) struct DefinitionView<'a> {
     pub(super) claims: &'a [u8],
 }
 impl<'a> DefinitionView<'a> {
+    pub(super) fn has_identity(
+        &self,
+        contract: &BridgeConditionalContract,
+        location: &BridgeConditionalLocation,
+    ) -> bool {
+        self.identity == contract.identity()
+            && self.stage == location.stage_identity()
+            && location.node_identity() == contract.identity()
+            && self.dependencies == contract.dependency_count()
+    }
+
     pub(super) fn read(input: &mut Reader<'a>) -> Result<Self, D> {
         let occurrence = input.occurrence()?;
         let identity = input.text()?;

@@ -1,7 +1,10 @@
 //! Consume the program owner, then seal fresh Bridge projections after Signal admission.
 use super::BridgeConditionalRuntimeBuilder;
+use crate::conditional_execution::authored_section::branch_projection::{
+    BranchPosture, BranchProjection, ReadmittedBranch,
+};
 use crate::conditional_execution::authored_section::readmission::{
-    Installation, PreparedBranch, Program, ReadmittedBranch,
+    Installation, PreparedBranch, Program,
 };
 use crate::conditional_execution::{
     BridgeAuthoredInstallationBindings, BridgeAuthoredReadmissionDenial as D,
@@ -32,6 +35,7 @@ impl BridgeConditionalRuntimeBuilder {
             .bridge
             .take()
             .ok_or(D::UnsupportedProgramFamily)?;
+        template.diagnostics = template.diagnostics.for_authored_installation();
         template.semantic_dependency_registry = Default::default();
         template.correspondence_allocations = Default::default();
         let _installation_memory = execution
@@ -65,7 +69,7 @@ impl BridgeConditionalRuntimeBuilder {
             std::mem::size_of::<BridgeReadmittedAuthoredAssembly>() as u64,
             crate::conditional_execution::retention::btree_charge::<
                 worth_foundational::facade::DurableSignalBranchIdentity,
-                Box<ReadmittedBranch>,
+                Arc<BranchProjection>,
             >(installation.branches.len())
             .map_err(|_| {
                 D::section(crate::conditional_execution::BridgeAuthoredSectionDenial::SizeLimit)
@@ -89,7 +93,13 @@ impl BridgeConditionalRuntimeBuilder {
             let branch_identity = handle.basis().observation().branch_id().clone();
             branches.insert(identity, finish(prepared, branch_identity, execution)?);
         }
+        installation
+            .program
+            .bridge
+            .diagnostics
+            .readmit_writeback_diagnostics(&signal);
         Ok(Box::new(BridgeReadmittedAuthoredAssembly {
+            program: Arc::clone(&installation.program),
             signal,
             branches,
             _memory: memory,
@@ -110,11 +120,17 @@ fn finish(
     prepared: Box<PreparedBranch>,
     branch: worth_signal::facade::branch::SignalBranchIdentity,
     execution: &ExecutionRequest<'_, '_>,
-) -> Result<Box<ReadmittedBranch>, D> {
+) -> Result<Arc<BranchProjection>, D> {
     use crate::conditional_execution::{lowering_registry, retention};
     prepared
         .backing
         .grow(execution, std::mem::size_of::<ReadmittedBranch>() as u64)?;
+    prepared.backing.grow(
+        execution,
+        retention::arc_charge::<BranchProjection>().map_err(|_| {
+            D::section(crate::conditional_execution::BridgeAuthoredSectionDenial::SizeLimit)
+        })?,
+    )?;
     let ledger = retention::BridgeRetentionLedger::new(
         prepared.program.bridge.policy.conditional_retention(),
     )
@@ -172,13 +188,16 @@ fn finish(
         );
         registry.install(key, lowering);
     }
-    Ok(Box::new(ReadmittedBranch {
-        _dependencies: prepared.dependencies,
-        _allocations: prepared.allocations,
-        _program: prepared.program,
-        section: prepared.section,
-        lowerings: registry,
-        retention: ledger,
-        _backing: prepared.backing,
+    Ok(Arc::new(BranchProjection {
+        state: std::sync::Mutex::new(Box::new(ReadmittedBranch {
+            posture: BranchPosture::Serving,
+            _dependencies: prepared.dependencies,
+            _allocations: prepared.allocations,
+            _program: prepared.program,
+            section: prepared.section,
+            lowerings: registry,
+            retention: ledger,
+            _backing: prepared.backing,
+        })),
     }))
 }

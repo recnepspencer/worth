@@ -43,6 +43,12 @@ pub enum SignalDurableAdvanceDenial {
         original: SignalBranchAdvanceIdentity,
     },
     ConditionalDefinitionPublicationRequired,
+    ConditionalDefinitionMismatch,
+    ConditionalInstallation(
+        super::super::conditional_execution::SignalConditionalInstallationExtensionDenial,
+    ),
+    ConditionalContract(crate::data::conditional_execution::SignalConditionalContractDenial),
+    DefinitionSectionRefused,
     DefinitionSourceMismatch {
         expected: worth_foundational::facade::SignalDefinitionTransitionReference,
         expected_branch: worth_foundational::facade::DurableSignalBranchIdentity,
@@ -62,11 +68,17 @@ pub enum SignalDurableAdvanceDenial {
 /// This output is constructed only after the concrete committed subject moved
 /// into its actual branch cell. Its fields cannot be authored by a caller.
 pub struct SignalDurableAdvanceOutput {
+    pub(super) projection: worth_foundational::facade::SignalDefinitionProjectionOutcome,
     pub(super) branch: SignalDurableBranchHandle,
     pub(super) transaction: SignalDurableTransactionResult,
     pub(super) artifact: SignalBranchAdvanceArtifact,
 }
 impl SignalDurableAdvanceOutput {
+    pub fn projection_outcome(
+        &self,
+    ) -> worth_foundational::facade::SignalDefinitionProjectionOutcome {
+        self.projection
+    }
     pub fn branch(&self) -> &SignalDurableBranchHandle {
         &self.branch
     }

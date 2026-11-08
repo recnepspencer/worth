@@ -22,6 +22,7 @@ where
         expected: &AdmittedSignalBranchBasis,
         runtime_ctx: &mut Ctx,
         recorded_nodes: worth_execution::ExecutionOrderedMap<u32, u32>,
+        change: Option<&crate::durability::SignalDurableConditionalDefinitionChange>,
         apply: F,
     ) -> Result<SignalPreparedDurableAdvance<Dm, I, T>, D>
     where
@@ -66,8 +67,47 @@ where
                 self.incarnation(),
                 state.state().installed_definition().cloned(),
             );
+        let change = match change {
+            Some(change) => {
+                use super::super::conditional_execution::{
+                    SignalConditionalInstallationCustody,
+                    SignalConditionalInstallationExtensionDenial as Installation,
+                };
+                use crate::data::retained_storage::{
+                    RetainedStorageCharge, SignalConditionalRetentionDenial,
+                };
+                let bytes = RetainedStorageCharge::capacity::<u8>(
+                    change.definition.installation_retained_bytes(),
+                )
+                .map_err(|_| D::ConditionalInstallation(Installation::CapacityExhausted))?;
+                let custody = owner
+                    .conditional_retention
+                    .reserve(1, bytes)
+                    .map_err(|denial| {
+                        D::ConditionalInstallation(match denial {
+                            SignalConditionalRetentionDenial::CapacityExhausted => {
+                                Installation::CapacityExhausted
+                            }
+                            SignalConditionalRetentionDenial::Closed
+                            | SignalConditionalRetentionDenial::Poisoned
+                            | SignalConditionalRetentionDenial::InvalidTransfer => {
+                                Installation::RetentionUnavailable
+                            }
+                        })
+                    })?;
+                Some((change, SignalConditionalInstallationCustody::new(custody)))
+            }
+            None => None,
+        };
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            state.prepare_durable_advance(execution, runtime_ctx, scope, recorded_nodes, apply)
+            state.prepare_durable_advance(
+                execution,
+                runtime_ctx,
+                scope,
+                recorded_nodes,
+                change,
+                apply,
+            )
         }));
         // Only the candidate was mutable. Release the actual canonical mutex
         // before propagating a caller unwind, so it is not falsely quarantined.

@@ -11,10 +11,11 @@ pub use crate::adapter::{
 pub use crate::builder::{RuntimeBridgeBuilder, UnattachedRelationalBridgeBuilder};
 pub use crate::conditional_execution::{
     BridgeAppliedConditionalInstallationExtension, BridgeAsyncEffectsIndeterminateObservation,
-    BridgeAuthoredDependencyDescription, BridgeAuthoredInstallationBindings,
-    BridgeAuthoredReadmissionDenial, BridgeAuthoredSection, BridgeAuthoredSectionDenial,
-    BridgeConditionalCausalObservation, BridgeConditionalComparatorProvider,
-    BridgeConditionalComparisonWork, BridgeConditionalComputeProvider, BridgeConditionalCondition,
+    BridgeAuthoredBranchDenial, BridgeAuthoredBranchView, BridgeAuthoredDependencyDescription,
+    BridgeAuthoredInstallationBindings, BridgeAuthoredReadmissionDenial, BridgeAuthoredSection,
+    BridgeAuthoredSectionDenial, BridgeConditionalCausalObservation,
+    BridgeConditionalComparatorProvider, BridgeConditionalComparisonWork,
+    BridgeConditionalComputeProvider, BridgeConditionalCondition,
     BridgeConditionalConditionProvider, BridgeConditionalContinuityDenial,
     BridgeConditionalContinuityMismatch, BridgeConditionalContract, BridgeConditionalContractParts,
     BridgeConditionalDecisionEvidence, BridgeConditionalDecisionReentryRequest,
@@ -35,7 +36,8 @@ pub use crate::conditional_execution::{
     BridgeConditionalRuntimeBuilder, BridgeConditionalRuntimeLifecycleProbe,
     BridgeConditionalRuntimeReconstitutionReport, BridgeConditionalSemanticObservation,
     BridgeConditionalSignalBasisBinding, BridgeConditionalTriggerProvider,
-    BridgeConditionalWakeProvider, BridgeExactOutputComparison, BridgeInstalledConditionalLowering,
+    BridgeConditionalWakeProvider, BridgeDurableDefinitionPublicationDenial,
+    BridgeExactOutputComparison, BridgeInstalledConditionalLowering,
     BridgeInstalledConditionalLoweringCounters, BridgeLiveConditionalLowering,
     BridgeManagedClockAcceptedObservation, BridgeManagedClockBinding, BridgeManagedClockClosure,
     BridgeManagedClockInstallationParts, BridgeManagedClockObservationOutcome,
@@ -385,3 +387,5 @@ pub use crate::conditional_execution::BridgePreparedConditionalReconstitution;
 pub use crate::policy::BridgeConditionalRetentionBudget;
 
 pub use crate::correspondence::BridgeCorrespondenceSignalFailure;
+
+pub use crate::diagnostics::BridgeWritebackDiagnosticReference;

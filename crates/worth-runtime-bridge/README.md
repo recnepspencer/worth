@@ -334,9 +334,26 @@ changed-build courts cover this intrinsic entry. Store-backed owner courts also
 cover graceful reopen and a kill after all publications are terminal, comparing
 three branches with the memory-only authored program and demanding derived
 values anew under the same or a changed build. These courts use source-free
-conditional definitions; they do not claim mixed owner effects. Home admission,
-mixed publication and durable conditional-definition publication remain pending.
+conditional definitions; they do not claim mixed owner effects. Home admission
+and mixed publication remain pending.
 Conditional execution and managed services retain their later phase boundaries.
+
+`BridgeReadmittedAuthoredAssembly::begin_conditional_definition_publication`
+prepares the successor through Signal's original durable task. It preserves
+registration, allocation and performed-claim sections, reserves the new lowering
+before effects, and activates it after Signal commits. Only the acting branch
+changes. `authored_branch` exposes a serving projection guard; preparation,
+pending publication and a committed projection requiring readmission have typed
+refusals. Resume the retained original rather than submitting another definition.
+
+Writeback execution records and replay-comparison records are process-local
+diagnostics. Current enumeration returns retained entries; historical reads take
+an owner-issued `BridgeWritebackDiagnosticReference`, which retains neither the
+payload nor the owner. Reads distinguish `NeverRetained`,
+`ExpiredUnderCountLimit` and `NotRetainedAcrossReopen`; a foreign owner refuses.
+Latest-entry access names the current archive. Fresh installation starts that
+archive empty and separates it from prior runtime aliases. These records never
+authorize effect replay; recovery evidence comes from durable owner commits.
 
 ## Retire Home-owned Bridge custody
 

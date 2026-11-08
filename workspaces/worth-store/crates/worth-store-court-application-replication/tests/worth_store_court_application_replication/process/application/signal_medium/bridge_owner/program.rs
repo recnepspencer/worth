@@ -38,7 +38,7 @@ pub(super) fn program() -> Box<Program> {
                     }),
                     location: BridgeConditionalLocation::workflow_stage("durable-stage", identity),
                     dependencies: Vec::new(),
-                    providers: providers(),
+                    providers: providers(&BridgeConditionalCondition::OnDemand),
                 })
                 .unwrap(),
         );
@@ -49,10 +49,19 @@ pub(super) fn program() -> Box<Program> {
         lowerings,
     })
 }
-fn providers() -> BridgeConditionalProviderSet {
-    BridgeConditionalProviderSet::new()
-        .trigger(Requested)
-        .compute(Compute)
+pub(super) fn providers(condition: &BridgeConditionalCondition) -> BridgeConditionalProviderSet {
+    match condition {
+        BridgeConditionalCondition::OnDemand => BridgeConditionalProviderSet::new()
+            .trigger(Requested)
+            .compute(Compute),
+        BridgeConditionalCondition::Always => BridgeConditionalProviderSet::new().compute(Compute),
+        BridgeConditionalCondition::AspectFiltered
+        | BridgeConditionalCondition::DeltaThreshold(_)
+        | BridgeConditionalCondition::RuntimePredicate
+        | BridgeConditionalCondition::TemporalWake => {
+            panic!("fixture declares only OnDemand and Always definitions")
+        }
+    }
 }
 struct Requested;
 struct Compute;
@@ -115,6 +124,6 @@ impl BridgeAuthoredInstallationBindings for Bindings {
         assert_eq!(location.stage_identity(), Some("durable-stage"));
         assert_eq!(location.node_identity(), contract.identity());
         self.providers += 1;
-        Ok(providers())
+        Ok(providers(contract.condition()))
     }
 }

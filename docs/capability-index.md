@@ -1549,8 +1549,12 @@ and readmit Bridge conditional program definitions through Signal transitions
 using `BridgeConditionalRuntimeBuilder` and fresh `BridgeAuthoredInstallationBindings`.
 The [Bridge owner entry](../crates/worth-runtime-bridge/README.md#authored-conditional-definition-recovery)
 rebuilds per-branch indexes, exact slots, lowering registry and retention ledger.
-Authored Home bootstrap, durable forks, durable conditional-definition publication
-and mixed World publication remain pending; the InitialEmpty Directory
+The returned assembly also publishes conditional successors through the original
+Signal definition/branch journal task and exposes typed branch-projection posture.
+Writeback diagnostic history uses owner-issued weak retention references with
+typed absence reasons; diagnostic records supply no durable effect authority.
+Authored Home bootstrap, durable forks and mixed World publication remain pending;
+the InitialEmpty Directory
 restriction above still applies. Applications continue through Query's declaration
 and Host facades.
 

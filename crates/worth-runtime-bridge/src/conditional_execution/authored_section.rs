@@ -1,20 +1,24 @@
 //! Bridge's authored declaration section inside a Signal definition transition.
+pub(super) mod branch_projection;
 pub(super) mod capture;
 mod definition;
+pub(super) mod definition_publication;
 mod dependency;
 mod fields;
 mod framing;
 mod layout;
+pub(super) mod publication;
 pub(super) mod readmission;
 mod registration;
 mod rows;
 mod targets;
-pub(super) use definition::BridgeReadmittedDefinitionSource;
-pub use dependency::BridgeAuthoredDependencyDescription;
-pub use readmission::{
-    BridgeAuthoredInstallationBindings, BridgeAuthoredReadmissionDenial,
-    BridgeReadmittedAuthoredAssembly,
+pub use branch_projection::{
+    BridgeAuthoredBranchDenial, BridgeAuthoredBranchView, BridgeReadmittedAuthoredAssembly,
 };
+pub(super) use definition::BridgeReadmittedDefinitionSource;
+pub use definition_publication::BridgeDurableDefinitionPublicationDenial;
+pub use dependency::BridgeAuthoredDependencyDescription;
+pub use readmission::{BridgeAuthoredInstallationBindings, BridgeAuthoredReadmissionDenial};
 
 use worth_foundational::facade::{
     BoundaryProtocolIdentity, BoundaryProtocolVersion, DurableSignalBranchIdentity,

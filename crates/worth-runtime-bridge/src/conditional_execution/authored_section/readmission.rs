@@ -5,7 +5,7 @@ use super::{
 };
 use crate::conditional_execution::{
     BridgeConditionalContract, BridgeConditionalDenial, BridgeConditionalLocation,
-    BridgeConditionalProviderSet, BridgeInstalledConditionalLowering,
+    BridgeConditionalProviderSet,
 };
 use crate::facade::RuntimeBridge;
 use std::{collections::BTreeMap, sync::Arc};
@@ -219,67 +219,6 @@ impl SignalAuthoredOwnerInstallation for Installation<'_> {
                 self.refusal = Some(reason);
                 Err(SignalAuthoredInstallationRefused)
             }
-        }
-    }
-}
-
-/// Private construction requires successful Signal admission and every Bridge branch.
-pub struct BridgeReadmittedAuthoredAssembly {
-    pub(in crate::conditional_execution) signal:
-        worth_signal::facade::durability::SignalDurableOwner<(), (), (), (), ()>,
-    pub(in crate::conditional_execution) branches:
-        BTreeMap<DurableSignalBranchIdentity, Box<ReadmittedBranch>>,
-    pub(in crate::conditional_execution) _memory:
-        Option<worth_execution::ExecutionMemoryReservation>,
-}
-pub(in crate::conditional_execution) struct ReadmittedBranch {
-    pub(in crate::conditional_execution) _dependencies:
-        crate::correspondence::AdmittedSemanticDependencyRegistry,
-    pub(in crate::conditional_execution) _allocations:
-        crate::correspondence::SharedCorrespondenceAllocationRegistry,
-    pub(in crate::conditional_execution) section: BridgeAuthoredSection,
-    pub(in crate::conditional_execution) lowerings:
-        crate::conditional_execution::lowering_registry::BridgeConditionalLoweringRegistry,
-    pub(in crate::conditional_execution) retention:
-        Arc<crate::conditional_execution::retention::BridgeRetentionLedger>,
-    pub(in crate::conditional_execution) _backing: Arc<backing::Backing>,
-    pub(in crate::conditional_execution) _program: Arc<Program>,
-}
-impl BridgeReadmittedAuthoredAssembly {
-    pub fn signal_owner(
-        &self,
-    ) -> &worth_signal::facade::durability::SignalDurableOwner<(), (), (), (), ()> {
-        &self.signal
-    }
-    pub fn authored_section(
-        &self,
-        branch: DurableSignalBranchIdentity,
-    ) -> Option<&BridgeAuthoredSection> {
-        self.branches.get(&branch).map(|branch| &branch.section)
-    }
-    pub fn conditional_definitions(
-        &self,
-        branch: DurableSignalBranchIdentity,
-    ) -> impl Iterator<Item = &Arc<BridgeInstalledConditionalLowering>> {
-        self.branches
-            .get(&branch)
-            .into_iter()
-            .flat_map(|branch| branch.lowerings.values())
-    }
-    pub fn conditional_retention(
-        &self,
-        branch: DurableSignalBranchIdentity,
-    ) -> Option<crate::conditional_execution::BridgeConditionalRetentionObservation> {
-        self.branches
-            .get(&branch)
-            .map(|branch| branch.retention.observation())
-    }
-}
-impl Drop for ReadmittedBranch {
-    fn drop(&mut self) {
-        self.retention.close();
-        for lowering in self.lowerings.values() {
-            lowering.lease.revoke_liveness();
         }
     }
 }

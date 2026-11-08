@@ -306,8 +306,13 @@ conditional source, graceful reopen and quiescent process termination. Values
 recompute on first demand after both same-build and changed-build readmission.
 This entry does not yet enable authored Home bootstrap, durable fork or mixed
 World publication. Bridge's authored section now has its own cold readmission
-entry. Dedicated durable conditional-definition publication remains subsequent
-work; ordinary advances refuse changes to conditional definitions.
+entry. `begin_definition_publication` prepares a conditional successor with the
+actual lowering owner and installed contract, then retains it in the original
+definition/branch journal task. Its transition carries the fresh conditional
+occurrence and the owner's Bridge section; ordinary advances still refuse
+conditional-definition changes. A committed projection callback that unwinds
+leaves the committed completion available for exact delivery, with a typed
+projection outcome, without executing the publication again.
 
 ## One Continuous Story
 

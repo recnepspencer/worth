@@ -31,6 +31,9 @@ where
         .and_then(|charge| charge.checked_add(Charge::capacity::<BranchPending<D, I, T>>(1)?))
         .and_then(|charge| charge.checked_add(Charge::capacity::<TransactionResult>(1)?))
         .and_then(|charge| {
+            charge.checked_add(Charge::capacity::<SignalDurableAdvanceCompletion>(1)?)
+        })
+        .and_then(|charge| {
             charge.checked_add(BranchState::<D, I, T>::durable_successor_framework_charge()?)
         })
         .map_err(|_| {

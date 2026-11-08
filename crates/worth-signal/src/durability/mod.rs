@@ -1,7 +1,13 @@
 //! Signal-owned durable source, distinct from evaluation snapshots.
 pub(crate) mod authored_image;
 mod branch_advance;
+mod definition_publication;
 mod definition_transition;
+pub(crate) use definition_publication::SignalDurableConditionalDefinitionChange;
+pub use definition_publication::{
+    SignalDefinitionPublicationContext, SignalDurableDefinitionPublication,
+    SignalOnlyDefinitionPublication,
+};
 mod descriptor;
 mod frame;
 mod medium;

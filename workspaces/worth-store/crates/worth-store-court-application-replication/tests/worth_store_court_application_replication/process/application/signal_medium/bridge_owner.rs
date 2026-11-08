@@ -8,6 +8,7 @@ use worth_execution::ExecutionRequest;
 use worth_runtime_bridge::facade::BridgeReadmittedAuthoredAssembly;
 use worth_signal::facade::durability::*;
 use worth_signal::facade::*;
+mod definition_publication;
 mod derived_reference;
 mod program;
 mod quiescent_kill;
@@ -64,13 +65,18 @@ fn assert_sources(
         assert_eq!(runtime.as_bytes(), definition.runtime_bytes());
         assert_eq!(
             owner
-                .authored_section(*branch)
+                .authored_branch(*branch)
                 .unwrap()
+                .authored_section()
                 .as_signal_section()
                 .as_bytes(),
             definition.bridge_bytes()
         );
-        let actual: Vec<_> = owner.conditional_definitions(*branch).collect();
+        let actual: Vec<_> = owner
+            .authored_branch(*branch)
+            .unwrap()
+            .conditional_definitions()
+            .collect();
         assert_eq!(actual.len(), reference.program.lowerings.len());
         for (actual, expected) in actual.iter().zip(&reference.program.lowerings) {
             assert_eq!(actual.contract(), expected.contract());
@@ -81,7 +87,10 @@ fn assert_sources(
                 expected.correspondence_count()
             );
         }
-        let retention = owner.conditional_retention(*branch).unwrap();
+        let retention = owner
+            .authored_branch(*branch)
+            .unwrap()
+            .conditional_retention();
         assert_eq!(retention.retained_definition_candidates(), 0);
         assert_eq!(retention.managed_clocks(), 0);
         assert_eq!(retention.reserved_temporal_intents(), 0);

@@ -17,4 +17,13 @@ where
     pub(in crate::branch::owner_services) restore_snapshot: Option<SignalSnapshotId>,
     pub(in crate::branch::owner_services) source_changed: bool,
     pub(in crate::branch::owner_services) transaction: Box<TransactionResult>,
+    pub(in crate::branch::owner_services) conditional:
+        Option<Box<SignalPreparedConditionalDefinition>>,
+}
+
+pub(in crate::branch::owner_services) struct SignalPreparedConditionalDefinition {
+    pub(in crate::branch::owner_services) contract:
+        crate::data::conditional_execution::InstalledSignalConditionalContract,
+    pub(in crate::branch::owner_services) custody:
+        super::super::conditional_execution::SignalConditionalInstallationCustody,
 }

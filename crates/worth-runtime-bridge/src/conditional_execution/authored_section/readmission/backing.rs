@@ -11,7 +11,9 @@ struct Held {
     reservation: Option<ExecutionMemoryReservation>,
 }
 impl Backing {
-    pub(super) fn new(execution: &ExecutionRequest<'_, '_>) -> Result<Arc<Self>, D> {
+    pub(in crate::conditional_execution) fn new(
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<Arc<Self>, D> {
         let bytes = crate::conditional_execution::retention::arc_charge::<Self>()
             .map_err(|_| D::section(super::super::BridgeAuthoredSectionDenial::SizeLimit))?;
         let reservation = execution.reserve_retained_memory(bytes).map_err(|cause| {

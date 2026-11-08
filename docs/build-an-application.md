@@ -7393,6 +7393,12 @@ rebuilds providers, branch-local correspondence indexes, lowering registry and
 retention ledger from fresh installation. Values and runtime keys never become
 recovered definitions. See the
 [Bridge owner contract](../crates/worth-runtime-bridge/README.md#authored-conditional-definition-recovery).
+That platform assembly publishes conditional successors through the retained
+Signal original and its definition-transition section. Writeback diagnostic
+records remain process-local: owner-issued retention references distinguish
+count eviction from loss across reopen, while effect recovery uses durable
+commits. A diagnostic cache never substitutes for authored definitions or an
+owner's commit evidence.
 Home's ordered
 Signal admission and Bridge/mixed publication integration are still pending, so
 Directory applications retain the InitialEmpty restrictions above. Applications

@@ -1,8 +1,9 @@
 mod authored_section;
 mod authoritative_delivery;
 pub use authored_section::{
-    BridgeAuthoredDependencyDescription, BridgeAuthoredInstallationBindings,
-    BridgeAuthoredReadmissionDenial, BridgeAuthoredSection, BridgeAuthoredSectionDenial,
+    BridgeAuthoredBranchDenial, BridgeAuthoredBranchView, BridgeAuthoredDependencyDescription,
+    BridgeAuthoredInstallationBindings, BridgeAuthoredReadmissionDenial, BridgeAuthoredSection,
+    BridgeAuthoredSectionDenial, BridgeDurableDefinitionPublicationDenial,
     BridgeReadmittedAuthoredAssembly, BRIDGE_AUTHORED_SECTION_PROTOCOL,
     BRIDGE_AUTHORED_SECTION_VERSION,
 };

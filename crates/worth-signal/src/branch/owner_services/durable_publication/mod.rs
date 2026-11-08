@@ -1,5 +1,6 @@
 //! Per-branch original tasks share only short metadata locks and physical publication order.
 mod driving;
+mod frame_preparation;
 pub(in crate::branch::owner_services) mod medium_binding;
 mod port;
 mod preparation;
@@ -77,6 +78,7 @@ where
     artifact: SignalBranchAdvanceArtifact,
     retention: SignalBranchAdmissionReservation,
     location: SignalAdvanceLocationReservation,
+    publication: Option<Box<dyn crate::durability::SignalDurableDefinitionPublication>>,
 }
 struct DefinitionPending<D, I, T>
 where
@@ -107,6 +109,7 @@ where
     Definition(Box<DefinitionPending<D, I, T>>),
     Branch(Box<BranchPending<D, I, T>>),
     Completing,
+    Completion(Box<SignalDurableAdvanceCompletion>),
     Delivered,
 }
 struct TaskSlot<D, I, T>
@@ -255,6 +258,7 @@ where
     fn drop(&mut self) {
         if let Some(resource) = self.resource.take() {
             let fate = match self.phase {
+                TaskPhase::Completion(_) => DurablePublicationFate::Committed,
                 TaskPhase::Preparing => DurablePublicationFate::ProvenNoEffect { detail: () },
                 TaskPhase::Definition(_)
                 | TaskPhase::Branch(_)
