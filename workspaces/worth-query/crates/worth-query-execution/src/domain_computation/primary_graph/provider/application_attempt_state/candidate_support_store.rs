@@ -1,7 +1,7 @@
 //! Retain actual discovery evidence on its already registered root, never admit from a descriptor.
 use super::*;
 use crate::domain_computation::primary_graph::{
-    application_query::AppliedQuerySupport, WorthQueryApplicationAttemptDenial as Denial,
+    provider::CandidateReadSupport, WorthQueryApplicationAttemptDenial as Denial,
     WorthQueryApplicationAttemptDenialKind as Kind,
 };
 use crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding;
@@ -30,12 +30,12 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
     }
 }
 impl super::super::WorthQueryPrimaryGraphProvider {
-    pub(in crate::domain_computation::primary_graph) fn retain_candidate_query_support(
+    pub(in crate::domain_computation::primary_graph) fn retain_candidate_read_support(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         root: &WorthQueryProviderSessionTerminalBinding,
         source: EntityId,
-        support: AppliedQuerySupport,
+        support: CandidateReadSupport,
     ) -> Result<(), Denial> {
         if self
             .publication_fault_control
@@ -44,16 +44,16 @@ impl super::super::WorthQueryPrimaryGraphProvider {
             let reserved = execution
                 .allocation_policy()
                 .reserve_memory(u64::MAX)
-                .map_err(|cause| Denial::allocation_denied(support.query(), cause))?;
+                .map_err(|cause| Denial::allocation_denied(support.subject(), cause))?;
             drop(reserved);
         }
         self.attempts
             .lock()
             .unwrap_or_else(|p| p.into_inner())
             .query_support_root(root)?
-            .retain_candidate_query_support(execution, source, support)
+            .retain_candidate_read_support(execution, source, support)
     }
-    pub(in crate::domain_computation::primary_graph) fn reset_candidate_query_support(
+    pub(in crate::domain_computation::primary_graph) fn reset_candidate_read_support(
         &self,
         root: &WorthQueryProviderSessionTerminalBinding,
     ) -> Result<(), Denial> {
@@ -61,7 +61,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
             .lock()
             .unwrap_or_else(|p| p.into_inner())
             .query_support_root(root)?
-            .reset_candidate_query_support();
+            .reset_candidate_read_support();
         Ok(())
     }
 }

@@ -204,6 +204,8 @@ impl ApplicationProgramDefinition<Schema> for Program {
                 .finish(),
             predecessor::program::feature(),
             family::diamond::feature(),
+            family::decision_input::feature(),
+            family::decision_write::feature(),
         ]
     }
 }
@@ -251,6 +253,12 @@ pub type AuthoredRestoreAction = ApplicationActionReference<
 
 pub(super) fn entry_spec<Delivery: ApplicationActionDelivery<Schema, edit::Binding>>(
 ) -> ApplicationFeatureSpec {
+    entry_spec_with_member_delivery::<Delivery, Completion>()
+}
+pub(super) fn entry_spec_with_member_delivery<
+    Delivery: ApplicationActionDelivery<Schema, edit::Binding>,
+    MemberDelivery: ApplicationActionDelivery<Schema, member_edit::Binding>,
+>() -> ApplicationFeatureSpec {
     ApplicationFeatureSpec::root::<Schema, Entry>()
         .provides::<EntryOutput>()
         .action::<predecessor::synchronous::Binding, Completion>()
@@ -263,7 +271,7 @@ pub(super) fn entry_spec<Delivery: ApplicationActionDelivery<Schema, edit::Bindi
         .finish_action()
         .action::<edit::Binding, Delivery>()
         .finish_action()
-        .action::<member_edit::Binding, Completion>()
+        .action::<member_edit::Binding, MemberDelivery>()
         .finish_action()
         .action::<authored_member::retire::Binding, Completion>()
         .finish_action()

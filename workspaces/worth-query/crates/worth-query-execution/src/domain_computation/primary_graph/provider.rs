@@ -13,7 +13,7 @@ pub(in crate::domain_computation::primary_graph::provider) use application_attem
 pub(in crate::domain_computation::primary_graph) use application_attempt_state::RebaseVerificationFailure;
 pub(in crate::domain_computation) use application_attempt_state::RegisteredPrimaryRead;
 pub(in crate::domain_computation::primary_graph) use application_attempt_state::{
-    CoupledApplicationMember, CoupledProducerPreparation,
+    CandidateReadSupport, CoupledApplicationMember, CoupledProducerPreparation,
 };
 pub use application_attempt_state::{
     FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason,

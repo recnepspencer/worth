@@ -8,6 +8,7 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 /// selection compares before it reuses that output.
 pub struct WorthQueryRetainedOutputCandidate {
     pub(in crate::domain_computation::primary_graph::output_lineage) coupled_completion: Option<super::super::CoupledOutputCompletion>,
+    pub(in crate::domain_computation::primary_graph) recovered_checkpoint: Option<crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity>,
     pub(in crate::domain_computation::primary_graph) required_publication: Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
     pub(in crate::domain_computation::primary_graph) producing_implementation: Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation>,
     pub(in crate::domain_computation::primary_graph) binding: TypeId,
@@ -89,6 +90,10 @@ impl WorthQueryApplicationOutputLineage {
                         coupled_completion: recorded.coupled_completion.clone(),
                         producing_implementation: recorded.producing_implementation,
                         required_publication: recorded.required_publication.clone(),
+                        recovered_checkpoint: recorded
+                            .native_prior_checkpoint
+                            .as_ref()
+                            .and_then(|prior| prior.recovered().cloned()),
                         binding: *output_binding,
                         correspondence: Arc::clone(&recorded.correspondence),
                         source_identity: recorded.source_identity,

@@ -79,6 +79,9 @@ impl StoreDenial {
             WorthQueryApplicationAttemptDenial as Denial,
             WorthQueryApplicationAttemptDenialKind as Kind,
         };
+        if let Self::ExecutionRequest(cause) = self {
+            return Denial::relational_read_stopped(cause.into(), subject);
+        }
         if let Self::Content(cause) = self {
             return Denial::relational_read_stopped(cause.into_execution_cause(), subject);
         }

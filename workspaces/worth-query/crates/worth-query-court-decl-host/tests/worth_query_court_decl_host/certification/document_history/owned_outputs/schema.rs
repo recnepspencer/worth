@@ -100,6 +100,7 @@ impl Registration<Schema> for Actor {
 fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
+    let schema = family::decision_write::declare(family::decision_input::declare(schema));
     let schema = family::diamond::declare(predecessor::declare(
         family::predecessor_family::declare(schema),
     ));

@@ -16,7 +16,7 @@ pub(super) fn prepare_members(
     before: &SnapshotHandle,
     policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<(), crate::domain_computation::WorthQueryProviderSessionCommitStop> {
-    let complete = if members.is_empty() && root.candidate_query_support().is_empty() {
+    let complete = if members.is_empty() && root.candidate_read_support().is_empty() {
         None
     } else {
         Some(
@@ -26,8 +26,8 @@ pub(super) fn prepare_members(
                 .expect("Native retained genuine coupled proposal read custody"),
         )
     };
-    if !root.candidate_query_support().is_empty() {
-        support::require_queries(
+    if !root.candidate_read_support().is_empty() {
+        support::require_read_support(
             execution,
             provider,
             root,
@@ -45,7 +45,7 @@ pub(super) fn prepare_members(
             complete.as_ref().expect("coupled complete image"),
             member.meaning.source_scope,
         )?;
-        support::require_queries(
+        support::require_read_support(
             execution,
             provider,
             &owned.attempt,

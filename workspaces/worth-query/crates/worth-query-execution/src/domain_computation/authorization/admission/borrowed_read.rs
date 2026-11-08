@@ -1,5 +1,5 @@
 //! Independent operation admission through the caller's original Native loan.
-use super::validation::{denial, validate_admission_clock, validate_static_authority_prefix};
+use super::validation::{denial, validate_conventional_preflight, ConventionalPreflightEntrance};
 use crate::domain_computation::{
     authorization::{
         WorthQueryOperationAuthorizationDenial as Denial,
@@ -50,14 +50,14 @@ impl<'a> BorrowedReadOperationAdmission<'a> {
             scope: scope.entity_id(),
             observe: Box::new(move |execution, native, snapshot, operation| {
                 let result = (|| {
-                    validate_admission_clock(
-                        &runtime.runtime,
-                        principal.clock(),
+                    validate_conventional_preflight(
+                        runtime,
+                        principal,
+                        scope,
+                        operation,
                         request,
-                        operation.operation(),
+                        ConventionalPreflightEntrance::BorrowedRead,
                     )?;
-                    super::validation::admit_request(request, operation.operation())?;
-                    validate_static_authority_prefix(runtime, principal, scope, operation)?;
                     runtime
                         .observe_current_operation_borrowed(
                             execution, principal, scope, operation, session, native, snapshot,
@@ -65,10 +65,14 @@ impl<'a> BorrowedReadOperationAdmission<'a> {
                         .retain_for(operation)
                 })();
                 result.map_err(|cause: Denial| {
-                    denial(
-                        cause.kind(),
-                        format!("{}: {}", operation.operation(), cause.subject()),
-                    )
+                    if cause.kind() == Kind::Refused(Refusal::CapabilityAuthorizationMissing) {
+                        cause
+                    } else {
+                        denial(
+                            cause.kind(),
+                            format!("{}: {}", operation.operation(), cause.subject()),
+                        )
+                    }
                 })
             }),
         }
@@ -80,11 +84,7 @@ impl<'a> BorrowedReadOperationAdmission<'a> {
         snapshot: SnapshotHandle,
         operation: InstalledOperationView<'_>,
     ) -> Result<WorthQueryRetainedAuthorizationDecisionFacts, Denial> {
-        // A read cannot inherit an outer producer's capability. Its own
-        // conventional requirements must authorize this original principal/scope.
-        if operation.contracts().authorization() == worth_query_installation::facade::WorthQueryInstalledApplicationOperationAuthorization::Capability {
-            return Err(denial(Kind::Refused(Refusal::CapabilityAuthorizationMissing), operation.operation()));
-        }
+        // The common preflight checks this read's own requirements, never an outer grant.
         (self.observe)(execution, native, snapshot, operation)
     }
 }

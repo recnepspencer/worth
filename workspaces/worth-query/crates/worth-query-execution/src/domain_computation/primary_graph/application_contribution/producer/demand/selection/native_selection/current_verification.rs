@@ -30,7 +30,6 @@ where
             )
         })?;
     let mut current = Vec::with_capacity(live_candidates.len());
-    use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity;
     for (candidate, entity) in live_candidates {
         let live = retained_liveness::read(execution, &view, *entity)?;
         if candidate.historical_selection.is_some() {
@@ -41,16 +40,11 @@ where
             current.push((live, exact));
             continue;
         }
-        let identity_current = candidate
-            .source_identity
-            .is_some_and(|identity| match identity {
-                RecordedSourceIdentity::Runtime(runtime) => {
-                    runtime == source.idempotency_identity()
-                }
-                RecordedSourceIdentity::Checkpoint(checkpoint) => {
-                    checkpoint == source.checkpoint_identity()
-                }
-            });
+        let identity_current = source_identity_matches(
+            candidate,
+            source.idempotency_identity(),
+            source.checkpoint_identity(),
+        );
         // The source facts and the performed output witness are
         // one fact set: either half moving ends exact reuse, and a
         // live output selects Preserve. Checkpoints state the output half among their
@@ -62,38 +56,17 @@ where
             .native_output_witness
             .as_ref()
             .and_then(|witness| witness.get());
-        let owner = &application
-            .runtime
-            .primary_provider
-            .graph
-            .source_owner
-            .invalidation_owner;
         let proven = live
-            && match candidate.source_identity {
-                Some(RecordedSourceIdentity::Checkpoint(_)) => true,
-                _ => {
-                    witness.is_some()
-                        && retained_output_settlement_is_verified(
-                            runtime,
-                            selected.application_basis().snapshot_handle(),
-                            candidate.verification_requirement,
-                            &candidate.settlement_identity,
-                            owner,
-                        )?
-                }
-            };
+            && origin_is_verified(
+                application,
+                runtime,
+                selected.application_basis().snapshot_handle(),
+                candidate,
+            )?;
         // Existing live output determines Preserve even when its producing
         // build cannot reuse. Identity never substitutes for native liveness.
-        let (_, installed) = application
-            .installed_producers
-            .select_exact::<Family>(candidate.binding)?;
-        let implementation_current = candidate.producing_implementation.is_some_and(|original| {
-            original
-                == worth_relational::facade::mvcc::RequiredOutputProducingImplementation::new(
-                    installed.edition.build_identity(),
-                    installed.edition.digest(),
-                )
-        });
+        let implementation_current =
+            implementation_matches::<Schema, Family>(application, candidate)?;
         let facts_current = implementation_current
             && proven
             && matches!(
@@ -118,4 +91,70 @@ where
         current.push((live, facts_current));
     }
     Ok::<_, WorthQueryOutputDemandDenial>(current)
+}
+
+mod applied;
+pub(in crate::domain_computation::primary_graph) use applied::VerifiedAppliedParent;
+fn source_identity_matches(
+    candidate: &WorthQueryRetainedOutputCandidate,
+    runtime: crate::domain_computation::primary_graph::application_query::WorthQueryRuntimeSourceIdentity,
+    checkpoint: crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity,
+) -> bool {
+    use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity;
+    candidate
+        .source_identity
+        .is_some_and(|identity| match identity {
+            RecordedSourceIdentity::Runtime(original) => original == runtime,
+            RecordedSourceIdentity::Checkpoint(original) => original == checkpoint,
+        })
+}
+fn implementation_matches<S: ApplicationSchema + 'static, F: WorthQueryProducerOutputFamily<S>>(
+    application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    candidate: &WorthQueryRetainedOutputCandidate,
+) -> Result<bool, WorthQueryOutputDemandDenial> {
+    let (_, installed) = application
+        .installed_producers
+        .select_exact::<F>(candidate.binding)?;
+    Ok(candidate.producing_implementation.is_some_and(|original| {
+        original
+            == worth_relational::facade::mvcc::RequiredOutputProducingImplementation::new(
+                installed.edition.build_identity(),
+                installed.edition.digest(),
+            )
+    }))
+}
+fn origin_is_verified<S: ApplicationSchema>(
+    application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    candidate: &WorthQueryRetainedOutputCandidate,
+) -> Result<bool, WorthQueryOutputDemandDenial> {
+    use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity;
+    match candidate.source_identity {
+        Some(RecordedSourceIdentity::Checkpoint(_)) => Ok(true),
+        _ => Ok(candidate
+            .native_output_witness
+            .as_ref()
+            .and_then(|witness| witness.get())
+            .is_some()
+            && retained_output_settlement_is_verified(
+                runtime,
+                snapshot,
+                candidate.verification_requirement,
+                &candidate.settlement_identity,
+                &application
+                    .runtime
+                    .primary_provider
+                    .graph
+                    .source_owner
+                    .invalidation_owner,
+            )?),
+    }
+}
+pub(super) fn exact_source_contract<S: ApplicationSchema>(
+    candidate: &WorthQueryRetainedOutputCandidate,
+    installed: &crate::domain_computation::primary_graph::application_contribution::producer::registry::InstalledProducerProvider<S>,
+) -> bool {
+    matches!(candidate.source_identity, Some(crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity::Checkpoint(_)))
+        || installed.declaration.input_reuse.is_some_and(|contract| contract.determinism() == worth_foundational::facade::DeterminismContract::CanonicalBitwise)
 }

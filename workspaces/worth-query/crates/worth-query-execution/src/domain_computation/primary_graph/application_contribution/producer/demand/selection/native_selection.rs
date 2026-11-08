@@ -1,6 +1,7 @@
 //! Sole producer source/lifecycle selection on the original native borrow.
 use super::*;
 mod current_verification;
+pub(in crate::domain_computation::primary_graph) use current_verification::VerifiedAppliedParent;
 
 impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) fn select_output_producer_with_remaining_core<Family>(
@@ -256,15 +257,8 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                         .select_exact::<Family>(candidate.binding)?;
                     // Restored rows use their own authenticated readmission;
                     // other runtime rows still need the input cutoff.
-                    let recovered = matches!(candidate.source_identity, Some(
-                        crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity::Checkpoint(_)
-                    ));
-                    if recovered
+                    if current_verification::exact_source_contract(&candidate, entry)
                         || candidate.historical_selection.is_some()
-                        || entry.declaration.input_reuse.is_some_and(|contract| {
-                            contract.determinism()
-                                == worth_foundational::facade::DeterminismContract::CanonicalBitwise
-                        })
                     {
                         selected.retain_verified_output(&candidate);
                         return Ok((selected, entry));

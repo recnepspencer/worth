@@ -1,6 +1,13 @@
 //! Read-only selection of an actual part; appending still admits one writer per route.
 use super::*;
 impl RelationalAuthoredCoupledCandidate<'_> {
+    /// Only an Edit may complete a route by verification; retirement retains its mandatory Preserve participants.
+    pub fn permits_unchanged_output_selection(&self) -> bool {
+        matches!(
+            self.binding.owners.source,
+            super::super::CoupledSource::Edit(_)
+        )
+    }
     /// Select an already appended part by the admitted full-generation route.
     /// This index is an observation, never publication or writer authority.
     pub fn prepared_route_index(

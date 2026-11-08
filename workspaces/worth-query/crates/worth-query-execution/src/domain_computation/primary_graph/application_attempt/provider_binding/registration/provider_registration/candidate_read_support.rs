@@ -1,23 +1,23 @@
 //! Actual graph discoveries belong to the registered edit, even without a new writer.
 use super::WorthQueryPrimaryGraphApplicationAttempt;
 use crate::domain_computation::primary_graph::{
-    application_query::AppliedQuerySupport, WorthQueryApplicationAttemptDenial as Denial,
+    provider::CandidateReadSupport, WorthQueryApplicationAttemptDenial as Denial,
     WorthQueryApplicationAttemptDenialKind as Kind,
 };
 use worth_relational::facade::identity::EntityId;
 #[derive(Default)]
-pub(super) struct CandidateQuerySupports {
-    values: Vec<(EntityId, AppliedQuerySupport)>,
+pub(super) struct CandidateReadSupports {
+    values: Vec<(EntityId, CandidateReadSupport)>,
     storage: Option<worth_execution::ExecutionMemoryReservation>,
 }
-impl CandidateQuerySupports {
+impl CandidateReadSupports {
     fn retain(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: EntityId,
-        support: AppliedQuerySupport,
+        support: CandidateReadSupport,
     ) -> Result<(), Denial> {
-        let subject = support.query();
+        let subject = support.subject();
         execution
             .run_native_with_checkpoint(|context| {
                 crate::domain_computation::primary_graph::admitted_capture::checkpoint(context, 1)
@@ -39,7 +39,7 @@ impl CandidateQuerySupports {
                 .ok_or_else(capacity)?
                 .max(1);
             let bytes = next
-                .checked_mul(std::mem::size_of::<(EntityId, AppliedQuerySupport)>())
+                .checked_mul(std::mem::size_of::<(EntityId, CandidateReadSupport)>())
                 .and_then(|bytes| u64::try_from(bytes).ok())
                 .ok_or_else(capacity)?;
             let memory = execution
@@ -76,21 +76,21 @@ impl CandidateQuerySupports {
     }
 }
 impl WorthQueryPrimaryGraphApplicationAttempt {
-    pub(in crate::domain_computation::primary_graph) fn retain_candidate_query_support(
+    pub(in crate::domain_computation::primary_graph) fn retain_candidate_read_support(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: EntityId,
-        support: AppliedQuerySupport,
+        support: CandidateReadSupport,
     ) -> Result<(), Denial> {
-        self.candidate_query_support
+        self.candidate_read_support
             .retain(execution, source, support)
     }
-    pub(in crate::domain_computation::primary_graph) fn reset_candidate_query_support(&mut self) {
-        self.candidate_query_support = CandidateQuerySupports::default();
+    pub(in crate::domain_computation::primary_graph) fn reset_candidate_read_support(&mut self) {
+        self.candidate_read_support = CandidateReadSupports::default();
     }
-    pub(in crate::domain_computation::primary_graph) fn candidate_query_support(
+    pub(in crate::domain_computation::primary_graph) fn candidate_read_support(
         &self,
-    ) -> &[(EntityId, AppliedQuerySupport)] {
-        &self.candidate_query_support.values
+    ) -> &[(EntityId, CandidateReadSupport)] {
+        &self.candidate_read_support.values
     }
 }

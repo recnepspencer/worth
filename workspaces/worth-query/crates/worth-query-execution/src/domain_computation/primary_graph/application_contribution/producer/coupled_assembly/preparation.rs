@@ -79,6 +79,12 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
                     ),
                 ));
             }
+            super::super::execution::CoupledSourceRead::Verified(parent) => {
+                return self
+                    .retain_verified_parent(execution, parent)
+                    .map(Some)
+                    .map_err(Into::into);
+            }
             super::super::execution::CoupledSourceRead::Source(source) => source,
         };
         let lifecycle = if source.predecessor.is_some() {

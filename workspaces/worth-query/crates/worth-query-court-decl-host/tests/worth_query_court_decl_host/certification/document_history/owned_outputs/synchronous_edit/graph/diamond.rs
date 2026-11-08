@@ -27,7 +27,7 @@ fn exercise(worker: bool) {
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
     let mut identity = None;
-    for value in [3, 4] {
+    for (value, expected_contacts) in [(3, 6), (4, 5)] {
         let before = courts::native_head(&host).0;
         let contacts = host.producer_contacts_on_this_thread_for_test();
         let performed = request
@@ -105,7 +105,7 @@ fn exercise(worker: bool) {
         identity = Some(output.native_id);
         assert_eq!(
             host.producer_contacts_on_this_thread_for_test(),
-            contacts + 6,
+            contacts + expected_contacts,
             "the shared child runs once after both parents"
         );
         assert_eq!(
@@ -130,7 +130,7 @@ fn exercise(worker: bool) {
         assert!(settled, "all actual co-committed routes settle");
         assert_eq!(
             host.producer_contacts_on_this_thread_for_test(),
-            contacts + 6
+            contacts + expected_contacts
         );
         assert_eq!(
             courts::native_head(&host).1,
@@ -160,7 +160,7 @@ fn unequal(worker: bool) {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
-    for value in [3, 4] {
+    for (value, expected_contacts) in [(3, 7), (4, 5)] {
         let before = courts::native_head(&host).0;
         let contacts = host.producer_contacts_on_this_thread_for_test();
         let outcome = request
@@ -216,7 +216,7 @@ fn unequal(worker: bool) {
         );
         assert_eq!(
             host.producer_contacts_on_this_thread_for_test(),
-            contacts + 7
+            contacts + expected_contacts
         );
         assert_eq!(courts::native_head(&host).1, [before]);
         let (_, _, mut outputs) = performed
@@ -236,7 +236,7 @@ fn unequal(worker: bool) {
         assert!(settled);
         assert_eq!(
             host.producer_contacts_on_this_thread_for_test(),
-            contacts + 7
+            contacts + expected_contacts
         );
         assert_eq!(courts::native_head(&host).1, [before]);
     }

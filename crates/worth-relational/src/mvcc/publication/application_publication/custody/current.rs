@@ -38,49 +38,29 @@ pub(super) fn readmit(
         .ok_or_else(|| refuse(meaning.source_scope))?;
     let result = execution
         .run_native_with_checkpoint(|context| {
-            checkpoint(
-                context,
-                (producer.len()
-                    + origin.producer.len()
-                    + meaning.family.len()
-                    + origin.meaning.family.len()
-                    + roles.len()
-                    + 96) as u64,
-            )
-            .map_err(execution_stop)?;
+            super::description::charge(context, origin, producer, meaning, roles.len())?;
             let kind = installed.source_scope_ownership.scope_kind(producer);
-            if !kind.is_some_and(|kind| owner_matches(installed, basis, &roster, origin, kind))
-                || origin.producer != producer
-                || &origin.dependency_identity != dependency
-                || &origin.meaning != meaning
-                || roles.len() != origin.members.len()
-            {
+            if !kind.is_some_and(|kind| owner_matches(installed, basis, &roster, origin, kind)) {
                 return Err(refuse(meaning.source_scope));
             }
-            for (index, role) in roles.iter().enumerate() {
-                checkpoint(
-                    context,
-                    (index + origin.members.len() + role.role.len() + role.entity_name.len() + 1)
-                        as u64,
-                )
-                .map_err(execution_stop)?;
-                if roles[..index]
-                    .iter()
-                    .any(|prior| prior.target == role.target)
-                    || !origin.members.iter().any(|member| {
-                        role.target == EntityReference::Existing(member.id)
-                            && member.role == role.role
-                            && member.entity_name == role.entity_name
-                            && member.kind == role.kind
-                            && member.posture == role.posture
-                    })
-                {
-                    return Err(refuse(match role.target {
-                        EntityReference::Existing(id) => id,
-                        _ => meaning.source_scope,
-                    }));
-                }
-            }
+            super::description::require(
+                context,
+                origin,
+                producer,
+                dependency,
+                meaning,
+                roles.iter().map(|role| super::RecordedRequiredOutputRole {
+                    role: &role.role,
+                    entity_name: &role.entity_name,
+                    kind: role.kind,
+                    posture: role.posture,
+                    entity: match role.target {
+                        EntityReference::Existing(entity) => Some(entity),
+                        _ => None,
+                    },
+                }),
+            )?
+            .map_err(refuse)?;
             Ok(())
         })
         .map_err(execution_stop)?

@@ -3,7 +3,6 @@ use super::execution::{CoupledSourceReadStop, PreparedCoupledWriter};
 use super::*;
 mod disposal;
 mod preparation;
-mod query_support_denial;
 use crate::domain_computation::primary_graph::{
     application_attempt::coupled_outputs::DeclaredCoupledOutputDemands, WorthQueryAdvancementPhase,
     WorthQueryPrimaryGraphApplicationRuntime,
@@ -85,8 +84,38 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
         self.application
             .runtime
             .primary_provider
-            .retain_candidate_query_support(execution, &self.root_session, parent.source(), support)
-            .map_err(query_support_denial::denial)
+            .retain_candidate_read_support(
+                execution,
+                &self.root_session,
+                parent.source(),
+                crate::domain_computation::primary_graph::provider::CandidateReadSupport::Query(
+                    support,
+                ),
+            )
+            .map_err(super::execution::denial::candidate_support_denied)
+    }
+    pub(super) fn retain_verified_parent(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        parent: super::VerifiedAppliedParent,
+    ) -> Result<super::synchronous_outputs::AppliedOutputParent, WorthQueryOutputDemandDenial> {
+        let applied = super::synchronous_outputs::AppliedOutputParent::new(
+            parent.pin().clone(),
+            parent.source(),
+        );
+        self.application
+            .runtime
+            .primary_provider
+            .retain_candidate_read_support(
+                execution,
+                &self.root_session,
+                parent.source(),
+                crate::domain_computation::primary_graph::provider::CandidateReadSupport::Parent(
+                    parent,
+                ),
+            )
+            .map_err(super::execution::denial::candidate_support_denied)?;
+        Ok(applied)
     }
     pub(in crate::domain_computation::primary_graph) fn take_denial(
         &self,
@@ -193,9 +222,11 @@ impl<S: ApplicationSchema> RelationalAuthoredCoupledProducerAssembly
             .application
             .runtime
             .primary_provider
-            .reset_candidate_query_support(&self.root_session)
+            .reset_candidate_read_support(&self.root_session)
             .map_err(|cause| {
-                CoupledSourceReadStop::Query(query_support_denial::denial(cause).into())
+                CoupledSourceReadStop::Query(
+                    super::execution::denial::candidate_support_denied(cause).into(),
+                )
             })
             .and_then(|()| self.prepare(execution, candidate));
         match prepared {

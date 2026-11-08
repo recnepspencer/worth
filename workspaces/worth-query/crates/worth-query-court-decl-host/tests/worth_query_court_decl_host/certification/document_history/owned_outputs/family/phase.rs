@@ -1,4 +1,56 @@
 //! Shared optional predecessor fixture program is declared at its real owner.
+macro_rules! producer_operation {
+    (DecisionInputInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read DecisionInputInitial, $entity, $key, $value, $of); };
+    (DecisionInputPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read DecisionInputPreserve, $entity, $key, $value, $of); };
+    (DecisionWriteInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_write DecisionWriteInitial, $entity, $key, $value, $of); };
+    (DecisionWritePreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_write DecisionWritePreserve, $entity, $key, $value, $of); };
+    (@member_write $operation:ident, $entity:ident, $key:ident, $value:ident, $of:ident) => {
+        worth_query_operation!(pub $operation for Schema, input InputBinding; access {
+            read_entities: [SourceEntity, $entity, Member]; read_fields: [source_key(), source_value(), $key::at(stringify!($key)), $value::at(stringify!($value)), MemberKey::at("MemberKey"), MemberValue::at("MemberValue")];
+            read_relations: [$of]; writes: [$key::at(stringify!($key)), $value::at(stringify!($value)), MemberValue::at("MemberValue")]; creates: [$entity]; links: [$of];
+        });
+    };
+    (@member_read $operation:ident, $entity:ident, $key:ident, $value:ident, $of:ident) => {
+        worth_query_operation!(pub $operation for Schema, input InputBinding; access {
+            read_entities: [SourceEntity, $entity, Member]; read_fields: [source_key(), source_value(), $key::at(stringify!($key)), $value::at(stringify!($value)), MemberKey::at("MemberKey"), MemberValue::at("MemberValue")];
+            read_relations: [$of]; writes: [$key::at(stringify!($key)), $value::at(stringify!($value))]; creates: [$entity]; links: [$of];
+        });
+    };
+    ($operation:ident, $entity:ident, $key:ident, $value:ident, $of:ident) => {
+            worth_query_operation!(pub $operation for Schema, input InputBinding; access {
+                read_entities: [SourceEntity, $entity]; read_fields: [source_key(), source_value(), $key::at(stringify!($key)), $value::at(stringify!($value))];
+                read_relations: [$of]; writes: [$key::at(stringify!($key)), $value::at(stringify!($value))]; creates: [$entity]; links: [$of];
+            });
+    };
+}
+macro_rules! producer_decision_dependency {
+    (DecisionInputInitial, $reader:ident) => { producer_decision_dependency!(@member_read $reader) };
+    (DecisionInputPreserve, $reader:ident) => { producer_decision_dependency!(@member_read $reader) };
+    (@member_read $reader:ident) => {{
+        let member = $reader.resolve_entity(MemberKey::at("MemberKey"), "m".to_owned())?;
+        $reader.field(&member, MemberValue::at("MemberValue"))?.expect("seeded decision member has its required value")
+    }};
+    ($operation:ident, $reader:ident) => { 0 };
+}
+macro_rules! producer_member_target {
+    (DecisionWriteInitial, $reader:ident) => { producer_member_target!(@write $reader) };
+    (DecisionWritePreserve, $reader:ident) => { producer_member_target!(@write $reader) };
+    (@write $reader:ident) => {{
+        let member = $reader.resolve_entity(MemberKey::at("MemberKey"), "m".to_owned())?;
+        $reader.field(&member, MemberValue::at("MemberValue"))?;
+        Some($reader.mutation_target(&member)?)
+    }};
+    ($operation:ident, $reader:ident) => { None };
+}
+macro_rules! producer_member_effect {
+    (DecisionWriteInitial, $writer:ident, $decision:ident, $input:ident) => { producer_member_effect!(@write $writer, $decision, $input) };
+    (DecisionWritePreserve, $writer:ident, $decision:ident, $input:ident) => { producer_member_effect!(@write $writer, $decision, $input) };
+    (@write $writer:ident, $decision:ident, $input:ident) => {{
+        let member = $writer.projected_entity($decision.member_target.as_ref().expect("actual completed member decision"))?;
+        $writer.write_field(&member, MemberValue::at("MemberValue"), $input.0.value + 1)?;
+    }};
+    ($operation:ident, $writer:ident, $decision:ident, $input:ident) => { () };
+}
 macro_rules! predecessor_program {
     (PredecessorInitial) => {
         use super::super::predecessor::{fixture_world as world, program};
@@ -48,10 +100,7 @@ macro_rules! phase {
             use super::*;
             #[derive(Clone, serde::Serialize)] pub struct Input(pub query::Row);
             worth_query_structured_value_binding!(pub InputBinding for Input { identity: $identity });
-            worth_query_operation!(pub $operation for Schema, input InputBinding; access {
-                read_entities: [SourceEntity, $entity]; read_fields: [source_key(), source_value(), $key::at(stringify!($key)), $value::at(stringify!($value))];
-                read_relations: [$of]; writes: [$key::at(stringify!($key)), $value::at(stringify!($value))]; creates: [$entity]; links: [$of];
-            });
+            producer_operation!($operation, $entity, $key, $value, $of);
             pub type Operation = $operation;
             pub struct Outputs;
             pub struct Output;
@@ -63,7 +112,7 @@ macro_rules! phase {
                 const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[<Output as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR];
                 const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] = &[];
             }
-            pub struct Decision { source: WorthQueryInvariantMutationTarget<Schema, SourceEntity>, output: Option<WorthQueryInvariantMutationTarget<Schema, $entity>> }
+            pub struct Decision { source: WorthQueryInvariantMutationTarget<Schema, SourceEntity>, output: Option<WorthQueryInvariantMutationTarget<Schema, $entity>>, member_value: u64, member_target: Option<WorthQueryInvariantMutationTarget<Schema, Member>> }
             pub struct Binding;
             impl ApplicationMutationBinding<Schema> for Binding {
                 type Input = Input; type InputBinding = InputBinding; type Result = (); type ResultBinding = ResultBinding;
@@ -145,6 +194,8 @@ macro_rules! phase {
                         let source = reader.resolve_entity(source_key(), input.0.key.clone())?;
                         reader.field(&source, source_value())?;
                         predecessor_hook!($operation, reader, source);
+                        let member_value = producer_decision_dependency!($operation, reader);
+                        let member_target = producer_member_target!($operation, reader);
                         let prior = if $preserve { Some(reader.prior_output_preserved_or_created::<preserve::Binding, preserve::Output, initial::Binding, initial::Output>()?) }
                             else { reader.resolve_optional_entity($key::at(stringify!($key)), output_key(&input.0))? };
                         if !$preserve && prior.is_some() { return Ok(Err(Denial::InitialHasPriorOutput)); }
@@ -153,15 +204,16 @@ macro_rules! phase {
                             Some(prior) => { reader.field(&prior, $value::at(stringify!($value)))?; Some(reader.mutation_target(&prior)?) }
                             None => None,
                         };
-                        Ok(Ok(Decision { source: reader.mutation_target(&source)?, output }))
+                        Ok(Ok(Decision { source: reader.mutation_target(&source)?, output, member_value, member_target }))
                     })();
                     match result { Ok(Ok(decision)) => HandlerResult::Completed(decision), Ok(Err(denial)) => HandlerResult::DomainDenied(denial), Err(error) => HandlerResult::ExecutionDenied(error) }
                 }
                 fn build_candidate(&self, input: &Input, decision: Decision, writer: &mut CandidateWriter<'_, Schema, Binding>) -> HandlerResult<(), Denial> {
-                    let value = (self.derive)(input.0.value);
+                    let value = (self.derive)(input.0.value) + decision.member_value;
                     if value == u64::MAX { return HandlerResult::DomainDenied(Denial::DerivedValueOutOfRange); }
                     let result = (|| {
                         let source = writer.projected_entity(&decision.source)?;
+                        producer_member_effect!($operation, writer, decision, input);
                         let output = match &decision.output {
                             Some(prior) => { let output = writer.projected_entity(prior)?; writer.write_field(&output, $value::at(stringify!($value)), value)?; output }
                             None => {

@@ -386,3 +386,7 @@ family!(
 );
 
 pub mod diamond;
+
+pub mod decision_input;
+
+pub mod decision_write;

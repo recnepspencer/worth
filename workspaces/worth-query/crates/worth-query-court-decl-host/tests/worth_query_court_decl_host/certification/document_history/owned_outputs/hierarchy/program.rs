@@ -173,6 +173,8 @@ impl ApplicationProgramDefinition<Schema> for Program {
                 .finish(),
             super::super::predecessor::program::feature(),
             family::diamond::feature(),
+            family::decision_input::feature(),
+            family::decision_write::feature(),
         ]
     }
 }

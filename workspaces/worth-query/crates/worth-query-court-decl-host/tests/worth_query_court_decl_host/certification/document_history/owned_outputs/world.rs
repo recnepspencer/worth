@@ -20,6 +20,8 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
     fn contracts(
         contracts: &mut WorthQueryApplicationContributionContracts<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        family::decision_write::contracts(contracts)?;
+        family::decision_input::contracts(contracts)?;
         family::diamond::contracts(contracts)?;
         family::predecessor_family::contracts(contracts)?;
         from_first::contracts(contracts)?;
@@ -49,6 +51,8 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup.handler::<predecessor::synchronous::Binding, _>(predecessor::synchronous::Handler)?;
         setup.handler::<member_edit::Binding, _>(member_edit::Handler)?;
         setup.handler::<member_delete::Binding, _>(member_delete::Handler)?;
+        family::decision_write::install(setup)?;
+        family::decision_input::install(setup)?;
         family::diamond::install(setup)?;
         family::predecessor_family::install(setup)?;
         from_first::install(setup)?;

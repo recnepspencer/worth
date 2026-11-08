@@ -9,7 +9,9 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-mod candidate_query_support;
+mod candidate_read_support;
+mod candidate_support_store;
+pub(in crate::domain_computation::primary_graph) use candidate_read_support::CandidateReadSupport;
 mod commit_completion;
 mod coupled_extraction;
 mod coupled_preparation;

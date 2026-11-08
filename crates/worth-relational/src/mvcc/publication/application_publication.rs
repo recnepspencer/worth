@@ -37,8 +37,8 @@ pub use completion::{
 };
 pub(crate) use custody::prepare as prepare_publications;
 pub use custody::{
-    RelationalPerformedOutputPublications, RelationalPreparedOutputPublications,
-    RelationalRequiredOutputPublication,
+    RecordedRequiredOutputRole, RelationalPerformedOutputPublications,
+    RelationalPreparedOutputPublications, RelationalRequiredOutputPublication,
 };
 pub use producing_implementation::RequiredOutputProducingImplementation;
 pub use route_absence::RelationalRequiredOutputRouteAbsence;

@@ -40,7 +40,7 @@ pub(super) fn require(
     }
     Ok(())
 }
-pub(super) fn require_queries(
+pub(super) fn require_read_support(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
     attempt: &WorthQueryPrimaryGraphApplicationAttempt,
@@ -49,7 +49,7 @@ pub(super) fn require_queries(
         worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
     >,
 ) -> Result<(), Stop> {
-    for (source, support) in attempt.candidate_query_support() {
+    for (source, support) in attempt.candidate_read_support() {
         let answer = provider.graph.with_runtime(execution, |runtime| {
             support.changed_fact(execution, runtime, before, complete)
         });
@@ -57,12 +57,13 @@ pub(super) fn require_queries(
             Ok(None) => {}
             Ok(Some(fact)) => require_answer(Ok(false), *source, || {
                 format!(
-                    "{}: a later coupled contribution changed discovery support: {}",
-                    support.query(),
+                    "{}: a later coupled contribution changed {}: {}",
+                    support.subject(),
+                    support.description(),
                     fact.locator_identity()
                 )
             })?,
-            Err(cause) => require_answer(Err(cause), *source, || support.query().to_owned())?,
+            Err(cause) => require_answer(Err(cause), *source, || support.subject().to_owned())?,
         }
     }
     Ok(())

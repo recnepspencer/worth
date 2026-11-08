@@ -12,6 +12,7 @@ mod coupled_assembly;
 pub(crate) mod synchronous_outputs;
 pub(in crate::domain_computation::primary_graph) use coupled_assembly::DeclaredProducerAssembly;
 pub(crate) mod demand;
+pub(in crate::domain_computation::primary_graph) use demand::VerifiedAppliedParent;
 mod denial_value;
 pub(in crate::domain_computation::primary_graph) use demand::MatchedRequiredPredecessors;
 pub(in crate::domain_computation::primary_graph) use demand::{CurrentBasis, CurrentProof};

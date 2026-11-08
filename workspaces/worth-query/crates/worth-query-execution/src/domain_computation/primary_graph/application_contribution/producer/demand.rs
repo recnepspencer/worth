@@ -39,6 +39,7 @@ use required_continuations::RequiredContinuations;
 pub(in crate::domain_computation::primary_graph) use required_continuations::RequiredFreshOutcome;
 pub(in crate::domain_computation::primary_graph) use required_continuations::RequiredFreshProgress;
 use required_provenance::DemandProgressionProvenance;
+pub(in crate::domain_computation::primary_graph) use selection::VerifiedAppliedParent;
 
 mod denial;
 pub(in crate::domain_computation::primary_graph) use denial::ProducerPublicationStale;

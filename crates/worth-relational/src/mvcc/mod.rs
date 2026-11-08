@@ -3,7 +3,9 @@ pub(crate) use publication::CoupledSource;
 mod observation;
 pub(crate) mod publication;
 pub use publication::RelationalPublicationReadDependencyDenial;
-pub use publication::{PreparedMemoryRelationalCutover, ScopedRelationalPublication};
+pub use publication::{
+    PreparedMemoryRelationalCutover, RecordedRequiredOutputRole, ScopedRelationalPublication,
+};
 pub(crate) mod owned_graph_selection;
 pub(crate) mod retained_entity_selection;
 pub use owned_graph_selection::{

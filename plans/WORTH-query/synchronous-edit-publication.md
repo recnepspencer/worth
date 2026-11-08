@@ -649,3 +649,47 @@ agent-context and whitespace. Primary structural review covered19 Rust files
 and16 function advisories, with no new size exemption. This checkpoints support
 custody, not healthy-parent reuse or P5/S6 completion; the reset evidence gap
 above remains an explicit final-slice obligation.
+
+## Applied healthy-parent verification (relocated worktree, D1384)
+
+The currentness owner now issues a distinct `VerifiedAppliedParent` only for
+an actual automatic Edit demand. It joins the genuine Native predecessor,
+original lineage, producing build and source identity, then compares the
+original source and sealed output facts at the exact unpublished D. Origin
+cutoffs and operation admission remain at C. Checkpoint descriptions are
+compared by the existing Native custody owner; descriptive data grants no
+custody. Explicit demands and mandatory retirement participants remain writers.
+
+Verified source/output support belongs to the registered edit attempt. Final
+qualification compares it with the complete candidate, so a later child cannot
+change an input on which a reused parent depended. A changed source or extra
+decision fact runs the real producer; no settlement, writer or history origin
+is fabricated to reuse a healthy parent. All existing discovered-child queries
+still run and retain their own support.
+
+Public evidence covers hot/cold and worker-only healthy parents and children,
+a decision input that changes only in D, and a later child invalidating an
+otherwise healthy parent. The latter refuses the entire edit with the actual
+source and changed field. Diamond contact assertions change only for exactly
+verified unchanged members; changed result values and one-commit assertions
+remain exact. The evidence directory contains the changed-assertion list and
+SHA-restored mutations.
+
+The shared conventional operation preflight now serves ordinary and borrowed
+read entrances. Each retains its established refusal ordering and capability
+diagnostic; borrowed reads still independently admit their installed operation
+with current principal and original scope, using the original Native loan.
+
+This checkpoint is not P5/S6 completion. Remaining work includes original
+standalone Ready reuse, generic required-delivery handoff, discovered roots,
+independent publication custody, the authored-stage/seal envelope, retry-reset
+evidence, complete visible semantics/growth evidence and full baseline comparison.
+
+Checkpoint evidence: public carrier598 passed/2 ignored; final graph40 passed;
+legacy coupled35 passed; Native predecessor15 passed (including accounted and
+worker-only recorded-selector rejection). Six Query and one Native runtime
+mutants are killed and SHA-restored. Query workspace all-target check, boundary,
+agent-context, formatting, dirty line caps and whitespace checks pass. The cold
+metadata role walk checks the original request before each lookup. New Native
+runtime courts live in the relational court crate, not product src. Full root
+and Query test/baseline comparison remains mandatory at final P5/S6 closeout.

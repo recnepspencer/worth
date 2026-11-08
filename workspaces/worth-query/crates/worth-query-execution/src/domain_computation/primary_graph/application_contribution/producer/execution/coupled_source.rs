@@ -64,6 +64,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 {
     Retiring,
     Prepared(usize),
+    Verified(super::super::VerifiedAppliedParent),
     Source(ErasedAppliedProducerSource),
 }
 
@@ -228,6 +229,15 @@ where
             )
         })?
     };
+    if demand.reuse_prepared && assembly.permits_unchanged_output_selection() {
+        if let Some(prior) = predecessor.as_ref() {
+            if let Some(parent) = runtime.verify_applied_output_parent::<Binding::OutputFamily>(
+                execution, request, before, &candidate, &source, prior,
+            )? {
+                return Ok(CoupledSourceRead::Verified(parent));
+            }
+        }
+    }
     let profile = <Binding::OutputFamily as super::super::WorthQueryProducerOutputFamily<Schema>>::profile_kind(&source.value);
     Ok(CoupledSourceRead::Source(ErasedAppliedProducerSource {
         predecessor,

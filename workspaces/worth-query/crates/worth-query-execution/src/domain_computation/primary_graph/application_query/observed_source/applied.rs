@@ -48,6 +48,16 @@ impl<Query, Value> AppliedQuerySource<Query, Value> {
         }
     }
 
+    pub(in crate::domain_computation::primary_graph) fn runtime_source_identity(
+        &self,
+    ) -> WorthQueryRuntimeSourceIdentity {
+        self.meaning.runtime_idempotency_identity()
+    }
+    pub(in crate::domain_computation::primary_graph) fn checkpoint_source_identity(
+        &self,
+    ) -> WorthQueryCheckpointSourceIdentity {
+        self.meaning.checkpoint_identity()
+    }
     pub(in crate::domain_computation::primary_graph) fn root(&self) -> EntityId {
         self.meaning.footprint().root
     }
