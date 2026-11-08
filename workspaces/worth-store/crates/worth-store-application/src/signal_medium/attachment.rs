@@ -7,6 +7,7 @@ pub struct StoreSignalMediumAttachmentRefused {
     cause: SignalDurableMediumDenial,
     serving: Box<ServingPhysicalRuntime>,
     binding: SignalDurableHomeBinding,
+    checkpoint: Option<worth_signal::facade::durability::SignalAuthoredHomeImage>,
     placement: AdmittedRecordPlacementPolicy,
 }
 impl StoreSignalMediumAttachmentRefused {
@@ -14,17 +15,31 @@ impl StoreSignalMediumAttachmentRefused {
         cause: SignalDurableMediumDenial,
         serving: Box<ServingPhysicalRuntime>,
         binding: SignalDurableHomeBinding,
+        checkpoint: Option<worth_signal::facade::durability::SignalAuthoredHomeImage>,
         placement: AdmittedRecordPlacementPolicy,
     ) -> Self {
         Self {
             cause,
             serving,
             binding,
+            checkpoint,
             placement,
         }
     }
     pub fn cause(&self) -> &SignalDurableMediumDenial {
         &self.cause
+    }
+    /// Recover the SAME unshared allocation and image to correct an input
+    /// mismatch. Retrying an unchanged stopped request uses `try_attach`.
+    pub fn into_parts(
+        self,
+    ) -> (
+        Box<ServingPhysicalRuntime>,
+        SignalDurableHomeBinding,
+        Option<worth_signal::facade::durability::SignalAuthoredHomeImage>,
+        AdmittedRecordPlacementPolicy,
+    ) {
+        (self.serving, self.binding, self.checkpoint, self.placement)
     }
     pub fn try_attach(
         self,
@@ -39,6 +54,7 @@ impl StoreSignalMediumAttachmentRefused {
         super::StoreSignalMedium::from_serving(
             self.serving,
             self.binding,
+            self.checkpoint,
             self.placement,
             execution,
         )

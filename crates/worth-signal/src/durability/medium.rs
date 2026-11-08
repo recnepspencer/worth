@@ -56,6 +56,12 @@ pub enum SignalDurableMediumDenial {
     Unavailable,
     PublicationBusy,
     PublicationUnresolved,
+    CheckpointBounds(Box<super::SignalOwnerReadmissionDenial>),
+    CheckpointSourceBehind {
+        journal: SignalDurableJournal,
+        checkpoint: u64,
+        observed: u64,
+    },
     Storage(String),
 }
 #[derive(Debug)]
@@ -74,6 +80,7 @@ pub enum SignalPublicationTaskPosture {
 /// to a later physical root partway through owner reconstruction.
 pub trait SignalDurableReadSource: std::fmt::Debug + Send + Sync {
     fn owner(&self) -> DurableSignalOwnerIdentity;
+    fn identity_contribution(&self) -> super::SignalRecordedIdentityContribution;
     fn frontier(
         &self,
         journal: SignalDurableJournal,

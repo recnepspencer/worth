@@ -25,16 +25,25 @@ pub(super) fn capture(
     let reader = serving
         .try_records_for_checkpoint(execution)
         .map_err(storage)?;
-    Ok(Box::new(StoreSignalReadSource {
+    let source = Box::new(StoreSignalReadSource {
         owner: medium.binding.owner(),
         serving,
         reader: Mutex::new(reader),
         _funding: funding,
-    }))
+    });
+    match &medium.checkpoint {
+        Some(image) => image.with_original_tail(source, execution),
+        None => Ok(source),
+    }
 }
 impl SignalDurableReadSource for StoreSignalReadSource {
     fn owner(&self) -> DurableSignalOwnerIdentity {
         self.owner
+    }
+    fn identity_contribution(
+        &self,
+    ) -> worth_signal::facade::durability::SignalRecordedIdentityContribution {
+        worth_signal::facade::durability::SignalRecordedIdentityContribution::empty(self.owner)
     }
     fn frontier(
         &self,

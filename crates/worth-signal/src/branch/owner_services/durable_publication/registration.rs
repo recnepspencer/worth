@@ -98,6 +98,11 @@ where
             .tasks
             .lock()
             .map_err(|_| Dn::PublicationStatePoisoned)?;
+        if table.capture_active {
+            return Err(Dn::CheckpointCaptureInProgress {
+                owner: self.binding().owner(),
+            });
+        }
         for branch in branches.identities() {
             if let Some(original) = table.branches.get(&branch) {
                 return Err(Dn::BranchReserved {

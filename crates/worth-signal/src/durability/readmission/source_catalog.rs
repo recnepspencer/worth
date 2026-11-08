@@ -97,7 +97,7 @@ impl SignalOwnerSourceReadmission {
     }
     pub(crate) fn capture(
         medium: &dyn SignalDurableMedium,
-        contribution: SignalRecordedIdentityContribution,
+        mut contribution: SignalRecordedIdentityContribution,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, D> {
         match medium.publication_task_posture() {
@@ -114,6 +114,7 @@ impl SignalOwnerSourceReadmission {
         {
             return Err(D::ForeignOwner);
         }
+        contribution.merge(&original.identity_contribution(), execution)?;
         use crate::data::retained_storage::{
             btree_structure_charge, RetainedStorageCharge as Charge,
         };

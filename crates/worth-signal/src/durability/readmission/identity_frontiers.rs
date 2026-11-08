@@ -1,4 +1,5 @@
-//! Observed identity bounds from original durable records, never live authority.
+//! Recorded and owner-issued identity bounds, never live admission authority.
+mod image_codec;
 use super::SignalOwnerReadmissionDenial as D;
 use crate::durability::{SignalDefinitionTransitionArtifact, SignalDurableBranchDescriptor};
 use worth_foundational::facade::{

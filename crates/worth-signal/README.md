@@ -293,6 +293,16 @@ The returned `SignalReadmittedSourcePoint` retains the original artifact and
 admitted observation without a derived transaction result. The branch and cell
 must still exist; the descriptor door continues to require the current head.
 
+`capture_authored_home_image` excludes new publications on the actual task table
+while capturing original definition and advance frames plus issuance bounds.
+Pending work refuses with the identities of every holding original. A failed
+capture releases that gate. `SignalAuthoredHomeImage` retains its funded byte
+region and supplies a checkpoint prefix joined to one protected journal tail;
+the source contribution preserves issued identity gaps across readmission.
+Store attachment retains the supplied image with its original serving input,
+including on refusal. The Home composer must capture at its quiesced close;
+these owner APIs alone do not enable Home checkpoint selection or bootstrap.
+
 Each medium exposes one stable, funded `SignalDurableOwnerAdmissionRegistry`.
 Readmission acquires its exclusive claim before journal replay and transfers the
 non-cloneable custody into the actual canonical owner allocation. A competing

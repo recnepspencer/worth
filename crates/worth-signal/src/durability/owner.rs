@@ -92,6 +92,15 @@ where
     pub fn source_port(&self) -> SignalDurableBranchSourcePort<D, I, T> {
         self.port.clone()
     }
+    pub fn capture_authored_home_image(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<
+        super::SignalAuthoredHomeImage,
+        crate::branch::owner_services::SignalDurableAdvanceDenial,
+    > {
+        self.publication.capture_authored_home_image(execution)
+    }
     pub fn take_installation_contracts(
         &mut self,
     ) -> BTreeMap<DurableSignalBranchIdentity, Vec<SignalReadmittedConditionalContract>> {

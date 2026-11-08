@@ -57,16 +57,24 @@ pub(super) fn encode(
     execution: &ExecutionRequest<'_, '_>,
     emit: &mut dyn FnMut(&mut Writer<'_>) -> Result<(), SignalDurableFrameDenial>,
 ) -> Result<ExecutionImmutableBytes, SignalDurableFrameDenial> {
+    encode_bounded(kind, execution, SIGNAL_OWNER_FRAME_MAXIMUM_BYTES, emit)
+}
+pub(super) fn encode_bounded(
+    kind: u32,
+    execution: &ExecutionRequest<'_, '_>,
+    maximum: usize,
+    emit: &mut dyn FnMut(&mut Writer<'_>) -> Result<(), SignalDurableFrameDenial>,
+) -> Result<ExecutionImmutableBytes, SignalDurableFrameDenial> {
     use SignalDurableFrameDenial as D;
     let mut size = 0usize;
     emit(&mut Writer::new(&mut |bytes| {
         size = size
             .checked_add(bytes.len())
-            .filter(|n| *n <= SIGNAL_OWNER_FRAME_MAXIMUM_BYTES - HEADER)
+            .filter(|n| *n <= maximum.saturating_sub(HEADER))
             .ok_or(D::SizeLimit)?;
         Ok(())
     }))?;
-    admit_work(execution, size.saturating_mul(3))?;
+    admit_work_bounded(execution, size.saturating_mul(3), maximum)?;
     let mut checksum = Sha256::new();
     let version = SIGNAL_OWNER_FRAME_VERSION.get().to_le_bytes();
     let kind = kind.to_le_bytes();
@@ -90,8 +98,15 @@ pub(super) fn encode(
     Ok(out.seal().map_err(D::Backing)?.into_immutable_bytes())
 }
 pub(super) fn payload(bytes: &[u8], kind: u32) -> Result<Reader<'_>, SignalDurableFrameDenial> {
+    payload_bounded(bytes, kind, SIGNAL_OWNER_FRAME_MAXIMUM_BYTES)
+}
+pub(super) fn payload_bounded(
+    bytes: &[u8],
+    kind: u32,
+    maximum: usize,
+) -> Result<Reader<'_>, SignalDurableFrameDenial> {
     use SignalDurableFrameDenial as D;
-    if bytes.len() > SIGNAL_OWNER_FRAME_MAXIMUM_BYTES {
+    if bytes.len() > maximum {
         return Err(D::SizeLimit);
     }
     if bytes.len() < HEADER || &bytes[..8] != MAGIC {
@@ -137,7 +152,14 @@ pub(super) fn admit_work(
     execution: &ExecutionRequest<'_, '_>,
     size: usize,
 ) -> Result<(), SignalDurableFrameDenial> {
-    if size > SIGNAL_OWNER_FRAME_MAXIMUM_BYTES.saturating_mul(3) {
+    admit_work_bounded(execution, size, SIGNAL_OWNER_FRAME_MAXIMUM_BYTES)
+}
+pub(super) fn admit_work_bounded(
+    execution: &ExecutionRequest<'_, '_>,
+    size: usize,
+    maximum: usize,
+) -> Result<(), SignalDurableFrameDenial> {
+    if size > maximum.saturating_mul(3) {
         return Err(SignalDurableFrameDenial::SizeLimit);
     }
     execution

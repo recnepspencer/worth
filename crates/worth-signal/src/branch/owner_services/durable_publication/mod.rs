@@ -1,4 +1,5 @@
 //! Per-branch original tasks share only short metadata locks and physical publication order.
+mod checkpoint_capture;
 mod composite;
 mod cutover;
 mod driving;
@@ -144,6 +145,7 @@ where
     I: Copy + Ord + 'static,
     T: Copy + Ord + 'static,
 {
+    capture_active: bool,
     branches: BTreeMap<SignalBranchId, SignalBranchAdvanceIdentity>,
     tasks: BTreeMap<SignalBranchAdvanceIdentity, Arc<Mutex<TaskSlot<D, I, T>>>>,
 }
@@ -192,6 +194,7 @@ where
             vocabulary,
             source: Mutex::new(source),
             tasks: Mutex::new(TaskTable {
+                capture_active: false,
                 branches: BTreeMap::new(),
                 tasks: BTreeMap::new(),
             }),

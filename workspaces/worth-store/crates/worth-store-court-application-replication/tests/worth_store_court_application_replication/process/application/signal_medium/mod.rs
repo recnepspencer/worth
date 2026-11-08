@@ -1,6 +1,7 @@
 //! Transport and owner readmission courts cross actual Store journals.
 mod bridge_owner;
 mod composite_owner;
+mod home_image_capture_probe;
 mod medium_fixture;
 mod owner_admission;
 mod owner_candidate_refusal;
@@ -8,6 +9,8 @@ mod owner_definition_projection;
 mod owner_definition_publication;
 mod owner_fixture;
 mod owner_fork;
+mod owner_home_image;
+mod owner_home_image_identity;
 mod owner_installation;
 mod owner_node_issuance;
 mod owner_quiescent_kill;

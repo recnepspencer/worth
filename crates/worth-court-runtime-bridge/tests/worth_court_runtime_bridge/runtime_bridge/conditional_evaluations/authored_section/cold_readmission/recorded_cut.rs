@@ -59,6 +59,9 @@ impl SignalDurableReadSource for ReadCut {
     fn owner(&self) -> DurableSignalOwnerIdentity {
         self.0.owner
     }
+    fn identity_contribution(&self) -> SignalRecordedIdentityContribution {
+        SignalRecordedIdentityContribution::empty(self.owner())
+    }
     fn frontier(
         &self,
         journal: SignalDurableJournal,

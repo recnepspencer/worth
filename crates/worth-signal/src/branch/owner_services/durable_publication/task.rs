@@ -12,6 +12,12 @@ use worth_foundational::facade::{DurablePublicationFate, SignalBranchAdvanceIden
 #[derive(Debug)]
 pub enum SignalDurableAdvanceDenial {
     CompositePublicationRequired,
+    CheckpointCaptureInProgress {
+        owner: worth_foundational::facade::DurableSignalOwnerIdentity,
+    },
+    CheckpointOriginalsPending {
+        originals: worth_execution::ExecutionArray<SignalBranchAdvanceIdentity>,
+    },
     CompositeOwnerNotAttached,
     CompositeOwnerAlreadyAttached,
     CompositeAttachmentPending {

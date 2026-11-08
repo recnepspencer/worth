@@ -137,6 +137,7 @@ fn alternate_adapters_require_released_unshared_serving_and_attachment_refusals_
     let refused = match StoreSignalMedium::from_serving(
         serving,
         binding.clone(),
+        None,
         placement,
         &ExecutionRequest::serial(&stopped),
     ) {

@@ -24,6 +24,7 @@ pub struct StoreSignalMedium {
     placement: AdmittedRecordPlacementPolicy,
     publications: SignalPublications,
     admission: SignalDurableOwnerAdmissionRegistry,
+    checkpoint: Option<worth_signal::facade::durability::SignalAuthoredHomeImage>,
     _funding: Option<ExecutionMemoryReservation>,
 }
 impl std::fmt::Debug for StoreSignalMedium {
@@ -40,15 +41,16 @@ impl StoreSignalMedium {
     pub fn from_serving(
         serving: Box<ServingPhysicalRuntime>,
         binding: SignalDurableHomeBinding,
+        checkpoint: Option<worth_signal::facade::durability::SignalAuthoredHomeImage>,
         placement: AdmittedRecordPlacementPolicy,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<(Arc<ServingPhysicalRuntime>, Arc<Self>), StoreSignalMediumAttachmentRefused> {
-        let prepared = Self::prepare_attachment(&serving, &binding, execution);
+        let prepared = Self::prepare_attachment(&serving, &binding, checkpoint.as_ref(), execution);
         let (funding, admission) = match prepared {
             Ok(prepared) => prepared,
             Err(cause) => {
                 return Err(StoreSignalMediumAttachmentRefused::new(
-                    cause, serving, binding, placement,
+                    cause, serving, binding, checkpoint, placement,
                 ))
             }
         };
@@ -56,6 +58,7 @@ impl StoreSignalMedium {
         let medium = Arc::new(Self {
             serving: Mutex::new(Some(Arc::clone(&serving))),
             binding,
+            checkpoint,
             placement,
             publications: SignalPublications::default(),
             admission,
@@ -66,6 +69,7 @@ impl StoreSignalMedium {
     fn prepare_attachment(
         serving: &ServingPhysicalRuntime,
         binding: &SignalDurableHomeBinding,
+        checkpoint: Option<&worth_signal::facade::durability::SignalAuthoredHomeImage>,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<
         (
@@ -74,6 +78,9 @@ impl StoreSignalMedium {
         ),
         D,
     > {
+        if checkpoint.is_some_and(|image| image.owner() != binding.owner()) {
+            return Err(D::ForeignOwner);
+        }
         for journal in [
             worth_foundational::facade::SignalDurableJournal::Definitions,
             worth_foundational::facade::SignalDurableJournal::Advances,

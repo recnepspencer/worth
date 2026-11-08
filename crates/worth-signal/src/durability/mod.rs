@@ -29,6 +29,8 @@ pub use readmitted_source_point::{
     SignalReadmittedSourcePoint, SignalSourcePointReadmissionDenial,
 };
 mod frame;
+mod home_image;
+pub use home_image::{SignalAuthoredHomeImage, SIGNAL_HOME_IMAGE_MAXIMUM_BYTES};
 mod medium;
 mod owner;
 mod owner_installation;

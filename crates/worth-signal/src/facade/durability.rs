@@ -34,4 +34,5 @@ pub use crate::durability::{
 
 pub use crate::durability::SignalCommittedAdvanceEvidence;
 pub use crate::durability::SignalRecordedSourcePoint;
+pub use crate::durability::{SignalAuthoredHomeImage, SIGNAL_HOME_IMAGE_MAXIMUM_BYTES};
 pub use crate::durability::{SignalReadmittedSourcePoint, SignalSourcePointReadmissionDenial};

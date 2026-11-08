@@ -51,7 +51,7 @@ pub(super) fn open_with_identity(
         [8; 32],
         ApplicationBuildIdentity::parse(build).unwrap(),
     );
-    StoreSignalMedium::from_serving(serving, binding, placement, execution).unwrap()
+    StoreSignalMedium::from_serving(serving, binding, None, placement, execution).unwrap()
 }
 pub(super) fn close(
     serving: Arc<ServingPhysicalRuntime>,
