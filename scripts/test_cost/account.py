@@ -32,6 +32,19 @@ def process(command):
     return child.returncode, usage.ru_utime + usage.ru_stime, 'complete'
 
 
+def diagnose_launch(binary):
+    # Diagnosis is only after a real failure, never an admission scan or retry.
+    if sys.platform != 'darwin':
+        return
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+        from macos_link.diagnostic import diagnose
+        if message := diagnose(binary):
+            sys.stderr.write(message + '\n')
+    except (ImportError, OSError, ValueError):
+        pass
+
+
 def reservation(environment, binary, test):
     path = environment.get('WORTH_TEST_COST_RESERVATIONS')
     if not path:
@@ -56,7 +69,13 @@ def execute(command, environment=None):
     start = time.perf_counter()
     # Launch/wait failures retain their real exception. Optional telemetry starts
     # only after the exact child has finished and must never change its outcome.
-    code, cpu, posture = process(command)
+    try:
+        code, cpu, posture = process(command)
+    except OSError:
+        diagnose_launch(command[0])
+        raise
+    if code == -9:
+        diagnose_launch(command[0])
     wall = time.perf_counter() - start
     binary = environment.get('NEXTEST_BINARY_ID', command[0])
     test = environment.get('NEXTEST_TEST_NAME', '')

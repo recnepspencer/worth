@@ -1,0 +1,4 @@
+#!/usr/bin/env python3
+"""Cargo's target-scoped arm64 Darwin linker."""
+from macos_link.driver import main
+raise SystemExit(main())

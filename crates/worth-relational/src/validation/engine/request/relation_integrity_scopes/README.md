@@ -19,7 +19,9 @@ edge targets. Metadata checks kind, visibility, endpoint and generation; an
 adjacency slot alone never establishes entity identity. Field-only writes with
 unchanged identity/kind/endpoints do not dirty reachability.
 
-The predecessor is required for removed/retargeted records and reused slots.
+Removed/retargeted records and reused slots require the predecessor image or
+the physical journal relation seeds. Both are retained as conservative evidence;
+neither alone is required for ordinary SDK-authored mutations.
 The applied candidate supplies surviving reachability. Planned created keys
 remain logical before application; applied source selection uses the actual
 issued identities. A refused proposal publishes neither its mutation nor its
@@ -39,5 +41,8 @@ scope and covers its owned traversal buffers until the last packet drops it.
 The inspection recorder is bounded diagnostic evidence and is never accepted
 as graph or validation authority. SDK courts compare the actual selected source
 and successor sets with an exhaustive edge-list oracle, including refusals,
-retargeting, deletion and restoration; the scale court doubles unrelated
+retargeting, deletion and restoration. Mixed batches also compare law verdicts
+with a literal candidate graph after entity delete/replace, same-commit
+restoration, cross-component retargets and unrelated kinds sharing endpoints,
+in both single and split partition layouts; the scale court doubles unrelated
 components, retained history and installed kinds independently.

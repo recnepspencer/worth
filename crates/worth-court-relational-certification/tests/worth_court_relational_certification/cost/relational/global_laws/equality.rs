@@ -1,4 +1,5 @@
 //! Oracle uses a separate edge list and exhaustive graph traversals, never SDK adjacency.
+mod mixed;
 use std::collections::{BTreeMap, BTreeSet};
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::{
@@ -59,6 +60,7 @@ fn maintained_sources_equal_cold_seeds_13_to_16() {
     random_edits(13..=16);
 }
 fn random_edits(seeds: std::ops::RangeInclusive<u64>) {
+    mixed::random_edits(seeds.clone());
     let host = request();
     let execution = ExecutionRequest::serial(&host);
     let mut retirements = 0;
