@@ -55,3 +55,24 @@ pub fn bounded_lease(
     })
     .unwrap()
 }
+
+/// Capture setup has its own original payer; the installed serving policy stays
+/// unchanged. This is the same 64 MiB grant as this owner's transition fixture;
+/// there is no pre-capture footprint quote.
+pub fn capture<
+    Schema: worth_query_decl::facade::application_schema::ApplicationSchema + 'static,
+>(
+    application: &worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
+        Schema,
+    >,
+) -> worth_query_host::facade::application_installation::WorthQueryApplicationCheckpoint {
+    let funding = lease(64 * 1024 * 1024);
+    application.with_funded_host_advancement(
+        worth_execution::ExecutionAllocationPolicy::Execution(&funding),
+        |phase| application.capture_application_checkpoint(
+            &phase,
+            worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation,
+        ),
+    ).expect("the original capture setup request opens")
+     .expect("the complete original capture setup is funded")
+}
