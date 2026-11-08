@@ -40,6 +40,29 @@ pub enum RelationalCallerAssociationRefusal {
 impl RelationalCallerAssociation {
     pub const MAX_LEN: usize = 4096;
 
+    pub(crate) fn payload_allocation_bytes(count: usize) -> Option<u64> {
+        let bytes = std::alloc::Layout::new::<[usize; 2]>()
+            .extend(std::alloc::Layout::array::<u8>(count).ok()?)
+            .ok()?
+            .0
+            .pad_to_align()
+            .size();
+        u64::try_from(bytes).ok()
+    }
+
+    pub(crate) fn retained_allocation_bytes(count: usize) -> Option<u64> {
+        let bytes = Self::payload_allocation_bytes(count)?;
+        let funding = std::alloc::Layout::new::<[usize; 2]>()
+            .extend(std::alloc::Layout::new::<
+                worth_execution::ExecutionMemoryReservation,
+            >())
+            .ok()?
+            .0
+            .pad_to_align()
+            .size();
+        bytes.checked_add(u64::try_from(funding).ok()?)
+    }
+
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, RelationalCallerAssociationRefusal> {
         if bytes.is_empty() {
             return Err(RelationalCallerAssociationRefusal::Empty);

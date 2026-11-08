@@ -30,14 +30,23 @@ enum TransitionAdmission {
 impl RelationalTransitionPublication {
     pub(crate) fn cutover<Output>(
         self,
-        apply: impl FnOnce(PositionedBranchTransition) -> Output,
+        retain: impl FnOnce(PositionedBranchTransition) -> Arc<PositionedBranchTransition>,
+        apply: impl FnOnce(
+            Arc<PositionedBranchTransition>,
+            Option<DurablyCommitted<super::RelationalCommittedTransitionEvidence>>,
+        ) -> Output,
     ) -> Output {
         match self.admission {
             TransitionAdmission::MemoryOnly(positioned)
-            | TransitionAdmission::Replayed(positioned) => apply(positioned),
-            TransitionAdmission::Durable(committed) => {
-                committed.consume(|publication| apply(publication.into_positioned()))
-            }
+            | TransitionAdmission::Replayed(positioned) => apply(retain(positioned), None),
+            TransitionAdmission::Durable(committed) => committed.consume(|publication| {
+                let evidence = super::RelationalCommittedTransitionEvidence::from_publication(
+                    publication,
+                    retain,
+                );
+                let positioned = evidence.retained_positioned();
+                apply(positioned, Some(DurablyCommitted::from_owner(evidence)))
+            }),
         }
     }
 }
@@ -52,6 +61,8 @@ pub(crate) trait RelationalBranchTransitionDurableStep: sealed::Step {
     /// Why the step did not admit the cutover.
     type Stop;
 
+    fn caller_association(&self) -> Option<&crate::history::data::RelationalCallerAssociation>;
+
     /// Make `positioned` durable, or say why its cutover must not run.
     fn take(
         &self,
@@ -65,6 +76,7 @@ pub(crate) trait RelationalBranchTransitionDurableStep: sealed::Step {
 pub(crate) struct LiveBranchTransitionStep<'request, 'authority> {
     medium: Option<Arc<RelationalDurableMediumBinding>>,
     policy: worth_execution::ExecutionAllocationPolicy<'request, 'authority>,
+    association: Option<crate::history::data::RelationalCallerAssociation>,
     #[cfg(test)]
     publication_pause: publication_pause_for_test::BranchTransitionPublicationControlForTest,
 }
@@ -77,9 +89,20 @@ impl<'request, 'authority> LiveBranchTransitionStep<'request, 'authority> {
         Self {
             medium,
             policy: execution.allocation_policy(),
+            association: None,
             #[cfg(test)]
             publication_pause: Default::default(),
         }
+    }
+
+    pub(crate) fn associated(
+        medium: Arc<RelationalDurableMediumBinding>,
+        execution: &worth_execution::ExecutionRequest<'request, 'authority>,
+        association: crate::history::data::RelationalCallerAssociation,
+    ) -> Self {
+        let mut step = Self::new(Some(medium), execution);
+        step.association = Some(association);
+        step
     }
 
     #[cfg(test)]
@@ -94,6 +117,10 @@ impl sealed::Step for LiveBranchTransitionStep<'_, '_> {}
 
 impl RelationalBranchTransitionDurableStep for LiveBranchTransitionStep<'_, '_> {
     type Stop = RelationalDurableStepStop;
+
+    fn caller_association(&self) -> Option<&crate::history::data::RelationalCallerAssociation> {
+        self.association.as_ref()
+    }
 
     /// Cost: one artifact encode and one medium publication with a medium.
     fn take(
@@ -161,6 +188,10 @@ pub(crate) struct ReplayedBranchTransitionDivergence {
 impl RelationalBranchTransitionDurableStep for ReplayedBranchTransitionStep<'_> {
     type Stop = ReplayedBranchTransitionDivergence;
 
+    fn caller_association(&self) -> Option<&crate::history::data::RelationalCallerAssociation> {
+        self.recorded.caller_association()
+    }
+
     /// Cost: one structural comparison of two small records.
     fn take(
         &self,
@@ -172,7 +203,10 @@ impl RelationalBranchTransitionDurableStep for ReplayedBranchTransitionStep<'_> 
         };
         if reproduced {
             return Ok(RelationalTransitionPublication {
-                admission: TransitionAdmission::Replayed(positioned),
+                admission: TransitionAdmission::Replayed(
+                    positioned
+                        .with_recorded_artifact_digest(self.recorded.recorded_artifact_digest()),
+                ),
             });
         }
         Err(ReplayedBranchTransitionDivergence {

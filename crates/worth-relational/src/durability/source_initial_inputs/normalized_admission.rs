@@ -28,6 +28,15 @@ pub(crate) fn readmit(
                     request,
                 )?)
                 .ok_or_else(overflow)?;
+            let association = record.field("caller_association", request)?;
+            if association.0 != [0xc0] {
+                let count = association.octets(request)?.len();
+                if count == 0 || count > crate::history::data::RelationalCallerAssociation::MAX_LEN {
+                    return Err(overflow());
+                }
+                dynamic = dynamic.checked_add(crate::history::data::RelationalCallerAssociation::payload_allocation_bytes(count).ok_or_else(overflow)?)
+                    .ok_or_else(overflow)?;
+            }
             Ok(())
         })
         .map_err(Refusal::Payload)?;
@@ -59,6 +68,9 @@ pub(crate) fn readmit(
             || record.follows.0 < follows
             || record.follows.0 > covered
         {
+            return Err(Refusal::Malformed);
+        }
+        if record.caller_association.is_some() && record.artifact_digest.is_none() {
             return Err(Refusal::Malformed);
         }
         follows = record.follows.0;

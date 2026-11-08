@@ -13,6 +13,7 @@ use crate::runtime::BranchTransitionRecordError;
 
 type ForkStop = RelationalBranchTransitionStop<RelationalForkDenial>;
 type ForkFailure<S> = BranchTransitionRecordError<RelationalForkDenial, S>;
+use super::publication::with_basis;
 use super::source_validation::ForkSourceInput;
 
 impl RelationalForkPort {
@@ -152,7 +153,7 @@ impl RelationalForkPort {
             .map_err(RelationalBranchTransitionStop::Denied)?;
         let step = LiveBranchTransitionStep::new(self.medium.clone(), execution);
         self.fork_reserved_with_hooks(execution, &step, reservation, source, || {}, || {}, false)
-            .map(|(outcome, _)| outcome)
+            .map(|installed| installed.outcome)
             .map_err(Into::into)
     }
 
@@ -169,6 +170,39 @@ impl RelationalForkPort {
         let step = LiveBranchTransitionStep::new(self.medium.clone(), execution);
         self.fork_reserved_with_hooks(execution, &step, reservation, source, || {}, || {}, true)
             .map(with_basis)
+            .map_err(Into::into)
+    }
+
+    /// Bind the actual World creation association before the original durable fork.
+    /// A memory-only receiver refuses before any target installation.
+    pub fn fork_reserved_associated_with_basis(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        reservation: RelationalForkTargetReservation,
+        source: AdmittedRelationalForkSourceBasis,
+        association: crate::history::data::RelationalCallerAssociation,
+    ) -> Result<super::RelationalAssociatedFork, ForkStop> {
+        self.admit_home_program_fork()
+            .map_err(RelationalBranchTransitionStop::Denied)?;
+        let medium = self
+            .medium
+            .clone()
+            .ok_or(RelationalBranchTransitionStop::Denied(
+                RelationalForkDenial::DurableAssociationRequiresMedium,
+            ))?;
+        let bytes = crate::history::data::RelationalCallerAssociation::retained_allocation_bytes(
+            association.as_bytes().len(),
+        )
+        .ok_or(RelationalBranchTransitionStop::Denied(
+            RelationalForkDenial::RetentionCapacityExhausted,
+        ))?;
+        let memory = execution
+            .reserve_retained_memory(bytes)
+            .map_err(RelationalBranchTransitionStop::RequestStopped)?;
+        let association = association.with_decoded_memory(memory);
+        let step = LiveBranchTransitionStep::associated(medium, execution, association);
+        self.fork_reserved_with_hooks(execution, &step, reservation, source, || {}, || {}, true)
+            .map(super::RelationalAssociatedFork::from_installation)
             .map_err(Into::into)
     }
 
@@ -195,7 +229,7 @@ impl RelationalForkPort {
         let (_, source) = self.observe_fork_source(source_branch).map_err(denied)?;
         let reservation = self.reserve_fork_target(target_branch).map_err(denied)?;
         self.fork_reserved_with_hooks(execution, step, reservation, source, || {}, || {}, false)
-            .map(|(outcome, _)| outcome)
+            .map(|installed| installed.outcome)
     }
 
     #[cfg(test)]
@@ -216,7 +250,7 @@ impl RelationalForkPort {
             release.wait();
         };
         self.fork_reserved_with_hooks(execution, &step, reservation, source, pause, || {}, false)
-            .map(|(outcome, _)| outcome)
+            .map(|installed| installed.outcome)
             .map_err(Into::into)
     }
 
@@ -241,153 +275,4 @@ impl RelationalForkPort {
             .map(with_basis)
             .map_err(Into::into)
     }
-
-    /// The fork transition, in phase order: custody and source validation,
-    /// target preparation, head retention and basis issuance (every fallible
-    /// step), then the durable step with the stale-source re-check inside the
-    /// reservation, and only then the target's installation.
-    #[allow(clippy::too_many_arguments)]
-    fn fork_reserved_with_hooks<S: RelationalBranchTransitionDurableStep>(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        step: &S,
-        reservation: RelationalForkTargetReservation,
-        source: AdmittedRelationalForkSourceBasis,
-        pause_before_install: impl FnOnce(),
-        pause_after_install: impl FnOnce(),
-        return_basis: bool,
-    ) -> Result<(RelationalForkOutcome, Option<AdmittedRelationalBranchBasis>), ForkFailure<S::Stop>>
-    {
-        self.fork_reserved_input_with_hooks(
-            execution,
-            step,
-            reservation,
-            ForkSourceInput::Current(source),
-            pause_before_install,
-            pause_after_install,
-            return_basis,
-        )
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    fn fork_reserved_input_with_hooks<S: RelationalBranchTransitionDurableStep>(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        step: &S,
-        reservation: RelationalForkTargetReservation,
-        source: ForkSourceInput,
-        pause_before_install: impl FnOnce(),
-        pause_after_install: impl FnOnce(),
-        return_basis: bool,
-    ) -> Result<(RelationalForkOutcome, Option<AdmittedRelationalBranchBasis>), ForkFailure<S::Stop>>
-    {
-        let denied = BranchTransitionRecordError::Denied;
-        if !self.owner.owns_reservation(&reservation) {
-            return Err(denied(RelationalForkDenial::ForeignRuntime));
-        }
-        // Declared before every Native guard: all early preparation failures
-        // release their returned participant-owned lookup outside those guards.
-        let mut lookup_cleanup = None;
-        let _operation = self
-            .lifecycle
-            .admit()
-            .ok_or(denied(RelationalForkDenial::OwnerUnavailable))?;
-        let publication = self.owner.begin_branch_transition();
-        let validated = self.validate_fork_input(source).map_err(denied)?;
-        // The fork association uses the actual current registration through
-        // durable installation. A rebind cannot turn its pending lookup live.
-        let source_epoch = if validated.source_root.managed_source_image.get().is_some() {
-            Some(self.publication.companion_epoch().map_err(|_| {
-                denied(RelationalForkDenial::ManagedSource(
-                    crate::mvcc::CompanionPreflightStop::RegistrationChanged,
-                ))
-            })?)
-        } else {
-            None
-        };
-        let companion = source_epoch
-            .as_ref()
-            .map(|epoch| {
-                epoch
-                    .active()
-                    .map_err(|_| {
-                        denied(RelationalForkDenial::ManagedSource(
-                            crate::mvcc::CompanionPreflightStop::RegistrationChanged,
-                        ))
-                    })?
-                    .ok_or_else(|| {
-                        denied(RelationalForkDenial::ManagedSource(
-                            crate::mvcc::CompanionPreflightStop::RegistrationChanged,
-                        ))
-                    })
-            })
-            .transpose()?;
-        pause_before_install();
-        let prepared = self
-            .prepare_fork_target(
-                execution,
-                reservation,
-                &validated,
-                companion,
-                &mut lookup_cleanup,
-            )
-            .map_err(denied)?;
-        let mut installable = Some(
-            self.prepare_installation(prepared, return_basis)
-                .map_err(denied)?,
-        );
-        let source_cell = self
-            .owner
-            .branch_cell(validated.descriptor.source_branch())
-            .ok_or(denied(RelationalForkDenial::SourceBranchMissing))?
-            .publication_cell();
-        let _coordination = source_cell.coordination().enter();
-        let source_state = source_cell.enter_state();
-        let transition = validated.transition(
-            installable
-                .as_ref()
-                .expect("prepared fork target")
-                .target_branch()
-                .clone(),
-        );
-        let installed = publication.record_with_cutover(
-            execution,
-            step,
-            validated.source_root.retained_schema_authority(),
-            || {
-                self.recheck_fork_source(&validated, &source_state)?;
-                // Coordination still excludes source writers. Readers must not
-                // wait on source state across durable I/O or registry insertion.
-                drop(source_state);
-                Ok(transition)
-            },
-            |_| {
-                self.install_fork_target(
-                    &validated,
-                    installable.take().expect("one durable fork cutover"),
-                )
-            },
-        );
-        drop(_coordination);
-        drop(publication);
-        drop(source_epoch);
-        // Refused/unresolved callbacks never own this preparation. Successful
-        // cutover also returns its derived cleanup instead of destroying it
-        // inside Native coordination or the canonical position reservation.
-        drop(installable);
-        let (outcome, basis, cleanup) = installed?;
-        drop(cleanup);
-        drop(lookup_cleanup);
-        pause_after_install();
-        Ok((outcome, basis))
-    }
-}
-
-fn with_basis(
-    (outcome, basis): (RelationalForkOutcome, Option<AdmittedRelationalBranchBasis>),
-) -> (RelationalForkOutcome, AdmittedRelationalBranchBasis) {
-    (
-        outcome,
-        basis.expect(/* Proof: This call requests basis-enabled fork installation; its successful branch constructs Some(basis), while every refusal returns before extraction. */ "basis-enabled fork installation returns its basis"),
-    )
 }

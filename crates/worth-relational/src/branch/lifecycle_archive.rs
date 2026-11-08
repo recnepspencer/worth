@@ -90,7 +90,7 @@ impl crate::runtime::RelationalRuntime {
             step,
             schema,
             || Ok(transition),
-            |_| state.install_archive(archived.clone()),
+            |_, _| state.install_archive(archived.clone()),
         )?;
         Ok(ArchivedRelationalBranch {
             identity: identity.clone(),

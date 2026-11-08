@@ -8,7 +8,7 @@ use crate::branch::RelationalBranchTransitionSequence;
 use crate::publication::patch::data::PatchStreamPosition;
 
 pub(super) const MAGIC: [u8; 8] = *b"WRTHRBTA";
-pub(super) const FORMAT_VERSION: u16 = 2;
+pub(super) const FORMAT_VERSION: u16 = 3;
 
 const VERSION_OFFSET: usize = MAGIC.len();
 const SEQUENCE_OFFSET: usize = VERSION_OFFSET + 2;

@@ -24,6 +24,21 @@ pub(crate) struct TransitionOriginalRecord {
     pub(crate) follows: PatchStreamPosition,
     pub(crate) schema: [u8; 32],
     pub(crate) transition: RelationalBranchTransition,
+    #[serde(deserialize_with = "required_association")]
+    pub(crate) caller_association: Option<crate::history::data::RelationalCallerAssociation>,
+    #[serde(deserialize_with = "required_digest")]
+    pub(crate) artifact_digest: Option<[u8; 32]>,
+}
+
+fn required_association<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<crate::history::data::RelationalCallerAssociation>, D::Error> {
+    Option::deserialize(deserializer)
+}
+fn required_digest<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<[u8; 32]>, D::Error> {
+    Option::deserialize(deserializer)
 }
 
 #[derive(Debug, Deserialize)]

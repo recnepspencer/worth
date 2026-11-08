@@ -9,7 +9,7 @@ use worth_execution::{ExecutionImmutableBytes, ExecutionRequest, ExecutionReques
 use worth_foundational::facade::{BoundaryProtocolCompatibilityWindow, BoundaryProtocolVersion};
 
 const MAGIC: &[u8; 8] = b"WRTHRCS1";
-const VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(1);
+const VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(2);
 const HEADER: usize = 84;
 
 #[derive(Debug, Clone)]

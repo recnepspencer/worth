@@ -2,6 +2,8 @@ pub use crate::durability::authority::CapturedRelationalCheckpointAdmissionImage
 pub use crate::durability::authority::{
     AdmittedNativeInterimReceiver, CapturedNativeInterimAdmission, CapturedNativeInterimComponent,
     CapturedNativeInterimOrigin, NativeInterimBootstrapContinuation,
+    ReadmittedRelationalAssociatedFork, RefusedRelationalForkReadmission,
+    RelationalForkReadmissionCause,
 };
 pub use crate::durability::authority::{
     FreshRelationalSourceAdmission, ObservedRelationalMemoryCommit, PreparedRelationalHomeRecovery,

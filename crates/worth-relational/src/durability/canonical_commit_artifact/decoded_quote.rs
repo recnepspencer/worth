@@ -207,18 +207,9 @@ fn association(
     }
     octets.skip(count)?;
     octets.finish()?;
-    let bytes = std::alloc::Layout::array::<u8>(count).map_err(|_| malformed())?;
-    let layout = std::alloc::Layout::new::<(usize, usize)>()
-        .extend(bytes)
-        .map_err(|_| malformed())?
-        .0
-        .pad_to_align();
-    let mut quote = OwnerAllocation::from(u64::try_from(layout.size()).map_err(|_| malformed())?);
-    add(
-        &mut quote,
-        shared_root::<worth_execution::ExecutionMemoryReservation>()?,
-    )?;
-    Ok(quote)
+    let bytes = crate::history::data::RelationalCallerAssociation::retained_allocation_bytes(count)
+        .ok_or_else(malformed)?;
+    Ok(OwnerAllocation::from(bytes))
 }
 
 pub(super) fn field<'a>(
