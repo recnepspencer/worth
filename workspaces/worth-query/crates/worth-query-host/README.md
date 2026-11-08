@@ -197,6 +197,12 @@ explicit unbudgeted `reclaim()` or abandonment. Dropping a Home is not successfu
 close. The Directory close method does not provide a completed MemoryOnly close;
 its owning refusal can return the original MemoryOnly Home through `resume()`.
 
+An installed authentication-event signing registry retires intact with its
+original Query owner. Close retains its inert supplier custody until explicit
+`reclaim()` or abandonment. A separately retained external authentication owner
+remains usable; closing the Home does not revoke that service. A retained
+program-runtime alias still refuses close with `Busy(ProgramRuntime)`.
+
 Dispose of a development directory with
 `discard_home(WorthQueryApplicationHomeLocation::Directory(path))` only when its
 lease is free. Discard destroys its data; it is separate from close. A held lease
