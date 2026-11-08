@@ -879,6 +879,9 @@ include every resolution tagged with it.
 
   The phase's first deliverable is a per-kind table naming the route each run
   kind takes.
+  The [Phase 7 custody routes](milestone-3-long-running-custody.md) select those
+  routes and inventory every retained conditional decision. They distinguish
+  existing lifecycle contracts from the durable consumers still to implement.
 - **R8 (Phase 6).** General required-output custody is a durable obligation in
   `query.obligations`. That covers `DemandRecord` performed obligations and
   prerequisites, and `SourceCustody`. Ready outputs remain derived.
