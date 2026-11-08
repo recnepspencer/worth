@@ -50,6 +50,24 @@ impl RelationalDurableMediumTransfer {
 }
 
 impl RelationalDurableMediumBinding {
+    pub(crate) fn admit_home_program_planning(
+        &self,
+    ) -> Result<(), RelationalHomeProgramWriteDenial> {
+        use RelationalHomeProgramWriteDenial as Denial;
+        let phase = self.home_phase();
+        match phase.as_ref().ok_or(Denial::MediumMoved)? {
+            RelationalHomeProgramPhase::Pending(required) => self
+                .transition
+                .as_ref()
+                .ok_or(Denial::TransitionNotRequested)?
+                .admit_required(required)
+                .map_err(Denial::Admission),
+            RelationalHomeProgramPhase::Unrestricted => Err(Denial::TransitionNotRequested),
+            RelationalHomeProgramPhase::Bound { .. } => Err(Denial::TransitionAlreadyBound),
+            RelationalHomeProgramPhase::Refused(cause) => Err(Denial::Admission(*cause)),
+        }
+    }
+
     pub(crate) fn admit_completed_home_steps<Source: PartialEq>(
         &self,
         completed: &worth_proof::CompletedHomeProgramTransitionSteps<Source>,

@@ -13,6 +13,8 @@ pub enum WorthQueryHomeProgramTransitionDenial {
     InvalidPlan,
     Author(WorthQueryPrimaryGraphInstallationDenial),
     AuthoredBody(WorthQueryHomeProgramTransitionBodyDenial),
+    PlanningRequest(worth_store_application::ApplicationHomeTransitionPlanningRequestDenial),
+    Source(QueryHomeProgramTransitionSourceDenial),
     Native(worth_relational::facade::runtime::RelationalHomeProgramContractDenial),
     Body(worth_relational::facade::runtime::RelationalHomeProgramBodyDenial),
     Staging(worth_relational::facade::mvcc::RelationalTransactionStagingDenial),

@@ -10,7 +10,9 @@ use worth_foundational::facade::HomeProgramTransitionCatalogDigest;
 
 mod body_digest;
 mod body_validation;
+mod planning_request;
 pub use body_digest::{home_program_transition_body_digest, RelationalHomeProgramBodyDenial};
+pub use planning_request::RelationalHomeProgramPlanningSource;
 mod catalog_digest;
 mod predecessor_catalog;
 mod retention;
@@ -46,6 +48,7 @@ pub enum RelationalHomeProgramContractDenial {
     CapacityOverflow,
     CatalogEncoding,
     UnboundHome,
+    TransitionPhase(crate::durability::medium::RelationalHomeProgramWriteDenial),
     Admission(worth_proof::HomeProgramTransitionAdmissionDenial),
     Plan(worth_foundational::facade::HomeProgramTransitionDescriptionDenial),
     TargetCatalogMismatch,

@@ -15,6 +15,12 @@ pub struct WorthQueryHomeProgramTransitionReadSource<'owner, 'scope> {
     pub(super) layout: &'owner WorthQueryPrimaryGraphLayout,
     phase: &'owner WorthQueryBootstrapAdvancementPhase<'scope>,
 }
+
+#[derive(Debug)]
+pub enum QueryHomeProgramTransitionSourceDenial {
+    Native(worth_relational::facade::runtime::RelationalHomeProgramContractDenial),
+    Meaning(WorthQueryPrimaryGraphInstallationDenial),
+}
 impl WorthQueryHomeProgramTransitionReadSource<'_, '_> {
     pub fn schema_registry(&self) -> &worth_relational::facade::schema::RelationalSchemaRegistry {
         self.metadata.schema()
@@ -96,24 +102,39 @@ impl<Schema: ApplicationSchemaComposition, Program>
         phase: &'owner WorthQueryBootstrapAdvancementPhase<'scope>,
         native: &RelationalRuntime,
         basis: &AdmittedRelationalBranchBasis,
+        admitted: &worth_proof::AdmittedHomeProgramTransitionPlanningRequest<
+            worth_relational::facade::runtime::RelationalHomeProgramPlanningSource,
+        >,
     ) -> Result<
         WorthQueryHomeProgramTransitionReadSource<'owner, 'scope>,
-        WorthQueryPrimaryGraphInstallationDenial,
+        QueryHomeProgramTransitionSourceDenial,
     > {
+        use QueryHomeProgramTransitionSourceDenial as Denial;
+        native
+            .admit_home_program_transition_planning_request(admitted, basis)
+            .map_err(Denial::Native)?;
         let (_, receipt) = self.predecessor_native_meaning();
         if receipt.runtime_instance_id() != native.runtime_instance_id() {
-            return Err(denied(
+            return Err(Denial::Meaning(denied(
                 "transition source belongs to another actual Native receiver",
-            ));
+            )));
         }
         let view = native
             .read_truth()
             .project_observation(&basis.observation())
-            .map_err(|cause| denied(format!("transition original source refused: {cause:?}")))?;
+            .map_err(|cause| {
+                Denial::Meaning(denied(format!(
+                    "transition original source refused: {cause:?}"
+                )))
+            })?;
         let metadata = native
             .read_truth()
             .pin_view_read_capability(&view, &[], &phase.execution_request())
-            .map_err(|cause| denied(format!("transition original metadata refused: {cause:?}")))?;
+            .map_err(|cause| {
+                Denial::Meaning(denied(format!(
+                    "transition original metadata refused: {cause:?}"
+                )))
+            })?;
         Ok(WorthQueryHomeProgramTransitionReadSource {
             view,
             metadata,

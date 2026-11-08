@@ -59,9 +59,17 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
             let bridge = target
                 .prepare_home_program_bridge(&bridge)
                 .map_err(Denial::Author)?;
+            let admitted = home
+                .admit_home_program_transition_planning_request(source, &request)
+                .map_err(Denial::PlanningRequest)?;
             let lens = before
-                .home_program_transition_source(phase, native, source.basis().relational_basis())
-                .map_err(Denial::Author)?;
+                .home_program_transition_source(
+                    phase,
+                    native,
+                    source.basis().relational_basis(),
+                    &admitted,
+                )
+                .map_err(Denial::Source)?;
             let mut plan = author(&lens, &target.authoring_target()).map_err(Denial::Author)?;
             let count = u32::try_from(plan.steps.len()).map_err(|_| Denial::InvalidPlan)?;
             if count == 0 || plan.target >= count {

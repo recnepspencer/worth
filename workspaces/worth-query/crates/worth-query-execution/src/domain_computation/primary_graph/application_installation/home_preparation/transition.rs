@@ -13,7 +13,8 @@ mod promotion;
 pub use authored_body::WorthQueryHomeProgramTransitionBodyDenial;
 mod author_source;
 pub use author_source::{
-    WorthQueryHomeProgramTransitionReadSource, WorthQueryHomeProgramTransitionTarget,
+    QueryHomeProgramTransitionSourceDenial, WorthQueryHomeProgramTransitionReadSource,
+    WorthQueryHomeProgramTransitionTarget,
 };
 pub use promotion::QueryHomeTransitionPromotionRefused;
 use worth_relational::facade::{

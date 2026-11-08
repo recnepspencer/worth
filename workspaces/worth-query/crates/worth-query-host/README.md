@@ -235,6 +235,11 @@ Relational records; private Query records and materialization mutations refuse
 before the intent. The framework updates the existing activation record.
 Signal/Bridge mutations remain unsupported in this lane.
 
+The author lens is admitted by the actual Home owner. Native verifies its
+attached Home seal, incarnation and exact source admission before exposing the
+predecessor view. Descriptive owner coordinates cannot substitute for that
+request, and planning permission does not authorize a transition step.
+
 Fresh and already-current Homes skip the transition author. After a successful
 transition, close normally and reopen with the successor request alone. Existing
 entities and durable history remain in the same Home; neither initializer is
