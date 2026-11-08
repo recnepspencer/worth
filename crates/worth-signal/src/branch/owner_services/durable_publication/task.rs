@@ -1,6 +1,6 @@
 //! A request can stop while its original owner task and callback result remain retained.
 use super::super::SignalDurableBranchHandle;
-use super::SignalDurableTransactionResult;
+use super::SignalDurableOwnerEffect;
 use crate::durability::{
     SignalAuthoredImageDenial, SignalBranchAdvanceArtifact, SignalDurableFrameDenial,
     SignalDurableMediumDenial, SignalOwnerReadmissionDenial,
@@ -24,6 +24,7 @@ pub enum SignalDurableAdvanceDenial {
     Source(super::super::durable_source_port::SignalDurableSourceDenial),
     Readmission(SignalOwnerReadmissionDenial),
     Mutation(crate::branch::SignalBranchAdvanceDenial),
+    Fork(crate::branch::SignalBranchForkOperationDenial),
     Frame(SignalDurableFrameDenial),
     Image(SignalAuthoredImageDenial),
     Medium(SignalDurableMediumDenial),
@@ -78,8 +79,8 @@ pub enum SignalDurableAdvanceDenial {
 pub struct SignalDurableAdvanceOutput {
     pub(super) projection: worth_foundational::facade::SignalDefinitionProjectionOutcome,
     pub(super) branch: SignalDurableBranchHandle,
-    pub(super) transaction: SignalDurableTransactionResult,
-    pub(super) artifact: SignalBranchAdvanceArtifact,
+    pub(super) effect: SignalDurableOwnerEffect,
+    pub(super) evidence: crate::durability::SignalCommittedAdvanceEvidence,
 }
 impl SignalDurableAdvanceOutput {
     pub fn projection_outcome(
@@ -91,16 +92,22 @@ impl SignalDurableAdvanceOutput {
         &self.branch
     }
     pub fn artifact(&self) -> &SignalBranchAdvanceArtifact {
-        &self.artifact
+        self.evidence.artifact()
+    }
+    pub fn evidence(&self) -> &crate::durability::SignalCommittedAdvanceEvidence {
+        &self.evidence
+    }
+    pub fn effect(&self) -> &SignalDurableOwnerEffect {
+        &self.effect
     }
     pub fn into_parts(
         self,
     ) -> (
         SignalDurableBranchHandle,
-        SignalDurableTransactionResult,
-        SignalBranchAdvanceArtifact,
+        SignalDurableOwnerEffect,
+        crate::durability::SignalCommittedAdvanceEvidence,
     ) {
-        (self.branch, self.transaction, self.artifact)
+        (self.branch, self.effect, self.evidence)
     }
 }
 enum SignalDurableAdvanceTerminal {

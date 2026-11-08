@@ -8,7 +8,7 @@ use worth_proof::{
     AdmittedCompositeSignalPublication, InstalledCompositeSignalPublicationAuthority,
 };
 
-pub(super) struct CompositeAdvanceAuthorization {
+pub(super) struct CompositePublicationAuthorization {
     pub(super) grant: AdmittedCompositeSignalPublication,
     pub(super) association: CompositeAttemptAssociation,
     pub(super) commitment: [u8; 32],
@@ -55,6 +55,29 @@ where
         }
         *installed = Some(authority);
         Ok(())
+    }
+
+    pub(super) fn admit_publication_mode(
+        &self,
+        authorization: Option<&CompositePublicationAuthorization>,
+    ) -> Result<
+        std::sync::MutexGuard<'_, Option<InstalledCompositeSignalPublicationAuthority>>,
+        SignalDurableAdvanceDenial,
+    > {
+        use SignalDurableAdvanceDenial as Dn;
+        let installed = self
+            .composite
+            .lock()
+            .map_err(|_| Dn::PublicationStatePoisoned)?;
+        match (installed.as_ref(), authorization) {
+            (None, None) => {}
+            (Some(_), None) => return Err(Dn::CompositePublicationRequired),
+            (None, Some(_)) => return Err(Dn::CompositeOwnerNotAttached),
+            (Some(authority), Some(authorization)) => authority
+                .admit(&authorization.grant, &authorization.commitment)
+                .map_err(Dn::CompositeAdmission)?,
+        }
+        Ok(installed)
     }
 
     pub(super) fn require_standalone(&self) -> Result<(), SignalDurableAdvanceDenial> {
@@ -135,7 +158,7 @@ where
             runtime_ctx,
             apply,
             None,
-            Some(CompositeAdvanceAuthorization {
+            Some(CompositePublicationAuthorization {
                 grant,
                 association,
                 commitment,

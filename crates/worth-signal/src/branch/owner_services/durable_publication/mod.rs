@@ -1,11 +1,18 @@
 //! Per-branch original tasks share only short metadata locks and physical publication order.
 mod composite;
+mod cutover;
 mod driving;
+mod effect;
+use effect::{PreparedSignalOwnerEffect, ReservedSignalBranches};
+pub use effect::{SignalDurableForkResult, SignalDurableOwnerEffect};
+mod fork_frames;
+mod fork_preparation;
 mod frame_preparation;
 pub(in crate::branch::owner_services) mod medium_binding;
 mod port;
 mod preparation;
 pub(in crate::branch::owner_services) mod prepared;
+mod registration;
 mod source_access;
 mod task;
 mod task_storage;
@@ -69,17 +76,17 @@ where
     T: Copy + Ord + 'static,
 {
 }
-struct ReadyAdvance<D, I, T>
+struct ReadyPublication<D, I, T>
 where
     D: Copy + Ord + std::fmt::Debug + 'static,
     I: Copy + Ord,
     T: Copy + Ord,
 {
-    prepared: SignalPreparedDurableAdvance<D, I, T>,
+    prepared: PreparedSignalOwnerEffect<D, I, T>,
     artifact: SignalBranchAdvanceArtifact,
     retention: SignalBranchAdmissionReservation,
     location: SignalAdvanceLocationReservation,
-    publication: Option<Box<dyn crate::durability::SignalDurableDefinitionPublication>>,
+    publication: Option<Box<dyn crate::durability::SignalDurableProjectionPublication>>,
 }
 struct DefinitionPending<D, I, T>
 where
@@ -87,7 +94,7 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
-    advance: ReadyAdvance<D, I, T>,
+    advance: ReadyPublication<D, I, T>,
     definition: SignalDefinitionTransitionArtifact,
     location: SignalDefinitionLocationReservation,
 }
@@ -97,7 +104,7 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
-    advance: ReadyAdvance<D, I, T>,
+    advance: ReadyPublication<D, I, T>,
     definition: Arc<SignalDefinitionSourceRecord>,
 }
 enum TaskPhase<D, I, T>
@@ -119,7 +126,7 @@ where
     I: Copy + Ord + 'static,
     T: Copy + Ord + 'static,
 {
-    branch: SignalBranchId,
+    branches: ReservedSignalBranches,
     resource: Option<
         LinearResource<
             SignalBranchAdvanceIdentity,
@@ -235,7 +242,13 @@ where
             .tasks
             .lock()
             .expect("terminal task metadata contains only owner primitives");
-        tasks.branches.remove(&slot.branch);
+        tasks.branches.remove(&slot.branches.target());
+        match slot.branches {
+            ReservedSignalBranches::Advanced(_) => {}
+            ReservedSignalBranches::Forked { source, .. } => {
+                tasks.branches.remove(&source);
+            }
+        }
         tasks.tasks.remove(&original);
         drop(tasks);
         let mut turn = self

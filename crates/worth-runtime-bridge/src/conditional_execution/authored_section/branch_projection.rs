@@ -7,10 +7,7 @@ use crate::conditional_execution::{
     lowering_registry::BridgeConditionalLoweringRegistry, retention::BridgeRetentionLedger,
     BridgeInstalledConditionalLowering,
 };
-use std::{
-    collections::BTreeMap,
-    sync::{Arc, Mutex, MutexGuard, TryLockError},
-};
+use std::sync::{Arc, Mutex, MutexGuard, TryLockError};
 use worth_foundational::facade::{DurableSignalBranchIdentity, SignalBranchAdvanceIdentity};
 use worth_signal::facade::NodeId;
 
@@ -18,8 +15,7 @@ pub struct BridgeReadmittedAuthoredAssembly {
     pub(in crate::conditional_execution) program: Arc<Program>,
     pub(in crate::conditional_execution) signal:
         worth_signal::facade::durability::SignalDurableOwner<(), (), (), (), ()>,
-    pub(in crate::conditional_execution) branches:
-        BTreeMap<DurableSignalBranchIdentity, Arc<BranchProjection>>,
+    pub(in crate::conditional_execution) branches: Arc<super::branch_registry::BranchRegistry>,
     pub(in crate::conditional_execution) _memory:
         Option<worth_execution::ExecutionMemoryReservation>,
 }
@@ -28,6 +24,9 @@ pub(in crate::conditional_execution) struct BranchProjection {
 }
 pub(in crate::conditional_execution) enum BranchPosture {
     Serving,
+    ForkPreparing {
+        target: DurableSignalBranchIdentity,
+    },
     Preparing {
         node: NodeId,
     },
@@ -52,6 +51,16 @@ pub(in crate::conditional_execution) struct ReadmittedBranch {
 }
 #[derive(Debug)]
 pub enum BridgeAuthoredBranchDenial {
+    RegistryContactHeld {
+        branch: DurableSignalBranchIdentity,
+    },
+    ForkReserved {
+        branch: DurableSignalBranchIdentity,
+    },
+    ForkPreparing {
+        branch: DurableSignalBranchIdentity,
+        target: DurableSignalBranchIdentity,
+    },
     UnknownBranch {
         branch: DurableSignalBranchIdentity,
     },
@@ -86,17 +95,16 @@ impl BridgeReadmittedAuthoredAssembly {
     ) -> &worth_signal::facade::durability::SignalDurableOwner<(), (), (), (), ()> {
         &self.signal
     }
-    pub fn authored_branch(
+    pub fn with_authored_branch<R>(
         &self,
         branch: DurableSignalBranchIdentity,
-    ) -> Result<BridgeAuthoredBranchView<'_>, BridgeAuthoredBranchDenial> {
-        let projection = self
-            .branches
-            .get(&branch)
-            .ok_or(BridgeAuthoredBranchDenial::UnknownBranch { branch })?;
-        Ok(BridgeAuthoredBranchView {
+        inspect: impl FnOnce(BridgeAuthoredBranchView<'_>) -> R,
+    ) -> Result<R, BridgeAuthoredBranchDenial> {
+        let projection = self.branches.projection(branch)?;
+        let view = BridgeAuthoredBranchView {
             branch: projection.serving(branch)?,
-        })
+        };
+        Ok(inspect(view))
     }
 }
 impl BranchProjection {
@@ -112,6 +120,9 @@ impl BranchProjection {
         })?;
         match guard.posture {
             BranchPosture::Serving => Ok(guard),
+            BranchPosture::ForkPreparing { target } => {
+                Err(BridgeAuthoredBranchDenial::ForkPreparing { branch, target })
+            }
             BranchPosture::ReadmissionRequired { original } => {
                 Err(BridgeAuthoredBranchDenial::ReadmissionRequired { branch, original })
             }

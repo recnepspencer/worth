@@ -1,7 +1,6 @@
 //! Drive retained originals; neither a retry nor a stopped request reexecutes a callback.
 use super::task::{SignalDurableAdvanceAnswer, SignalDurableAdvanceDriver};
 use super::*;
-use crate::branch::owner_services::SignalDurableBranchHandle;
 use crate::durability::{
     publication_binding::{admit_definition, SignalPublicationBindingDenial},
     SignalPublicationObservation,
@@ -60,7 +59,7 @@ where
         let terminal = std::mem::replace(
             slot,
             TaskSlot {
-                branch: slot.branch,
+                branches: slot.branches,
                 resource: None,
                 phase: TaskPhase::Delivered,
                 composite_grant: None,
@@ -133,12 +132,17 @@ where
             .admit()
             .map_err(super::super::mutation_port::map_advance_admission_denial)
             .map_err(Dn::Mutation)?;
-        let cell = owner
-            .lookup_cell(&admission, slot.branch)
-            .map_err(|denial| {
-                super::super::mutation_port::map_advance_registry_denial(denial, slot.branch)
-            })
-            .map_err(Dn::Mutation)?;
+        let cell = match slot.branches {
+            ReservedSignalBranches::Advanced(branch) => Some(
+                owner
+                    .lookup_cell(&admission, branch)
+                    .map_err(|denial| {
+                        super::super::mutation_port::map_advance_registry_denial(denial, branch)
+                    })
+                    .map_err(Dn::Mutation)?,
+            ),
+            ReservedSignalBranches::Forked { .. } => None,
+        };
         {
             let mut turn = self
                 .physical_turn
@@ -213,43 +217,43 @@ where
             advance,
             definition,
         } = *pending;
-        let ReadyAdvance {
+        let ReadyPublication {
             prepared,
             artifact,
             retention,
             location,
             publication,
         } = advance;
-        match medium_binding::admit_advance(prepared, artifact, definition, completion) {
+        match medium_binding::admit_publication(prepared, artifact, definition, completion) {
             Ok(proof) => {
-                let (old_state, transaction, observation, record) =
-                    cell.commit_durable_advance(&admission, proof);
-                let artifact = self
-                    .source
-                    .lock()
-                    .expect("source index has no user code")
-                    .record_committed_advance(record, location);
-                let basis = owner.admit_canonical_basis(
-                    observation,
-                    slot.branch,
-                    cell.incarnation().get(),
-                    retention.into_one(),
-                );
-                let branch = SignalDurableBranchHandle::from_owner(
-                    basis,
-                    artifact.descriptor().clone(),
-                    self.medium.binding().incarnation().fence(),
-                );
+                let committed =
+                    self.commit_effect(&owner, &admission, cell, proof, retention, location);
+                let cutover::CommittedSignalCutover {
+                    old_state,
+                    effect,
+                    branch,
+                    evidence,
+                } = committed;
                 use worth_foundational::facade::SignalDefinitionProjectionOutcome as Projection;
                 let memory = slot._memory.take();
                 drop(slot);
                 let mut output = SignalDurableAdvanceOutput {
                     projection: Projection::NotRequired,
                     branch,
-                    artifact,
-                    transaction: SignalDurableTransactionResult {
-                        result: transaction,
-                        _memory: memory,
+                    evidence,
+                    effect: match effect {
+                        cutover::CutoverOwnerEffect::Advanced(result) => {
+                            SignalDurableOwnerEffect::Advanced(SignalDurableTransactionResult {
+                                result,
+                                _memory: memory,
+                            })
+                        }
+                        cutover::CutoverOwnerEffect::Forked(outcome) => {
+                            SignalDurableOwnerEffect::Forked(SignalDurableForkResult {
+                                outcome,
+                                _memory: memory,
+                            })
+                        }
                     },
                 };
                 let had_publication = publication.is_some();

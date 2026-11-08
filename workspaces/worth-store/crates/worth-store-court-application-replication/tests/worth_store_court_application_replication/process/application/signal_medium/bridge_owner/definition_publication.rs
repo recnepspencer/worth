@@ -34,13 +34,12 @@ fn conditional_definition_publication_resumes_its_original_and_reopens_only_the_
     let port = owner.signal_owner().source_port();
     let descriptor = port.observe(branch).unwrap();
     let basis = port.readmit_descriptor(&descriptor).unwrap();
-    let view = owner.authored_branch(branch).unwrap();
-    let original = view.conditional_definitions().next().unwrap();
-    assert!(
-        matches!(owner.begin_conditional_definition_publication(&execution, &basis, &original, successor(&original)),
-        Err(BridgeDurableDefinitionPublicationDenial::Branch(BridgeAuthoredBranchDenial::ProjectionContactHeld { branch: held })) if held == branch)
-    );
-    drop(view);
+    let original = owner.with_authored_branch(branch, |view| {
+        let original = view.conditional_definitions().next().unwrap();
+        assert!(matches!(owner.begin_conditional_definition_publication(&execution, &basis, &original, successor(&original)),
+            Err(BridgeDurableDefinitionPublicationDenial::Branch(BridgeAuthoredBranchDenial::ProjectionContactHeld { branch: held })) if held == branch));
+        original
+    }).unwrap();
     let task = owner
         .begin_conditional_definition_publication(
             &execution,
@@ -56,7 +55,7 @@ fn conditional_definition_publication_resumes_its_original_and_reopens_only_the_
         "preparation moves no canonical head"
     );
     assert!(
-        matches!(owner.authored_branch(branch), Err(BridgeAuthoredBranchDenial::Pending { branch: held, original: retained }) if held == branch && retained == original_task)
+        matches!(owner.with_authored_branch(branch, |_| ()), Err(BridgeAuthoredBranchDenial::Pending { branch: held, original: retained }) if held == branch && retained == original_task)
     );
     drop(task);
     let resumed = owner
@@ -71,10 +70,9 @@ fn conditional_definition_publication_resumes_its_original_and_reopens_only_the_
     );
     let new_reference = output.artifact().descriptor().definition();
     let actual = owner
-        .authored_branch(branch)
-        .unwrap()
-        .conditional_definitions()
-        .next()
+        .with_authored_branch(branch, |view| {
+            view.conditional_definitions().next().unwrap()
+        })
         .unwrap();
     assert!(matches!(
         actual.contract().condition(),
@@ -128,8 +126,9 @@ fn conditional_definition_publication_resumes_its_original_and_reopens_only_the_
             .source_port()
             .observe(identity)
             .unwrap();
-        let view = owner.authored_branch(identity).unwrap();
-        let definitions: Vec<_> = view.conditional_definitions().collect();
+        let definitions: Vec<_> = owner
+            .with_authored_branch(identity, |view| view.conditional_definitions().collect())
+            .unwrap();
         if identity == branch {
             assert_eq!(descriptor.definition(), new_reference);
             assert!(matches!(
@@ -168,8 +167,11 @@ fn conditional_definition_publication_resumes_its_original_and_reopens_only_the_
             BridgeConditionalCondition::OnDemand
         ));
         assert_eq!(
-            view.conditional_retention()
-                .retained_definition_candidates(),
+            owner
+                .with_authored_branch(identity, |view| view
+                    .conditional_retention()
+                    .retained_definition_candidates())
+                .unwrap(),
             0
         );
     }

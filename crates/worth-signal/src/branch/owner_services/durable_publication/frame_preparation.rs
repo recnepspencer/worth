@@ -123,12 +123,15 @@ where
             )
             .map_err(Dn::Frame)?;
             Ok(TaskPhase::Definition(Box::new(DefinitionPending {
-                advance: ReadyAdvance {
-                    prepared,
+                advance: ReadyPublication {
+                    prepared: PreparedSignalOwnerEffect::Advanced(Box::new(prepared)),
                     artifact,
                     retention,
                     location,
-                    publication,
+                    publication: publication.map(|publication| {
+                        publication
+                            as Box<dyn crate::durability::SignalDurableProjectionPublication>
+                    }),
                 },
                 definition,
                 location: SignalDefinitionLocationReservation::reserve(execution)
@@ -160,12 +163,15 @@ where
             )
             .map_err(Dn::Frame)?;
             Ok(TaskPhase::Branch(Box::new(BranchPending {
-                advance: ReadyAdvance {
-                    prepared,
+                advance: ReadyPublication {
+                    prepared: PreparedSignalOwnerEffect::Advanced(Box::new(prepared)),
                     artifact,
                     retention,
                     location,
-                    publication,
+                    publication: publication.map(|publication| {
+                        publication
+                            as Box<dyn crate::durability::SignalDurableProjectionPublication>
+                    }),
                 },
                 definition,
             })))

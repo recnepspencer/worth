@@ -7,6 +7,7 @@ mod owner_candidate_refusal;
 mod owner_definition_projection;
 mod owner_definition_publication;
 mod owner_fixture;
+mod owner_fork;
 mod owner_installation;
 mod owner_node_issuance;
 mod owner_quiescent_kill;

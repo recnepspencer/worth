@@ -8,6 +8,7 @@ use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 
 pub(super) fn reserve<D, I, T>(
     execution: &ExecutionRequest<'_, '_>,
+    branches: ReservedSignalBranches,
 ) -> Result<Option<ExecutionMemoryReservation>, SignalDurableAdvanceDenial>
 where
     D: Copy + Ord + std::fmt::Debug + 'static,
@@ -19,7 +20,7 @@ where
             charge.checked_add(btree_structure_charge::<
                 SignalBranchId,
                 SignalBranchAdvanceIdentity,
-            >(1)?)
+            >(branches.count())?)
         })
         .and_then(|charge| {
             charge.checked_add(btree_structure_charge::<
@@ -29,12 +30,17 @@ where
         })
         .and_then(|charge| charge.checked_add(Charge::capacity::<DefinitionPending<D, I, T>>(1)?))
         .and_then(|charge| charge.checked_add(Charge::capacity::<BranchPending<D, I, T>>(1)?))
-        .and_then(|charge| charge.checked_add(Charge::capacity::<TransactionResult>(1)?))
         .and_then(|charge| {
             charge.checked_add(Charge::capacity::<SignalDurableAdvanceCompletion>(1)?)
         })
         .and_then(|charge| {
-            charge.checked_add(BranchState::<D, I, T>::durable_successor_framework_charge()?)
+            charge.checked_add(match branches {
+                ReservedSignalBranches::Advanced(_) => BranchState::<D, I, T>::durable_successor_framework_charge()?
+                    .checked_add(Charge::capacity::<prepared::SignalPreparedDurableAdvance<D, I, T>>(1)?)?
+                    .checked_add(Charge::capacity::<TransactionResult>(1)?)?,
+                ReservedSignalBranches::Forked { .. } =>
+                    crate::branch::owner_services::owner::fork_reservation::SignalPreparedOwnedFork::<D, I, T>::framework_charge()?,
+            })
         })
         .map_err(|_| {
             SignalDurableAdvanceDenial::Readmission(

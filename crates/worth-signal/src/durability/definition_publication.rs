@@ -46,13 +46,12 @@ impl SignalDefinitionPublicationContext<'_> {
 
 /// Prepare all fallible derived work before media publication. The original task
 /// retains this object across caller drop/resume and consumes it after cutover.
-pub trait SignalDurableDefinitionPublication: Send {
+pub trait SignalDurableDefinitionPublication: super::SignalDurableProjectionPublication {
     fn prepare(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
         context: SignalDefinitionPublicationContext<'_>,
     ) -> Result<SignalBridgeAuthoredSection, SignalDurableAdvanceDenial>;
-    fn committed(self: Box<Self>, branch: &SignalDurableBranchHandle);
 }
 
 /// Signal-only publication cannot silently carry another owner's stale section.
@@ -68,7 +67,6 @@ impl SignalDurableDefinitionPublication for SignalOnlyDefinitionPublication {
         }
         Ok(context.predecessor().bridge_section())
     }
-    fn committed(self: Box<Self>, _: &SignalDurableBranchHandle) {}
 }
 
 pub(crate) struct SignalDurableConditionalDefinitionChange {
@@ -76,4 +74,8 @@ pub(crate) struct SignalDurableConditionalDefinitionChange {
     pub(crate) predecessor: InstalledSignalConditionalContract,
     pub(crate) definition: SignalConditionalContractDefinition,
     pub(crate) publication: Box<dyn SignalDurableDefinitionPublication>,
+}
+
+impl super::SignalDurableProjectionPublication for SignalOnlyDefinitionPublication {
+    fn committed(self: Box<Self>, _: &SignalDurableBranchHandle) {}
 }

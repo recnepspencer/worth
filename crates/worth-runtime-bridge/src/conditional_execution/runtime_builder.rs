@@ -9,7 +9,7 @@ use super::{
 };
 use crate::facade::RuntimeBridge;
 mod authored_capture;
-mod authored_readmission;
+pub(super) mod authored_readmission;
 
 /// The only public construction posture for a Bridge-owned conditional runtime.
 /// Sealing consumes the builder, so installation authority cannot accompany the

@@ -131,7 +131,7 @@ pub(in crate::conditional_execution) struct Installation<'a> {
     pub(in crate::conditional_execution) refusal: Option<BridgeAuthoredReadmissionDenial>,
 }
 impl Installation<'_> {
-    fn prepare(
+    pub(in crate::conditional_execution) fn prepare(
         &mut self,
         branch: SignalAuthoredBranchInstallation<'_>,
         execution: &ExecutionRequest<'_, '_>,
@@ -140,7 +140,7 @@ impl Installation<'_> {
         if branch.bridge_section().is_empty() {
             return Err(D::MissingBridgeSection);
         }
-        let identity = branch.descriptor().branch();
+        let identity = branch.branch();
         let backing = backing::Backing::new(execution)?;
         backing.grow(execution, std::mem::size_of::<PreparedBranch>() as u64)?;
         let section =
@@ -209,7 +209,7 @@ impl SignalAuthoredOwnerInstallation for Installation<'_> {
         branch: SignalAuthoredBranchInstallation<'_>,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<(), SignalAuthoredInstallationRefused> {
-        let identity = branch.descriptor().branch();
+        let identity = branch.branch();
         match self.prepare(branch, execution) {
             Ok(prepared) => {
                 self.branches.insert(identity, prepared);

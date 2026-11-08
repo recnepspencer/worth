@@ -1,3 +1,5 @@
+mod durable_fork;
+pub use durable_fork::{SignalCompositeForkBinding, SignalDurableForkReservation};
 pub use owner_services::{
     PreparedInitialEmptySignalStop, SignalInitialEmptyStopDenial, SignalInitialEmptyStopRefused,
     StoppedInitialEmptySignalAllocation,

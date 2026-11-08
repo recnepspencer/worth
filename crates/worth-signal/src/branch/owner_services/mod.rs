@@ -31,7 +31,8 @@ pub(crate) mod durable_publication;
 pub use durable_publication::{
     SignalDurableAdvanceCompletion, SignalDurableAdvanceDenial, SignalDurableAdvanceDriveRefusal,
     SignalDurableAdvanceOutput, SignalDurableAdvanceProgress, SignalDurableAdvanceTask,
-    SignalDurableBranchMutationPort, SignalDurableTransactionResult,
+    SignalDurableBranchMutationPort, SignalDurableForkResult, SignalDurableOwnerEffect,
+    SignalDurableTransactionResult,
 };
 pub use durable_source_port::{SignalDurableBranchSourcePort, SignalDurableSourceDenial};
 mod operation_control;

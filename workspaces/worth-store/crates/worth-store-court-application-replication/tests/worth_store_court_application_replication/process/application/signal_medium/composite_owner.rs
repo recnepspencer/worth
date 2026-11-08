@@ -12,7 +12,7 @@ use worth_proof::{
 };
 use worth_signal::facade::durability::*;
 
-fn association(ordinal: u64) -> CompositeAttemptAssociation {
+pub(super) fn association(ordinal: u64) -> CompositeAttemptAssociation {
     let world = DurableWorldOwnerIdentity::from_recorded(
         media::owner().home(),
         WorldOwnerSlotIdentity::from_recorded(4),

@@ -12,7 +12,7 @@ impl SignalAuthoredOwnerInstallation for RefuseSecondBranch {
         branch: SignalAuthoredBranchInstallation<'_>,
         _execution: &ExecutionRequest<'_, '_>,
     ) -> Result<(), SignalAuthoredInstallationRefused> {
-        self.visited.push(branch.descriptor().branch());
+        self.visited.push(branch.branch());
         assert_eq!(branch.contracts().len(), 1);
         assert!(branch.bridge_section().is_empty());
         if self.visited.len() == 2 {

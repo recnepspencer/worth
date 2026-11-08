@@ -33,6 +33,7 @@ pub(crate) mod restoration;
 pub(crate) mod retirement;
 pub(crate) mod retirement_planning;
 pub(crate) mod snapshot;
+mod unpublished_state;
 
 pub(in crate::branch::owner_services) use fork_custody::SignalBranchForkSourceCustody;
 

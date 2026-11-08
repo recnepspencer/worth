@@ -138,6 +138,19 @@ impl SignalRecordedIdentityContribution {
             ),
         ))
     }
+    pub(crate) fn issue_fork_cell(
+        &mut self,
+        branch: worth_foundational::facade::DurableSignalBranchIdentity,
+    ) -> Result<worth_foundational::facade::DurableSignalCellIncarnation, D> {
+        self.check_owner(branch.owner())?;
+        self.branch = self.branch.max(branch.ordinal());
+        self.cell = self.cell.checked_add(1).ok_or(D::IdentityExhausted)?;
+        Ok(
+            worth_foundational::facade::DurableSignalCellIncarnation::from_recorded(
+                branch, self.cell,
+            ),
+        )
+    }
     pub(crate) fn issue_definition(&mut self) -> Result<SignalDefinitionTransitionIdentity, D> {
         self.definition = self.definition.checked_add(1).ok_or(D::IdentityExhausted)?;
         Ok(SignalDefinitionTransitionIdentity::from_recorded(

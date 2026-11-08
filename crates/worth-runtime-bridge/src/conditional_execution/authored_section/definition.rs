@@ -139,6 +139,23 @@ pub(super) struct DefinitionView<'a> {
     pub(super) claims: &'a [u8],
 }
 impl<'a> DefinitionView<'a> {
+    pub(super) fn write_rebased(
+        &self,
+        out: &mut Writer<'_>,
+        occurrence: DurableSignalConditionalDefinitionOccurrence,
+        claims: &mut dyn FnMut(&mut Writer<'_>) -> Result<(), D>,
+    ) -> Result<(), D> {
+        out.occurrence(occurrence)?;
+        out.text(self.identity)?;
+        out.byte(u8::from(self.stage.is_some()))?;
+        if let Some(stage) = self.stage {
+            out.text(stage)?;
+        }
+        out.number(self.dependencies as u64)?;
+        out.blob(self.ordinals)?;
+        out.byte(self.kind.code())?;
+        out.record(claims)
+    }
     pub(super) fn has_identity(
         &self,
         contract: &BridgeConditionalContract,

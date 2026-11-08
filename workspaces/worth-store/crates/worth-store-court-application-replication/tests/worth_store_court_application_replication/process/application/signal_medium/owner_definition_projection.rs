@@ -14,9 +14,6 @@ impl SignalDurableDefinitionPublication for PanickingProjection {
     ) -> Result<SignalBridgeAuthoredSection, SignalDurableAdvanceDenial> {
         SignalOnlyDefinitionPublication.prepare(execution, context)
     }
-    fn committed(self: Box<Self>, _: &SignalDurableBranchHandle) {
-        panic!("projection completion unwinds after the real commit");
-    }
 }
 fn program() -> (Box<fixture::Runtime>, SignalAspectLoweringOwner) {
     let mut graph = Box::new(SignalGraph::new());
@@ -115,4 +112,10 @@ fn projection_unwind_retains_the_committed_original_for_exact_delivery_without_r
     );
     drop((contracts, basis, delivered, port, owner));
     media::close(serving, medium, &execution);
+}
+
+impl SignalDurableProjectionPublication for PanickingProjection {
+    fn committed(self: Box<Self>, _: &SignalDurableBranchHandle) {
+        panic!("projection completion unwinds after the real commit");
+    }
 }

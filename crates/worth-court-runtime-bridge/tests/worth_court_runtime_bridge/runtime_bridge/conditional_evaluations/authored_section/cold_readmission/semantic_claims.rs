@@ -2,6 +2,7 @@
 use super::*;
 use crate::conditional_evaluations::native_absence;
 use std::sync::atomic::{AtomicUsize, Ordering};
+mod fork_preparation;
 
 struct Bindings {
     candidate: BridgeSemanticDependencyCandidate,
@@ -149,10 +150,9 @@ fn cold_correspondence_rebinds_full_semantics_and_preserves_the_selected_slot_wi
             .unwrap();
         assert_eq!(bindings.rebound, 1);
         let restored = owner
-            .authored_branch(branch)
-            .unwrap()
-            .conditional_definitions()
-            .next()
+            .with_authored_branch(branch, |view| {
+                view.conditional_definitions().next().unwrap()
+            })
             .unwrap();
         assert_eq!(restored.signal_node(), node);
         assert_eq!(restored.correspondence_count(), 1);
@@ -164,11 +164,12 @@ fn cold_correspondence_rebinds_full_semantics_and_preserves_the_selected_slot_wi
         );
         assert_eq!(
             owner
-                .authored_branch(branch)
-                .unwrap()
-                .authored_section()
-                .as_signal_section()
-                .as_bytes(),
+                .with_authored_branch(branch, |view| view
+                    .authored_section()
+                    .as_signal_section()
+                    .as_bytes()
+                    .to_vec())
+                .unwrap(),
             definition.bridge_bytes()
         );
         let port = owner.signal_owner().source_port();

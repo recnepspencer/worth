@@ -162,6 +162,15 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
+    pub(crate) fn forked_framework_charge() -> Result<
+        crate::data::retained_storage::RetainedStorageCharge,
+        crate::data::retained_storage::RetainedStoragePreparationDenial,
+    > {
+        use crate::data::retained_storage::RetainedStorageCharge as Charge;
+        Charge::capacity::<crate::data::graph::SignalGraph>(1)?
+            .checked_add(Charge::capacity::<DerivedState<D, I>>(1)?)
+    }
+
     pub(crate) fn fork_for_owner_cell(
         &mut self,
         parent: &crate::state::SignalBranchHandle,

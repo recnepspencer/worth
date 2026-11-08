@@ -127,7 +127,7 @@ where
                 .readmit_branch(
                     crate::durability::SignalAuthoredBranchInstallation::new(
                         &graph,
-                        &branch.head,
+                        branch.head.branch(),
                         &restored_contracts,
                         artifact.bridge_bytes(),
                     ),

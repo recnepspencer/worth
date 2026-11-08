@@ -28,7 +28,21 @@ macro_rules! map_admission_denial {
     };
 }
 
-map_admission_denial!(map_fork_admission_denial, SignalBranchForkOperationDenial);
+pub(in crate::branch::owner_services) fn map_fork_admission_denial(
+    denial: SignalOwnerAdmissionDenial,
+) -> SignalBranchForkOperationDenial {
+    match denial {
+        SignalOwnerAdmissionDenial::ForeignOwner | SignalOwnerAdmissionDenial::OwnerUnavailable => {
+            SignalBranchForkOperationDenial::OwnerUnavailable(SignalOwnerUnavailable)
+        }
+        SignalOwnerAdmissionDenial::OperationCapacityExhausted {
+            maximum_in_flight_operations,
+        } => SignalBranchForkOperationDenial::OperationCapacityExhausted {
+            maximum_in_flight_operations,
+        },
+        SignalOwnerAdmissionDenial::OwnerReentry => SignalBranchForkOperationDenial::OwnerReentry,
+    }
+}
 pub(in crate::branch::owner_services) fn map_advance_admission_denial(
     denial: SignalOwnerAdmissionDenial,
 ) -> SignalBranchAdvanceDenial {

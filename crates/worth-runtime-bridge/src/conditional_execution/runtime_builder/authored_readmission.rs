@@ -67,9 +67,15 @@ impl BridgeConditionalRuntimeBuilder {
         };
         let owner_bytes = crate::conditional_execution::retention::sum(&[
             std::mem::size_of::<BridgeReadmittedAuthoredAssembly>() as u64,
+            crate::conditional_execution::retention::arc_charge::<
+                crate::conditional_execution::authored_section::branch_registry::BranchRegistry,
+            >()
+            .map_err(|_| {
+                D::section(crate::conditional_execution::BridgeAuthoredSectionDenial::SizeLimit)
+            })?,
             crate::conditional_execution::retention::btree_charge::<
                 worth_foundational::facade::DurableSignalBranchIdentity,
-                Arc<BranchProjection>,
+                crate::conditional_execution::authored_section::branch_registry::BranchSlot,
             >(installation.branches.len())
             .map_err(|_| {
                 D::section(crate::conditional_execution::BridgeAuthoredSectionDenial::SizeLimit)
@@ -91,7 +97,9 @@ impl BridgeConditionalRuntimeBuilder {
             let descriptor = port.observe(identity).map_err(D::source)?;
             let handle = port.readmit_descriptor(&descriptor).map_err(D::source)?;
             let branch_identity = handle.basis().observation().branch_id().clone();
-            branches.insert(identity, finish(prepared, branch_identity, execution)?);
+            branches.insert(identity, crate::conditional_execution::authored_section::branch_registry::BranchSlot::Serving {
+                projection: finish(prepared, branch_identity, execution)?, _memory: None,
+            });
         }
         installation
             .program
@@ -101,7 +109,10 @@ impl BridgeConditionalRuntimeBuilder {
         Ok(Box::new(BridgeReadmittedAuthoredAssembly {
             program: Arc::clone(&installation.program),
             signal,
-            branches,
+            branches:
+                crate::conditional_execution::authored_section::branch_registry::BranchRegistry::new(
+                    branches,
+                ),
             _memory: memory,
         }))
     }
@@ -116,7 +127,7 @@ impl BridgeConditionalRuntimeBuilder {
         )
     }
 }
-fn finish(
+pub(in crate::conditional_execution) fn finish(
     prepared: Box<PreparedBranch>,
     branch: worth_signal::facade::branch::SignalBranchIdentity,
     execution: &ExecutionRequest<'_, '_>,

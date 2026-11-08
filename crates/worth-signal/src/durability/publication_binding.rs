@@ -15,8 +15,8 @@ impl SignalCommittedAdvanceRecord {
     pub(crate) fn artifact(&self) -> &super::SignalBranchAdvanceArtifact {
         &self.artifact
     }
-    pub(crate) fn into_original(self) -> (super::SignalBranchAdvanceArtifact, NonZeroU64) {
-        (self.artifact, self.position)
+    pub(crate) fn position(&self) -> NonZeroU64 {
+        self.position
     }
 }
 pub(crate) fn admit_branch_record(

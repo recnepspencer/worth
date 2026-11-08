@@ -194,6 +194,9 @@ impl SignalDurableDefinitionPublication for Pending {
             }
         }
     }
+}
+
+impl worth_signal::facade::durability::SignalDurableProjectionPublication for Pending {
     fn committed(mut self: Box<Self>, branch: &SignalDurableBranchHandle) {
         let original = match self.reservation.phase {
             ReservationPhase::Prepared { original } => original,

@@ -1,51 +1,11 @@
 //! Candidate execution finishes before any physical publication can begin.
-use super::composite::CompositeAdvanceAuthorization;
+use super::composite::CompositePublicationAuthorization;
 use super::*;
 use crate::branch::owner_services::{SignalDurableBranchHandle, SignalDurableSourceDenial};
 use crate::data::error::SignalError;
 use crate::logic::transaction::SignalTransaction;
 use worth_execution::ExecutionRequest;
-use worth_foundational::facade::DurableSignalBranchIdentity;
 
-/// An executing callback never leaves a nameless reservation after unwinding.
-struct PreparingAdvance<D, I, T>
-where
-    D: Copy + Ord + std::fmt::Debug + 'static,
-    I: Copy + Ord + 'static,
-    T: Copy + Ord + 'static,
-{
-    state: Arc<SignalDurablePublicationState<D, I, T>>,
-    original: SignalBranchAdvanceIdentity,
-    armed: bool,
-}
-impl<D, I, T> Drop for PreparingAdvance<D, I, T>
-where
-    D: Copy + Ord + std::fmt::Debug + 'static,
-    I: Copy + Ord + 'static,
-    T: Copy + Ord + 'static,
-{
-    fn drop(&mut self) {
-        if self.armed {
-            // No media method is reachable while this reservation is Preparing.
-            // Poison recovery here releases owned resources only; subsequent
-            // operation entry still reports the poisoned publication state.
-            let mut table = self
-                .state
-                .tasks
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
-            let slot = table.tasks.remove(&self.original);
-            if let Some(slot) = &slot {
-                let guard = slot
-                    .lock()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner);
-                table.branches.remove(&guard.branch);
-            }
-            drop(table);
-            drop(slot);
-        }
-    }
-}
 impl<D, I, E, Ctx, T> SignalDurableBranchMutationPort<D, I, E, Ctx, T>
 where
     D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
@@ -101,7 +61,7 @@ where
         runtime_ctx: &mut Ctx,
         apply: F,
         change: Option<Box<crate::durability::SignalDurableConditionalDefinitionChange>>,
-        authorization: Option<CompositeAdvanceAuthorization>,
+        authorization: Option<CompositePublicationAuthorization>,
     ) -> Result<SignalDurableAdvanceTask, SignalDurableAdvanceDenial>
     where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
@@ -144,64 +104,12 @@ where
         let retention = owner
             .reserve_admitted_retention(&admission, branch, 1)
             .map_err(|denial| Denial::Source(SignalDurableSourceDenial::Retention(denial)))?;
-        let _memory = task_storage::reserve::<D, I, T>(&execution)?;
-        // Attachment and registration have one order. No lock spans apply or I/O.
-        let composite = state
-            .composite
-            .lock()
-            .map_err(|_| Denial::PublicationStatePoisoned)?;
-        match (composite.as_ref(), authorization.as_ref()) {
-            (None, None) => {}
-            (Some(_), None) => return Err(Denial::CompositePublicationRequired),
-            (None, Some(_)) => return Err(Denial::CompositeOwnerNotAttached),
-            (Some(authority), Some(authorization)) => authority
-                .admit(&authorization.grant, &authorization.commitment)
-                .map_err(Denial::CompositeAdmission)?,
-        }
-        let (association, composite_grant) = match authorization {
-            Some(authorization) => (Some(authorization.association), Some(authorization.grant)),
-            None => (None, None),
-        };
-        let (original, new_admission, recorded_nodes) = {
-            let mut table = state
-                .tasks
-                .lock()
-                .map_err(|_| Denial::PublicationStatePoisoned)?;
-            if let Some(original) = table.branches.get(&branch) {
-                return Err(Denial::BranchReserved {
-                    original: *original,
-                });
-            }
-            let mut source = state
-                .source
-                .lock()
-                .map_err(|_| Denial::PublicationStatePoisoned)?;
-            let (original, new_admission) = source
-                .frontiers
-                .issue_advance_and_admission()
-                .map_err(Denial::Readmission)?;
-            let durable_branch = DurableSignalBranchIdentity::from_recorded(
-                state.medium.binding().owner(),
-                branch.0,
-            );
-            let recorded_nodes = source.frontiers.node_issuance_root(durable_branch);
-            let slot = Arc::new(Mutex::new(TaskSlot {
-                branch,
-                resource: Some(LinearResource::mint(original, &state.authority)),
-                phase: TaskPhase::Preparing,
-                composite_grant: composite_grant,
-                _memory,
-            }));
-            table.branches.insert(branch, original);
-            table.tasks.insert(original, slot);
-            (original, new_admission, recorded_nodes)
-        };
-        drop(composite);
-        let mut reservation = PreparingAdvance {
-            state: Arc::clone(&state),
-            original,
-            armed: true,
-        };
+        let mut registered = state.register_prepared(
+            &execution,
+            ReservedSignalBranches::Advanced(branch),
+            authorization,
+        )?;
+        let original = registered.original;
         // Only this target cell's lock is held by the existing canonical kernel.
         // No publication table, source-index or physical-turn lock spans apply.
         let prepared = cell.prepare_durable_advance(
@@ -210,24 +118,19 @@ where
             execution,
             expected.basis(),
             runtime_ctx,
-            recorded_nodes,
+            registered.recorded_nodes.clone(),
             change.as_deref(),
             apply,
         )?;
         let phase = state.prepare_frames(
             original,
-            new_admission,
+            registered.new_admission,
             prepared,
             retention,
             change.map(|change| change.publication),
-            association,
+            registered.association.take(),
             &execution,
         )?;
-        let slot = state.task(original)?;
-        slot.lock()
-            .map_err(|_| Denial::PublicationStatePoisoned)?
-            .phase = phase;
-        reservation.armed = false;
-        Ok(state.handle(original))
+        registered.seal(phase)
     }
 }

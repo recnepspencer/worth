@@ -74,8 +74,9 @@ impl SignalRecoveredSourceLocations {
         &mut self,
         record: crate::durability::publication_binding::SignalCommittedAdvanceRecord,
         _custody: SignalAdvanceLocationReservation,
-    ) -> crate::durability::SignalBranchAdvanceArtifact {
-        let (artifact, position) = record.into_original();
+    ) -> crate::durability::SignalCommittedAdvanceEvidence {
+        let artifact = record.artifact();
+        let position = record.position();
         self.advances.insert(
             artifact.identity(),
             SignalFundedAdvanceLocation {
@@ -86,7 +87,7 @@ impl SignalRecoveredSourceLocations {
                 _custody,
             },
         );
-        artifact
+        crate::durability::SignalCommittedAdvanceEvidence::from_committed(record)
     }
     pub(crate) fn advance_record(
         &self,

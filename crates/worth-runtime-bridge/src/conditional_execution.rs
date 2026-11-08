@@ -4,8 +4,8 @@ pub use authored_section::{
     BridgeAuthoredBranchDenial, BridgeAuthoredBranchView, BridgeAuthoredDependencyDescription,
     BridgeAuthoredInstallationBindings, BridgeAuthoredReadmissionDenial, BridgeAuthoredSection,
     BridgeAuthoredSectionDenial, BridgeDurableDefinitionPublicationDenial,
-    BridgeReadmittedAuthoredAssembly, BRIDGE_AUTHORED_SECTION_PROTOCOL,
-    BRIDGE_AUTHORED_SECTION_VERSION,
+    BridgeDurableForkPublicationDenial, BridgeReadmittedAuthoredAssembly,
+    BRIDGE_AUTHORED_SECTION_PROTOCOL, BRIDGE_AUTHORED_SECTION_VERSION,
 };
 mod causal_observation;
 mod compatibility;

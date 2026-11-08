@@ -95,19 +95,18 @@ fn cold_owner_rebuilds_conditional_definitions_and_retention_on_every_branch_for
         for ((identity, handle), definition) in branches.iter().zip(&definitions) {
             assert_eq!(
                 owner
-                    .authored_branch(*identity)
-                    .unwrap()
-                    .authored_section()
-                    .as_signal_section()
-                    .as_bytes(),
+                    .with_authored_branch(*identity, |view| view
+                        .authored_section()
+                        .as_signal_section()
+                        .as_bytes()
+                        .to_vec())
+                    .unwrap(),
                 definition.bridge_bytes()
             );
             assert_eq!(
                 owner
-                    .authored_branch(*identity)
-                    .unwrap()
-                    .conditional_definitions()
-                    .count(),
+                    .with_authored_branch(*identity, |view| view.conditional_definitions().count())
+                    .unwrap(),
                 2
             );
             let descriptor = owner
@@ -121,17 +120,17 @@ fn cold_owner_rebuilds_conditional_definitions_and_retention_on_every_branch_for
                 identity.ordinal().checked_sub(1).filter(|id| *id != 0)
             );
             let usage = owner
-                .authored_branch(*identity)
-                .unwrap()
-                .conditional_retention();
+                .with_authored_branch(*identity, |view| view.conditional_retention())
+                .unwrap();
             assert_eq!(usage.managed_clocks(), 0);
             assert_eq!(usage.reserved_temporal_intents(), 0);
             assert_eq!(usage.retained_definition_candidates(), 0);
             assert!(usage.retained_bytes() > 0);
             for lowering in owner
-                .authored_branch(*identity)
+                .with_authored_branch(*identity, |view| {
+                    view.conditional_definitions().collect::<Vec<_>>()
+                })
                 .unwrap()
-                .conditional_definitions()
             {
                 assert_eq!(lowering.location().stage_identity(), Some("authored-stage"));
                 assert!(matches!(

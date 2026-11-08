@@ -87,9 +87,7 @@ impl BridgeReadmittedAuthoredAssembly {
         request: BridgeOwnedConditionalInstallationRequest,
     ) -> Result<SignalDurableAdvanceTask, D> {
         let branch = expected.descriptor().branch();
-        let projection = self.branches.get(&branch).cloned().ok_or(D::Branch(
-            BridgeAuthoredBranchDenial::UnknownBranch { branch },
-        ))?;
+        let projection = self.branches.projection(branch).map_err(D::Branch)?;
         let mut serving = projection.serving(branch).map_err(D::Branch)?;
         if !serving
             .lowerings

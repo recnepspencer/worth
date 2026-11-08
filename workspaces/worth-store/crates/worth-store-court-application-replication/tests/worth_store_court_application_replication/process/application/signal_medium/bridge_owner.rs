@@ -10,6 +10,7 @@ use worth_signal::facade::durability::*;
 use worth_signal::facade::*;
 mod definition_publication;
 mod derived_reference;
+mod fork_publication;
 mod program;
 mod quiescent_kill;
 mod source;
@@ -65,18 +66,17 @@ fn assert_sources(
         assert_eq!(runtime.as_bytes(), definition.runtime_bytes());
         assert_eq!(
             owner
-                .authored_branch(*branch)
-                .unwrap()
-                .authored_section()
-                .as_signal_section()
-                .as_bytes(),
+                .with_authored_branch(*branch, |view| view
+                    .authored_section()
+                    .as_signal_section()
+                    .as_bytes()
+                    .to_vec())
+                .unwrap(),
             definition.bridge_bytes()
         );
         let actual: Vec<_> = owner
-            .authored_branch(*branch)
-            .unwrap()
-            .conditional_definitions()
-            .collect();
+            .with_authored_branch(*branch, |view| view.conditional_definitions().collect())
+            .unwrap();
         assert_eq!(actual.len(), reference.program.lowerings.len());
         for (actual, expected) in actual.iter().zip(&reference.program.lowerings) {
             assert_eq!(actual.contract(), expected.contract());
@@ -88,9 +88,8 @@ fn assert_sources(
             );
         }
         let retention = owner
-            .authored_branch(*branch)
-            .unwrap()
-            .conditional_retention();
+            .with_authored_branch(*branch, |view| view.conditional_retention())
+            .unwrap();
         assert_eq!(retention.retained_definition_candidates(), 0);
         assert_eq!(retention.managed_clocks(), 0);
         assert_eq!(retention.reserved_temporal_intents(), 0);

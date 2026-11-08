@@ -1,10 +1,13 @@
 //! Bridge's authored declaration section inside a Signal definition transition.
 pub(super) mod branch_projection;
+pub(in crate::conditional_execution) mod branch_registry;
 pub(super) mod capture;
 mod definition;
 pub(super) mod definition_publication;
 mod dependency;
 mod fields;
+mod fork_publication;
+mod fork_section;
 mod framing;
 mod layout;
 pub(super) mod publication;
@@ -18,6 +21,7 @@ pub use branch_projection::{
 pub(super) use definition::BridgeReadmittedDefinitionSource;
 pub use definition_publication::BridgeDurableDefinitionPublicationDenial;
 pub use dependency::BridgeAuthoredDependencyDescription;
+pub use fork_publication::BridgeDurableForkPublicationDenial;
 pub use readmission::{BridgeAuthoredInstallationBindings, BridgeAuthoredReadmissionDenial};
 
 use worth_foundational::facade::{

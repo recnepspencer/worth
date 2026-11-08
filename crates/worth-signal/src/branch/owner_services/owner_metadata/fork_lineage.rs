@@ -126,3 +126,31 @@ where
         }
     }
 }
+
+impl<D, I, T> SignalOwnerForkLineageReservation<'_, D, I, T>
+where
+    D: Copy + Ord + std::fmt::Debug + 'static,
+    I: Copy + Ord,
+    T: Copy + Ord,
+{
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
+    pub(crate) fn into_owned(
+        mut self,
+        owner: Arc<SignalOwner<D, I, T>>,
+    ) -> SignalOwnerOwnedForkLineageReservation<D, I, T> {
+        assert!(
+            std::ptr::eq(self.metadata, &owner.metadata),
+            "captured lineage returns to its exact issuing owner"
+        );
+        self.committed = true;
+        SignalOwnerOwnedForkLineageReservation {
+            owner: Some(owner),
+            parent_branch_id: self.parent_branch_id,
+            child_branch_id: self.child_branch_id,
+            committed: false,
+        }
+    }
+}

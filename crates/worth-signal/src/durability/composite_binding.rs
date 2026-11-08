@@ -49,3 +49,28 @@ impl SignalCompositeAdvanceBinding {
         (self.expected, self.association, self.commitment)
     }
 }
+
+pub(crate) fn fork_commitment(
+    execution: &ExecutionRequest<'_, '_>,
+    source: &SignalDurableBranchHandle,
+    cell: worth_foundational::facade::DurableSignalCellIncarnation,
+    name: &str,
+    association: &CompositeAttemptAssociation,
+) -> Result<[u8; 32], SignalDurableFrameDenial> {
+    if source.descriptor().owner().home() != association.attempt().owner().home()
+        || source.descriptor().owner() != cell.branch().owner()
+    {
+        return Err(SignalDurableFrameDenial::ForeignOwner);
+    }
+    frame::commitment(
+        execution,
+        b"worth.signal.composite-fork-binding.v1",
+        &mut |out| {
+            source.descriptor().write(out)?;
+            out.branch(cell.branch())?;
+            out.number(cell.ordinal())?;
+            out.blob(name.as_bytes())?;
+            out.association(Some(association))
+        },
+    )
+}

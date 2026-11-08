@@ -1,25 +1,26 @@
 //! An installation owner observes actual recovered source before service begins.
-use super::{SignalDurableBranchDescriptor, SignalReadmittedConditionalContract};
+use super::SignalReadmittedConditionalContract;
 use crate::data::graph::SignalGraph;
+use worth_foundational::facade::DurableSignalBranchIdentity;
 
-/// Borrowed installation inputs from the original branch being readmitted.
-/// The graph is cold and immutable; this view grants no publication service.
+/// Read-only source from a recovered branch or a private owner fork.
+/// This descriptive view grants no serving or publication authority.
 pub struct SignalAuthoredBranchInstallation<'a> {
     graph: &'a SignalGraph,
-    descriptor: &'a SignalDurableBranchDescriptor,
+    branch: DurableSignalBranchIdentity,
     contracts: &'a [SignalReadmittedConditionalContract],
     bridge_section: &'a [u8],
 }
 impl<'a> SignalAuthoredBranchInstallation<'a> {
     pub(crate) fn new(
         graph: &'a SignalGraph,
-        descriptor: &'a SignalDurableBranchDescriptor,
+        branch: DurableSignalBranchIdentity,
         contracts: &'a [SignalReadmittedConditionalContract],
         bridge_section: &'a [u8],
     ) -> Self {
         Self {
             graph,
-            descriptor,
+            branch,
             contracts,
             bridge_section,
         }
@@ -27,8 +28,8 @@ impl<'a> SignalAuthoredBranchInstallation<'a> {
     pub fn graph(&self) -> &SignalGraph {
         self.graph
     }
-    pub fn descriptor(&self) -> &SignalDurableBranchDescriptor {
-        self.descriptor
+    pub fn branch(&self) -> DurableSignalBranchIdentity {
+        self.branch
     }
     pub fn contracts(&self) -> &[SignalReadmittedConditionalContract] {
         self.contracts
