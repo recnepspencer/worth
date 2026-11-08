@@ -32,6 +32,9 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
         phase: &WorthQueryBootstrapAdvancementPhase<'_>,
         author: Author,
         resources: DerivedIndexMaintenanceBudget,
+        workflow_dispositions: Option<
+            &worth_query_execution::facade::primary_graph::WorthQueryWorkflowDispositions,
+        >,
     ) -> Result<
         PlannedHomeProgramTransition<A, AP, B, BP>,
         WorthQueryHomeProgramTransitionOpenRefused<A, AP, B, BP>,
@@ -63,12 +66,7 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
                 .admit_home_program_transition_planning_request(source, &request)
                 .map_err(Denial::PlanningRequest)?;
             let lens = before
-                .home_program_transition_source(
-                    phase,
-                    native,
-                    source.basis().relational_basis(),
-                    &admitted,
-                )
+                .home_program_transition_source(phase, native, source, admitted)
                 .map_err(Denial::Source)?;
             let mut plan = author(&lens, &target.authoring_target()).map_err(Denial::Author)?;
             let count = u32::try_from(plan.steps.len()).map_err(|_| Denial::InvalidPlan)?;
@@ -82,6 +80,19 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
                     &step.batches,
                 )
                 .map_err(Denial::AuthoredBody)?;
+            }
+            if let Some(batch) = target
+                .prepare_home_workflow_dispositions(
+                    before,
+                    &lens,
+                    workflow_dispositions,
+                    resources
+                        .maximum_work_units
+                        .expect("opening admitted finite transition resources"),
+                )
+                .map_err(Denial::Workflow)?
+            {
+                plan.steps[plan.target as usize].batches.push(batch);
             }
             plan.steps[plan.target as usize].batches.push(
                 target

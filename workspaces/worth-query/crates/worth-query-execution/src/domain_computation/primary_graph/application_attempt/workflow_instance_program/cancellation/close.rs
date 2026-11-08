@@ -143,7 +143,7 @@ where
             });
             let mut actor_fields = BTreeMap::new();
             layout.instance.ending_actor.append(
-                crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.admission).ending_actor(),
+                &crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.admission).ending_actor(),
                 &mut actor_fields,
             );
             let effects = vec![

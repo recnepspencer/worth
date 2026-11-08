@@ -177,7 +177,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
         Some(inventory) => prepare_workflow_dispositions(
             graph.layout.workflow(), inventory, workflow.as_ref(),
             selected.product().product_branch(), target,
-            crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&admission).ending_actor(),
+            &crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&admission).ending_actor(),
         ).map_err(|cause| match cause {
             WorkflowDispositionPreparationDenial::Required => WorthQueryBranchAdoptionPreparationDenial::WorkflowDispositionRequired,
             WorkflowDispositionPreparationDenial::Rejected => WorthQueryBranchAdoptionPreparationDenial::WorkflowDispositionRejected,

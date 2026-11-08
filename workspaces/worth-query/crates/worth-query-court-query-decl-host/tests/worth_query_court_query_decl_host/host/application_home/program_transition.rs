@@ -329,3 +329,5 @@ fn host_transition_refuses_private_record_bodies_before_intent_and_preserves_a()
     assert_eq!(contacts.load(Ordering::SeqCst), 0);
     (*home).close(&execution).unwrap();
 }
+
+mod workflow_dispositions;

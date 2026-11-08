@@ -16,7 +16,10 @@ pub(in crate::domain_computation::primary_graph) fn prepare_workflow_disposition
     choices: Option<&WorthQueryWorkflowDispositions>,
     branch: WorthQueryProductBranch,
     target: &ApplicationProgramRevision,
-    actor: worth_proof::AdmittedWorkflowEndingActor<WorkflowAdmittedActor>,
+    actor: &worth_proof::AdmittedWorkflowEndingActor<
+        WorkflowAdmittedActor,
+        worth_relational::facade::runtime::RelationalHomeProgramPlanningSource,
+    >,
 ) -> Result<Vec<MutationIntent>, WorkflowDispositionPreparationDenial> {
     let Some(choices) = choices else {
         return if inventory.is_empty() {

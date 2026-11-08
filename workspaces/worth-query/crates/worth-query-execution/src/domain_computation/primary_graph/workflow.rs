@@ -27,8 +27,8 @@ pub(in crate::domain_computation::primary_graph) use assessment::{
 
 pub(in crate::domain_computation::primary_graph) use adoption::WorthQueryWorkflowAdoptionInventory;
 pub use adoption::{
-    WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowDispositions,
-    WorthQueryWorkflowInstanceDisposition,
+    WorkflowAdoptionReadDenial, WorthQueryWorkflowDefinitionDisposition,
+    WorthQueryWorkflowDispositions, WorthQueryWorkflowInstanceDisposition,
 };
 pub use definition::{
     WorkflowDefinitionBindingDenial, WorkflowDefinitionPreparationDenial,

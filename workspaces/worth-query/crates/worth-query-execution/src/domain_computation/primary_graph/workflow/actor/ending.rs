@@ -24,12 +24,21 @@ impl WorkflowEndingActorFields {
 
     pub(in crate::domain_computation::primary_graph) fn append(
         &self,
-        actor: worth_proof::AdmittedWorkflowEndingActor<super::record::WorkflowAdmittedActor>,
+        actor: &worth_proof::AdmittedWorkflowEndingActor<
+            super::record::WorkflowAdmittedActor,
+            worth_relational::facade::runtime::RelationalHomeProgramPlanningSource,
+        >,
         fields: &mut BTreeMap<AspectFieldLocator, AspectValue>,
     ) {
+        let provenance = match actor {
+            worth_proof::AdmittedWorkflowEndingActor::Principal(actor) => actor.ending_provenance(),
+            worth_proof::AdmittedWorkflowEndingActor::HomeProgramTransition(request) => {
+                WorkflowEndingActorProvenance::HomeWorldOwner(request.source().actor())
+            }
+        };
         fields.insert(
             self.payload.clone(),
-            AspectValue::InlineBytes(actor.actor().ending_provenance().recorded_bytes()),
+            AspectValue::InlineBytes(provenance.recorded_bytes()),
         );
     }
 

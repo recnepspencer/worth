@@ -216,6 +216,21 @@ The next successful open after discard initializes a new Home identity.
 
 ### Development workflow with program transitions
 
+Attach workflow choices to the transition request with
+`.with_workflow_dispositions(choices)`. The same fresh inventory and legality
+checks used by live adoption govern those choices. The total policy
+`WorthQueryWorkflowDispositions::retire_and_cancel_unperformed()` retires current
+definitions and cancels only unperformed instances; performed effects,
+outstanding approvals and owner custody still refuse. Ending provenance records
+the actual durable Home World owner from the checked request, never a principal
+invented for the Home. These framework writes enter the canonical target step
+after the authored-body fence and before intent recording.
+
+Workflow-bearing Directory admission still waits for H5's family cutoff and
+structural workflow readmission. Supplying choices does not bypass either gate;
+positive workflow cancellation/reopen qualification is pending that integration.
+
+
 When a Directory Home's recorded program or schema differs, supply the actual
 successor declaration and program on the open request. Call
 `successor.with_program_transition(predecessor, resources, author)` before

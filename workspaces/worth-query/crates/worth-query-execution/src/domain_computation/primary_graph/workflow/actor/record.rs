@@ -30,7 +30,10 @@ impl WorkflowAdmittedActor {
     /// They are DATA, never a grant for a later request or another runtime.
     pub(in crate::domain_computation::primary_graph) fn ending_actor(
         self,
-    ) -> worth_proof::AdmittedWorkflowEndingActor<Self> {
+    ) -> worth_proof::AdmittedWorkflowEndingActor<
+        Self,
+        worth_relational::facade::runtime::RelationalHomeProgramPlanningSource,
+    > {
         worth_proof::AdmittedWorkflowEndingActor::from_admitted_actor(self)
     }
     pub(super) fn ending_provenance(

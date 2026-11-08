@@ -68,6 +68,7 @@ where
             predecessor,
             author,
             resources,
+            workflow_dispositions,
         } = self.transition;
         let WorthQueryApplicationHomeLocation::Directory(location) = self.location else {
             return Err(Refused::configuration(Denial::DirectoryRequired));
@@ -167,7 +168,7 @@ where
             };
         Ok(Box::new(match select_home_program_opening(admitted) {
             ApplicationHomeProgramOpening::Current(home) => {
-                drop((before, author));
+                drop((before, author, workflow_dispositions));
                 PreparedHomeProgramOpening::Current {
                     query: after,
                     home,
@@ -183,6 +184,7 @@ where
                     home,
                     author,
                     resources,
+                    workflow_dispositions,
                     checkpoint_limits: self.checkpoint_limits,
                     observation,
                 }
@@ -209,6 +211,7 @@ enum PreparedHomeProgramOpening<
         before: PreparedHomeApplication<A, AP>, after: PreparedHomeApplication<B, BP>,
         home: worth_proof::HomeAdmitted<AdmittedApplicationHome>, author: Author,
         resources: worth_relational::facade::indexes::DerivedIndexMaintenanceBudget,
+        workflow_dispositions: Option<worth_query_execution::facade::primary_graph::WorthQueryWorkflowDispositions>,
         checkpoint_limits: ApplicationHomeCheckpointLimits, observation: ApplicationHomeOpeningObservation,
     },
 }
@@ -227,6 +230,8 @@ enum ReadyHomeProgramOpening<
         home: UnsharedReadmittedApplicationHome,
         author: Author,
         resources: worth_relational::facade::indexes::DerivedIndexMaintenanceBudget,
+        workflow_dispositions:
+            Option<worth_query_execution::facade::primary_graph::WorthQueryWorkflowDispositions>,
         checkpoint_limits: ApplicationHomeCheckpointLimits,
         observation: ApplicationHomeOpeningObservation,
     },
@@ -284,6 +289,7 @@ where
                 home,
                 author,
                 resources,
+                workflow_dispositions,
                 checkpoint_limits,
                 observation,
             } => {
@@ -302,6 +308,7 @@ where
                     home,
                     author,
                     resources,
+                    workflow_dispositions,
                     checkpoint_limits,
                     observation,
                 }))
@@ -344,6 +351,7 @@ where
                 home,
                 author,
                 resources,
+                workflow_dispositions,
                 checkpoint_limits,
                 observation,
             } => super::handoff::transition(
@@ -353,6 +361,7 @@ where
                 home,
                 author,
                 resources,
+                workflow_dispositions,
                 checkpoint_limits,
                 observation,
             ),

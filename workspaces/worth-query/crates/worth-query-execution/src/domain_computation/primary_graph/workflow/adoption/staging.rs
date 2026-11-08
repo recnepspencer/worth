@@ -35,8 +35,9 @@ pub(in crate::domain_computation::primary_graph) fn stage_workflow_dispositions(
     inventory: &WorthQueryWorkflowAdoptionInventory,
     choices: &AdmittedWorkflowDispositions,
     target: &ApplicationProgramRevision,
-    advancer: worth_proof::AdmittedWorkflowEndingActor<
+    advancer: &worth_proof::AdmittedWorkflowEndingActor<
         crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor,
+        worth_relational::facade::runtime::RelationalHomeProgramPlanningSource,
     >,
 ) -> Vec<MutationIntent> {
     let revision = program_revision_rendering(target);

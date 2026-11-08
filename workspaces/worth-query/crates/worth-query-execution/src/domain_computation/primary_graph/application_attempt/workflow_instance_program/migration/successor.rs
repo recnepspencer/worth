@@ -54,7 +54,7 @@ pub(super) fn successor_effects(
     layout
         .instance
         .ending_actor
-        .append(advancer.ending_actor(), &mut end_fields);
+        .append(&advancer.ending_actor(), &mut end_fields);
     effects.push(WorthQueryApplicationRealizedEffect::UpdateEntity {
         entity: "workflow-instance".to_owned(),
         entity_id: source,

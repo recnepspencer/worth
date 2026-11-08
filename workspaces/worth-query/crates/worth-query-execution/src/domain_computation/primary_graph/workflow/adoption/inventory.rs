@@ -48,19 +48,37 @@ pub(in crate::domain_computation::primary_graph) fn inventory_workflows(
     branch: VisibilityProjectionView,
     request: &WorkflowAdoptionInventoryRequest<'_>,
 ) -> Result<WorthQueryWorkflowAdoptionInventory, WorkflowAdoptionReadDenial> {
+    let empty =
+        super::selected_population::is_empty(execution, runtime, basis, &branch, request.layout)?;
+    if empty {
+        return Ok(WorthQueryWorkflowAdoptionInventory {
+            source: *request.source,
+            target: *request.target,
+            definitions: Box::new([]),
+            instances: Box::new([]),
+            digest: digest(request, &[], &[], &BTreeMap::new()),
+            work_units: 0,
+        });
+    }
+    inventory_workflows_from_records(execution, branch, request)
+}
+
+/// Reads authoritative records after the caller's exact population observation.
+/// This also remains correct for an empty source; no caller-provided empty fact.
+pub(in crate::domain_computation::primary_graph) fn inventory_workflows_from_records(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    branch: VisibilityProjectionView,
+    request: &WorkflowAdoptionInventoryRequest<'_>,
+) -> Result<WorthQueryWorkflowAdoptionInventory, WorkflowAdoptionReadDenial> {
     let layout = request.layout;
-    let empty = super::selected_population::is_empty(execution, runtime, basis, &branch, request)?;
     let mut truth = WorkflowAdoptionTruth::new(branch, request.maximum_work_units);
     let mut read = BTreeMap::<EntityId, ReadDefinition>::new();
     let mut definitions = Vec::new();
     // Every definition and instance is linked to a lineage. An exact empty
     // native lineage population proves both inventories empty, without scans
     // through unrelated application relations.
-    let current_definitions = if empty {
-        Vec::new()
-    } else {
-        truth.relations_of_kind(execution, layout.current_definition_relation)?
-    };
+    let current_definitions =
+        truth.relations_of_kind(execution, layout.current_definition_relation)?;
     for current in current_definitions {
         let definition = read_definition(
             execution,
@@ -80,11 +98,8 @@ pub(in crate::domain_computation::primary_graph) fn inventory_workflows(
     }
     definitions.sort_unstable_by_key(|occurrence| occurrence.definition);
     let mut instances = Vec::new();
-    let live_instances = if empty {
-        Vec::new()
-    } else {
-        read_live_instances(execution, &mut truth, layout, request.branch_occurrence)?
-    };
+    let live_instances =
+        read_live_instances(execution, &mut truth, layout, request.branch_occurrence)?;
     for live in live_instances {
         let definition = read_definition(
             execution,

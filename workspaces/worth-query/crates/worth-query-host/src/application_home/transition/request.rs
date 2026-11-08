@@ -13,6 +13,8 @@ where
     pub(super) predecessor: WorthQueryApplicationHomeRequest<'a, Before, Program>,
     pub(super) author: Author,
     pub(super) resources: worth_relational::facade::indexes::DerivedIndexMaintenanceBudget,
+    pub(super) workflow_dispositions:
+        Option<worth_query_execution::facade::primary_graph::WorthQueryWorkflowDispositions>,
 }
 impl<'a, Schema, Program> WorthQueryApplicationHomeRequest<'a, Schema, Program>
 where
@@ -47,6 +49,7 @@ where
                 predecessor,
                 author,
                 resources,
+                workflow_dispositions: None,
             },
             location: self.location,
             program: self.program,
@@ -60,5 +63,26 @@ where
             authorization_time_source: self.authorization_time_source,
             initial_state: self.initial_state,
         }
+    }
+}
+
+impl<'a, A, AP, B, BP, Author>
+    WorthQueryApplicationHomeRequest<'a, B, BP, WorthQueryHomeProgramTransition<'a, A, AP, Author>>
+where
+    A: ApplicationSchemaComposition,
+    AP: ApplicationProgramDefinition<A>,
+    AP::Contributions: WorthQueryApplicationContributionTuple<A>,
+    B: ApplicationSchemaComposition,
+    BP: ApplicationProgramDefinition<B>,
+    BP::Contributions: WorthQueryApplicationContributionTuple<B>,
+{
+    /// Choose workflow dispositions for the private fresh transition inventory.
+    /// These choices grant no principal authority and bypass no Home family gate.
+    pub fn with_workflow_dispositions(
+        mut self,
+        choices: worth_query_execution::facade::primary_graph::WorthQueryWorkflowDispositions,
+    ) -> Self {
+        self.transition.workflow_dispositions = Some(choices);
+        self
     }
 }

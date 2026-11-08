@@ -105,6 +105,16 @@ impl WorthQueryWorkflowDispositions {
         self.instances.push((instance.clone(), disposition));
         self
     }
+    /// Empty population accepts total policies, never references to absent facts.
+    pub(in crate::domain_computation::primary_graph) fn admit_empty_population(
+        &self,
+    ) -> Result<(), ()> {
+        if self.definitions.is_empty() && self.instances.is_empty() {
+            Ok(())
+        } else {
+            Err(())
+        }
+    }
     pub(in crate::domain_computation::primary_graph) fn resolve(
         &self,
         inventory: &WorthQueryWorkflowAdoptionInventory,
