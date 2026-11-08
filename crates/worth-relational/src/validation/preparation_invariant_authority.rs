@@ -44,6 +44,7 @@ impl PreparationInvariantAuthority<'_> {
         )
         .with_aggregate(aggregate);
         let request = InvariantExecutionRequest::from_semantic_plan(
+            execution,
             InvariantRequestProfile::CommitBoundary,
             &view,
             observation,
@@ -236,6 +237,7 @@ impl PreparationInvariantAuthority<'_> {
             )));
         }
         let request = InvariantExecutionRequest::from_semantic_plan(
+            execution,
             profile,
             &view,
             observation,

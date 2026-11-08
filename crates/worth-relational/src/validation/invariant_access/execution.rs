@@ -114,6 +114,7 @@ impl<'runtime> InvariantAccess<'runtime> {
                 let view = self.view.with_counter_sink(&counts);
                 let answer = (|| -> Result<InvariantExecutionResult, crate::transactions::data::TransactionCommitError> {
                 let request = InvariantExecutionRequest::from_profile_with_contract_at_current_version(
+                    execution,
                     profile,
                     &view,
                     observation.with_probed_sources(views),

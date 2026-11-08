@@ -23,8 +23,7 @@ impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
                         .insert(id);
                 }
             }
-            self.touched_relation_sources.insert(id);
-            self.touched_relation_targets.insert(id);
+            self.touch_entity_incidence(id);
         }
         for edge in selection.current_relations() {
             self.collect_relation_delete(edge.relation_id)?;

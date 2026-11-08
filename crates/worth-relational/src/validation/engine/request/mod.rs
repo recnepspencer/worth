@@ -3,6 +3,7 @@ mod construction;
 mod filtering;
 mod preparation_control;
 mod relation_integrity_scopes;
+mod scope_admission;
 mod scope_types;
 #[cfg(test)]
 mod test_support;
@@ -272,7 +273,8 @@ fn relation_scope_requirement(rule: &InvariantRule) -> Option<(KindId, RelationS
             scan_full_on_create: true,
             ..RelationScopeRequirement::default()
         },
-        InvariantRule::ConnectivityMinimumContract(_) => RelationScopeRequirement {
+        InvariantRule::ConnectivityMinimumContract(contract) => RelationScopeRequirement {
+            minimum_candidate_kinds: contract.source_kind_ids.iter().copied().collect(),
             requires_global_evaluation: true,
             requires_visible_successors: true,
             scan_existing_source_on_create: true,

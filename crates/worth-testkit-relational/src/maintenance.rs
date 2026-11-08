@@ -1,4 +1,5 @@
 //! Shared equality and growth courts for the SDK's maintained structures.
+pub mod relation_laws;
 use std::sync::Arc;
 use worth_relational::facade::storage::maintenance::{
     ChangeWork, CommitChange, Maintained, ReconstructionLane,
