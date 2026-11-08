@@ -97,3 +97,30 @@ therefore run the real producer again. Its old-root lookup then refuses typed
 PredecessorBasisUnavailable, as D1260 requires; an application may explicitly
 choose full computation, but never substitute C values for historical values.
 No operational root hold or old authorization is serialized by this slice.
+
+## D1348 qualification and independent-certification handoff
+
+The extraction and #84 integration are ready for independent certification on
+master81dd70ad67. The complete Query all-targets workspace passes, including all
+526 public Decl/Host courts (235 history,10 predecessor). Native predecessor6,
+authored-restoration7 and the worker selection court pass; the paired public
+historical-handle fence passes. Eight new behavioral mutations are killed and
+restored by SHA256; the substrate checkpoint retains its ten earlier mutations.
+
+Complete root all-targets requests reproduce master's identical deadline compile
+error in runtime-world request_custody.rs44. Root workspace doctests pass. Query
+workspace doctests reproduce the same four failures in three untouched subjects,
+with identical diagnostics after checkout-path normalization. The official full
+driver's18 census refusals also match master; those requests have zero coverage
+and are not counted as passing tests. Evidence and exact commands are in
+`orchestration/public-history53.report.md` and build-cache/history53-d1347.
+
+Master's supported Native frame is now CHK20. Its pre-HistoricalSelection writer
+recorded the compatibility fixture through the existing recorder, with unchanged
+Native production sources. The current reader retains the original identity,
+membership, meaning and liveness assertions. Original CHK18 artifacts remain
+archived. This slice adds no format version or legacy fallback.
+
+Cold predecessor inputs remain explicitly unavailable under D1260. Restored
+publication inputs remain unavailable with their origin kind under D1348/#94.
+P5 and further history capabilities are not part of this handoff.
