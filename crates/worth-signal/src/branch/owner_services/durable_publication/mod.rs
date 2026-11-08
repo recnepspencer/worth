@@ -1,4 +1,5 @@
 //! Per-branch original tasks share only short metadata locks and physical publication order.
+mod composite;
 mod driving;
 mod frame_preparation;
 pub(in crate::branch::owner_services) mod medium_binding;
@@ -127,6 +128,7 @@ where
         >,
     >,
     phase: TaskPhase<D, I, T>,
+    _composite_grant: Option<worth_proof::AdmittedCompositeSignalPublication>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 struct TaskTable<D, I, T>
@@ -152,6 +154,8 @@ where
     physical_turn: Mutex<Option<SignalBranchAdvanceIdentity>>,
     unsettled: Mutex<Option<SignalBranchAdvanceIdentity>>,
     authority: AuthorityWitness<SignalPublicationTaskOwner<D, I, T>>,
+    composite: Mutex<Option<worth_proof::InstalledCompositeSignalPublicationAuthority>>,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl<D, I, T> SignalDurablePublicationState<D, I, T>
 where
@@ -164,11 +168,18 @@ where
         medium: Arc<dyn SignalDurableMedium>,
         vocabulary: Arc<SignalDurableTierVocabulary<T>>,
         source: SignalRecoveredSourceLocations,
-    ) -> Arc<Self> {
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Arc<Self>, crate::durability::SignalOwnerReadmissionDenial> {
+        let bytes = crate::data::retained_storage::arc_allocation_charge::<Self>()
+            .map_err(|_| crate::durability::SignalOwnerReadmissionDenial::MetadataCapacity)?
+            .bytes();
+        let memory = execution
+            .reserve_retained_memory(bytes)
+            .map_err(crate::durability::SignalOwnerReadmissionDenial::Request)?;
         let authority = AuthorityWitness::from_authority_marker(SignalPublicationTaskOwner {
             _owner: owner.clone(),
         });
-        Arc::new(Self {
+        Ok(Arc::new(Self {
             owner,
             medium,
             vocabulary,
@@ -180,7 +191,9 @@ where
             physical_turn: Mutex::new(None),
             unsettled: Mutex::new(None),
             authority,
-        })
+            composite: Mutex::new(None),
+            _memory: memory,
+        }))
     }
     fn owner(&self) -> Result<Arc<SignalOwner<D, I, T>>, SignalDurableAdvanceDenial> {
         SignalOwner::upgrade(&self.owner)

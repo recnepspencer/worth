@@ -7,7 +7,12 @@ mod band;
 mod binding;
 mod brand;
 mod collections;
+mod composite_signal_publication;
 mod composition;
+pub use composite_signal_publication::{
+    AdmittedCompositeSignalPublication, CompositeSignalPublicationAdmissionDenial,
+    InstalledCompositeSignalPublicationAuthority, InstalledCompositeSignalPublicationOwner,
+};
 pub mod contracts;
 mod durable_publication;
 mod signal_branch_readmission;

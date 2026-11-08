@@ -77,7 +77,8 @@ where
             medium,
             vocabulary,
             source.into_locations(execution)?,
-        );
+            execution,
+        )?;
         Ok(Self {
             _runtime: runtime,
             publication,
@@ -118,5 +119,28 @@ where
     }
     pub fn mutation_port(&self) -> SignalDurableBranchMutationPort<D, I, E, Ctx, T> {
         SignalDurableBranchMutationPort::from_owner(&self.publication)
+    }
+
+    /// Bind the actual composing issuer before exposing any composite services.
+    /// Previously issued standalone writer ports observe this same attachment.
+    pub fn bind_composite_owner(
+        &self,
+        authority: worth_proof::InstalledCompositeSignalPublicationAuthority,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<
+        super::SignalCompositeOwnerServicePorts<D, I, E, Ctx, T>,
+        crate::branch::owner_services::SignalDurableAdvanceDenial,
+    > {
+        self.publication
+            .attach_composite_owner(authority, execution)?;
+        let (basis, _, _) = self
+            ._runtime
+            .sealed_owner_port_slots()
+            .expect("durable owner retains its actual sealed runtime");
+        Ok(super::SignalCompositeOwnerServicePorts {
+            basis,
+            source: self.source_port(),
+            mutation: self.mutation_port(),
+        })
     }
 }

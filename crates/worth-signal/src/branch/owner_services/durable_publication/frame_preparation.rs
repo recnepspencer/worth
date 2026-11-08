@@ -16,6 +16,7 @@ where
         prepared: SignalPreparedDurableAdvance<D, I, T>,
         retention: SignalBranchAdmissionReservation,
         mut publication: Option<Box<dyn crate::durability::SignalDurableDefinitionPublication>>,
+        association: Option<worth_foundational::facade::CompositeAttemptAssociation>,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<TaskPhase<D, I, T>, SignalDurableAdvanceDenial> {
         use SignalDurableAdvanceDenial as Dn;
@@ -117,7 +118,7 @@ where
                 execution,
                 original,
                 descriptor,
-                None,
+                association,
                 SignalAuthoredBranchChange::Advanced,
             )
             .map_err(Dn::Frame)?;
@@ -154,7 +155,7 @@ where
                 execution,
                 original,
                 descriptor,
-                None,
+                association,
                 SignalAuthoredBranchChange::Advanced,
             )
             .map_err(Dn::Frame)?;

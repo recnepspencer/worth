@@ -1,4 +1,5 @@
 //! Candidate execution finishes before any physical publication can begin.
+use super::composite::CompositeAdvanceAuthorization;
 use super::*;
 use crate::branch::owner_services::{SignalDurableBranchHandle, SignalDurableSourceDenial};
 use crate::data::error::SignalError;
@@ -63,7 +64,7 @@ where
     where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
     {
-        self.begin_prepared(execution, expected, runtime_ctx, apply, None)
+        self.begin_prepared(execution, expected, runtime_ctx, apply, None, None)
     }
     /// Publish one conditional successor on its actual owner; no conditional
     /// evaluation service or mutable graph is issued to the caller.
@@ -90,15 +91,17 @@ where
                     publication,
                 },
             )),
+            None,
         )
     }
-    fn begin_prepared<F>(
+    pub(super) fn begin_prepared<F>(
         &self,
         execution: ExecutionRequest<'_, '_>,
         expected: &SignalDurableBranchHandle,
         runtime_ctx: &mut Ctx,
         apply: F,
         change: Option<Box<crate::durability::SignalDurableConditionalDefinitionChange>>,
+        authorization: Option<CompositeAdvanceAuthorization>,
     ) -> Result<SignalDurableAdvanceTask, SignalDurableAdvanceDenial>
     where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
@@ -142,6 +145,23 @@ where
             .reserve_admitted_retention(&admission, branch, 1)
             .map_err(|denial| Denial::Source(SignalDurableSourceDenial::Retention(denial)))?;
         let _memory = task_storage::reserve::<D, I, T>(&execution)?;
+        // Attachment and registration have one order. No lock spans apply or I/O.
+        let composite = state
+            .composite
+            .lock()
+            .map_err(|_| Denial::PublicationStatePoisoned)?;
+        match (composite.as_ref(), authorization.as_ref()) {
+            (None, None) => {}
+            (Some(_), None) => return Err(Denial::CompositePublicationRequired),
+            (None, Some(_)) => return Err(Denial::CompositeOwnerNotAttached),
+            (Some(authority), Some(authorization)) => authority
+                .admit(&authorization.grant, &authorization.commitment)
+                .map_err(Denial::CompositeAdmission)?,
+        }
+        let (association, composite_grant) = match authorization {
+            Some(authorization) => (Some(authorization.association), Some(authorization.grant)),
+            None => (None, None),
+        };
         let (original, new_admission, recorded_nodes) = {
             let mut table = state
                 .tasks
@@ -169,12 +189,14 @@ where
                 branch,
                 resource: Some(LinearResource::mint(original, &state.authority)),
                 phase: TaskPhase::Preparing,
+                _composite_grant: composite_grant,
                 _memory,
             }));
             table.branches.insert(branch, original);
             table.tasks.insert(original, slot);
             (original, new_admission, recorded_nodes)
         };
+        drop(composite);
         let mut reservation = PreparingAdvance {
             state: Arc::clone(&state),
             original,
@@ -198,6 +220,7 @@ where
             prepared,
             retention,
             change.map(|change| change.publication),
+            association,
             &execution,
         )?;
         let slot = state.task(original)?;

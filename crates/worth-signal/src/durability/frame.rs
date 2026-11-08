@@ -14,6 +14,31 @@ pub(super) const HEADER: usize = 56;
 pub const SIGNAL_OWNER_FRAME_MAXIMUM_BYTES: usize = 96 << 20;
 const MAGIC: &[u8; 8] = b"WSIGOWNR";
 
+/// Bind transient owner meaning with the same field grammar, without an artifact.
+pub(super) fn commitment(
+    execution: &ExecutionRequest<'_, '_>,
+    domain: &[u8],
+    emit: &mut dyn FnMut(&mut Writer<'_>) -> Result<(), SignalDurableFrameDenial>,
+) -> Result<[u8; 32], SignalDurableFrameDenial> {
+    let mut size = 0usize;
+    emit(&mut Writer::new(&mut |bytes| {
+        size = size
+            .checked_add(bytes.len())
+            .filter(|size| *size <= SIGNAL_OWNER_FRAME_MAXIMUM_BYTES)
+            .ok_or(SignalDurableFrameDenial::SizeLimit)?;
+        Ok(())
+    }))?;
+    admit_work(execution, size.saturating_mul(2))?;
+    let mut hash = Sha256::new();
+    hash.update(domain);
+    hash.update(SIGNAL_OWNER_FRAME_VERSION.get().to_le_bytes());
+    emit(&mut Writer::new(&mut |bytes| {
+        hash.update(bytes);
+        Ok(())
+    }))?;
+    Ok(hash.finalize().into())
+}
+
 #[derive(Debug)]
 pub enum SignalDurableFrameDenial {
     Malformed,

@@ -53,6 +53,7 @@ where
             .state
             .upgrade()
             .ok_or(SignalDurableAdvanceDenial::OwnerUnavailable)?;
+        state.require_standalone()?;
         state.task(original)?;
         Ok(state.handle(original))
     }

@@ -1,6 +1,10 @@
 //! Signal-owned durable source, distinct from evaluation snapshots.
 pub(crate) mod authored_image;
 mod branch_advance;
+mod composite_binding;
+mod composite_owner;
+pub use composite_binding::SignalCompositeAdvanceBinding;
+pub use composite_owner::SignalCompositeOwnerServicePorts;
 mod definition_publication;
 mod definition_transition;
 pub(crate) use definition_publication::SignalDurableConditionalDefinitionChange;

@@ -11,6 +11,14 @@ use worth_foundational::facade::{DurablePublicationFate, SignalBranchAdvanceIden
 
 #[derive(Debug)]
 pub enum SignalDurableAdvanceDenial {
+    CompositePublicationRequired,
+    CompositeOwnerNotAttached,
+    CompositeOwnerAlreadyAttached,
+    CompositeAttachmentPending {
+        originals: worth_execution::ExecutionArray<SignalBranchAdvanceIdentity>,
+    },
+    CompositeAdmission(worth_proof::CompositeSignalPublicationAdmissionDenial),
+    Backing(worth_execution::ExecutionRequestArrayDenial),
     OwnerUnavailable,
     PublicationStatePoisoned,
     Source(super::super::durable_source_port::SignalDurableSourceDenial),

@@ -11,7 +11,8 @@ pub use crate::data::graph::SignalAuthoredGraphReadmission;
 pub use crate::durability::{
     SignalAuthoredBranchChange, SignalAuthoredBranchInstallation, SignalAuthoredImage,
     SignalAuthoredImageDenial, SignalAuthoredInstallationRefused, SignalAuthoredOwnerInstallation,
-    SignalBranchAdvanceArtifact, SignalBridgeAuthoredSection, SignalDefinitionPublicationContext,
+    SignalBranchAdvanceArtifact, SignalBridgeAuthoredSection, SignalCompositeAdvanceBinding,
+    SignalCompositeOwnerServicePorts, SignalDefinitionPublicationContext,
     SignalDefinitionTransitionArtifact, SignalDurableBranchDescriptor,
     SignalDurableDefinitionPublication, SignalDurableFrameDenial, SignalDurableHomeBinding,
     SignalDurableMedium, SignalDurableMediumDenial, SignalDurableOwner,
