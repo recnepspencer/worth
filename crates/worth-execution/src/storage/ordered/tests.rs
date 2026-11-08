@@ -222,3 +222,5 @@ fn rotations_and_removals_match_independent_ordered_truth_with_old_views() {
     drop(original);
     assert_eq!(lease.charged_memory_bytes(), 0);
 }
+
+mod cost;

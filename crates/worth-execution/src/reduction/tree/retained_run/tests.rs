@@ -1,8 +1,7 @@
 use super::*;
 use crate::{
-    ChargedBytes, ExecutionMap, ExecutionRequest, ExecutionWorkCeiling, KeylessPartition,
-    MapKernelFailure, RetainedMapDenial, RetainedRunDenial, RetainedRunOutcome, SerialMemoryBudget,
-    SerialRequest,
+    ExecutionMap, ExecutionRequest, ExecutionWorkCeiling, KeylessPartition, MapKernelFailure,
+    RetainedMapDenial, RetainedRunDenial, RetainedRunOutcome, SerialMemoryBudget, SerialRequest,
 };
 use std::{
     collections::BTreeMap,
@@ -56,7 +55,9 @@ fn copied_node_refuses_at_its_own_exact_funding_boundary_before_any_kernel() {
         .min_by_key(|id| crate::reduction::plan::priority(PartitionIdentity::new(*id)))
         .unwrap();
     let node = PartitionIdentity::new(if root == 1 { 10 } else { 1 });
-    let available = scope + prior.additional_charged_bytes() + node_bytes - 1;
+    // Prior cells already hold their grants. Leave room for the real scope
+    // and less than one new node, with no second invoice for the old tree.
+    let available = scope + node_bytes - 1;
     let blocker = memory
         .reserve(memory.limit().expect("fixture installs finite memory") - held - available)
         .unwrap();

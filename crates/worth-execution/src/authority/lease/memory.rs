@@ -80,6 +80,16 @@ impl LeaseMemory {
         std::iter::successors(Some(self.node.as_ref()), |node| node.parent.as_deref())
     }
 
+    /// Transfer part of the same owned charge; the ledger total is unchanged.
+    pub(in crate::authority) fn split_owned(&mut self, bytes: u64) -> Option<Self> {
+        self.bytes = self.bytes.checked_sub(bytes)?;
+        Some(Self {
+            authority: Arc::clone(&self.authority),
+            node: Arc::clone(&self.node),
+            bytes,
+        })
+    }
+
     /// Holds `bytes` instead, checked under one ledger lock against every
     /// limit on the lineage, with what this holds counted as room.
     pub(in crate::authority) fn resize(&mut self, bytes: u64) -> Result<(), MemoryLimitDenial> {
@@ -169,7 +179,9 @@ impl LeaseMemory {
 
 impl Drop for LeaseMemory {
     fn drop(&mut self) {
-        let _ = self.resize(0);
+        if self.bytes != 0 {
+            let _ = self.resize(0);
+        }
     }
 }
 

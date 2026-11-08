@@ -351,8 +351,12 @@ impl ExecutionMemoryReservation {
 
 impl Drop for ExecutionMemoryReservation {
     fn drop(&mut self) {
-        if let Held::Serial { budget, bytes } = &self.held {
+        if let Held::Serial { budget, bytes } = &self.held
+            && *bytes != 0
+        {
             let _ = budget.resize(*bytes, 0);
         }
     }
 }
+
+mod split;

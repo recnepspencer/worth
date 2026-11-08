@@ -1,38 +1,54 @@
-//! Allocation custody for the sole ordered-cell construction algorithm.
+//! Admission stays at path orchestration; cell constructors receive owned bytes only.
 use super::ExecutionOrderedMapDenial as Denial;
-use crate::{ExecutionAllocationPolicy, ExecutionMemoryReservation, ExecutionRequest};
+use crate::{ExecutionAllocationPolicy, ExecutionMemoryReservation};
+use std::cell::RefCell;
 
-#[derive(Clone, Copy)]
-pub(super) enum Funding<'request, 'authority> {
-    Policy(ExecutionAllocationPolicy<'request, 'authority>),
-    Request {
-        request: ExecutionRequest<'request, 'authority>,
-        accounted: bool,
-    },
+pub(super) trait FundingSource {
+    fn uses_accounting(&self) -> bool;
+    fn reserve_memory(&self, bytes: u64) -> Result<Option<ExecutionMemoryReservation>, Denial>;
 }
-impl<'request, 'authority> From<ExecutionAllocationPolicy<'request, 'authority>>
-    for Funding<'request, 'authority>
-{
-    fn from(policy: ExecutionAllocationPolicy<'request, 'authority>) -> Self {
-        Self::Policy(policy)
+impl FundingSource for ExecutionAllocationPolicy<'_, '_> {
+    fn uses_accounting(&self) -> bool {
+        (*self).uses_accounting()
+    }
+    fn reserve_memory(&self, bytes: u64) -> Result<Option<ExecutionMemoryReservation>, Denial> {
+        (*self).reserve_memory(bytes).map_err(Denial::Allocation)
     }
 }
-impl Funding<'_, '_> {
-    pub(super) fn uses_accounting(self) -> bool {
-        match self {
-            Self::Policy(policy) => policy.uses_accounting(),
-            Self::Request { accounted, .. } => accounted,
-        }
+
+pub(super) struct PathFunding {
+    accounted: bool,
+    owned: RefCell<Option<ExecutionMemoryReservation>>,
+}
+impl PathFunding {
+    pub(super) fn admit(source: &dyn FundingSource, bytes: u64) -> Result<Self, Denial> {
+        let accounted = source.uses_accounting();
+        let owned = if accounted {
+            source.reserve_memory(bytes)?
+        } else {
+            None
+        };
+        Ok(Self {
+            accounted,
+            owned: RefCell::new(owned),
+        })
+    }
+    pub(super) fn uses_accounting(&self) -> bool {
+        self.accounted
     }
     pub(super) fn reserve_memory(
-        self,
+        &self,
         bytes: u64,
     ) -> Result<Option<ExecutionMemoryReservation>, Denial> {
-        match self {
-            Self::Policy(policy) => policy.reserve_memory(bytes).map_err(Denial::Allocation),
-            Self::Request { request, .. } => request
-                .reserve_retained_memory(bytes)
-                .map_err(Denial::Request),
+        let mut owned = self.owned.borrow_mut();
+        match owned.as_mut() {
+            Some(owned) => owned
+                .split_untracked(bytes)
+                .map(Some)
+                .ok_or(Denial::CapacityOverflow),
+            // Explicit system allocation retains accounting metadata without
+            // inventing a request grant. No source or request exists here.
+            None => Ok(None),
         }
     }
 }

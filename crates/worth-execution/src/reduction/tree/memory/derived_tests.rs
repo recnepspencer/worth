@@ -36,6 +36,8 @@ fn independent_node_charge(node: &Arc<Node<Payload>>) -> u64 {
     (size_of::<Node<Payload>>() + 2 * size_of::<usize>()) as u64
         + owned_bytes(&node.value)
         + owned_bytes(&node.aggregate)
+        + node.value.canonical.as_ref().unwrap().retained_bytes()
+        + node.aggregate.canonical.as_ref().unwrap().retained_bytes()
         + node.left.as_ref().map_or(0, independent_node_charge)
         + node.right.as_ref().map_or(0, independent_node_charge)
 }

@@ -1,6 +1,6 @@
 //! A complete native ordered input needs no persistent path replacements.
 use super::{
-    funding::Funding, node, request::funded, ExecutionOrderedMap, ExecutionOrderedMapDenial,
+    funding::PathFunding, node, request::funded, ExecutionOrderedMap, ExecutionOrderedMapDenial,
 };
 use crate::ExecutionRequest;
 use std::sync::Arc;
@@ -25,8 +25,17 @@ impl<K: Ord, V> ExecutionOrderedMap<K, V> {
         request: ExecutionRequest<'_, '_>,
     ) -> Result<Option<Self>, ExecutionOrderedMapDenial> {
         funded(request, |funding| {
+            let bytes = if funding.uses_accounting() {
+                u64::try_from(count)
+                    .ok()
+                    .and_then(|n| n.checked_mul(node::cell_bytes::<K, V>().ok()?))
+                    .ok_or(ExecutionOrderedMapDenial::CapacityOverflow)?
+            } else {
+                0
+            };
+            let pool = PathFunding::admit(funding, bytes)?;
             let mut entries = entries.into_iter();
-            let root = build(count, &mut entries, &mut None, funding, request);
+            let root = build(count, &mut entries, &mut None, &pool, request);
             match root {
                 Ok(root) if entries.next().is_none() => Ok(Some(Self { root })),
                 Ok(_) | Err(Failure::Input) => Ok(None),
@@ -40,7 +49,7 @@ fn build<K: Ord, V>(
     count: usize,
     entries: &mut impl Iterator<Item = (K, V)>,
     previous: &mut Option<Arc<node::Entry<K, V>>>,
-    funding: Funding<'_, '_>,
+    funding: &PathFunding,
     request: ExecutionRequest<'_, '_>,
 ) -> Result<node::Link<K, V>, Failure> {
     request
