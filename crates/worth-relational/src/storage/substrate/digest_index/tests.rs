@@ -10,7 +10,12 @@ proptest! {
     ) {
         let mut index = DigestIndex::default();
         let mut expected = BTreeMap::new();
-        for (key, value) in actions {
+        for (draw, value) in actions {
+            // Deletion must target the maintained set, not almost surely miss a
+            // freshly sampled 128-bit key. Retain random misses when empty.
+            let key = if value.is_none() && !expected.is_empty() {
+                *expected.keys().nth((draw % expected.len() as u128) as usize).unwrap()
+            } else { draw };
             let retained = index.clone();
             let before = retained.digest();
             index.set(key, value).unwrap();
@@ -28,7 +33,15 @@ proptest! {
         prop_assert_eq!(bulk.digest(), reference(&ordered));
         prop_assert_eq!(bulk.digest(), index.digest());
         prop_assert_eq!(bulk.allocation_bytes(), index.allocation_bytes());
-        for key in expected.keys() { index.set(*key, None).unwrap(); }
+        let remaining = expected.keys().copied().collect::<Vec<_>>();
+        for key in remaining {
+            let retained = index.clone();
+            let before = retained.digest();
+            index.set(key, None).unwrap();
+            expected.remove(&key);
+            prop_assert_eq!(index.digest(), reference(&expected.iter().map(|(&k, &v)| (k,v)).collect::<Vec<_>>()));
+            prop_assert_eq!(retained.digest(), before);
+        }
         prop_assert_eq!(index.digest(), reference(&[]));
         prop_assert_eq!(index.allocation_bytes(), 0);
     }

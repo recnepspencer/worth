@@ -1,5 +1,6 @@
 //! Advance current custody while preserving every unchanged claim row.
 mod claims_delta;
+mod successors;
 use super::{record, CurrentPublicationRoster};
 use crate::authority::mutation::current_records::{
     CompletedCurrentRecords as CompletedOwnership, Writer,
@@ -137,6 +138,7 @@ pub(crate) fn complete(
                     && patch.structural_change
                         == crate::publication::patch::data::RecordStructuralChange::Deleted
             });
+        let successors = successors::select(candidate, scope, scope_deleted, &mut writer)?;
         let replaced = |meaning: &crate::mvcc::RequiredOutputPublicationMeaning| {
             scope_deleted
                 || candidate
@@ -165,15 +167,10 @@ pub(crate) fn complete(
                     + 1,
             )?;
             if changed(&row.value.origin.meaning) {
-                let successor = candidate.output_origins().find(|origin| {
-                    !scope_deleted
-                        && origin.source_scope_owned
-                        && origin.meaning.same_route(&row.value.origin.meaning)
-                        && origin.members.iter().any(|member| {
-                            member.posture != crate::mvcc::RequiredOutputRolePosture::Retire
-                        })
-                });
-                if successor.is_none() {
+                if !successors
+                    .iter()
+                    .any(|(_, origin)| origin.meaning.same_route(&row.value.origin.meaning))
+                {
                     claims_delta::retire(
                         execution,
                         basis,
@@ -186,14 +183,7 @@ pub(crate) fn complete(
             }
         }
         routes.retain(|route| !replaced(&route.meaning));
-        let has_new = candidate.output_origins().any(|origin| {
-            origin.source_scope_owned
-                && origin.meaning.source_scope == scope
-                && origin
-                    .members
-                    .iter()
-                    .any(|member| member.posture != crate::mvcc::RequiredOutputRolePosture::Retire)
-        });
+        let has_new = !successors.is_empty();
         let catalog = if let Some((id, _)) = old_catalog {
             Some(*id)
         } else if has_new {
@@ -211,17 +201,7 @@ pub(crate) fn complete(
         } else {
             None
         };
-        for (ordinal, origin) in candidate
-            .output_origins()
-            .enumerate()
-            .filter(|(_, origin)| {
-                origin.source_scope_owned
-                    && origin.meaning.source_scope == scope
-                    && origin.members.iter().any(|member| {
-                        member.posture != crate::mvcc::RequiredOutputRolePosture::Retire
-                    })
-            })
-        {
+        for (ordinal, origin) in successors {
             let Some(catalog) = catalog else {
                 return Err(super::corrupt(
                     origin.commit.commit_id,

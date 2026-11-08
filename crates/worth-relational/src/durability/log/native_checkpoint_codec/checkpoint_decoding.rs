@@ -1,7 +1,7 @@
 use super::checkpoint_wire::CheckpointWire;
 use super::manifest_capture::corrupt;
 use super::member_source::InlineCheckpointSource;
-use super::{DecodedNativeCheckpoint, DurabilityError, RecoveryFailureClass};
+use super::DecodedNativeCheckpoint;
 use crate::durability::data::RelationalRecoveryStop;
 use crate::durability::medium::RelationalDurableColdSource;
 use std::collections::BTreeMap;
@@ -23,15 +23,7 @@ pub(crate) fn decode_checkpoint_from_source(
     execution
         .check_live()
         .map_err(|stop| RelationalRecoveryStop::Request(stop.into()))?;
-    let payload = bytes.strip_prefix(super::CHECKPOINT_MAGIC).ok_or_else(|| {
-        DurabilityError::new(
-            RecoveryFailureClass::UnsupportedLegacySemantics,
-            format!(
-                "unsupported native checkpoint frame; {} required",
-                String::from_utf8_lossy(super::CHECKPOINT_MAGIC).trim_end(),
-            ),
-        )
-    })?;
+    let payload = super::checkpoint_payload(bytes)?;
     let wire: CheckpointWire<'_> = rmp_serde::from_slice(payload)
         .map_err(|error| corrupt(format!("native manifest: {error}")))?;
     let facts =

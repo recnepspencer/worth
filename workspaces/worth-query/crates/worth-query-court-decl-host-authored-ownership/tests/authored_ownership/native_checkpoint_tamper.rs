@@ -92,7 +92,7 @@ pub(super) fn mutate(
     mut change: impl FnMut(&[u8]) -> Option<(Range<usize>, Vec<u8>)>,
 ) -> WorthQueryApplicationCheckpoint {
     let original = checkpoint.bytes();
-    let magic = b"WORTH-REL-CHK20\n";
+    let magic = b"WORTH-REL-CHK20.1\n";
     let start = original
         .windows(magic.len())
         .position(|value| value == magic)
