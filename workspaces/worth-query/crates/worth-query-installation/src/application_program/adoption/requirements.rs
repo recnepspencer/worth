@@ -19,6 +19,7 @@ use crate::application_program::support::{
 use crate::facade::WorthQueryInstalledApplicationSchema;
 
 const DEFAULT_COMPARISON_WORK_LIMIT: usize = 65_536;
+mod installation_pair;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryProgramAddedRule {
@@ -200,6 +201,10 @@ pub enum WorthQueryProgramAdoptionRequirementsDenial {
     UnresolvedRuleScope {
         rule: WorthQueryProgramRuleKey,
     },
+    /// One retained rule key names different installed operational meaning.
+    InstalledRuleContractChanged {
+        rule: WorthQueryProgramRuleKey,
+    },
     SemanticComparison(ApplicationSemanticDiffDenial),
 }
 
@@ -230,26 +235,12 @@ where
         maximum_comparison_work: usize,
     ) -> Result<WorthQueryProgramAdoptionRequirements, WorthQueryProgramAdoptionRequirementsDenial>
     {
-        let installed = installed_schema.binding_identity();
-        if self.schema_binding() != &installed {
-            return Err(
-                WorthQueryProgramAdoptionRequirementsDenial::ForeignSchemaBinding {
-                    roster: self.schema_binding().clone(),
-                    installed,
-                },
-            );
-        }
-        let source_entry = self.entry(source).ok_or(
-            WorthQueryProgramAdoptionRequirementsDenial::UnrosteredSource { revision: *source },
-        )?;
-        let target_entry = self.entry(target).ok_or(
-            WorthQueryProgramAdoptionRequirementsDenial::UnrosteredTarget { revision: *target },
-        )?;
-        compile_requirements(
+        self.adoption_requirements_from_installed_predecessor(
             installed_schema,
-            installed,
-            source_entry,
-            target_entry,
+            self,
+            installed_schema,
+            source,
+            target,
             maximum_comparison_work,
         )
     }
