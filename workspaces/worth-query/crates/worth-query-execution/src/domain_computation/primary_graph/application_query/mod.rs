@@ -35,6 +35,7 @@ pub(crate) mod derived_view;
 mod disclosure;
 mod execution_shape;
 mod execution_validation;
+pub(in crate::domain_computation::primary_graph) mod request_recipe;
 
 mod graph_read_plan_binding;
 mod history;

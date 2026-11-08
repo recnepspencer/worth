@@ -1,22 +1,19 @@
 //! Business work stays on the original ordinary SDK owners of the one private candidate.
 use super::*;
 
-impl<'runtime, S, H, I, P, A> WorthQueryHistoryGroupExecution<'runtime, S, H, I, P, A>
+impl<'runtime, S, H, P, M> WorthQueryHistoryGroupExecution<'runtime, S, H, P, M>
 where
     S: ApplicationSchema + 'static,
     H: ApplicationHistoryBinding<S>,
-    I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
-    A: ApplicationAction<S, I::Binding>,
-    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
-    I::Binding: WorthQuerySourceOperationBinding<S>
-        + ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
-    <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding:
-        ApplicationMutationScopeBinding<S, Scope = ApplicationHistoryModel<S, H>>,
+    M: WorthQueryHistoryGroupMembers<S, H, P>,
     Scope<S, H>: ApplicationQueryScopeResolution<S, Principal<S, H>>,
     Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
 {
-    pub fn advance<Payload: WorthQueryHistoryPayloadMode<S, H>, Outputs>(
+    pub fn advance<
+        Payload: WorthQueryHistoryPayloadMode<S, H>,
+        Outputs: WorthQueryHistoryOutputsMode<S, H>,
+    >(
         &mut self,
         document: &WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
@@ -27,21 +24,27 @@ where
             WorthQueryHistoryGroupPosture::Admitting => self.admit(document, request)?,
             WorthQueryHistoryGroupPosture::CreatingCandidate => self.fork(document, request)?,
             WorthQueryHistoryGroupPosture::Running => self.run_member(document, request)?,
+            WorthQueryHistoryGroupPosture::QualifyingOutputs => {
+                self.qualify_outputs(document, request)?
+            }
             _ => {}
         }
         Ok(self.posture)
     }
 
-    fn run_member<Payload: WorthQueryHistoryPayloadMode<S, H>, Outputs>(
+    fn run_member<
+        Payload: WorthQueryHistoryPayloadMode<S, H>,
+        Outputs: WorthQueryHistoryOutputsMode<S, H>,
+    >(
         &mut self,
         document: &WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<(), WorthQueryHistoryGroupDenial> {
         use WorthQueryHistoryGroupDenial as Denial;
-        if matches!(&self.members[self.next], Member::Completed(_)) {
+        if self.members.member(self.next).posture() == storage::MemberPosture::Completed {
             return self.capture_member(document, request);
         }
-        if let Member::Unbound(operation) = &mut self.members[self.next] {
+        if self.members.member(self.next).posture() == storage::MemberPosture::Unbound {
             let restriction = document
                 .owner
                 .application()
@@ -65,51 +68,26 @@ where
                 .map_err(|cause| {
                     Denial::History(WorthQueryApplicationHistoryDenial::ExecutionRequest(cause))
                 })??;
-            match Mode::<S, I, A>::bind_candidate(
-                operation.take().expect("initial SDK owner"),
-                restriction,
-            ) {
-                Ok(operation) => self.members[self.next] = Member::Operation(Some(operation)),
-                Err((original, cause)) => {
-                    *operation = Some(original);
-                    return Err(Denial::History(
-                        WorthQueryApplicationHistoryDenial::Document(cause),
-                    ));
-                }
-            }
+            self.members.member_mut(self.next).bind(restriction)?;
             return Ok(());
         }
-        let Member::Operation(operation) = &mut self.members[self.next] else {
-            unreachable!("running member owns an operation")
-        };
         let current = WorthQueryApplicationRequest {
             application: document.owner.application(),
             principal: request.principal,
             scope: request.scope,
             branch: self.candidate.as_ref().expect("private candidate").branch(),
         };
-        match Mode::<S, I, A>::advance(operation.take().expect("original SDK operation"), &current)
-        {
-            HistoryOperationAdvance::Progress(next) => *operation = Some(next),
-            HistoryOperationAdvance::Refused {
-                operation: next,
-                denial,
-            } => {
-                *operation = Some(next);
-                return Err(Denial::Member(denial));
-            }
-            HistoryOperationAdvance::Completed(completed) => {
-                self.members[self.next] = Member::Completed(Some(completed))
-            }
-            HistoryOperationAdvance::Terminal(terminal) => {
-                self.members[self.next] = Member::Terminal(Some(terminal));
-                self.posture = WorthQueryHistoryGroupPosture::Terminal;
-            }
+        self.members.member_mut(self.next).advance(&current)?;
+        if self.members.member(self.next).posture() == storage::MemberPosture::Terminal {
+            self.posture = WorthQueryHistoryGroupPosture::Terminal;
         }
         Ok(())
     }
 
-    fn capture_member<Payload: WorthQueryHistoryPayloadMode<S, H>, Outputs>(
+    fn capture_member<
+        Payload: WorthQueryHistoryPayloadMode<S, H>,
+        Outputs: WorthQueryHistoryOutputsMode<S, H>,
+    >(
         &mut self,
         document: &WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
@@ -122,22 +100,16 @@ where
                 document
                     .read_in_advancement(&phase, request)
                     .map_err(Denial::History)?;
-                let Member::Completed(Some(completed)) = &self.members[self.next] else {
-                    unreachable!("actual completion")
-                };
                 let current = WorthQueryApplicationRequest {
                     application: document.owner.application(),
                     principal: request.principal,
                     scope: request.scope,
                     branch: self.candidate.as_ref().unwrap().branch(),
                 };
-                let source = Mode::<S, I, A>::recording_source(completed, &phase, &current)
-                    .map_err(Denial::Member)?
-                    .ok_or(Denial::History(
-                        WorthQueryApplicationHistoryDenial::Document(
-                            WorthQueryDocumentHistoryDenial::ReceiptMismatch,
-                        ),
-                    ))?;
+                let source = self
+                    .members
+                    .member(self.next)
+                    .recording_source(&phase, &current)?;
                 let reservation = self.reservation.as_mut().expect("reserved group");
                 let candidate = self.candidate.as_ref().unwrap();
                 match source {
@@ -166,7 +138,11 @@ where
                 })?;
                 self.next += 1;
                 if self.next == self.members.len() {
-                    self.posture = WorthQueryHistoryGroupPosture::ReadyToComplete;
+                    self.posture = if document.outputs.records_output_forest() {
+                        WorthQueryHistoryGroupPosture::QualifyingOutputs
+                    } else {
+                        WorthQueryHistoryGroupPosture::ReadyToComplete
+                    };
                 }
                 Ok(())
             })

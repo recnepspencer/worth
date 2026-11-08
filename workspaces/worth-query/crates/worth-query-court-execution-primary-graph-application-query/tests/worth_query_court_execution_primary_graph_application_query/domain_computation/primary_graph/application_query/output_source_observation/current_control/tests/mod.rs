@@ -36,3 +36,26 @@ fn permission_and_budget_refusals_are_not_authored_data_outcomes() {
         .is_control_refusal_for_test());
     }
 }
+
+#[test]
+fn historical_source_presence_refusals_cannot_be_swallowed() {
+    use worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryAdmissionDenialKind as Kind;
+    use worth_relational::facade::identity::{EntityId, KindId, PartitionId};
+    let source = EntityId::new(PartitionId::main(), 7, 2);
+    for kind in [
+        Kind::HistoricalSourceNotLive { source },
+        Kind::HistoricalSourceKindMismatch {
+            source,
+            actual: KindId::new(3),
+        },
+        Kind::HistoricalSourceOutsideDomain { source },
+    ] {
+        let cause = WorthQueryApplicationQueryAdmissionDenial::new_for_test(kind, "source query");
+        assert!(SourceQueryObservationStop::Admission(cause.clone()).is_control_refusal_for_test());
+        assert!(SourceQueryObservationStop::Preparation {
+            phase: SourceQueryPreparationPhase::Permission,
+            cause,
+        }
+        .is_control_refusal_for_test());
+    }
+}

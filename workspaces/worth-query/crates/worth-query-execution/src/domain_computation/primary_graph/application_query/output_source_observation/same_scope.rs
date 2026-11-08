@@ -93,9 +93,10 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
         self.with_resolved_plan::<B, _, _>(
             execution,
             &installed,
-            ApplicationQueryParameterSet::new(),
+            super::permission::SourceQueryParameters::Live(ApplicationQueryParameterSet::new()),
             &principal,
             &scope,
+            super::permission::SourceScopePosture::Current,
             native,
             consume,
         )

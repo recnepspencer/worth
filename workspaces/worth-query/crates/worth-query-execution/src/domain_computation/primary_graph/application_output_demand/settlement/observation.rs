@@ -30,6 +30,9 @@ pub enum OriginalSettledProducerSource {
     Restored {
         checkpoint: super::super::WorthQueryAcceptedOutputCheckpointIdentity,
     },
+    HistoricalSelection {
+        origin: crate::domain_computation::primary_graph::output_lineage::HistoricalAcceptedOrigin,
+    },
 }
 
 /// One original-request funded header sharing only original immutable backings.
@@ -82,9 +85,7 @@ impl OriginalSettledProducerObservation {
                 Arc::clone(stable.output_correspondence()),
             ),
             WorthQueryAcceptedOutputAuthority::Restored(restored) => (
-                OriginalSettledProducerSource::Restored {
-                    checkpoint: restored.checkpoint.clone(),
-                },
+                restored_source(restored),
                 Arc::clone(&restored.correspondence),
             ),
         };
@@ -118,9 +119,7 @@ impl OriginalSettledProducerObservation {
             execution,
             runtime,
             product,
-            OriginalSettledProducerSource::Restored {
-                checkpoint: restored.checkpoint.clone(),
-            },
+            restored_source(restored),
             Arc::clone(&restored.correspondence),
         )
     }
@@ -187,6 +186,23 @@ impl OriginalSettledProducerObservation {
         &self,
     ) -> Arc<WorthQueryApplicationOutputCorrespondence> {
         Arc::clone(&self.correspondence)
+    }
+}
+
+fn restored_source(
+    restored: &super::super::WorthQueryRestoredAcceptedOutput,
+) -> OriginalSettledProducerSource {
+    match &restored.origin {
+        super::super::RestoredOutputOrigin::Checkpoint(checkpoint) => {
+            OriginalSettledProducerSource::Restored {
+                checkpoint: checkpoint.clone(),
+            }
+        }
+        super::super::RestoredOutputOrigin::HistoricalSelection(origin) => {
+            OriginalSettledProducerSource::HistoricalSelection {
+                origin: origin.clone(),
+            }
+        }
     }
 }
 

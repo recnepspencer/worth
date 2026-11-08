@@ -1,195 +1,59 @@
+//! History projects the shared current-head owner's typed failures.
 use super::WorthQueryDocumentHistoryDenial as Denial;
 use crate::basis::WorthQueryProductObservationLease;
+use crate::domain_computation::authorization::{
+    admitted_request::AdmittedRequestCurrentness, WorthQueryAdmissionLapse,
+};
+use crate::domain_computation::primary_graph::product_operation::current_read::{
+    head, CurrentReadDenial,
+};
 use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryPrimaryGraphApplicationRuntime,
 };
 use worth_query_installation::facade::ApplicationSchema;
-use worth_runtime_world::facade::ProductBranchCurrentnessFailure;
 
-/// Validate through the same Native commit lane and World head guard as adoption.
-/// Prepared values enter and leave the guard without allocation or authored effects.
-pub(in crate::domain_computation::primary_graph) fn confirm<S: ApplicationSchema, Value>(
+pub(in crate::domain_computation::primary_graph) fn confirm<S: ApplicationSchema, T>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
     phase: &WorthQueryAdvancementPhase<'_>,
     product: &WorthQueryProductObservationLease,
-    value: Value,
-) -> Result<Value, (Value, Denial)> {
+    value: T,
+) -> Result<T, (T, Denial)> {
     confirm_with_request(runtime, phase, product, None, value).map(|(value, _)| value)
 }
-
-/// Read delivery can additionally depend on its original authentication request.
-/// This is a short owner handoff, never a producer callback.
-pub(super) fn confirm_with_request<S: ApplicationSchema, Value>(
+pub(super) fn confirm_with_request<S: ApplicationSchema, T>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
     phase: &WorthQueryAdvancementPhase<'_>,
     product: &WorthQueryProductObservationLease,
-    request: Option<
-        &crate::domain_computation::authorization::admitted_request::AdmittedRequestCurrentness,
-    >,
-    value: Value,
-) -> Result<
-    (
-        Value,
-        Option<crate::domain_computation::authorization::WorthQueryAdmissionLapse>,
-    ),
-    (Value, Denial),
-> {
+    request: Option<&AdmittedRequestCurrentness>,
+    value: T,
+) -> Result<(T, Option<WorthQueryAdmissionLapse>), (T, Denial)> {
     let execution = match phase.execution_request_for(&runtime.runtime.product_runtime) {
         Ok(execution) => execution,
         Err(_) => return Err((value, Denial::ForeignPhase)),
     };
-    confirm_in_execution(runtime, &execution, product, request, value)
+    head::confirm_in_execution(runtime, &execution, product, request, value)
+        .map_err(|(value, cause)| (value, document_denial(cause)))
 }
-
-/// Internal callers carry the execution already checked by their advancement.
-pub(super) fn confirm_in_execution<S: ApplicationSchema, Value>(
+pub(super) fn confirm_in_execution_with_effect<S: ApplicationSchema, T>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     product: &WorthQueryProductObservationLease,
-    request: Option<
-        &crate::domain_computation::authorization::admitted_request::AdmittedRequestCurrentness,
-    >,
-    value: Value,
-) -> Result<
-    (
-        Value,
-        Option<crate::domain_computation::authorization::WorthQueryAdmissionLapse>,
-    ),
-    (Value, Denial),
-> {
-    confirm_in_execution_with_effect(runtime, execution, product, request, value, |_| {})
+    request: Option<&AdmittedRequestCurrentness>,
+    value: T,
+    effect: impl FnOnce(&mut T),
+) -> Result<(T, Option<WorthQueryAdmissionLapse>), (T, Denial)> {
+    head::confirm_in_execution_with_effect(runtime, execution, product, request, value, effect)
+        .map_err(|(value, cause)| (value, document_denial(cause)))
 }
-
-/// Only the document owner supplies this platform metadata transition.
-pub(super) fn confirm_in_execution_with_effect<S: ApplicationSchema, Value>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    product: &WorthQueryProductObservationLease,
-    request: Option<
-        &crate::domain_computation::authorization::admitted_request::AdmittedRequestCurrentness,
-    >,
-    value: Value,
-    effect: impl FnOnce(&mut Value),
-) -> Result<
-    (
-        Value,
-        Option<crate::domain_computation::authorization::WorthQueryAdmissionLapse>,
-    ),
-    (Value, Denial),
-> {
-    if let Err(stop) = execution.check_live() {
-        return Err((value, stopped(stop)));
-    }
-    let lane = runtime
-        .runtime
-        .primary_provider
-        .application_branch_commit_lane_for_occurrence(
-            product.observation().lifecycle_incarnation(),
-        );
-    let _coordination = lane.enter();
-    runtime
-        .runtime
-        .primary_provider
-        .graph
-        .with_runtime(execution, |native| {
-            confirm_in_native_with_effect(
-                runtime,
-                execution,
-                product,
-                request,
-                &_coordination,
-                native,
-                value,
-                effect,
-            )
-        })
-}
-
-/// The caller holds this occurrence's lane, and supplies the actual Native owner.
-/// This core never acquires Query's Native transport or an earlier-order seal.
-pub(super) fn confirm_in_native<S: ApplicationSchema, Value>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    product: &WorthQueryProductObservationLease,
-    request: Option<
-        &crate::domain_computation::authorization::admitted_request::AdmittedRequestCurrentness,
-    >,
-    coordination: &crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>,
-    native: &worth_relational::facade::runtime::RelationalRuntime,
-    value: Value,
-) -> Result<
-    (
-        Value,
-        Option<crate::domain_computation::authorization::WorthQueryAdmissionLapse>,
-    ),
-    (Value, Denial),
-> {
-    confirm_in_native_with_effect(
-        runtime,
-        execution,
-        product,
-        request,
-        coordination,
-        native,
-        value,
-        |_| {},
-    )
-}
-
-fn confirm_in_native_with_effect<S: ApplicationSchema, Value>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    product: &WorthQueryProductObservationLease,
-    request: Option<
-        &crate::domain_computation::authorization::admitted_request::AdmittedRequestCurrentness,
-    >,
-    coordination: &crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>,
-    native: &worth_relational::facade::runtime::RelationalRuntime,
-    value: Value,
-    effect: impl FnOnce(&mut Value),
-) -> Result<
-    (
-        Value,
-        Option<crate::domain_computation::authorization::WorthQueryAdmissionLapse>,
-    ),
-    (Value, Denial),
-> {
-    if !coordination.admits(product.observation()) {
-        return Err((value, Denial::HeadDiverged));
-    }
-    if let Err(denial) = native
-        .owner_component_services()
-        .basis_port()
-        .compare_current_exact(product.relational_basis())
-    {
-        return Err((value, Denial::NativeBasis(denial)));
-    }
-    let world = runtime.runtime.product_runtime.owner.observation_port();
-    match world.while_product_branch_current(product.observation(), value, |mut value, _current| {
-        if let Err(stop) = execution.check_live() {
-            return Err((value, stopped(stop)));
-        }
-        // Denial allocation and refused-value cleanup belong outside owner guards.
-        let lapse = request.and_then(|request| request.lapse());
-        if lapse.is_none() {
-            effect(&mut value);
-        }
-        Ok((value, lapse))
-    }) {
-        Ok(outcome) => outcome,
-        Err(ProductBranchCurrentnessFailure::ExpectedHeadUnavailable(value)) => {
-            Err((value, Denial::HeadDiverged))
-        }
-        Err(ProductBranchCurrentnessFailure::AdmissionDenied { denial, argument }) => {
-            Err((argument, Denial::HeadAdmission(denial)))
+pub(super) fn document_denial(cause: CurrentReadDenial) -> Denial {
+    match cause {
+        CurrentReadDenial::ForeignPhase => Denial::ForeignPhase,
+        CurrentReadDenial::HeadDiverged => Denial::HeadDiverged,
+        CurrentReadDenial::NativeBasis(cause) => Denial::NativeBasis(cause),
+        CurrentReadDenial::HeadAdmission(cause) => Denial::HeadAdmission(cause),
+        CurrentReadDenial::Stopped(cause) => Denial::Stopped(cause),
+        CurrentReadDenial::Authorization(_) | CurrentReadDenial::Busy => {
+            unreachable!("head owner returns request lapses as data and never tries a lane")
         }
     }
-}
-
-fn stopped(stop: worth_execution::MapKernelStop) -> Denial {
-    Denial::Stopped(
-        crate::domain_computation::primary_graph::application_contribution::advancement_denial(
-            worth_execution::WorkCeilingDenial::Stopped(stop),
-        ),
-    )
 }

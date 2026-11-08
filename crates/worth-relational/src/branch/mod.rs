@@ -21,7 +21,15 @@ pub use retained_fork_source::AdmittedRelationalRetainedForkSource;
 mod identity;
 mod lifecycle;
 mod materialization;
+mod model_ownership;
 mod owner_services;
+pub use model_ownership::{
+    RelationalModelOwnership, RelationalModelOwnershipConflict, RelationalModelOwnershipDenial,
+    RelationalModelOwnershipDomain, RelationalOwnedModelEntityBoundary,
+    RelationalOwnedModelForeignRelation, RelationalOwnedModelGraphSelection,
+    RelationalOwnedModelOutputRoute, RelationalOwnedModelPublicationRead,
+    RelationalOwnedModelPublishedRoute, RelationalOwnedModelSelectionDenial,
+};
 mod record_advance;
 mod reference;
 pub use record_advance::{
@@ -147,3 +155,5 @@ mod basis_registry_scale_tests;
 
 mod symbol_read;
 pub(crate) use symbol_read::SymbolAdmittedRootRead;
+
+pub(crate) use model_ownership::validate_candidate_ownership;

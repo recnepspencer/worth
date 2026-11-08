@@ -215,6 +215,9 @@ pub enum RelationalPublicationDenial {
     /// was never installed.
     DurablePublicationRefused(crate::durability::medium::RelationalDurablePublicationRefusal),
     RetainedEntitySelectionDurabilityUnsupported,
+    OwnedGraphSelectionDurabilityUnsupported {
+        model: crate::identity::data::EntityId,
+    },
 }
 
 /// A bounded resource turned this publication attempt away without moving

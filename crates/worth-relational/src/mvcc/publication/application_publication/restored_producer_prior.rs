@@ -3,9 +3,7 @@ use super::*;
 use crate::execution::request_stage::checkpoint;
 use crate::{
     branch::AdmittedRelationalBranchBasis,
-    history::data::{
-        CanonicalCommitEnvelope, CanonicalOutputPublication, CanonicalRequiredOutputOrigin,
-    },
+    history::data::{CanonicalOutputPublication, CanonicalRequiredOutputOrigin},
     identity::data::EntityId,
     runtime::RelationalRuntime,
     transactions::data::RecordRef,
@@ -36,30 +34,55 @@ impl RelationalRestoredProducerPrior {
     }
 }
 impl RelationalRuntime {
-    pub fn readmit_authored_restored_producer_prior(
+    pub fn readmit_restored_producer_prior(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         installed: &RelationalInstalledApplicationPublicationAuthority,
         basis: &AdmittedRelationalBranchBasis,
         meaning: &RequiredOutputPublicationMeaning,
     ) -> Result<Option<RelationalRestoredProducerPrior>, TransactionCommitError> {
-        let Some(publication) = self
-            .readmit_authored_output_retirement_successor(execution, installed, basis, meaning)?
+        let Some(publication) =
+            self.readmit_native_output_transition_successor(execution, installed, basis, meaning)?
         else {
             return Ok(None);
         };
-        if !publication.is_authored_restoration() {
+        if !publication.is_authored_restoration() && !publication.is_historical_selection() {
             return Ok(None);
         }
         let antecedent = execution
             .run_native_with_checkpoint(|context| {
-                let mut current: Arc<CanonicalCommitEnvelope> = self
-                    .history
-                    .canonical_envelope(publication.origin.commit.commit_id)
+                let mut validated_history = crate::history::data::OutputOriginHistory::default();
+                let mut current = validated_history
+                    .by_commit(
+                        publication.origin.commit.commit_id,
+                        &mut |commit| self.history.canonical_envelope(commit),
+                        context,
+                    )
+                    .map_err(custody::cold_stop)?
                     .ok_or_else(|| corrupt(publication.origin.meaning.source_scope))?;
                 let mut origin = Arc::clone(&publication.origin);
                 let bound = self.history.catalog_len();
                 for _ in 0..=bound {
+                    if matches!(
+                        origin.publication,
+                        CanonicalOutputPublication::HistoricalSelection { .. }
+                    ) {
+                        checkpoint(context, 1).map_err(custody::execution_stop)?;
+                        let meaning = origin.meaning.clone();
+                        current = crate::history::data::historical_producer_antecedent(
+                            self,
+                            &current,
+                            &origin,
+                            &mut validated_history,
+                            context,
+                        )
+                        .map_err(custody::cold_stop)?;
+                        origin = current
+                            .output_origin_for_route(&meaning, context)
+                            .map(Arc::clone)
+                            .map_err(custody::cold_stop)?;
+                        continue;
+                    }
                     let CanonicalOutputPublication::AuthoredRestoration { predecessor, .. } =
                         origin.publication
                     else {
@@ -85,13 +108,16 @@ impl RelationalRuntime {
                         .ok_or_else(corrupted)?;
                     let mut original = origin.meaning.clone();
                     original.source_scope = old;
-                    current = self
-                        .history
-                        .canonical_envelope(predecessor)
+                    current = validated_history
+                        .by_commit(
+                            predecessor,
+                            &mut |commit| self.history.canonical_envelope(commit),
+                            context,
+                        )
+                        .map_err(custody::cold_stop)?
                         .ok_or_else(corrupted)?;
                     origin = current
-                        .validate_output_origins(context)
-                        .and_then(|origins| origins.output_origin_for_route(&original, context))
+                        .output_origin_for_route(&original, context)
                         .map(Arc::clone)
                         .map_err(|stop| match stop {
                             crate::history::data::CodecRetirementClosureStop::Request(cause) => {

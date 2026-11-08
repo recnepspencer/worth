@@ -39,6 +39,10 @@ pub struct RequiredOutputRoleTarget {
 
 #[derive(Debug)]
 pub enum RequiredOutputPublication {
+    HistoricalSelection {
+        admission: worth_proof::AdmittedHistoricalOutputSelection,
+        selections: Vec<super::RelationalHistoricalOutputSelection>,
+    },
     CoupledAuthored {
         group: super::RelationalCoupledAuthoredPublication,
     },
@@ -80,6 +84,7 @@ impl RequiredOutputPublication {
 
     pub(crate) fn admission_work(&self) -> u64 {
         let count = match self {
+            Self::HistoricalSelection { selections, .. } => selections.len(),
             Self::CoupledAuthored { group } => {
                 group.parts.len() + group.binding.owners.retirements.len()
             }
@@ -97,6 +102,18 @@ impl RequiredOutputPublication {
         installed: &super::RelationalInstalledApplicationPublicationAuthority,
     ) -> bool {
         match self {
+            Self::HistoricalSelection {
+                admission,
+                selections,
+            } => {
+                admission.publication_count() == selections.len()
+                    && selections.iter().all(|s| {
+                        installed.authority.admits_historical_output_selection(
+                            admission,
+                            s.publication.authority(),
+                        )
+                    })
+            }
             Self::CoupledAuthored { group } => group.admitted_by(installed),
             Self::Birth { admission, .. } => installed.authority.admits_required_output(admission),
             Self::Preserve {
@@ -141,7 +158,7 @@ impl RequiredOutputPublication {
 
     pub(crate) fn lineage_attribution(&self) -> Option<(&str, [u8; 32])> {
         match self {
-            Self::CoupledAuthored { .. } => None,
+            Self::CoupledAuthored { .. } | Self::HistoricalSelection { .. } => None,
             Self::Birth { admission, .. } => {
                 Some((admission.producer(), *admission.dependency_identity()))
             }

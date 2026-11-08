@@ -14,3 +14,5 @@ mod compound_publication;
 mod materialization;
 
 mod restoration_header;
+
+mod predecessor_basis;

@@ -60,6 +60,16 @@ pub(super) fn select_at(
             .canonical_envelope(commit)
             .ok_or("cold route selection lost canonical history")?;
         require_linear_history(&envelope)?;
+        for absence in envelope.historical_absent_routes() {
+            charge(
+                context,
+                absence.meaning.family.len() + meaning.family.len() + 65,
+            )?;
+            if absence.meaning.same_route(meaning) {
+                envelope.validate_historical_selection_header(context)?;
+                return Ok(Some(RequiredOutputRoutePosition::HistoricalAbsence(commit)));
+            }
+        }
         let mut event = None;
         for candidate in &envelope.required_output_codec_retirements {
             charge(

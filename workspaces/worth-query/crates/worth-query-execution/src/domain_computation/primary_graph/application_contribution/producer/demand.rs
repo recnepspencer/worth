@@ -57,16 +57,39 @@ pub use read_close::WorthQueryOutputReadCloseDenial;
 ///
 /// Returned by `select_output_producer`. It records the choice only; admitting
 /// and advancing the demand re-check that the producer is still installed.
+/// Which existing readmission owner an exact retained selection reaches.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) enum RetainedOutputReadPosture {
+    Ordinary,
+    HistoricalSelection,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQuerySelectedApplicationProducer {
     pub(super) identity: String,
     pub(super) applicability: WorthQueryProducerApplicability,
     pub(super) exact_retained_output: bool,
+    pub(super) retained_read_posture: RetainedOutputReadPosture,
     pub(super) retained_idempotency_key: Option<[u8; 32]>,
     pub(super) retained_output_binding: Option<TypeId>,
     // An exact selection whose producer declares no Preserve posture reuses
     // the live output it was selected for and never executes over it.
     pub(super) reuses_live_output_only: bool,
+}
+
+impl WorthQuerySelectedApplicationProducer {
+    fn retain_verified_output(
+        &mut self,
+        candidate: &crate::domain_computation::primary_graph::output_lineage::current_output::retained_candidates::WorthQueryRetainedOutputCandidate,
+    ) {
+        self.retained_idempotency_key = Some(candidate.idempotency_key_identity);
+        self.retained_output_binding = Some(candidate.binding);
+        self.retained_read_posture = if candidate.historical_selection.is_some() {
+            RetainedOutputReadPosture::HistoricalSelection
+        } else {
+            RetainedOutputReadPosture::Ordinary
+        };
+    }
 }
 
 /// Runtime-affine admission for one exact source occurrence and installed producer.
@@ -230,6 +253,7 @@ where
                 identity: selected.declaration.identity.clone(),
                 applicability,
                 exact_retained_output: false,
+                retained_read_posture: RetainedOutputReadPosture::Ordinary,
 
                 retained_idempotency_key: None,
                 retained_output_binding: None,

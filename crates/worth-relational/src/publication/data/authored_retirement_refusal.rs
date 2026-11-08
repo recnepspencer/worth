@@ -29,4 +29,9 @@ pub enum AuthoredRetirementRefusal {
         publication: crate::history::data::CommitId,
     },
     IncompleteRestoration,
+    HistoricalSelectionBasisChanged,
+    HistoricalSelectionRouteMissing,
+    HistoricalSelectionNotOwned {
+        publication: crate::history::data::CommitId,
+    },
 }

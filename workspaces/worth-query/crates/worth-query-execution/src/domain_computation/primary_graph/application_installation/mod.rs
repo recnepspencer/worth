@@ -7,6 +7,7 @@ mod denial;
 mod limits;
 mod profile;
 pub(crate) mod program;
+pub(in crate::domain_computation::primary_graph) use program::HistoryAdmittedChildSource;
 pub(in crate::domain_computation::primary_graph) use program::OriginalProgramRootCompletion;
 pub(in crate::domain_computation::primary_graph) use program::WorthQuerySupportedProgramRecord;
 pub(in crate::domain_computation::primary_graph) mod program_admission;

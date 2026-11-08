@@ -8,6 +8,7 @@ use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::{EntityReference, MergedCommitPlan};
 
 mod incidence_collection;
+mod owned_graph;
 mod relation_changes;
 mod scope_completion;
 use super::preparation_control::InvariantPreparationControl;
@@ -35,6 +36,9 @@ pub(crate) fn prepare_relation_integrity_scopes(
     if let Some(plan) = semantic_plan {
         if let Some(selection) = plan.selection() {
             accumulator.collect_revalidated_entity(selection.entity())?;
+        }
+        if let Some(selection) = plan.graph_selection() {
+            accumulator.collect_owned_graph(selection)?;
         }
         accumulator.collect_plan(plan.commands())?;
     }

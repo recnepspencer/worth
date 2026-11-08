@@ -17,6 +17,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) use candid
 mod family_entry;
 pub use family_entry::WorthQueryApplicationOutputFamilyEntry;
 
+mod native_publication;
 mod projection;
 pub use projection::WorthQueryApplicationOutputEntity;
 pub use projection::WorthQueryApplicationOutputProjectionDenial;

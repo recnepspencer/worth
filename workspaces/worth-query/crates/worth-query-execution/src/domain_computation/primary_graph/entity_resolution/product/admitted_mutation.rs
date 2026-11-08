@@ -19,12 +19,30 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         WorthQueryApplicationEntityIdentity<Schema, Field::Entity>,
         WorthQueryEntityResolutionDenial,
     > {
+        self.resolve_entity_selector_admitted_with_native_access(
+            execution, field, &value, request, native,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn resolve_entity_selector_admitted_with_native_access<
+        Field: RecordSelection,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        field: Field,
+        value: &Field::Value,
+        request: &WorthQueryRequestScope,
+        native: &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess<'_>,
+    ) -> Result<
+        WorthQueryApplicationEntityIdentity<Schema, Field::Entity>,
+        WorthQueryEntityResolutionDenial,
+    > {
         admit_request(request, field.field())?;
         let column = self.record_selection(field)?;
         let locus = column.recipe().locus();
         // The declared field encoder is application-authored work. Its returned
         // value is moved through the framework lookup and identity construction.
-        Field::Binding::validate(&value).map_err(|_| {
+        Field::Binding::validate(value).map_err(|_| {
             entity_denial(
                 WorthQueryEntityResolutionDenialKind::Refused(
                     ResolutionRefusal::ValueEncodingRejected,
@@ -32,7 +50,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 column.path(),
             )
         })?;
-        let encoded = Field::Binding::encode(&value).map_err(|_| {
+        let encoded = Field::Binding::encode(value).map_err(|_| {
             entity_denial(
                 WorthQueryEntityResolutionDenialKind::Refused(
                     ResolutionRefusal::ValueEncodingRejected,

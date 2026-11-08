@@ -38,14 +38,20 @@ use crate::domain_computation::provider_session::WorthQueryGraphWorkAccessContex
 
 #[path = "selected_conventional/current_control.rs"]
 mod current_control;
+#[path = "selected_conventional/historical_source.rs"]
+mod historical_source;
 #[path = "selected_conventional/ordinary.rs"]
 mod ordinary;
-pub(in crate::domain_computation) use current_control::authorize_current_control_mutation_on_selected;
+pub(in crate::domain_computation) use current_control::{
+    authorize_current_control_mutation_on_selected,
+    authorize_historical_control_mutation_on_selected,
+};
 pub(in crate::domain_computation) use ordinary::authorize_public_mutation_on_selected;
 
 struct SelectedMutationProducts<'selected, 'runtime, Schema: ApplicationSchema> {
     mutation: &'selected SharedSelectedProductOperation<'runtime, Schema>,
     control: Option<&'selected SharedSelectedProductOperation<'runtime, Schema>>,
+    history: Option<crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation<'selected>>,
 }
 
 impl<Schema: ApplicationSchema> SelectedMutationProducts<'_, '_, Schema> {
@@ -97,7 +103,14 @@ where
     use SelectedConventionalAdmissionStop as Stop;
 
     if !std::ptr::eq(principal.selected(), products.security().selected())
-        || !std::ptr::eq(scope.selected(), products.security().selected())
+        || !std::ptr::eq(
+            scope.selected(),
+            if products.history.is_some() {
+                products.mutation.selected()
+            } else {
+                products.security().selected()
+            },
+        )
         || !principal.request().same_request(request)
         || !scope.request().same_request(request)
     {
@@ -191,6 +204,16 @@ where
     // The one principal fact is counted and added to the session's retained
     // decision-fact count; neither operation is an authorization shortcut.
 
+    if let Some(history) = products.history {
+        historical_source::require_source(
+            execution,
+            runtime,
+            history,
+            scope.scope(),
+            products.mutation.selected().product().relational_basis(),
+            operation.operation(),
+        )?;
+    }
     graph_work.record_decision_facts(authorization.exact_fact_count());
 
     // Fund the exact owned subject strings, two authority Arc<str> backings,

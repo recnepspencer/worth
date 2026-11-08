@@ -3,7 +3,11 @@ mod observation;
 pub(crate) mod publication;
 pub use publication::RelationalPublicationReadDependencyDenial;
 pub use publication::{PreparedMemoryRelationalCutover, ScopedRelationalPublication};
+pub(crate) mod owned_graph_selection;
 pub(crate) mod retained_entity_selection;
+pub use owned_graph_selection::{
+    RelationalOwnedGraphSelection, RelationalOwnedGraphSelectionPreparationError,
+};
 mod transaction;
 #[cfg(test)]
 pub(crate) use transaction::split_contacts;
@@ -47,11 +51,12 @@ pub use publication::{
     RelationalAuthoredCoupledProducerAssembly, RelationalAuthoredCoupledTransaction,
     RelationalAuthoredRestoration, RelationalAuthoredRetirement, RelationalCoupledAssemblyFailure,
     RelationalCoupledAuthoredPublication, RelationalDeclaredCoupledOwner,
-    RelationalPerformedOutputPublications, RelationalPreparedOutputPublications,
-    RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
-    RelationalRestoredProducerPrior, RequiredOutputProducingImplementation,
-    RequiredOutputPublication, RequiredOutputPublicationMeaning, RequiredOutputRolePosture,
-    RequiredOutputRoleTarget,
+    RelationalHistoricalOutputSelection, RelationalPerformedOutputPublications,
+    RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin,
+    RelationalPreparedOutputPublications, RelationalRequiredOutputPublication,
+    RelationalRequiredOutputRouteAbsence, RelationalRestoredProducerPrior,
+    RequiredOutputProducingImplementation, RequiredOutputPublication,
+    RequiredOutputPublicationMeaning, RequiredOutputRolePosture, RequiredOutputRoleTarget,
 };
 pub use retained_entity_selection::{
     RelationalRetainedEntitySelection, RelationalRetainedEntitySelectionDenial,
@@ -87,3 +92,5 @@ pub(crate) use publication::{native_birth_fixture, native_meaning_fixture};
 
 #[cfg(test)]
 pub(crate) use publication::native_roles_fixture;
+
+pub(crate) use publication::require_graph_coverage;

@@ -21,6 +21,8 @@ pub use projection::{
     RelationalAdjacencyDirection, RelationalAdjacencySupportDenial, RelationalAdjacencyVisit,
     RelationalAspectPresenceSupportDenial, RelationalBorrowedRecordReadDenial,
     RelationalEntityMetadata, RelationalEntityRetirement, RelationalFieldSupportComparisonDenial,
+    RelationalHistoricalSelectionRead, RelationalHistoricalSelectionReadDenial,
+    RelationalHistoricalSourcePresence, RelationalHistoricalSourceReadDenial,
     RelationalProjectedFieldObservation, RelationalProjectionContractDenial,
     RelationalRelationMetadata, VisibilityProjectionView,
 };

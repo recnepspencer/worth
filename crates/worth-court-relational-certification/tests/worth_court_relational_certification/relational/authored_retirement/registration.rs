@@ -62,6 +62,11 @@ fn owned_publication_admission_requires_registered_storage_before_any_effect() {
     };
     deny(
         runtime
+            .prepare_historical_output_selection(execution, &installed, &before, &before, &meaning)
+            .unwrap_err(),
+    );
+    deny(
+        runtime
             .readmit_required_output_route_absence(execution, &installed, &before, &meaning)
             .unwrap_err(),
     );

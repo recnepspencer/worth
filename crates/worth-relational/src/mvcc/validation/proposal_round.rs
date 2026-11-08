@@ -125,6 +125,11 @@ impl RelationalPreparationRuntime {
                             selected,
                             execution.allocation_policy(),
                         )?,
+                        RelationalProposalSource::OwnedGraphSelection(retained) => {
+                            crate::authority::commit::phases::prepare::owned_graph_selection::prepare(
+                                execution, &runtime, transaction, selected, retained,
+                            )?
+                        }
                         RelationalProposalSource::RetainedEntitySelection(retained) => {
                             crate::authority::commit::phases::prepare::retained_entity_selection::prepare(
                                 &runtime, transaction, selected, retained, execution.allocation_policy(),
@@ -133,7 +138,13 @@ impl RelationalPreparationRuntime {
                     };
                     let validation_input =
                         RelationalTransactionValidationInput::from_transaction(transaction);
-                    let mut mutation = match prepared.plan.retained() {
+                    let mut mutation = if let Some(retained) = prepared.plan.owned_graph() {
+                        crate::authority::commit::phases::applied_mutation::owned_graph_selection::apply(
+                            execution, &runtime, &selected, &prepared.working_state, retained,
+                            prepared.schema_authority.as_ref(), &identity, symbols,
+                            source_interpretation, &validation_input.content,
+                        )
+                    } else { match prepared.plan.retained() {
                         Some(retained) => apply_retained_entity_selection_draft(
                             execution, &runtime, &selected, &prepared.working_state, retained,
                             prepared.schema_authority.as_ref(), &identity, symbols,
@@ -151,7 +162,7 @@ impl RelationalPreparationRuntime {
                         source_interpretation,
                         &validation_input.content,
                     ),
-                    }?;
+                    }}?;
                     let runtime = round.with_candidate_symbols(mutation.candidate_symbols());
                     mutation.prepare_managed_sources(
                         *execution,
@@ -159,7 +170,7 @@ impl RelationalPreparationRuntime {
                         selected,
                         &identity,
                         (validation_input.merge_parent_bases().is_empty()
-                            && prepared.plan.retained().is_none())
+                            && !prepared.plan.view().has_selection())
                             .then_some(prepared.plan.view().commands()),
                     )?;
                     let control = crate::validation::engine::InvariantPreparationControl::for_transaction(

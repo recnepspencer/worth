@@ -1,5 +1,7 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
+type OncePublicationBases =
+    std::sync::OnceLock<std::sync::Weak<dyn crate::history::retention::PublicationBasisAccess>>;
 
 use super::target::RelationalBranchRootDescriptor;
 use super::RelationalPersistentRegionSet;
@@ -138,6 +140,7 @@ struct RelationalCommittedBranchRoot {
 /// reuse.
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalBranchRoot {
+    pub(crate) publication_bases: OncePublicationBases,
     content: crate::content::ContentDirectory,
     id: u64,
     regions: Arc<RelationalPersistentRegionSet>,
@@ -186,10 +189,10 @@ impl RelationalBranchRootState {
 impl RelationalBranchRoot {
     #[cfg(test)]
     pub(crate) fn empty() -> Arc<Self> {
-        let issuer = RelationalBranchRootIdentityIssuer::default();
         Arc::new(Self {
             id: 0,
             regions: RelationalPersistentRegionSet::empty(0),
+            publication_bases: Default::default(),
             content: Default::default(),
             entity_slot_count: 0,
             relation_slot_count: 0,
@@ -215,6 +218,7 @@ impl RelationalBranchRoot {
             regions: RelationalPersistentRegionSet::empty(0),
             entity_slot_count: 0,
             relation_slot_count: 0,
+            publication_bases: Default::default(),
             content: Default::default(),
             content_accumulator: [0; 32],
             output_publication_positions: Default::default(),

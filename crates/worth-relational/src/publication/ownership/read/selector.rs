@@ -16,7 +16,17 @@ pub(super) fn relation(
         .relation_arena()
         .get(&id)
         .ok_or_else(|| damaged(&subject))?;
-    if slot.is_materialization_unavailable() {
+    // A historical selection may restore a genuinely retired original ID.
+    // Only its actual applied image supplies routing metadata; a live slot
+    // with lost metadata must still refuse as damaged.
+    let restoring_retired = matches!(
+        slot.lifecycle(),
+        crate::storage::data::RecordLifecycleState::DeletedRetained
+            | crate::storage::data::RecordLifecycleState::RetainedDanglingForAudit
+    ) && after
+        .and_then(|image| image.relation_metadata(id))
+        .is_some();
+    if slot.is_materialization_unavailable() || restoring_retired {
         let restored = after
             .and_then(|after| after.relation_metadata(id))
             .ok_or_else(|| missing_restoration(subject.clone()))?;

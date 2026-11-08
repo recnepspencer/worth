@@ -25,6 +25,7 @@ mod equality_fields;
 pub(crate) mod field_coordinate;
 mod field_optionality;
 pub(in crate::domain_computation::primary_graph) use field_coordinate::InstalledFieldCoordinate;
+mod history_ownership;
 mod installation_primitives;
 mod kind_lookup;
 mod live_control_roles;
@@ -83,6 +84,7 @@ pub(in crate::domain_computation::primary_graph) use registry_lowering::{
 
 #[derive(Debug)]
 pub struct WorthQueryPrimaryGraphLayout {
+    history_ownership: history_ownership::HistoryOwnershipLayouts,
     value_bindings:
         worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
     principal_bindings: BTreeMap<String, WorthQueryPrimaryPrincipalBindingLayout>,
@@ -269,6 +271,12 @@ impl WorthQueryPrimaryGraphLayout {
 
         Ok((
             Self {
+                history_ownership: history_ownership::lower(
+                    schema,
+                    &entity_kinds,
+                    &relation_layouts,
+                    &live_control_entity_kinds,
+                )?,
                 value_bindings: value_bindings.clone(),
                 principal_bindings,
                 live_control_entity_kinds,

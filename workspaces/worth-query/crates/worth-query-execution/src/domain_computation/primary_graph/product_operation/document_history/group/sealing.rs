@@ -16,28 +16,12 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     ) -> Result<WorthQueryHistoryStep, WorthQueryDocumentHistoryGroupAdoptionFailure<'runtime, S>>
     where
         M: ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
-        M::ScopeBinding: ApplicationMutationScopeBinding<S, Scope = ApplicationHistoryModel<S, H>>,
     {
         use WorthQueryDocumentHistoryDenial as Denial;
         let prepared = (|| {
-            self.application()
-                .assess_document_history_operation::<H, M>(
-                    phase,
-                    access,
-                    self,
-                    installed,
-                    operation.selected,
-                    operation.admitted,
-                )?;
-            self.validate_reservation(&group.reservation)?;
+            self.readmit_history_group_operation(phase, access, installed, operation, &group)?;
             if group.completed.len() != group.members.len() {
                 return Err(Denial::GroupNotComplete);
-            }
-            let meaning = operation.binding.bind_admission(operation.admitted);
-            if !group.members.last().is_some_and(|last| {
-                last.canonical_key() == meaning.canonical_key() && last.has_same_intent(meaning)
-            }) {
-                return Err(Denial::IntentDrift);
             }
             if !std::ptr::eq(self.application(), candidate.application())
                 || candidate.expected_source() != group.reservation.expected
@@ -48,7 +32,12 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 return Err(Denial::ForeignRecording);
             }
             let last = group.completed.last().ok_or(Denial::GroupNotComplete)?;
-            let source = Arc::clone(&last.endpoint);
+            let source = Arc::clone(
+                group
+                    .outputs
+                    .as_ref()
+                    .map_or(&last.endpoint, |outputs| &outputs.endpoint),
+            );
             if source.branch_incarnation() != candidate.branch().occurrence() {
                 return Err(Denial::ReceiptMismatch);
             }
@@ -66,9 +55,16 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 .journal
                 .prepared_step(&group.reservation.record, endpoint.clone());
             Ok(PreparedBinding {
+                discovery_recipes: group
+                    .outputs
+                    .as_ref()
+                    .map(|outputs| Arc::clone(&outputs.recipes)),
                 node: RecordedNode {
                     step: step.clone(),
-                    root_posture: last.root_posture,
+                    root_posture: group
+                        .outputs
+                        .as_ref()
+                        .map_or(last.root_posture, |outputs| outputs.root_posture),
                 },
                 source,
                 endpoint,
@@ -89,7 +85,9 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         let WorthQueryDocumentHistoryGroupReservation {
             reservation,
             members,
+            scopes,
             completed,
+            outputs,
             candidate: bound_candidate,
             _allocation,
         } = group;
@@ -101,7 +99,9 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                     reservation: WorthQueryDocumentHistoryGroupReservation {
                         reservation,
                         members,
+                        scopes,
                         completed,
+                        outputs,
                         candidate: bound_candidate,
                         _allocation,
                     },

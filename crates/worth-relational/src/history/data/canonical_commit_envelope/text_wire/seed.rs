@@ -23,6 +23,7 @@ impl<'de> Visitor<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
         let mut coupled_authored_publication = None;
         let mut required_output_codec_retirements = None;
         let mut required_output_origin = None;
+        let mut historical_output_selection = None;
         let mut producer_cascade_retirement = None;
         let mut authored_cascade_restoration = None;
         let mut authored_cascade_retirement = None;
@@ -66,6 +67,12 @@ impl<'de> Visitor<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
                         ));
                     }
                     required_output_codec_retirements = Some(map.next_value()?);
+                }
+                "historical_output_selection" => {
+                    if historical_output_selection.is_some() {
+                        return Err(M::Error::duplicate_field("historical_output_selection"));
+                    }
+                    historical_output_selection = Some(map.next_value()?);
                 }
                 "required_output_origin" => {
                     if required_output_origin.is_some() {
@@ -253,6 +260,7 @@ impl<'de> Visitor<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
             }
         }
         Ok(CanonicalEnvelopeWire {
+            historical_output_selection: historical_output_selection.flatten(),
             content: content.ok_or_else(|| M::Error::missing_field("content"))?,
             coupled_authored_publication: coupled_authored_publication.flatten(),
             required_output_codec_retirements: required_output_codec_retirements

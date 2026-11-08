@@ -130,6 +130,25 @@ fn run<'p>(
                 return Err(failure);
             }
         }
+        if plan.graph_selection().is_some() {
+            for delta in &proposal
+                .proposed_mutation
+                .outcome
+                .effect
+                .publication
+                .canonical_deltas
+            {
+                (sink.checkpoint)(1)?;
+                sink.insert(super::owned_graph::whole_record(
+                    &delta.target,
+                    delta.kind_id,
+                    delta.structural_change,
+                ));
+                if let Some(failure) = sink.failure.take() {
+                    return Err(failure);
+                }
+            }
+        }
         for intent in &plan.commands().merged_intents {
             (sink.checkpoint)(1)?;
             work.validated_intents_examined += 1;

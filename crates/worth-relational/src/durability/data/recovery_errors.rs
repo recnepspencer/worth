@@ -42,6 +42,8 @@ pub enum RecoveryFailureClass {
     CheckpointFrameSizeMismatch,
     /// Retained entity selection requires its original live historical basis.
     UnsupportedRetainedEntitySelectionReplay,
+    /// Owned graph selection retains original live source custody.
+    UnsupportedOwnedGraphSelectionReplay,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -227,6 +229,7 @@ impl DurabilityError {
             | RecoveryFailureClass::CheckpointAllocationUnavailable
             | RecoveryFailureClass::UnsupportedRetainedForkReplay
             | RecoveryFailureClass::UnsupportedRetainedEntitySelectionReplay
+            | RecoveryFailureClass::UnsupportedOwnedGraphSelectionReplay
             | RecoveryFailureClass::CheckpointFrameSizeMismatch => None,
             _ => Some(SuggestedFix::RepairDurableStore),
         };
@@ -250,6 +253,7 @@ impl DurabilityError {
             | RecoveryFailureClass::ReplayFailure
             | RecoveryFailureClass::UnsupportedRetainedForkReplay
             | RecoveryFailureClass::UnsupportedRetainedEntitySelectionReplay
+            | RecoveryFailureClass::UnsupportedOwnedGraphSelectionReplay
             | RecoveryFailureClass::SchemaMismatch
             | RecoveryFailureClass::DeclaredSchemaMismatch
             | RecoveryFailureClass::ProfileMismatch

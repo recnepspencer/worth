@@ -13,6 +13,7 @@ use worth_execution::{ExecutionMemoryReservation, ExecutionResourceLease, MapKer
 pub(crate) enum RequiredOutputRoutePosition {
     Published(CommitId),
     CodecRetired(CommitId),
+    HistoricalAbsence(CommitId),
 }
 
 #[derive(Clone, Debug, Default)]
@@ -101,7 +102,7 @@ fn insert(
         let bytes = (std::mem::size_of::<PublicationRoute>()
             + 2 * std::mem::size_of::<usize>()
             + meaning.family.len()) as u64;
-        context.checkpoint(bytes).map_err(request)?;
+        checkpoint(context, bytes).map_err(request)?;
         let funding = reserve(lease, bytes)?;
         let route = Arc::new(PublicationRoute {
             family: meaning.family.clone(),
@@ -188,7 +189,7 @@ fn node(
     lease: Lease<'_, '_>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Arc<PositionNode>, TransactionCommitError> {
-    context.checkpoint(6).map_err(request)?;
+    checkpoint(context, 6).map_err(request)?;
     let bytes = (std::mem::size_of::<PositionNode>() + 2 * std::mem::size_of::<usize>()) as u64;
     let funding = reserve(lease, bytes)?;
     let height = height(&left)

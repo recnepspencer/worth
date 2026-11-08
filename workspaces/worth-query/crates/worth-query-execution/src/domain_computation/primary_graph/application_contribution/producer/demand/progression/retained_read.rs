@@ -248,10 +248,11 @@ where
             control.as_ref().unwrap_or(&shared).selected(),
             control.as_ref().map(|_| shared.selected()),
             controls,
+            history,
             |permission| {
                 if let Some(history) = history {
                     permission
-                        .require_history_principal(history)
+                        .require_current_principal(history.read_control())
                         .map_err(query_admission_denial)?;
                     permission
                         .require_original_scope(retained)

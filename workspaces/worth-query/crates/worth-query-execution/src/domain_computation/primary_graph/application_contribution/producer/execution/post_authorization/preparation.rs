@@ -23,6 +23,12 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         <Operation<Schema, Binding> as ApplicationMutationBinding<Schema>>::Principal,
         <Operation<Schema, Binding> as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
     >,
+    original_scope: Option<
+        &crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity<
+            Schema,
+            MutationScope<Schema, Binding>,
+        >,
+    >,
     mut admission: crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<
         Schema,
         <Operation<Schema, Binding> as ApplicationMutationBinding<Schema>>::Operation,
@@ -200,10 +206,17 @@ where
     if let Some(context) = prepared_context {
         required_output.retain_prepared_decision_reuse(context);
     }
+    let predecessor_reads =
+        super::super::super::predecessor_reads::ProducerPredecessorReadAccess::prepare::<
+            Schema,
+            Binding,
+        >(&mut required_output, edition);
     admission.bind_required_output_demand(required_output);
     let bound_source = prepared_source
         .consume_into(&mut admission)
         .map_err(|error| failed(Binding::IDENTITY, error))?;
+    let producer_request = admission.retain_admitted_request();
+    let producer_principal = admission.operation_scope_binding().principal();
     let source_query =
         crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess::new(
             runtime,
@@ -214,6 +227,26 @@ where
             request_scope,
         )
         .map_err(super::super::denial::request_admission_rejected)?;
+    let source_query = if commit_authority.history_control().is_none()
+        && Binding::PREDECESSOR_READS.is_some()
+    {
+        source_query.with_current_control(
+            crate::domain_computation::primary_graph::product_operation::current_read::CurrentReadControl::new(
+                shared.selected().product().read_lease_ref(), &producer_request, &producer_principal))
+            .map_err(super::super::denial::request_admission_rejected)?
+    } else {
+        source_query
+    };
+    let read_admission = original_scope.map(|scope| {
+        crate::domain_computation::authorization::BorrowedReadOperationAdmission::new(
+            runtime,
+            principal,
+            scope,
+            request_scope,
+            admission.graph_work().identity(),
+        )
+    });
+    let source_query = source_query.with_predecessor_reads(read_admission, predecessor_reads);
     let prepared = runtime
         .prepare_mutation_handler_plan_with_source_access::<Operation<Schema, Binding>>(
             phase,
@@ -231,7 +264,7 @@ where
             },
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
-    if let Some(stop) = source_query.take_history_failure() {
+    if let Some(stop) = source_query.take_control_failure() {
         return Err(super::super::denial::request_admission_rejected(stop));
     }
     let (requests, completion, inputs) = match prepared {

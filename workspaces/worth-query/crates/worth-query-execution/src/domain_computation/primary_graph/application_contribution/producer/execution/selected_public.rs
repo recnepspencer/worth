@@ -9,8 +9,11 @@ use worth_query_declaration::facade::application_schema::ApplicationEntityMarker
 
 use super::*;
 use crate::domain_computation::authorization::authorize_current_control_mutation_on_selected;
-use crate::domain_computation::authorization::authorize_public_mutation_on_selected;
 use crate::domain_computation::authorization::SelectedConventionalAdmissionStop;
+use crate::domain_computation::authorization::{
+    authorize_historical_control_mutation_on_selected, authorize_public_mutation_on_selected,
+};
+use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
 use crate::domain_computation::primary_graph::SharedSelectedProductOperation;
 use crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial;
 use crate::domain_computation::primary_graph::WorthQueryIssuedSelectedPrincipal;
@@ -57,6 +60,12 @@ where
         MutationPrincipal<Schema, Binding>,
         MutationPrincipalIdentity<Schema, Binding>,
     >,
+    pub(super) scope: Option<
+        crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity<
+            Schema,
+            MutationScope<Schema, Binding>,
+        >,
+    >,
     pub(super) operation:
         crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<
             Schema,
@@ -73,6 +82,7 @@ pub(super) fn prepare_selected_public_mutation<'selected, 'runtime, Schema, Bind
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     shared: &'selected SharedSelectedProductOperation<'runtime, Schema>,
     control: Option<&'selected SharedSelectedProductOperation<'runtime, Schema>>,
+    history: Option<HistoryProducerInvocation<'_>>,
     external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
     input: &MutationInput<Schema, Binding>,
@@ -86,7 +96,7 @@ where
     MutationScope<Schema, Binding>: ApplicationEntityMarkerIdentity<Schema>,
 {
     prepare_public_mutation::<Schema, Binding>(
-        execution, installed, runtime, shared, control, external, request, input, None,
+        execution, installed, runtime, shared, control, history, external, request, input, None,
     )
 }
 
@@ -96,6 +106,7 @@ pub(super) fn prepare_recovery_public_mutation<'selected, 'runtime, Schema, Bind
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     shared: &'selected SharedSelectedProductOperation<'runtime, Schema>,
     control: Option<&'selected SharedSelectedProductOperation<'runtime, Schema>>,
+    history: Option<HistoryProducerInvocation<'_>>,
     external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
     input: &MutationInput<Schema, Binding>,
@@ -115,6 +126,7 @@ where
         runtime,
         shared,
         control,
+        history,
         external,
         request,
         input,
@@ -128,6 +140,7 @@ fn prepare_public_mutation<'selected, 'runtime, Schema, Binding>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     shared: &'selected SharedSelectedProductOperation<'runtime, Schema>,
     control: Option<&'selected SharedSelectedProductOperation<'runtime, Schema>>,
+    history: Option<HistoryProducerInvocation<'_>>,
     external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
     input: &MutationInput<Schema, Binding>,
@@ -189,34 +202,44 @@ where
             input,
         )
         .into_field_parts(principal.principal().principal_identity());
-    let scope = selected
-        .resolve_mutation_scope_issued(execution, field, value, request)
-        .map_err(|cause| {
-            if control.is_some() {
-                Stop::CurrentScope(cause)
-            } else {
-                Stop::Scope(cause)
+    let scope = selected.resolve_mutation_scope_issued(execution, field, value, request);
+    let scope = match scope {
+        Ok(scope) if history.is_some_and(|history| history.admits_historical_truth(shared.selected())) => {
+            let (truth_field, truth_value) = <_ as ApplicationMutationInputScope<Schema, Mutation<Schema, Binding>>>::scope_for_binding(input)
+                .into_field_parts(principal.principal().principal_identity());
+            if let Ok(truth_scope) = shared.selected().resolve_mutation_scope_issued(execution, truth_field, truth_value, request)
+                && truth_scope.scope().entity_id() != scope.scope().entity_id() {
+                require_selected_heads::<Schema, Binding>(runtime, shared, control, recovery)?;
+                let operation = authorize_historical_control_mutation_on_selected::<Schema, Mutation<Schema, Binding>, MutationScope<Schema, Binding>>(
+                    execution, runtime, shared, control.ok_or(Stop::ForeignSelectedRuntime)?, &current, &installed.prepared_graph,
+                    &principal, &truth_scope, history.expect("historical source"), request,
+                ).map_err(Stop::CurrentOperation)?;
+                return Ok(PreparedSelectedPublicMutation { principal, operation, scope: Binding::PREDECESSOR_READS.map(|_| truth_scope.scope().retain_description().into_application_identity()) });
             }
-        })?;
-    let source_matches = match recovery {
-        Some(recovery) => recovery
-            .admits_selected(shared.selected().product().observation())
-            .map_err(|stop| Stop::Head(stop.into()))?,
-        None => source_readmission::is_current_selected_product::<Schema, Binding>(
-            runtime,
-            shared.selected(),
-        )
-        .map_err(Stop::Head)?,
-    };
-    if !source_matches {
-        return Err(Stop::MovedHead);
-    }
-    let operation = if let Some(control) = control {
-        if !source_readmission::is_current_selected_product::<Schema, Binding>(runtime, selected)
-            .map_err(Stop::CurrentHead)?
-        {
-            return Err(Stop::CurrentMovedHead);
+            scope
         }
+        Ok(scope) => scope,
+        Err(cause) if history.is_some_and(|history| history.admits_historical_truth(shared.selected()))
+            && cause.kind() == crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(
+                crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind::UnknownEntity,
+            ) => {
+            require_selected_heads::<Schema, Binding>(runtime, shared, control, recovery)?;
+            let history = history.expect("guarded historical source");
+            let control = control.ok_or(Stop::ForeignSelectedRuntime)?;
+            let (field, value) = <_ as ApplicationMutationInputScope<Schema, Mutation<Schema, Binding>>>::scope_for_binding(input)
+                .into_field_parts(principal.principal().principal_identity());
+            let mutation_scope = shared.selected().resolve_mutation_scope_issued(execution, field, value, request)
+                .map_err(Stop::Scope)?;
+            let operation = authorize_historical_control_mutation_on_selected::<Schema, Mutation<Schema, Binding>, MutationScope<Schema, Binding>>(
+                execution, runtime, shared, control, &current, &installed.prepared_graph,
+                &principal, &mutation_scope, history, request,
+            ).map_err(Stop::CurrentOperation)?;
+            return Ok(PreparedSelectedPublicMutation { principal, operation, scope: Binding::PREDECESSOR_READS.map(|_| mutation_scope.scope().retain_description().into_application_identity()) });
+        }
+        Err(cause) => return Err(if control.is_some() { Stop::CurrentScope(cause) } else { Stop::Scope(cause) }),
+    };
+    require_selected_heads::<Schema, Binding>(runtime, shared, control, recovery)?;
+    let operation = if let Some(control) = control {
         let selector = scope.scope().retain_scope_selector_funded(execution).map_err(|cause| {
             Stop::CurrentOperation(SelectedConventionalAdmissionStop::Authorization(
                 crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(
@@ -267,7 +290,44 @@ where
     Ok(PreparedSelectedPublicMutation {
         principal,
         operation,
+        scope: Binding::PREDECESSOR_READS.map(|_| {
+            scope
+                .scope()
+                .retain_description()
+                .into_application_identity()
+        }),
     })
+}
+
+fn require_selected_heads<S, B>(
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    shared: &SharedSelectedProductOperation<'_, S>,
+    control: Option<&SharedSelectedProductOperation<'_, S>>,
+    recovery: Option<&super::unpublished::ContinuationState>,
+) -> Result<(), SelectedPublicPreparationStop>
+where
+    S: ApplicationSchema + 'static,
+    B: WorthQueryApplicationProducerBinding<S>,
+{
+    use SelectedPublicPreparationStop as Stop;
+    let source_matches = match recovery {
+        Some(recovery) => recovery
+            .admits_selected(shared.selected().product().observation())
+            .map_err(|stop| Stop::Head(stop.into()))?,
+        None => source_readmission::is_current_selected_product::<S, B>(runtime, shared.selected())
+            .map_err(Stop::Head)?,
+    };
+    if !source_matches {
+        return Err(Stop::MovedHead);
+    }
+    if let Some(control) = control {
+        if !source_readmission::is_current_selected_product::<S, B>(runtime, control.selected())
+            .map_err(Stop::CurrentHead)?
+        {
+            return Err(Stop::CurrentMovedHead);
+        }
+    }
+    Ok(())
 }
 
 mod denial;

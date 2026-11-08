@@ -160,6 +160,12 @@ impl ValidatedRelationalProposal {
             });
             work.record_materialized_targets(1);
         }
+        if let Some(selection) = plan.graph_selection() {
+            for record in selection.targets() {
+                targets.push(ValidatedFieldMutationTarget::WholeRecord { record });
+                work.record_materialized_targets(1);
+            }
+        }
         for intent in validated_intents {
             work.record_validated_intent();
             let materialized = targets_for_intent(intent);

@@ -4,9 +4,11 @@ pub use replay_retention_denial::RelationalReplayRetentionDenial;
 mod branch_creation;
 mod canonical_commit_allocation;
 mod canonical_commit_envelope;
-pub(crate) use canonical_commit_envelope::validate_authored_restoration_candidate;
+pub(crate) use canonical_commit_envelope::{
+    validate_authored_restoration_candidate, OutputOriginHistory,
+};
 mod codec_retirement_closure;
-pub(crate) use codec_retirement_closure::source_scope_closure;
+pub(crate) use codec_retirement_closure::{historical_producer_antecedent, source_scope_closure};
 mod codec_retirement_preservation;
 pub(crate) use canonical_commit_envelope::CanonicalCoupledAuthoredSources;
 pub(crate) use codec_retirement_closure::select_owned_scope_dependent;
@@ -55,8 +57,8 @@ pub(crate) use canonical_commit_envelope::{
     CanonicalRequiredOutputOrigin,
 };
 pub use canonical_commit_envelope::{
-    CanonicalCommitAuthorityKind, CanonicalCommitEnvelope, CanonicalRetainedEntitySelection,
-    RelationalDescriptiveTouch, RelationalDescriptiveTouchGraph,
+    CanonicalCommitAuthorityKind, CanonicalCommitEnvelope, CanonicalOwnedGraphSelection,
+    CanonicalRetainedEntitySelection, RelationalDescriptiveTouch, RelationalDescriptiveTouchGraph,
     RelationalDescriptiveTouchPrecision, RelationalReplayRecord, RelationalTouchAdjacencyDirection,
     ReplaySchemaVersion,
 };

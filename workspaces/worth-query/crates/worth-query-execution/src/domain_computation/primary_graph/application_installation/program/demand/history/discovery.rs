@@ -40,10 +40,10 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
                     .into_external()
             || discovery.connection
                 != crate::equality_type_id::EqualityTypeId::of::<C>().into_external()
-            || !std::sync::Arc::ptr_eq(&discovery.parent, &parent.settled.retained)
+            || !discovery.parent.same_custody(&crate::domain_computation::primary_graph::product_operation::document_history::navigation::HistoryDependentParent::Settled(std::sync::Arc::clone(&parent.settled.retained)))
             || !parent.profile.same_custody(&discovery.profile)
             || !std::sync::Arc::ptr_eq(&discovery.original, &parent.original)
-            || !discovery.parent.belongs_to(runtime)
+            || !parent.settled.retained.belongs_to(runtime)
         {
             return Err(Denial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::ForeignDocument));
         }
@@ -67,7 +67,13 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         runtime
             .authorize_retained_history_query::<DiscoveryBinding<S, C>>(
                 &execution,
-                authority.producer_invocation(),
+                if authority.uses_owned_model_graph() {
+                    authority
+                        .producer_invocation()
+                        .for_family(<Family<S, D> as WorthQueryProducerOutputFamily<S>>::IDENTITY)
+                } else {
+                    authority.producer_invocation()
+                },
                 source,
                 principal,
                 request,

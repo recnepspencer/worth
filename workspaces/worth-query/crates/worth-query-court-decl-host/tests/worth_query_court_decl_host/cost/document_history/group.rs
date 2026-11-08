@@ -19,8 +19,11 @@ type Action = ApplicationActionReference<
     SetRetentionBinding,
     RetentionCompletion,
 >;
-type Group<'a> = WorthQueryGroupedHistoryDocument<'a, DocumentRetentionSchema, RetentionHistory,
-    SetRetentionIntent, worth_query_testkit_document_retention::facade::document_retention_model::host::RetentionProgramP0, Action>;
+type Group<'a> = WorthQueryGroupedHistoryDocument<'a,
+DocumentRetentionSchema,
+RetentionHistory,
+worth_query_testkit_document_retention::facade::document_retention_model::host::RetentionProgramP0,
+worth_query_host::facade::application_entry::WorthQueryHistoryTypedMembers<DocumentRetentionSchema,SetRetentionIntent,worth_query_testkit_document_retention::facade::document_retention_model::host::RetentionProgramP0,Action>>;
 type Open = for<'a> fn(&'a App, Document<'a>, u128) -> Group<'a>;
 
 fn open<'a, const N: usize>(host: &'a App, document: Document<'a>, key: u128) -> Group<'a> {

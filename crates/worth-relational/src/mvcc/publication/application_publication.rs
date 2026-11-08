@@ -1,7 +1,11 @@
 use crate::transactions::data::TransactionCommitError;
+mod historical_selection;
+pub(crate) use historical_selection::require_graph_coverage;
+pub use historical_selection::RelationalHistoricalOutputSelection;
 mod authored_cascade;
 mod authored_restoration;
 mod authored_retirement;
+mod native_transition_succession;
 mod restored_producer_prior;
 pub use authored_cascade::RelationalAuthoredRetirement;
 pub use authored_restoration::RelationalAuthoredRestoration;
@@ -18,7 +22,9 @@ pub use coupled_assembly::{
     RelationalCoupledAuthoredPublication,
 };
 pub use coupled_owners::{RelationalAuthoredCoupledOwners, RelationalDeclaredCoupledOwner};
+mod predecessor_basis;
 mod predecessor_observation;
+pub use predecessor_basis::{RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin};
 mod producing_implementation;
 mod route_absence;
 mod scope_ownership;

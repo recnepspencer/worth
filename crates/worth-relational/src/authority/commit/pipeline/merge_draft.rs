@@ -107,7 +107,7 @@ fn prepare_symbol_round(
                 &candidate,
                 selected,
                 &identity,
-                (parent_count == 0 && admitted.semantic_plan().selection().is_none())
+                (parent_count == 0 && !admitted.semantic_plan().has_selection())
                     .then_some(admitted.command_plan()),
             )?;
             let control = InvariantPreparationControl::for_transaction(

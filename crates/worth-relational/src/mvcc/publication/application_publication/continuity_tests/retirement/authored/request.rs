@@ -76,7 +76,7 @@ fn authored_retirement_readmission_checkpoints_keep_original_cancellation_and_he
             }
         }),
         || {
-            runtime.readmit_authored_output_retirement_successor(
+            runtime.readmit_native_output_transition_successor(
                 original_execution,
                 &installed,
                 &basis,
@@ -91,7 +91,7 @@ fn authored_retirement_readmission_checkpoints_keep_original_cancellation_and_he
         basis.descriptor()
     );
     let successor = runtime
-        .readmit_authored_output_retirement_successor(execution, &installed, &basis, meaning)
+        .readmit_native_output_transition_successor(execution, &installed, &basis, meaning)
         .unwrap()
         .unwrap();
     assert_eq!(successor.origin.commit, publication.origin.commit);

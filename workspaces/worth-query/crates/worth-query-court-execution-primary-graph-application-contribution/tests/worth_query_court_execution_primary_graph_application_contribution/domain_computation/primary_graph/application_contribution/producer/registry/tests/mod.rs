@@ -331,3 +331,5 @@ fn cascade_ownership_is_installed_identity_and_family_wide_meaning() {
 pub mod canonical_inventory;
 #[path = "output_equivalence/mod.rs"]
 pub mod output_equivalence;
+
+mod predecessor_reads;

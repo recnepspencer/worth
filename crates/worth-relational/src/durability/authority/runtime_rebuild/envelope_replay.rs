@@ -31,6 +31,13 @@ pub(super) fn replay_readmitted_envelope(
 ) -> Result<crate::history::data::PositionedCanonicalCommit, RelationalRecoveryStop> {
     crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
         let envelope = readmitted.envelope();
+        if matches!(envelope.authority_kind, CanonicalCommitAuthorityKind::OwnedGraphSelection(_)) {
+            return Err(DurabilityError::new(
+                RecoveryFailureClass::UnsupportedOwnedGraphSelectionReplay,
+                "owned graph selection cannot be reconstructed from a canonical tail without its original source custody",
+            ).into());
+        }
+
         if matches!(
             envelope.authority_kind,
             CanonicalCommitAuthorityKind::RetainedEntitySelection(_)

@@ -111,6 +111,7 @@ impl ContinuationState {
             runtime,
             &shared,
             control.as_ref(),
+            invocation.history_control(),
             principal,
             request,
             input.input(),

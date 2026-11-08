@@ -233,11 +233,26 @@ pub(super) fn check(
                 target: EntityReference::Existing(names[name]),
             })
             .collect::<Vec<_>>();
-        runtime
+        let publication = runtime
             .readmit_required_output_publication(
                 execution, installed, &basis, producer, &[1; 32], &meaning, &roles,
             )
             .unwrap();
+        assert_eq!(
+            runtime.predecessor_publication_basis(
+                execution,
+                &basis,
+                Some(&publication),
+                Some(worth_relational::facade::history::CommitId(
+                    publication.authority().publication_coordinate().0
+                ))
+            ),
+            Err(
+                RelationalPredecessorBasisDenial::PredecessorBasisUnavailableForOrigin(
+                    RelationalPredecessorBasisOrigin::AuthoredRestoration
+                )
+            )
+        );
     }
     // Compare carried counts only after the cold/warm restoration and its
     // original record/route assertions, so this oracle cannot warm that path.

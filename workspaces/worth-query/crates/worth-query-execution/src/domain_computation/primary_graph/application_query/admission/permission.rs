@@ -28,6 +28,7 @@ mod principal_dependency;
 mod read_authorization;
 mod selected_access;
 mod source_parameters;
+mod source_preparation;
 pub(in crate::domain_computation::primary_graph) use fresh::FreshQueryPermissionStop;
 pub(in crate::domain_computation::primary_graph) use selected_access::SelectedIssuedAccessRoot;
 

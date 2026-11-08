@@ -11,6 +11,7 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     /// An opted-in producer's source is shared, contextual or not its exact entity scope.
     ProducerOwnershipRequiresEntitySourceScope,
     ProducerFamilyOwnershipMismatch,
+    ProducerPredecessorReadContractRejected,
     /// Typed readiness declaration or installed field meaning was refused.
     ReadinessContractRejected,
     ContentAdmissionRejected,

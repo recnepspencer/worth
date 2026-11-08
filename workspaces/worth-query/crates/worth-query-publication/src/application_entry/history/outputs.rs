@@ -1,12 +1,16 @@
 //! A document's output mode owns its tree; a request lends only current admission.
 use super::*;
 mod binding;
+mod forest;
+pub(super) use forest::RecordingForest;
+pub use forest::WorthQueryHistoryWithOutputTrees;
 mod closing;
 mod denial;
 mod progression;
 mod registry;
 mod retained;
 mod tree;
+mod verified;
 pub use denial::WorthQueryHistoryOutputDenial;
 pub use retained::WorthQueryHistoryWithOutputs;
 use worth_query_declaration::facade::application_history::ApplicationHistoryNavigationBinding;
@@ -18,6 +22,10 @@ pub use worth_query_execution::publication_boundary::document_history::{
     WorthQueryHistoryOutputAdvanceDenial, WorthQueryHistoryOutputReadDenial,
     WorthQueryHistoryRootOutputAdmissionDenial,
 };
+pub use worth_query_execution::publication_boundary::document_history::{
+    WorthQueryHistoryOutputQualificationDenial, WorthQueryRecordingOutputQualificationDenial,
+};
+pub use worth_query_execution::publication_boundary::original_read_outputs::WorthQueryOriginalReadOutputDenial;
 
 /// A document with no required derived-output tree has no output registry.
 #[derive(Debug)]
@@ -49,6 +57,20 @@ pub trait WorthQueryHistoryOutputsMode<S: ApplicationSchema, H: ApplicationHisto
 }
 
 pub(super) trait OutputDriver<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> {
+    /// Data posture only; final qualification still requires the original forest.
+    fn records_output_forest(&self) -> bool {
+        false
+    }
+    fn with_recording<T>(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        consume: impl FnOnce(Option<&mut RecordingForest<S>>) -> (T, bool),
+    ) -> Result<T, WorthQueryHistoryOutputDenial>;
+    fn discard_recording(
+        &self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+        branch: worth_query_execution::facade::product::WorthQueryProductBranch,
+    ) -> Result<(), WorthQueryHistoryOutputDenial>;
     fn release_for_branch(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -105,6 +127,20 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> WorthQueryHistoryOut
 impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> OutputDriver<S, H>
     for WorthQueryHistoryNoOutputs
 {
+    fn with_recording<T>(
+        &self,
+        _: &WorthQueryAdvancementPhase<'_>,
+        consume: impl FnOnce(Option<&mut RecordingForest<S>>) -> (T, bool),
+    ) -> Result<T, WorthQueryHistoryOutputDenial> {
+        Ok(consume(None).0)
+    }
+    fn discard_recording(
+        &self,
+        _: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+        _: worth_query_execution::facade::product::WorthQueryProductBranch,
+    ) -> Result<(), WorthQueryHistoryOutputDenial> {
+        Ok(())
+    }
     fn release_for_branch(
         &self,
         _: &WorthQueryAdvancementPhase<'_>,

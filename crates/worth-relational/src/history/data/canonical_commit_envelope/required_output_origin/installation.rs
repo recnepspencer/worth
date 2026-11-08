@@ -97,6 +97,15 @@ impl CanonicalCommitEnvelope {
                 "required-output installation changed before native preparation",
             ));
         }
+        if let Publication::HistoricalSelection {
+            admission,
+            selections,
+        } = publication
+        {
+            return super::historical_selection::install(
+                self, basis, state, installed, &admission, selections, lease, context,
+            );
+        }
         if let Publication::CoupledAuthored { group } = publication {
             return super::coupled_authored::install(
                 self,
@@ -196,7 +205,8 @@ impl CanonicalCommitEnvelope {
                 )?;
                 (meaning, roles, Some(origin))
             }
-            Publication::CoupledAuthored { .. }
+            Publication::HistoricalSelection { .. }
+            | Publication::CoupledAuthored { .. }
             | Publication::AuthoredCascadeRetirement { .. }
             | Publication::AuthoredCascadeRestoration { .. } => {
                 unreachable!("cascade consumed before ordinary installation")

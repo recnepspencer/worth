@@ -50,8 +50,24 @@ impl RelationalRequiredOutputPublication {
             crate::history::data::CanonicalOutputPublication::AuthoredRestoration { .. }
         )
     }
+    /// This Native origin selects the producer's own retained record identities.
+    pub fn is_historical_selection(&self) -> bool {
+        matches!(
+            self.origin.publication,
+            crate::history::data::CanonicalOutputPublication::HistoricalSelection { .. }
+        )
+    }
     pub fn authority(&self) -> &worth_proof::RequiredOutputPublicationAuthority {
         &self.authority
+    }
+    /// Whether both name one canonical Native origin of this runtime: the same
+    /// publishing commit, producer, dependency and complete route meaning.
+    pub fn same_origin(&self, other: &Self) -> bool {
+        self.runtime_instance_id == other.runtime_instance_id
+            && self.origin.commit == other.origin.commit
+            && self.origin.producer == other.origin.producer
+            && self.origin.dependency_identity == other.origin.dependency_identity
+            && self.origin.meaning == other.origin.meaning
     }
 }
 
@@ -285,3 +301,5 @@ impl crate::transactions::data::CommitResult {
             })
     }
 }
+
+mod court_doors_for_test;

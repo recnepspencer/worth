@@ -48,6 +48,13 @@ pub(in crate::domain_computation::primary_graph) use restoration::PriorOutputOri
 pub(crate) mod retained_computation;
 pub(in crate::domain_computation::primary_graph) use retained_computation::PriorComputationRecord;
 mod fork_origin;
+mod historical_transport;
+pub use historical_transport::{
+    HistoricalAcceptedOrigin, WorthQueryHistoryPublicationCorrespondenceMismatch,
+};
+pub(in crate::domain_computation::primary_graph) use historical_transport::{
+    HistoricalSelectionCoordinate, HistoricalTransportDenial, PreparedHistoricalTransport,
+};
 mod retention;
 pub(crate) mod settlement_identity;
 
@@ -293,6 +300,7 @@ impl WorthQueryApplicationOutputLineage {
             native_prior_checkpoint,
             computation_source,
             performed_origin: None,
+            historical_selection: None,
             consumed_outputs,
             completed_handler_facts,
             completed_decision_reuse,

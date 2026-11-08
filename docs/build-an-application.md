@@ -2108,6 +2108,46 @@ head or recreated model refuses. Close with
 `document.close(&phase)` and retain any live-document or retired-cleanup failure.
 See [attach a model and read its owned head](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#attach-a-model-and-read-its-owned-head).
 
+To include operations scoped to owned entities, declare `.owns(relation)` on the
+history and enroll `.owned_operation::<Binding>(label)`. Native proves instance
+membership from the stored full-generation ownership edges at the current head;
+registered source-scope-owned publication members participate through the same
+current-custody owner. Installation enforces one document owner, including
+custody first installed in the prospective publication. See the
+[generic owned-model example](history-owned-models.md). The explicit
+`OwnedModelGraph` navigation path remains under qualification. Its transfer
+policy restores the selected owner of a live transferred member at its original
+identity, while preserving the outside owner's other state. Missing owner
+sources, second ownership and current invariant violations refuse typed; undo
+and redo never silently retire a selected live member.
+
+A configured producer source may exist only in the private restored candidate.
+In that case navigation uses its retained original description to check current
+principal, permission, capability and request facts at the current head first.
+It then validates the source's full generation, liveness and owned-domain
+membership at that exact candidate. Restored grants never authorize the call;
+a refusal leaves selection unchanged. When a new discovery or child-source
+intent resolves only at the candidate, a denied current audience receives the
+ordinary current scope refusal, without additional historical identity details.
+The same admission applies below a verified parent and a genuinely regenerated
+historical parent. The installed discovery query computes the child set,
+including empty sets; a restored stale child can regenerate while its healthy
+model root stays unopened. Give a changed discovery implementation a new build
+identity: the selected parent then takes its actual fallback and the installed
+query computes the new child set. Corrupt parent/publication lineage refuses
+before producer work. A healthy discovered child also verifies without projecting its producer
+source, whether its parent was verified or genuinely regenerated. It keeps
+read-only parent custody for further discovery, with no synthetic settlement;
+closed traversal reauthorizes each source at C. The final currentness pass
+checks all restored routes at the one endpoint. A fallback can create a child
+source at a later private candidate. Its identity and liveness are checked at
+that exact candidate, and declared ownership or current publication custody must
+connect it to the selected domain. A matching business key at C can name a
+different generation; that older entity cannot supply its permission. Every
+grant still comes from C. A transferred member authorizes its selected subset,
+including new publication children, without authorizing the outside owner's
+unrelated members. All-tree edit recording remains under qualification.
+
 To bound selectable history across all futures, declare separate
 `ApplicationHistoryWindowBinding` and `ApplicationHistoryBookmarkBinding`
 recipes and install them with `.window_policy::<Window>()` and
@@ -2257,6 +2297,43 @@ the complete example with
 `cargo run --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml -p worth-query-consumer-root -- --document-history`.
 Its renderer descriptions carry no historical payload lease and cannot reopen a
 document after process loss.
+
+Owned graph navigation can retain a runtime-length set of original typed
+output trees with `with_output_trees::<Program, FirstRoot>(..)` followed by
+`with_output_tree::<Program, OtherRoot>(..)`. Each entry retains its actual
+program continuation and disposal custody. One navigation qualifies the complete
+collection at the endpoint derived from all original publication movements; a
+later fallback cannot leave an earlier family stale. Native supplies the selected
+publication routes independently of the configured collection. Healthy restored snapshots verify every Native route through the existing
+currentness owner before opening any original root or disclosing a producer
+source. They need no fallback driver. An actual fallback still freshly admits
+its source at C. A healthy leaf family remains unopened while a stale sibling falls back;
+the existing currentness owner checks skipped routes again at the one derived
+endpoint. The same-build cold-checkpoint path reconstructs original expected
+output versions from recorded facts; verification still checks those versions
+against the selected sources and current Native custody. A changed build falls
+back only for the affected family. Query role metadata that disagrees with the
+selected Native publication refuses as `OutputPublicationCorrespondence`; its
+`WorthQueryHistoryPublicationCorrespondenceMismatch` names producer, family and
+source, plus the original publication coordinate. The refusal holds diagnostic
+data without retaining Native publication or historical-basis custody. For non-leaf trees, a healthy parent can discover children from its restored
+output without running its root producer. Discovery runs the installed query
+with current C permission, including for empty results; the publication roster
+never supplies the child list. Each recorded step retains the canonical discovery
+request recipe with its source intent. Navigation runs discovery with that frozen
+input, even if the caller's retained demand has since changed. A new live edit
+records its new input. Principals, permissions and request scope stay current;
+installed discovery meaning is never frozen. Missing, corrupt or foreign-document
+recipes refuse typed with the selected step, without adopting a partial head.
+Pre-recipe steps are never backfilled from a live demand. A parent matches its family, full-generation scope
+and admitted parameter partition. Discovery can read an output scope restored
+only at the exact private candidate D: current C still supplies every principal,
+permission and request fact. A denied audience receives no additional historical
+existence information. The same rule covers sources created by a real fallback
+at a progressed private candidate, including a new generation of C's business
+key. Corrupt lineage refuses typed; changed discovery meaning takes the real
+parent fallback. For isolated source or fixed edits, the configured trees also complete on the private candidate before adoption of the single recorded step. Healthy leaves verify before opening their original roots. Recording after checkout can retain a healthy non-leaf parent without inventing a settlement or reopening its source: installed discovery and dependent reads use fresh current document control. A completed ordinary fixed action keeps its genuine original execution and discovery posture. A configured source that the edit retired or moved outside the document has a distinct Native-backed completion. Final qualification checks every whole tree, rechecks these completions and verifies Native’s independent current obligations. An omitted stale family or a later tree invalidating an earlier result refuses before adoption. Configure the exact declared fixed root when retaining a fixed action, alongside its other families. Group recording and codec-retired selection remain under qualification. See the
+[owned-model plan](../plans/WORTH-query/history-owned-models.md).
 
 To record an isolated edit, consume the attached document with
 `document.edit(intent).idempotency_owned(&request, key)?`, then
@@ -2449,6 +2526,15 @@ publishes a new inverse, compensation or reapplication under its own contract.
 For a gesture containing several ordinary actions, use an
 owning group. It keeps the original model selected until all members complete,
 then records one history edge:
+
+For a runtime-length mix of action types, open
+`document.gesture(host, request, key)` and add each entry with
+`push::<Intent, Action>(request, intent, member_key)`. The first advancement
+freezes the member list. The same group owner advances and completes it at one
+endpoint, and `finish` returns each original completion for typed recovery with
+`original::<Intent, Action>()`. Installed member and retained-result limits apply.
+The [mixed Model/Member gesture](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_model/gesture.rs)
+shows runtime membership, atomic adoption and refused partial work.
 
 <!-- compiled: document_history_group_open.rs -->
 ```rust
@@ -4243,6 +4329,65 @@ An input dependency or a reference never implies ownership. Two independent
 producers may read the same source without entering its cascade. Opting in does
 not make an external endpoint of a producer-owned relation an owned entity.
 See the [custody contract](../plans/WORTH-query/authored-retirement-custody.md).
+
+#### Declared predecessor reads
+
+An owned producer can read its inputs as its exact predecessor publication
+consumed them. Declare its installed read-only operations beside `OWNERSHIP`:
+
+```rust,ignore
+const PREDECESSOR_READS: Option<WorthQueryPredecessorReadContract<Schema>> =
+    Some(WorthQueryPredecessorReadContract::new(&[
+        WorthQueryPredecessorReadOperation::new(ReadInputs::reference()),
+    ]));
+```
+
+These declaration types live in `host::application_contribution`. Installation
+requires `SourceScopeCascade`, no duplicate operation, and actual installed
+operations with no mutation touches, emissions, external effects or executable
+body. The contract participates in producer equality and edition identity.
+A declaration grants nothing. Each read independently authorizes that read
+operation's installed authorization and abilities **at the current control basis
+C**, using the producer's current principal and original source scope. It never
+borrows a historical grant or substitutes the producer operation's permission.
+
+Inside the producer handler, use the sealed decision-reader door:
+
+```rust,ignore
+let source = reader.scope().clone();
+let previous = reader.predecessor_observation(ReadInputs::reference(), |old| {
+    let source = old.entity(Source::reference(), &source)
+        .map_err(HandlerExecutionDenial::new)?;
+    old.field(&source, InputValue::at("InputValue"))
+        .map_err(HandlerExecutionDenial::new)
+});
+```
+
+The outer result describes observation admission; the closure's result describes
+its read. The restricted reader exposes tracked entity, field and relation
+reads. Its `PredecessorEntity` and `PredecessorRelation` handles are distinct from
+current projection identities and cannot mint mutation targets. There is no raw
+reader, nested query, computation or publication access. Reads use the existing
+Native loan, request checks and projection limits. Current control contention
+returns `CurrentControlBusy` without waiting on an earlier lock from that loan.
+Admission and control loss veto publication even when a handler catches them.
+
+Native chooses exactly the predecessor checked by the ordinary succession fence.
+Its decision root is retained by reference under the live head/candidate lifecycle;
+succession replaces the hold and retirement releases it. Historical keys and
+publication/basis provenance remain separate from current dependencies. Current
+READ authorization support remains a current dependency. No old value is
+substituted with a current value, and no old root is retained by Query evidence.
+
+A first publication or cold reopen refuses `PredecessorBasisUnavailable`; a
+producer can then choose full computation. Undeclared reads refuse
+`UndeclaredPredecessorRead`, and conflicting predecessor coordinates refuse
+`PredecessorMismatch`. HistoricalSelection and authored-restoration publications
+refuse `PredecessorBasisUnavailableForOrigin`, naming the origin kind. Their
+navigation precommit basis is not the producer's consumed input basis; follow-up
+#94 owns that restoration contract. No durable format change is introduced.
+The `host::primary_graph` audience exposes `RelationalPredecessorBasisDenial`
+and `RelationalPredecessorBasisOrigin` for matching that original typed cause.
 
 #### Typed producer domain denial
 

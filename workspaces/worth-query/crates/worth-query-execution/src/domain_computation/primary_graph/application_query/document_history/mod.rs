@@ -6,6 +6,7 @@ mod navigation;
 mod operation;
 mod output_intent;
 mod output_read;
+mod recording_outputs;
 mod retention;
 pub use output_intent::{WorthQueryHistoryOutputIntent, WorthQueryHistoryOutputNavigationDenial};
 pub(in crate::domain_computation::primary_graph) use output_read::HistoryOutputControlPlan;

@@ -1,3 +1,4 @@
+mod native_route;
 mod observation_reader;
 
 pub(crate) mod retained_candidates;
@@ -19,6 +20,8 @@ use super::WorthQueryProducerLineageHead;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
 
 pub struct RetainedOutputCurrentnessRead {
+    pub(in crate::domain_computation::primary_graph) required_publication:
+        Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
     pub(in crate::domain_computation::primary_graph) identity:
         Arc<super::RecordedSettlementIdentity>,
     pub(in crate::domain_computation::primary_graph) facts: Option<super::ComparableSourceFacts>,
@@ -26,6 +29,8 @@ pub struct RetainedOutputCurrentnessRead {
         Arc<[ConsumedOutputEvidence]>,
     pub(in crate::domain_computation::primary_graph) native_output_witness:
         Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
+    pub(in crate::domain_computation::primary_graph) historical_selection:
+        Option<Arc<super::HistoricalSelectionCoordinate>>,
     /// The facts and the witness are everything this output depends on.
     pub(in crate::domain_computation::primary_graph) consumed_nothing: bool,
     pub(in crate::domain_computation::primary_graph) verification_requirement:
@@ -195,11 +200,13 @@ impl WorthQueryApplicationOutputLineage {
             let (recorded, _) = self.matching_output_in_partition_budgeted(
                 &source,
                 coordinate,
-                restored.checkpoint.source_partition,
+                restored.origin.partition(),
                 execution,
                 |recorded| {
-                    recorded.source_identity
-                        == Some(RecordedSourceIdentity::Checkpoint(restored.source_identity))
+                    (match &restored.origin {
+                        crate::domain_computation::primary_graph::application_output_demand::RestoredOutputOrigin::Checkpoint(_) => recorded.source_identity == Some(RecordedSourceIdentity::Checkpoint(restored.source_identity)),
+                        crate::domain_computation::primary_graph::application_output_demand::RestoredOutputOrigin::HistoricalSelection(origin) => Arc::ptr_eq(&recorded.settlement_identity, origin.settlement()),
+                    })
                         && std::ptr::eq(
                             recorded.correspondence.as_ref(),
                             settlement.output_correspondence.as_ref(),
@@ -311,6 +318,8 @@ fn retained_currentness_read(
         .unwrap_or(recorded);
     Ok(Some(RetainedOutputCurrentnessRead {
         identity: Arc::clone(&recorded.settlement_identity),
+        historical_selection: recorded.historical_selection.clone(),
+        required_publication: recorded.required_publication.clone(),
         facts,
         consumed_outputs: Arc::clone(&recorded.consumed_outputs),
         native_output_witness: origin.native_output_witness_cell().map(Arc::clone),

@@ -159,14 +159,14 @@ where
         Ok(())
     }
 
-    pub(in crate::domain_computation::primary_graph) fn require_history_principal(
+    pub(in crate::domain_computation::primary_graph) fn require_current_principal(
         &self,
-        history: crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation<'_>,
+        control: crate::domain_computation::primary_graph::product_operation::current_read::CurrentReadControl<'_>,
     ) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {
         let principal = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(
             self.access.principal().principal_entity_id(),
         );
-        if !history.admits_principal(&principal) {
+        if !control.admits_principal(&principal) {
             return Err(denial(
                 WorthQueryApplicationQueryAdmissionDenialKind::StalePrincipal,
                 self.query.name(),

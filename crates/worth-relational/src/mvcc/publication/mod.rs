@@ -9,11 +9,12 @@ pub use application_publication::{
     RelationalAuthoredCoupledProducerAssembly, RelationalAuthoredCoupledTransaction,
     RelationalAuthoredRestoration, RelationalAuthoredRetirement, RelationalCoupledAssemblyFailure,
     RelationalCoupledAuthoredPublication, RelationalDeclaredCoupledOwner,
-    RelationalPerformedOutputPublications, RelationalPreparedOutputPublications,
-    RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
-    RelationalRestoredProducerPrior, RequiredOutputProducingImplementation,
-    RequiredOutputPublication, RequiredOutputPublicationMeaning, RequiredOutputRolePosture,
-    RequiredOutputRoleTarget,
+    RelationalHistoricalOutputSelection, RelationalPerformedOutputPublications,
+    RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin,
+    RelationalPreparedOutputPublications, RelationalRequiredOutputPublication,
+    RelationalRequiredOutputRouteAbsence, RelationalRestoredProducerPrior,
+    RequiredOutputProducingImplementation, RequiredOutputPublication,
+    RequiredOutputPublicationMeaning, RequiredOutputRolePosture, RequiredOutputRoleTarget,
 };
 pub(crate) use preparation_denial::PublicationPreparationDenial;
 mod candidate;
@@ -63,3 +64,5 @@ pub(crate) use application_publication::{native_birth_fixture, native_meaning_fi
 
 #[cfg(test)]
 pub(crate) use application_publication::native_roles_fixture;
+
+pub(crate) use application_publication::require_graph_coverage;

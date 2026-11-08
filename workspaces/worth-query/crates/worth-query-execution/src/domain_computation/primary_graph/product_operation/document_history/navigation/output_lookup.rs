@@ -21,7 +21,7 @@ pub(in crate::domain_computation::primary_graph) enum HistoryOutputLookup {
         key: [u8; 32],
         phase: HistoryOutputLookupPhase,
         branch: crate::basis::WorthQueryProductBranch,
-        source: Arc<crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation>,
+        restored: super::output_authority::HistoryRestoredOutputBasis,
         profile: WorthQueryHistoryOutputProfile,
     },
     Selected {
@@ -59,9 +59,12 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             )
             .map_err(Denial::Value)?
             .bind_admission(admission);
-        let (_cell, progress) =
+        let (_cell, mut progress) =
             navigation.registered_progress(phase, self, admission, meaning, Some(profile))?;
         let key = progress.meaning.canonical_key();
+        if progress.accept_verified_restoration(phase)? {
+            return Ok(HistoryOutputLookup::Pending { key });
+        }
         let source_phase = match &progress.phase {
             NavigationPhase::AwaitingOutputs { .. } => HistoryOutputLookupPhase::AwaitingOutputs,
             NavigationPhase::Selecting { .. } => HistoryOutputLookupPhase::Selecting,
@@ -73,14 +76,19 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             }
             _ => return Ok(HistoryOutputLookup::Pending { key }),
         };
-        let source = Arc::clone(progress.output_source.as_ref().ok_or(Denial::IntentDrift)?);
+        let restored = progress
+            .output_source
+            .as_ref()
+            .ok_or(Denial::IntentDrift)?
+            .clone();
+        let source = restored.observation();
         Ok(HistoryOutputLookup::Source {
             key,
             phase: source_phase,
             branch: crate::basis::WorthQueryProductBranch::from_occurrence(
                 source.product_observation().lifecycle_incarnation(),
             ),
-            source,
+            restored,
             profile: progress
                 .output_profile
                 .as_ref()

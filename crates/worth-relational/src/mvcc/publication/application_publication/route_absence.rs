@@ -78,6 +78,7 @@ impl RequiredOutputPublicationAdmission {
                 "an installed family publication requires its exact predecessor",
             )),
             Some(Position::CodecRetired(commit)) => Ok(Some(commit)),
+            Some(Position::HistoricalAbsence(_)) => Ok(None),
             None if positions.unresolved_prefix().is_some() => {
                 let absence = absence.filter(|absence| absence.covers(installed, basis, meaning))
                     .ok_or_else(|| origin_denial("Birth requires native cold route-absence readmission for the unresolved canonical prefix"))?;
@@ -151,6 +152,7 @@ impl crate::runtime::RelationalRuntime {
                     let retirement = match selected {
                         Some(Position::Published(_)) => return Ok(None),
                         Some(Position::CodecRetired(commit)) => Some(commit),
+                        Some(Position::HistoricalAbsence(_)) => None,
                         None => None,
                     };
                     let bytes = (std::mem::size_of::<RelationalRequiredOutputRouteAbsence>()

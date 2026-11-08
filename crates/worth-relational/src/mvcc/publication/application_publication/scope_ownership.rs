@@ -42,6 +42,12 @@ impl RelationalInstalledApplicationPublicationAuthority {
             InstalledSourceScopeOwnership(Arc::new(producers.into_iter().collect()));
         self
     }
+
+    /// Whether this installed publisher owns any producer's source scope. Only
+    /// then can a graph selection meet producer custody that it must restore.
+    pub fn owns_source_scopes(&self) -> bool {
+        !self.source_scope_ownership.is_empty()
+    }
 }
 
 impl InstalledSourceScopeOwnership {

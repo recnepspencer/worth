@@ -63,6 +63,7 @@ pub struct DeclaredProducerBinding
         Option<super::super::native_field_contract::NativeFieldBindingExpectation>,
     pub(in crate::domain_computation::primary_graph::application_contribution) installed_output_equivalence:
         Option<Arc<super::output_equivalence_contract::InstalledProducerOutputEquivalence>>,
+    pub(in crate::domain_computation::primary_graph::application_contribution) predecessor_reads: Option<Vec<super::predecessor_reads::PredecessorReadMeaning>>,
     pub(in crate::domain_computation::primary_graph::application_contribution) input_reuse:
         Option<super::WorthQueryProducerInputReuseContract>,
     pub(in crate::domain_computation::primary_graph::application_contribution) binding_type: TypeId,
@@ -78,6 +79,7 @@ pub struct DeclaredProducerBinding
 }
 
 mod history_group;
+mod implementation;
 pub(crate) mod operation_binding_uniqueness;
 pub(crate) mod output_family_inventory;
 mod pending;
@@ -248,6 +250,7 @@ where
                 identity: selected.declaration.identity.clone(),
                 applicability: selected.declaration.applicability[0],
                 exact_retained_output: true,
+                retained_read_posture: super::demand::RetainedOutputReadPosture::Ordinary,
 
                 retained_idempotency_key: None,
                 retained_output_binding: None,

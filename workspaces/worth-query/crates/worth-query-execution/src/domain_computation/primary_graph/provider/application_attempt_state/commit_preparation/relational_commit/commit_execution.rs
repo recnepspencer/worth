@@ -120,6 +120,7 @@ pub(super) fn commit(
         provider,
         &attempt,
         required_prerequisites.as_ref(),
+        history.is_some_and(|cutover| cutover.uses_owned_model_graph()),
     )?;
     let predecessor = match (
         required_prerequisites.as_ref(),

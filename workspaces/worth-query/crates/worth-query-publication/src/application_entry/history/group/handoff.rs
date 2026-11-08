@@ -10,15 +10,14 @@ pub enum WorthQueryHistoryGroupHandoffPointForTest {
     Adoption,
 }
 
-impl<S, H, I, P, A, Payload: WorthQueryHistoryPayloadMode<S, H>, Outputs>
-    WorthQueryGroupedHistoryDocument<'_, S, H, I, P, A, Payload, Outputs>
+impl<S, H, P, M, Payload, Outputs>
+    WorthQueryGroupedHistoryDocument<'_, S, H, P, M, Payload, Outputs>
 where
     S: ApplicationSchema,
     H: ApplicationHistoryBinding<S>,
-    I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
-    A: ApplicationAction<S, I::Binding>,
-    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
+    M: WorthQueryHistoryGroupMembers<S, H, P>,
+    Payload: WorthQueryHistoryPayloadMode<S, H>,
 {
     /// Rendezvous at the original Native receiver after endpoint capture,
     /// before its guarded adoption. This changes no operation outcome.
@@ -30,15 +29,12 @@ where
     }
 }
 
-impl<
-        S: ApplicationSchema,
-        H: ApplicationHistoryBinding<S>,
-        I: ApplicationMutationIntent<S>,
-        P: ApplicationProgramDefinition<S>,
-        A: ApplicationAction<S, I::Binding>,
-    > WorthQueryHistoryGroupExecution<'_, S, H, I, P, A>
+impl<S, H, P, M> WorthQueryHistoryGroupExecution<'_, S, H, P, M>
 where
-    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
+    S: ApplicationSchema,
+    H: ApplicationHistoryBinding<S>,
+    P: ApplicationProgramDefinition<S>,
+    M: WorthQueryHistoryGroupMembers<S, H, P>,
 {
     #[doc(hidden)]
     pub fn pause_on_group_handoff_for_test(

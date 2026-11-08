@@ -33,6 +33,14 @@ impl Projection<'_, '_, '_, '_, '_> {
             work(self.context, 1)?;
             self.record(selection.entity(), None)?;
         }
+        if let Some(selection) = plan.graph_selection() {
+            for target in selection.targets() {
+                work(self.context, 1)?;
+                if let RecordRef::Entity(entity) = target {
+                    self.record(entity, None)?;
+                }
+            }
+        }
         for intent in &plan.commands().merged_intents {
             work(self.context, 1)?;
             match intent {

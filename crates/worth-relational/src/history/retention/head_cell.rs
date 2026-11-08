@@ -51,6 +51,13 @@ impl RelationalBranchHeadRetentionCell {
         }
         Ok(obligation.binding())
     }
+    pub(crate) fn publication_bases(&self) -> Option<Arc<dyn super::PublicationBasisAccess>> {
+        let slot = self.obligation.lock().unwrap_or_else(|e| e.into_inner());
+        slot.as_ref()?
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .publication_bases()
+    }
     pub(crate) fn reset(&self, obligation: RelationalHeadRetentionObligation) {
         let previous = self
             .obligation

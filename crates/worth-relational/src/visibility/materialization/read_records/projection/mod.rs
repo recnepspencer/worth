@@ -23,6 +23,11 @@ mod field_support;
 pub use field_support::RelationalFieldSupportComparisonDenial;
 mod frontier_adjacency;
 mod historical_basis_reads;
+mod historical_selection;
+pub use historical_selection::{
+    RelationalHistoricalSelectionRead, RelationalHistoricalSelectionReadDenial,
+    RelationalHistoricalSourcePresence, RelationalHistoricalSourceReadDenial,
+};
 mod kind_scans;
 mod pinned;
 mod projection_records;

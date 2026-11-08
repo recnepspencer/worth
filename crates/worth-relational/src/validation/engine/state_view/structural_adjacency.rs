@@ -80,7 +80,7 @@ impl<'state> InvariantStateView<'state> {
         relation_ids.into_iter().collect()
     }
 
-    fn relation_candidates(
+    pub(crate) fn relation_candidates(
         &self,
         entity_id: EntityId,
         outgoing: bool,

@@ -143,6 +143,15 @@ fn reconstruct_chain(
                 }
                 break;
             }
+            CanonicalOutputPublication::HistoricalSelection { .. } => {
+                current = super::super::historical_selection::antecedent(
+                    runtime,
+                    &current,
+                    current_origin,
+                    validated_history,
+                    context,
+                )?;
+            }
             CanonicalOutputPublication::Preserve { predecessor }
             | CanonicalOutputPublication::AuthoredRetirement { predecessor }
             | CanonicalOutputPublication::ProducerRetirement { predecessor } => {
@@ -180,6 +189,13 @@ fn reconstruct_chain(
         None;
     for envelope in chain.iter().rev() {
         let membership = envelope.output_origin_for_route(&origin.meaning, context)?;
+        if matches!(
+            membership.publication,
+            CanonicalOutputPublication::HistoricalSelection { .. }
+        ) {
+            // A selection restores its antecedent, not a patch on its displaced head.
+            continue;
+        }
         let member = membership.members.iter().find(|member| member.id == id);
         let Some(member) = member else { continue };
         let patch = envelope

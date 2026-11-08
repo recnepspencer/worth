@@ -51,7 +51,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         };
         let restored = native.with_runtime_mut(graph, execution, foreign, |runtime| {
             runtime
-                .readmit_authored_restored_producer_prior(
+                .readmit_restored_producer_prior(
                     execution,
                     &publisher.native,
                     selected.product().relational_basis(),

@@ -1,6 +1,7 @@
 mod allocation;
 mod allocation_delta;
 mod allocation_walk;
+mod historical_selection;
 mod materialization_quote;
 mod merge;
 mod payload_allocation;

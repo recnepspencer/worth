@@ -15,6 +15,8 @@ use crate::transactions::data::{
 };
 use std::collections::{BTreeMap, BTreeSet};
 use std::time::Instant;
+#[path = "prepare/owned_graph_selection.rs"]
+pub(crate) mod owned_graph_selection;
 #[path = "prepare/retained_entity_selection.rs"]
 pub(crate) mod retained_entity_selection;
 

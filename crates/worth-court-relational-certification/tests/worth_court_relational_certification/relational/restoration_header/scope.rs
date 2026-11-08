@@ -22,7 +22,7 @@ fn recorded_header_corruption_restores_history_when_the_court_unwinds() {
         .unwrap()
         .unwrap();
     let admit = || {
-        runtime.readmit_authored_output_retirement_successor(
+        runtime.readmit_native_output_transition_successor(
             execution,
             &world.installed,
             &basis,

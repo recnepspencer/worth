@@ -363,6 +363,7 @@ impl RecordedOutput {
             computation_source,
             native_prior_checkpoint,
             performed_origin,
+            historical_selection: None,
             consumed_outputs,
             completed_handler_facts,
             completed_decision_reuse,

@@ -91,7 +91,7 @@ impl RelationalRuntime {
                 let mut publications = Vec::with_capacity(event.publications.len());
                 for origin in &event.publications {
                     publications.push(
-                        self.readmit_authored_output_retirement_successor(
+                        self.readmit_native_output_transition_successor(
                             execution,
                             installed,
                             basis,

@@ -22,6 +22,17 @@ pub(in crate::domain_computation::primary_graph::invariant_projection) struct Co
         RetainedSourceFacts,
 }
 
+pub(in crate::domain_computation::primary_graph::invariant_projection) enum NativeReadAccess<'a> {
+    Acquire,
+    Borrowed(&'a mut worth_relational::facade::runtime::RelationalRuntime),
+    Applied(
+        &'a worth_relational::facade::runtime::RelationalPinnedRead,
+        &'a worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+    ),
+}
+
 impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthority<Schema> {
     pub(in crate::domain_computation::primary_graph::invariant_projection) fn project_borrowed<
         Output,
@@ -89,9 +100,37 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
         ) -> Output,
         retention_control: StorageControl<'_, '_>,
     ) -> Result<CompletedProjectionRead<Output>, WorthQueryInvariantProjectionDenial> {
+        let access = match applied {
+            Some((before, candidate)) => NativeReadAccess::Applied(before, candidate),
+            None => NativeReadAccess::Acquire,
+        };
+        self.read_native_with_access(
+            execution,
+            work_budget,
+            basis,
+            snapshot,
+            access,
+            projection,
+            retention_control,
+        )
+    }
+    pub(in crate::domain_computation::primary_graph::invariant_projection) fn read_native_with_access<
+        Output,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        work_budget: WorthQueryInvariantProjectionWorkBudget,
+        basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        access: NativeReadAccess<'_>,
+        projection: impl FnOnce(
+            &mut WorthQueryApplicationInvariantProjectionReader<'_, Schema>,
+        ) -> Output,
+        retention_control: StorageControl<'_, '_>,
+    ) -> Result<CompletedProjectionRead<Output>, WorthQueryInvariantProjectionDenial> {
         // The applied reader's aggregate cache is private to this image. Its
         // backing must not enter the committed version cache before publication.
-        let _applied_cache_memory = if applied.is_some() {
+        let _applied_cache_memory = if matches!(&access, NativeReadAccess::Applied(..)) {
             let bytes = (std::mem::size_of::<
                 std::sync::Mutex<
                     super::super::super::aggregate_projection::WorthQueryAggregateProjections,
@@ -114,8 +153,8 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
         let decode_work = std::cell::Cell::new(None);
         let decode =
             super::super::super::value_decode::ValueDecodeState::new(self.value_bindings.clone());
-        let decoded = decode.run(execution, |value_decode| match applied {
-            None => self.graph.with_runtime_mut(execution, |runtime| {
+        let decoded = decode.run(execution, |value_decode| match access {
+            NativeReadAccess::Acquire => self.graph.with_runtime_mut(execution, |runtime| {
                 catch_unwind(AssertUnwindSafe(|| {
                     self.execute_reader(
                         execution,
@@ -130,7 +169,20 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
                     )
                 }))
             }),
-            Some((before, candidate)) => catch_unwind(AssertUnwindSafe(|| {
+            NativeReadAccess::Borrowed(native) => catch_unwind(AssertUnwindSafe(|| {
+                self.execute_reader(
+                    execution,
+                    NativeProjectionRead::Committed(native),
+                    value_decode,
+                    basis,
+                    snapshot,
+                    work_budget,
+                    projection,
+                    retention_control,
+                    &decode_work,
+                )
+            })),
+            NativeReadAccess::Applied(before, candidate) => catch_unwind(AssertUnwindSafe(|| {
                 self.execute_reader(
                     execution,
                     NativeProjectionRead::Applied { before, candidate },

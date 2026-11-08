@@ -176,6 +176,7 @@ impl RelationalBranchRoot {
         };
         let version = envelope.commit.version_id;
         let mut root = Self {
+            publication_bases: Default::default(),
             // Reconstructed storage has no live companion association.
             content: crate::content::ContentDirectory::default(),
             managed_source_image: std::sync::OnceLock::new(),

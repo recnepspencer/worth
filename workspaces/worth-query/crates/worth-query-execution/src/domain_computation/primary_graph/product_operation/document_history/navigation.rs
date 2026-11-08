@@ -1,4 +1,5 @@
 //! Owned process-local navigation attempts; canonical truth stays with Native and World.
+use super::WorthQueryHistoryNodeId;
 mod admission;
 mod control;
 mod custody;
@@ -7,8 +8,12 @@ mod eligibility;
 pub(crate) mod output_authority;
 mod output_completion;
 mod output_correspondence;
+mod output_coverage;
+mod output_custody;
 mod output_lookup;
 mod output_profile;
+pub(in crate::domain_computation::primary_graph) mod output_verification;
+mod restored_verification;
 pub(in crate::domain_computation::primary_graph) use output_lookup::{
     HistoryOutputLookup, HistoryOutputLookupPhase,
 };
@@ -29,16 +34,24 @@ use custody::{NavigationAttempt, NavigationPhase, NavigationProgress};
 pub(super) use disposal::NavigationDisposal;
 pub use output_authority::WorthQueryHistoryOutputAuthority;
 pub(in crate::domain_computation::primary_graph) use output_authority::{
-    HistoryBorrowedReadStop, HistoryProducerCutover, HistoryProducerInvocation,
+    HistoryBorrowedReadStop, HistoryProducerCutover,
 };
-pub use output_completion::WorthQueryCompletedHistoryOutputs;
+pub use output_completion::{
+    WorthQueryCompletedHistoryOutputs, WorthQueryHistoryOutputQualificationDenial,
+    WorthQueryRetainedHistoryOutputTree,
+};
 pub use output_profile::{
     WorthQueryHistoryOutputNavigationAdvance, WorthQueryHistoryOutputProfile,
 };
-pub(in crate::domain_computation::primary_graph) use output_source::HistoryDependentSource;
 pub use output_source::WorthQueryHistoryRootOutputAdmissionDenial;
+pub(in crate::domain_computation::primary_graph) use output_source::{
+    HistoryDependentParent, HistoryDependentSource,
+};
 pub use output_source::{WorthQueryAdmittedHistoryProgramOutput, WorthQueryHistoryOutputSource};
-pub use output_source::{WorthQueryHistoryDependentOutputRead, WorthQueryHistoryOutputDiscovery};
+pub use output_source::{
+    WorthQueryHistoryDependentOutputRead, WorthQueryHistoryOutputDiscovery,
+    WorthQueryVerifiedHistoryParent,
+};
 pub use output_source::{
     WorthQueryHistoryOutputAdvanceDenial, WorthQueryHistoryProgramOutputAdvance,
     WorthQuerySettledHistoryProgramOutput,
@@ -71,6 +84,12 @@ pub enum WorthQueryHistoryNavigationDenial {
     Document(WorthQueryDocumentHistoryDenial),
     RequiresSemanticCorrection(WorthQueryHistoryNavigationEligibilityDenial),
     DocumentClosed,
+    DiscoveryRecipeUnsupportedScope { step: WorthQueryHistoryNodeId, binding: &'static str },
+    DiscoveryRecipeInvalidScope { step: WorthQueryHistoryNodeId, binding: &'static str },
+    DiscoveryRecipeSealed { step: WorthQueryHistoryNodeId },
+    DiscoveryRecipeMissing { step: WorthQueryHistoryNodeId },
+    DiscoveryRecipeCorrupt { step: WorthQueryHistoryNodeId },
+    DiscoveryRecipeForeignDocument { step: WorthQueryHistoryNodeId },
     ForeignDocument,
     HeadChanged,
     NoParent,
@@ -94,6 +113,19 @@ pub enum WorthQueryHistoryNavigationDenial {
     ForkRecovery,
     Transaction(worth_relational::facade::mvcc::RelationalBranchTransactionAdmissionDenial),
     Preparation(worth_relational::facade::mvcc::RelationalRetainedEntitySelectionPreparationError),
+    OwnedGraph(worth_relational::facade::branch::RelationalOwnedModelSelectionDenial),
+    GraphPreparation(worth_relational::facade::mvcc::RelationalOwnedGraphSelectionPreparationError),
+    /// The selected step retains no exact lineage row for a producer route
+    /// Native restores, or its lookup stopped.
+    OutputLineage(worth_relational::facade::mvcc::CompanionPreflightStop),
+    /// Descriptive Query roles disagree with this selected Native publication.
+    OutputPublicationCorrespondence(
+        crate::domain_computation::primary_graph::output_lineage::WorthQueryHistoryPublicationCorrespondenceMismatch,
+    ),
+    RestoredOutputRead(worth_relational::facade::runtime::RelationalHistoricalSelectionReadDenial),
+    RestoredOutputCurrentness(
+        crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial,
+    ),
     SelectorSnapshot(worth_relational::facade::snapshots::RelationalSnapshotAdmissionDenial),
     Publication(worth_runtime_world::facade::NoEffectCompositePublication),
     Recovery(worth_runtime_world::facade::RuntimeWorldRecoveryDenial),
@@ -132,3 +164,5 @@ impl<S> std::fmt::Debug for WorthQueryDocumentHistoryNavigation<'_, S> {
             .finish_non_exhaustive()
     }
 }
+
+pub(in crate::domain_computation) use output_authority::HistoryProducerInvocation;

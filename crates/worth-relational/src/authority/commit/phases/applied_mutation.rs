@@ -18,6 +18,7 @@ pub(crate) struct PendingMutationIdentities {
 mod aggregate_consequences;
 pub(crate) mod content;
 pub(crate) mod ordinary_apply;
+pub(crate) mod owned_graph_selection;
 pub(crate) use ordinary_apply::AppliedMutationCore;
 
 pub(crate) struct AppliedMutationDraft {

@@ -20,6 +20,7 @@ use crate::domain_computation::primary_graph::output_lineage::SealedNativeOutput
 use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact;
 
 mod equality;
+mod historical_selection;
 mod image_fence;
 mod native_evidence;
 mod root_source;

@@ -50,7 +50,7 @@ impl<'a> SelectedOutputAdmission<'a> {
                             published.idempotency_key_identity()
                         }
                         WorthQueryAcceptedOutputAuthority::Restored(restored) => {
-                            restored.checkpoint.idempotency_key
+                            restored.origin.key()
                         }
                     }
                 }

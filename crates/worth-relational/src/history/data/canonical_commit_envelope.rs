@@ -28,10 +28,12 @@ pub(crate) use live_managed_source_history::LiveManagedSourceHistory;
 mod authoritative_artifact_encoding;
 mod embedded_checkpoint;
 mod lineage_projection;
+mod owned_graph_selection;
 mod payload_digest;
 mod retained_entity_selection;
 pub(crate) use authoritative_artifact_encoding::AuthoritativeArtifactEnvelopeRef;
 pub(crate) use embedded_checkpoint::EmbeddedCheckpointEnvelopeRef;
+pub use owned_graph_selection::CanonicalOwnedGraphSelection;
 pub use retained_entity_selection::CanonicalRetainedEntitySelection;
 #[path = "canonical_commit_envelope/descriptive_touches.rs"]
 mod descriptive_touches;
@@ -74,6 +76,9 @@ pub struct CanonicalCommitEnvelope {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) coupled_authored_publication:
         Option<std::sync::Arc<CanonicalCoupledAuthoredPublication>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) historical_output_selection:
+        Option<std::sync::Arc<required_output_origin::CanonicalHistoricalOutputSelection>>,
     #[serde(default)]
     pub(crate) required_output_materialization:
         Option<std::sync::Arc<CanonicalRequiredOutputMaterialization>>,
@@ -123,12 +128,15 @@ pub enum CanonicalCommitAuthorityKind {
     BranchReferenceMovement,
     /// A fresh version selecting one retained authoritative entity payload.
     RetainedEntitySelection(std::sync::Arc<CanonicalRetainedEntitySelection>),
+    OwnedGraphSelection(std::sync::Arc<CanonicalOwnedGraphSelection>),
 }
 
 impl CanonicalCommitAuthorityKind {
     pub fn advances_version(&self) -> bool {
         match self {
-            Self::VersionedTransaction | Self::RetainedEntitySelection(_) => true,
+            Self::VersionedTransaction
+            | Self::RetainedEntitySelection(_)
+            | Self::OwnedGraphSelection(_) => true,
             Self::BranchReferenceMovement => false,
         }
     }
@@ -136,7 +144,9 @@ impl CanonicalCommitAuthorityKind {
     pub fn retained_entity_selection(&self) -> Option<&CanonicalRetainedEntitySelection> {
         match self {
             Self::RetainedEntitySelection(selection) => Some(selection),
-            Self::VersionedTransaction | Self::BranchReferenceMovement => None,
+            Self::VersionedTransaction
+            | Self::BranchReferenceMovement
+            | Self::OwnedGraphSelection(_) => None,
         }
     }
 }
@@ -189,6 +199,9 @@ impl CanonicalCommitEnvelope {
         if let Some(selection) = self.authority_kind.retained_entity_selection() {
             touched.insert(RecordRef::Entity(selection.entity()));
         }
+        if let CanonicalCommitAuthorityKind::OwnedGraphSelection(selection) = &self.authority_kind {
+            touched.extend(selection.targets());
+        }
         touched
     }
 
@@ -199,6 +212,14 @@ impl CanonicalCommitEnvelope {
             .retained_entity_selection()
             .map(|selection| Some(RecordRef::Entity(selection.entity())))
             .into_iter()
+            .chain(
+                match &self.authority_kind {
+                    CanonicalCommitAuthorityKind::OwnedGraphSelection(selection) => Some(selection),
+                    _ => None,
+                }
+                .into_iter()
+                .flat_map(|selection| selection.targets().map(Some)),
+            )
             .chain(
                 self.merged_plan
                     .merged_intents

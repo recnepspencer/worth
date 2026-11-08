@@ -16,6 +16,7 @@ use super::affected_record_filter::{
 mod claim_nested;
 mod incidence;
 mod metadata;
+mod owned_graph;
 use claim_nested::claim_intent_nested_allocations;
 
 pub(crate) fn collect_touched_structural_set(
@@ -73,6 +74,20 @@ pub(crate) fn collect_touched_structural_set(
                 state_view,
                 before_image_view,
                 access,
+            );
+        }
+        if let Some(selection) = plan.graph_selection() {
+            owned_graph::collect(
+                selection,
+                state_view,
+                before_image_view,
+                access,
+                work,
+                &mut visible_entities,
+                &mut visible_relations,
+                &mut touched_partitions,
+                &mut planned_entity_deletes,
+                &mut planned_relation_deletes,
             );
         }
         for intent in &plan.commands().merged_intents {

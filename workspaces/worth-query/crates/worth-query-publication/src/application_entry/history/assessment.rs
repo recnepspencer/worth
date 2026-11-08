@@ -8,10 +8,7 @@ use crate::application_entry::{
     },
 };
 use worth_query_declaration::facade::{
-    application_history::ApplicationHistoryModel,
-    application_operation::{
-        ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeBinding,
-    },
+    application_operation::ApplicationMutationIntent,
     application_program::{ApplicationAction, ApplicationProgramDefinition},
 };
 
@@ -40,8 +37,6 @@ where
         A: ApplicationAction<S, I::Binding>,
         M: WorthQuerySourceDeliveryMode,
         I::Binding: WorthQuerySourceOperationBinding<S>,
-        <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding:
-            ApplicationMutationScopeBinding<S, Scope = ApplicationHistoryModel<S, H>>,
     {
         let runtime = self.owner.application();
         if !std::ptr::eq(runtime, request.application) {

@@ -12,6 +12,8 @@ pub(crate) use coupled_authored::{
     CanonicalCoupledAuthoredPublication, CanonicalCoupledAuthoredSources,
 };
 mod authored_restoration;
+mod historical_selection;
+pub(crate) use historical_selection::CanonicalHistoricalOutputSelection;
 mod installation;
 pub(crate) use authored_cascade::CanonicalAuthoredRetirement;
 pub(crate) use authored_restoration::CanonicalAuthoredRestoration;
@@ -55,12 +57,19 @@ pub(crate) enum CanonicalOutputPublication {
     AuthoredRetirement {
         predecessor: CommitId,
     },
+    /// Select the producer's committed version; provenance is this new commit.
+    HistoricalSelection {
+        selected: CommitId,
+        generation: VersionId,
+        predecessor: Option<CommitId>,
+    },
 }
 
 impl CanonicalOutputPublication {
     pub(crate) fn predecessor(&self) -> Option<CommitId> {
         match self {
             Self::Birth | Self::BirthAfterCodecRetirement { .. } => None,
+            Self::HistoricalSelection { predecessor, .. } => *predecessor,
             Self::Preserve { predecessor }
             | Self::AuthoredRetirement { predecessor }
             | Self::ProducerRetirement { predecessor }

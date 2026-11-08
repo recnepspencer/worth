@@ -6,7 +6,7 @@ use std::collections::BTreeSet;
 #[allow(clippy::too_many_arguments)]
 pub(super) fn read(
     execution: &ExecutionRequest<'_, '_>,
-    basis: &AdmittedRelationalBranchBasis,
+    source: OwnershipReadSource<'_>,
     storage: &CurrentPublicationStorage,
     view: &InvariantStateView<'_>,
     records: &[RecordRef],
@@ -23,7 +23,7 @@ pub(super) fn read(
     }
     let mut reach = Reach {
         execution,
-        basis,
+        source,
         storage,
         view,
         after,
@@ -61,7 +61,7 @@ pub(super) fn read(
 
 struct Reach<'a, 'request, 'scope, 'kernel, 'authority> {
     execution: &'a ExecutionRequest<'request, 'scope>,
-    basis: &'a AdmittedRelationalBranchBasis,
+    source: OwnershipReadSource<'a>,
     storage: &'a CurrentPublicationStorage,
     view: &'a InvariantStateView<'a>,
     after: Option<&'a InvariantStateView<'a>>,
@@ -77,11 +77,7 @@ impl Reach<'_, '_, '_, '_, '_> {
         &mut self,
         partition: crate::identity::data::PartitionId,
     ) -> Result<(), TransactionCommitError> {
-        self.basis
-            .inner
-            .root
-            .demand_head_partition(self.execution, partition)
-            .map_err(|e| crate::authority::commit::preparation::storage_read_denial(self.basis, e))
+        self.source.demand(self.execution, partition)
     }
     fn relation(
         &mut self,
@@ -115,8 +111,7 @@ impl Reach<'_, '_, '_, '_, '_> {
         direction: Direction,
     ) -> Result<Vec<RelationId>, TransactionCommitError> {
         self.demand(id.partition_id)?;
-        let basis = self.basis;
-        let root = &basis.inner.root;
+        let root = self.source.root();
         let head = root
             .get_current_partition(id.partition_id)
             .ok_or_else(|| damaged(&RecordRef::Entity(id)))?;
@@ -258,7 +253,7 @@ pub(in crate::publication::ownership) fn claims(
     publication: CommitId,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<CurrentPublicationRoster, TransactionCommitError> {
-    let mut roster = super::empty(execution, basis)?;
+    let mut roster = super::empty(execution, OwnershipReadSource::Admitted(basis))?;
     let storage = basis
         .inner
         .root
@@ -273,7 +268,7 @@ pub(in crate::publication::ownership) fn claims(
     );
     let mut reach = Reach {
         execution,
-        basis,
+        source: OwnershipReadSource::Admitted(basis),
         storage,
         view: &view,
         after: None,

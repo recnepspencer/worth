@@ -58,23 +58,26 @@ pub use history::{
     WorthQueryHistoryEditCaptureDenial, WorthQueryHistoryEditCaptureFailure,
     WorthQueryHistoryEditDenial, WorthQueryHistoryEditDescription, WorthQueryHistoryEditFinish,
     WorthQueryHistoryEditOutcome, WorthQueryHistoryEditPosture, WorthQueryHistoryExpectedCheckout,
-    WorthQueryHistoryGroupCompletionIter, WorthQueryHistoryGroupCompletionKind,
-    WorthQueryHistoryGroupCompletions, WorthQueryHistoryGroupDenial,
-    WorthQueryHistoryGroupExecution, WorthQueryHistoryGroupFinish, WorthQueryHistoryGroupPosture,
-    WorthQueryHistoryNavigation, WorthQueryHistoryNavigationAdvance,
-    WorthQueryHistoryNavigationAdvanceDenial, WorthQueryHistoryNavigationBuilder,
-    WorthQueryHistoryNavigationCompletion, WorthQueryHistoryNavigationDenial,
-    WorthQueryHistoryNavigationEligibilityDenial, WorthQueryHistoryNavigationIntent,
-    WorthQueryHistoryNavigationPosture, WorthQueryHistoryNoOutputs, WorthQueryHistoryNodeId,
-    WorthQueryHistoryOutputAdvanceDenial, WorthQueryHistoryOutputDenial,
+    WorthQueryHistoryGestureCompletion, WorthQueryHistoryGestureIntent,
+    WorthQueryHistoryGestureMembers, WorthQueryHistoryGroupCompletionIter,
+    WorthQueryHistoryGroupCompletionKind, WorthQueryHistoryGroupCompletions,
+    WorthQueryHistoryGroupDenial, WorthQueryHistoryGroupExecution, WorthQueryHistoryGroupFinish,
+    WorthQueryHistoryGroupMembers, WorthQueryHistoryGroupPosture, WorthQueryHistoryNavigation,
+    WorthQueryHistoryNavigationAdvance, WorthQueryHistoryNavigationAdvanceDenial,
+    WorthQueryHistoryNavigationBuilder, WorthQueryHistoryNavigationCompletion,
+    WorthQueryHistoryNavigationDenial, WorthQueryHistoryNavigationEligibilityDenial,
+    WorthQueryHistoryNavigationIntent, WorthQueryHistoryNavigationPosture,
+    WorthQueryHistoryNoOutputs, WorthQueryHistoryNodeId, WorthQueryHistoryOutputAdvanceDenial,
+    WorthQueryHistoryOutputDenial, WorthQueryHistoryOutputQualificationDenial,
     WorthQueryHistoryOutputReadDenial, WorthQueryHistoryOutputsMode, WorthQueryHistoryPage,
     WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial, WorthQueryHistoryPageEntry,
     WorthQueryHistoryPageLimits, WorthQueryHistoryPageRow, WorthQueryHistoryParentBoundary,
     WorthQueryHistoryPayloadMode, WorthQueryHistoryPreviewResult, WorthQueryHistoryRedoChoice,
     WorthQueryHistoryRedoChoices, WorthQueryHistoryReleaseOutcome,
     WorthQueryHistoryRetentionStatus, WorthQueryHistoryRootOutputAdmissionDenial,
-    WorthQueryHistorySelection, WorthQueryHistoryStep, WorthQueryHistoryWindowChange,
-    WorthQueryHistoryWithOutputs,
+    WorthQueryHistorySelection, WorthQueryHistoryStep, WorthQueryHistoryTypedMembers,
+    WorthQueryHistoryWindowChange, WorthQueryHistoryWithOutputTrees, WorthQueryHistoryWithOutputs,
+    WorthQueryOriginalReadOutputDenial, WorthQueryRecordingOutputQualificationDenial,
 };
 #[doc(hidden)]
 pub use history::{
@@ -270,3 +273,5 @@ pub use workflow::{
     WorthQueryWorkflowProposalRequest, WorthQueryWorkflowSuccessionBindingDenial,
 };
 pub use worth_query_execution::facade::primary_graph::WorthQueryApplicationQueryBatchResourceDenial;
+
+pub use history::WorthQueryHistoryPublicationCorrespondenceMismatch;

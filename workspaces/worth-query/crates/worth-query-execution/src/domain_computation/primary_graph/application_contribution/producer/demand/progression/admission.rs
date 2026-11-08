@@ -1,6 +1,7 @@
 use worth_query_installation::facade::ApplicationSchema;
 
 mod dependent;
+mod historical_restoration;
 mod restoration;
 mod retained_observation;
 

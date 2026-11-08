@@ -17,6 +17,10 @@ pub(super) fn admission_is_row(kind: WorthQueryApplicationQueryAdmissionDenialKi
         | Kind::ForeignScope
         | Kind::StalePrincipal
         | Kind::StaleScope
+        | Kind::HistoricalSourceNotLive { .. }
+        | Kind::HistoricalSourceKindMismatch { .. }
+        | Kind::HistoricalSourceOutsideDomain { .. }
+        | Kind::HistoricalSourceOwnershipUnavailable { .. }
         | Kind::ScopeTypeMismatch
         | Kind::Authorization(_)
         | Kind::DisclosureGovernanceRequired

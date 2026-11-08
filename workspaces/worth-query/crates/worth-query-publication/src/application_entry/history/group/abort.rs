@@ -1,46 +1,15 @@
 //! Abort discharges original source owners, then candidate custody, then reserved metadata.
 use super::*;
 
-fn close_original<S, I, P, A>(
-    closing: Closing<S, I, P, A>,
-    request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
-    aborting:Option<&worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryGroupAborting>,
-) -> Result<
-    (),
-    (
-        Member<S, I, P, A>,
-        crate::application_entry::WorthQueryOperationCloseDenial,
-    ),
->
-where
-    S: ApplicationSchema + 'static,
-    I: ApplicationMutationIntent<S>,
-    P: ApplicationProgramDefinition<S>,
-    A: ApplicationAction<S, I::Binding>,
-    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
-{
-    let current = WorthQueryApplicationRequest {
-        application: request.application,
-        principal: request.principal,
-        scope: request.scope,
-        branch: Mode::<S, I, A>::group_disposal_target(&closing),
-    };
-    Mode::<S, I, A>::close_group_disposal(closing, &current, aborting)
-        .map(drop)
-        .map_err(|(closing, cause)| (Member::ClosingOriginal(Some(closing)), cause))
-}
-
-impl<'runtime, S, H, I, P, A, Payload: WorthQueryHistoryPayloadMode<S, H>, Outputs>
-    WorthQueryGroupedHistoryDocument<'runtime, S, H, I, P, A, Payload, Outputs>
+impl<'runtime, S, H, P, M, Payload, Outputs>
+    WorthQueryGroupedHistoryDocument<'runtime, S, H, P, M, Payload, Outputs>
 where
     S: ApplicationSchema + 'static,
     H: ApplicationHistoryBinding<S>,
-    I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
-    A: ApplicationAction<S, I::Binding>,
-    Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
-    I::Binding: WorthQuerySourceOperationBinding<S>
-        + ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
+    M: WorthQueryHistoryGroupMembers<S, H, P>,
+    Payload: WorthQueryHistoryPayloadMode<S, H>,
+    Outputs: WorthQueryHistoryOutputsMode<S, H>,
 {
     /// This never reverses a publication. Earlier staged effects are retired
     /// through their actual owners while the document's selected head is preserved.
@@ -79,6 +48,15 @@ where
             return Err((self, Denial::NotReady));
         }
         self.execution.posture = WorthQueryHistoryGroupPosture::Aborting;
+        if let Some(candidate) = &self.execution.candidate {
+            if let Err(cause) = self
+                .document
+                .outputs
+                .discard_recording(request, candidate.branch())
+            {
+                return Err((self, Denial::Outputs(cause)));
+            }
+        }
         if let Some(reservation) = self.execution.reservation.take() {
             match self
                 .document
@@ -97,42 +75,12 @@ where
         }
         while self.execution.closing < self.execution.members.len() {
             let index = self.execution.closing;
-            let member = std::mem::replace(&mut self.execution.members[index], Member::Closed);
-            let result = match member {
-                Member::Description(_) => Ok(()),
-                Member::Unbound(Some(operation)) | Member::Operation(Some(operation)) => {
-                    match Mode::<S, I, A>::begin_group_disposal(operation) {
-                        Ok(closing) => {
-                            close_original(closing, request, self.execution.aborting.as_ref())
-                        }
-                        Err((operation, cause)) => Err((Member::Operation(Some(operation)), cause)),
-                    }
-                }
-                Member::ClosingOriginal(Some(closing)) => {
-                    close_original(closing, request, self.execution.aborting.as_ref())
-                }
-                Member::Completed(Some(completed)) => {
-                    let current = WorthQueryApplicationRequest {
-                        application: request.application,
-                        principal: request.principal,
-                        scope: request.scope,
-                        branch: Mode::<S, I, A>::completed_target(&completed),
-                    };
-                    Mode::<S, I, A>::discard_completed(completed, &current)
-                        .map_err(|(completed, cause)| (Member::Completed(Some(completed)), cause))
-                }
-                Member::Terminal(Some(terminal)) => {
-                    match Mode::<S, I, A>::begin_group_terminal_disposal(terminal) {
-                        Ok(closing) => {
-                            close_original(closing, request, self.execution.aborting.as_ref())
-                        }
-                        Err((terminal, cause)) => Err((Member::Terminal(Some(terminal)), cause)),
-                    }
-                }
-                _ => unreachable!("every unclosed original owner is retained"),
-            };
-            if let Err((member, cause)) = result {
-                self.execution.members[index] = member;
+            if let Err(cause) = self
+                .execution
+                .members
+                .member_mut(index)
+                .dispose(request, self.execution.aborting.as_ref())
+            {
                 return Err((self, Denial::Close(cause)));
             }
             self.execution.closing += 1;
