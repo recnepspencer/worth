@@ -1,5 +1,6 @@
 //! The irreversible cut precedes all physical retirement and forbids resume.
 use super::*;
+use crate::runtime::state::RelationalReadCustodyHolders as Holders;
 impl RelationalSourceClose {
     /// Validate the complete original source graph while serving remains
     /// resumable. Each cursor step consults the caller's original request;
@@ -51,7 +52,9 @@ impl RelationalSourceClose {
                     && state.runtime.history.has_detached_retention_obligations()
                 {
                     return Err(Denial::Native(
-                        RelationalRuntimeCloseDenial::ReadCustodyRetained,
+                        RelationalRuntimeCloseDenial::ReadCustodyRetained(Holders::detached(
+                            state.runtime.history.retention_cost_counters(),
+                        )),
                     ));
                 }
                 state
@@ -116,7 +119,11 @@ impl RelationalSourceClose {
                         // refuse BEFORE sealing or retiring physical sources.
                         if state.runtime.history.has_detached_retention_obligations() {
                             return Err(Denial::Native(
-                                RelationalRuntimeCloseDenial::ReadCustodyRetained,
+                                RelationalRuntimeCloseDenial::ReadCustodyRetained(
+                                    Holders::detached(
+                                        state.runtime.history.retention_cost_counters(),
+                                    ),
+                                ),
                             ));
                         }
                         state.stage = Stage::Seal;

@@ -57,9 +57,8 @@ fn memory_terminal_close_retires_real_cached_read_and_preserves_original_stop() 
         )
         .unwrap();
     let refused = runtime.prepare_close().unwrap_err();
-    assert_eq!(
-        refused.reason(),
-        Denial::ReadCustodyRetained,
+    assert!(
+        matches!(refused.reason(), Denial::ReadCustodyRetained(_)),
         "real prior cache-close obstruction"
     );
     let runtime = refused.into_runtime();
@@ -133,7 +132,7 @@ fn memory_terminal_close_keeps_actual_independent_projection_until_its_release()
     for _ in 0..30 {
         match close.advance(request) {
             O::Advanced => {}
-            O::Refused(Denial::ReadCustodyRetained) => {
+            O::Refused(Denial::ReadCustodyRetained(_)) => {
                 refused = true;
                 break;
             }
@@ -262,7 +261,7 @@ fn memory_terminal_close_preserves_pending_settlement_and_explicit_snapshot_repa
     let mut close = handle.into_memory_close().unwrap();
     assert!(matches!(
         close.advance(request),
-        O::Refused(Denial::ReadCustodyRetained)
+        O::Refused(Denial::ReadCustodyRetained(_))
     ));
     let handle = close.into_refused_handle().unwrap();
     handle.with_runtime(|runtime| release_test_commit_snapshot(runtime, &result));

@@ -346,13 +346,22 @@ fn late_history_refusal_retains_actual_partial_root_caps_and_home_lease_until_cl
     }
     // Explicit cleanup releases the actual staged catalog/caps. It returns
     // the SAME Native-readmitted Home, without fabricating a World stage.
-    assert!(matches!(
-        refused.into_home().close(&execution),
+    match refused.into_home().close(&execution) {
         ApplicationHomeCloseOutcome::Closed {
             checkpoint: Err(ApplicationHomeCheckpointDenial::WorldSectionRequired),
             ..
+        } => {}
+        ApplicationHomeCloseOutcome::Closed {
+            checkpoint: Err(cause),
+            ..
+        } => panic!("failed World admission checkpoint refused differently: {cause:?}"),
+        ApplicationHomeCloseOutcome::Closed {
+            checkpoint: Ok(_), ..
+        } => panic!("failed World admission cannot produce a complete checkpoint"),
+        ApplicationHomeCloseOutcome::CloseRefused { reason, .. } => {
+            panic!("failed World admission retains close custody: {reason:?}")
         }
-    ));
+    }
     let fixture = open(directory.path(), &execution);
     assert_eq!(fixture.home.home_identity(), identity);
     let head = fixture

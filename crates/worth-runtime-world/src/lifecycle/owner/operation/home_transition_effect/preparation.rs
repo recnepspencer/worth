@@ -33,7 +33,13 @@ where
         let memory =
             OriginalHomeTransitionContinuation::reserve_backing(request).map_err(Denial::Medium)?;
         let prepared = self
-            .prepare_readmitted_successor(request, &record.expected, record.open.open(), native)
+            .prepare_readmitted_successor(
+                request,
+                &record.expected,
+                record.open.open(),
+                crate::history::RecoveredWorldOwnerEvidenceRef::RelationalOnly(native),
+                record.expected.basis().correspondence_basis().clone(),
+            )
             .map_err(Denial::Readmission)?;
         if prepared.after.selected_commit() != &record.commit || prepared.attempt != record.attempt
         {

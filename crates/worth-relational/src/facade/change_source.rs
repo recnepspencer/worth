@@ -46,3 +46,5 @@ pub use crate::change_source::{
     RelationalSelectedCommit, RetiredMemoryRelationalAllocation,
     RetiredRelationalRetainedObservation, RetiredRelationalRuntimeHandleAlias,
 };
+
+pub use crate::change_source::RelationalReadCustodyHolders;

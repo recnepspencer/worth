@@ -94,7 +94,12 @@ where
             let admitted = authority
                 .admit_recorded_publication(execution, native, effect, before, &after)
                 .map_err(|cause| Denial::NativePublication(Box::new(cause)))?;
-            custody.publications.push(Some(admitted));
+            custody.occurrence_owners.push(
+                crate::history::RecoveredWorldOwnerEvidence::from_admitted_components(
+                    Some(admitted),
+                    None,
+                ),
+            );
             insert(&mut descriptors, &open.commit, &after, execution)?;
             insert(&mut published, &open.association.attempt(), &(), execution)?;
         }
@@ -159,7 +164,9 @@ where
             )?;
         }
         let before = custody.root.take().expect("same original root admission");
-        let expected = root.install_readmitted_root(artifact, before, signal, bridge, execution)?;
+        let (expected, origin) =
+            root.install_readmitted_root(artifact, before, signal, bridge, execution)?;
+        custody.checkpoint_origin = Some(origin);
         custody.observations.push(expected.clone());
         let mut observations = ExecutionOrderedMap::default();
         insert(&mut observations, &head.commit, &expected, execution)?;
@@ -170,17 +177,22 @@ where
                 .ok_or(Denial::MissingPredecessor)?;
             let mut origin = crate::durability::PreparedCheckpointOccurrence::prepare(execution)
                 .map_err(Denial::Medium)?;
-            let admitted = custody.publications[index]
+            let admitted = custody.occurrence_owners[index]
                 .take()
                 .expect("same acquired occurrence cap");
-            let record =
-                match root.prepare_readmitted_occurrence(execution, before, occurrence, admitted) {
-                    Ok(record) => record,
-                    Err((admitted, cause)) => {
-                        custody.publications[index] = Some(admitted);
-                        return Err(cause);
-                    }
-                };
+            let record = match root.prepare_readmitted_occurrence(
+                execution,
+                before,
+                occurrence,
+                admitted,
+                before.basis().correspondence_basis().clone(),
+            ) {
+                Ok(record) => record,
+                Err((admitted, cause)) => {
+                    custody.occurrence_owners[index] = Some(admitted);
+                    return Err(cause);
+                }
+            };
             custody.records.push(record.clone());
             let selected = root.install_readmitted_occurrence(&record, &mut custody.capacities)?;
             custody.observations.push(selected.clone());
@@ -190,7 +202,7 @@ where
                 )
             })?;
             origin.bind(selected.basis(), pins);
-            binding.retain_checkpoint_occurrence(origin);
+            custody.checkpoint_occurrences.push(origin);
             insert(&mut observations, &open.commit, &selected, execution)?;
         }
         for disposition in recovered.dispositions.values() {
@@ -242,6 +254,18 @@ where
                         .transpose()?,
                     native: custody.publications[*index].take(),
                 });
+        }
+        // All fallible reconciliation is complete. Until this handoff the
+        // owning refusal retains every recipe with its private World graph;
+        // the Home binding must not outlive cleanup with a partial recipe.
+        binding.retain_checkpoint_origin(
+            custody
+                .checkpoint_origin
+                .take()
+                .expect("same admitted root origin"),
+        );
+        for origin in custody.checkpoint_occurrences.drain(..) {
+            binding.retain_checkpoint_occurrence(origin);
         }
         Ok(())
     })();

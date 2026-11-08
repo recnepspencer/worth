@@ -43,7 +43,8 @@ pub(crate) use owner_lifecycle::{
 pub(crate) use preparation_runtime::RelationalPreparationOwnerBinding;
 pub(crate) use preparation_runtime::RelationalPreparationRuntime;
 pub use prepared_close::{
-    PreparedRelationalRuntimeClose, RelationalRuntimeCloseDenial, RelationalRuntimeCloseRefused,
+    PreparedRelationalRuntimeClose, RelationalReadCustodyHolders, RelationalRuntimeCloseDenial,
+    RelationalRuntimeCloseRefused,
 };
 pub(in crate::runtime) use publication_lifecycle::RelationalRuntimePublicationOwner;
 pub(crate) use publication_lifecycle::{

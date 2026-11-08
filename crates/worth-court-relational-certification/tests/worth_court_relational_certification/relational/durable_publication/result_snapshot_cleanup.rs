@@ -161,10 +161,10 @@ fn result_snapshot_cleanup_keeps_independent_reader_and_refuses_foreign_owner() 
     assert_eq!(view.entities().len(), 1);
     drop(view);
     let refused = runtime.prepare_close().unwrap_err();
-    assert_eq!(
+    assert!(matches!(
         refused.reason(),
-        RelationalRuntimeCloseDenial::ReadCustodyRetained
-    );
+        RelationalRuntimeCloseDenial::ReadCustodyRetained(_)
+    ));
     let runtime = refused.into_runtime();
     runtime.snapshots().release_snapshot(&independent).unwrap();
     assert_eq!(runtime.retention().active_snapshot_count(), 0);
@@ -176,10 +176,10 @@ fn result_snapshot_cleanup_keeps_independent_reader_and_refuses_foreign_owner() 
     // The real materialized cache still owns its own observation. Original
     // result completion does not discharge this independent Native custody.
     let refused = runtime.prepare_close().unwrap_err();
-    assert_eq!(
+    assert!(matches!(
         refused.reason(),
-        RelationalRuntimeCloseDenial::ReadCustodyRetained
-    );
+        RelationalRuntimeCloseDenial::ReadCustodyRetained(_)
+    ));
     // Native final destruction is deliberately unbudgeted fixture teardown;
     // this result-only task does not claim bounded cache eviction/Native finish.
     drop(refused.into_runtime());

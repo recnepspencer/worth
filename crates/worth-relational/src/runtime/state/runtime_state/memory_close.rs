@@ -1,4 +1,5 @@
 //! Only the authentic memory owner may establish business quiescence.
+use super::RelationalReadCustodyHolders as Holders;
 use super::{RelationalRuntime, RelationalRuntimeCloseDenial};
 
 impl RelationalRuntime {
@@ -31,10 +32,19 @@ impl RelationalRuntime {
                 RelationalRuntimeCloseDenial::PublicationCustodyRetained,
             ));
         }
-        if !self.visibility.try_memory_read_registrations_empty()?
-            || !self.history.try_memory_targets_empty()?
-        {
-            return Ok(Some(RelationalRuntimeCloseDenial::ReadCustodyRetained));
+        let (active, published, capacity, replay) =
+            self.visibility.try_memory_read_registrations()?;
+        let targets = !self.history.try_memory_targets_empty()?;
+        if active || published || capacity || replay || targets {
+            return Ok(Some(RelationalRuntimeCloseDenial::ReadCustodyRetained(
+                Holders::Registrations {
+                    active_snapshot_handles: active,
+                    published_snapshot_handles: published,
+                    published_snapshot_capacity: capacity,
+                    replay_versions: replay,
+                    fork_targets: targets,
+                },
+            )));
         }
         Ok(None)
     }
@@ -47,7 +57,9 @@ impl RelationalRuntime {
             return Ok(observed);
         }
         if self.history.has_detached_retention_obligations() {
-            return Ok(Some(RelationalRuntimeCloseDenial::ReadCustodyRetained));
+            return Ok(Some(RelationalRuntimeCloseDenial::ReadCustodyRetained(
+                Holders::detached(self.history.retention_cost_counters()),
+            )));
         }
         self.tenure.close_authority().expect(
             /* Proof: Memory close checks authentic Owner tenure before exposing its phase; that private phase retains the same runtime and never changes tenure. */

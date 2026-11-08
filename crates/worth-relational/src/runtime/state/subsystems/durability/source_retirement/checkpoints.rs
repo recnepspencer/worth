@@ -3,8 +3,14 @@ use super::*;
 use crate::durability::data::NativeDirectoryRetirementHandoff;
 use crate::runtime::{RelationalRuntimeCloseDenial, RelationalSourceCloseDenial as Stop};
 
-fn shared_checkpoint() -> Stop {
-    Stop::Native(RelationalRuntimeCloseDenial::ReadCustodyRetained)
+fn shared_checkpoint(index: usize, canonical: bool, shares: usize) -> Stop {
+    Stop::Native(RelationalRuntimeCloseDenial::ReadCustodyRetained(
+        crate::runtime::state::RelationalReadCustodyHolders::CheckpointDirectory {
+            index,
+            canonical,
+            shares,
+        },
+    ))
 }
 
 impl DurabilitySubsystem {
@@ -25,7 +31,11 @@ impl DurabilitySubsystem {
                 &checkpoint.directory
             };
             if directory.is_some() && Arc::strong_count(checkpoint) != 1 {
-                return Err(shared_checkpoint());
+                return Err(shared_checkpoint(
+                    index,
+                    canonical,
+                    Arc::strong_count(checkpoint),
+                ));
             }
             directory.as_ref().and_then(|edge| edge.snapshot())
         };
@@ -55,7 +65,9 @@ impl DurabilitySubsystem {
         } {
             return Ok(Some(true));
         }
-        let checkpoint = Arc::get_mut(checkpoint).ok_or_else(shared_checkpoint)?;
+        let shares = Arc::strong_count(checkpoint);
+        let checkpoint =
+            Arc::get_mut(checkpoint).ok_or_else(|| shared_checkpoint(index, canonical, shares))?;
         let directory = if canonical {
             &mut checkpoint.canonical_directory
         } else {
@@ -80,7 +92,9 @@ impl DurabilitySubsystem {
             .checkpoints
             .get_mut(index)
             .expect("same checkpoint owns its loan");
-        let checkpoint = Arc::get_mut(checkpoint).ok_or_else(shared_checkpoint)?;
+        let shares = Arc::strong_count(checkpoint);
+        let checkpoint =
+            Arc::get_mut(checkpoint).ok_or_else(|| shared_checkpoint(index, canonical, shares))?;
         let directory = if canonical {
             &mut checkpoint.canonical_directory
         } else {

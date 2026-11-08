@@ -1,6 +1,8 @@
 //! Original recovered publication installation shares the reserved catalog owner.
 use super::*;
-use crate::history::{ReadmittedPublicationRecord, WorldReadmittedPublication};
+use crate::history::{
+    NativeReadmittedPublicationRecord, ReadmittedPublicationRecord, WorldReadmittedPublication,
+};
 use crate::retention::HistoryRetentionObligation;
 
 impl ReservedCompositeCommitCapacity {
@@ -66,7 +68,7 @@ impl ReservedCompositeCommitCapacity {
         history: &crate::history::CompositeHistoryCatalog,
         commit: &Arc<CompositeRuntimeWorldCommit>,
         pins: &mut Option<HistoryRetentionObligation>,
-        record: &Arc<ReadmittedPublicationRecord>,
+        record: &NativeReadmittedPublicationRecord,
     ) -> Result<
         (
             crate::history::ProductHeadHistoryProtectionObligation,
@@ -85,7 +87,7 @@ impl ReservedCompositeCommitCapacity {
         let original = pins
             .as_ref()
             .ok_or(CompositeHistoryCatalogDenial::HistoryPinBasisMismatch)?;
-        self.validate_readmitted(&state, commit, original, record)?;
+        self.validate_readmitted(&state, commit, original, record.record())?;
         let identity = self.identity.clone();
         let reachability = state.reachability.clone();
         let slot = self.slots.as_ref().expect("same live reserved slots");
@@ -95,7 +97,7 @@ impl ReservedCompositeCommitCapacity {
             slot,
             commit.clone(),
             Some(crate::history::PublicationEvidence::Readmitted(
-                record.clone(),
+                record.record().clone(),
             )),
             pins.take().expect("validated original pins"),
         );
@@ -115,15 +117,15 @@ impl ReservedCompositeCommitCapacity {
                 HistoryProtectionClass::ProductHead,
             ),
         );
-        let publication = WorldReadmittedPublication {
-            record: record.clone(),
-            _history: CompositeHistoryProtectionObligation::new(
+        let publication = WorldReadmittedPublication::from_native(
+            record.retained(),
+            CompositeHistoryProtectionObligation::new(
                 reachability,
                 identity,
                 HistoryProtectionClass::ExplicitObligation,
             ),
-            _catalog: history.clone(),
-        };
+            history.clone(),
+        );
         Ok((head, publication))
     }
 }

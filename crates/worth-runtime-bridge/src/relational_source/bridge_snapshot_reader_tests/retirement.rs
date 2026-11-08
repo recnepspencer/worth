@@ -277,10 +277,10 @@ fn bridge_lease_retirement_observation_alias_vetoes_unwrapped_native_owner_close
     drop(source);
     let runtime = Arc::try_unwrap(runtime).expect("the actual runtime outer Arc is unique");
     let refused = runtime.prepare_close().unwrap_err();
-    assert_eq!(
+    assert!(matches!(
         refused.reason(),
-        RelationalRuntimeCloseDenial::ReadCustodyRetained
-    );
+        RelationalRuntimeCloseDenial::ReadCustodyRetained(_)
+    ));
     let runtime = refused.into_runtime();
     assert!(runtime
         .entity_record_at_observation(&request, &alias, entity)

@@ -62,7 +62,7 @@ impl SubmittedContinuationWork {
             native,
             record_backing,
         } = self.work;
-        let record = crate::history::ReadmittedPublicationRecord::new(
+        let record = crate::history::ReadmittedPublicationRecord::new_native(
             record_backing,
             common.before.snapshot().clone(),
             common.after.clone(),

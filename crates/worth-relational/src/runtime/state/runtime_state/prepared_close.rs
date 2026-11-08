@@ -1,5 +1,6 @@
 //! Bounded owner close using the existing admission and publication registries.
 use super::RelationalRuntime;
+pub use crate::change_source::RelationalReadCustodyHolders;
 
 #[cfg(test)]
 mod tests;
@@ -9,7 +10,7 @@ pub enum RelationalRuntimeCloseDenial {
     NotOwner,
     OperationsInFlight,
     PublicationCustodyRetained,
-    ReadCustodyRetained,
+    ReadCustodyRetained(RelationalReadCustodyHolders),
 }
 
 /// A refused close still owns the same serving runtime.
@@ -89,7 +90,15 @@ impl RelationalRuntime {
                     || self.state.history.has_detached_retention_obligations()
                 {
                     close.resume_admission();
-                    Some(RelationalRuntimeCloseDenial::ReadCustodyRetained)
+                    Some(RelationalRuntimeCloseDenial::ReadCustodyRetained(
+                        RelationalReadCustodyHolders::SnapshotsAndHistory {
+                            active_snapshots: self.state.visibility.active_snapshot_count(),
+                            detached_history: self
+                                .state
+                                .history
+                                .has_detached_retention_obligations(),
+                        },
+                    ))
                 } else {
                     None
                 }

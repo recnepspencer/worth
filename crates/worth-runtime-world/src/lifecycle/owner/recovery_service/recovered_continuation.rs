@@ -118,13 +118,14 @@ where
                     .ok_or(Denial::NoOwnerEffect)?,
             )
             .map_err(|cause| Denial::Readmission(Box::new(cause)))?;
+        let record_backing = crate::history::ReadmittedPublicationRecordBacking::prepare(execution)
+            .map_err(Denial::Durable)?;
         let funding = execution
             .reserve_retained_memory(
                 (std::mem::size_of::<PreparedRecoveredPublication>()
-                    + std::mem::size_of::<crate::history::ReadmittedPublicationRecord>()
                     + std::mem::size_of::<crate::history::PreparedReadmittedPublicationRecord>()
                     + std::mem::size_of::<crate::history::CompositeRuntimeWorldCommit>()
-                    + 6 * std::mem::size_of::<usize>()) as u64,
+                    + 4 * std::mem::size_of::<usize>()) as u64,
             )
             .map_err(|cause| Denial::Durable(WorldDurableMediumDenial::Request(cause)))?;
         let capacity = self
@@ -215,6 +216,7 @@ where
             }
         };
         let record = crate::history::ReadmittedPublicationRecord::prepare_original(
+            record_backing,
             effects.expected_head().snapshot().clone(),
             after,
             attempt,

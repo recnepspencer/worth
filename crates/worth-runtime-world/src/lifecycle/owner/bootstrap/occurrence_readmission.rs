@@ -1,7 +1,7 @@
-//! Materialize an original occurrence using concrete recovered Native custody.
+//! Materialize an original occurrence with only its actual acting owners.
 use super::*;
 use crate::durability::{AdmittedWorldOccurrence, WorldReadmissionDenial as Denial};
-use crate::history::ReadmittedPublicationRecord;
+use crate::history::{ReadmittedPublicationRecord, RecoveredWorldOwnerEvidence};
 use worth_proof::RelationalPublicationReadmitted;
 use worth_relational::facade::durability::RelationalRecoveredPublicationCustody;
 
@@ -16,24 +16,33 @@ where
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         before: &ProductBranchObservation,
         occurrence: &AdmittedWorldOccurrence,
-        native: RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>,
-    ) -> Result<
-        std::sync::Arc<ReadmittedPublicationRecord>,
-        (
-            RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>,
-            Denial,
-        ),
-    > {
+        owners: RecoveredWorldOwnerEvidence,
+        bridge: worth_runtime_bridge::facade::AdmittedRuntimeWorldCorrespondenceBasis,
+    ) -> Result<std::sync::Arc<ReadmittedPublicationRecord>, (RecoveredWorldOwnerEvidence, Denial)>
+    {
         let location = occurrence.location();
         let open = occurrence.open();
-        if Some(location.owner()) != self.owner_identity().durable()
+        let owners_match_open = match (open.component_intent, owners.borrowed()) {
+            (
+                crate::durability::WorldOpenComponentIntent::RelationalOnly,
+                crate::history::RecoveredWorldOwnerEvidenceRef::RelationalOnly(_),
+            ) => true,
+            (
+                crate::durability::WorldOpenComponentIntent::RelationalOnly,
+                crate::history::RecoveredWorldOwnerEvidenceRef::SignalOnly(_)
+                | crate::history::RecoveredWorldOwnerEvidenceRef::RelationalAndSignal { .. },
+            ) => false,
+        };
+        if !owners_match_open
+            || Some(location.owner()) != self.owner_identity().durable()
             || location.attempt() != open.association.attempt()
             || location.commit() != open.commit
         {
-            return Err((native, Denial::OccurrenceEvidenceMismatch));
+            return Err((owners, Denial::OccurrenceEvidenceMismatch));
         }
-        match self.prepare_readmitted_successor(execution, before, open, native.custody()) {
-            Err(cause) => Err((native, cause)),
+        match self.prepare_readmitted_successor(execution, before, open, owners.borrowed(), bridge)
+        {
+            Err(cause) => Err((owners, cause)),
             Ok(prepared) => Ok(ReadmittedPublicationRecord::new(
                 prepared.record,
                 before.snapshot().clone(),
@@ -41,7 +50,7 @@ where
                 prepared.attempt,
                 location.clone(),
                 occurrence.publishing_incarnation(),
-                native,
+                owners,
             )),
         }
     }

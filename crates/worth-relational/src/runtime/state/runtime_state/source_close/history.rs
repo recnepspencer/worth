@@ -8,6 +8,7 @@ use crate::history::{data::CommitId, RelationalCommitEnvelopeResidency};
 use crate::runtime::state::subsystems::{
     RelationalPerformedSourceWalk, RelationalSourceHistoryBinding,
 };
+use crate::runtime::state::RelationalReadCustodyHolders as Holders;
 enum Stage {
     LiveRoots,
     RetiredRoots,
@@ -170,14 +171,18 @@ impl NativeHistorySourceRetirement {
                     {
                         None => {
                             return Err(RelationalSourceCloseDenial::Native(
-                                RelationalRuntimeCloseDenial::ReadCustodyRetained,
+                                RelationalRuntimeCloseDenial::ReadCustodyRetained(
+                                    Holders::BranchHead { index: self.live },
+                                ),
                             ))
                         }
                         Some(false) => self.live += 1,
                         Some(true) => {
                             if self.original.external_custody_retained() {
                                 return Err(RelationalSourceCloseDenial::Native(
-                                    RelationalRuntimeCloseDenial::ReadCustodyRetained,
+                                    RelationalRuntimeCloseDenial::ReadCustodyRetained(
+                                        self.original.retained_close_holders(),
+                                    ),
                                 ));
                             }
                             self.stage = Stage::Complete;

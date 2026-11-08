@@ -22,7 +22,13 @@ where
         signal: AdmittedSignalInitialEmptyRoot,
         bridge: AdmittedRuntimeWorldCorrespondenceBasis,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<ProductBranchObservation, Denial> {
+    ) -> Result<
+        (
+            ProductBranchObservation,
+            crate::durability::WorldCheckpointOrigin,
+        ),
+        Denial,
+    > {
         let WorldRecord::Branch {
             head,
             bootstrap,
@@ -79,22 +85,16 @@ where
             // The branch frame was already selected through actual Home
             // recovery; installing its SAME identities performs no new I/O.
             let performed = prepared.install().map_err(Denial::RootAdmission)?;
-            self.state
-                .durable
-                .as_ref()
-                .expect("readmitted Home binding")
-                .retain_checkpoint_origin(
-                    prepared
-                        .checkpoint_origin
-                        .take()
-                        .expect("same prepared admitted origin obligation"),
-                );
+            let origin = prepared
+                .checkpoint_origin
+                .take()
+                .expect("same prepared admitted origin obligation");
             *self
                 .state
                 .bootstrap
                 .lock()
                 .unwrap_or_else(|e| e.into_inner()) = RuntimeWorldBootstrapState::Performed;
-            Ok(performed.product_branch().clone())
+            Ok((performed.product_branch().clone(), origin))
         })();
         result.map_err(|cause| {
             Denial::RootPreparation(Box::new(crate::durability::RefusedWorldRootReadmission {

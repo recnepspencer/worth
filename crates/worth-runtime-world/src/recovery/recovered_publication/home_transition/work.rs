@@ -7,8 +7,8 @@ use crate::{
     },
     durability::{WorldDurableMediumBinding, WorldOccurrenceCustody},
     history::{
-        CompositeHistoryCatalog, ProductHeadHistoryProtectionObligation,
-        ReadmittedPublicationRecord, ReadmittedPublicationRecordBacking,
+        CompositeHistoryCatalog, NativeReadmittedPublicationRecord,
+        ProductHeadHistoryProtectionObligation, ReadmittedPublicationRecordBacking,
         ReservedCompositeCommitCapacity,
     },
     retention::{
@@ -78,19 +78,19 @@ pub(super) struct SubmittedContinuationWork {
 }
 pub(super) struct MaterializedContinuationWork {
     pub(super) common: ContinuationCommon,
-    pub(super) record: Arc<ReadmittedPublicationRecord>,
+    pub(super) record: NativeReadmittedPublicationRecord,
     pub(super) permit: WorldProductMovementPermit,
 }
 pub(super) struct HistoryInstalledContinuationWork {
     pub(super) common: ContinuationCommon,
-    pub(super) record: Arc<ReadmittedPublicationRecord>,
+    pub(super) record: NativeReadmittedPublicationRecord,
     pub(super) permit: WorldProductMovementPermit,
     pub(super) history_head: ProductHeadHistoryProtectionObligation,
     pub(super) publication: WorldReadmittedPublication,
 }
 pub(super) struct TransferredContinuationWork {
     pub(super) common: ContinuationCommon,
-    pub(super) record: Arc<ReadmittedPublicationRecord>,
+    pub(super) record: NativeReadmittedPublicationRecord,
     pub(super) permit: WorldProductMovementPermit,
     pub(super) history_head: ProductHeadHistoryProtectionObligation,
     pub(super) publication: WorldReadmittedPublication,
@@ -98,7 +98,7 @@ pub(super) struct TransferredContinuationWork {
 }
 pub(super) struct InstalledContinuationWork {
     pub(super) common: ContinuationCommon,
-    pub(super) record: Arc<ReadmittedPublicationRecord>,
+    pub(super) record: NativeReadmittedPublicationRecord,
     pub(super) permit: Option<WorldProductMovementPermit>,
     pub(super) head: Option<ProductBranchHeadProtection>,
     pub(super) publication: Option<WorldReadmittedPublication>,
