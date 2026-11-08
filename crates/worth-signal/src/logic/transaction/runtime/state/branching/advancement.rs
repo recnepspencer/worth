@@ -48,6 +48,32 @@ where
             >,
         ) -> Result<(), SignalError>,
     {
+        worth_execution::run_with_execution_stack(move || {
+            self.advance_signal_branch_on_execution_stack(execution, runtime_ctx, expected, apply)
+        })
+    }
+
+    #[inline(never)]
+    fn advance_signal_branch_on_execution_stack<F>(
+        &mut self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
+        runtime_ctx: &mut Ctx,
+        expected: &AdmittedSignalBranchBasis,
+        apply: F,
+    ) -> Result<SignalBranchAdvanceOutcome, SignalBranchAdvanceDenial>
+    where
+        F: FnOnce(
+            &mut crate::logic::transaction::runtime::transaction::SignalTransaction<
+                '_,
+                D,
+                I,
+                E,
+                Ctx,
+                T,
+            >,
+        ) -> Result<(), SignalError>,
+    {
         if let Some((_, mutation, _)) = self.sealed_owner_port_slots() {
             let cancellation = crate::branch::SignalOwnerCancellationSource::new();
             return mutation.advance_exact(

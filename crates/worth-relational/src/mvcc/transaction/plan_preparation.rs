@@ -13,6 +13,17 @@ impl BranchBoundRelationalTransaction {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &crate::runtime::RelationalRuntime,
     ) -> Result<&MergedCommitPlan, TransactionCommitError> {
+        worth_execution::run_with_execution_stack(move || {
+            self.prepare_merged_plan_on_execution_stack(execution, runtime)
+        })
+    }
+
+    #[inline(never)]
+    fn prepare_merged_plan_on_execution_stack(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &crate::runtime::RelationalRuntime,
+    ) -> Result<&MergedCommitPlan, TransactionCommitError> {
         let preparation = runtime.preparation_runtime_snapshot();
         crate::authority::commit::pipeline::consult_stage(
             execution,

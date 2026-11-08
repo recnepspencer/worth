@@ -177,6 +177,17 @@ impl RelationalRuntime {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
+        worth_execution::run_with_execution_stack(move || {
+            self.validate_branch_transaction_on_execution_stack(execution, transaction)
+        })
+    }
+
+    #[inline(never)]
+    fn validate_branch_transaction_on_execution_stack(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        transaction: crate::mvcc::BranchBoundRelationalTransaction,
+    ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
         crate::authority::commit::pipeline::consult_stage(
             execution,
             crate::authority::commit::pipeline::CommitStage::Validation,
@@ -188,6 +199,22 @@ impl RelationalRuntime {
     /// Validate with metadata independently bound to every actual proposal round.
     /// The factory is borrowed; the caller retains its outer fence ownership.
     pub fn validate_branch_transaction_with_source_context(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        transaction: crate::mvcc::BranchBoundRelationalTransaction,
+        context: &dyn crate::validation::candidate_source::ManagedIndexSourceContextFactory,
+    ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
+        worth_execution::run_with_execution_stack(move || {
+            self.validate_branch_transaction_with_source_context_on_execution_stack(
+                execution,
+                transaction,
+                context,
+            )
+        })
+    }
+
+    #[inline(never)]
+    fn validate_branch_transaction_with_source_context_on_execution_stack(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,

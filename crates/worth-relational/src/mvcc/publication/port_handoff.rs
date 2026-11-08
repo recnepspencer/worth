@@ -71,6 +71,20 @@ impl RelationalPublicationPort {
             PreparedMemoryRelationalCutover<'cutover, 'policy, 'request>,
         ) -> R,
     ) -> Result<ScopedRelationalPublication<R>, RelationalPublicationOutcome> {
+        worth_execution::run_with_execution_stack(move || {
+            self.with_prepared_memory_cutover_on_execution_stack(execution, candidate, handoff)
+        })
+    }
+
+    #[inline(never)]
+    fn with_prepared_memory_cutover_on_execution_stack<'policy, 'request, R>(
+        &self,
+        execution: &ExecutionRequest<'policy, 'request>,
+        candidate: PreparedRelationalCommitCandidate,
+        handoff: impl for<'cutover> FnOnce(
+            PreparedMemoryRelationalCutover<'cutover, 'policy, 'request>,
+        ) -> R,
+    ) -> Result<ScopedRelationalPublication<R>, RelationalPublicationOutcome> {
         let mut handoff = Some(handoff);
         let mut result = None;
         let publication = self.with_prepared_publication(

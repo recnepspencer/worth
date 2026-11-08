@@ -7,11 +7,33 @@ impl RelationalRuntime {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
     ) -> Result<CommitResult, TransactionCommitError> {
+        worth_execution::run_with_execution_stack(move || {
+            self.commit_branch_transaction_on_execution_stack(execution, transaction)
+        })
+    }
+
+    #[inline(never)]
+    fn commit_branch_transaction_on_execution_stack(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        transaction: crate::mvcc::BranchBoundRelationalTransaction,
+    ) -> Result<CommitResult, TransactionCommitError> {
         let candidate = self.prepare_branch_transaction(execution, transaction)?;
         self.publish_prepared_candidate(execution, candidate)
     }
 
     pub fn prepare_branch_transaction(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        transaction: crate::mvcc::BranchBoundRelationalTransaction,
+    ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
+        worth_execution::run_with_execution_stack(move || {
+            self.prepare_branch_transaction_on_execution_stack(execution, transaction)
+        })
+    }
+
+    #[inline(never)]
+    fn prepare_branch_transaction_on_execution_stack(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,

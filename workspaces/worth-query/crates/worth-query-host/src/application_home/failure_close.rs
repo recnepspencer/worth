@@ -62,6 +62,17 @@ impl<Schema: ApplicationSchemaComposition, Program: 'static>
         WorthQueryApplicationHomeOpeningClosed,
         WorthQueryApplicationHomeOpeningCloseRefused<Schema, Program>,
     > {
+        worth_execution::run_with_execution_stack(move || self.close_on_execution_stack(request))
+    }
+
+    #[inline(never)]
+    fn close_on_execution_stack(
+        self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<
+        WorthQueryApplicationHomeOpeningClosed,
+        WorthQueryApplicationHomeOpeningCloseRefused<Schema, Program>,
+    > {
         retirement_plan::prepare(self).execute(request)
     }
 }
@@ -148,6 +159,16 @@ impl<Schema: ApplicationSchemaComposition, Program: 'static>
     WorthQueryApplicationHomeOpeningCloseRefused<Schema, Program>
 {
     pub fn try_close(
+        self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryApplicationHomeOpeningClosed, Self> {
+        worth_execution::run_with_execution_stack(move || {
+            self.try_close_on_execution_stack(request)
+        })
+    }
+
+    #[inline(never)]
+    fn try_close_on_execution_stack(
         self,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<WorthQueryApplicationHomeOpeningClosed, Self> {

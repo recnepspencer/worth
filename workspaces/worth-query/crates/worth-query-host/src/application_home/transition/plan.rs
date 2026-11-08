@@ -28,7 +28,7 @@ impl WorthQueryHomeProgramTransitionPlan {
         let intent = RelationalTransactionIntent::ordinary();
         match (&self.schema_transition, position == self.target) {
             (Some((schema, policy)), true) => {
-                intent.with_schema_transition(schema.clone(), policy.clone())
+                intent.with_schema_transition(schema.clone(), *policy)
             }
             (Some(_), false) | (None, true) | (None, false) => intent,
         }
