@@ -84,3 +84,7 @@ impl CanonicalCommitEnvelope {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "payload_encoding_tests.rs"]
+mod tests;

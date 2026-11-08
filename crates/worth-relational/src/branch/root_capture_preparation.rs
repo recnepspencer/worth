@@ -266,3 +266,7 @@ impl PreparedRootSchema {
         cost
     }
 }
+
+#[cfg(test)]
+#[path = "root_capture_preparation/schema_reuse_tests.rs"]
+mod schema_reuse_tests;
