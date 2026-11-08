@@ -1,0 +1,43 @@
+[
+  {
+    "lane": "consumer-mains-build",
+    "exit": 0
+  },
+  {
+    "lane": "invariant_reads-main",
+    "exit": 0,
+    "pe_stack_reserve_bytes": 1048576
+  },
+  {
+    "lane": "required_feature-main",
+    "exit": 0,
+    "pe_stack_reserve_bytes": 1048576
+  },
+  {
+    "lane": "shared_execution-main",
+    "exit": 101,
+    "pe_stack_reserve_bytes": 1048576
+  },
+  {
+    "lane": "worth-query-consumer-root-main",
+    "exit": 0,
+    "pe_stack_reserve_bytes": 1048576
+  },
+  {
+    "lane": "retention-default",
+    "exit": 101,
+    "selected": [
+      "application_invariant_acceptance::proof::application_program::discovered::retention::discovered_committed_retention_refuses_twice_then_promotes_original_carrier"
+    ],
+    "cleanup_assertion_may_remain": true
+  },
+  {
+    "lane": "bank-tests",
+    "exit": 0,
+    "selected": [
+      "oracle::server_owned_effects::server::parallel_history::assessment_history::assessment_history_settles_at_each_request_width",
+      "oracle::server_owned_effects::server::parallel_history::transfer_history::seeded_transfers_match_at_host_policy_and_each_request_width"
+    ],
+    "rust_min_stack_present": false
+  }
+]
