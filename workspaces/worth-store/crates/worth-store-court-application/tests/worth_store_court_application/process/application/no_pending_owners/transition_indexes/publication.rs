@@ -21,7 +21,7 @@ pub(super) fn run(
 ) -> Option<worth_relational::facade::indexes::RetainedDerivedIndexDefinition> {
     let directory = tempfile::tempdir().unwrap();
     let mut fixture =
-        super::super::transition_opening::open_transition(directory.path(), &execution);
+        super::super::transition_opening::open_transition(directory.path(), execution);
     let source = fixture
         .home
         .world()
@@ -43,20 +43,17 @@ pub(super) fn run(
     let before_history = native.history().historical_latest_commit();
     let mut private = native
         .index_authority()
-        .prepare_home_program_definitions(&execution)
+        .prepare_home_program_definitions(execution)
         .unwrap();
-    assert_eq!(
-        private.install(&execution, &old_definition).unwrap(),
-        old_id
-    );
-    let target_id = private.install(&execution, &target_definition).unwrap();
+    assert_eq!(private.install(execution, &old_definition).unwrap(), old_id);
+    let target_id = private.install(execution, &target_definition).unwrap();
     assert_eq!(
         target_id.0,
         old_id.0 + 1,
         "the owner assigns the next contiguous identity"
     );
     assert_eq!(
-        private.install(&execution, &target_definition).unwrap(),
+        private.install(execution, &target_definition).unwrap(),
         target_id
     );
     assert_eq!(
@@ -72,21 +69,21 @@ pub(super) fn run(
         .is_none());
     let contracts = native
         .prepare_home_program_contracts(
-            &execution,
+            execution,
             source.basis().relational_basis(),
             target::registry(),
             Vec::new(),
             Vec::new(),
         )
         .unwrap()
-        .with_index_definitions(private.finish(&execution).unwrap())
+        .with_index_definitions(private.finish(execution).unwrap())
         .unwrap();
     let proposed = target::proposed();
     let intent =
         RelationalTransactionIntent::ordinary().with_schema_transition(proposed.clone(), None);
     let body = target::body();
     let digest =
-        home_program_transition_body_digest(&execution, &intent, std::slice::from_ref(&body))
+        home_program_transition_body_digest(execution, &intent, std::slice::from_ref(&body))
             .unwrap();
     let reserved = fixture
         .home
@@ -94,18 +91,18 @@ pub(super) fn run(
             source.clone(),
             HomeProgramTransitionPlanDigest::from_recorded([83; 32]),
             1,
-            contracts.target_meaning(&execution, 0).unwrap(),
+            contracts.target_meaning(execution, 0).unwrap(),
             &[digest],
-            &execution,
+            execution,
         )
         .unwrap();
     fixture.home.stage_home_program_transition_intent(reserved,
-        worth_query_testkit_installation::facade::installation::application_home_binding::admitted_transition_successor_binding(), &execution).unwrap();
+        worth_query_testkit_installation::facade::installation::application_home_binding::admitted_transition_successor_binding(), execution).unwrap();
     loop {
         execution.consult().unwrap();
         match fixture
             .home
-            .advance_home_program_transition_intent(&execution)
+            .advance_home_program_transition_intent(execution)
             .unwrap()
         {
             ApplicationHomeTransitionIntentOutcome::Committed => break,
@@ -115,7 +112,7 @@ pub(super) fn run(
     }
     let mut grant = fixture
         .home
-        .admit_home_program_transition_step(0, &source, &execution)
+        .admit_home_program_transition_step(0, &source, execution)
         .unwrap();
     let cancellation = RuntimeWorldCancellationSource::new();
     let reservation = grant.take_reservation().unwrap();
@@ -124,7 +121,7 @@ pub(super) fn run(
         .world()
         .publication_port()
         .prepare_home_transition_step(
-            &execution,
+            execution,
             source.clone(),
             intent,
             grant.plan(),
@@ -135,12 +132,12 @@ pub(super) fn run(
             None,
         )
         .unwrap();
-    let mut outcome = pending.advance(&execution);
+    let mut outcome = pending.advance(execution);
     let opened = loop {
         execution.consult().unwrap();
         match outcome {
             WorldOpenAttemptOutcome::Opened(opened) => break opened,
-            WorldOpenAttemptOutcome::Pending(pending) => outcome = pending.advance(&execution),
+            WorldOpenAttemptOutcome::Pending(pending) => outcome = pending.advance(execution),
             other => panic!("original World open refused: {other:?}"),
         }
     };
@@ -149,7 +146,7 @@ pub(super) fn run(
         RelationalCallerAssociation::from_bytes(opened.caller_association_bytes()).unwrap();
     let mut transaction = native
         .begin_home_program_step(
-            &execution,
+            execution,
             source.basis().relational_basis(),
             RelationalHomeProgramStepContracts::Target {
                 contracts: &contracts,
@@ -165,10 +162,10 @@ pub(super) fn run(
     transaction
         .push_batch(body, execution.allocation_policy())
         .unwrap();
-    let proposal = transaction.validate(&execution, native).unwrap();
+    let proposal = transaction.validate(execution, native).unwrap();
     let (opened, proposal) = opened.bind_query_native_proposal(proposal).unwrap();
     let mut candidate = native
-        .prepare_validated_proposal(&execution, proposal)
+        .prepare_validated_proposal(execution, proposal)
         .unwrap();
     let requested = match journey {
         Journey::IncompleteGenerations => &[][..],
@@ -187,7 +184,7 @@ pub(super) fn run(
                 maximum_cold_record_slots: Some(100),
                 maximum_derived_rows: Some(100),
             },
-            &execution,
+            execution,
         )
         .unwrap();
     assert!(native
@@ -198,9 +195,9 @@ pub(super) fn run(
     match journey {
         Journey::Publish => {
             let prepared = opened
-                .complete_query_native_preparation(candidate, &execution)
+                .complete_query_native_preparation(candidate, execution)
                 .unwrap();
-            let performed = fixture.publish(&execution, prepared, &cancellation.token());
+            let performed = fixture.publish(execution, prepared, &cancellation.token());
             assert_eq!(performed.new_product_head().reference_generation().get(), 1);
             assert_eq!(
                 native
@@ -224,7 +221,7 @@ pub(super) fn run(
             let observation = basis.observation();
             let generation = native
                 .index_access()
-                .read_published_generation_for_observation(&execution, target_id, &observation)
+                .read_published_generation_for_observation(execution, target_id, &observation)
                 .unwrap()
                 .unwrap();
             let DerivedIndexEntries::EntityField(entries) = &generation.entries else {
@@ -240,7 +237,7 @@ pub(super) fn run(
             let receipt = native.history().historical_latest_commit().unwrap();
             let envelope = native
                 .replay()
-                .canonical_commit_envelope(&execution, receipt.commit_id)
+                .canonical_commit_envelope(execution, receipt.commit_id)
                 .unwrap()
                 .unwrap();
             let wire: serde_json::Value =
@@ -340,7 +337,7 @@ pub(super) fn run(
             assert!(matches!(
                 native
                     .publication_port()
-                    .compare_and_publish(&execution, candidate),
+                    .compare_and_publish(execution, candidate),
                 RelationalPublicationOutcome::Denied(
                     RelationalPublicationDenial::StaleIndexDefinitions
                 )

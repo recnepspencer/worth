@@ -16,10 +16,10 @@ impl RelationalPreparationRuntime {
             None => basis.inner.root.execution_contracts.get(),
         };
         let mut runtime = self.clone();
-        if let Some(target) = target {
-            if !target.receiver_epoch.same_epoch(&self.configuration_epoch) {
-                return Err(required_contracts());
-            }
+        if let Some(target) = target
+            && !target.receiver_epoch.same_epoch(&self.configuration_epoch)
+        {
+            return Err(required_contracts());
         }
         runtime.schema_contract_runtime = self.configuration_epoch.schema_contract_runtime.clone();
         runtime.execution_contracts = None;

@@ -1,0 +1,23 @@
+COMMAND: ["python", "target/lane-evidence/topology_funding_verify.py"]
+HEAD: bb3e73655b80af464f5dfdbbd73a93b8e616d9d8
+CLEAN: false
+START: 2026-11-08T17:58:40.165441+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+C_FREE_BYTES 1035385909248
+topology-check-driver: exit=0 log=C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\topology-check-driver.log
+C_FREE_BYTES 1032436985856
+prebuild: cargo metadata --offline --format-version 1 --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-certification\fixtures\consumer_entry\Cargo.toml"
+prebuild: cargo test --message-format=json --no-run --package worth-query-topology-entry --lib --profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-certification\fixtures\consumer_entry\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo nextest list --cargo-message-format=json --package worth-query-topology-entry --lib --cargo-profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-certification\fixtures\consumer_entry\Cargo.toml" --list-type binaries-only --message-format json
+   Compiling worth-schema-graph v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-contracts\crates\worth-schema-graph)
+   Compiling worth-harness v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-harness)
+   Compiling worth-query v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query)
+   Compiling worth-query-testkit-host v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-testkit-host)
+   Compiling worth-query-topology-entry v0.0.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-certification\fixtures\consumer_entry\topology_entry)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3m 55s
+prebuild: cargo nextest list --cargo-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\topology-funding\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\topology-funding\build\binaries.json" --message-format json --ignore-default-filter -E "test(=checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh) + test(=checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_chain_settles_through_its_last_consumer_alone) + test(=checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_consumer_never_settles_over_a_stale_upstream) + test(=checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_world_verifies_each_root_and_decides_each_consumer_once) + test(=checkpoint_recovery::required_chain::exact_invalidation::locality::lifecycle::serial::authored_ring_checkpoint_reopens_then_accepts_a_new_source_edit)"
+prebuild: cargo nextest run --cargo-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\topology-funding\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\topology-funding\build\binaries.json" --profile ci --config-file "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\topology-funding\nextest.toml" --ignore-default-filter --no-fail-fast --no-tests=fail --message-format libtest-json --success-output immediate -E "test(=checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh) + test(=checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_chain_settles_through_its_last_consumer_alone) + test(=checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_consumer_never_settles_over_a_stale_upstream) + test(=checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_world_verifies_each_root_and_decides_each_consumer_once) + test(=checkpoint_recovery::required_chain::exact_invalidation::locality::lifecycle::serial::authored_ring_checkpoint_reopens_then_accepts_a_new_source_edit)"
+RESULT 100
+
+END: 2026-11-08T18:12:24.479335+00:00
+EXIT: 100

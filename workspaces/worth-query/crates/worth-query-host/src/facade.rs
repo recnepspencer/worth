@@ -379,3 +379,7 @@ pub use crate::application_home::{
 /// Relational DATA for a Home transition author. These values grant no step,
 /// initialization, publication or Native owner access.
 pub mod home_program_transition;
+
+pub use worth_foundational::facade::{
+    CanonicalDigestId, DurableOwnerFamily, UncleanRecoveryUnsupported,
+};

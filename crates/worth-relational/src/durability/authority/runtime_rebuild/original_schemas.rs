@@ -17,8 +17,9 @@ impl OriginalSchemaGraph {
         plan: &mut RecoveryPlan,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Option<Self>, RelationalRecoveryStop> {
-        let graph = Self::admit_unbound(plan, request)?;
-        if let Some(graph) = &graph {
+        let mut graph = Self::admit_unbound(plan, request)?;
+        if let Some(graph) = &mut graph {
+            graph.bind_home_executables(&plan.config.schema.registry.content_formats, request)?;
             graph.bind_directories(plan, request)?;
         }
         Ok(graph)
@@ -40,7 +41,7 @@ impl OriginalSchemaGraph {
             schemas: ReadmittedSourceSchemaCatalog::prepare(request, directory_copies)?,
         };
         for image in &original.current.schemas {
-            ReadmittedSourceSchemaCatalog::insert_image(
+            ReadmittedSourceSchemaCatalog::insert_unbound_image(
                 &mut graph.schemas,
                 image,
                 &plan.config.schema.registry,
@@ -49,7 +50,7 @@ impl OriginalSchemaGraph {
         }
         if let Some(checkpoint) = &plan.checkpoint {
             for image in &checkpoint.branch_root_schema_images {
-                ReadmittedSourceSchemaCatalog::insert_image(
+                ReadmittedSourceSchemaCatalog::insert_unbound_image(
                     &mut graph.schemas,
                     image,
                     &plan.config.schema.registry,
@@ -68,7 +69,7 @@ impl OriginalSchemaGraph {
                 {
                     return Err(corrupt("Home tail result carrier attribution disagrees").into());
                 }
-                ReadmittedSourceSchemaCatalog::insert_image(
+                ReadmittedSourceSchemaCatalog::insert_unbound_image(
                     &mut graph.schemas,
                     image,
                     &plan.config.schema.registry,

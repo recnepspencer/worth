@@ -39,7 +39,8 @@ mod serial {
         let request = application.request(&principal, &scope);
         let (_, first) = demand(&request, &application);
         assert_eq!(first[0].runs, [Run::Full(Cause::FirstRun)]);
-        let checkpoint = application.with_host_advancement(|host_phase| application.capture_application_checkpoint(&host_phase, worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation).unwrap()).expect("installed host call opens");
+        let checkpoint =
+            worth_query_testkit_host::facade::host::checkpoint_capture::capture(&application);
         drop(application);
         let application = installation::install_configured::<false, TOTALS_WORK, 1>(
             Some(checkpoint),

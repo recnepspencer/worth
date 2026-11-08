@@ -126,12 +126,60 @@ where
     where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
     {
+        worth_execution::run_with_execution_stack(move || {
+            self.advance_exact_on_execution_stack(
+                execution,
+                expected,
+                runtime_ctx,
+                cancellation,
+                apply,
+            )
+        })
+    }
+
+    #[inline(never)]
+    fn advance_exact_on_execution_stack<F>(
+        &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
+        expected: &AdmittedSignalBranchBasis,
+        runtime_ctx: &mut Ctx,
+        cancellation: &SignalOwnerCancellationToken,
+        apply: F,
+    ) -> Result<SignalBranchAdvanceOutcome, SignalBranchAdvanceDenial>
+    where
+        F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
+    {
         self.advance_exact_with_completion(execution, expected, runtime_ctx, cancellation, apply)
             .into_result()
     }
 
     /// Preserve exact owner completion when a post-movement boundary unwinds.
     pub fn advance_exact_with_completion<F>(
+        &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
+        expected: &AdmittedSignalBranchBasis,
+        runtime_ctx: &mut Ctx,
+        cancellation: &SignalOwnerCancellationToken,
+        apply: F,
+    ) -> crate::branch::SignalBranchAdvanceCompletion
+    where
+        F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
+    {
+        worth_execution::run_with_execution_stack(move || {
+            self.advance_exact_with_completion_on_execution_stack(
+                execution,
+                expected,
+                runtime_ctx,
+                cancellation,
+                apply,
+            )
+        })
+    }
+
+    #[inline(never)]
+    fn advance_exact_with_completion_on_execution_stack<F>(
         &self,
         execution: worth_execution::ExecutionRequest<'_, '_>,
 

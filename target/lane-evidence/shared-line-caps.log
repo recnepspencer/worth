@@ -1,0 +1,10 @@
+COMMAND: ["C:/Program Files/Git/bin/bash.exe", "scripts/ci/check_workspace_rust_line_caps.sh", "dirty"]
+HEAD: 0df3280458de6db962dd6c2adc90e5c0b0191976
+CLEAN: false
+START: 2026-11-08T17:56:18.162910+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+[workspace-rust-line-caps] enforcing 400-line cap for dirty Rust files
+[workspace-rust-line-caps] PASS: checked 2 Rust files
+
+END: 2026-11-08T17:56:33.143946+00:00
+EXIT: 0

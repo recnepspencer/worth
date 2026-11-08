@@ -42,10 +42,9 @@ pub(super) fn resolve(
                 .entity_registration(actual.kind_id)
                 .map_err(relational_schema_denial)?
                 == actual
+                && selected.replace(actual.clone()).is_some()
             {
-                if selected.replace(actual.clone()).is_some() {
-                    return Err(invalid_member("ambiguous original application entity role"));
-                }
+                return Err(invalid_member("ambiguous original application entity role"));
             }
         }
         let selected = selected
@@ -94,12 +93,11 @@ pub(super) fn resolve(
                 .relation_registration(actual.kind_id)
                 .map_err(relational_schema_denial)?
                 == actual
+                && selected.replace(actual.kind_id).is_some()
             {
-                if selected.replace(actual.kind_id).is_some() {
-                    return Err(invalid_member(
-                        "ambiguous original application relation role",
-                    ));
-                }
+                return Err(invalid_member(
+                    "ambiguous original application relation role",
+                ));
             }
         }
         relations.insert(

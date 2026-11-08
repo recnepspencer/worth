@@ -85,7 +85,7 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
             }
             plan.steps[plan.target as usize].batches.push(
                 target
-                    .bind_home_program_transition_activation(&before, &lens)
+                    .bind_home_program_transition_activation(before, &lens)
                     .map_err(Denial::Author)?,
             );
             let bodies = plan

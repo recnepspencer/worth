@@ -34,7 +34,24 @@ where
         WorthQueryApplicationHome<B, BP>,
         WorthQueryHomeProgramTransitionOpenRefused<A, AP, B, BP>,
     > {
-        self.prepare_transition_opening(phase)?.finish(phase)
+        worth_execution::run_with_execution_stack(move || {
+            self.open_in_advancement_on_execution_stack(phase)
+        })
+    }
+
+    #[inline(never)]
+    fn open_in_advancement_on_execution_stack(
+        self,
+        phase: &WorthQueryBootstrapAdvancementPhase<'_>,
+    ) -> Result<
+        WorthQueryApplicationHome<B, BP>,
+        WorthQueryHomeProgramTransitionOpenRefused<A, AP, B, BP>,
+    > {
+        let ready = {
+            let prepared = self.prepare_transition_opening(phase)?;
+            prepared.readmit(phase)?
+        };
+        ready.finish(phase)
     }
 
     #[inline(never)]
@@ -233,25 +250,15 @@ where
     >,
 {
     #[inline(never)]
-    fn finish(
-        self: Box<Self>,
-        phase: &WorthQueryBootstrapAdvancementPhase<'_>,
-    ) -> Result<
-        WorthQueryApplicationHome<B, BP>,
-        WorthQueryHomeProgramTransitionOpenRefused<A, AP, B, BP>,
-    > {
-        self.readmit(phase)?.finish(phase)
-    }
-    #[inline(never)]
     fn readmit(
-        self: Box<Self>,
+        self,
         phase: &WorthQueryBootstrapAdvancementPhase<'_>,
     ) -> Result<
         Box<ReadyHomeProgramOpening<'a, A, AP, B, BP, Author>>,
         WorthQueryHomeProgramTransitionOpenRefused<A, AP, B, BP>,
     > {
         use WorthQueryHomeProgramTransitionOpenRefused as Refused;
-        match *self {
+        match self {
             Self::Current {
                 query,
                 home,
@@ -322,13 +329,13 @@ where
 {
     #[inline(never)]
     fn finish(
-        self: Box<Self>,
+        self,
         phase: &WorthQueryBootstrapAdvancementPhase<'_>,
     ) -> Result<
         WorthQueryApplicationHome<B, BP>,
         WorthQueryHomeProgramTransitionOpenRefused<A, AP, B, BP>,
     > {
-        match *self {
+        match self {
             Self::Current(opening) => opening::initialization::initialize_directory(phase, opening)
                 .map_err(WorthQueryHomeProgramTransitionOpenRefused::successor),
             Self::Transition {

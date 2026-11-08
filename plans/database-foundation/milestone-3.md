@@ -114,7 +114,7 @@ Each H item's proof is its phase's graceful journeys, plus the graceful oracle.
     interpretations process-local and counts each retained meaning once; it
     transfers none to durable membership.
 - **H10 (Phase 10): Public cutover.**
-  - Callers and examples on the open call. They run on their genuine main thread under the default stack in the dev profile.
+  - Callers and examples on the open call. They run on their genuine main thread under the default stack in the dev profile. Entry-point stack growth through `stacker::maybe_grow` satisfies this main-thread requirement.
   - The guides; deleting `UnsupportedDurableFamily`.
   - A graceful full journey across every family.
   - Documentation that states plainly that crash recovery is not yet certified.

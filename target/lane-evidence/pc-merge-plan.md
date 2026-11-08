@@ -1,0 +1,7 @@
+# Lifecycle safe-point merge boundary and plan
+
+Base fbbdf5edff; exact incoming80543019fb. Real merge only; no P-C tip, master or UI changes. D16 transition owner supplies shared successor compilation, guarded Native/World/Store promotion and binding acknowledgement, public Host transition with B handoff/reopen. Existing integration supplies D8 service quarantine, recovered custody admission, typed bootstrap completion, P-A authenticated codec cutover, original-request-funded history and publication phases. Preserve both at construction/visibility/facade/dependency/caller seams. Caller inventories take exact sorted union; no aliases, baseline expansion or compatibility shims.
+
+Read the governing D16/D17, shared roadmap requirements, and current owner definitions before resolving. First resolve the entire conflict set; then one serial check per reached workspace (Root, Query, Store, Bank and positive consumer fixture; Host belongs to Query). Select Tier2 against fbbdf5edff via affected_lanes.py, excluding ignored bodies, query-scale, exhaustive oracles and Store scenarios. Existing P-A held items and known cleanup reds remain evidence, not permission to weaken courts. Classify every observed failure before runtime repairs. Fresh independent reviewer reads both parents, resolutions, and logs without rebuilding. Commit and send the integration head immediately for H5 before stack implementation.
+
+Stack growth is a separate subsequent reviewed batch, with no frame-shrinking work.

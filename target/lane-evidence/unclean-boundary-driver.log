@@ -1,0 +1,31 @@
+COMMAND: ["C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\pa_merge_owned_cargo.py", "unclean-boundary", "tools/boundary-check/Cargo.toml", "run", "--target-dir", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\constitution-tools", "--", "--root", "C:\\programming\\worth worktees\\worktrees\\m3-host-home"]
+HEAD: 7e2a7b85ff02fa253c1d99649625fa666f90e306
+CLEAN: false
+START: 2026-11-08T16:56:48.039221+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+prebuild: cargo build --message-format=json --target-dir "C:\programming\worth worktees\worktrees\m3-host-home\target\constitution-tools" --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\tools\boundary-check\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo run --message-format=json --target-dir "C:\programming\worth worktees\worktrees\m3-host-home\target\constitution-tools" --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\tools\boundary-check\Cargo.toml" -- --root "C:\programming\worth worktees\worktrees\m3-host-home"
+   Compiling serde_core v1.0.229
+   Compiling proc-macro2 v1.0.107
+   Compiling zmij v1.0.23
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.27
+   Compiling serde v1.0.229
+   Compiling serde_json v1.0.154
+   Compiling winnow v1.0.4
+   Compiling memchr v2.8.3
+   Compiling itoa v1.0.18
+   Compiling toml_parser v1.1.5+spec-1.1.0
+   Compiling toml_datetime v1.1.2+spec-1.1.0
+   Compiling serde_spanned v1.1.2
+   Compiling toml v1.1.8+spec-1.1.0
+   Compiling syn v2.0.119
+   Compiling boundary-check v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\tools\boundary-check)
+    Finished `dev` profile [unoptimized] target(s) in 46.54s
+     Running `target\constitution-tools\debug\boundary-check.exe --root 'C:\programming\worth worktees\worktrees\m3-host-home'`
+BOUNDARY_INPUT_FAILURE inputs: target/lane-evidence/pc-merge-families-preview.md: stream did not contain valid UTF-8
+belongs: tools/boundary-check/src/inputs.rs; restore readable Git inputs and offline Cargo metadata before judging boundaries
+error: process didn't exit successfully: `target\constitution-tools\debug\boundary-check.exe --root 'C:\programming\worth worktees\worktrees\m3-host-home'` (exit code: 2)
+
+END: 2026-11-08T16:57:46.896961+00:00
+EXIT: 2

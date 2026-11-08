@@ -1,0 +1,43 @@
+COMMAND: ["C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\pa_merge_owned_cargo.py", "unclean-store-round3-check", "workspaces/worth-store/Cargo.toml", "check", "-p", "worth-store-application", "--tests", "--message-format=json", "--keep-going"]
+HEAD: 7e2a7b85ff02fa253c1d99649625fa666f90e306
+CLEAN: false
+START: 2026-11-08T17:07:57.134625+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+prebuild: cargo check -p worth-store-application --tests --message-format=json --keep-going --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo check -p worth-store-application --tests --message-format=json --keep-going --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\Cargo.toml"
+    Checking worth-proof v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-proof)
+   Compiling worth-store-physical-backend v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-physical-backend)
+    Checking worth-foundational v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-foundational)
+    Checking worth-store-aspect-native v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-aspect-native)
+    Checking worth-execution v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-execution)
+    Checking worth-query-declaration v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-declaration)
+    Checking worth-store-authority v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-authority)
+    Checking worth-signal v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-signal)
+    Checking worth-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-relational)
+    Checking worth-store-physical-format v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-physical-format)
+    Checking worth-store-security v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-security)
+    Checking worth-store-modes v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-modes)
+    Checking worth-query-installation v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-installation)
+    Checking worth-store-physical-integrity v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-physical-integrity)
+    Checking worth-store-wal v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-wal)
+    Checking worth-query-testkit-installation v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-testkit-installation)
+    Checking worth-store-buffer-pool v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-buffer-pool)
+    Checking worth-store-recovery-physics v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-recovery-physics)
+    Checking worth-store-physical-isolation v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-physical-isolation)
+    Checking worth-store-io-scheduler v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-io-scheduler)
+    Checking worth-store-reclaim-policy v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-reclaim-policy)
+    Checking worth-store-retention v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-retention)
+    Checking worth-store-lsm-authority v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-lsm-authority)
+    Checking worth-store-tiering v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-tiering)
+    Checking worth-store-blob-chunks v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-blob-chunks)
+    Checking worth-store-layout-indexes v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-layout-indexes)
+    Checking worth-store v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store)
+    Checking worth-store-recovery-runtime v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-recovery-runtime)
+    Checking worth-runtime-bridge v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-runtime-bridge)
+    Checking worth-store-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-relational)
+    Checking worth-runtime-world v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-runtime-world)
+    Checking worth-store-application v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-application)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 41s
+
+END: 2026-11-08T17:09:41.130179+00:00
+EXIT: 0

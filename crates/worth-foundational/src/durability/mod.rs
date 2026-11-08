@@ -85,3 +85,6 @@ pub use retention_class::{DurableArtifactRetention, RetentionClass};
 
 mod world_original_fate;
 pub use world_original_fate::WorldOriginalFate;
+
+mod unclean_recovery;
+pub use unclean_recovery::UncleanRecoveryUnsupported;

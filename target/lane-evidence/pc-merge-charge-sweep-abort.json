@@ -1,0 +1,13 @@
+﻿{
+    "pid":  62412,
+    "executable":  "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\target\\debug\\deps\\worth_query_court_execution_primary_graph_application_attempt-667fb6fde2e31290.exe",
+    "command":  "\"C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\target\\debug\\deps\\worth_query_court_execution_primary_graph_application_attempt-667fb6fde2e31290.exe\" --exact domain_computation::primary_graph::application_attempt::compare_and_commit::commit_outcome::denial::execution::authority_cause::tests::authority_evidence_exposes_request_resources_by_value_through_the_commit_door --nocapture",
+    "parent_command":  "\"C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe\" \"C:\\programming\\worth worktees\\worktrees\\m3-host-home\\scripts\\test_cost\\account.py\" \"C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\target\\debug\\deps\\worth_query_court_execution_primary_graph_application_attempt-667fb6fde2e31290.exe\" --exact domain_computation::primary_graph::application_attempt::compare_and_commit::commit_outcome::denial::execution::authority_cause::tests::authority_evidence_exposes_request_resources_by_value_through_the_commit_door --nocapture",
+    "started_utc":  "2026-11-08T09:16:48.2838489Z",
+    "observed_utc":  "2026-11-08T10:00:42.8807482Z",
+    "elapsed_seconds":  2634.5869014,
+    "cpu_seconds":  2614.125,
+    "classification":  "CLEANUP-C2-incomplete-charge-prefix-sweep",
+    "action":  "Terminate only this exact busy child. INCOMPLETE, not passed or an asserted timeout.",
+    "policy":  "No test, assertion or nextest timeout configuration is changed."
+}

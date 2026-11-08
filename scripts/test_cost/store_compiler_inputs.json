@@ -167,6 +167,94 @@
       "profile": "diagnostic-test",
       "packages": [
         {
+          "audience": "recovery-construction-privacy:workspaces/worth-store/crates/worth-store-court-recovery-runtime-replication/tests/worth_store_court_recovery_runtime_replication/compile_fail/recovery_runtime/authority_compile/mod.rs",
+          "authority": {
+            "declaration": "workspaces/worth-store/crates/worth-store-court-recovery-runtime-replication/tests/worth_store_court_recovery_runtime_replication/compile_fail/recovery_runtime/authority_compile/mod.rs",
+            "source_commit": "e787b51b3e",
+            "suite_identity": "recovery-construction-privacy",
+            "reader": "certification_uncoded_semantic_denial"
+          },
+          "dependencies": [
+            {
+              "default_features": true,
+              "features": [],
+              "name": "sha2",
+              "version": "0.10"
+            },
+            {
+              "default_features": true,
+              "features": [],
+              "name": "tempfile",
+              "version": "3"
+            },
+            {
+              "default_features": true,
+              "features": [],
+              "name": "worth-foundational",
+              "path": "crates/worth-foundational"
+            },
+            {
+              "default_features": true,
+              "features": [],
+              "name": "worth-proof",
+              "path": "crates/worth-proof"
+            },
+            {
+              "default_features": true,
+              "features": [
+                "certification-test-authority",
+                "recovery-runtime-owner",
+                "test-support",
+                "volatile-sync-for-tests"
+              ],
+              "name": "worth-store",
+              "path": "workspaces/worth-store/crates/worth-store"
+            },
+            {
+              "default_features": true,
+              "features": [],
+              "name": "worth-store-physical-format",
+              "path": "workspaces/worth-store/crates/worth-store-physical-format"
+            },
+            {
+              "default_features": true,
+              "features": [
+                "test-support"
+              ],
+              "name": "worth-store-physical-integrity",
+              "path": "workspaces/worth-store/crates/worth-store-physical-integrity"
+            },
+            {
+              "default_features": true,
+              "features": [
+                "test-support"
+              ],
+              "name": "worth-store-recovery-physics",
+              "path": "workspaces/worth-store/crates/worth-store-recovery-physics"
+            },
+            {
+              "default_features": true,
+              "features": [],
+              "name": "worth-store-recovery-runtime",
+              "path": "workspaces/worth-store/crates/worth-store-recovery-runtime"
+            },
+            {
+              "default_features": false,
+              "features": [
+                "recovery-runtime-fixtures"
+              ],
+              "name": "worth-store-test-support",
+              "path": "workspaces/worth-store/crates/worth-store-test-support"
+            }
+          ],
+          "sources": [
+            "workspaces/worth-store/crates/worth-store-court-recovery-runtime-replication/tests/worth_store_court_recovery_runtime_replication/sources/worth_store_recovery_runtime/ui/namespace_durable_recovery_cannot_be_forged.rs",
+            "workspaces/worth-store/crates/worth-store-court-recovery-runtime-replication/tests/worth_store_court_recovery_runtime_replication/sources/worth_store_recovery_runtime/ui/planned_recovery_cannot_be_forged.rs",
+            "workspaces/worth-store/crates/worth-store-court-recovery-runtime-replication/tests/worth_store_court_recovery_runtime_replication/sources/worth_store_recovery_runtime/ui/reopened_recovery_cannot_be_forged.rs",
+            "workspaces/worth-store/crates/worth-store-court-recovery-runtime-replication/tests/worth_store_court_recovery_runtime_replication/sources/worth_store_recovery_runtime/ui/staged_recovery_cannot_be_forged.rs"
+          ]
+        },
+        {
           "audience": "physical-driver-contract-boundary:workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/support/s4_5_driver_contract_boundary_compile_fail/declarations.rs",
           "authority": {"declaration": "workspaces/worth-store/crates/worth-store-court-maintenance-recovery-runtime-replication/tests/worth_store_court_maintenance_recovery_runtime_replication/support/s4_5_driver_contract_boundary_compile_fail/declarations.rs", "source_commit": "1c4b93bb9a", "suite_identity": "physical-driver-contract-boundary"},
           "dependencies": [

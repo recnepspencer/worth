@@ -43,7 +43,13 @@ impl WorthQueryApplicationCheckpoint {
                 let work = u64::try_from(self.bytes().len())
                     .map_err(|_| CheckpointDecodeDenial::capacity())?;
                 request
-                    .run_native_with_checkpoint(|context| context.checkpoint_cost(work, work))
+                    .run_native_with_checkpoint(|context| {
+                        if context.has_accounting() {
+                            context.checkpoint_cost(work, work)
+                        } else {
+                            context.poll()
+                        }
+                    })
                     .map_err(CheckpointDecodeDenial::execution)?
                     .0
                     .map_err(|cause| {
