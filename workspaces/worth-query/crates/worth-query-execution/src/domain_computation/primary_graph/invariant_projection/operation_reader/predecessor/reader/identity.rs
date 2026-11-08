@@ -9,10 +9,12 @@ use super::*;
 /// use worth_query_execution::facade::primary_graph::{
 ///     WorthQueryApplicationOperationInvariantProjectionReader as Reader,
 ///     WorthQueryInvariantEntityIdentity as CurrentEntity, PredecessorEntity,
+///     RelationalPredecessorBasisDenial as Denial, RelationalPredecessorBasisOrigin as Origin,
 /// };
 /// fn current<S: ApplicationSchema, E, O>(reader: &Reader<'_, '_, S, O>, entity: &CurrentEntity<S, E>) {
 ///     let _ = reader.mutation_target(entity);
 ///     let _historical_type: Option<&PredecessorEntity<S, E>> = None;
+///     let _ = Denial::PredecessorBasisUnavailableForOrigin(Origin::HistoricalSelection);
 /// }
 /// ```
 ///

@@ -4386,6 +4386,8 @@ producer can then choose full computation. Undeclared reads refuse
 refuse `PredecessorBasisUnavailableForOrigin`, naming the origin kind. Their
 navigation precommit basis is not the producer's consumed input basis; follow-up
 #94 owns that restoration contract. No durable format change is introduced.
+The `host::primary_graph` audience exposes `RelationalPredecessorBasisDenial`
+and `RelationalPredecessorBasisOrigin` for matching that original typed cause.
 
 #### Typed producer domain denial
 
