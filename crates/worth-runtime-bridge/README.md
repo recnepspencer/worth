@@ -330,8 +330,12 @@ start empty. Fresh source and provider objects come from installation.
 
 The privately constructed `BridgeReadmittedAuthoredAssembly` owns the durable
 Signal owner and exposes authored definition inspection. Cold multi-branch and
-changed-build courts cover this intrinsic entry. Home admission, mixed
-publication and durable conditional-definition publication remain pending.
+changed-build courts cover this intrinsic entry. Store-backed owner courts also
+cover graceful reopen and a kill after all publications are terminal, comparing
+three branches with the memory-only authored program and demanding derived
+values anew under the same or a changed build. These courts use source-free
+conditional definitions; they do not claim mixed owner effects. Home admission,
+mixed publication and durable conditional-definition publication remain pending.
 Conditional execution and managed services retain their later phase boundaries.
 
 ## Retire Home-owned Bridge custody

@@ -1,4 +1,5 @@
 //! Transport and owner readmission courts cross actual Store journals.
+mod bridge_owner;
 mod medium_fixture;
 mod owner_admission;
 mod owner_candidate_refusal;
