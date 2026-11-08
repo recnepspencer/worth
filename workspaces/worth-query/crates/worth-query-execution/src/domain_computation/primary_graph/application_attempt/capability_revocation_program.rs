@@ -51,6 +51,7 @@ impl<Schema, Operation, Input, Scope>
         };
         Ok(WorthQueryCapabilityRevocationProgram {
             program: WorthQueryApplicationEffectProgram {
+                synchronous_outputs: None,
                 read_set: self,
                 effects: vec![effect],
                 conditional_definition: None,

@@ -53,7 +53,8 @@ impl WorthQueryPrimaryGraphCommittedApplication {
     pub(in crate::domain_computation::primary_graph::provider) fn detach_coupled_delivery(
         &mut self,
     ) {
-        self.retire_publication();
+        self.committed_product_publication =
+            self.committed_product_publication.co_committed_member();
         self.coupled_member = true;
     }
     pub(in crate::domain_computation::primary_graph) fn is_coupled_member(&self) -> bool {

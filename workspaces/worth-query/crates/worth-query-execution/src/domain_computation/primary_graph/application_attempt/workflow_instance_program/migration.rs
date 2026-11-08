@@ -308,6 +308,7 @@ where
             start_path: resumed.start_path().to_owned(),
             supersession: None,
             program: WorthQueryApplicationEffectProgram {
+                synchronous_outputs: None,
                 read_set: self,
                 effects,
                 conditional_definition: None,

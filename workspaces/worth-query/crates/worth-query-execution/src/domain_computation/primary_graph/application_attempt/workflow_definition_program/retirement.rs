@@ -158,6 +158,7 @@ where
         WorthQueryApplicationAttemptDenial,
     > {
         Ok(WorthQueryApplicationEffectProgram {
+            synchronous_outputs: None,
             read_set: self,
             effects,
             conditional_definition: None,

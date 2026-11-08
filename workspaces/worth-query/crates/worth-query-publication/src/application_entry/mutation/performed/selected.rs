@@ -79,6 +79,8 @@ where
         Program: ApplicationProgramDefinition<Schema>,
         Program::Outputs: ApplicationProgramOutputsShape<Schema>,
         Root: ApplicationOutputGraphShape<Schema> + ApplicationRequiredOutputRoot,
+        Root::Dependents: worth_query_execution::publication_boundary::synchronous_outputs::SynchronousOutputEdges<Schema, <RootConnection<Schema, Root> as WorthQueryApplicationRequiredOutputConnection<Schema>>::Demand>,
+        <RootConnection<Schema, Root> as WorthQueryApplicationRequiredOutputConnection<Schema>>::Demand: Clone + Send,
         RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
         Intent::Binding:
             WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
@@ -112,6 +114,8 @@ where
         Program: ApplicationProgramDefinition<Schema>,
         Program::Outputs: ApplicationProgramOutputsShape<Schema>,
         Root: ApplicationOutputGraphShape<Schema> + ApplicationRequiredOutputRoot,
+        Root::Dependents: worth_query_execution::publication_boundary::synchronous_outputs::SynchronousOutputEdges<Schema, <RootConnection<Schema, Root> as WorthQueryApplicationRequiredOutputConnection<Schema>>::Demand>,
+        <RootConnection<Schema, Root> as WorthQueryApplicationRequiredOutputConnection<Schema>>::Demand: Clone + Send,
         RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
         Intent::Binding: WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
         <DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::Input:
@@ -189,6 +193,8 @@ where
         Program: ApplicationProgramDefinition<Schema>,
         Program::Outputs: ApplicationProgramOutputsShape<Schema>,
         Root: ApplicationOutputGraphShape<Schema> + ApplicationRequiredOutputRoot,
+        Root::Dependents: worth_query_execution::publication_boundary::synchronous_outputs::SynchronousOutputEdges<Schema, <RootConnection<Schema, Root> as WorthQueryApplicationRequiredOutputConnection<Schema>>::Demand>,
+        <RootConnection<Schema, Root> as WorthQueryApplicationRequiredOutputConnection<Schema>>::Demand: Clone + Send,
         RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
         Intent::Binding: WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
         <DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::Input:
@@ -219,7 +225,7 @@ where
                             .compare_and_commit_selected_required_output_source::<Root, Intent::Binding>(phase,
                                 &worth_query_execution::publication_boundary::program_publication_access(),
                                 &owner,
-                                program,
+                                program.with_synchronous_required_outputs::<RootConnection<Schema,Root>,Root::Dependents>(&worth_query_execution::publication_boundary::program_publication_access(), demand.clone()),
                                 binding.idempotency(),
                                 allocation_policy,
                             ),

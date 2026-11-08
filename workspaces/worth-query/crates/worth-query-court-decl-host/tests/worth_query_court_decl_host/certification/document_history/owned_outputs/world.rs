@@ -1,5 +1,6 @@
 //! Separate installed world: model `a` (value 1) owning member `m`, plus NAV grant.
 use super::*;
+pub(super) mod authorization_clock;
 use worth_query_host::facade::product::WorthQueryProductBranch;
 pub type Host = WorthQueryProgramApplicationRuntime<Schema, program::Program>;
 pub type Document<'a> = WorthQueryApplicationHistoryDocument<'a, Schema, History>;

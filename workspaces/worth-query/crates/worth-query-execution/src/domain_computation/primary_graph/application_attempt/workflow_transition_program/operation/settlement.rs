@@ -115,6 +115,7 @@ where
         let mut read_set = self.admitted.into_read_set();
         read_set.local_action_settlement = local_origin;
         let program = WorthQueryApplicationEffectProgram {
+            synchronous_outputs: None,
             read_set,
             effects,
             conditional_definition: None,

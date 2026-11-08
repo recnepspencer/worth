@@ -206,6 +206,7 @@ impl<Schema, Operation, Input, Scope>
         self.output_correspondence.validate_effects(&self.effects)?;
         self.validate_body_external_emission()?;
         Ok(WorthQueryApplicationEffectProgram {
+            synchronous_outputs: None,
             read_set: self.read_set,
             effects: self.effects,
             content_attachments: self.content_attachments,

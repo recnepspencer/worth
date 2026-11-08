@@ -226,18 +226,18 @@ impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
             Ok(candidate) => candidate,
             Err(outcome) => {
                 assembly.abort_writers(execution);
-                return match assembly.take_denial() {
+                return assembly.finish_abort(match assembly.take_denial() {
                     Some(denial) => WorthQueryProviderProgressionOutcome::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::coupled_producer(denial)),
                     None => outcome,
-                };
+                });
             },
         };
         if let Err(denial) = assembly.authorize_members(execution, authority.coordination()) {
             candidate.discard();
             assembly.abort_writers(execution);
-            return crate::domain_computation::primary_graph::application_attempt::provider_execution::outcome::progression_from_authorization_denial(
+            return assembly.finish_abort(crate::domain_computation::primary_graph::application_attempt::provider_execution::outcome::progression_from_authorization_denial(
                 denial, crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::DecisionReadSet,
-            );
+            ));
         }
         let outcome = super::authorized::authorize_and_resolve_provider_commit(
             execution,

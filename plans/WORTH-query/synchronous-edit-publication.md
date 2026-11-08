@@ -378,3 +378,130 @@ one strengthened committed-generation assertion are recorded in the external
 report. Current C-only Debug/selection behavior is preserved. P5/S6 remains in
 progress; installed graph/waves, independent routes, seal and final semantics
 qualification are not claimed by these finite-source courts.
+
+### Required graph assembly boundary and implementation plan
+
+Adversarial constraint: a child discovered only after its parent's actual writer
+must join the same candidate; child discovery/refusal must never leave the source
+or an earlier writer committed. C remains the authority basis throughout.
+
+The source SDK owns the actual typed root demand before commit. QE currently
+erases it into recovery TypeId and assembles only explicit coupled declarations.
+The sealed declaration shape already determines adjacency; installed discovery
+and producer bindings remain the sole meaning owners. Native already owns candidate
+append, output correspondence/custody and final group validation. It must receive
+all participants before final invariant approval. The ordinary lazy demand graph
+posture remains explicit.
+
+Implement a request-local required tree carried on the effect program through
+prepared/running/progression custody. QE's sealed Leaf/Edge/tuple executor traverses
+that shape, with a distinct applied parent minted only after the actual writer
+append. It reads the real discovery query on that parent's immutable candidate
+pin, through existing C principal/READ admission and applied projection owners.
+It computes child demands through the installed connection and appends them via
+the same producer preparation/retention path as explicit coupled participants.
+No settled-output conversion, current observation, committed epoch or roster child
+list is introduced.
+
+First prove a public required nonleaf source performs its root and discovered
+child before return, one Native ancestry step, correct values and warm zero-contact
+delivery. Add late discovery/child refusal, changed inputs, worker and mutation
+evidence. Then extend independent positions and S6 envelope with the remaining
+whole-edit visible-semantics courts. Focused public/Native owner courts precede
+broader baseline qualification. Forbidden ownership/hashing owners are excluded.
+
+The first graph courts exposed an important authorization premise: a discovery
+query whose permission follows a newly created output relation cannot establish
+that permission at C. The success fixture now has a separately declared public
+discovery connection; the original C-restricted connection remains as a no-effect
+refusal court. Neither installed permission was weakened. Eight serial/worker
+courts pass through contact-free, commit-free readiness.
+
+Boundary follow-through: discovery values alone are insufficient when a later
+participant changes their read support. Retain each actual complete discovery
+footprint and its exact post-parent pin in the registered parent's preparation.
+At the existing pre-World coupled-support owner, compare those facts to the final
+candidate through the same fact support comparator used for writer decisions.
+A query of incoming SecondOf adjacency gives the counterexample: its discovered
+child adds that edge, changing the discovery support. Refuse typed before effect;
+the skip-retention mutant must expose the incomplete implementation.
+
+
+### Remaining source and seal cutover boundaries
+
+The fixed graph checkpoint enters assembly from the typed required-source SDK.
+Full P5 must also account for advanced selected-program mutation entry: selecting
+a required-delivery action must not publish its source while silently omitting
+that action's required tree. Trace the installed typed root visitation and source
+intent carriage before deciding whether to register the executor at installation
+or refuse an entry that lacks its actual typed required handoff. A name or root
+TypeId alone cannot manufacture that proof. Demand-only roots retain their own
+explicit demand meaning; the edit envelope must capture actual requested trees.
+
+The ordinary candidate has one admitted authored operation/read set and one
+mutation-handler proof. The S6 envelope needs independently admitted authored
+stages and a seal, with their real proofs, read supports and results retained
+until one final publication. Native's coupled parts currently describe producers,
+so an authored stage cannot be disguised as a producer. Keep each authorization
+with its own operation and union only actual admitted effects at the existing
+transaction boundary. No intermediate committed branch or receipt is an envelope.
+
+Independent producer succession must use its existing route-position/canonical
+publication owner. The owned roster path remains exclusive for opted-in source
+ownership, including mandatory storage. Do not fall from missing owned custody
+to historical independent routes. Explicit retirement root completeness and
+repeated/extra owner refusals must remain unchanged while ordinary auto graph
+overlap is scheduled once.
+
+
+### Coupled abort custody (scoped review finding)
+
+The shared assembly's `abort_writers` discards each actual abort outcome. The
+managed cleanup owner can return real recovery custody (for example, its native
+Bridge finalization on a worker). This must not be dropped when a later graph
+participant fails or Native retries a cold-symbol round. A runtime-owned latch
+will retain all actual abort failures, forbid another preparation round after
+failed disposal, and transfer them through the existing CoupledFailure and
+CleanupRequired owners. Reuse the existing settlement failure aggregation, with
+no synthetic cleanup owner or policy. The original managed cleanup owner remains
+responsible for the native cause, unresolved evidence and lawful retry.
+
+Prove this with the unstable-discovery fixture: all real writers prepare, final
+support refuses, and receiver-owned scheduling makes the first parent abort's
+actual native cleanup fail. The whole model stays unchanged; the refusal retains
+the exact native owner and discharges it only on lawful retry. Cover serial and
+worker request postures, and kill a drop-abort-result mutation.
+
+
+### Fixed graph checkpoint qualification
+
+The public carrier passes574 tests (2 ignored), Query workspace all-target check
+passes, and boundary/context/dirty80-file line caps pass. Twelve runtime mutants
+are assertion-killed with exact SHA restoration; a thirteenth compile mutation
+removing Send from captured graph custody fails at the existing effect-program
+Send fence (E0277). The shared abort owner now retains actual failed cleanup and
+the original refusal in both preparation and post-preparation disposal. Four
+serial/worker courts retain exact Native custody and discharge it on lawful retry
+with unchanged model/head and zero active sessions/World attempts.
+
+This is a foundation checkpoint, not P5/S6 completion. Next, the SDK's fixed
+operation cleanup collection must support multiple real managed failures from a
+coupled group. Its current Option/assertion and single-wrapper source handoff
+are insufficient; the raw performed API already carries nested owners. Review
+the receipt/failure observations and all forwarding consumers, retain/release
+the complete collection through the existing owner, and prove two actual Native
+failures through an owned fixed operation. Extend the existing receiver-owned
+worker scheduling control with a bounded count; never fabricate failure custody.
+Then continue the listed source/independent/discovered/seal and whole-edit courts.
+
+
+The current typed tree executor is depth-first. The remaining wave join must
+prepare all parents before a converging child, coalesce duplicate actual routes
+using admitted full-generation source/partition evidence, and preserve explicit
+retirement completeness. A diamond graph is the distinguishing court: both
+parents change, one child consumes both final outputs, runs once, and all commit
+once. An unchanged required root needs a verified candidate-output posture through
+the existing currentness owner; never create a fake writer to get a parent. Both
+that case and discovered-root preparation need discovery support retained by the
+whole edit even when no parent writer runs. Consolidate at the existing final
+candidate-support owner rather than introducing another currentness reader.

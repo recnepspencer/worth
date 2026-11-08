@@ -3,8 +3,18 @@ use super::*;
 pub struct Parent;
 pub struct Input;
 pub struct Output;
+pub struct FirstSeedInput;
+impl ApplicationInputPort<Schema, Parent> for FirstSeedInput {
+    type Value = query::RowBinding;
+    const IDENTITY: &'static str = "hierarchy-seed-input";
+    const REQUIRED: bool = false;
+}
+
 impl ApplicationFeature<Schema> for Parent {
-    type Inputs = ApplicationFeatureInputList<Input, ApplicationFeatureInputLeaf>;
+    type Inputs = ApplicationFeatureInputList<
+        Input,
+        ApplicationFeatureInputList<FirstSeedInput, ApplicationFeatureInputLeaf>,
+    >;
     const IDENTITY: &'static str = "owned-outputs.hierarchy.parent";
 }
 impl ApplicationInputPort<Schema, Parent> for Input {

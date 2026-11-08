@@ -1,6 +1,8 @@
 //! Declared roots select installed producers; Native decides their exact roster.
 use super::execution::{CoupledSourceReadStop, PreparedCoupledWriter};
 use super::*;
+mod disposal;
+mod preparation;
 use crate::domain_computation::primary_graph::{
     application_attempt::coupled_outputs::DeclaredCoupledOutputDemands, WorthQueryAdvancementPhase,
     WorthQueryPrimaryGraphApplicationRuntime,
@@ -23,13 +25,14 @@ pub(in crate::domain_computation::primary_graph) struct DeclaredProducerAssembly
 > {
     phase: &'run WorthQueryAdvancementPhase<'phase>,
     coordination: &'a crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'a>,
-    application: &'a WorthQueryPrimaryGraphApplicationRuntime<S>,
-    principal: Option<&'a WorthQueryAuthenticatedExternalPrincipal<S>>,
-    before: &'a crate::basis::WorthQueryProductBranchLease,
-    request: &'a WorthQueryRequestScope,
+    pub(super) application: &'a WorthQueryPrimaryGraphApplicationRuntime<S>,
+    pub(super) principal: Option<&'a WorthQueryAuthenticatedExternalPrincipal<S>>,
+    pub(super) before: &'a crate::basis::WorthQueryProductBranchLease,
+    pub(super) request: &'a WorthQueryRequestScope,
     demands: &'a DeclaredCoupledOutputDemands,
     writers: RefCell<Vec<CoupledWriter<'run, S>>>,
     denial: RefCell<Option<WorthQueryOutputDemandDenial>>,
+    abort_failures: RefCell<Vec<crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted>>,
 }
 struct CoupledWriter<'run, S> {
     producer: std::sync::Arc<registry::InstalledProducerProvider<S>>,
@@ -66,29 +69,35 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
             demands,
             writers: RefCell::new(Vec::new()),
             denial: RefCell::new(None),
+            abort_failures: RefCell::new(Vec::new()),
         }
+    }
+    pub(super) fn retain_discovery_support(
+        &self,
+        parent: &super::synchronous_outputs::AppliedOutputParent,
+        support: crate::domain_computation::primary_graph::application_query::AppliedQuerySupport,
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
+        let writers = self.writers.borrow();
+        let Some(CoupledWriter {
+            stage: Some(CoupledWriterStage::Inspected(writer)),
+            ..
+        }) = writers.get(parent.writer())
+        else {
+            return Err(WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::ForeignSettlement,
+                support.query().to_owned(),
+            ));
+        };
+        self.application
+            .runtime
+            .primary_provider
+            .retain_coupled_query_support(writer.session(), support);
+        Ok(())
     }
     pub(in crate::domain_computation::primary_graph) fn take_denial(
         &self,
     ) -> Option<WorthQueryOutputDemandDenial> {
         self.denial.borrow_mut().take()
-    }
-    pub(in crate::domain_computation::primary_graph) fn abort_writers(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) {
-        for writer in self.writers.borrow_mut().drain(..) {
-            if let Some(stage) = writer.stage {
-                let _ = match stage {
-                    CoupledWriterStage::Inspected(writer) => {
-                        writer.abort(execution, self.phase, self.application)
-                    }
-                    CoupledWriterStage::Prepared(writer) => {
-                        writer.abort(execution, self.phase, self.application)
-                    }
-                };
-            }
-        }
     }
     pub(in crate::domain_computation::primary_graph) fn settle_writers(
         &self, execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -129,7 +138,8 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
                     unpublished,
                 )
             } else {
-                prepared.abort(execution, self.phase, self.application)
+                self.retain_abort_outcome(prepared.abort(execution, self.phase, self.application));
+                continue;
             };
             let uncommitted = match outcome {
                 Outcome::Committed(receipt) | Outcome::AlreadyCommitted(receipt) => {
@@ -137,7 +147,6 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
                     continue;
                 }
                 Outcome::ProductUnpublished(_) => continue,
-                Outcome::Aborted if !effected => continue,
                 other => match other.landed() {
                     Err(failure) => failure,
                     Ok(_) => unreachable!("only an uncommitted participant outcome remains"),
@@ -152,7 +161,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
                 (None, failure) => failure,
             });
         }
-        failure.map(Progression::CoupledFailure).unwrap_or(root)
+        self.finish_abort(failure.map(Progression::CoupledFailure).unwrap_or(root))
     }
     pub(in crate::domain_computation::primary_graph) fn authorize_members(
         &self,
@@ -173,119 +182,6 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
         }
         Ok(())
     }
-    fn prepare(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
-    ) -> Result<(), CoupledSourceReadStop> {
-        if let Some(cause) = self.demands.take_failure() {
-            return Err(CoupledSourceReadStop::capture(cause));
-        }
-        let principal = self.principal.ok_or_else(|| {
-            WorthQueryOutputDemandDenial::new(
-                WorthQueryOutputDemandDenialKind::ForeignSource,
-                "coupled producer authentication",
-            )
-        })?;
-        let graph = &self.application.runtime.primary_provider.graph;
-        let before_pin = graph.with_runtime_mut(execution, |runtime| {
-            let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
-                runtime, self.before.relational_basis(),
-            ).map_err(|cause| WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::ForeignSource, format!("coupled before basis: {cause:?}")))?;
-            let indexes = graph.layout.equality_index_ids().collect::<Vec<_>>();
-            let pin = runtime.read_truth().pin_read_capability(&snapshot, &indexes, execution);
-            crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-            pin.map_err(|cause| WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::ForeignSource, format!("coupled before pin: {cause:?}")))
-        })?;
-        let registry = &self.application.installed_producers;
-        for demand in &self.demands.values {
-            let source_entry = registry.declared_coupled_source(demand)?;
-            let Some(source) = source_entry.executor.read_coupled_source(
-                execution,
-                self.application,
-                principal,
-                self.request,
-                self.before,
-                &before_pin,
-                demand,
-                candidate,
-            )?
-            else {
-                continue;
-            };
-            let lifecycle = if source.predecessor.is_some() {
-                WorthQueryProducerLifecyclePosture::Preserve
-            } else {
-                WorthQueryProducerLifecyclePosture::Initial
-            };
-            let producer = registry.declared_coupled_producer(demand, source.profile, lifecycle)?;
-            let pin = candidate.pin_source(execution)?;
-            let prepared = producer.executor.prepare_coupled_writer(
-                self.phase,
-                self.coordination,
-                self.application,
-                principal,
-                self.request,
-                self.before,
-                &before_pin,
-                &pin,
-                source,
-                producer.edition,
-            )?;
-            let PreparedCoupledWriter {
-                writer,
-                publication,
-                batch,
-                content,
-            } = prepared;
-            // Keep the session even when Native requests an ordinary symbol retry;
-            // the next actual assembly round closes it before rerunning the handler.
-            let meaning = match &publication {
-                worth_relational::facade::mvcc::RequiredOutputPublication::Preserve {
-                    meaning,
-                    ..
-                }
-                | worth_relational::facade::mvcc::RequiredOutputPublication::Birth {
-                    meaning,
-                    ..
-                } => meaning,
-                _ => unreachable!("installed coupled preparation issues a producing origin"),
-            };
-            self.writers.borrow_mut().push(CoupledWriter {
-                producer: std::sync::Arc::clone(producer),
-                stage: Some(CoupledWriterStage::Inspected(writer)),
-                meaning: meaning.clone(),
-            });
-            match self
-                .application
-                .runtime
-                .primary_provider
-                .application_attempt_operation_control
-                .take_coupled_participant_corruption()
-            {
-                fault @ (1..=3) => candidate.append_corrupt_participant_for_test(
-                    execution,
-                    publication,
-                    &content,
-                    vec![batch],
-                    fault,
-                )?,
-                _ => candidate.append_publication(execution, publication, &content, vec![batch])?,
-            }
-            let after_own = candidate.pin_source(execution)?;
-            let writers = self.writers.borrow();
-            let Some(CoupledWriterStage::Inspected(writer)) =
-                writers.last().and_then(|writer| writer.stage.as_ref())
-            else {
-                unreachable!("actual appended writer")
-            };
-            self.application
-                .runtime
-                .primary_provider
-                .retain_coupled_after_own(writer.session(), after_own);
-        }
-        Ok(())
-    }
 }
 impl<S: ApplicationSchema> RelationalAuthoredCoupledProducerAssembly
     for DeclaredProducerAssembly<'_, '_, '_, S>
@@ -295,7 +191,9 @@ impl<S: ApplicationSchema> RelationalAuthoredCoupledProducerAssembly
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
     ) -> Result<ControlFlow<()>, RelationalCoupledAssemblyFailure> {
-        self.abort_writers(execution);
+        if !self.abort_writers(execution) {
+            return Ok(ControlFlow::Break(()));
+        }
         self.denial.borrow_mut().take();
         match self.prepare(execution, candidate) {
             Ok(()) => Ok(ControlFlow::Continue(())),

@@ -2,43 +2,16 @@
 use super::*;
 use worth_query_host::facade::{
     admission::authenticated_principal::{
-        WorthQueryAdmissionClock, WorthQueryAdmissionTimeController, WorthQueryCancellationSource,
-        WorthQueryRequestScope,
+        WorthQueryAdmissionTimeController, WorthQueryCancellationSource, WorthQueryRequestScope,
     },
     runtime::ExecutionAllocationPolicy,
 };
-struct TimeSource(WorthQueryAdmissionClock);
-impl WorthQueryRuntimeTimeSource for TimeSource {
-    fn admission_clock(&self) -> WorthQueryAdmissionClock {
-        self.0.clone()
-    }
-    fn current_time(&self) -> Result<std::time::SystemTime, WorthQueryRuntimeTimeSourceDenial> {
-        Ok(std::time::SystemTime::now())
-    }
-}
 fn run(worker: bool) {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
     let controller = WorthQueryAdmissionTimeController::new().unwrap();
     controller.hold();
     let clock = controller.clock();
-    let schema = Schema::declaration().unwrap();
-    let host = in_memory_program_with_authorization_time_source(
-        ApplicationProgramAuthoring::<Schema, program::Program>::begin()
-            .with_schema(&schema)
-            .validated_program()
-            .unwrap(),
-        schema,
-        (world::Configuration::default(),),
-        ApplicationBuildIdentity::parse("91830000-0000-0000-0000-000000005356").unwrap(),
-        if worker {
-            world::worker_limits_with_clock(clock.clone())
-        } else {
-            host_limits(clock.clone())
-        },
-        |_, graph, installed| world::seed(graph, installed, 1, None),
-        TimeSource(clock.clone()),
-    )
-    .unwrap();
+    let host = world::authorization_clock::install::<program::Program>(clock.clone(), worker, 1);
     let scope =
         WorthQueryRequestScope::new(None, WorthQueryCancellationSource::new().token(), clock);
     let principal = authenticate_operator(host.installed_schema(), &scope);

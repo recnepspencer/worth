@@ -23,7 +23,8 @@ where
     MutationInput<Schema, Intent>: Clone + Send + Sync,
     MutationScope<Schema, Intent>:
         ApplicationMutationScopeResolution<Schema, MutationPrincipal<Schema, Intent>>,
-    Demand<Schema, Root>: Clone,
+    Demand<Schema, Root>: Clone + Send,
+    Root::Dependents:worth_query_execution::publication_boundary::synchronous_outputs::SynchronousOutputEdges<Schema,Demand<Schema,Root>>,
     SourceIntent<Schema, Root>: ApplicationQueryIntent<Schema, Binding = Source<Schema, Root>>,
     SourceScope<Schema, Root>:
         ApplicationQueryScopeResolution<Schema, SourcePrincipal<Schema, Root>>,

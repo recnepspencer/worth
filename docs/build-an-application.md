@@ -4285,13 +4285,24 @@ cannot be used as ordinary current scopes. Current descriptions retain `Some`
 with their exact committed index generation. Native refuses an unavailable
 source as `CoupledSourceNotLive`.
 
-These finite Initial/Preserve roots are the first part of
-[P5/S6 synchronous edit publication](../plans/WORTH-query/synchronous-edit-publication.md).
-Transitive dependent discovery and the explicit document-seal envelope remain
-in that implementation plan. Declared predecessor
-observations also work inside the coupled handler, with independently admitted
-current-C read permission and the edit's genuinely held commit lane. Native never labels the transaction-before basis as a
-coupled producer's consumed applied input image.
+A fixed required `ApplicationOutputGraph` also joins its installed root and
+transitive dependents to the source publication. Each discovery query reads its
+actual parent's unpublished output, with principal, permission and request
+control checked at C. The installed connection computes the dependent demands;
+publication rosters never supply that set. The complete discovery read support
+is checked against the final candidate, so a later producer cannot invalidate
+the discovery that selected it. A late discovery or producer refusal leaves the
+whole edit unchanged. Required-output readiness consumes the actual group
+receipts without another producer contact or Native commit.
+
+[P5/S6 synchronous edit publication](../plans/WORTH-query/synchronous-edit-publication.md)
+is still in progress: shared-route and wave scheduling, discovered roots,
+independent routes, healthy-root reuse within an edit and the explicit
+document-seal envelope remain in that plan. Demand-only output graphs retain
+their explicit lazy delivery meaning. Declared predecessor observations also
+work inside coupled handlers, with independently admitted current-C read
+permission and the edit's genuinely held commit lane. Native never labels the
+transaction-before basis as a coupled producer's consumed applied input image.
 
 For an authored splice that changes relations, add typed relation loci to the
 recorded inverse's pre-image demand:

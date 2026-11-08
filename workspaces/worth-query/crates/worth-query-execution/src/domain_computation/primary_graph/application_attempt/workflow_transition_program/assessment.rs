@@ -113,6 +113,7 @@ where
         let mut read_set = self.admitted.into_read_set();
         bind_currentness_facts(execution, &mut read_set, &currentness_facts, &node_path)?;
         let program = WorthQueryApplicationEffectProgram {
+            synchronous_outputs: None,
             content_attachments: Default::default(),
             read_set,
             effects,

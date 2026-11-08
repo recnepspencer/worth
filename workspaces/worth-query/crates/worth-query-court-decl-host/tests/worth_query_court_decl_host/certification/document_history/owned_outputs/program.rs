@@ -181,27 +181,7 @@ impl ApplicationProgramDefinition<Schema> for Program {
         ApplicationProgramIdentity::new("owned-outputs.program.v1");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
-            ApplicationFeatureSpec::root::<Schema, Entry>()
-                .provides::<EntryOutput>()
-                .action::<predecessor::synchronous::Binding, Completion>()
-                .finish_action()
-                .action::<synchronous_edit::new_source::Binding, Completion>()
-                .finish_action()
-                .action::<synchronous_edit::new_source::restricted::Binding, Completion>()
-                .finish_action()
-                .action::<synchronous_edit::Binding, Completion>()
-                .finish_action()
-                .action::<edit::Binding, Completion>()
-                .finish_action()
-                .action::<member_edit::Binding, Completion>()
-                .finish_action()
-                .action::<authored_member::retire::Binding, Completion>()
-                .finish_action()
-                .action::<authored_member::restore::Binding, Completion>()
-                .finish_action()
-                .action::<member_delete::Binding, Completion>()
-                .finish_action()
-                .finish(),
+            entry_spec::<Completion>(),
             ApplicationFeatureSpec::root::<Schema, Derived>()
                 .conditional_operation::<from_first::initial::Operation>()
                 .conditional_operation::<from_first::preserve::Operation>()
@@ -267,3 +247,28 @@ pub type AuthoredRestoreAction = ApplicationActionReference<
     authored_member::restore::Binding,
     Completion,
 >;
+
+pub(super) fn entry_spec<Delivery: ApplicationActionDelivery<Schema, edit::Binding>>(
+) -> ApplicationFeatureSpec {
+    ApplicationFeatureSpec::root::<Schema, Entry>()
+        .provides::<EntryOutput>()
+        .action::<predecessor::synchronous::Binding, Completion>()
+        .finish_action()
+        .action::<synchronous_edit::new_source::Binding, Completion>()
+        .finish_action()
+        .action::<synchronous_edit::new_source::restricted::Binding, Completion>()
+        .finish_action()
+        .action::<synchronous_edit::Binding, Completion>()
+        .finish_action()
+        .action::<edit::Binding, Delivery>()
+        .finish_action()
+        .action::<member_edit::Binding, Completion>()
+        .finish_action()
+        .action::<authored_member::retire::Binding, Completion>()
+        .finish_action()
+        .action::<authored_member::restore::Binding, Completion>()
+        .finish_action()
+        .action::<member_delete::Binding, Completion>()
+        .finish_action()
+        .finish()
+}

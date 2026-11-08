@@ -85,6 +85,11 @@ pub fn selected_source_read_denied(
     };
     match stop {
         Stop::CurrentControl(stop) => request_admission_rejected(stop),
+        Stop::Principal(cause) => super::principal_rejected(subject, cause),
+        Stop::Scope(cause) => super::scope_rejected(subject, cause),
+        Stop::Admission(cause) | Stop::Preparation { cause, .. } => {
+            query_admission_denied(subject, cause)
+        }
         Stop::Read(Read::Admission(stop)) => {
             super::super::source_readmission::ready_resource_denial(subject, stop)
         }

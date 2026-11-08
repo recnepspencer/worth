@@ -15,7 +15,7 @@ use worth_query_declaration::facade::{
     application_schema::ApplicationSchema,
 };
 mod preimage;
-mod source_arguments;
+pub(in crate::domain_computation::primary_graph) mod source_arguments;
 pub(super) use preimage::CoupledPreImage;
 pub(in crate::domain_computation::primary_graph) use source_arguments::CoupledSourceArguments;
 
@@ -34,6 +34,7 @@ pub struct DeclaredCoupledOutputDemands {
     _memory: Vec<worth_execution::ExecutionMemoryReservation>,
     failure: std::cell::RefCell<Option<Denial>>,
     declared: bool,
+    pub(in crate::domain_computation::primary_graph) synchronous: Option<crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::CapturedSynchronousOutputs>,
 }
 
 impl DeclaredCoupledOutputDemands {
@@ -45,7 +46,7 @@ impl DeclaredCoupledOutputDemands {
         }
     }
     pub(in crate::domain_computation::primary_graph) fn is_declared(&self) -> bool {
-        self.declared
+        self.declared || self.synchronous.is_some()
     }
     pub(in crate::domain_computation::primary_graph) fn take_failure(&self) -> Option<Denial> {
         self.failure.borrow_mut().take()

@@ -58,6 +58,7 @@ where
 
         let read_set = admitted.into_read_set();
         let program = WorthQueryApplicationEffectProgram {
+            synchronous_outputs: None,
             read_set,
             effects,
             conditional_definition: None,

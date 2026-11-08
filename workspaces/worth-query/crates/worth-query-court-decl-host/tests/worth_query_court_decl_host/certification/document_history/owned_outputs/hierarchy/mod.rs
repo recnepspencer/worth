@@ -1,7 +1,7 @@
 //! A genuine non-leaf SDK graph: discovery reads the first family's output.
 use super::*;
 mod courts;
-mod program;
+pub(super) mod program;
 
 mod partition;
 

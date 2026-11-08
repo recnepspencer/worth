@@ -37,6 +37,7 @@ where
         phase,
     } = entry;
     let WorthQueryApplicationEffectProgram {
+        synchronous_outputs,
         read_set,
         mut effects,
         mut content_attachments,
@@ -54,7 +55,7 @@ where
     let new_commit_refusal = read_set.new_commit_refusal;
     let signed_creation = read_set.signed_creation;
     let mut mutation_proof = read_set.mutation_handler_binding;
-    let coupled_outputs = aftermath_causality
+    let mut coupled_outputs = aftermath_causality
         .as_ref()
         .and_then(|causality| {
             causality
@@ -67,6 +68,7 @@ where
                 .map(|proof| std::mem::take(&mut proof.coupled_outputs))
                 .unwrap_or_default()
         });
+    coupled_outputs.synchronous = synchronous_outputs;
     let workflow_approval_authority = workflow_settlement
         .as_ref()
         .and_then(|binding| binding.approval_authority.clone());

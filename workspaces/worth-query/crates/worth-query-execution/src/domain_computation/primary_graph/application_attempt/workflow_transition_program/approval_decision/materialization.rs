@@ -36,6 +36,7 @@ where
     let progress_update = admitted.prepare_progress_update(meaning.decision.outcome(), None)?;
     Ok(PreparedWorkflowAdvance::Transition {
         program: WorthQueryApplicationEffectProgram {
+            synchronous_outputs: None,
             content_attachments: Default::default(),
             read_set: admitted.into_read_set(),
             effects,

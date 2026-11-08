@@ -149,6 +149,7 @@ where
             cancellation_identity_locator: layout.instance.cancellation_identity.clone(),
             performed: performed.into_iter().map(|effect| effect.path).collect(),
             program: WorthQueryApplicationEffectProgram {
+                synchronous_outputs: None,
                 read_set: self,
                 effects,
                 conditional_definition: None,

@@ -61,15 +61,18 @@ pub(in crate::domain_computation::primary_graph) fn derive<'a>(
                 let Some(receipt) = settlement.application_commit_receipt() else {
                     continue;
                 };
-                let movement = receipt
-                    .committed_product_publication()
-                    .original_movement()
-                    .ok_or_else(|| {
-                        refused(
-                            Kind::RetainedBasisUnavailable,
-                            "original output movement is unavailable",
-                        )
-                    })?;
+                let publication = receipt.committed_product_publication();
+                // This member never moved World independently. Its nominal
+                // group origin proves zero distance at this exact endpoint.
+                if publication.co_committed_at(origin) {
+                    continue;
+                }
+                let movement = publication.original_movement().ok_or_else(|| {
+                    refused(
+                        Kind::RetainedBasisUnavailable,
+                        "original output movement is unavailable",
+                    )
+                })?;
                 let before = movement.old_product_head();
                 let after = movement.new_product_head();
                 for snapshot in [before, after] {

@@ -198,3 +198,8 @@ pub mod operation_input_capture {
 pub mod capability_command {
     pub use crate::domain_computation::primary_graph::authenticated_principal::WorthQueryCommandPrincipalPin;
 }
+
+/// Executable sealed graph shape used only by source publication.
+pub mod synchronous_outputs {
+    pub use crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::{SynchronousOutputEdges, AppliedOutputParent, SynchronousOutputAssembly, SynchronousOutputFailure};
+}

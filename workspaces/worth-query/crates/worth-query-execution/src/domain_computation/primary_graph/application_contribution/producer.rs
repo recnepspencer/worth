@@ -9,6 +9,7 @@ use worth_query_declaration::facade::application_schema::ApplicationStructuredVa
 use worth_query_installation::facade::ApplicationSchema;
 
 mod coupled_assembly;
+pub(crate) mod synchronous_outputs;
 pub(in crate::domain_computation::primary_graph) use coupled_assembly::DeclaredProducerAssembly;
 pub(crate) mod demand;
 mod denial_value;

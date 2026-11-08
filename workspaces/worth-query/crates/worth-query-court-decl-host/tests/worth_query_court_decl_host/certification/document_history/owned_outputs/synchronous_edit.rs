@@ -67,7 +67,7 @@ impl OperationHandler<Schema, Binding> for Handler {
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    schema
+    graph::unstable::query::declare(schema)
         .declared_operation::<SynchronousPatchModel>(
             SynchronousPatchModel::reference()
                 .definition()
@@ -98,3 +98,5 @@ mod failure;
 mod initial;
 
 pub(super) mod new_source;
+
+pub(super) mod graph;

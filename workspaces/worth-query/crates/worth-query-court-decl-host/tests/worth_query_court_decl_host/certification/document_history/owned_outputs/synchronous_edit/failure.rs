@@ -2,7 +2,9 @@
 use super::*;
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 
-pub(super) fn checkpoint(host: &world::Host) -> WorthQueryApplicationCheckpoint {
+pub(super) fn checkpoint<P: ApplicationProgramDefinition<Schema>>(
+    host: &WorthQueryProgramApplicationRuntime<Schema, P>,
+) -> WorthQueryApplicationCheckpoint {
     host.with_host_advancement(|phase| {
         host.capture_application_checkpoint(
             &phase,
@@ -100,7 +102,10 @@ fn worker_only_later_producer_refusal_keeps_the_complete_model_byte_identical() 
     refuses_without_effect(true);
 }
 
-pub(super) fn assert_model_unchanged(host: &world::Host, before: &WorthQueryApplicationCheckpoint) {
+pub(super) fn assert_model_unchanged<P: ApplicationProgramDefinition<Schema>>(
+    host: &WorthQueryProgramApplicationRuntime<Schema, P>,
+    before: &WorthQueryApplicationCheckpoint,
+) {
     let after = checkpoint(host);
     host.with_host_advancement(|phase| {
         let before = host

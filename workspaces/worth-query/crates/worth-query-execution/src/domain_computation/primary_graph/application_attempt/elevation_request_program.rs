@@ -51,6 +51,7 @@ impl<Schema, Operation, Input, Scope>
             self.admission.operation(),
         )?;
         let program = WorthQueryApplicationEffectProgram {
+            synchronous_outputs: None,
             read_set: self,
             effects,
             conditional_definition: None,
