@@ -1,7 +1,7 @@
 //! Immutable, sendable required demand carried into its source's assembly.
 use super::*;
 use source::{Source, SourceInput};
-use std::{any::Any, marker::PhantomData};
+use std::marker::PhantomData;
 use worth_query_declaration::facade::{
     application_program::WorthQueryApplicationRequiredOutputConnection,
     application_query::{
@@ -96,10 +96,6 @@ where
         },
     )
 }
-/// Private erasure follows the effect; only its schema-typed owner opens it.
-pub(in crate::domain_computation::primary_graph) struct CapturedSynchronousOutputs(
-    Box<dyn Any + Send>,
-);
 impl CapturedSynchronousOutputs {
     pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn assemble<
         S: ApplicationSchema,
@@ -110,15 +106,25 @@ impl CapturedSynchronousOutputs {
         before: &RelationalPinnedRead,
         candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
     ) -> Result<(), CoupledSourceReadStop> {
-        let tree = self
-            .0
-            .downcast_ref::<Box<dyn RequiredTree<S>>>()
-            .ok_or_else(|| {
-                super::super::WorthQueryOutputDemandDenial::new(
-                    super::super::WorthQueryOutputDemandDenialKind::ForeignDemand,
-                    "required graph schema",
-                )
-            })?;
+        let Self::Prepared { root, _memory } = self else {
+            let Self::Refused(cause) = self else {
+                unreachable!()
+            };
+            return Err(CoupledSourceReadStop::capture(cause.denial()));
+        };
+        let tree = root.downcast_ref::<root::Root<S>>().ok_or_else(|| {
+            super::super::WorthQueryOutputDemandDenial::new(
+                super::super::WorthQueryOutputDemandDenialKind::ForeignDemand,
+                "required graph schema",
+            )
+        })?;
+        retention_observation::record(
+            execution.has_accounting(),
+            tree.container_bytes(),
+            _memory
+                .as_ref()
+                .map(worth_execution::ExecutionMemoryReservation::bytes),
+        );
         let order = tree.order();
         let context = SynchronousOutputAssembly {
             owner,
@@ -127,10 +133,8 @@ impl CapturedSynchronousOutputs {
             order,
         };
         let mut wave = SynchronousOutputWave::new();
-        if let Some(parent) = tree.prepare(&context, candidate).map_err(|cause| cause.0)? {
-            tree.discover(&context, &parent, &mut wave)
-                .map_err(|cause| cause.0)?;
-        }
+        tree.seed(&context, candidate, &mut wave)
+            .map_err(|cause| cause.0)?;
         wave.drive(&context, candidate).map_err(|cause| cause.0)
     }
 }
@@ -140,6 +144,7 @@ impl<S: ApplicationSchema, O, I, Scope>
     pub fn with_synchronous_required_outputs<C, E>(
         mut self,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         demand: C::Demand,
         order: &worth_query_declaration::facade::application_program::ApplicationProgramConnectionOrder,
     ) -> Self
@@ -154,13 +159,20 @@ impl<S: ApplicationSchema, O, I, Scope>
                 <Source<S, C::Demand> as ApplicationQueryBinding<S>>::PrincipalIdentity,
             >,
     {
-        let tree: Box<dyn RequiredTree<S>> = Box::new(Tree::<C::Demand, E> {
-            connection: C::IDENTITY,
-            order: order.clone(),
-            demand,
-            marker: PhantomData,
-        });
-        self.synchronous_outputs = Some(CapturedSynchronousOutputs(Box::new(tree)));
+        self.synchronous_outputs = Some(CapturedSynchronousOutputs::capture(
+            execution,
+            C::IDENTITY,
+            std::mem::size_of::<Tree<C::Demand, E>>() + std::mem::size_of::<root::Root<S>>(),
+            || {
+                let tree: Box<dyn RequiredTree<S>> = Box::new(Tree::<C::Demand, E> {
+                    connection: C::IDENTITY,
+                    order: order.clone(),
+                    demand,
+                    marker: PhantomData,
+                });
+                Box::new(root::Root::Fixed(tree))
+            },
+        ));
         self
     }
 }

@@ -6,6 +6,7 @@ mod cleanup;
 mod control;
 mod decision_dependency;
 mod diamond;
+mod discovered;
 mod failure;
 mod healthy;
 mod independent;

@@ -63,6 +63,8 @@ pub enum WorthQueryOutputDemandDenialKind {
     UnobservedWrite(crate::domain_computation::primary_graph::WorthQueryApplicationUnobservedWrite),
     /// The installed producer ran and its domain rejected the decision.
     ProducerDomainDenied,
+    /// An installed connection rejected discovery input or its computed demands.
+    DiscoveryConnection(Box<worth_query_declaration::facade::application_program::WorthQueryRequiredOutputConnectionDenial>),
     /// The selected original source could not supply a concrete resource quote.
     /// The admitted request lost its operation authorization before publication.
     RequestAuthorization(

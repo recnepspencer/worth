@@ -8,6 +8,9 @@ mod sealed {
 pub trait WorthQueryErasedInstalledProgramMeaning: sealed::InstalledMeaning + Send + Sync {
     fn as_any(&self) -> &dyn std::any::Any;
     fn action_inventory(&self) -> WorthQueryInstalledActionInventory<'_>;
+    fn connection_order(
+        &self,
+    ) -> &worth_query_declaration::facade::application_program::ApplicationProgramConnectionOrder;
     /// Original installed declarations, including dormant rostered computations.
     fn features(
         &self,
@@ -22,6 +25,12 @@ impl<Schema: 'static, Program: 'static> WorthQueryErasedInstalledProgramMeaning
 {
     fn as_any(&self) -> &dyn std::any::Any {
         self
+    }
+    fn connection_order(
+        &self,
+    ) -> &worth_query_declaration::facade::application_program::ApplicationProgramConnectionOrder
+    {
+        self.connection_order()
     }
     fn features(
         &self,

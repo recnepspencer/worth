@@ -127,6 +127,7 @@ where
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProducerUnavailable
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ManagedCleanupRequired(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProducerDomainDenied
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::DiscoveryConnection(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::RequestAuthorization(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProductSelection(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::SchedulingRejected

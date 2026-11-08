@@ -204,6 +204,8 @@ where
         <<DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value:
             WorthQueryApplicationProjection<Schema, <DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::Query> + Clone,
     {
+        let execution = phase.checked_execution_request_for(application.runtime().product_runtime())
+            .map_err(|cause| WorthQueryPerformedMutationExecutionDenial::Mutation(WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?;
         let (selected, owner) = self.select_performed_owner::<Program, Root>(phase, application)?;
         let demand = <Intent::Binding as WorthQueryApplicationRequiredOutputSource<
             Schema,
@@ -225,7 +227,7 @@ where
                             .compare_and_commit_selected_required_output_source::<Root, Intent::Binding>(phase,
                                 &worth_query_execution::publication_boundary::program_publication_access(),
                                 &owner,
-                                program.with_synchronous_required_outputs::<RootConnection<Schema,Root>,Root::Dependents>(&worth_query_execution::publication_boundary::program_publication_access(), demand.clone(), application.installed_program().connection_order()),
+                                program.with_synchronous_required_outputs::<RootConnection<Schema,Root>,Root::Dependents>(&worth_query_execution::publication_boundary::program_publication_access(), &execution, demand.clone(), owner.connection_order()),
                                 binding.idempotency(),
                                 allocation_policy,
                             ),

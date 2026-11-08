@@ -140,7 +140,11 @@ where
         owner: &WorthQuerySelectedProgramOwner<'_, Schema>,
         program: SourceProgram<Schema, Source>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
-        discovery: <RootConnection<Schema, Root> as WorthQueryApplicationDiscoveredOutputConnection<Schema>>::Discovery,
+        discovery: std::sync::Arc<
+            <RootConnection<Schema, Root> as WorthQueryApplicationDiscoveredOutputConnection<
+                Schema,
+            >>::Discovery,
+        >,
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> ProgramSourceCommit
     where
@@ -183,10 +187,7 @@ where
             program,
             idempotency,
             crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
-            ProgramOutputSourcePayload::Discovered {
-                root,
-                discovery: std::sync::Arc::new(discovery),
-            },
+            ProgramOutputSourcePayload::Discovered { root, discovery },
             allocation_policy,
         )
     }

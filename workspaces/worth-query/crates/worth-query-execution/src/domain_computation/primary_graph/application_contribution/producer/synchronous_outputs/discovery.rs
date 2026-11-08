@@ -25,11 +25,43 @@ impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
         B::ScopeBinding: ApplicationQueryScopeResolution<S, B::PrincipalIdentity>,
         Row<S, B>: WorthQueryApplicationProjection<S, B::Query>,
     {
+        self.discover_at::<B>(&parent.pin, parent.source(), intent)
+    }
+    pub(super) fn discover_authored<B>(
+        &self,
+        source: &AppliedAuthoredDiscovery,
+        intent: B::Input,
+    ) -> Result<Row<S, B>, CoupledSourceReadStop>
+    where
+        B: ApplicationQueryBinding<S>,
+        B::Input: ApplicationQueryIntent<S, Binding = B>,
+        B::ScopeBinding: ApplicationQueryScopeResolution<S, B::PrincipalIdentity>,
+        Row<S, B>: WorthQueryApplicationProjection<S, B::Query>,
+    {
+        self.discover_at::<B>(&source.pin, source.source, intent)
+    }
+    fn discover_at<B>(
+        &self,
+        pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        subject: worth_relational::facade::identity::EntityId,
+        intent: B::Input,
+    ) -> Result<Row<S, B>, CoupledSourceReadStop>
+    where
+        B: ApplicationQueryBinding<S>,
+        B::Input: ApplicationQueryIntent<S, Binding = B>,
+        B::ScopeBinding: ApplicationQueryScopeResolution<S, B::PrincipalIdentity>,
+        Row<S, B>: WorthQueryApplicationProjection<S, B::Query>,
+    {
         let runtime = self.owner.application;
-        let external = self
-            .owner
-            .principal
-            .expect("actual producing parent required its principal");
+        let external = self.owner.principal.ok_or_else(|| {
+            super::super::WorthQueryOutputDemandDenial::new(
+                super::super::WorthQueryOutputDemandDenialKind::ForeignSource,
+                format!(
+                    "{}: current principal unavailable for discovery",
+                    B::IDENTITY
+                ),
+            )
+        })?;
         let selected = runtime
             .on_branch(self.owner.before.product_branch())
             .select_with_request(self.execution)
@@ -38,7 +70,12 @@ impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
             })?;
         let shared = selected
             .prepare_shared_query_basis()
-            .map_err(|(_,cause)|super::super::execution::denial::selected_source_read_denied(B::IDENTITY,SourceQueryObservationStop::Read(crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedOneShotStop::Admission(cause))))?;
+            .map_err(|(_, cause)| {
+                let stop = SourceQueryObservationStop::Read(
+                    crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedOneShotStop::Admission(cause),
+                );
+                super::super::execution::denial::selected_source_read_denied(B::IDENTITY, stop)
+            })?;
         let reader = SourceQueryReaderAccess::new(
             runtime,
             &shared,
@@ -52,11 +89,11 @@ impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
                 self.execution,
                 intent,
                 self.before,
-                &parent.pin,
+                pin,
                 &mut ApplicationQueryNativeAccess::acquire(),
                 |plan, _| {
                     let source = runtime
-                        .project_applied_source_plan(self.execution, plan, &parent.pin)
+                        .project_applied_source_plan(self.execution, plan, pin)
                         .map_err(|cause| cause.into_source_query_stop(B::IDENTITY))?;
                     let support = source
                         .retain_candidate_support(
@@ -64,11 +101,11 @@ impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
                             self.execution,
                             self.owner.request,
                             B::IDENTITY,
-                            &parent.pin,
+                            pin,
                         )
                         .map_err(SourceQueryObservationStop::SourceFacts)?;
                     self.owner
-                        .retain_discovery_support(self.execution, parent, support)
+                        .retain_discovery_support(self.execution, subject, support)
                         .map_err(SourceQueryObservationStop::CurrentControl)?;
                     Ok(source.value)
                 },

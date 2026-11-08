@@ -78,7 +78,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
     pub(super) fn retain_discovery_support(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        parent: &super::synchronous_outputs::AppliedOutputParent,
+        source: worth_relational::facade::identity::EntityId,
         support: crate::domain_computation::primary_graph::application_query::AppliedQuerySupport,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         self.application
@@ -87,7 +87,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
             .retain_candidate_read_support(
                 execution,
                 &self.root_session,
-                parent.source(),
+                source,
                 crate::domain_computation::primary_graph::provider::CandidateReadSupport::Query(
                     support,
                 ),

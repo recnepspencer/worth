@@ -57,7 +57,8 @@ where
     where
         Program: ApplicationProgramDefinition<Schema>,
         Program::Outputs: ApplicationProgramOutputsShape<Schema>,
-        Root: ApplicationOutputGraphShape<Schema> + ApplicationDiscoveredOutputRoot,
+        Root: ApplicationOutputGraphShape<Schema> + ApplicationDiscoveredOutputRoot
+            + worth_query_execution::publication_boundary::synchronous_outputs::SynchronousDiscoveredOutputRoot<Schema>,
         RootConnection<Schema, Root>:
             WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Intent::Binding>,
     {
@@ -100,15 +101,18 @@ where
     where
         Program: ApplicationProgramDefinition<Schema>,
         Program::Outputs: ApplicationProgramOutputsShape<Schema>,
-        Root: ApplicationOutputGraphShape<Schema> + ApplicationDiscoveredOutputRoot,
+        Root: ApplicationOutputGraphShape<Schema> + ApplicationDiscoveredOutputRoot
+            + worth_query_execution::publication_boundary::synchronous_outputs::SynchronousDiscoveredOutputRoot<Schema>,
         RootConnection<Schema, Root>:
             WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Intent::Binding>,
     {
+        let execution = phase.checked_execution_request_for(application.runtime().product_runtime())
+            .map_err(|cause| WorthQueryPerformedMutationExecutionDenial::Mutation(WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?;
         let (selected, owner) = self.select_performed_owner::<Program, Root>(phase, application)?;
         let discovery =
             RootConnection::<Schema, Root>::discovery_from_source(self.request.intent.input())
                 .map_err(WorthQueryPerformedMutationExecutionDenial::Connection)?;
-        let retained_discovery = discovery.clone();
+        let retained_discovery = std::sync::Arc::new(discovery.clone());
         let source =
             crate::application_entry::mutation::performed_source::PerformedSourceCommit::default();
         let outcome = self
@@ -125,7 +129,13 @@ where
                                 phase,
                                 &worth_query_execution::publication_boundary::program_publication_access(),
                                 &owner,
-                                program,
+                                <Root as worth_query_execution::publication_boundary::synchronous_outputs::SynchronousDiscoveredOutputRoot<Schema>>::attach(
+                                    program,
+                                    &worth_query_execution::publication_boundary::program_publication_access(),
+                                    &execution,
+                                    std::sync::Arc::clone(&retained_discovery),
+                                    owner.connection_order(),
+                                ),
                                 binding.idempotency(),
                                 retained_discovery,
                                 allocation_policy,

@@ -1,5 +1,65 @@
 # Synchronous edit publication — P5 and S6 (D1353/D1358/D1359)
 
+## Governing remainder — D1397 (2026-11-08)
+
+The independent plan review (`orchestration/review-pubquery-p5-plan.md`) found
+three blocking gaps. The measured cabinet still uses generic mutate followed
+by caller-started demands: the committed required-source machinery alone does
+not change its eight commits. The following checkpoints supersede the older
+unimplemented plan and exclusions below. Historical implementation notes remain
+as evidence, not authority for a seal-before-derived design.
+
+1. CP1: complete discovered roots, typed connection refusals and M-D1 through
+   M-D6, including read-only post-receipt delivery in hot, cold and recovery legs.
+2. CP2: trace cabinet self-continuation first; co-commit caller-started synchronous
+   outputs through the synchronous entry, make current demand certification and
+   identity-equal ComputedSlot completion commit nothing, preserve exactly the
+   legacy final rows without intermediate retirement churn, and add the generic
+   cabinet fan-out/shrink fixture with an all-branch commit counter.
+3. CP3: write `p5-s6-plan.md` for independent review, then stop with
+   `BLOCKED: S6 plan review`. No S6 implementation precedes that review. The
+   envelope must support authored stages reading earlier applied derived waves,
+   C admission/D data/final support, the declared stage DAG with typed cycles,
+   several root slots, one whole-envelope key/receipt and an in-candidate seal.
+4. CP4 after the S6 review/implementation: all visible semantics, two-axis growth,
+   real cold-symbol reset evidence and every remaining review mutant; merge
+   public master `9ee736d3ba` and compare complete root/Query lanes to that clean
+   master, replacing the earlier 893 baseline. Report a scratch-only proprietary
+   cabinet probe. Root owns the later proprietary migration and #29/#30.
+
+A caller starting demands immediately after an edit does not declare deferred
+work. Synchronous entries are the typed required source and envelope. Truly
+lazy work stays separate; continuing an already-current result commits nothing.
+One edit's final rows must equal the old multi-commit sequence's final rows.
+If that old final state is wrong, stop with the trace instead of encoding it.
+
+Track every mutant by its ID, including M-D6. Each checkpoint ends with a commit
+and short report; future commits carry the D1397 co-author footer. No P5 READY
+before all checkpoints and independent qualification are complete.
+
+
+### CP1 checkpoint
+
+Discovered required roots now share their captured recipe with receipt recovery
+and seed the existing candidate wave. Query admits at C, reads the authored D,
+and retains actual discovery support through final qualification. Root and child
+connection failures preserve their original typed cause. The selected program
+supplies occurrence order. Captured containers use the original retained-stage
+budget owner; a scoped readonly recorder checks the actual held reservation.
+
+Qualification:20 new accounted/worker, hot/cold and interrupted-recovery courts;
+full public carrier630 passed/2 ignored; legacy coupled35 passed; Query workspace
+all-target compile and boundary/context/format/400-line guards passed. M-D1–M-D6
+are killed, including separate actual-contact hot/recovery and post-reopen cold
+legs. Three additional funding/worker/typed-cause mutants are killed. Every
+mutation is SHA-256 restored. No existing assertion changed. External evidence:
+`build-cache/history53-d1347/p5-discovered-qualification.json`.
+
+This completes CP1 only. The old generic cabinet call path still needs CP2;
+there is no P5 READY or measured cabinet commit reduction at this checkpoint.
+
+---
+
 Status: implementation in progress on top of `f3c161bfd3`. This is one delivery
 slice; intermediate checkpoints do not claim P5 or S6 completion.
 

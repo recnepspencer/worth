@@ -74,6 +74,7 @@ impl WorthQueryOutputDemandDenialKind {
             | Self::UnobservedWrite(_)
             | Self::ProducerUnavailable
             | Self::ProducerDomainDenied
+            | Self::DiscoveryConnection(_)
             | Self::RequestAuthorization(_)
             | Self::SchedulingRejected
             | Self::PublicationStale

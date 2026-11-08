@@ -16,6 +16,8 @@ impl worth_execution::ChargedBytes for WorthQueryOutputDemandDenial {
             return u64::MAX;
         }
         let diagnostic = match self.kind.as_ref() {
+            Kind::DiscoveryConnection(cause) => (std::mem::size_of_val(cause.as_ref()) as u64)
+                .saturating_add(cause.owned_allocation_capacity_bytes() as u64),
             Kind::UnobservedWrite(cause) => {
                 cause.locator().owned_allocation_capacity_bytes() as u64
             }

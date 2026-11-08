@@ -51,18 +51,18 @@ where
         let connection =
             <Binding<S, C> as WorthQueryApplicationDependentOutputConnection<S>>::IDENTITY;
         let refused = |cause| {
-            SynchronousOutputFailure(CoupledSourceReadStop::Query(
-                super::super::execution::denial::failed(connection, cause).into(),
+            SynchronousOutputFailure(CoupledSourceReadStop::from(
+                super::super::WorthQueryOutputDemandDenial::discovery_connection_denied(
+                    connection, cause,
+                ),
             ))
         };
         context.checkpoint(connection)?;
-        let intent = Binding::<S, C>::discovery_from_root(demand)
-            .map_err(|cause| refused(format!("{cause:?}")))?;
+        let intent = Binding::<S, C>::discovery_from_root(demand).map_err(refused)?;
         let discovered = context
             .discover::<QueryBinding<S, C>>(parent, intent)
             .map_err(SynchronousOutputFailure)?;
-        let children = Binding::<S, C>::demands_from_discovery(&discovered)
-            .map_err(|cause| refused(format!("{cause:?}")))?;
+        let children = Binding::<S, C>::demands_from_discovery(&discovered).map_err(refused)?;
         for child in children {
             context.checkpoint(connection)?;
             capture::schedule::<S, Child<S, C>, E>(

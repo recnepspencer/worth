@@ -392,3 +392,5 @@ pub use worth_relational::facade::transactions::{
 
 mod native_refusals;
 pub use native_refusals::*;
+
+pub use crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::{SynchronousCaptureRetentionCountsForTest, SynchronousCaptureRetentionForTest, SynchronousDiscoveredOutputRoot, SynchronousOutputEdges};

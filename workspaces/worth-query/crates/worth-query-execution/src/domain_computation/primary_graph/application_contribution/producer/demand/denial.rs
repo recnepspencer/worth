@@ -2,6 +2,7 @@ mod settlement_provenance;
 pub use settlement_provenance::WorthQueryOutputSettlementProvenanceDenial;
 pub(super) mod cleanup_custody;
 mod diagnostic_copy;
+mod discovery_connection;
 mod history_source;
 mod invariant_refusal;
 mod kind;

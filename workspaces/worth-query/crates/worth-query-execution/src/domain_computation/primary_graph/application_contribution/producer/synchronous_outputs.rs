@@ -11,13 +11,33 @@ use worth_relational::facade::{
     runtime::{RelationalAppliedCandidateReadIdentity, RelationalPinnedRead},
 };
 mod capture;
-pub(in crate::domain_computation::primary_graph) use capture::CapturedSynchronousOutputs;
+pub(in crate::domain_computation::primary_graph) enum CapturedSynchronousOutputs {
+    Prepared {
+        root: Box<dyn std::any::Any + Send>,
+        _memory: Option<worth_execution::ExecutionMemoryReservation>,
+    },
+    Refused(retention::CaptureRefusal),
+}
+mod discovered;
+mod retention;
+mod retention_observation;
+#[doc(hidden)]
+pub use retention_observation::{
+    SynchronousCaptureRetentionCountsForTest, SynchronousCaptureRetentionForTest,
+};
+mod root;
+pub use discovered::SynchronousDiscoveredOutputRoot;
 mod discovery;
 mod edges;
 mod source;
 mod wave;
 pub use wave::SynchronousOutputWave;
 
+/// The actual authored prefix read by root discovery, without producer settlement.
+struct AppliedAuthoredDiscovery {
+    source: worth_relational::facade::identity::EntityId,
+    pin: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+}
 pub struct AppliedOutputParent {
     source: worth_relational::facade::identity::EntityId,
     pin: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,

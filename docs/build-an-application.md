@@ -4334,10 +4334,22 @@ they do not use the source-owned roster. Initial and Preserve producers share
 the family route, and output readiness rejoins their actual performed receipt.
 The retirement and restoration paths keep their source-owned custody rules.
 
+A discovered required `ApplicationDiscoveredOutputGraph` also computes its roots
+inside the source transaction. Its captured discovery request is shared with
+receipt recovery, while its installed connection computes the root set from the
+unpublished authored image at D. Names and fields come from D; principal,
+permission and request checks stay at C. Its roots and descendants join the same
+wave and retain discovery support until final qualification. Connection failures
+retain the original `WorthQueryRequiredOutputConnectionDenial` under
+`DiscoveryConnection`, naming that connection. Post-receipt delivery and recovery
+observe the existing publications without reopening healthy producers or making
+another commit, including current demands after a checkpoint reopen.
+
 [P5/S6 synchronous edit publication](../plans/WORTH-query/synchronous-edit-publication.md)
-is still in progress: discovered roots and the explicit
-document-seal envelope remain in that plan. Demand-only output graphs retain
-their explicit lazy delivery meaning. Declared predecessor observations also
+is still in progress: general demand continuations and the explicit document-seal
+envelope remain in that plan. Demand-only output graphs retain their separate
+lazy delivery meaning. Synchronous consequences belong to the required-source
+entry or the planned envelope. Declared predecessor observations also
 work inside coupled handlers, with independently admitted current-C read
 permission and the edit's genuinely held commit lane. Native never labels the
 transaction-before basis as a coupled producer's consumed applied input image.

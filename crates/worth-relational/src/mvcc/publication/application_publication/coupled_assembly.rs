@@ -97,6 +97,12 @@ pub(crate) struct CoupledPublicationPart {
 }
 
 impl RelationalAuthoredCoupledCandidate<'_> {
+    /// The full-generation source admitted by Native for this authored prefix.
+    /// Descriptive identity only; reading D still requires its applied read pin.
+    pub fn authored_source(&self) -> crate::identity::data::EntityId {
+        self.binding.owners.source.subject()
+    }
+
     /// Classify an actual candidate source through the same canonical roster
     /// that admitted this assembly. The caller cannot submit an owner set.
     pub fn declared_owner(
