@@ -26,6 +26,7 @@ pub use crate::durability::{
     SIGNAL_AUTHORED_IMAGE_VERSION, SIGNAL_OWNER_FRAME_MAXIMUM_BYTES, SIGNAL_OWNER_FRAME_PROTOCOL,
     SIGNAL_OWNER_FRAME_VERSION, SIGNAL_RUNTIME_AUTHORED_IMAGE_PROTOCOL,
 };
+pub use worth_proof::ProvenNoEffectPublication;
 
 pub use crate::branch::{SignalCompositeForkBinding, SignalDurableForkReservation};
 pub use crate::durability::{
@@ -33,6 +34,7 @@ pub use crate::durability::{
 };
 
 pub use crate::durability::SignalCommittedAdvanceEvidence;
+pub use crate::durability::SignalNoEffectOriginal;
 pub use crate::durability::SignalRecordedSourcePoint;
 pub use crate::durability::{SignalAuthoredHomeImage, SIGNAL_HOME_IMAGE_MAXIMUM_BYTES};
 pub use crate::durability::{

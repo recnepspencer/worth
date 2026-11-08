@@ -15,6 +15,8 @@ pub use composite_signal_publication::{
 };
 pub mod contracts;
 mod durable_publication;
+mod proven_no_effect_publication;
+pub use proven_no_effect_publication::ProvenNoEffectPublication;
 mod signal_branch_readmission;
 pub use signal_branch_readmission::SignalBranchReadmitted;
 mod signal_owner_readmission;

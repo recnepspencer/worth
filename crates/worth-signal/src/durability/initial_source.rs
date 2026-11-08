@@ -74,7 +74,12 @@ pub struct SignalInitialSourceStepRefusal {
 
 pub(crate) enum InitialSourcePhase {
     Definition,
+    DefinitionRefused(worth_proof::ProvenNoEffectPublication<SignalNoEffectOriginal>),
     Advance(Arc<SignalDefinitionSourceRecord>),
+    AdvanceRefused {
+        definition: Arc<SignalDefinitionSourceRecord>,
+        proof: worth_proof::ProvenNoEffectPublication<SignalNoEffectOriginal>,
+    },
     Published(SignalCommittedAdvanceRecord),
 }
 pub(crate) struct InitialSourceCustody<D, I, E, Ctx, T>

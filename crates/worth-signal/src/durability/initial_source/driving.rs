@@ -23,19 +23,50 @@ where
     ) -> Result<SignalInitialSourceProgress, SignalInitialSourceStepRefusal> {
         loop {
             match &self.phase {
-                InitialSourcePhase::Definition => {
-                    let completion = match self
-                        .custody
-                        .medium
-                        .advance_definition(&self.custody.definition, execution)
-                    {
+                InitialSourcePhase::Definition | InitialSourcePhase::DefinitionRefused(_) => {
+                    let observation = match &self.phase {
+                        InitialSourcePhase::Definition => self
+                            .custody
+                            .medium
+                            .advance_definition(&self.custody.definition, execution),
+                        InitialSourcePhase::DefinitionRefused(proof) => {
+                            self.custody.medium.retry_definition_after_no_effect(
+                                &self.custody.definition,
+                                proof,
+                                execution,
+                            )
+                        }
+                        InitialSourcePhase::Advance(_)
+                        | InitialSourcePhase::AdvanceRefused { .. }
+                        | InitialSourcePhase::Published(_) => unreachable!("definition phase"),
+                    };
+                    let completion = match observation {
                         SignalPublicationObservation::Pending => {
                             return Ok(SignalInitialSourceProgress::Pending)
                         }
                         SignalPublicationObservation::Finished(completion) => completion,
                     };
-                    let proof = admit_definition(self.custody.definition.clone(), completion)
-                        .map_err(|fate| refusal(SignalDurableJournal::Definitions, fate))?;
+                    let proof = match admit_definition(self.custody.definition.clone(), completion)
+                    {
+                        Ok(proof) => proof,
+                        Err(fate) => {
+                            self.phase = match &fate {
+                                DurablePublicationFate::ProvenNoEffect { .. } => {
+                                    InitialSourcePhase::DefinitionRefused(
+                                        self.custody.admission.admission().no_effect_original(
+                                            SignalDurableJournal::Definitions,
+                                            self.custody.definition.digest(),
+                                        ),
+                                    )
+                                }
+                                DurablePublicationFate::Committed
+                                | DurablePublicationFate::Indeterminate { .. } => {
+                                    InitialSourcePhase::Definition
+                                }
+                            };
+                            return Err(refusal(SignalDurableJournal::Definitions, fate));
+                        }
+                    };
                     let custody = self
                         .custody
                         .definition_custody
@@ -45,12 +76,23 @@ where
                         SignalDefinitionSourceRecord::from_committed(proof, custody),
                     );
                 }
-                InitialSourcePhase::Advance(definition) => {
-                    let completion = match self
-                        .custody
-                        .medium
-                        .advance_branch(&self.custody.advance, execution)
-                    {
+                InitialSourcePhase::Advance(definition)
+                | InitialSourcePhase::AdvanceRefused { definition, .. } => {
+                    let definition = Arc::clone(definition);
+                    let observation = match &self.phase {
+                        InitialSourcePhase::Advance(_) => self
+                            .custody
+                            .medium
+                            .advance_branch(&self.custody.advance, execution),
+                        InitialSourcePhase::AdvanceRefused { proof, .. } => self
+                            .custody
+                            .medium
+                            .retry_branch_after_no_effect(&self.custody.advance, proof, execution),
+                        InitialSourcePhase::Definition
+                        | InitialSourcePhase::DefinitionRefused(_)
+                        | InitialSourcePhase::Published(_) => unreachable!("advance phase"),
+                    };
+                    let completion = match observation {
                         SignalPublicationObservation::Pending => {
                             return Ok(SignalInitialSourceProgress::Pending)
                         }
@@ -58,10 +100,34 @@ where
                     };
                     let record = admit_branch_record(
                         self.custody.advance.clone(),
-                        Arc::clone(definition),
+                        Arc::clone(&definition),
                         completion,
-                    )
-                    .map_err(|(_, fate)| refusal(SignalDurableJournal::Advances, fate))?;
+                    );
+                    let record = match record {
+                        Ok(record) => record,
+                        Err((_, fate)) => {
+                            self.phase = match &fate {
+                                DurablePublicationFate::ProvenNoEffect { .. } => {
+                                    InitialSourcePhase::AdvanceRefused {
+                                        definition,
+                                        proof: self
+                                            .custody
+                                            .admission
+                                            .admission()
+                                            .no_effect_original(
+                                                SignalDurableJournal::Advances,
+                                                self.custody.advance.digest(),
+                                            ),
+                                    }
+                                }
+                                DurablePublicationFate::Committed
+                                | DurablePublicationFate::Indeterminate { .. } => {
+                                    InitialSourcePhase::Advance(definition)
+                                }
+                            };
+                            return Err(refusal(SignalDurableJournal::Advances, fate));
+                        }
+                    };
                     self.phase = InitialSourcePhase::Published(record);
                 }
                 InitialSourcePhase::Published(_) => {
@@ -79,7 +145,10 @@ where
                     record,
                 })
             }
-            InitialSourcePhase::Definition | InitialSourcePhase::Advance(_) => Err(self),
+            InitialSourcePhase::Definition
+            | InitialSourcePhase::DefinitionRefused(_)
+            | InitialSourcePhase::Advance(_)
+            | InitialSourcePhase::AdvanceRefused { .. } => Err(self),
         }
     }
 }

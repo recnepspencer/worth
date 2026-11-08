@@ -353,6 +353,13 @@ Only `SignalPublishedInitialSource`, obtained after the original branch ACK,
 can transfer that same claim into cold owner readmission. No initialization
 effect is executed by readmission. Home must retain this original before driving
 it; these owner-level entries do not themselves enable Home or Host admission.
+After a proven-no-effect step, initialization retains a concrete
+`ProvenNoEffectPublication<SignalNoEffectOriginal>` tied to the actual live
+registry, journal and frame digest. It requests an explicit physical retry of
+that unchanged frame. Store also requires its own task to have proved no effect
+before retiring prior physical custody. Ordinary terminal observations stay
+stable; pending, committed and unresolved originals cannot be cleared by retry.
+The program, authored identities and frames are retained throughout.
 
 ## One Continuous Story
 

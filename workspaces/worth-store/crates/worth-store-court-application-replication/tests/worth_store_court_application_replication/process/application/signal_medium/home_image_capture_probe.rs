@@ -125,4 +125,22 @@ impl SignalDurableMedium for ObservedMedium {
     ) -> Result<(), SignalDurableMediumDenial> {
         self.original.retire(execution)
     }
+    fn retry_definition_after_no_effect(
+        &self,
+        artifact: &SignalDefinitionTransitionArtifact,
+        proof: &worth_proof::ProvenNoEffectPublication<SignalNoEffectOriginal>,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> SignalPublicationObservation {
+        self.original
+            .retry_definition_after_no_effect(artifact, proof, execution)
+    }
+    fn retry_branch_after_no_effect(
+        &self,
+        artifact: &SignalBranchAdvanceArtifact,
+        proof: &worth_proof::ProvenNoEffectPublication<SignalNoEffectOriginal>,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> SignalPublicationObservation {
+        self.original
+            .retry_branch_after_no_effect(artifact, proof, execution)
+    }
 }

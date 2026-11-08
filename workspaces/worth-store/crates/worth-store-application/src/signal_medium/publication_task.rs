@@ -107,6 +107,31 @@ pub(super) enum Endpoint {
     NoEffect,
     Unresolved,
 }
+impl SignalPublicationDriver<'_> {
+    /// Called only with the original exclusive driver and an admitted exact
+    /// retry proof. Retire physical custody only after this task itself proved
+    /// no effect; terminal observation on the ordinary advance path is stable.
+    pub(super) fn retry_no_effect(&self) {
+        let retired = {
+            let mut state = self.0.state.lock().unwrap_or_else(|e| e.into_inner());
+            if state.invalid {
+                return;
+            }
+            match state.endpoint.as_ref() {
+                Some(Endpoint::NoEffect) => Some(std::mem::take(&mut *state)),
+                Some(
+                    Endpoint::Ready(_)
+                    | Endpoint::Stopped(_)
+                    | Endpoint::Committed(_)
+                    | Endpoint::Terminal(_)
+                    | Endpoint::Unresolved,
+                )
+                | None => None,
+            }
+        };
+        drop(retired);
+    }
+}
 impl SignalPublicationTask {
     fn unresolved(&self) -> bool {
         let state = self.state.lock().unwrap_or_else(|e| e.into_inner());

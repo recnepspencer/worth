@@ -13,7 +13,21 @@ pub(super) fn publish(
     medium: &StoreSignalMedium,
     subject: &SignalPublicationSubject,
     execution: &ExecutionRequest<'_, '_>,
+    retry: Option<
+        &worth_proof::ProvenNoEffectPublication<
+            worth_signal::facade::durability::SignalNoEffectOriginal,
+        >,
+    >,
 ) -> SignalPublicationObservation {
+    if let Some(proof) = retry {
+        if let Err(cause) =
+            proof
+                .original()
+                .admit_retry(&medium.admission, subject.journal(), subject.digest())
+        {
+            return no_effect(cause);
+        }
+    }
     let task = match medium.publications.task(subject, execution) {
         Ok(task) => task,
         Err(Denial::PublicationBusy) => return SignalPublicationObservation::Pending,
@@ -27,6 +41,9 @@ pub(super) fn publish(
     let Some(_driver) = task.try_driver() else {
         return SignalPublicationObservation::Pending;
     };
+    if retry.is_some() {
+        _driver.retry_no_effect();
+    }
     // Recovery is consumed outside the disposable return context. Its SAME
     // returned strong retainer is installed before the operation is lent.
     task.resume();

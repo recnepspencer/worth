@@ -121,3 +121,39 @@ fn indeterminate_start_retains_original_custody_and_refuses_replacement() {
         &publications.task(&original, &execution).unwrap()
     ));
 }
+
+#[test]
+fn retry_driver_preserves_unresolved_original_and_registry_reservation() {
+    let host = SerialRequest::from_memory(
+        SerialMemoryBudget::new(None),
+        CancellationSource::new().token(),
+        None,
+    );
+    let execution = ExecutionRequest::serial(&host);
+    let original = subject(&execution, 1);
+    let successor = subject(&execution, 2);
+    let publications = SignalPublications::default();
+    let task = publications.task(&original, &execution).unwrap();
+    let driver = task.try_driver().unwrap();
+    let _ = task.remember_refusal(SignalPublicationObservation::Finished(
+        SignalPublicationCompletion::indeterminate(Denial::PublicationUnresolved),
+    ));
+    driver.retry_no_effect();
+    drop(driver);
+    assert_eq!(
+        publications.posture(),
+        SignalPublicationTaskPosture::Unsettled
+    );
+    assert!(
+        matches!(task.observation(), Some(SignalPublicationObservation::Finished(done))
+        if matches!(done.fate(), worth_foundational::facade::DurablePublicationFate::Indeterminate { .. }))
+    );
+    assert!(matches!(
+        publications.task(&successor, &execution),
+        Err(Denial::PublicationUnresolved)
+    ));
+    assert!(Arc::ptr_eq(
+        &task,
+        &publications.task(&original, &execution).unwrap()
+    ));
+}

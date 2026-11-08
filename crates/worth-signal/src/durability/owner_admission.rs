@@ -128,6 +128,8 @@ pub(crate) struct SignalDurableOwnerClaim {
     identity: SignalLiveOwnerIdentity,
 }
 impl worth_proof::AuthorityMarker for SignalDurableOwnerClaim {}
+mod no_effect_original;
+pub use no_effect_original::SignalNoEffectOriginal;
 impl std::fmt::Debug for SignalDurableOwnerClaim {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Debug::fmt(&self.identity, f)

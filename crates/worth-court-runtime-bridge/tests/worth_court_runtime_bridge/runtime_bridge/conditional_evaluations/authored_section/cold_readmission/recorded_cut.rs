@@ -129,4 +129,24 @@ impl SignalDurableMedium for RecordedCut {
     ) -> Result<(), SignalDurableMediumDenial> {
         panic!("immutable read-cut fixture is not a physical attachment")
     }
+    fn retry_definition_after_no_effect(
+        &self,
+        _: &SignalDefinitionTransitionArtifact,
+        _: &worth_signal::facade::durability::ProvenNoEffectPublication<
+            worth_signal::facade::durability::SignalNoEffectOriginal,
+        >,
+        _: &ExecutionRequest<'_, '_>,
+    ) -> SignalPublicationObservation {
+        panic!("readmission must not retry an owner effect")
+    }
+    fn retry_branch_after_no_effect(
+        &self,
+        _: &SignalBranchAdvanceArtifact,
+        _: &worth_signal::facade::durability::ProvenNoEffectPublication<
+            worth_signal::facade::durability::SignalNoEffectOriginal,
+        >,
+        _: &ExecutionRequest<'_, '_>,
+    ) -> SignalPublicationObservation {
+        panic!("readmission must not retry an owner effect")
+    }
 }

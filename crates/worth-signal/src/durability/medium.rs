@@ -56,6 +56,16 @@ pub enum SignalDurableMediumDenial {
     Unavailable,
     PublicationBusy,
     PublicationUnresolved,
+    PublicationRetryOwnerMismatch {
+        expected: super::SignalLiveOwnerIdentity,
+        observed: Option<super::SignalLiveOwnerIdentity>,
+    },
+    PublicationRetrySubjectMismatch {
+        expected_journal: SignalDurableJournal,
+        expected_digest: [u8; 32],
+        observed_journal: SignalDurableJournal,
+        observed_digest: [u8; 32],
+    },
     CheckpointBounds(Box<super::SignalOwnerReadmissionDenial>),
     CheckpointSourceBehind {
         journal: SignalDurableJournal,
@@ -112,6 +122,22 @@ pub trait SignalDurableMedium: std::fmt::Debug + Send + Sync {
     fn advance_branch(
         &self,
         artifact: &SignalBranchAdvanceArtifact,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> SignalPublicationObservation;
+    /// Explicitly retry the unchanged logical frame after an actual no-effect
+    /// answer. Ordinary advance keeps its terminal answer. The adapter checks
+    /// this concrete proof AND its actual current task before retiring any
+    /// physical custody; committed, pending and unresolved tasks stay original.
+    fn retry_definition_after_no_effect(
+        &self,
+        artifact: &SignalDefinitionTransitionArtifact,
+        proof: &worth_proof::ProvenNoEffectPublication<super::SignalNoEffectOriginal>,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> SignalPublicationObservation;
+    fn retry_branch_after_no_effect(
+        &self,
+        artifact: &SignalBranchAdvanceArtifact,
+        proof: &worth_proof::ProvenNoEffectPublication<super::SignalNoEffectOriginal>,
         execution: &ExecutionRequest<'_, '_>,
     ) -> SignalPublicationObservation;
     /// Quiesced owner teardown releases this exact serving share. It refuses

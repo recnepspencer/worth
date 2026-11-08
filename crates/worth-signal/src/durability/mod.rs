@@ -46,7 +46,9 @@ pub use owner_installation::{
 };
 mod owner_admission;
 pub(crate) use owner_admission::SignalDurableOwnerAdmission;
-pub use owner_admission::{SignalDurableOwnerAdmissionRegistry, SignalLiveOwnerIdentity};
+pub use owner_admission::{
+    SignalDurableOwnerAdmissionRegistry, SignalLiveOwnerIdentity, SignalNoEffectOriginal,
+};
 pub(crate) mod publication_binding;
 pub use owner::{SignalDurableOwner, SignalReadmittedConditionalContract};
 pub(crate) mod readmission;

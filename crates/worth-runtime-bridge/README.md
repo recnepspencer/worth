@@ -338,6 +338,10 @@ fresh `BridgeAuthoredInstallationBindings` through the same cold installation
 kernel. Preparation refusal returns the builder with its original Signal runtime
 restored. Store-backed courts cover a refused branch step after definition ACK,
 same-original retry, populated-source refusal and changed-build recomputation.
+Registered no-effect refusals use Signal's concrete proof and explicit retry
+port, preserving the same authored frames and builder. Ordinary observations
+keep their terminal answer; retry cannot erase a pending or unresolved physical
+original or publish a committed frame again.
 
 The privately constructed `BridgeReadmittedAuthoredAssembly` owns the durable
 Signal owner and exposes authored definition inspection. Cold multi-branch and

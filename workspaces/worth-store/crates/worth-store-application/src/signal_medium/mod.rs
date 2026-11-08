@@ -109,12 +109,17 @@ impl StoreSignalMedium {
         &self,
         artifact: subject::SignalPublicationArtifact,
         execution: &ExecutionRequest<'_, '_>,
+        retry: Option<
+            &worth_proof::ProvenNoEffectPublication<
+                worth_signal::facade::durability::SignalNoEffectOriginal,
+            >,
+        >,
     ) -> SignalPublicationObservation {
         if artifact.owner() != self.binding.owner() {
             return publication::no_effect(D::ForeignOwner);
         }
         let subject = subject::SignalPublicationSubject::new(artifact);
-        publication::publish(self, &subject, execution)
+        publication::publish(self, &subject, execution, retry)
     }
 }
 impl SignalDurableMedium for StoreSignalMedium {
@@ -141,6 +146,7 @@ impl SignalDurableMedium for StoreSignalMedium {
         self.publish(
             subject::SignalPublicationArtifact::Definition(artifact.clone()),
             execution,
+            None,
         )
     }
     fn advance_branch(
@@ -151,6 +157,35 @@ impl SignalDurableMedium for StoreSignalMedium {
         self.publish(
             subject::SignalPublicationArtifact::Advance(artifact.clone()),
             execution,
+            None,
+        )
+    }
+    fn retry_definition_after_no_effect(
+        &self,
+        artifact: &SignalDefinitionTransitionArtifact,
+        proof: &worth_proof::ProvenNoEffectPublication<
+            worth_signal::facade::durability::SignalNoEffectOriginal,
+        >,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> SignalPublicationObservation {
+        self.publish(
+            subject::SignalPublicationArtifact::Definition(artifact.clone()),
+            execution,
+            Some(proof),
+        )
+    }
+    fn retry_branch_after_no_effect(
+        &self,
+        artifact: &SignalBranchAdvanceArtifact,
+        proof: &worth_proof::ProvenNoEffectPublication<
+            worth_signal::facade::durability::SignalNoEffectOriginal,
+        >,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> SignalPublicationObservation {
+        self.publish(
+            subject::SignalPublicationArtifact::Advance(artifact.clone()),
+            execution,
+            Some(proof),
         )
     }
     fn retire(&self, execution: &ExecutionRequest<'_, '_>) -> Result<(), D> {
