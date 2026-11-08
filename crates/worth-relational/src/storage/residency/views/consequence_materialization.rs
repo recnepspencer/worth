@@ -72,6 +72,10 @@ impl super::RelationalRegionHeadView<'_> {
                 && journal.relation_slots.is_empty()
             {
                 admit(1, prior.relation_arena.sparse_shell_allocation_bound())?;
+                staged.relation_arena = prior.relation_arena.sparse_shape_clone_for_overlay();
+                staged.relation_overlay_is_sparse = true;
+            }
+            if journal.adjacency_omitted {
                 admit(
                     journal.adjacency_slots.len() as u64,
                     prior
@@ -84,8 +88,6 @@ impl super::RelationalRegionHeadView<'_> {
                         .reverse_adjacency
                         .adoption_allocation_bound(journal.reverse_adjacency_slots.len()),
                 )?;
-                staged.relation_arena = prior.relation_arena.sparse_shape_clone_for_overlay();
-                staged.relation_overlay_is_sparse = true;
                 let mut outgoing = prior.adjacency.clone();
                 let mut incoming = prior.reverse_adjacency.clone();
                 copied = copied.saturating_add(
@@ -98,6 +100,7 @@ impl super::RelationalRegionHeadView<'_> {
                     ));
                 staged.adjacency = outgoing;
                 staged.reverse_adjacency = incoming;
+                journal.adjacency_omitted = false;
             }
             if !entity_slots.is_empty() {
                 admit(1, prior.entity_arena.sparse_shell_allocation_bound())?;

@@ -17,6 +17,15 @@ pub struct MaintenancePhaseWork {
 pub struct MaintenanceWorkObservation {
     pub phases: Vec<MaintenancePhaseWork>,
     pub omitted_phases: usize,
+    /// Actual Native ownership records written, including structural retirements.
+    pub ownership_rows: u64,
+    /// Canonical record rows of each completed publication in this observation.
+    pub published_rows: Vec<usize>,
+    pub omitted_publications: usize,
+    pub content_index_hash_bytes: u64,
+    pub partition_value_hash_bytes: u64,
+    pub commit_payload_hash_bytes: u64,
+    pub visibility_payload_hash_bytes: u64,
 }
 
 struct Recorder {
@@ -60,6 +69,55 @@ fn record(work: MaintenancePhaseWork) {
             } else {
                 recorder.observation.omitted_phases =
                     recorder.observation.omitted_phases.saturating_add(1);
+            }
+        }
+    });
+}
+
+pub(crate) enum HashPurpose {
+    ContentIndex,
+    PartitionValue,
+    CommitPayload,
+    BranchVisibility,
+}
+
+pub(crate) fn hash_bytes(purpose: HashPurpose, bytes: usize) {
+    RECORDER.with(|slot| {
+        if let Some(recorder) = slot.borrow().as_ref() {
+            let mut recorder = recorder.borrow_mut();
+            let observation = &mut recorder.observation;
+            let total = match purpose {
+                HashPurpose::ContentIndex => &mut observation.content_index_hash_bytes,
+                HashPurpose::PartitionValue => &mut observation.partition_value_hash_bytes,
+                HashPurpose::CommitPayload => &mut observation.commit_payload_hash_bytes,
+                HashPurpose::BranchVisibility => &mut observation.visibility_payload_hash_bytes,
+            };
+            *total = total.saturating_add(bytes as u64);
+        }
+    });
+}
+
+pub(crate) fn ownership_rows(rows: usize) {
+    RECORDER.with(|slot| {
+        if let Some(recorder) = slot.borrow().as_ref() {
+            let mut recorder = recorder.borrow_mut();
+            recorder.observation.ownership_rows = recorder
+                .observation
+                .ownership_rows
+                .saturating_add(rows as u64);
+        }
+    });
+}
+
+pub(crate) fn published_commit(rows: usize) {
+    RECORDER.with(|slot| {
+        if let Some(recorder) = slot.borrow().as_ref() {
+            let mut recorder = recorder.borrow_mut();
+            if recorder.observation.published_rows.len() < recorder.maximum {
+                recorder.observation.published_rows.push(rows);
+            } else {
+                recorder.observation.omitted_publications =
+                    recorder.observation.omitted_publications.saturating_add(1);
             }
         }
     });

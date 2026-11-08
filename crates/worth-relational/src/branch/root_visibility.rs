@@ -36,6 +36,10 @@ impl RelationalBranchVisibilityCommitment {
         digest.update(match correctness_index {
             RelationalRootCorrectnessIndex::AuthoritativeFallback => [0],
         });
+        crate::execution::phase_observation::hash_bytes(
+            crate::execution::phase_observation::HashPurpose::BranchVisibility,
+            payload.len(),
+        );
         digest.update(payload);
         Self(digest.finalize().into())
     }

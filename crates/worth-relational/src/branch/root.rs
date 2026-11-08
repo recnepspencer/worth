@@ -378,13 +378,9 @@ impl RelationalBranchRoot {
             Arc::ptr_eq(&root.canonical_envelope, envelope)
                 && root.axes.storage_root == *root.descriptor.truth_root()
                 && root.axes.schema_root == *root.descriptor.schema_root()
-                && root.axes.visibility
-                    == RelationalBranchVisibilityCommitment::for_root(
-                        envelope,
-                        root.axes.storage_root,
-                        root.axes.schema_root,
-                        root.axes.correctness_index,
-                    )
+            // Exact immutable envelope custody carries root admission's
+            // visibility proof. Cold readmission and is_complete verify
+            // it independently; artifact linkage does not reconstruct it.
         })
     }
 

@@ -26,11 +26,48 @@ pub(crate) struct Route {
 pub(crate) struct Publication {
     pub(crate) origin: Arc<CanonicalRequiredOutputOrigin>,
     pub(crate) ordinal: usize,
+    /// Legacy rows implicitly bind claims to their original publication. A
+    /// successor carries that generation explicitly while replacing its origin.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) custody: Option<CommitId>,
+}
+impl Publication {
+    pub(crate) fn custody(&self) -> CommitId {
+        self.custody.unwrap_or(self.origin.commit.commit_id)
+    }
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Edge {
     pub(crate) publication: CommitId,
     pub(crate) edge: CanonicalRequiredOutputRelation,
+}
+/// Custody binds identity, birth and endpoints. Write continuity belongs to the
+/// latest canonical origin. The stored witness retains its original receipt
+/// bytes for codec compatibility; those historical write positions do not
+/// require rewriting an unchanged custody claim.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct RelationClaim {
+    pub(crate) id: crate::identity::data::RelationId,
+    kind: crate::identity::data::KindId,
+    source: EntityId,
+    target: EntityId,
+    birth: CommitId,
+}
+impl From<&CanonicalRequiredOutputRelation> for RelationClaim {
+    fn from(edge: &CanonicalRequiredOutputRelation) -> Self {
+        Self {
+            id: edge.id,
+            kind: edge.kind,
+            source: edge.source,
+            target: edge.target,
+            birth: edge.birth,
+        }
+    }
+}
+impl RelationClaim {
+    pub(crate) fn matches(&self, edge: &CanonicalRequiredOutputRelation) -> bool {
+        self == &Self::from(edge)
+    }
 }
 
 pub(crate) fn fields<'a>(

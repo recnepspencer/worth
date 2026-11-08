@@ -77,10 +77,12 @@ pub(crate) fn complete(
             let bytes = writer.encode(&crate::publication::ownership::record::Publication {
                 origin: std::sync::Arc::clone(origin),
                 ordinal,
+                custody: old.map(|(_, p)| p.custody()),
             })?;
             use sha2::Digest;
             Some(RoutePresence::published(
                 origin,
+                old.map(|(_, p)| p.custody()),
                 sha2::Sha256::digest(bytes).into(),
             ))
         } else {

@@ -197,6 +197,21 @@ impl World {
         sample.record(Phase::Invariants, "schema_projection_rows", schema_work);
         sample.record(Phase::WholeCommit, "charged_work", report.charged_work());
         sample.observe_phase_work(&observation);
+        sample.record(
+            Phase::RootAdmission,
+            "content_index_hash_bytes",
+            observation.content_index_hash_bytes,
+        );
+        sample.record(
+            Phase::RootAdmission,
+            "partition_value_hash_bytes",
+            observation.partition_value_hash_bytes,
+        );
+        sample.record(
+            Phase::Publication,
+            "commit_payload_hash_bytes",
+            observation.commit_payload_hash_bytes,
+        );
         sample.commits = 1;
         sample.touched.push(result.changed_records.len());
         let counters = &result.execution().complexity_delta;

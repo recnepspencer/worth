@@ -15,9 +15,9 @@ fn taken_domain_failure_is_data_and_every_outer_member_completes() {
     let _serial = TEST_LOCK.lock().unwrap();
     for width in [0, 1, 2, 4] {
         let parent = authority()
-            .request_lease(request(width.max(1), 2_000, 100))
+            .request_lease(accounted_request(width.max(1), 100))
             .unwrap();
-        let child = parent.child(request(1, 1_000, 100)).unwrap();
+        let child = parent.child(accounted_request(1, 100)).unwrap();
         let outer = run_checked_batch(
             Some(&parent),
             &batch(&[1, 2], 0),
@@ -67,9 +67,11 @@ fn a_request_owned_child_refusal_cannot_be_taken() {
     let _serial = TEST_LOCK.lock().unwrap();
     for width in [0, 1, 2, 4] {
         let parent = authority()
-            .request_lease(request(width.max(1), 2_000, 100))
+            .request_lease(accounted_request(width.max(1), 100))
             .unwrap();
-        let unrelated = authority().request_lease(request(1, 500, 100)).unwrap();
+        let unrelated = authority()
+            .request_lease(accounted_request(1, 100))
+            .unwrap();
         let outer = run_checked_batch(
             Some(&parent),
             &batch(&[1, 2], 0),
@@ -106,9 +108,9 @@ fn an_untaken_cause_stops_the_parent_without_changing_its_cost() {
     let _serial = TEST_LOCK.lock().unwrap();
     for width in [0, 1, 2, 4] {
         let parent = authority()
-            .request_lease(request(width.max(1), 2_000, 100))
+            .request_lease(accounted_request(width.max(1), 100))
             .unwrap();
-        let child = parent.child(request(1, 1_000, 100)).unwrap();
+        let child = parent.child(accounted_request(1, 100)).unwrap();
         let run = |take| {
             run_checked_batch(
                 Some(&parent),
@@ -160,9 +162,9 @@ fn only_a_strictly_narrower_declared_ceiling_can_be_taken() {
         for computation_owned in [false, true] {
             let limit = if computation_owned { 100 } else { 1 };
             let parent = authority()
-                .request_lease(request(width.max(1), 2_000, limit))
+                .request_lease(accounted_request(width.max(1), limit))
                 .unwrap();
-            let child = parent.child(request(1, 1_000, limit)).unwrap();
+            let child = parent.child(accounted_request(1, limit)).unwrap();
             let outer = run_checked_batch(
                 Some(&parent),
                 &batch(&[1], 0),
@@ -206,10 +208,12 @@ fn a_checkpoint_cannot_release_any_untaken_cause_or_a_request_stop() {
     let _serial = TEST_LOCK.lock().unwrap();
     for width in [0, 1, 2, 4] {
         let parent = authority()
-            .request_lease(request(width.max(1), 2_000, 100))
+            .request_lease(accounted_request(width.max(1), 100))
             .unwrap();
-        let child = parent.child(request(1, 1_000, 100)).unwrap();
-        let unrelated = authority().request_lease(request(1, 500, 100)).unwrap();
+        let child = parent.child(accounted_request(1, 100)).unwrap();
+        let unrelated = authority()
+            .request_lease(accounted_request(1, 100))
+            .unwrap();
         let outer = run_checked_batch(
             Some(&parent),
             &batch(&[1], 0),
@@ -270,9 +274,9 @@ fn child_panic_and_result_capacity_are_computation_owned() {
     for width in [0, 1, 2, 4] {
         for panics in [false, true] {
             let parent = authority()
-                .request_lease(request(width.max(1), 2_000, 100))
+                .request_lease(accounted_request(width.max(1), 100))
                 .unwrap();
-            let child = parent.child(request(1, 1_000, 100)).unwrap();
+            let child = parent.child(accounted_request(1, 100)).unwrap();
             let outer = run_checked_batch(
                 Some(&parent),
                 &batch(&[1], 0),
@@ -314,4 +318,5 @@ fn child_panic_and_result_capacity_are_computation_owned() {
     }
 }
 
+mod overlapping_memory;
 mod two_domain_children;

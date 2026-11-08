@@ -103,7 +103,7 @@ pub(super) fn validate(
             storage.publication_link,
             row.entity,
             *catalog,
-            publication,
+            row.value.custody(),
             RecordRef::Entity(owner),
         )?;
         if live.contains(&row.entity) {
@@ -126,7 +126,7 @@ pub(super) fn validate(
                         storage.member_link,
                         member.id,
                         row.entity,
-                        publication,
+                        row.value.custody(),
                     )) {
                         return Err(corrupt(publication, RecordRef::Entity(member.id)));
                     }
@@ -144,8 +144,7 @@ pub(super) fn validate(
             let row = publications
                 .get(&link.target)
                 .ok_or_else(|| corrupt(link.publication, RecordRef::Relation(link.id)))?;
-            let o = &row.value.origin;
-            if link.publication != o.commit.commit_id {
+            if link.publication != row.value.custody() {
                 return Err(corrupt(link.publication, RecordRef::Relation(link.id)));
             }
             if link.kind == storage.member_link {
@@ -158,7 +157,7 @@ pub(super) fn validate(
                     .ok_or_else(|| corrupt(link.publication, RecordRef::Entity(link.source)))?;
                 if edges
                     .get(&(row.entity, witness.edge.id))
-                    .is_none_or(|edge| **edge != witness.edge)
+                    .is_none_or(|edge| !record::RelationClaim::from(&witness.edge).matches(edge))
                 {
                     return Err(corrupt(
                         link.publication,

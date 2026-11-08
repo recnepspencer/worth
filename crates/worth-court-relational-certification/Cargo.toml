@@ -8,6 +8,7 @@
 "license" = { "workspace" = true }
 
 [dependencies]
+sha2-software = { package = "sha2", version = "=0.9.9", features = ["force-soft"] }
 serde_json = "1"
 "sha2" = { "version" = "^0.10" }
 "worth-execution" = { "path" = "../worth-execution" }

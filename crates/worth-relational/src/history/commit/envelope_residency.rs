@@ -59,6 +59,10 @@ impl RelationalCommitEnvelopeResidency {
         canonical_payload: Arc<[u8]>,
     ) -> Self {
         use sha2::{Digest, Sha256};
+        crate::execution::phase_observation::hash_bytes(
+            crate::execution::phase_observation::HashPurpose::CommitPayload,
+            canonical_payload.len(),
+        );
         let payload_digest = Sha256::digest(canonical_payload.as_ref()).into();
         Self {
             state: Mutex::new(EnvelopeState {

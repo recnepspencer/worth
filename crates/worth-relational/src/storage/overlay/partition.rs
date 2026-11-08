@@ -238,6 +238,9 @@ impl PartitionState {
 
 #[derive(Debug, Clone, Default)]
 pub(crate) struct PartitionMutationJournal {
+    /// This overlay omitted the predecessor's graph. Sequential writers may
+    /// change clone mode without supplying untouched adjacency slots.
+    pub(crate) adjacency_omitted: bool,
     pub(crate) entity_slots: BTreeSet<usize>,
     pub(crate) relation_slots: BTreeSet<usize>,
     pub(crate) adjacency_slots: BTreeSet<usize>,

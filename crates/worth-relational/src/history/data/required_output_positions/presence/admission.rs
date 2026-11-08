@@ -111,7 +111,7 @@ pub(crate) fn validate(
                     );
                     use sha2::Digest;
                     let digest: [u8; 32] = sha2::Sha256::digest(bytes).into();
-                    if value.origin.commit.commit_id != publication
+                    if value.custody() != publication
                         || publications.insert(key, (id, value, digest)).is_some()
                     {
                         return Err(bad(source));
@@ -151,6 +151,7 @@ pub(crate) fn validate(
                 if p.meaning != o.meaning
                     || p.publication != o.commit.commit_id
                     || p.generation != o.commit.version_id
+                    || p.custody() != row.custody()
                     || p.row_digest != digest
                 {
                     return Err(bad());

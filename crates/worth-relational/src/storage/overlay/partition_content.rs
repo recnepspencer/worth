@@ -149,6 +149,10 @@ fn hash_value(
     domain: &[u8],
     value: &impl Serialize,
 ) -> Result<[u8; 32], PartitionContentDigestError> {
+    crate::execution::phase_observation::hash_bytes(
+        crate::execution::phase_observation::HashPurpose::PartitionValue,
+        b"worth.relational.partition-value.v2\0".len() + 8 + domain.len(),
+    );
     let mut hash = Sha256::new();
     hash.update(b"worth.relational.partition-value.v2\0");
     hash.update((domain.len() as u64).to_be_bytes());
@@ -162,6 +166,10 @@ struct Sha256Writer<'a>(&'a mut Sha256);
 
 impl std::io::Write for Sha256Writer<'_> {
     fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        crate::execution::phase_observation::hash_bytes(
+            crate::execution::phase_observation::HashPurpose::PartitionValue,
+            bytes.len(),
+        );
         self.0.update(bytes);
         Ok(bytes.len())
     }
