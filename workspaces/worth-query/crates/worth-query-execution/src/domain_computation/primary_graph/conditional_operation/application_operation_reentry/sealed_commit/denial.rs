@@ -219,6 +219,7 @@ pub fn classify_kind(kind: Kind) -> Outcome {
         | Kind::MandatoryReviewProgramMismatch
         | Kind::DelegationActivationRequired
         | Kind::CapabilityRevocationRequired
+        | Kind::RequiredOutputPreparationMissing
         | Kind::ApplicationProgramRequired
         | Kind::WorkflowAuthorityRequired
         | Kind::ProgramNotActiveOnOccurrence { .. }

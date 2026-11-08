@@ -4295,6 +4295,13 @@ cannot be used as ordinary current scopes. Current descriptions retain `Some`
 with their exact committed index generation. Native refuses an unavailable
 source as `CoupledSourceNotLive`.
 
+An otherwise admitted fresh generic `execute_in_program` call cannot omit an
+installed required source's typed preparation. It refuses
+`RequiredOutputPreparationMissing`, naming the binding. Use the owning action's
+retention entry or the advanced typed required-source entry that supplies the
+actual installed root. Recorded receipt replay and intent drift keep their
+established precedence over this fresh-entry refusal.
+
 A fixed required `ApplicationOutputGraph` also joins its installed root and
 transitive dependents to the source publication. Each discovery query reads its
 actual parent's unpublished output, with principal, permission and request

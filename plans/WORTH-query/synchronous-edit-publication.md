@@ -724,3 +724,23 @@ Ready exempt D data checks. Query all-target check and all repository guards
 pass. Legacy coupled regression has35 passes before the coherent checkpoint.
 Consumer guide and capability index now describe verified automatic parents;
 discovered roots,independent routes and the authored-stage/seal envelope remain.
+
+## Generic required-source entry diagnostic
+
+Boundary review at64e9262ac6 verified that occurrence_commit's installed owner
+already prevents generic action commits for required output sources. Preserve
+that single fence and the different typed source publication entry. Its current
+ApplicationProgramRequired lacks the real subject although the program is
+already selected. Add a precise missing-preparation cause naming the binding.
+Keep receipt replay and intent drift before the fresh-entry refusal, under both
+ordinary and narrowed funding. Courts use the installed generic graph, prove
+no effect on refusal,same-key typed completion,exact generic replay and drift,
+and zero readiness contacts/commits. No graph may be inferred from names.
+
+Required-source diagnostic checkpoint:public606 passed/2 ignored,legacy35,Query
+all-target check and all guards pass. Two accounted/worker journey courts cover
+fresh no-effect refusal,same-key typed graph completion,exact receipt replay,
+intent drift and read-only readiness. Two worker mutants (skip the installed
+source fence,discard recorded replay before the fresh gate) are killed and
+SHA-restored. No existing assertion was loosened. The new typed cause preserves
+the terminal classifications of the old general program-entry refusal.

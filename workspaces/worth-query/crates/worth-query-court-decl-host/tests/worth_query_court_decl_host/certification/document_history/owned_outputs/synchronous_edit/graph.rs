@@ -12,6 +12,7 @@ mod late_parent;
 mod partition;
 mod permission;
 mod program;
+mod required_source_gate;
 mod retention;
 pub(super) mod unstable;
 

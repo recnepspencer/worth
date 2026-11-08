@@ -50,6 +50,7 @@ pub(super) fn application_commit_cause(
         | Kind::MandatoryReviewProgramMismatch
         | Kind::DelegationActivationRequired
         | Kind::CapabilityRevocationRequired
+        | Kind::RequiredOutputPreparationMissing
         | Kind::ApplicationProgramRequired
         | Kind::WorkflowAuthorityRequired
         | Kind::ProgramNotActiveOnOccurrence { .. }

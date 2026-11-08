@@ -149,6 +149,8 @@ pub enum WorthQueryApplicationCommitDenialKind {
     CapabilityRevocationRequired,
     /// The operation must run under the branch's program; use a program lane.
     ApplicationProgramRequired,
+    /// An installed required source reached an entry without its typed output preparation.
+    RequiredOutputPreparationMissing,
     /// The operation is guarded by a workflow, so only the workflow runtime may
     /// commit it.
     WorkflowAuthorityRequired,

@@ -55,10 +55,15 @@ where
             }
         };
     let binding = TypeId::of::<Binding>();
-    if !owner.owns_action(binding.into_external())
-        || owner.owns_output_source(binding.into_external())
-    {
+    if !owner.owns_action(binding.into_external()) {
         return WorthQueryApplicationCommitOutcome::Denied(program_required());
+    }
+    if owner.owns_output_source(binding.into_external()) {
+        return WorthQueryApplicationCommitOutcome::Denied(
+            WorthQueryApplicationCommitDenial::required_output_preparation_missing(
+                Binding::IDENTITY,
+            ),
+        );
     }
     if !program.matches_workflow_authority_binding::<Binding>(&idempotency) {
         return WorthQueryApplicationCommitOutcome::Denied(
